@@ -1,0 +1,25 @@
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: "example-job"
+spec:
+  runtimeid: "1234"
+  replica_specs:
+    - replicas: 1
+      tf_port: 2222
+      tf_replica_type: MASTER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:latest
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 1
+      tf_port: 2222
+      tf_replica_type: WORKER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:latest
+              name: tensorflow
+          restartPolicy: OnFailure

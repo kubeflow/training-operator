@@ -1,0 +1,20 @@
+Date: 01/20/17
+
+This package is imported from Kubernetes 1.5 branch .
+
+client-go doesn’t have leader election package imported at the time of writing.
+We are trying our best to communicate with upstream and get that package imported to client-go.
+
+Meanwhile, that process is slow, and even complicated due to a few aspects:
+
+- The importing work seems to be happening on 2.0/master but not 1.5 that we are using.
+- We are using client-go 1.5 which is k8s 1.4, and we need to pull packages from k8s 1.5 due to some concern.
+  This is mixing versions, which gets things more complicated.
+- This might introduce new API to client-go 1.5, which might get things more complicated.
+- There are still concerns on upstream on “write to endpoints”. This is the most complicated.
+
+The situation is complicated, and we need to expedite our work.
+Thus, we fork "pkg/client/leaderelection" from Kubernetes 1.5 branch to our repo.
+
+Nonetheless, we should try our best to push the changes to upstream and communicate with community members to resolve the problem.
+After that we should replace it to client-go again.

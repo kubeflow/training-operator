@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tf-job-operator
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: tf-job-operator
+    spec:
+      containers:
+      - name: tf-job-operator
+        image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
+        command:
+          - /opt/cmle/tf_operator
+          - -alsologtostderr
+          - -v=1
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name

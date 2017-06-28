@@ -1,0 +1,31 @@
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: "tf-smoke-gpu"
+spec:
+  runtimeid: "1234"
+  replica_specs:
+    - replicas: 1
+      tf_port: 2222
+      tf_replica_type: MASTER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
+              name: tensorflow
+              resources:
+                limits:
+                  alpha.kubernetes.io/nvidia-gpu: 1
+              volumeMounts:
+                - name: nvidia-debug-tools
+                  mountPath: /usr/local/bin/nvidia
+                - name: nvidia-libraries
+                  mountPath: /usr/local/nvidia/lib64 # This path is special; it is expected to be present in `/etc/ld.so.conf` inside the container image.
+          volumes:
+            - name: nvidia-debug-tools # optional
+              hostPath:
+                path: /home/kubernetes/bin/nvidia/bin
+            - name: nvidia-libraries # required
+              hostPath:
+                path: /home/kubernetes/bin/nvidia/lib
+          restartPolicy: OnFailure
