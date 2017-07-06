@@ -47,6 +47,28 @@ func NewTFReplicaSet(clientSet     kubernetes.Interface, tfReplicaSpec spec.TfRe
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
 
+	if tfReplicaSpec.TfPort == nil {
+		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
+	}
+
+	if tfReplicaSpec.Template == nil {
+		return nil, errors.New("tfReplicaSpec.Template can't be nil.")
+	}
+
+	// Make sure the replica type is valid.
+	validReplicaTypes := []spec.TfReplicaType{spec.MASTER, spec.PS, spec.WORKER}
+
+	isValidReplicaType := false
+	for _, t := range validReplicaTypes {
+		if t == tfReplicaSpec.TfReplicaType {
+			isValidReplicaType = true
+			break
+		}
+	}
+
+	if !isValidReplicaType {
+		return nil, fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", tfReplicaSpec.TfReplicaType, validReplicaTypes)
+	}
 	return &TFReplicaSet{
 		ClientSet: clientSet,
 		Job: job,
@@ -140,11 +162,9 @@ func (s *TFReplicaSet) Create() error {
 			// We can't get c in the loop variable because that would be by value so our modifications
 			// wouldn't have any effect.
 			c := &newJ.Spec.Template.Spec.Containers[i]
-			log.Infof("DO NOT SUBMIT container: %v", c.Name)
 			if spec.ContainerName(c.Name) != spec.TENSORFLOW {
 				continue
 			}
-			log.Infof("DO NOT SUBMIT container: %v set TF_CONFIG", c.Name)
 			if len(c.Env) == 0 {
 				c.Env = make([]v1.EnvVar, 0)
 			}
@@ -155,7 +175,6 @@ func (s *TFReplicaSet) Create() error {
 		}
 
 		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		log.Infof("DO NOT SUBMIT Creating Job: %v", util.Pformat(newJ))
 		_, err = s.ClientSet.BatchV1().Jobs(NAMESPACE).Create(newJ)
 
 		// If the job already exists do nothing.

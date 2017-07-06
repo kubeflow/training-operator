@@ -5,34 +5,43 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	tpb "mlkube.io/pkg/trainer/protos"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"reflect"
 	"time"
 	"fmt"
+	"mlkube.io/pkg/spec"
+	"sync"
 )
 
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
-	code := &tpb.TrainingCode{
-		PythonModule: proto.String("main_module"),
-		PackageUris:  []string{"pkg1"},
+	jobSpec := &spec.TfJob {
+		Spec: spec.TfJobSpec {
+			RuntimeId: "some-runtime",
+			ReplicaSpecs: []*spec.TfReplicaSpec{
+				{
+					Replicas: proto.Int32(2),
+					TfPort: proto.Int32(10),
+					Template: &v1.PodTemplateSpec{},
+					TfReplicaType: spec.PS,
+				},
+			},
+		},
 	}
 
-	cluster := TFCluster{
-		RuntimeId: "some-runtime",
+	stopC := make(chan struct{})
+
+	wg := &sync.WaitGroup{}
+	job, err := initJob(clientSet, jobSpec, stopC, wg)
+
+	if err != nil {
+		t.Fatalf("NewTFReplicaSet failed: %v", err)
 	}
 
-	process := tpb.TensorFlowProcess{
-		Image:       proto.String("image"),
-		NumReplicas: proto.Int32(2),
-		Type:        tpb.TensorFlowProcess_PS.Enum(),
-	}
-
-	replica, err := NewTFReplicaSet(clientSet, *code, process, cluster)
+	replica, err := NewTFReplicaSet(clientSet, *jobSpec.Spec.ReplicaSpecs[0], job)
 
 	if err != nil {
 		t.Fatalf("NewTFReplicaSet failed: %v", err)
@@ -64,7 +73,7 @@ func TestTFReplicaSet(t *testing.T) {
 		s := sList.Items[index]
 
 		if !reflect.DeepEqual(expectedLabels, s.ObjectMeta.Labels) {
-			t.Fatalf("Service Labels; Got %v Want: %v", expectedLabels, s.ObjectMeta.Labels)
+			t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
 		}
 
 		name := fmt.Sprintf("ps-some-runtime-%v", index)
@@ -102,112 +111,11 @@ func TestTFReplicaSet(t *testing.T) {
 	}
 }
 
-func TestTFReplicaSet_CreatePublicServices(t *testing.T) {
-	clientSet := fake.NewSimpleClientset(&v1.Service{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: "ps-some-runtime-0",
-			Namespace: "default",
-		},
-		Spec: v1.ServiceSpec{
-			Ports: []v1.ServicePort {
-				{
-					Name: "tf-port",
-					Port: 2222,
-				},
-			},
-		},
-		Status: v1.ServiceStatus {
-			LoadBalancer: v1.LoadBalancerStatus {
-				Ingress: []v1.LoadBalancerIngress {
-					{
-						IP: "123.123.123.123",
-					},
-				},
-			},
-		},
-	})
-
-	code := &tpb.TrainingCode{
-		PythonModule: proto.String("main_module"),
-		PackageUris:  []string{"pkg1"},
-	}
-
-	cluster := TFCluster{
-		RuntimeId: "some-runtime",
-	}
-
-	process := tpb.TensorFlowProcess{
-		Image:       proto.String("image"),
-		NumReplicas: proto.Int32(1),
-		Type:        tpb.TensorFlowProcess_PS.Enum(),
-		AssignExternalIp: proto.Bool(true),
-	}
-
-	replica, err := NewTFReplicaSet(clientSet, *code, process, cluster)
-
-	if err != nil {
-		t.Fatalf("NewTFReplicaSet failed: %v", err)
-	}
-
-	otherClientSet := fake.NewSimpleClientset()
-	if err := replica.CreatePublicServices(otherClientSet); err != nil {
-		t.Fatalf("replica.CreatePublicServices() error; %v", err)
-	}
-
-	for index := 0; index < 1; index ++ {
-		// Expected labels
-		expectedLabels := map[string]string{
-			"cloud_ml":   "",
-			"task_index": fmt.Sprintf("%v", index),
-			"job_type":   "PS",
-			"runtime_id": "some-runtime",
-		}
-
-		// Check that a service was created.
-		sList, err := otherClientSet.CoreV1().Services(NAMESPACE).List(meta_v1.ListOptions{})
-		if err != nil {
-			t.Fatalf("List services error; %v", err)
-		}
-
-		if len(sList.Items) != 1 {
-			t.Fatalf("Expected 1 service got %v", len(sList.Items))
-		}
-
-		s := sList.Items[index]
-
-		if !reflect.DeepEqual(expectedLabels, s.ObjectMeta.Labels) {
-			t.Fatalf("Service Labels; Got %v Want: %v", expectedLabels, s.ObjectMeta.Labels)
-		}
-
-		name := fmt.Sprintf("ps-some-runtime-%v", index)
-		if s.ObjectMeta.Name != name {
-			t.Fatalf("Job.ObjectMeta.Name = %v; want %v", s.ObjectMeta.Name, name)
-		}
-
-		// Check that an endpoints object was created.
-
-		endpoint, err := otherClientSet.Core().Endpoints(NAMESPACE).Get(name, meta_v1.GetOptions{})
-
-		if err != nil {
-			t.Fatalf("Endpoints(%v).Get(%v) error; %v", NAMESPACE, name, err)
-		}
-
-		if endpoint.Subsets[0].Addresses[0].IP != "123.123.123.123"  {
-			t.Fatalf("endpoint.Subsets[0].Addresses[0].IP want 123.123.123.123 got %v", endpoint.Subsets[0].Addresses[0].IP)
-		}
-	}
-
-	// Delete the services.
-	if err := replica.DeletePublicServices(otherClientSet); err != nil {
-		t.Fatalf("replica.DeleteServices() error; %v", err)
-	}
-}
-
-func TestTFReplicaSetFromPodList(t *testing.T) {
+func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 	type TestCase struct {
 		PodList  v1.PodList
 		Name     string
-		Expected tpb.TFReplicaSetStatus_State
+		Expected spec.ReplicaState
 	}
 
 	cases := []TestCase{
@@ -229,7 +137,7 @@ func TestTFReplicaSetFromPodList(t *testing.T) {
 		    },
 		  },
 		  Name: "master",
-		  Expected: tpb.TFReplicaSetStatus_RUNNING,
+		  Expected: spec.ReplicaStateRunning,
 		},
 		{
 		  PodList: v1.PodList {
@@ -251,7 +159,7 @@ func TestTFReplicaSetFromPodList(t *testing.T) {
 		    },
 		  },
 		  Name: "master",
-		  Expected: tpb.TFReplicaSetStatus_SUCCEEDED,
+		  Expected: spec.ReplicaStateSucceeded,
 		},
 		{
 		  // Multiple containers; make sure we match by name.
@@ -280,7 +188,7 @@ func TestTFReplicaSetFromPodList(t *testing.T) {
 		    },
 		  },
 		  Name: "master",
-		  Expected: tpb.TFReplicaSetStatus_SUCCEEDED,
+		  Expected: spec.ReplicaStateSucceeded,
 		},
 		{
 		  // Container failed with permanent error and then got restarted.
@@ -307,7 +215,7 @@ func TestTFReplicaSetFromPodList(t *testing.T) {
 		    },
 		  },
 		  Name: "master",
-		  Expected: tpb.TFReplicaSetStatus_FAILED,
+		  Expected: spec.ReplicaStateFailed,
 		},
 		{
 			// Multiple Pods; check we get the most recent.
@@ -349,12 +257,12 @@ func TestTFReplicaSetFromPodList(t *testing.T) {
 				},
 			},
 			Name:     "master",
-			Expected: tpb.TFReplicaSetStatus_FAILED,
+			Expected: spec.ReplicaStateFailed,
 		},
 	}
 
 	for _, c := range cases {
-		status := replicaStatusFromPodList(c.PodList, c.Name)
+		status := replicaStatusFromPodList(c.PodList, spec.ContainerName(c.Name))
 		if status != c.Expected {
 			t.Errorf("replicaStatusFromPodList(%+v, %v)=%v ; want %v", c.PodList, c.Name, status, c.Expected)
 		}

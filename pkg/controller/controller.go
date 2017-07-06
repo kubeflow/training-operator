@@ -44,6 +44,8 @@ type Controller struct {
   jobRVs map[string]string
   stopChMap  map[string]chan struct{}
 
+  // TODO(jlewi): waitCluster should probably be used to ensure TrainingJob has finished processing
+  // a stop event before shutting down and deleting all jobs.
   waitCluster sync.WaitGroup
 }
 

@@ -7,6 +7,7 @@ import (
 
   "k8s.io/client-go/pkg/api/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  "cmle.io/pkg/util"
 )
 
 const (
@@ -89,9 +90,12 @@ type TfReplicaSpec struct {
 }
 
 func (c *TfJobSpec) Validate() error {
-  // Check that each replica has a tensorflow container.
+  // Check that each replica has a TensorFlow container.
   for _, r := range c.ReplicaSpecs {
     found := false
+    if r.Template == nil {
+      return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+    }
     for _, c := range r.Template.Spec.Containers {
       if c.Name == string(TENSORFLOW) {
         found = true

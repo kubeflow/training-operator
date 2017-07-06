@@ -71,8 +71,7 @@ type TrainingJob struct {
 // It is a map from job names to network addressess.
 type ClusterSpec map[string][]string
 
-func NewJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
-
+func initJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:  kubeCli,
 		Replicas: make([]*TFReplicaSet, 0),
@@ -83,6 +82,20 @@ func NewJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}
 		gc:       garbagecollection.New(kubeCli, job.Metadata.Namespace),
 	}
 
+	for _, t := range j.job.Spec.ReplicaSpecs {
+		r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+		if err != nil {
+			return nil, err
+		}
+		j.Replicas = append(j.Replicas, r)
+	}
+	return j, nil
+}
+func NewJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
+	j, err := initJob(kubeCli, job, stopC, wg)
+	if err != nil {
+		return j, err
+	}
 	// Increment the wait group which the controller uses to monitor the job processing.
 	wg.Add(1)
 	go func() {
@@ -102,13 +115,6 @@ func NewJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}
 		j.run(stopC)
 	}()
 
-	for _, t := range j.job.Spec.ReplicaSpecs {
-		r, err := NewTFReplicaSet(j.KubeCli, *t, j)
-		if err != nil {
-			return nil, err
-		}
-		j.Replicas = append(j.Replicas, r)
-	}
 	return j, nil
 }
 
