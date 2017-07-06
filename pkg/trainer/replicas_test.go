@@ -38,7 +38,7 @@ func TestTFReplicaSet(t *testing.T) {
 	job, err := initJob(clientSet, jobSpec, stopC, wg)
 
 	if err != nil {
-		t.Fatalf("NewTFReplicaSet failed: %v", err)
+		t.Fatalf("initJob failed: %v", err)
 	}
 
 	replica, err := NewTFReplicaSet(clientSet, *jobSpec.Spec.ReplicaSpecs[0], job)

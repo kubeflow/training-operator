@@ -146,7 +146,7 @@ There is a lot of code from earlier versions (including the ETCD operator) that 
 
 ### Testing
 
-Tests are out of date and broken.
+There is minimal testing.
 
 ## Building the Operator
 
