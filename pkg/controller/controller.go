@@ -44,9 +44,9 @@ type Controller struct {
   jobRVs map[string]string
   stopChMap  map[string]chan struct{}
 
-  // TODO(jlewi): waitCluster should probably be used to ensure TrainingJob has finished processing
+  // TODO(jlewi): waitJobs should probably be used to ensure TrainingJob has finished processing
   // a stop event before shutting down and deleting all jobs.
-  waitCluster sync.WaitGroup
+  waitJobs sync.WaitGroup
 }
 
 type Config struct {
@@ -94,7 +94,7 @@ func (c *Controller) Run() error {
     for _, stopC := range c.stopChMap {
       close(stopC)
     }
-    c.waitCluster.Wait()
+    c.waitJobs.Wait()
   }()
 
   eventCh, errCh := c.watch(watchVersion)
@@ -133,7 +133,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
     // Event indicates that a new instance of the Cluster TPR was created.
     // So we create a Cluster object to control this resource.
     stopC := make(chan struct{})
-    nc, err := trainer.NewJob(c.KubeCli, clus, stopC, &c.waitCluster)
+    nc, err := trainer.NewJob(c.KubeCli, clus, stopC, &c.waitJobs)
 
     if err != nil {
       return err
@@ -182,7 +182,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
     clus.Spec.Cleanup()
 
     stopC := make(chan struct{})
-    nc, err := trainer.NewJob(c.Config.KubeCli, &clus, stopC, &c.waitCluster)
+    nc, err := trainer.NewJob(c.Config.KubeCli, &clus, stopC, &c.waitJobs)
 
     if err != nil {
       log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, clus.Metadata.Name)
