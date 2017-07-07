@@ -148,6 +148,14 @@ There is a lot of code from earlier versions (including the ETCD operator) that 
 
 There is minimal testing.
 
+### TensorBoard Integration
+
+What's the best way to integrate TensorBoard?
+
+  *  A TfJob could launch TensorBoard and the lifetime of the TensorBoard instance would be tied to the job.
+  *  In addition we could possible use a TPR for TensorBoard or a framework like []fission.io](http://fission.io/) to
+     make it easy to launch a TensorBoard instance just by specifying the arguments for TensorBoard.
+
 ## Building the Operator
 
 To build the agent pull in client-go
