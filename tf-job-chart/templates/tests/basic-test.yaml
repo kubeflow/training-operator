@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  # We give the pod a random name so that we can run helm test multiple times and not
+  # have issues because the pod already exists.
+  name: "{{.Release.Name}}-tfjob-test-{{randAlphaNum 6 | lower }}"
+  annotations:
+    # See https://github.com/kubernetes/helm/blob/master/docs/chart_tests.md
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: basic-test
+      # TODO(jlewi): Should we use an IMAGE that contains the relevant python test code? The example (i.e. the
+      # TensorFlow code used by examples/tf_job.yaml) is already pushed to a registry and therefore not the code
+      # pulled from the source tree.
+      image: python:latest
+      command: ["/bin/sh","-c"]
+      # TODO(jlewi): We download kubectl because the test uses kubectl to submit TfJobs to be used in the tests.
+      # We should probably use the Python API in the test (or maybe switch to go?) and then we don't need to
+      # download kubectl.
+      args: ["wget -NP /usr/bin https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+            && chmod 755 /usr/bin/kubectl
+            && pip install nose-tap
+            && nosetests --with-tap /tests/run.py"]
+      volumeMounts:
+      - mountPath: /tests
+        name: tests
+        readOnly: true
+      - mountPath: /tools
+        name: tools
+  volumes:
+  - name: tests
+    configMap:
+      name: tfjob-tests
+  - name: tools
+    emptyDir: {}
+  restartPolicy: Never

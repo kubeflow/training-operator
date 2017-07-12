@@ -67,7 +67,7 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 1. Deploy the operator
 
    ```
-   kubectl create -f ./images/tf_operator/tf_job_operator_deployment.yaml 
+   helm install tf-job-chart/ -n tf-job --wait --replace
    ```
 
 1. Make sure the operator is running
@@ -80,6 +80,14 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 
     ```
 
+1. Run the helm tests
+
+    ```
+    helm test tf-job
+    RUNNING: tf-job-tfjob-test-pqxkwk
+    PASSED: tf-job-tfjob-test-pqxkwk
+    ```
+    
 ## Run the example
 
 A simplistic TF program is in the directory tf_sample. 
@@ -147,6 +155,14 @@ There is a lot of code from earlier versions (including the ETCD operator) that 
 ### Testing
 
 There is minimal testing.
+
+#### Unittests
+
+There are some unittests.
+
+#### E2E tests
+
+The helm package provides some basic E2E tests.
 
 ### TensorBoard Integration
 

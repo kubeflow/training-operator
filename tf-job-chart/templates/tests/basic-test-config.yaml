@@ -1,0 +1,30 @@
+# This ConfigMap is used by the basic-test helm chart to define the python script to use to run the tests.
+#
+# TODO(jlewi): Is it a common convention to use a ConfigMap to define the tests? I think one advantage of this
+# approach is that you don't have to push the test code anywhere. If we pulled down the python file from somewhere
+# else (e.g. github or as a Docker image) we'd have to push the code somewhere first.
+# However, the test however, is already pulling tf_job.yaml from github so already there is some mismatch between
+# the code and the test. The helm package also doesn't deploy the TfJob operator. So arguably we already have to
+# build and deploy various artifacts in order to run the test and we can probably reuse those mechanisms to deploy
+# the actual python test files.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tfjob-tests
+data:
+  run.py: |-
+    #! /usr/bin/python
+    from subprocess import call
+    def test_trivial():
+        assert "a" == "a"
+
+    def test_create():
+        # TODO(jlewi): This is just an initial hack. The job is deleted in case there is a previous run lying around.
+        # delete will return an error if the resource doesn't exist.
+        # A better solution is probably to give job a unique id so that different runs don't interfere.
+        return_code = call("kubectl delete -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml", shell=True)
+
+        return_code = call("kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml", shell=True)
+        assert(return_code == 0)
+
+    # more tests here
