@@ -15,27 +15,24 @@ spec:
 
 ---
 
-apiVersion: v1
-kind: ReplicationController
+apiVersion: apps/v1beta1
+kind: Deployment
 metadata:
   name: {{ .Release.Name }}
 spec:
   replicas: 1
-  selector:
-    app: {{ .Release.Name }}
   template:
     metadata:
       name: {{ .Release.Name }}
       labels:
         app: {{ .Release.Name }}
     spec:
-      # TODO(jlewi): We should use helm to create
       containers:
       - name: tensorboard
         image: gcr.io/tensorflow/tensorflow:latest
         command:
           - /usr/local/bin/tensorboard
-          - --logdir={ .Values.logDir }
+          - --logdir={{ .Values.logDir }}
           - --port=80
         ports:
         - containerPort: 80
