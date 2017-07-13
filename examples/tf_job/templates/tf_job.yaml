@@ -1,0 +1,24 @@
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replica_specs:
+    - replicas: 1
+      tf_port: 2222
+      tf_replica_type: MASTER
+      template:
+        spec:
+          containers:
+            - image: {{ .Values.image }} 
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 1
+      tf_port: 2222
+      tf_replica_type: WORKER
+      template:
+        spec:
+          containers:
+            - image: {{ .Values.image }}
+              name: tensorflow
+          restartPolicy: OnFailure

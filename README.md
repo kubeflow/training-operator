@@ -95,7 +95,7 @@ A simplistic TF program is in the directory tf_sample.
 1. Start the example
 
     ```
-    kubectl create -f examples/tf_job.yaml
+    helm install --name=tf-job ./examples/tf_job
     ```
     
 1. Check the job
