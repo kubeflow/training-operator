@@ -37,7 +37,9 @@ type Event struct {
 }
 
 type Controller struct {
-  Config
+  Namespace      string
+  KubeCli kubernetes.Interface
+  TfJobClient k8sutil.TfJobClient
 
   jobs map[string]*trainer.TrainingJob
   // Kubernetes resource version of the jobs
@@ -49,20 +51,14 @@ type Controller struct {
   waitJobs sync.WaitGroup
 }
 
-type Config struct {
-  // Namespace is the namespace associated with this controller. The controller will only monitor/modify TfJobs
-  // in this namespace.
-  Namespace      string
-  KubeCli kubernetes.Interface
-}
-
-func (c *Config) Validate() error {
-  return nil
-}
-
-func New(cfg Config) *Controller {
+func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string) *Controller {
+  if tfJobClient == nil {
+    panic("tfJobClient can't be nil")
+  }
   return &Controller{
-    Config: cfg,
+    Namespace: ns,
+    KubeCli: kubeCli,
+    TfJobClient: tfJobClient,
     // TODO(jlewi)): What to do about cluster.Cluster?
     jobs:   make(map[string]*trainer.TrainingJob),
     jobRVs: make(map[string]string),
@@ -133,7 +129,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
     // Event indicates that a new instance of the Cluster TPR was created.
     // So we create a Cluster object to control this resource.
     stopC := make(chan struct{})
-    nc, err := trainer.NewJob(c.KubeCli, clus, stopC, &c.waitJobs)
+    nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs)
 
     if err != nil {
       return err
@@ -166,7 +162,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 func (c *Controller) findAllTfJobs() (string, error) {
   // TODO(jlewi): Need to implement this function.
   log.Info("finding existing jobs...")
-  jobList, err := k8sutil.GetTfJobsList(c.KubeCli.CoreV1().RESTClient(), c.Config.Namespace)
+  jobList, err := c.TfJobClient.List(c.Namespace)
   if err != nil {
     return "", err
   }
@@ -182,7 +178,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
     clus.Spec.Cleanup()
 
     stopC := make(chan struct{})
-    nc, err := trainer.NewJob(c.Config.KubeCli, &clus, stopC, &c.waitJobs)
+    nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &clus, stopC, &c.waitJobs)
 
     if err != nil {
       log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, clus.Metadata.Name)
@@ -235,12 +231,12 @@ func (c *Controller) createTPR() error {
     },
     Description: spec.TPRDescription,
   }
-  _, err := c.Config.KubeCli.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
+  _, err := c.KubeCli.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
   if err != nil {
     return err
   }
 
-  return k8sutil.WaitTfJobTPRReady(c.KubeCli.CoreV1().RESTClient(), 3*time.Second, 30*time.Second, c.Namespace)
+  return c.TfJobClient.WaitTPRReady(3*time.Second, 30*time.Second, c.Namespace)
 }
 
 // watch creates a go routine, and watches the TF cluster kind resources from
@@ -255,7 +251,7 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
   go func() {
     defer close(eventCh)
     for {
-      resp, err := k8sutil.WatchClusters(MasterHost, c.Config.Namespace, KubeHttpCli, watchVersion)
+      resp, err := c.TfJobClient.Watch(MasterHost, c.Namespace, KubeHttpCli, watchVersion)
       if err != nil {
         errCh <- err
         return
@@ -289,7 +285,7 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
           if st.Code == http.StatusGone {
             // event history is outdated.
             // if nothing has changed, we can go back to watch again.
-            clusterList, err := k8sutil.GetTfJobsList(c.Config.KubeCli.CoreV1().RESTClient(), c.Config.Namespace)
+            clusterList, err := c.TfJobClient.List(c.Namespace)
             if err == nil && !c.isClustersCacheStale(clusterList.Items) {
               watchVersion = clusterList.Metadata.ResourceVersion
               break

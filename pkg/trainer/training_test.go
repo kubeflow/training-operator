@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"mlkube.io/pkg/spec"
 	"sync"
+	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
 )
 
 func TestIsRetryableTerminationState(t *testing.T) {
@@ -119,7 +120,7 @@ func TestClusterSpec(t *testing.T) {
 		stopC := make(chan struct{})
 
 		wg := &sync.WaitGroup{}
-		job, err := initJob(clientSet, c.Spec, stopC, wg)
+		job, err := initJob(clientSet,  &tfJobFake.TfJobClientFake{}, c.Spec, stopC, wg)
 
 		if err != nil {
 			t.Fatalf("initJob failed: %v", err)
@@ -137,5 +138,46 @@ func TestClusterSpec(t *testing.T) {
 				t.Errorf("Key %v got %v want %v", k, actualV, v)
 			}
 		}
+	}
+}
+
+func TestJobSetup(t *testing.T) {
+	// Verify the setup will fill in the RuntimeId.
+	clientSet := fake.NewSimpleClientset()
+
+	jobSpec := &spec.TfJob {
+		Spec: spec.TfJobSpec {
+			ReplicaSpecs: []*spec.TfReplicaSpec{
+				{
+					Replicas: proto.Int32(2),
+					TfPort: proto.Int32(10),
+					Template: &v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers : []v1.Container {
+								{
+									Name: "tensorflow",
+								},
+							},
+						},
+					},
+					TfReplicaType: spec.PS,
+				},
+			},
+		},
+	}
+
+	stopC := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	job, err := initJob(clientSet, &tfJobFake.TfJobClientFake{}, jobSpec, stopC, wg)
+
+	err = job.setup()
+
+	if err != nil {
+		t.Errorf("j.setup error: %v", err)
+	}
+
+	// Make sure the runtime id is set.
+	if job.job.Spec.RuntimeId == "" {
+		t.Errorf("RuntimeId should not be empty after calling setup.")
 	}
 }

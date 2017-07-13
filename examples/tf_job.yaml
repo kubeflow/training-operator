@@ -3,7 +3,6 @@ kind: "TfJob"
 metadata:
   name: "example-job"
 spec:
-  runtimeid: "1234"
   replica_specs:
     - replicas: 1
       tf_port: 2222

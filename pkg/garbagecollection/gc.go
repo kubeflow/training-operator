@@ -30,12 +30,14 @@ const (
 
 type GC struct {
 	kubecli kubernetes.Interface
+	tfJobClient k8sutil.TfJobClient
 	ns      string
 }
 
-func New(kubecli kubernetes.Interface, ns string) *GC {
+func New(kubecli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string) *GC {
 	return &GC{
 		kubecli: kubecli,
+		tfJobClient: tfJobClient,
 		ns:      ns,
 	}
 }
@@ -49,7 +51,7 @@ func (gc *GC) CollectJob(job string, jobUID types.UID) {
 // FullyCollect collects resources that were created before,
 // but does not belong to any current running clusters.
 func (gc *GC) FullyCollect() error {
-	jobs, err := k8sutil.GetTfJobsList(gc.kubecli.CoreV1().RESTClient(), gc.ns)
+	jobs, err := gc.tfJobClient.List(gc.ns)
 	if err != nil {
 		return err
 	}

@@ -12,6 +12,7 @@ import (
 	"time"
 	"fmt"
 	"mlkube.io/pkg/spec"
+	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
 	"sync"
 )
 
@@ -35,7 +36,7 @@ func TestTFReplicaSet(t *testing.T) {
 	stopC := make(chan struct{})
 
 	wg := &sync.WaitGroup{}
-	job, err := initJob(clientSet, jobSpec, stopC, wg)
+	job, err := initJob(clientSet, &tfJobFake.TfJobClientFake{}, jobSpec, stopC, wg)
 
 	if err != nil {
 		t.Fatalf("initJob failed: %v", err)

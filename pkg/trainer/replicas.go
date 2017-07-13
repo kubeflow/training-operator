@@ -20,7 +20,6 @@ import (
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
 type TFReplicaSet struct {
 	ClientSet     kubernetes.Interface
-	Labels KubernetesLabels
 	// Job is a pointer to the TrainingJob to which this replica belongs.
 	Job *TrainingJob
   Spec spec.TfReplicaSpec
@@ -73,16 +72,22 @@ func NewTFReplicaSet(clientSet     kubernetes.Interface, tfReplicaSpec spec.TfRe
 		ClientSet: clientSet,
 		Job: job,
     Spec: tfReplicaSpec,
-		Labels: KubernetesLabels(map[string]string{
-      "cloud_ml":   "",
-      "job_type":   string(tfReplicaSpec.TfReplicaType),
-      "runtime_id": job.job.Spec.RuntimeId,}),
 	}, nil
+}
+
+// Labels returns the labels for this replica set.
+func (s *TFReplicaSet) Labels() KubernetesLabels {
+	return KubernetesLabels(map[string]string{
+		"mlkube.io":   "",
+		"job_type":   string(s.Spec.TfReplicaType),
+		// runtime_id is set by Job.setup, which is called after the TfReplicaSet is created.
+		// this is why labels aren't a member variable.
+		"runtime_id": s.Job.job.Spec.RuntimeId,})
 }
 
 func (s *TFReplicaSet) Create() error {
 	for index := int32(0); index <  *s.Spec.Replicas; index++ {
-		taskLabels := s.Labels
+		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
 
 		// Create the service.
@@ -192,7 +197,7 @@ func (s *TFReplicaSet) Create() error {
 
 // Delete deletes the replicas
 func (s *TFReplicaSet) Delete() error {
-  selector, err := s.Labels.ToSelector()
+  selector, err := s.Labels().ToSelector()
   if err != nil {
     return err
   }
@@ -329,7 +334,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
       continue
     }
 
-    labels := s.Labels
+    labels := s.Labels()
     labels["task_index"] = fmt.Sprintf("%v", index)
     selector, err := labels.ToSelector()
     if err != nil {

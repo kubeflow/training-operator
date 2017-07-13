@@ -23,37 +23,88 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/pkg/api"
 )
 
-// TODO: replace this package with Operator client
+// TFJobClient defines an interface for working with TfJob TPRs.
+type TfJobClient interface {
+	// Get returns a TfJob
+	Get(ns string, name string) (*spec.TfJob, error)
 
-// TfJobTPRUpdateFunc is a function to be used when atomically
-// updating a Cluster TPR.
-type TfJobTPRUpdateFunc func(*spec.TfJob)
+	// List returns a list of TfJobs
+	List(ns string) (*spec.TfJobList, error)
 
-func WatchClusters(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
-	return httpClient.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
-		host, spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, resourceVersion))
+	// Update a TfJob.
+	Update(ns string, c *spec.TfJob) (*spec.TfJob, error)
+
+	// Watch TfJobs.
+	Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error)
+
+	// WaitTPRReady blocks until the TfJob TPR is ready.
+	WaitTPRReady(interval, timeout time.Duration, ns string) error
 }
 
-func GetTfJobsList(restcli rest.Interface, ns string) (*spec.TfJobList, error) {
-	b, err := restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
+// TfJobRestClient uses the Kubernetes rest interface to talk to the TPR.
+type TfJobRestClient struct {
+	restcli *rest.RESTClient
+}
+
+func NewTfJobClient() (*TfJobRestClient, error) {
+	config, err := InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	clusters := &spec.TfJobList{}
-	if err := json.Unmarshal(b, clusters); err != nil {
+	config.GroupVersion = &schema.GroupVersion{
+		Group:   spec.TPRGroup,
+		Version: spec.TPRVersion,
+	}
+	config.APIPath = "/apis"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+
+	restcli, err := rest.RESTClientFor(config)
+	if err != nil {
 		return nil, err
 	}
-	return clusters, nil
+
+	cli := &TfJobRestClient{
+		restcli: restcli,
+	}
+	return cli, nil
 }
 
-// WaitTfJobTPRReady blocks until the TPR is ready.
+// HttpClient returns the http client used.
+func (c *TfJobRestClient) Client() *http.Client {
+	return c.restcli.Client
+}
+
+func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
+	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
+		host, spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, resourceVersion))
+}
+
+func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
+	b, err := c.restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	jobs := &spec.TfJobList{}
+	if err := json.Unmarshal(b, jobs); err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
+// WaitTPRReady blocks until the TPR is ready.
 // Readiness is determined based on when we can list the resources.
-func WaitTfJobTPRReady(restcli rest.Interface, interval, timeout time.Duration, ns string) error {
+func (c *TfJobRestClient) WaitTPRReady(interval, timeout time.Duration, ns string) error {
 	return retryutil.Retry(interval, int(timeout/interval), func() (bool, error) {
-		_, err := restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
+		_, err := c.restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
 		if err != nil {
 			if apierrors.IsNotFound(err) { // not set up yet. wait more.
 				return false, nil
@@ -64,49 +115,23 @@ func WaitTfJobTPRReady(restcli rest.Interface, interval, timeout time.Duration, 
 	})
 }
 
+
 func listTfJobsURI(ns string) string {
 	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
 }
 
-func GetClusterTPRObject(restcli rest.Interface, ns, name string) (*spec.TfJob, error) {
+func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
 	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
-	b, err := restcli.Get().RequestURI(uri).DoRaw()
+	b, err := c.restcli.Get().RequestURI(uri).DoRaw()
 	if err != nil {
 		return nil, err
 	}
 	return readOutTfJob(b)
 }
 
-// AtomicUpdateClusterTPRObject will get the latest result of a TfJob,
-// let user modify it, and update the cluster with modified result
-// The entire process would be retried if there is a conflict of resource version
-//
-// TODO(jlewi): This function is from the etcd-operator. Is it still useful?
-func AtomicUpdateClusterTPRObject(restcli rest.Interface, name, namespace string, maxRetries int, updateFunc TfJobTPRUpdateFunc) (*spec.TfJob, error) {
-	var updatedCluster *spec.TfJob
-	err := retryutil.Retry(1*time.Second, maxRetries, func() (done bool, err error) {
-		currCluster, err := GetClusterTPRObject(restcli, namespace, name)
-		if err != nil {
-			return false, err
-		}
-
-		updateFunc(currCluster)
-
-		updatedCluster, err = UpdateTfJobTPRObject(restcli, namespace, currCluster)
-		if err != nil {
-			if apierrors.IsConflict(err) {
-				return false, nil
-			}
-			return false, err
-		}
-		return true, nil
-	})
-	return updatedCluster, err
-}
-
-func UpdateTfJobTPRObject(restcli rest.Interface, ns string, c *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, c.Metadata.Name)
-	b, err := restcli.Put().RequestURI(uri).Body(c).DoRaw()
+func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) {
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, j.Metadata.Name)
+	b, err := c.restcli.Put().RequestURI(uri).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
 	}

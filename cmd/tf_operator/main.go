@@ -36,6 +36,7 @@ var (
   leaseDuration = 15 * time.Second
   renewDuration = 5 * time.Second
   retryPeriod   = 3 * time.Second
+  tfJobClient *k8sutil.TfJobRestClient
 )
 
 func init() {
@@ -52,11 +53,11 @@ func init() {
     panic(err)
   }
   controller.MasterHost = restCfg.Host
-  restcli, err := k8sutil.NewTPRClient()
+  tfJobClient, err = k8sutil.NewTfJobClient()
   if err != nil {
     panic(err)
   }
-  controller.KubeHttpCli = restcli.Client
+  controller.KubeHttpCli = tfJobClient.Client()
 }
 
 func main() {
@@ -125,18 +126,15 @@ func main() {
 }
 
 func run(stop <-chan struct{}) {
-  cfg := newControllerConfig()
-  if err := cfg.Validate(); err != nil {
-    log.Fatalf("invalid operator config: %v", err)
-  }
+  kubeCli := k8sutil.MustNewKubeClient()
 
-  go periodicFullGC(cfg.KubeCli, cfg.Namespace, gcInterval)
+  go periodicFullGC(kubeCli, tfJobClient, namespace, gcInterval)
 
   // TODO(jlewi): Should we start chaos?
   // startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
 
   for {
-    c := controller.New(cfg)
+    c := controller.New(kubeCli, tfJobClient, namespace)
     err := c.Run()
     switch err {
     case controller.ErrVersionOutdated:
@@ -146,19 +144,9 @@ func run(stop <-chan struct{}) {
   }
 }
 
-func newControllerConfig() controller.Config {
-  kubecli := k8sutil.MustNewKubeClient()
 
-  cfg := controller.Config{
-    Namespace: namespace,
-    KubeCli:   kubecli,
-  }
-
-  return cfg
-}
-
-func periodicFullGC(kubecli kubernetes.Interface, ns string, d time.Duration) {
-  gc := garbagecollection.New(kubecli, ns)
+func periodicFullGC(kubecli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, d time.Duration) {
+  gc := garbagecollection.New(kubecli, tfJobClient, ns)
   timer := time.NewTimer(d)
   defer timer.Stop()
   for {

@@ -48,7 +48,10 @@ type TrainingJob struct {
 	job *spec.TfJob
 
 	KubeCli  kubernetes.Interface
+
 	Replicas []*TFReplicaSet
+
+	tfJobClient  k8sutil.TfJobClient
 
 	// in memory state of the job.
 	// status is the source of truth after job struct is materialized. Changes to the status to be persisted
@@ -71,15 +74,16 @@ type TrainingJob struct {
 // It is a map from job names to network addressess.
 type ClusterSpec map[string][]string
 
-func initJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
+func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:  kubeCli,
+		tfJobClient: tfJobClient,
 		Replicas: make([]*TFReplicaSet, 0),
 		job:      job,
 		eventCh:  make(chan *jobEvent, 100),
 		stopCh:   make(chan struct{}),
 		status:   job.Status.Copy(),
-		gc:       garbagecollection.New(kubeCli, job.Metadata.Namespace),
+		gc:       garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
 	}
 
 	for _, t := range j.job.Spec.ReplicaSpecs {
@@ -91,8 +95,8 @@ func initJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{
 	}
 	return j, nil
 }
-func NewJob(kubeCli kubernetes.Interface, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
-	j, err := initJob(kubeCli, job, stopC, wg)
+func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
+	j, err := initJob(kubeCli, tfJobClient, job, stopC, wg)
 	if err != nil {
 		return j, err
 	}
@@ -265,20 +269,19 @@ func (j *TrainingJob) masterName() string {
 	return fmt.Sprintf("master-%v-0", j.job.Spec.RuntimeId)
 }
 
-//func (j *TrainingJob) getMaster() *tpb.TensorFlowProcess {
-//	for _, i := range j.Config.TensorflowProcesses {
-//		if *i.Type == tpb.TensorFlowProcess_MASTER {
-//			return i
-//		}
-//	}
-//	return nil
-//}
-
 // setup the training job.
 func (j *TrainingJob) setup() error {
+	if j.job == nil {
+		return fmt.Errorf("job.Spec can't be nil")
+	}
+
 	err := j.job.Spec.Validate()
 	if err != nil {
-		return fmt.Errorf("invalid cluster spec: %v", err)
+		return fmt.Errorf("invalid job spec: %v", err)
+	}
+
+	if j.job.Spec.RuntimeId == "" {
+		j.job.Spec.RuntimeId = util.RandString(4)
 	}
 
 	var shouldCreateCluster bool
@@ -291,7 +294,7 @@ func (j *TrainingJob) setup() error {
 		shouldCreateCluster = false
 
 	default:
-		return fmt.Errorf("unexpected cluster phase: %s", j.status.Phase)
+		return fmt.Errorf("unexpected TfJob phase: %s", j.status.Phase)
 	}
 
 	if shouldCreateCluster {
@@ -362,7 +365,7 @@ func (j *TrainingJob) updateTPRStatus() error {
 
 	newJob := j.job
 	newJob.Status = j.status
-	newJob, err := k8sutil.UpdateTfJobTPRObject(j.KubeCli.Core().RESTClient(), j.job.Metadata.Namespace, newJob)
+	newJob, err := j.tfJobClient.Update(j.job.Metadata.Namespace, newJob)
 	if err != nil {
 		return err
 	}
@@ -518,7 +521,7 @@ func (j *TrainingJob) reportFailedStatus() {
 			return false, nil
 		}
 
-		cl, err := k8sutil.GetClusterTPRObject(j.KubeCli.CoreV1().RESTClient(), j.job.Metadata.Namespace, j.job.Metadata.Name)
+		cl, err := j.tfJobClient.Get(j.job.Metadata.Namespace, j.job.Metadata.Name)
 		if err != nil {
 			// Update (PUT) will return conflict even if object is deleted since we have UID set in object.
 			// Because it will check UID first and return something like:

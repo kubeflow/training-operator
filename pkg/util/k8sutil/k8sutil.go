@@ -9,11 +9,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // for gcp auth
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -57,27 +53,6 @@ func InClusterConfig() (*rest.Config, error) {
 	return rest.InClusterConfig()
 }
 
-func NewTPRClient() (*rest.RESTClient, error) {
-	config, err := InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	config.GroupVersion = &schema.GroupVersion{
-		Group:   spec.TPRGroup,
-		Version: spec.TPRVersion,
-	}
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
-
-	restcli, err := rest.RESTClientFor(config)
-	if err != nil {
-		return nil, err
-	}
-	return restcli, nil
-}
-
 func IsKubernetesResourceAlreadyExistError(err error) bool {
 	return apierrors.IsAlreadyExists(err)
 }
@@ -96,7 +71,7 @@ func JobListOpt(clusterName string) metav1.ListOptions {
 func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
-		"tf_jobr": jobName,
+		"tf_job": jobName,
 		"app":          spec.AppLabel,
 	}
 }
