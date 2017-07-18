@@ -13,7 +13,7 @@ spec:
       - name: tf-job-operator
         image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
         command:
-          - /opt/cmle/tf_operator
+          - /opt/mlkube/tf_operator
           - -alsologtostderr
           - -v=1
         env:
