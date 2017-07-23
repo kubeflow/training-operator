@@ -120,6 +120,15 @@ func listTfJobsURI(ns string) string {
 	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
 }
 
+func (c *TfJobRestClient) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) {
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
+	b, err := c.restcli.Post().RequestURI(uri).Body(j).DoRaw()
+	if err != nil {
+		return nil, err
+	}
+	return readOutTfJob(b)
+}
+
 func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
 	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
 	b, err := c.restcli.Get().RequestURI(uri).DoRaw()
@@ -136,6 +145,13 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 		return nil, err
 	}
 	return readOutTfJob(b)
+}
+
+
+func (c *TfJobRestClient) Delete(ns, name string) (error) {
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
+	_, err := c.restcli.Delete().RequestURI(uri).DoRaw()
+	return err
 }
 
 func readOutTfJob(b []byte) (*spec.TfJob, error) {
