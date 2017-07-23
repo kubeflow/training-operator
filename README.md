@@ -21,7 +21,7 @@ K8s makes it easy to configure and deploy each set of TF replicas. Various tools
 
 
 TfJob provides a K8s resource representing a single, distributed, TensorFlow job. 
-The Spec and Status (defined in [tf_job.go](https://cloud-ml.googlesource.com/jlewi-training/+/tpr/pkg/spec/tf_job.go))
+The Spec and Status (defined in [tf_job.go](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go))
 are customized for TensorFlow. The spec allows specifying the Docker image and arguments to use for each TensorFlow
 replica (i.e. master, worker, and parameter server). The status provides relevant information such as the number of
 replicas in various states.
@@ -46,7 +46,7 @@ example-job   TfJob.v1beta1.mlkube.io
 
 The code is closely modeled on Coreos's [etcd-operator](https://github.com/coreos/etcd-operator).
 
-The TfJob Spec(defined in [tf_job.go](https://cloud-ml.googlesource.com/jlewi-training/+/tpr/pkg/spec/tf_job.go)) 
+The TfJob Spec(defined in [tf_job.go](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go)) 
 reuses the existing Kubernetes structure PodTemplateSpec to describe TensorFlow processes. 
 We use PodTemplateSpec because we want to make it easy for users to 
   configure the processes; for example setting resource requirements or adding volumes. 
@@ -61,7 +61,7 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 1. Clone the repository
 
     ```
-    git clone https://cloud-ml.googlesource.com/jlewi-training
+    git clone https://github.com/jlewi/mlkube.io/
     ```
 
 1. Deploy the operator
@@ -186,7 +186,7 @@ Create a symbolic link inside your GOPATH to the location you checked out the co
     ln -sf ${GIT_TRAINING}/src/mlkube.io ${GOPATH}/src/
     ```
 
-  * GIT_TRAINING should be the location where you checked out https://cloud-ml.googlesource.com/training/
+  * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
 	
 Build it
 
