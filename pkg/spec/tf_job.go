@@ -7,7 +7,7 @@ import (
 
   "k8s.io/client-go/pkg/api/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  "cmle.io/pkg/util"
+  "mlkube.io/pkg/util"
 )
 
 const (
