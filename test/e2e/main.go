@@ -206,7 +206,7 @@ func main() {
   if err == nil {
     fmt.Println("ok 1 - Successfully ran TfJob")
   } else {
-    fmt.Println("not ok 1 - Running TfJob failed %v", err)
+    fmt.Printf("not ok 1 - Running TfJob failed %v \n", err)
     // Exit with non zero exit code for Helm tests.
     os.Exit(1)
   }
