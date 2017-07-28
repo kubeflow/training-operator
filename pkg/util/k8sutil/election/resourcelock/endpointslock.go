@@ -23,14 +23,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
 type EndpointsLock struct {
 	// EndpointsMeta should contain a Name and a Namespace of an
 	// Endpoints object that the LeaderElector will attempt to lead.
-	EndpointsMeta api.ObjectMeta
+	EndpointsMeta v1.ObjectMeta
 	Client        kubernetes.Interface
 	LockConfig    ResourceLockConfig
 	e             *v1.Endpoints

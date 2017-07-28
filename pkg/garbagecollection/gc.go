@@ -13,8 +13,8 @@
 package garbagecollection
 
 import (
-	"mlkube.io/pkg/util/k8sutil"
 	"mlkube.io/pkg/spec"
+	"mlkube.io/pkg/util/k8sutil"
 
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,16 +29,16 @@ const (
 )
 
 type GC struct {
-	kubecli kubernetes.Interface
+	kubecli     kubernetes.Interface
 	tfJobClient k8sutil.TfJobClient
-	ns      string
+	ns          string
 }
 
 func New(kubecli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string) *GC {
 	return &GC{
-		kubecli: kubecli,
+		kubecli:     kubecli,
 		tfJobClient: tfJobClient,
-		ns:      ns,
+		ns:          ns,
 	}
 }
 

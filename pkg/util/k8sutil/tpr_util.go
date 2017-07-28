@@ -22,11 +22,11 @@ import (
 	"mlkube.io/pkg/util/retryutil"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/rest"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/rest"
 )
 
 // TFJobClient defines an interface for working with TfJob TPRs.
@@ -57,7 +57,6 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	config.GroupVersion = &schema.GroupVersion{
 		Group:   spec.TPRGroup,
 		Version: spec.TPRVersion,
@@ -115,7 +114,6 @@ func (c *TfJobRestClient) WaitTPRReady(interval, timeout time.Duration, ns strin
 	})
 }
 
-
 func listTfJobsURI(ns string) string {
 	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
 }
@@ -147,8 +145,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 	return readOutTfJob(b)
 }
 
-
-func (c *TfJobRestClient) Delete(ns, name string) (error) {
+func (c *TfJobRestClient) Delete(ns, name string) error {
 	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
 	_, err := c.restcli.Delete().RequestURI(uri).DoRaw()
 	return err

@@ -2,23 +2,25 @@
 package trainer
 
 import (
+	"fmt"
+	"reflect"
+
+	log "github.com/golang/glog"
 	"mlkube.io/pkg/spec"
 	"mlkube.io/pkg/util"
 	"mlkube.io/pkg/util/k8sutil"
 	"mlkube.io/pkg/util/retryutil"
-	"fmt"
-	log "github.com/golang/glog"
-	"reflect"
 
 	//"k8s.io/client-go/kubernetes"
-	"mlkube.io/pkg/garbagecollection"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"math"
 	"strings"
 	"sync"
 	"time"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
+	"mlkube.io/pkg/garbagecollection"
 )
 
 const (
@@ -26,7 +28,7 @@ const (
 )
 
 var (
-	reconcileInterval         = 8 * time.Second
+	reconcileInterval = 8 * time.Second
 )
 
 type jobEventType string
@@ -47,11 +49,11 @@ type jobEvent struct {
 type TrainingJob struct {
 	job *spec.TfJob
 
-	KubeCli  kubernetes.Interface
+	KubeCli kubernetes.Interface
 
 	Replicas []*TFReplicaSet
 
-	tfJobClient  k8sutil.TfJobClient
+	tfJobClient k8sutil.TfJobClient
 
 	// in memory state of the job.
 	// status is the source of truth after job struct is materialized. Changes to the status to be persisted
@@ -76,14 +78,14 @@ type ClusterSpec map[string][]string
 
 func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
 	j := &TrainingJob{
-		KubeCli:  kubeCli,
+		KubeCli:     kubeCli,
 		tfJobClient: tfJobClient,
-		Replicas: make([]*TFReplicaSet, 0),
-		job:      job,
-		eventCh:  make(chan *jobEvent, 100),
-		stopCh:   make(chan struct{}),
-		status:   job.Status.Copy(),
-		gc:       garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
+		Replicas:    make([]*TFReplicaSet, 0),
+		job:         job,
+		eventCh:     make(chan *jobEvent, 100),
+		stopCh:      make(chan struct{}),
+		status:      job.Status.Copy(),
+		gc:          garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
 	}
 
 	for _, t := range j.job.Spec.ReplicaSpecs {
