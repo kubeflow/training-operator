@@ -8,8 +8,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"mlkube.io/pkg/spec"
-	"sync"
 	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
+	"sync"
 )
 
 func TestIsRetryableTerminationState(t *testing.T) {
@@ -20,55 +20,55 @@ func TestIsRetryableTerminationState(t *testing.T) {
 
 	cases := []TestCase{
 		{
-      // Since reason is empty we don't trust the exit code.
+			// Since reason is empty we don't trust the exit code.
 			State: v1.ContainerStateTerminated{
 				ExitCode: 0,
 			},
-      Expected: true,
+			Expected: true,
 		},
-    {
-      State: v1.ContainerStateTerminated{
-        ExitCode: 0,
-        Message: "some reason",
-      },
-      Expected: false,
-    },
-    {
-      State: v1.ContainerStateTerminated{
-        ExitCode: 1,
-        Message: "some reason",
-      },
-      Expected: false,
-    },
-    {
-      // Since Reason is empty we don't trust the exit code.
-      State: v1.ContainerStateTerminated{
-        ExitCode: 1,
-      },
-      Expected: true,
-    },
-    {
-      State: v1.ContainerStateTerminated{
-        ExitCode: 244,
-        Message: "some reason",
-      },
-      Expected: true,
-    },
-    {
-      State: v1.ContainerStateTerminated{
-        ExitCode: 244,
-        Reason: "OOMKilled",
-      },
-      Expected: false,
-    },
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 0,
+				Message:  "some reason",
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 1,
+				Message:  "some reason",
+			},
+			Expected: false,
+		},
+		{
+			// Since Reason is empty we don't trust the exit code.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 1,
+			},
+			Expected: true,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 244,
+				Message:  "some reason",
+			},
+			Expected: true,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 244,
+				Reason:   "OOMKilled",
+			},
+			Expected: false,
+		},
 	}
 
-  for _, c := range cases {
-    actual := isRetryableTerminationState(&c.State)
+	for _, c := range cases {
+		actual := isRetryableTerminationState(&c.State)
 		if actual != c.Expected {
-      t.Errorf("isRetryableTerminationState(%+v)=%v want %v", c.State, actual, c.Expected)
-    }
-  }
+			t.Errorf("isRetryableTerminationState(%+v)=%v want %v", c.State, actual, c.Expected)
+		}
+	}
 }
 
 func TestClusterSpec(t *testing.T) {
@@ -95,12 +95,12 @@ func TestClusterSpec(t *testing.T) {
 							Template:      &v1.PodTemplateSpec{},
 							TfReplicaType: spec.MASTER,
 						},
-            {
-              Replicas:      proto.Int32(3),
-              TfPort:        proto.Int32(40),
-              Template:      &v1.PodTemplateSpec{},
-              TfReplicaType: spec.WORKER,
-            },
+						{
+							Replicas:      proto.Int32(3),
+							TfPort:        proto.Int32(40),
+							Template:      &v1.PodTemplateSpec{},
+							TfReplicaType: spec.WORKER,
+						},
 					},
 				},
 			},
@@ -108,7 +108,7 @@ func TestClusterSpec(t *testing.T) {
 			Expected: map[string][]string{
 				"ps":     []string{"ps-runtime-0:22", "ps-runtime-1:22"},
 				"master": []string{"master-runtime-0:42"},
-        "worker":     []string{"worker-runtime-0:40", "worker-runtime-1:40", "worker-runtime-2:40"},
+				"worker": []string{"worker-runtime-0:40", "worker-runtime-1:40", "worker-runtime-2:40"},
 			},
 		},
 	}
@@ -120,7 +120,7 @@ func TestClusterSpec(t *testing.T) {
 		stopC := make(chan struct{})
 
 		wg := &sync.WaitGroup{}
-		job, err := initJob(clientSet,  &tfJobFake.TfJobClientFake{}, c.Spec, stopC, wg)
+		job, err := initJob(clientSet, &tfJobFake.TfJobClientFake{}, c.Spec, stopC, wg)
 
 		if err != nil {
 			t.Fatalf("initJob failed: %v", err)
@@ -145,15 +145,15 @@ func TestJobSetup(t *testing.T) {
 	// Verify the setup will fill in the RuntimeId.
 	clientSet := fake.NewSimpleClientset()
 
-	jobSpec := &spec.TfJob {
-		Spec: spec.TfJobSpec {
+	jobSpec := &spec.TfJob{
+		Spec: spec.TfJobSpec{
 			ReplicaSpecs: []*spec.TfReplicaSpec{
 				{
 					Replicas: proto.Int32(2),
-					TfPort: proto.Int32(10),
+					TfPort:   proto.Int32(10),
 					Template: &v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
-							Containers : []v1.Container {
+							Containers: []v1.Container{
 								{
 									Name: "tensorflow",
 								},

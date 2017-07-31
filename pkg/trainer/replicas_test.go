@@ -5,28 +5,28 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"fmt"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"reflect"
-	"time"
-	"fmt"
 	"mlkube.io/pkg/spec"
 	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
+	"reflect"
 	"sync"
+	"time"
 )
 
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
-	jobSpec := &spec.TfJob {
-		Spec: spec.TfJobSpec {
+	jobSpec := &spec.TfJob{
+		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
 			ReplicaSpecs: []*spec.TfReplicaSpec{
 				{
-					Replicas: proto.Int32(2),
-					TfPort: proto.Int32(10),
-					Template: &v1.PodTemplateSpec{},
+					Replicas:      proto.Int32(2),
+					TfPort:        proto.Int32(10),
+					Template:      &v1.PodTemplateSpec{},
 					TfReplicaType: spec.PS,
 				},
 			},
@@ -52,7 +52,7 @@ func TestTFReplicaSet(t *testing.T) {
 		t.Fatalf("replica.Create() error; %v", err)
 	}
 
-	for index := 0; index < 2; index ++ {
+	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
 			"cloud_ml":   "",
@@ -121,102 +121,102 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 
 	cases := []TestCase{
 		{
-		  PodList: v1.PodList {
-		    Items: []v1.Pod {
-		      {
-		        Status: v1.PodStatus {
-		          ContainerStatuses: []v1.ContainerStatus {
-		            {
-		              Name: "master",
-		              State: v1.ContainerState{
-		                Running: &v1.ContainerStateRunning{},
-		              },
-		            },
-		          },
-		        },
-		      },
-		    },
-		  },
-		  Name: "master",
-		  Expected: spec.ReplicaStateRunning,
+			PodList: v1.PodList{
+				Items: []v1.Pod{
+					{
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name: "master",
+									State: v1.ContainerState{
+										Running: &v1.ContainerStateRunning{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Name:     "master",
+			Expected: spec.ReplicaStateRunning,
 		},
 		{
-		  PodList: v1.PodList {
-		    Items: []v1.Pod {
-		      {
-		        Status: v1.PodStatus {
-		          ContainerStatuses: []v1.ContainerStatus {
-		            {
-		              Name: "master",
-		              State: v1.ContainerState{
-		                Terminated: &v1.ContainerStateTerminated{
-		                  ExitCode: 0,
-		                },
-		              },
-		            },
-		          },
-		        },
-		      },
-		    },
-		  },
-		  Name: "master",
-		  Expected: spec.ReplicaStateSucceeded,
+			PodList: v1.PodList{
+				Items: []v1.Pod{
+					{
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name: "master",
+									State: v1.ContainerState{
+										Terminated: &v1.ContainerStateTerminated{
+											ExitCode: 0,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Name:     "master",
+			Expected: spec.ReplicaStateSucceeded,
 		},
 		{
-		  // Multiple containers; make sure we match by name.
-		  PodList: v1.PodList {
-		    Items: []v1.Pod {
-		      {
-		        Status: v1.PodStatus {
-		          ContainerStatuses: []v1.ContainerStatus {
-		            {
-		              Name: "other",
-		              State: v1.ContainerState{
-		                Running: &v1.ContainerStateRunning{},
-		              },
-		            },
-		            {
-		              Name: "master",
-		              State: v1.ContainerState{
-		                Terminated: &v1.ContainerStateTerminated{
-		                  ExitCode: 0,
-		                },
-		              },
-		            },
-		          },
-		        },
-		      },
-		    },
-		  },
-		  Name: "master",
-		  Expected: spec.ReplicaStateSucceeded,
+			// Multiple containers; make sure we match by name.
+			PodList: v1.PodList{
+				Items: []v1.Pod{
+					{
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name: "other",
+									State: v1.ContainerState{
+										Running: &v1.ContainerStateRunning{},
+									},
+								},
+								{
+									Name: "master",
+									State: v1.ContainerState{
+										Terminated: &v1.ContainerStateTerminated{
+											ExitCode: 0,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Name:     "master",
+			Expected: spec.ReplicaStateSucceeded,
 		},
 		{
-		  // Container failed with permanent error and then got restarted.
-		  PodList: v1.PodList {
-		    Items: []v1.Pod {
-		      {
-		        Status: v1.PodStatus {
-		          ContainerStatuses: []v1.ContainerStatus {
-		            {
-		              Name: "master",
-		              State: v1.ContainerState{
-		                Running: &v1.ContainerStateRunning{},
-		              },
+			// Container failed with permanent error and then got restarted.
+			PodList: v1.PodList{
+				Items: []v1.Pod{
+					{
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name: "master",
+									State: v1.ContainerState{
+										Running: &v1.ContainerStateRunning{},
+									},
 									LastTerminationState: v1.ContainerState{
 										Terminated: &v1.ContainerStateTerminated{
 											ExitCode: 100,
 											Message:  "some reason",
 										},
 									},
-		            },
-		          },
-		        },
-		      },
-		    },
-		  },
-		  Name: "master",
-		  Expected: spec.ReplicaStateFailed,
+								},
+							},
+						},
+					},
+				},
+			},
+			Name:     "master",
+			Expected: spec.ReplicaStateFailed,
 		},
 		{
 			// Multiple Pods; check we get the most recent.
@@ -245,7 +245,7 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 									State: v1.ContainerState{
 										Terminated: &v1.ContainerStateTerminated{
 											ExitCode: 100,
-											Message:   "some reason",
+											Message:  "some reason",
 										},
 									},
 								},

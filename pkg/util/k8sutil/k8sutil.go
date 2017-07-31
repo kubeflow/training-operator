@@ -72,7 +72,7 @@ func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
 		"tf_job": jobName,
-		"app":          spec.AppLabel,
+		"app":    spec.AppLabel,
 	}
 }
 
