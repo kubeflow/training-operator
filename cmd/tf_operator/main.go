@@ -1,160 +1,160 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"os"
-	"os/signal"
-	"runtime"
-	"time"
+  "flag"
+  "fmt"
+  "os"
+  "os/signal"
+  "runtime"
+  "time"
 
-	"mlkube.io/pkg/controller"
-	"mlkube.io/pkg/garbagecollection"
-	"mlkube.io/pkg/util/k8sutil"
-	"mlkube.io/pkg/util/k8sutil/election"
-	"mlkube.io/pkg/util/k8sutil/election/resourcelock"
-	"mlkube.io/version"
+  "mlkube.io/pkg/controller"
+  "mlkube.io/pkg/garbagecollection"
+  "mlkube.io/pkg/util/k8sutil"
+  "mlkube.io/pkg/util/k8sutil/election"
+  "mlkube.io/pkg/util/k8sutil/election/resourcelock"
+  "mlkube.io/version"
 
-	log "github.com/golang/glog"
+  log "github.com/golang/glog"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/tools/record"
+  "k8s.io/client-go/kubernetes"
+  "k8s.io/client-go/pkg/api/v1"
+  "k8s.io/client-go/tools/record"
 )
 
 var (
-	namespace  string
-	name       string
-	gcInterval time.Duration
+  namespace  string
+  name       string
+  gcInterval time.Duration
 
-	chaosLevel int
+  chaosLevel int
 
-	printVersion bool
+  printVersion bool
 )
 
 var (
-	leaseDuration = 15 * time.Second
-	renewDuration = 5 * time.Second
-	retryPeriod   = 3 * time.Second
-	tfJobClient   *k8sutil.TfJobRestClient
+  leaseDuration = 15 * time.Second
+  renewDuration = 5 * time.Second
+  retryPeriod   = 3 * time.Second
+  tfJobClient   *k8sutil.TfJobRestClient
 )
 
 func init() {
-	// chaos level will be removed once we have a formal tool to inject failures.
-	flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the etcd clusters created by the operator.")
-	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
-	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
+  // chaos level will be removed once we have a formal tool to inject failures.
+  flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the etcd clusters created by the operator.")
+  flag.BoolVar(&printVersion, "version", false, "Show version and quit")
+  flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
 
-	flag.Parse()
+  flag.Parse()
 
-	// Workaround for watching TPR resource.
-	restCfg, err := k8sutil.InClusterConfig()
-	if err != nil {
-		panic(err)
-	}
-	controller.MasterHost = restCfg.Host
-	tfJobClient, err = k8sutil.NewTfJobClient()
-	if err != nil {
-		panic(err)
-	}
-	controller.KubeHttpCli = tfJobClient.Client()
+  // Workaround for watching TPR resource.
+  restCfg, err := k8sutil.InClusterConfig()
+  if err != nil {
+    panic(err)
+  }
+  controller.MasterHost = restCfg.Host
+  tfJobClient, err = k8sutil.NewTfJobClient()
+  if err != nil {
+    panic(err)
+  }
+  controller.KubeHttpCli = tfJobClient.Client()
 }
 
 func main() {
-	namespace = os.Getenv("MY_POD_NAMESPACE")
-	if len(namespace) == 0 {
-		log.Fatalf("must set env MY_POD_NAMESPACE")
-	}
-	name = os.Getenv("MY_POD_NAME")
-	if len(name) == 0 {
-		log.Fatalf("must set env MY_POD_NAME")
-	}
+  namespace = os.Getenv("MY_POD_NAMESPACE")
+  if len(namespace) == 0 {
+    log.Fatalf("must set env MY_POD_NAMESPACE")
+  }
+  name = os.Getenv("MY_POD_NAME")
+  if len(name) == 0 {
+    log.Fatalf("must set env MY_POD_NAME")
+  }
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c)
-	go func() {
-		log.Infof("received signal: %v", <-c)
-		os.Exit(1)
-	}()
+  c := make(chan os.Signal, 1)
+  signal.Notify(c)
+  go func() {
+    log.Infof("received signal: %v", <-c)
+    os.Exit(1)
+  }()
 
-	if printVersion {
-		fmt.Println("tf_operator Version:", version.Version)
-		fmt.Println("Git SHA:", version.GitSHA)
-		fmt.Println("Go Version:", runtime.Version())
-		fmt.Printf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		os.Exit(0)
-	}
+  if printVersion {
+    fmt.Println("tf_operator Version:", version.Version)
+    fmt.Println("Git SHA:", version.GitSHA)
+    fmt.Println("Go Version:", runtime.Version())
+    fmt.Printf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+    os.Exit(0)
+  }
 
-	log.Infof("tf_operator Version: %v", version.Version)
-	log.Infof("Git SHA: %s", version.GitSHA)
-	log.Infof("Go Version: %s", runtime.Version())
-	log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+  log.Infof("tf_operator Version: %v", version.Version)
+  log.Infof("Git SHA: %s", version.GitSHA)
+  log.Infof("Go Version: %s", runtime.Version())
+  log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
 
-	id, err := os.Hostname()
-	if err != nil {
-		log.Fatalf("failed to get hostname: %v", err)
-	}
+  id, err := os.Hostname()
+  if err != nil {
+    log.Fatalf("failed to get hostname: %v", err)
+  }
 
-	// TODO: replace with to client-go once leader election pacakge is imported
-	// see https://github.com/kubernetes/client-go/issues/28
-	rl := &resourcelock.EndpointsLock{
-		EndpointsMeta: v1.ObjectMeta{
-			Namespace: namespace,
-			Name:      "tf-operator",
-		},
-		Client: k8sutil.MustNewKubeClient(),
-		LockConfig: resourcelock.ResourceLockConfig{
-			Identity:      id,
-			EventRecorder: &record.FakeRecorder{},
-		},
-	}
+  // TODO: replace with to client-go once leader election pacakge is imported
+  // see https://github.com/kubernetes/client-go/issues/28
+  rl := &resourcelock.EndpointsLock{
+    EndpointsMeta: v1.ObjectMeta{
+      Namespace: namespace,
+      Name:      "tf-operator",
+    },
+    Client: k8sutil.MustNewKubeClient(),
+    LockConfig: resourcelock.ResourceLockConfig{
+      Identity:      id,
+      EventRecorder: &record.FakeRecorder{},
+    },
+  }
 
-	election.RunOrDie(election.LeaderElectionConfig{
-		Lock:          rl,
-		LeaseDuration: leaseDuration,
-		RenewDeadline: renewDuration,
-		RetryPeriod:   retryPeriod,
-		Callbacks: election.LeaderCallbacks{
-			OnStartedLeading: run,
-			OnStoppedLeading: func() {
-				log.Fatalf("leader election lost")
-			},
-		},
-	})
+  election.RunOrDie(election.LeaderElectionConfig{
+    Lock:          rl,
+    LeaseDuration: leaseDuration,
+    RenewDeadline: renewDuration,
+    RetryPeriod:   retryPeriod,
+    Callbacks: election.LeaderCallbacks{
+      OnStartedLeading: run,
+      OnStoppedLeading: func() {
+        log.Fatalf("leader election lost")
+      },
+    },
+  })
 
-	panic("unreachable")
+  panic("unreachable")
 }
 
 func run(stop <-chan struct{}) {
-	kubeCli := k8sutil.MustNewKubeClient()
+  kubeCli := k8sutil.MustNewKubeClient()
 
-	go periodicFullGC(kubeCli, tfJobClient, namespace, gcInterval)
+  go periodicFullGC(kubeCli, tfJobClient, namespace, gcInterval)
 
-	// TODO(jlewi): Should we start chaos?
-	// startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
+  // TODO(jlewi): Should we start chaos?
+  // startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
 
-	for {
-		c := controller.New(kubeCli, tfJobClient, namespace)
-		err := c.Run()
-		switch err {
-		case controller.ErrVersionOutdated:
-		default:
-			log.Fatalf("controller Run() ended with failure: %v", err)
-		}
-	}
+  for {
+    c := controller.New(kubeCli, tfJobClient, namespace)
+    err := c.Run()
+    switch err {
+    case controller.ErrVersionOutdated:
+    default:
+      log.Fatalf("controller Run() ended with failure: %v", err)
+    }
+  }
 }
 
 func periodicFullGC(kubecli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, d time.Duration) {
-	gc := garbagecollection.New(kubecli, tfJobClient, ns)
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	for {
-		<-timer.C
-		err := gc.FullyCollect()
-		if err != nil {
-			log.Warningf("failed to cleanup resources: %v", err)
-		}
-	}
+  gc := garbagecollection.New(kubecli, tfJobClient, ns)
+  timer := time.NewTimer(d)
+  defer timer.Stop()
+  for {
+    <-timer.C
+    err := gc.FullyCollect()
+    if err != nil {
+      log.Warningf("failed to cleanup resources: %v", err)
+    }
+  }
 }
 
 // TODO(jlewi): We should add chaos back.

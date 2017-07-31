@@ -17,12 +17,12 @@ limitations under the License.
 package resourcelock
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
+  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  "k8s.io/client-go/tools/record"
 )
 
 const (
-	LeaderElectionRecordAnnotationKey = "control-plane.alpha.kubernetes.io/leader"
+  LeaderElectionRecordAnnotationKey = "control-plane.alpha.kubernetes.io/leader"
 )
 
 // LeaderElectionRecord is the record that is stored in the leader election annotation.
@@ -30,18 +30,18 @@ const (
 // with a random string (e.g. UUID) with only slight modification of this code.
 // TODO(mikedanese): this should potentially be versioned
 type LeaderElectionRecord struct {
-	HolderIdentity       string      `json:"holderIdentity"`
-	LeaseDurationSeconds int         `json:"leaseDurationSeconds"`
-	AcquireTime          metav1.Time `json:"acquireTime"`
-	RenewTime            metav1.Time `json:"renewTime"`
-	LeaderTransitions    int         `json:"leaderTransitions"`
+  HolderIdentity       string      `json:"holderIdentity"`
+  LeaseDurationSeconds int         `json:"leaseDurationSeconds"`
+  AcquireTime          metav1.Time `json:"acquireTime"`
+  RenewTime            metav1.Time `json:"renewTime"`
+  LeaderTransitions    int         `json:"leaderTransitions"`
 }
 
 // ResourceLockConfig common data that exists across different
 // resource locks
 type ResourceLockConfig struct {
-	Identity      string
-	EventRecorder record.EventRecorder
+  Identity      string
+  EventRecorder record.EventRecorder
 }
 
 // Interface offers a common interface for locking on arbitrary
@@ -50,22 +50,22 @@ type ResourceLockConfig struct {
 // them to change over time.  This interface is strictly for use
 // by the election code.
 type Interface interface {
-	// Get returns the LeaderElectionRecord
-	Get() (*LeaderElectionRecord, error)
+  // Get returns the LeaderElectionRecord
+  Get() (*LeaderElectionRecord, error)
 
-	// Create attempts to create a LeaderElectionRecord
-	Create(ler LeaderElectionRecord) error
+  // Create attempts to create a LeaderElectionRecord
+  Create(ler LeaderElectionRecord) error
 
-	// Update will update and existing LeaderElectionRecord
-	Update(ler LeaderElectionRecord) error
+  // Update will update and existing LeaderElectionRecord
+  Update(ler LeaderElectionRecord) error
 
-	// RecordEvent is used to record events
-	RecordEvent(string)
+  // RecordEvent is used to record events
+  RecordEvent(string)
 
-	// Identity will return the locks Identity
-	Identity() string
+  // Identity will return the locks Identity
+  Identity() string
 
-	// Describe is used to convert details on current resource lock
-	// into a string
-	Describe() string
+  // Describe is used to convert details on current resource lock
+  // into a string
+  Describe() string
 }

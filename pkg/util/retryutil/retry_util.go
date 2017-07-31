@@ -1,21 +1,21 @@
 package retryutil
 
 import (
-	"fmt"
-	"time"
+  "fmt"
+  "time"
 )
 
 type RetryError struct {
-	n int
+  n int
 }
 
 func (e *RetryError) Error() string {
-	return fmt.Sprintf("still failing after %d retries", e.n)
+  return fmt.Sprintf("still failing after %d retries", e.n)
 }
 
 func IsRetryFailure(err error) bool {
-	_, ok := err.(*RetryError)
-	return ok
+  _, ok := err.(*RetryError)
+  return ok
 }
 
 type ConditionFunc func() (bool, error)
@@ -25,24 +25,24 @@ type ConditionFunc func() (bool, error)
 // For example, if interval is 3s, f takes 1s, another f will be called 2s later.
 // However, if f takes longer than interval, it will be delayed.
 func Retry(interval time.Duration, maxRetries int, f ConditionFunc) error {
-	if maxRetries <= 0 {
-		return fmt.Errorf("maxRetries (%d) should be > 0", maxRetries)
-	}
-	tick := time.NewTicker(interval)
-	defer tick.Stop()
+  if maxRetries <= 0 {
+    return fmt.Errorf("maxRetries (%d) should be > 0", maxRetries)
+  }
+  tick := time.NewTicker(interval)
+  defer tick.Stop()
 
-	for i := 0; ; i++ {
-		ok, err := f()
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-		if i+1 == maxRetries {
-			break
-		}
-		<-tick.C
-	}
-	return &RetryError{maxRetries}
+  for i := 0; ; i++ {
+    ok, err := f()
+    if err != nil {
+      return err
+    }
+    if ok {
+      return nil
+    }
+    if i+1 == maxRetries {
+      break
+    }
+    <-tick.C
+  }
+  return &RetryError{maxRetries}
 }
