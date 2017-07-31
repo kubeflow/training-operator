@@ -10,24 +10,15 @@ spec:
       template:
         spec:
           containers:
-            - image: wbuchwalter/helm-tf:distributed-tf-cpu
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:latest
               name: tensorflow
-              command:
-                - python
-                - main.py
-                - --lr
-                - "0.005"
-                - --epochs
-                - "200"
-                - --batch_size
-                - "1"
           restartPolicy: OnFailure
-    - replicas: 3
+    - replicas: 1
       tf_port: 2222
       tf_replica_type: WORKER
       template:
         spec:
           containers:
-            - image: wbuchwalter/helm-tf:distributed-tf-cpu
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:latest
               name: tensorflow
           restartPolicy: OnFailure

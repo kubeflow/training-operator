@@ -2,6 +2,7 @@
 # only so we exclude them.
 bin/
 vendor/
+.vscode/
 
 # Compiled python files.
 *.pyc

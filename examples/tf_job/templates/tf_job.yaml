@@ -4,30 +4,21 @@ metadata:
   name: {{ .Release.Name }}
 spec:
   replica_specs:
-    - replicas: 2
+    - replicas: 1
       tf_port: 2222
       tf_replica_type: MASTER
       template:
         spec:
           containers:
-            - image: {{ .Values.psimage }} 
+            - image: {{ .Values.image }} 
               name: tensorflow
-              command:
-                - python
-                - main.py
-                - --lr
-                - {{ $lr | quote }}
-                - --epochs
-                - {{ $epochs | quote }}
-                - --batch_size
-                - {{ $batchsize | quote }}
           restartPolicy: OnFailure
-    - replicas: 3
+    - replicas: 1
       tf_port: 2222
       tf_replica_type: WORKER
       template:
         spec:
           containers:
-            - image: {{ .Values.workerimage }}
+            - image: {{ .Values.image }}
               name: tensorflow
           restartPolicy: OnFailure
