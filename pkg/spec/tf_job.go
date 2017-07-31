@@ -107,6 +107,56 @@ func (c *TfJobSpec) Validate() error {
 	return nil
 }
 
+// ConfigureAccelerators adds any accelerator specific configuration to the pods.
+func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorConfig) error {
+	for _, r := range c.ReplicaSpecs {
+		if r.Template == nil {
+			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+		}
+		for i, c := range r.Template.Spec.Containers {
+			if c.Name == string(TENSORFLOW) {
+				// Identify the accelerators attached to this container.
+				a := map[string]AcceleratorConfig{}
+
+				lists := []v1.ResourceList{c.Resources.Limits, c.Resources.Requests}
+				for _, resources := range lists {
+					for name, _ := range resources {
+
+						if _, ok := accelerators[string(name)]; !ok {
+							continue
+						}
+
+						// Add the expected mounts to the pods.
+						a[string(name)] = accelerators[string(name)]
+					}
+				}
+
+				// Add accelerator information to the pod.
+				for _, config := range a {
+					for _, v := range config.Volumes {
+						r.Template.Spec.Volumes = append(r.Template.Spec.Volumes,
+							v1.Volume{
+								Name: v.Name,
+								VolumeSource: v1.VolumeSource{
+									HostPath: &v1.HostPathVolumeSource{
+										Path: v.HostPath,
+									},
+								},
+							})
+						c.VolumeMounts = append(c.VolumeMounts, v1.VolumeMount{
+							Name:      v.Name,
+							MountPath: v.MountPath,
+						})
+					}
+				}
+				r.Template.Spec.Containers[i] = c
+				break
+			}
+		}
+	}
+	return nil
+}
+
 // Cleanup cleans up user passed spec, e.g. defaulting, transforming fields.
 // TODO: move this to admission controller
 func (c *TfJobSpec) Cleanup() {

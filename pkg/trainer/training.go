@@ -3,23 +3,21 @@ package trainer
 
 import (
 	"fmt"
-	"math"
-	"reflect"
-	"strings"
-	"sync"
-	"time"
-
 	log "github.com/golang/glog"
-
-	"mlkube.io/pkg/garbagecollection"
 	"mlkube.io/pkg/spec"
 	"mlkube.io/pkg/util"
 	"mlkube.io/pkg/util/k8sutil"
 	"mlkube.io/pkg/util/retryutil"
+	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	"math"
+	"mlkube.io/pkg/garbagecollection"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -96,7 +94,7 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 	}
 	return j, nil
 }
-func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
+func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup, config *spec.ControllerConfig) (*TrainingJob, error) {
 	j, err := initJob(kubeCli, tfJobClient, job, stopC, wg)
 	if err != nil {
 		return j, err
@@ -106,7 +104,7 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *
 	go func() {
 		defer wg.Done()
 
-		if err := j.setup(); err != nil {
+		if err := j.setup(config); err != nil {
 			log.Errorf("TfJob failed to setup: %v", err)
 			if j.status.Phase != spec.TfJobPhaseFailed {
 				j.status.SetReason(err.Error())
@@ -165,19 +163,19 @@ func (j *TrainingJob) deleteReplicas() error {
 
 //func replicaSetStatusToProto(r *TFReplicaSet, status *TFReplicaSetStatus) *tpb.TFReplicaSetStatus {
 //
-//  p := &tpb.TFReplicaSetStatus{
-//    State: status.State.Enum(),
-//    // Type: r.Spec.TfReplicaTypeProcess.Type,
-//    ReplicaStates: make([]*tpb.TFReplicaSetStatus_ReplicaStates, 0),
-//  }
+//	p := &tpb.TFReplicaSetStatus{
+//		State: status.State.Enum(),
+//		// Type: r.Spec.TfReplicaTypeProcess.Type,
+//		ReplicaStates: make([]*tpb.TFReplicaSetStatus_ReplicaStates, 0),
+//	}
 //
-//  for state, count := range status.ReplicasStates {
-//    p.ReplicaStates = append(p.ReplicaStates, &tpb.TFReplicaSetStatus_ReplicaStates{
-//      State: state.Enum(),
-//      NumReplicas: proto.Int(count),
-//    })
-//  }
-//  return p
+//	for state, count := range status.ReplicasStates {
+//		p.ReplicaStates = append(p.ReplicaStates, &tpb.TFReplicaSetStatus_ReplicaStates{
+//			State: state.Enum(),
+//			NumReplicas: proto.Int(count),
+//		})
+//	}
+//	return p
 //}
 
 func (j *TrainingJob) GetStatus() (spec.State, []*spec.TfReplicaStatus, error) {
@@ -271,7 +269,7 @@ func (j *TrainingJob) masterName() string {
 }
 
 // setup the training job.
-func (j *TrainingJob) setup() error {
+func (j *TrainingJob) setup(config *spec.ControllerConfig) error {
 	if j.job == nil {
 		return fmt.Errorf("job.Spec can't be nil")
 	}
@@ -279,6 +277,10 @@ func (j *TrainingJob) setup() error {
 	err := j.job.Spec.Validate()
 	if err != nil {
 		return fmt.Errorf("invalid job spec: %v", err)
+	}
+
+	if err := j.job.Spec.ConfigureAccelerators(config.Accelerators); err != nil {
+		return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)
 	}
 
 	if j.job.Spec.RuntimeId == "" {
@@ -290,7 +292,7 @@ func (j *TrainingJob) setup() error {
 	case spec.TfJobPhaseNone:
 		shouldCreateCluster = true
 		//case spec.TfJobPhaseCreating:
-		//  return errCreatedCluster
+		//	return errCreatedCluster
 	case spec.TfJobPhaseRunning:
 		shouldCreateCluster = false
 
@@ -408,9 +410,9 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 
 			// TODO(jlewi): We need handle a modify event.
 			//case eventModifyCluster:
-			//  if isSpecEqual(event.cluster.Spec, j.job.Spec) {
-			//    break
-			//  }
+			//	if isSpecEqual(event.cluster.Spec, j.job.Spec) {
+			//		break
+			//	}
 			case eventDeleteJob:
 				// TODO(jlewi): Delete is what should cause us to delete the Pods.
 				// we shouldn't delete the pods when the jobs finish because leaving the pods
@@ -488,22 +490,22 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 		}
 
 		//if isFatalError(rerr) {
-		//  clusterFailed = true
-		//  j.status.SetReason(rerr.Error())
+		//	clusterFailed = true
+		//	j.status.SetReason(rerr.Error())
 		//
-		//  log.Errorf("cluster failed: %v", rerr)
-		//  return
+		//	log.Errorf("cluster failed: %v", rerr)
+		//	return
 		//}
 	}
 }
 
 //func isSpecEqual(s1, s2 spec.TfJobSpec) bool {
-//  // TODO(jlewi): Need to implement this function.
-//  return false
-//  //if s1.Size != s2.Size || s1.Paused != s2.Paused || s1.Version != s2.Version {
-//  //  return false
-//  //}
-//  //return isBackupPolicyEqual(s1.Backup, s2.Backup)
+//	// TODO(jlewi): Need to implement this function.
+//	return false
+//	//if s1.Size != s2.Size || s1.Paused != s2.Paused || s1.Version != s2.Version {
+//	//	return false
+//	//}
+//	//return isBackupPolicyEqual(s1.Backup, s2.Backup)
 //}
 
 // TODO(jlewi): We probably need to update this function.

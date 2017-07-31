@@ -15,16 +15,4 @@ spec:
               resources:
                 limits:
                   alpha.kubernetes.io/nvidia-gpu: 1
-              volumeMounts:
-                - name: nvidia-debug-tools
-                  mountPath: /usr/local/bin/nvidia
-                - name: nvidia-libraries
-                  mountPath: /usr/local/nvidia/lib64 # This path is special; it is expected to be present in `/etc/ld.so.conf` inside the container image.
-          volumes:
-            - name: nvidia-debug-tools # optional
-              hostPath:
-                path: /home/kubernetes/bin/nvidia/bin
-            - name: nvidia-libraries # required
-              hostPath:
-                path: /home/kubernetes/bin/nvidia/lib
           restartPolicy: OnFailure
