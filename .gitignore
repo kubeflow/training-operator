@@ -1,6 +1,9 @@
 # pkg and bin directories currently contain build artifacts
 # only so we exclude them.
 bin/
+vendor/
+
+.vscode/
 
 # Compiled python files.
 *.pyc
@@ -9,7 +12,7 @@ bin/
 *~
 
 # Other temporary files
-*#
+.DS_Store
 
 # Files created by Gogland IDE
 .idea/

@@ -57,7 +57,6 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	config.GroupVersion = &schema.GroupVersion{
 		Group:   spec.TPRGroup,
 		Version: spec.TPRVersion,

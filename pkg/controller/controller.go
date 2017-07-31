@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"sync"
+	"time"
+
 	"k8s.io/client-go/kubernetes"
 	"mlkube.io/pkg/spec"
 	"mlkube.io/pkg/trainer"
 	"mlkube.io/pkg/util/k8sutil"
-	"net/http"
-	"sync"
-	"time"
 
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

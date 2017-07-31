@@ -18,7 +18,7 @@ import (
 	log "github.com/golang/glog"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
 )
 
@@ -98,7 +98,7 @@ func main() {
 	// TODO: replace with to client-go once leader election pacakge is imported
 	// see https://github.com/kubernetes/client-go/issues/28
 	rl := &resourcelock.EndpointsLock{
-		EndpointsMeta: api.ObjectMeta{
+		EndpointsMeta: v1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "tf-operator",
 		},
