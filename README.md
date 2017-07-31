@@ -187,7 +187,13 @@ Create a symbolic link inside your GOPATH to the location you checked out the co
     ```
 
   * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
-	
+
+Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
+
+```
+glide install
+```
+
 Build it
 
 ```
