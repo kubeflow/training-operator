@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/ghodss/yaml"
+
 	"mlkube.io/pkg/controller"
 	"mlkube.io/pkg/garbagecollection"
 	"mlkube.io/pkg/util/k8sutil"
@@ -17,9 +19,11 @@ import (
 
 	log "github.com/golang/glog"
 
+	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
+	"mlkube.io/pkg/spec"
 )
 
 var (
@@ -27,16 +31,17 @@ var (
 	name       string
 	gcInterval time.Duration
 
-	chaosLevel int
-
-	printVersion bool
+	chaosLevel           int
+	controllerConfigFile string
+	printVersion         bool
 )
 
 var (
-	leaseDuration = 15 * time.Second
-	renewDuration = 5 * time.Second
-	retryPeriod   = 3 * time.Second
-	tfJobClient   *k8sutil.TfJobRestClient
+	controllerConfig = spec.ControllerConfig{}
+	leaseDuration    = 15 * time.Second
+	renewDuration    = 5 * time.Second
+	retryPeriod      = 3 * time.Second
+	tfJobClient      *k8sutil.TfJobRestClient
 )
 
 func init() {
@@ -44,6 +49,7 @@ func init() {
 	flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the etcd clusters created by the operator.")
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
+	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
 
 	flag.Parse()
 
@@ -58,6 +64,24 @@ func init() {
 		panic(err)
 	}
 	controller.KubeHttpCli = tfJobClient.Client()
+
+	if controllerConfigFile != "" {
+		log.Infof("Loading controller config from %v.", controllerConfigFile)
+
+		data, err := ioutil.ReadFile(controllerConfigFile)
+		if err != nil {
+			log.Fatalf("Could not read file: %v. Error: %v", controllerConfigFile, err)
+		}
+
+		err = yaml.Unmarshal(data, &controllerConfig)
+		if err != nil {
+			log.Fatalf("Could not parse controller config; Error: %v\n", err)
+		}
+
+		log.Infof("ControllerConfig: %v", util.Pformat(controllerConfig))
+	} else {
+		log.Info("No controller_config_file provided; using empty config.")
+	}
 }
 
 func main() {
@@ -134,7 +158,7 @@ func run(stop <-chan struct{}) {
 	// startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
 
 	for {
-		c := controller.New(kubeCli, tfJobClient, namespace)
+		c := controller.New(kubeCli, tfJobClient, namespace, controllerConfig)
 		err := c.Run()
 		switch err {
 		case controller.ErrVersionOutdated:

@@ -6,14 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"sync"
-	"time"
-
 	"k8s.io/client-go/kubernetes"
 	"mlkube.io/pkg/spec"
 	"mlkube.io/pkg/trainer"
 	"mlkube.io/pkg/util/k8sutil"
+	"net/http"
+	"sync"
+	"time"
 
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +41,8 @@ type Controller struct {
 	KubeCli     kubernetes.Interface
 	TfJobClient k8sutil.TfJobClient
 
-	jobs map[string]*trainer.TrainingJob
+	config spec.ControllerConfig
+	jobs   map[string]*trainer.TrainingJob
 	// Kubernetes resource version of the jobs
 	jobRVs    map[string]string
 	stopChMap map[string]chan struct{}
@@ -52,7 +52,7 @@ type Controller struct {
 	waitJobs sync.WaitGroup
 }
 
-func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string) *Controller {
+func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
 	if tfJobClient == nil {
 		panic("tfJobClient can't be nil")
 	}
@@ -64,6 +64,7 @@ func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns strin
 		jobs:      make(map[string]*trainer.TrainingJob),
 		jobRVs:    make(map[string]string),
 		stopChMap: map[string]chan struct{}{},
+		config:    config,
 	}
 }
 
@@ -129,7 +130,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 		// Event indicates that a new instance of the Cluster TPR was created.
 		// So we create a Cluster object to control this resource.
 		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs)
+		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs, &c.config)
 
 		if err != nil {
 			return err
@@ -177,7 +178,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 		clus.Spec.Cleanup()
 
 		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &clus, stopC, &c.waitJobs)
+		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &clus, stopC, &c.waitJobs, &c.config)
 
 		if err != nil {
 			log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, clus.Metadata.Name)
