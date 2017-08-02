@@ -150,7 +150,6 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 					}
 
 					for _, envVar := range config.EnvVars {
-						fmt.Println("Got env vars")
 						c.Env = append(c.Env, v1.EnvVar{
 							Name:  envVar.Name,
 							Value: envVar.Value,
