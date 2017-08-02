@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart for Kubernetes
-name: tf_job
+name: tf-job
 version: 0.1.0
