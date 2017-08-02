@@ -1,12 +1,13 @@
 package spec
 
 import (
-	"cmle.io/pkg/util"
+	"reflect"
+	"testing"
+
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
-	"reflect"
-	"testing"
+	"mlkube.io/pkg/util"
 )
 
 func TestAddAccelertor(t *testing.T) {
