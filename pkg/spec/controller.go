@@ -17,4 +17,10 @@ type AcceleratorVolume struct {
 
 type AcceleratorConfig struct {
 	Volumes []AcceleratorVolume
+	EnvVars []EnvironmentVariableConfig
+}
+
+type EnvironmentVariableConfig struct {
+	Name  string
+	Value string
 }
