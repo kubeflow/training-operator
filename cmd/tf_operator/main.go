@@ -12,6 +12,7 @@ import (
 
 	"mlkube.io/pkg/controller"
 	"mlkube.io/pkg/garbagecollection"
+	"mlkube.io/pkg/util"
 	"mlkube.io/pkg/util/k8sutil"
 	"mlkube.io/pkg/util/k8sutil/election"
 	"mlkube.io/pkg/util/k8sutil/election/resourcelock"
@@ -20,6 +21,7 @@ import (
 	log "github.com/golang/glog"
 
 	"io/ioutil"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"

@@ -148,6 +148,13 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 							MountPath: v.MountPath,
 						})
 					}
+
+					for _, envVar := range config.EnvVars {
+						c.Env = append(c.Env, v1.EnvVar{
+							Name:  envVar.Name,
+							Value: envVar.Value,
+						})
+					}
 				}
 				r.Template.Spec.Containers[i] = c
 				break

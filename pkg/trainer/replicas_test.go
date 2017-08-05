@@ -6,14 +6,15 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"fmt"
+	"reflect"
+	"sync"
+	"time"
+
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"mlkube.io/pkg/spec"
 	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
-	"reflect"
-	"sync"
-	"time"
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -55,7 +56,7 @@ func TestTFReplicaSet(t *testing.T) {
 	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
-			"cloud_ml":   "",
+			"mlkube.io":  "",
 			"task_index": fmt.Sprintf("%v", index),
 			"job_type":   "PS",
 			"runtime_id": "some-runtime",
