@@ -18,8 +18,8 @@ import (
 	"net/http"
 	"time"
 
-	"mlkube.io/pkg/spec"
-	"mlkube.io/pkg/util/retryutil"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/util/retryutil"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
