@@ -4,7 +4,7 @@ import (
 	"net"
 	"os"
 
-	"mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/spec"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

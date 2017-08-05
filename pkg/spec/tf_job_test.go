@@ -7,7 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
-	"mlkube.io/pkg/util"
+	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 func TestAddAccelertor(t *testing.T) {
