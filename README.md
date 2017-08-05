@@ -1,6 +1,6 @@
 # K8s Third Party Resource and Operator For TensorFlow jobs
 
-![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)
+[![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
 
 ## Motivation
 
