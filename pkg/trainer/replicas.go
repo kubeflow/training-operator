@@ -229,7 +229,7 @@ func (s *TFReplicaSet) Delete() error {
 		err = s.ClientSet.CoreV1().Services(NAMESPACE).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
-			log.Errorf("Error deleteing service %v; %v", s.jobName(index), err)
+			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
 			failures = true
 		}
 	}

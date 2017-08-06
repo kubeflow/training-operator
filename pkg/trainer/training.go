@@ -3,21 +3,23 @@ package trainer
 
 import (
 	"fmt"
+	"reflect"
+
 	log "github.com/golang/glog"
 	"mlkube.io/pkg/spec"
 	"mlkube.io/pkg/util"
 	"mlkube.io/pkg/util/k8sutil"
 	"mlkube.io/pkg/util/retryutil"
-	"reflect"
+
+	"math"
+	"strings"
+	"sync"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"math"
 	"mlkube.io/pkg/garbagecollection"
-	"strings"
-	"sync"
-	"time"
 )
 
 const (
@@ -50,6 +52,8 @@ type TrainingJob struct {
 
 	Replicas []*TFReplicaSet
 
+	TensorBoard *TBReplicaSet
+
 	tfJobClient k8sutil.TfJobClient
 
 	// in memory state of the job.
@@ -78,6 +82,7 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 		KubeCli:     kubeCli,
 		tfJobClient: tfJobClient,
 		Replicas:    make([]*TFReplicaSet, 0),
+		TensorBoard: nil,
 		job:         job,
 		eventCh:     make(chan *jobEvent, 100),
 		stopCh:      make(chan struct{}),
@@ -92,8 +97,23 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 		}
 		j.Replicas = append(j.Replicas, r)
 	}
+
+	tb, err := initTensorBoard(kubeCli, job, j)
+	if err != nil {
+		return nil, err
+	}
+	j.TensorBoard = tb
+
 	return j, nil
 }
+
+func initTensorBoard(clientSet kubernetes.Interface, js *spec.TfJob, tj *TrainingJob) (*TBReplicaSet, error) {
+	if js.Spec.TensorBoard != nil {
+		return NewTBReplicaSet(clientSet, *js.Spec.TensorBoard, tj)
+	}
+	return nil, nil
+}
+
 func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup, config *spec.ControllerConfig) (*TrainingJob, error) {
 	j, err := initJob(kubeCli, tfJobClient, job, stopC, wg)
 	if err != nil {
@@ -137,22 +157,36 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
-// createReplicas creates all the replicas.
-func (j *TrainingJob) createReplicas() error {
+// createResources creates all the replicas and TensorBoard if requested
+func (j *TrainingJob) createResources() error {
 	log.Infof("TrainingJob.Create() for RuntimeId: %v", j.job.Spec.RuntimeId)
+	log.Infof("replicas: %v", len(j.Replicas))
 	for _, r := range j.Replicas {
 		if err := r.Create(); err != nil {
 			return err
 		}
 	}
+
+	if j.TensorBoard != nil {
+		if err := j.TensorBoard.Create(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-// deleteReplicas deletes the replicas.
-func (j *TrainingJob) deleteReplicas() error {
+// deleteResources deletes the replicas and TensorBoard it it was created
+func (j *TrainingJob) deleteResources() error {
 	log.Infof("TrainingJob.Delete() for RuntimeId: %v", j.job.Spec.RuntimeId)
 	for _, r := range j.Replicas {
 		if err := r.Delete(); err != nil {
+			return err
+		}
+	}
+
+	if j.TensorBoard != nil {
+		if err := j.TensorBoard.Delete(); err != nil {
 			return err
 		}
 	}
@@ -424,8 +458,8 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 					j.status.SetPhase(spec.TfJobPhaseCleanUp)
 				}
 
-				if cErr := j.deleteReplicas(); cErr != nil {
-					log.Errorf("trainingJob.Delete() error; %v", cErr)
+				if cErr := j.deleteResources(); cErr != nil {
+					log.Errorf("trainingJob.deleteResources() error; %v", cErr)
 				}
 				// j.status.SetPhase(spec.TfJobPhaseDone)
 				// Return from run because we want to stop reconciling the object.
@@ -438,7 +472,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			// now we always call Create.
 			if j.job.Status.Phase == spec.TfJobPhaseRunning {
 				// We call Create to make sure all the resources exist and are running.
-				if cErr := j.createReplicas(); cErr != nil {
+				if cErr := j.createResources(); cErr != nil {
 					log.Errorf("trainingJobcCreateReplicas() error; %v", cErr)
 				}
 
@@ -468,7 +502,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			}
 
 			if j.job.Status.Phase == spec.TfJobPhaseCleanUp {
-				if cErr := j.deleteReplicas(); cErr != nil {
+				if cErr := j.deleteResources(); cErr != nil {
 					log.Errorf("trainingJob.Delete() error; %v", cErr)
 				}
 				// j.status.SetPhase(spec.TfJobPhaseDone)

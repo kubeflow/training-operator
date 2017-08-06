@@ -3,10 +3,10 @@ kind: "TfJob"
 metadata:
   name: "tf-smoke-gpu"
 spec:
-  replica_specs:
+  replicaSpecs:
     - replicas: 1
-      tf_port: 2222
-      tf_replica_type: MASTER
+      tfPort: 2222
+      tfReplicaType: MASTER
       template:
         spec:
           containers:
