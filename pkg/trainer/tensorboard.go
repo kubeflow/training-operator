@@ -16,7 +16,9 @@ import (
 	"mlkube.io/pkg/spec"
 )
 
-//TBReplicaSet represent the RS for the TensorBoard instance
+const TbPort = 6006
+
+// TBReplicaSet represent the RS for the TensorBoard instance
 type TBReplicaSet struct {
 	ClientSet kubernetes.Interface
 	Job       *TrainingJob
@@ -36,14 +38,14 @@ func NewTBReplicaSet(clientSet kubernetes.Interface, s spec.TensorBoardSpec, job
 }
 
 func (s *TBReplicaSet) Create() error {
-	//By default we assume TensorBoard's service will be a ClusterIP
+	// By default we assume TensorBoard's service will be a ClusterIP
 	// unless specified otherwise by the user
 	st := v1.ServiceType("ClusterIP")
 	if s.Spec.ServiceType != "" {
 		st = s.Spec.ServiceType
 	}
 
-	//create the service exposing TensorBoard
+	// create the service exposing TensorBoard
 	service := &v1.Service{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   s.jobName(),
@@ -57,7 +59,7 @@ func (s *TBReplicaSet) Create() error {
 					Name: "tb-port",
 					Port: 80,
 					TargetPort: intstr.IntOrString{
-						IntVal: 6006,
+						IntVal: TbPort,
 					},
 				},
 			},
@@ -104,32 +106,14 @@ func (s *TBReplicaSet) Create() error {
 }
 
 func (s *TBReplicaSet) Delete() error {
-	selector, err := s.Labels().ToSelector()
-	if err != nil {
-		return err
-	}
-
-	listOpts := meta_v1.ListOptions{
-		LabelSelector: selector,
-	}
-
 	failures := false
 
-	err = s.ClientSet.ExtensionsV1beta1().Deployments(NAMESPACE).Delete(s.jobName(), &meta_v1.DeleteOptions{})
+	delProp := meta_v1.DeletePropagationForeground
+	err := s.ClientSet.ExtensionsV1beta1().Deployments(NAMESPACE).Delete(s.jobName(), &meta_v1.DeleteOptions{
+		PropagationPolicy: &delProp,
+	})
 	if err != nil {
 		log.Errorf("There was a problem deleting TensorBoard's deployment %v; %v", s.jobName(), err)
-		failures = true
-	}
-
-	err = s.ClientSet.ExtensionsV1beta1().ReplicaSets(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, listOpts)
-	if err != nil {
-		log.Errorf("Error deleting TensorBoard's replica set: %v; %v", s.jobName(), err)
-		failures = true
-	}
-
-	err = s.ClientSet.CoreV1().Pods(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, listOpts)
-	if err != nil {
-		log.Errorf("Error deleting TensorBoard's pod: %v; %v", s.jobName(), err)
 		failures = true
 	}
 
@@ -146,6 +130,7 @@ func (s *TBReplicaSet) Delete() error {
 }
 
 func (s *TBReplicaSet) getDeploymentSpecTemplate() v1.PodTemplateSpec {
+	// TODO: make the TensorFlow image a parameter of the job operator.
 	c := &v1.Container{
 		Name:  s.jobName(),
 		Image: "tensorflow/tensorflow",
@@ -154,7 +139,7 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate() v1.PodTemplateSpec {
 		},
 		Ports: []v1.ContainerPort{
 			{
-				ContainerPort: 6006,
+				ContainerPort: TbPort,
 			},
 		},
 		VolumeMounts: make([]v1.VolumeMount, 0),
