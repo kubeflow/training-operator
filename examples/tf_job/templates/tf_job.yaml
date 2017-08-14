@@ -5,8 +5,8 @@ metadata:
 spec:
   replica_specs:
     - replicas: 1
-      tf_port: 2222
-      tf_replica_type: MASTER
+      tfPort: 2222
+      tfReplicaType: MASTER
       template:
         spec:
           containers:
@@ -14,8 +14,8 @@ spec:
               name: tensorflow
           restartPolicy: OnFailure
     - replicas: 1
-      tf_port: 2222
-      tf_replica_type: WORKER
+      tfPort: 2222
+      tfReplicaType: WORKER
       template:
         spec:
           containers:
