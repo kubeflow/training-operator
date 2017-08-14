@@ -10,8 +10,8 @@ IMAGE=${REGISTRY}/tf_operator:latest
 
 DIR=`mktemp -d`
 echo Use ${DIR} as context
-go install mlkube.io/cmd/tf_operator
-go install mlkube.io/test/e2e
+go install github.com/jlewi/mlkube.io/cmd/tf_operator
+go install github.com/jlewi/mlkube.io/test/e2e
 cp ${GOPATH}/bin/tf_operator ${DIR}/
 cp ${GOPATH}/bin/e2e ${DIR}/
 cp ${SRC_DIR}/Dockerfile ${DIR}/

@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"mlkube.io/pkg/spec"
-	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
 )
 
 func TestTBReplicaSet(t *testing.T) {

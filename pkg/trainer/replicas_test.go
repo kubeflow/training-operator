@@ -13,8 +13,8 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"mlkube.io/pkg/spec"
-	tfJobFake "mlkube.io/pkg/util/k8sutil/fake"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
 )
 
 func TestTFReplicaSet(t *testing.T) {

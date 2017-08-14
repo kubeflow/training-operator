@@ -59,7 +59,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
-	rl "mlkube.io/pkg/util/k8sutil/election/resourcelock"
+	rl "github.com/jlewi/mlkube.io/pkg/util/k8sutil/election/resourcelock"
 )
 
 const (

@@ -13,8 +13,8 @@
 package garbagecollection
 
 import (
-	"mlkube.io/pkg/spec"
-	"mlkube.io/pkg/util/k8sutil"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

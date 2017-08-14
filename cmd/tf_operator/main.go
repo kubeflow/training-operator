@@ -10,13 +10,13 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"mlkube.io/pkg/controller"
-	"mlkube.io/pkg/garbagecollection"
-	"mlkube.io/pkg/util"
-	"mlkube.io/pkg/util/k8sutil"
-	"mlkube.io/pkg/util/k8sutil/election"
-	"mlkube.io/pkg/util/k8sutil/election/resourcelock"
-	"mlkube.io/version"
+	"github.com/jlewi/mlkube.io/pkg/controller"
+	"github.com/jlewi/mlkube.io/pkg/garbagecollection"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election/resourcelock"
+	"github.com/jlewi/mlkube.io/version"
 
 	log "github.com/golang/glog"
 
@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
-	"mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/spec"
 )
 
 var (
@@ -48,7 +48,7 @@ var (
 
 func init() {
 	// chaos level will be removed once we have a formal tool to inject failures.
-	flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the etcd clusters created by the operator.")
+	flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the TfJob created by the operator.")
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
 	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")

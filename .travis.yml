@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.8.x
+
+install:
+  # Install glide
+  -  curl https://glide.sh/get | sh
+  # Install dependencies using glide
+  - glide install
+
+script:
+  # We customize the build step because by default
+  # Travis runs go test -v ./... which will include the vendor
+  # directory.
+  # With go 1.9 vendor will be automatically excluded.
+  # For now though we just run all tests in pkg.
+  - go test -v ./pkg/...

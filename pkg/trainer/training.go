@@ -3,23 +3,25 @@ package trainer
 
 import (
 	"fmt"
+
 	"reflect"
 
 	log "github.com/golang/glog"
-	"mlkube.io/pkg/spec"
-	"mlkube.io/pkg/util"
-	"mlkube.io/pkg/util/k8sutil"
-	"mlkube.io/pkg/util/retryutil"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/jlewi/mlkube.io/pkg/util/retryutil"
 
 	"math"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/jlewi/mlkube.io/pkg/garbagecollection"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"mlkube.io/pkg/garbagecollection"
 )
 
 const (

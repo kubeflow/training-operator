@@ -7,13 +7,13 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
+	"github.com/jlewi/mlkube.io/pkg/spec"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"mlkube.io/pkg/spec"
 )
 
 const TbPort = 6006

@@ -1,5 +1,7 @@
 # K8s Third Party Resource and Operator For TensorFlow jobs
 
+[![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
+
 ## Motivation
 
 Distributed TensorFlow training jobs require managing multiple sets of TensorFlow replicas. 
@@ -239,16 +241,11 @@ What's the best way to integrate TensorBoard?
 
 ## Building the Operator
 
-To build the agent pull in client-go
-
-    ```
-    go get k8s.io/client-go/...
-    ```
-
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
     ```
-    ln -sf ${GIT_TRAINING} ${GOPATH}/src/
+    mkdir -p ${GOPATH}/src/github.com/jlewi
+    ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
     ```
 
   * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
@@ -262,7 +259,7 @@ glide install
 Build it
 
 ```
-go install mlkube.io/cmd/tf_operator
+go install github.com/jlewi/mlkube.io/cmd/tf_operator
 ```
 
 ## Runing the Operator Locally
