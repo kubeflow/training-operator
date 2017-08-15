@@ -62,6 +62,7 @@ func TestTBReplicaSet(t *testing.T) {
 	}
 
 	// Check that a service was created.
+	// TODO: Change this List for a Get for clarity
 	sList, err := clientSet.CoreV1().Services(NAMESPACE).List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Fatalf("List services error; %v", err)
