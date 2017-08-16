@@ -1,6 +1,6 @@
-package: mlkube.io
+package: github.com/jlewi/mlkube.io
 ignore:
-- mlkube.io
+- github.com/jlewi/mlkube.io
 import:
 - package: k8s.io/client-go
   version: v4.0.0-beta.0
@@ -8,18 +8,9 @@ import:
   version: abe34e4f5b4413c282a83011892cbeea5b32223b
 - package: k8s.io/apiextensions-apiserver
   version: 6d8c23d2e66ce61e2a7e34f92e8eb3eec13279fa
-- package: github.com/coreos/etcd
-  version: v3.1.9
 - package: github.com/pkg/errors
   version: v0.8.0
-- package: github.com/aws/aws-sdk-go
-  version: v1.10.9
-- package: github.com/coreos/go-semver
-  version: v0.2.0
 - package: github.com/pborman/uuid
   version: v1.0
-- package: github.com/prometheus/client_golang
-  version: v0.8.0
-- package: github.com/jpillora/go-ogle-analytics
 - package: golang.org/x/net
 - package: golang.org/x/time
