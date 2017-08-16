@@ -10,8 +10,6 @@ import:
   version: 6d8c23d2e66ce61e2a7e34f92e8eb3eec13279fa
 - package: github.com/coreos/etcd
   version: v3.1.9
-- package: github.com/Sirupsen/logrus
-  version: v1.0.0
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/aws/aws-sdk-go

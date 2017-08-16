@@ -2,10 +2,15 @@ language: go
 
 go:
   - 1.8.x
+  
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:masterminds/glide'
+    packages:
+      - glide
 
 install:
-  # Install glide
-  -  curl https://glide.sh/get | sh
   # Install dependencies using glide
   - glide install
 

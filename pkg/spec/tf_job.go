@@ -52,8 +52,11 @@ type TfJobSpec struct {
 	// TODO(jlewi): Can we we get rid of this and use some value from Kubernetes or a random ide.
 	RuntimeId string
 
+	//TensorBoardSpec specifies the configuration to start a TensorBoard deployment
+	TensorBoard *TensorBoardSpec `json:"tensorboard"`
+
 	// ReplicaSpecs specifies the TF replicas to run.
-	ReplicaSpecs []*TfReplicaSpec `json:"replica_specs"`
+	ReplicaSpecs []*TfReplicaSpec `json:"replicaSpecs"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -83,8 +86,16 @@ type TfReplicaSpec struct {
 	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 	// TfPort is the port to use for TF services.
-	TfPort        *int32 `json:"tf_port,omitempty" protobuf:"varint,1,opt,name=tf_port"`
-	TfReplicaType `json:"tf_replica_type"`
+	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
+	TfReplicaType `json:"tfReplicaType"`
+}
+
+type TensorBoardSpec struct {
+	//Location of TensorFlow event files
+	LogDir       string           `json:"logDir"`
+	Volumes      []v1.Volume      `json:"volumes"`
+	VolumeMounts []v1.VolumeMount `json:"volumeMounts"`
+	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
 func (c *TfJobSpec) Validate() error {

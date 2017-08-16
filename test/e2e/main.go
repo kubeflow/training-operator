@@ -12,17 +12,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	log "github.com/golang/glog"
-	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
+	log "github.com/golang/glog"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 const (
@@ -100,6 +101,9 @@ func run() error {
 					},
 				},
 			},
+			TensorBoard: &spec.TensorBoardSpec{
+				LogDir: "/tmp/tensorflow",
+			},
 		},
 	}
 
@@ -152,6 +156,21 @@ func run() error {
 		}
 	}
 
+	// Check that the TensorBoard deployment is present
+	tbDeployName := fmt.Sprintf("tensorboard-%v", tfJob.Spec.RuntimeId)
+	_, err = kubeCli.ExtensionsV1beta1().Deployments(Namespace).Get(tbDeployName, metav1.GetOptions{})
+
+	if err != nil {
+		return fmt.Errorf("TfJob %v did not create Deployment %v for TensorBoard", name, tbDeployName)
+	}
+
+	// Check that the TensorBoard service is present
+	_, err = kubeCli.CoreV1().Services(Namespace).Get(tbDeployName, metav1.GetOptions{})
+
+	if err != nil {
+		return fmt.Errorf("TfJob %v did not create Service %v for TensorBoard", name, tbDeployName)
+	}
+
 	// Delete the job and make sure all subresources are properly garbage collected.
 	if err := tfJobClient.Delete(Namespace, name); err != nil {
 		log.Fatal("Failed to delete TfJob %v; error %v", name, err)
@@ -160,6 +179,7 @@ func run() error {
 	// Define sets to keep track of Job controllers corresponding to Replicas
 	// that still exist.
 	jobs := make(map[string]bool)
+	isTBDeployDeleted := false
 
 	// Loop over each replica and make sure the expected resources are being deleted.
 	for _, r := range original.Spec.ReplicaSpecs {
@@ -172,8 +192,8 @@ func run() error {
 		}
 	}
 
-	// Wait for all jobs to be deleted.
-	for endTime := time.Now().Add(5 * time.Minute); time.Now().Before(endTime) && len(jobs) > 0; {
+	// Wait for all jobs and deployment to be deleted.
+	for endTime := time.Now().Add(5 * time.Minute); time.Now().Before(endTime) && (len(jobs) > 0 || !isTBDeployDeleted); {
 		for k := range jobs {
 			_, err := kubeCli.BatchV1().Jobs(Namespace).Get(k, metav1.GetOptions{})
 			if k8s_errors.IsNotFound(err) {
@@ -185,7 +205,17 @@ func run() error {
 			}
 		}
 
-		if len(jobs) > 0 {
+		if !isTBDeployDeleted {
+			// Check that TensorBoard deployment is being deleted
+			_, err = kubeCli.ExtensionsV1beta1().Deployments(Namespace).Get(tbDeployName, metav1.GetOptions{})
+			if k8s_errors.IsNotFound(err) {
+				isTBDeployDeleted = true
+			} else {
+				log.Infof("TensorBoard deployment still exists")
+			}
+		}
+
+		if len(jobs) > 0 || !isTBDeployDeleted {
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -193,6 +223,11 @@ func run() error {
 	if len(jobs) > 0 {
 		return fmt.Errorf("Not all Job controllers were successfully deleted.")
 	}
+
+	if !isTBDeployDeleted {
+		return fmt.Errorf("TensorBoard deployment was not successfully deleted.")
+	}
+
 	return nil
 }
 

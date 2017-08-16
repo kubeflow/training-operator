@@ -142,8 +142,8 @@ metadata:
 spec:
   replica_specs:
     - replicas: 1
-      tf_port: 2222
-      tf_replica_type: MASTER
+      tfPort: 2222
+      tfReplicaType: MASTER
       template:
         spec:
           containers:
@@ -154,6 +154,55 @@ spec:
                   alpha.kubernetes.io/nvidia-gpu: 1
           restartPolicy: OnFailure
 ```
+
+### Requesting a TensorBoard instance
+
+You can also ask the `TfJob` operator to create a TensorBoard instance to monitor your training.
+Here are the configuration options for TensorBoard:
+
+| Name | Description | Required | Default |
+|---|---|---|---|
+| `logDir` | Specifies the directory where TensorBoard will look to find TensorFlow event files that it can display | Yes | `None` | 
+| `volumes` | `Volumes` information that will be passed to the TensorBoard `deployment` | No | [] | 
+| `volumeMounts` | `VolumeMounts` information that will be passed to the TensorBoard `deployment` | No | [] | 
+| `serviceType` | `ServiceType` information that will be passed to the TensorBoard `service`| No | `ClusterIP` | 
+
+For example:
+
+```
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: "tf-smoke-gpu"
+spec:
+  replica_specs:
+    - replicas: 1
+      tfPort: 2222
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
+              name: tensorflow
+              resources:
+                limits:
+                  alpha.kubernetes.io/nvidia-gpu: 1
+          restartPolicy: OnFailure
+  tensorboard:
+    logDir: /tmp/tensorflow
+    serviceType: LoadBalancer
+    volumes:
+      - name: azurefile
+        azureFile:
+            secretName: azure-secret
+            shareName: data
+            readOnly: false
+    volumeMounts:
+      - mountPath: /tmp/tensorflow
+        name: azurefile
+    
+```
+
 
 ## Run the example
 
@@ -230,14 +279,6 @@ There are some unittests.
 #### E2E tests
 
 The helm package provides some basic E2E tests.
-
-### TensorBoard Integration
-
-What's the best way to integrate TensorBoard?
-
-  *  A TfJob could launch TensorBoard and the lifetime of the TensorBoard instance would be tied to the job.
-  *  In addition we could possible use a TPR for TensorBoard or a framework like []fission.io](http://fission.io/) to
-     make it easy to launch a TensorBoard instance just by specifying the arguments for TensorBoard.
 
 ## Building the Operator
 
