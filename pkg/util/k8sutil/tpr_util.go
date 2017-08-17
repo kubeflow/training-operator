@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// TFJobClient defines an interface for working with TfJob TPRs.
+// TFJobClient defines an interface for working with TfJob CRDs.
 type TfJobClient interface {
 	// Get returns a TfJob
 	Get(ns string, name string) (*spec.TfJob, error)

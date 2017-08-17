@@ -14,9 +14,13 @@ import (
 	"sync"
 	"time"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	// "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/apiextensions/v1beta1"
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwatch "k8s.io/apimachinery/pkg/watch"
+
 	v1beta1extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
@@ -39,6 +43,7 @@ type Event struct {
 type Controller struct {
 	Namespace   string
 	KubeCli     kubernetes.Interface
+	ApiCli      apiextensionsclient.Interface
 	TfJobClient k8sutil.TfJobClient
 
 	config spec.ControllerConfig
@@ -52,13 +57,14 @@ type Controller struct {
 	waitJobs sync.WaitGroup
 }
 
-func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
+func New(kubeCli kubernetes.Interface, apiCli apiextensionsclient.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
 	if tfJobClient == nil {
 		panic("tfJobClient can't be nil")
 	}
 	return &Controller{
 		Namespace:   ns,
 		KubeCli:     kubeCli,
+		ApiCli:  		apiCli,
 		TfJobClient: tfJobClient,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:      make(map[string]*trainer.TrainingJob),
@@ -222,16 +228,18 @@ func (c *Controller) initResource() (string, error) {
 }
 
 func (c *Controller) createTPR() error {
-	tpr := &v1beta1extensions.ThirdPartyResource{
+	crd := &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.TPRName(),
 		},
-		Versions: []v1beta1extensions.APIVersion{
-			{Name: spec.TPRVersion},
+		Spec: v1beta1.CustomeResourceDefinitionSpec{}
+		Version: spec.TPRVersion,
 		},
+	}
 		Description: spec.TPRDescription,
 	}
-	_, err := c.KubeCli.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
+
+	_, err := c.ApiCli.ApiextensionsV1beta1().ThirdPartyResources().Create(tpr)
 	if err != nil {
 		return err
 	}
