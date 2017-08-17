@@ -30,7 +30,7 @@ var (
 
 	initRetryWaitTime = 30 * time.Second
 
-	// Workaround for watching TPR resource.
+	// Workaround for watching CRD resource.
 	// client-go has encoding issue and we want something more predictable.
 	KubeHttpCli *http.Client
 	MasterHost  string
@@ -126,7 +126,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 			delete(c.jobRVs, clus.Metadata.Name)
 			return nil
 		}
-		return fmt.Errorf("ignore failed cluster (%s). Please delete its TPR", clus.Metadata.Name)
+		return fmt.Errorf("ignore failed cluster (%s). Please delete its CRD", clus.Metadata.Name)
 	}
 
 	// TODO: add validation to spec update.
@@ -134,7 +134,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 	//
 	switch event.Type {
 	case kwatch.Added:
-		// Event indicates that a new instance of the Cluster TPR was created.
+		// Event indicates that a new instance of the Cluster CRD was created.
 		// So we create a Cluster object to control this resource.
 		stopC := make(chan struct{})
 		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs, &c.config)
@@ -178,7 +178,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 		clus := jobList.Items[i]
 
 		if clus.Status.IsFailed() {
-			log.Infof("ignore failed TfJob (%s). Please delete its TPR", clus.Metadata.Name)
+			log.Infof("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
 			continue
 		}
 
@@ -211,34 +211,34 @@ func (c *Controller) findAllTfJobs() (string, error) {
 
 func (c *Controller) initResource() (string, error) {
 	watchVersion := "0"
-	err := c.createTPR()
+	err := c.createCRD()
 	if err != nil {
 		if k8sutil.IsKubernetesResourceAlreadyExistError(err) {
-			// TPR has been initialized before. We need to recover existing cluster.
+			// CRD has been initialized before. We need to recover existing cluster.
 			watchVersion, err = c.findAllTfJobs()
 			if err != nil {
 				log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
 				return "", err
 			}
 		} else {
-			log.Errorf("createTPR() returned error: %v", err)
-			return "", fmt.Errorf("fail to create TPR: %v", err)
+			log.Errorf("createCRD() returned error: %v", err)
+			return "", fmt.Errorf("fail to create CRD: %v", err)
 		}
 	}
 	return watchVersion, nil
 }
 
-func (c *Controller) createTPR() error {
+func (c *Controller) createCRD() error {
 	crd := &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: spec.TPRName(),
+			Name: spec.CRDName(),
 		},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group: spec.TPRGroup,
-			Version: spec.TPRVersion,
+			Group: spec.CRDGroup,
+			Version: spec.CRDVersion,
 			 Scope: v1beta1.NamespaceScoped,
 				Names: v1beta1.CustomResourceDefinitionNames{
-					Plural: spec.TPRKindPlural,
+					Plural: spec.CRDKindPlural,
 					// TODO(jlewi): Do we want to set the singular name?
 					// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
 					Kind:   reflect.TypeOf(spec.TfJob{}).Name(),
@@ -253,7 +253,7 @@ func (c *Controller) createTPR() error {
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Get(spec.TPRName(), metav1.GetOptions{})
+		crd, err = c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Get(spec.CRDName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -273,7 +273,7 @@ func (c *Controller) createTPR() error {
 	})
 
 	if err != nil {
-		deleteErr := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(spec.TPRName(), nil)
+		deleteErr := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(spec.CRDName(), nil)
 		if deleteErr != nil {
 			return k8sErrors.NewAggregate([]error{err, deleteErr})
 		}

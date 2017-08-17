@@ -11,19 +11,18 @@ import (
 )
 
 const (
-	TPRKind        = "tf-job"
+	CRDKind        = "tf-job"
 	// TODO(jlewi): Should tfjobs be hyphenated for consistency?
-	TPRKindPlural  = "tfjobs"
-	TPRGroup       = "mlkube.io"
-	TPRVersion     = "v1beta1"
-	TPRDescription = "TensorFlow training job"
+	CRDKindPlural  = "tfjobs"
+	CRDGroup       = "mlkube.io"
+	CRDVersion     = "v1beta1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
 )
 
-func TPRName() string {
-	return fmt.Sprintf("%s.%s", TPRKindPlural, TPRGroup)
+func CRDName() string {
+	return fmt.Sprintf("%s.%s", CRDKindPlural, CRDGroup)
 }
 
 type TfJob struct {

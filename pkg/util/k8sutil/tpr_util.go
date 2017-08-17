@@ -12,6 +12,8 @@
 
 package k8sutil
 
+// TODO(jlewi): We should rename this file to reflect the fact that we are using CRDs and not TPRs.
+
 import (
 	"encoding/json"
 	"fmt"
@@ -39,7 +41,7 @@ type TfJobClient interface {
 	Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error)
 }
 
-// TfJobRestClient uses the Kubernetes rest interface to talk to the TPR.
+// TfJobRestClient uses the Kubernetes rest interface to talk to the CRD.
 type TfJobRestClient struct {
 	restcli *rest.RESTClient
 }
@@ -72,7 +74,7 @@ func (c *TfJobRestClient) Client() *http.Client {
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
 	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
-		host, spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, resourceVersion))
+		host, spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, resourceVersion))
 }
 
 func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
@@ -89,11 +91,11 @@ func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
 }
 
 func listTfJobsURI(ns string) string {
-	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
+	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural)
 }
 
 func (c *TfJobRestClient) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural)
 	b, err := c.restcli.Post().RequestURI(uri).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
@@ -102,7 +104,7 @@ func (c *TfJobRestClient) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, name)
 	b, err := c.restcli.Get().RequestURI(uri).DoRaw()
 	if err != nil {
 		return nil, err
@@ -111,7 +113,7 @@ func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
 }
 
 func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, j.Metadata.Name)
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, j.Metadata.Name)
 	b, err := c.restcli.Put().RequestURI(uri).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
@@ -120,7 +122,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Delete(ns, name string) error {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
+	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, name)
 	_, err := c.restcli.Delete().RequestURI(uri).DoRaw()
 	return err
 }
