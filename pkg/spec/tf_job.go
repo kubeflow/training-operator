@@ -12,6 +12,7 @@ import (
 
 const (
 	TPRKind        = "tf-job"
+	// TODO(jlewi): Should tfjobs be hyphenated for consistency?
 	TPRKindPlural  = "tfjobs"
 	TPRGroup       = "mlkube.io"
 	TPRVersion     = "v1beta1"
@@ -21,10 +22,8 @@ const (
 	AppLabel = "tensorflow-job"
 )
 
-var ()
-
 func TPRName() string {
-	return fmt.Sprintf("%s.%s", TPRKind, TPRGroup)
+	return fmt.Sprintf("%s.%s", TPRKindPlural, TPRGroup)
 }
 
 type TfJob struct {

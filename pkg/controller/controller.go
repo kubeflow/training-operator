@@ -11,17 +11,18 @@ import (
 	"github.com/jlewi/mlkube.io/pkg/trainer"
 	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	// "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/apiextensions/v1beta1"
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwatch "k8s.io/apimachinery/pkg/watch"
-
-	v1beta1extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
@@ -232,19 +233,53 @@ func (c *Controller) createTPR() error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.TPRName(),
 		},
-		Spec: v1beta1.CustomeResourceDefinitionSpec{}
-		Version: spec.TPRVersion,
-		},
-	}
-		Description: spec.TPRDescription,
+		Spec: v1beta1.CustomResourceDefinitionSpec{
+			Group: spec.TPRGroup,
+			Version: spec.TPRVersion,
+			 Scope: v1beta1.NamespaceScoped,
+				Names: v1beta1.CustomResourceDefinitionNames{
+					Plural: spec.TPRKindPlural,
+					// TODO(jlewi): Do we want to set the singular name?
+					// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
+					Kind:   reflect.TypeOf(spec.TfJob{}).Name(),
+				},
+			},
 	}
 
-	_, err := c.ApiCli.ApiextensionsV1beta1().ThirdPartyResources().Create(tpr)
-	if err != nil {
+	_, err := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 
-	return c.TfJobClient.WaitTPRReady(3*time.Second, 30*time.Second, c.Namespace)
+	// wait for CRD being established
+	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
+		crd, err = c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Get(spec.TPRName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, cond := range crd.Status.Conditions {
+			switch cond.Type {
+			case v1beta1.Established:
+				if cond.Status == v1beta1.ConditionTrue {
+					return true, err
+				}
+			case v1beta1.NamesAccepted:
+				if cond.Status == v1beta1.ConditionFalse {
+					log.Errorf("Name conflict: %v\n", cond.Reason)
+				}
+			}
+		}
+		return false, err
+	})
+
+	if err != nil {
+		deleteErr := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(spec.TPRName(), nil)
+		if deleteErr != nil {
+			return k8sErrors.NewAggregate([]error{err, deleteErr})
+		}
+		return err
+	}
+	return nil
 }
 
 // watch creates a go routine, and watches the TF cluster kind resources from

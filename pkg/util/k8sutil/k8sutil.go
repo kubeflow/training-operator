@@ -6,6 +6,7 @@ import (
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -13,6 +14,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // for gcp auth
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"github.com/prometheus/common/log"
 )
 
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
@@ -24,9 +26,17 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 func MustNewKubeClient() kubernetes.Interface {
 	cfg, err := InClusterConfig()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return kubernetes.NewForConfigOrDie(cfg)
+}
+
+func MustNewApiExtensionsClient() apiextensionsclient.Interface {
+	cfg, err := InClusterConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return apiextensionsclient.NewForConfigOrDie(cfg)
 }
 
 // TODO(jlewi): We should rename InClusterConfig to reflect the fact that we can obtain the config from the Kube

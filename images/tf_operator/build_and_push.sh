@@ -6,6 +6,8 @@ ROOT_DIR=${SRC_DIR}/../../
 
 . ${ROOT_DIR}/config.sh
 
+# TODO(jlewi): Should we adopt a convention of using the
+# sha of the git commit as the tag and dirty if it isn't clean?
 IMAGE=${REGISTRY}/tf_operator:latest
 
 DIR=`mktemp -d`

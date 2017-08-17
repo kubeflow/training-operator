@@ -158,9 +158,10 @@ func run(stop <-chan struct{}) {
 
 	// TODO(jlewi): Should we start chaos?
 	// startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
+	apiCli := k8sutil.MustNewApiExtensionsClient()
 
 	for {
-		c := controller.New(kubeCli, tfJobClient, namespace, controllerConfig)
+		c := controller.New(kubeCli, apiCli, tfJobClient, namespace, controllerConfig)
 		err := c.Run()
 		switch err {
 		case controller.ErrVersionOutdated:

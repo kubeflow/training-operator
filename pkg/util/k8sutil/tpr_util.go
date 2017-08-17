@@ -16,14 +16,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util/retryutil"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
@@ -42,9 +37,6 @@ type TfJobClient interface {
 
 	// Watch TfJobs.
 	Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error)
-
-	// WaitTPRReady blocks until the TfJob TPR is ready.
-	WaitTPRReady(interval, timeout time.Duration, ns string) error
 }
 
 // TfJobRestClient uses the Kubernetes rest interface to talk to the TPR.
@@ -57,10 +49,7 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.GroupVersion = &schema.GroupVersion{
-		Group:   spec.TPRGroup,
-		Version: spec.TPRVersion,
-	}
+	config.GroupVersion = &spec.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
@@ -97,21 +86,6 @@ func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
 		return nil, err
 	}
 	return jobs, nil
-}
-
-// WaitTPRReady blocks until the TPR is ready.
-// Readiness is determined based on when we can list the resources.
-func (c *TfJobRestClient) WaitTPRReady(interval, timeout time.Duration, ns string) error {
-	return retryutil.Retry(interval, int(timeout/interval), func() (bool, error) {
-		_, err := c.restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
-		if err != nil {
-			if apierrors.IsNotFound(err) { // not set up yet. wait more.
-				return false, nil
-			}
-			return false, err
-		}
-		return true, nil
-	})
 }
 
 func listTfJobsURI(ns string) string {
