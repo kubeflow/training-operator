@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	CRDKind        = "tf-job"
-	// TODO(jlewi): Should tfjobs be hyphenated for consistency?
 	CRDKindPlural  = "tfjobs"
 	CRDGroup       = "mlkube.io"
 	CRDVersion     = "v1beta1"
