@@ -331,7 +331,8 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) error {
 		//	return errCreatedCluster
 	case spec.TfJobPhaseRunning:
 		shouldCreateCluster = false
-
+	case spec.TfJobPhaseFailed:
+		shouldCreateCluster = false
 	default:
 		return fmt.Errorf("unexpected TfJob phase: %s", j.status.Phase)
 	}

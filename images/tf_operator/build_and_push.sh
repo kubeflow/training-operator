@@ -8,7 +8,15 @@ ROOT_DIR=${SRC_DIR}/../../
 
 # TODO(jlewi): Should we adopt a convention of using the
 # sha of the git commit as the tag and dirty if it isn't clean?
-IMAGE=${REGISTRY}/tf_operator:latest
+GITHASH=$(git rev-parse --short HEAD)
+CHANGES=$(git diff-index --quiet HEAD -- || echo "untracked")
+if [ -n "$CHANGES" ]; then
+  # Get the hash of the diff.
+  DIFFHASH=$(git diff  | sha256sum)
+  DIFFHASH=${DIFFHASH:0:7}
+  GITHASH=${GITHASH}-dirty-${DIFFHASH}
+fi
+IMAGE=${REGISTRY}/tf_operator:${GITHASH}
 
 DIR=`mktemp -d`
 echo Use ${DIR} as context

@@ -23,6 +23,7 @@ import (
 	kwatch "k8s.io/apimachinery/pkg/watch"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 var (
@@ -343,8 +344,8 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 					log.Fatalf("unexpected status response from API server: %v", st.Message)
 				}
 
-				log.Infof("event: %v %v", ev.Type, ev.Object.Spec)
-				log.Infof("TfJob event: %v %v", ev.Type, ev.Object.Spec)
+				log.Infof("event: %v %v", ev.Type, util.Pformat((ev.Object.Spec)))
+				log.Infof("TfJob event: %v %v", ev.Type, util.Pformat(ev.Object.Spec))
 
 				watchVersion = ev.Object.Metadata.ResourceVersion
 				eventCh <- ev

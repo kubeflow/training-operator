@@ -10,9 +10,10 @@ metadata:
 spec:
   containers:
     - name: basic-test
-      image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
+      image: {{ .Values.image }}
       command:
         - /opt/mlkube/test/e2e
         - -alsologtostderr
+        - --image={{ .Values.image }}
         - -v=1
   restartPolicy: Never

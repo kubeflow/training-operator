@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	image = flag.String("image", "gcr.io/tf-on-k8s-dogfood/tf_sample:latest", "The Docker image to use with the TfJob.")
+	image = flag.String("image", "", "The Docker image to use with the TfJob.")
 )
 
 func run() error {
@@ -110,6 +110,7 @@ func run() error {
 	_, err = tfJobClient.Create(Namespace, original)
 
 	if err != nil {
+		log.Errorf("Creating the job failed; %v", err)
 		return err
 	}
 
