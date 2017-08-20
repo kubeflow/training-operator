@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	log "github.com/golang/glog"
 )
 
 // TFJobClient defines an interface for working with TfJob CRDs.
@@ -95,17 +97,19 @@ func listTfJobsURI(ns string) string {
 }
 
 func (c *TfJobRestClient) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural)
-	b, err := c.restcli.Post().RequestURI(uri).Body(j).DoRaw()
+	// Set the TypeMeta or we will get a BadRequest
+	j.TypeMeta.APIVersion = fmt.Sprintf("%v/%v", spec.CRDGroup, spec.CRDVersion)
+	j.TypeMeta.Kind = spec.CRDKind
+	b, err := c.restcli.Post().Resource(spec.CRDKindPlural).Namespace(ns).Body(j).DoRaw()
 	if err != nil {
+		log.Errorf("Creating the TfJob:\n%v\nError:\n%v", util.Pformat(j), util.Pformat(err))
 		return nil, err
 	}
 	return readOutTfJob(b)
 }
 
 func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, name)
-	b, err := c.restcli.Get().RequestURI(uri).DoRaw()
+	b, err := c.restcli.Get().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +117,10 @@ func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
 }
 
 func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, j.Metadata.Name)
-	b, err := c.restcli.Put().RequestURI(uri).Body(j).DoRaw()
+	// Set the TypeMeta or we will get a BadRequest
+	j.TypeMeta.APIVersion = fmt.Sprintf("%v/%v", spec.CRDGroup, spec.CRDVersion)
+	j.TypeMeta.Kind = spec.CRDKind
+	b, err := c.restcli.Put().Resource(spec.CRDKindPlural).Namespace(ns).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +128,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Delete(ns, name string) error {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, name)
-	_, err := c.restcli.Delete().RequestURI(uri).DoRaw()
+	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).DoRaw()
 	return err
 }
 

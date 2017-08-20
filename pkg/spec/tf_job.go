@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	CRDKind  = "TfJob"
 	CRDKindPlural  = "tfjobs"
 	CRDGroup       = "mlkube.io"
 	CRDVersion     = "v1beta1"
