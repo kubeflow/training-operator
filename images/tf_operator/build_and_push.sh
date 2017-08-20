@@ -6,8 +6,7 @@ ROOT_DIR=${SRC_DIR}/../../
 
 . ${ROOT_DIR}/config.sh
 
-# TODO(jlewi): Should we adopt a convention of using the
-# sha of the git commit as the tag and dirty if it isn't clean?
+# The image tag is based on the githash.
 GITHASH=$(git rev-parse --short HEAD)
 CHANGES=$(git diff-index --quiet HEAD -- || echo "untracked")
 if [ -n "$CHANGES" ]; then

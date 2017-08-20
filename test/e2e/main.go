@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	image = flag.String("image", "gcr.io/tf-on-k8s-dogfood/tf_sample:latest", "The Docker image to use with the TfJob.")
+	image = flag.String("image", "gcr.io/tf-on-k8s-dogfood/tf_sample:1188eb8-dirty-80a23ae", "The Docker image containing the TF program to run.")
 )
 
 func run() error {

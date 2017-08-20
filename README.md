@@ -336,5 +336,5 @@ You may need to remove the vendor directory of dependencies that also vendor dep
 with the versions vendored by mlkube; e.g.
 
 ```
-rm -rf  vendor/k8s.io/apiextensions-apiserver/vendorr
+rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
 ```
