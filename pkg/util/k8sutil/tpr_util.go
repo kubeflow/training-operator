@@ -12,24 +12,23 @@
 
 package k8sutil
 
+// TODO(jlewi): We should rename this file to reflect the fact that we are using CRDs and not TPRs.
+
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util/retryutil"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	log "github.com/golang/glog"
 )
 
-// TFJobClient defines an interface for working with TfJob TPRs.
+// TFJobClient defines an interface for working with TfJob CRDs.
 type TfJobClient interface {
 	// Get returns a TfJob
 	Get(ns string, name string) (*spec.TfJob, error)
@@ -42,12 +41,9 @@ type TfJobClient interface {
 
 	// Watch TfJobs.
 	Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error)
-
-	// WaitTPRReady blocks until the TfJob TPR is ready.
-	WaitTPRReady(interval, timeout time.Duration, ns string) error
 }
 
-// TfJobRestClient uses the Kubernetes rest interface to talk to the TPR.
+// TfJobRestClient uses the Kubernetes rest interface to talk to the CRD.
 type TfJobRestClient struct {
 	restcli *rest.RESTClient
 }
@@ -57,10 +53,7 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.GroupVersion = &schema.GroupVersion{
-		Group:   spec.TPRGroup,
-		Version: spec.TPRVersion,
-	}
+	config.GroupVersion = &spec.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
@@ -83,7 +76,7 @@ func (c *TfJobRestClient) Client() *http.Client {
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
 	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
-		host, spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, resourceVersion))
+		host, spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, resourceVersion))
 }
 
 func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
@@ -99,37 +92,24 @@ func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
 	return jobs, nil
 }
 
-// WaitTPRReady blocks until the TPR is ready.
-// Readiness is determined based on when we can list the resources.
-func (c *TfJobRestClient) WaitTPRReady(interval, timeout time.Duration, ns string) error {
-	return retryutil.Retry(interval, int(timeout/interval), func() (bool, error) {
-		_, err := c.restcli.Get().RequestURI(listTfJobsURI(ns)).DoRaw()
-		if err != nil {
-			if apierrors.IsNotFound(err) { // not set up yet. wait more.
-				return false, nil
-			}
-			return false, err
-		}
-		return true, nil
-	})
-}
-
 func listTfJobsURI(ns string) string {
-	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
+	return fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s", spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural)
 }
 
 func (c *TfJobRestClient) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural)
-	b, err := c.restcli.Post().RequestURI(uri).Body(j).DoRaw()
+	// Set the TypeMeta or we will get a BadRequest
+	j.TypeMeta.APIVersion = fmt.Sprintf("%v/%v", spec.CRDGroup, spec.CRDVersion)
+	j.TypeMeta.Kind = spec.CRDKind
+	b, err := c.restcli.Post().Resource(spec.CRDKindPlural).Namespace(ns).Body(j).DoRaw()
 	if err != nil {
+		log.Errorf("Creating the TfJob:\n%v\nError:\n%v", util.Pformat(j), util.Pformat(err))
 		return nil, err
 	}
 	return readOutTfJob(b)
 }
 
 func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
-	b, err := c.restcli.Get().RequestURI(uri).DoRaw()
+	b, err := c.restcli.Get().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +117,10 @@ func (c *TfJobRestClient) Get(ns, name string) (*spec.TfJob, error) {
 }
 
 func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, j.Metadata.Name)
-	b, err := c.restcli.Put().RequestURI(uri).Body(j).DoRaw()
+	// Set the TypeMeta or we will get a BadRequest
+	j.TypeMeta.APIVersion = fmt.Sprintf("%v/%v", spec.CRDGroup, spec.CRDVersion)
+	j.TypeMeta.Kind = spec.CRDKind
+	b, err := c.restcli.Put().Resource(spec.CRDKindPlural).Namespace(ns).Name(j.Metadata.Name).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +128,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Delete(ns, name string) error {
-	uri := fmt.Sprintf("/apis/%s/%s/namespaces/%s/%s/%s", spec.TPRGroup, spec.TPRVersion, ns, spec.TPRKindPlural, name)
-	_, err := c.restcli.Delete().RequestURI(uri).DoRaw()
+	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).DoRaw()
 	return err
 }
 

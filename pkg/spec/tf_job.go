@@ -11,20 +11,17 @@ import (
 )
 
 const (
-	TPRKind        = "tf-job"
-	TPRKindPlural  = "tfjobs"
-	TPRGroup       = "mlkube.io"
-	TPRVersion     = "v1beta1"
-	TPRDescription = "TensorFlow training job"
+	CRDKind  = "TfJob"
+	CRDKindPlural  = "tfjobs"
+	CRDGroup       = "mlkube.io"
+	CRDVersion     = "v1beta1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
 )
 
-var ()
-
-func TPRName() string {
-	return fmt.Sprintf("%s.%s", TPRKind, TPRGroup)
+func CRDName() string {
+	return fmt.Sprintf("%s.%s", CRDKindPlural, CRDGroup)
 }
 
 type TfJob struct {

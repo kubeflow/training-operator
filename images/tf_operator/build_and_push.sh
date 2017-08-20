@@ -6,7 +6,16 @@ ROOT_DIR=${SRC_DIR}/../../
 
 . ${ROOT_DIR}/config.sh
 
-IMAGE=${REGISTRY}/tf_operator:latest
+# The image tag is based on the githash.
+GITHASH=$(git rev-parse --short HEAD)
+CHANGES=$(git diff-index --quiet HEAD -- || echo "untracked")
+if [ -n "$CHANGES" ]; then
+  # Get the hash of the diff.
+  DIFFHASH=$(git diff  | sha256sum)
+  DIFFHASH=${DIFFHASH:0:7}
+  GITHASH=${GITHASH}-dirty-${DIFFHASH}
+fi
+IMAGE=${REGISTRY}/tf_operator:${GITHASH}
 
 DIR=`mktemp -d`
 echo Use ${DIR} as context

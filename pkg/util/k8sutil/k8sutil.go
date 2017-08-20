@@ -6,7 +6,9 @@ import (
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -24,9 +26,17 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 func MustNewKubeClient() kubernetes.Interface {
 	cfg, err := InClusterConfig()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return kubernetes.NewForConfigOrDie(cfg)
+}
+
+func MustNewApiExtensionsClient() apiextensionsclient.Interface {
+	cfg, err := InClusterConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return apiextensionsclient.NewForConfigOrDie(cfg)
 }
 
 // TODO(jlewi): We should rename InClusterConfig to reflect the fact that we can obtain the config from the Kube

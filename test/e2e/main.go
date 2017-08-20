@@ -7,6 +7,7 @@
 // TODO(jlewi): Do we need to make the test output conform to the TAP(https://testanything.org/)
 // protocol so we can fit into the K8s dashboard
 //
+// TODO(https://github.com/jlewi/mlkube.io/issues/21) The E2E test should actually run distributed TensorFlow.
 package main
 
 import (
@@ -31,7 +32,7 @@ const (
 )
 
 var (
-	image = flag.String("image", "gcr.io/tf-on-k8s-dogfood/tf_sample:latest", "The Docker image to use with the TfJob.")
+	image = flag.String("image", "", "The Docker image containing the TF program to run.")
 )
 
 func run() error {
@@ -110,6 +111,7 @@ func run() error {
 	_, err = tfJobClient.Create(Namespace, original)
 
 	if err != nil {
+		log.Errorf("Creating the job failed; %v", err)
 		return err
 	}
 
@@ -124,7 +126,7 @@ func run() error {
 		if tfJob.Status.State == spec.StateSucceeded || tfJob.Status.State == spec.StateFailed {
 			break
 		}
-		log.Infof("Waiting for job %v to finish", name)
+		log.Infof("Waiting for job %v to finish:\n%v", name, util.Pformat(tfJob))
 		time.Sleep(5 * time.Second)
 	}
 
@@ -234,6 +236,9 @@ func run() error {
 func main() {
 	flag.Parse()
 
+	if *image == "" {
+		log.Fatalf("--image must be provided.")
+	}
 	err := run()
 
 	// Generate TAP (https://testanything.org/) output

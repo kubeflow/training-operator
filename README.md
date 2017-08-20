@@ -1,6 +1,10 @@
-# K8s Third Party Resource and Operator For TensorFlow jobs
+# K8s Custom Resource and Operator For TensorFlow jobs
 
 [![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
+
+## Requirements
+
+Custom Resources require Kubernetes 1.7
 
 ## Motivation
 
@@ -17,7 +21,7 @@ K8s makes it easy to configure and deploy each set of TF replicas. Various tools
  needed for managing TF jobs.
  
  To solve this we define a 
- [K8S Third Party Resource](https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-third-party-resource/)
+ [K8S Custom Resource](https://kubernetes.io/docs/concepts/api-extension/custom-resources/)
  and [Operator](https://coreos.com/blog/introducing-operators.html) to manage a TensorFlow
  job on K8s.
 
@@ -317,8 +321,20 @@ export MY_POD_NAMESPACE=default
 export MY_POD_NAME=my-pod
 ```
 
+    * MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
+      set the corresponding namespace for the resource.
+
 TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 
 ## Go version
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
+
+## Vendoring
+
+You may need to remove the vendor directory of dependencies that also vendor dependencies as these may produce conflicts
+with the versions vendored by mlkube; e.g.
+
+```
+rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
+```

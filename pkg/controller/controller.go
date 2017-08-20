@@ -11,13 +11,19 @@ import (
 	"github.com/jlewi/mlkube.io/pkg/trainer"
 	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwatch "k8s.io/apimachinery/pkg/watch"
-	v1beta1extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 var (
@@ -25,7 +31,7 @@ var (
 
 	initRetryWaitTime = 30 * time.Second
 
-	// Workaround for watching TPR resource.
+	// Workaround for watching CRD resource.
 	// client-go has encoding issue and we want something more predictable.
 	KubeHttpCli *http.Client
 	MasterHost  string
@@ -39,6 +45,7 @@ type Event struct {
 type Controller struct {
 	Namespace   string
 	KubeCli     kubernetes.Interface
+	ApiCli      apiextensionsclient.Interface
 	TfJobClient k8sutil.TfJobClient
 
 	config spec.ControllerConfig
@@ -52,13 +59,14 @@ type Controller struct {
 	waitJobs sync.WaitGroup
 }
 
-func New(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
+func New(kubeCli kubernetes.Interface, apiCli apiextensionsclient.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
 	if tfJobClient == nil {
 		panic("tfJobClient can't be nil")
 	}
 	return &Controller{
 		Namespace:   ns,
 		KubeCli:     kubeCli,
+		ApiCli:  		apiCli,
 		TfJobClient: tfJobClient,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:      make(map[string]*trainer.TrainingJob),
@@ -119,7 +127,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 			delete(c.jobRVs, clus.Metadata.Name)
 			return nil
 		}
-		return fmt.Errorf("ignore failed cluster (%s). Please delete its TPR", clus.Metadata.Name)
+		return fmt.Errorf("ignore failed cluster (%s). Please delete its CRD", clus.Metadata.Name)
 	}
 
 	// TODO: add validation to spec update.
@@ -127,7 +135,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 	//
 	switch event.Type {
 	case kwatch.Added:
-		// Event indicates that a new instance of the Cluster TPR was created.
+		// Event indicates that a new instance of the Cluster CRD was created.
 		// So we create a Cluster object to control this resource.
 		stopC := make(chan struct{})
 		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs, &c.config)
@@ -171,7 +179,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 		clus := jobList.Items[i]
 
 		if clus.Status.IsFailed() {
-			log.Infof("ignore failed TfJob (%s). Please delete its TPR", clus.Metadata.Name)
+			log.Infof("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
 			continue
 		}
 
@@ -204,39 +212,75 @@ func (c *Controller) findAllTfJobs() (string, error) {
 
 func (c *Controller) initResource() (string, error) {
 	watchVersion := "0"
-	err := c.createTPR()
+	err := c.createCRD()
 	if err != nil {
 		if k8sutil.IsKubernetesResourceAlreadyExistError(err) {
-			// TPR has been initialized before. We need to recover existing cluster.
+			// CRD has been initialized before. We need to recover existing cluster.
 			watchVersion, err = c.findAllTfJobs()
 			if err != nil {
 				log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
 				return "", err
 			}
 		} else {
-			log.Errorf("createTPR() returned error: %v", err)
-			return "", fmt.Errorf("fail to create TPR: %v", err)
+			log.Errorf("createCRD() returned error: %v", err)
+			return "", fmt.Errorf("fail to create CRD: %v", err)
 		}
 	}
 	return watchVersion, nil
 }
 
-func (c *Controller) createTPR() error {
-	tpr := &v1beta1extensions.ThirdPartyResource{
+func (c *Controller) createCRD() error {
+	crd := &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: spec.TPRName(),
+			Name: spec.CRDName(),
 		},
-		Versions: []v1beta1extensions.APIVersion{
-			{Name: spec.TPRVersion},
-		},
-		Description: spec.TPRDescription,
+		Spec: v1beta1.CustomResourceDefinitionSpec{
+			Group: spec.CRDGroup,
+			Version: spec.CRDVersion,
+			 Scope: v1beta1.NamespaceScoped,
+				Names: v1beta1.CustomResourceDefinitionNames{
+					Plural: spec.CRDKindPlural,
+					// TODO(jlewi): Do we want to set the singular name?
+					// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
+					Kind:   reflect.TypeOf(spec.TfJob{}).Name(),
+				},
+			},
 	}
-	_, err := c.KubeCli.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
-	if err != nil {
+
+	_, err := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 
-	return c.TfJobClient.WaitTPRReady(3*time.Second, 30*time.Second, c.Namespace)
+	// wait for CRD being established
+	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
+		crd, err = c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Get(spec.CRDName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, cond := range crd.Status.Conditions {
+			switch cond.Type {
+			case v1beta1.Established:
+				if cond.Status == v1beta1.ConditionTrue {
+					return true, err
+				}
+			case v1beta1.NamesAccepted:
+				if cond.Status == v1beta1.ConditionFalse {
+					log.Errorf("Name conflict: %v\n", cond.Reason)
+				}
+			}
+		}
+		return false, err
+	})
+
+	if err != nil {
+		deleteErr := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(spec.CRDName(), nil)
+		if deleteErr != nil {
+			return k8sErrors.NewAggregate([]error{err, deleteErr})
+		}
+		return err
+	}
+	return nil
 }
 
 // watch creates a go routine, and watches the TF cluster kind resources from
@@ -300,8 +344,8 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 					log.Fatalf("unexpected status response from API server: %v", st.Message)
 				}
 
-				log.Infof("event: %v %v", ev.Type, ev.Object.Spec)
-				log.Infof("TfJob event: %v %v", ev.Type, ev.Object.Spec)
+				log.Infof("event: %v %v", ev.Type, util.Pformat((ev.Object.Spec)))
+				log.Infof("TfJob event: %v %v", ev.Type, util.Pformat(ev.Object.Spec))
 
 				watchVersion = ev.Object.Metadata.ResourceVersion
 				eventCh <- ev
