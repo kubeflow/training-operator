@@ -1,6 +1,10 @@
-# K8s Third Party Resource and Operator For TensorFlow jobs
+# K8s Custom Resource and Operator For TensorFlow jobs
 
 [![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
+
+## Requirements
+
+Custom Resources require Kubernetes 1.7
 
 ## Motivation
 
@@ -17,7 +21,7 @@ K8s makes it easy to configure and deploy each set of TF replicas. Various tools
  needed for managing TF jobs.
  
  To solve this we define a 
- [K8S Third Party Resource](https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-third-party-resource/)
+ [K8S Custom Resource](https://kubernetes.io/docs/concepts/api-extension/custom-resources/)
  and [Operator](https://coreos.com/blog/introducing-operators.html) to manage a TensorFlow
  job on K8s.
 

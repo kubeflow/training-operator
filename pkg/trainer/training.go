@@ -352,7 +352,7 @@ func (j *TrainingJob) triggerCreatePhase() error {
 	j.status.SetPhase(spec.TfJobPhaseCreating)
 
 	if err := j.updateTPRStatus(); err != nil {
-		return fmt.Errorf("cluster create: failed to update cluster phase (%v): %v", spec.TfJobPhaseCreating, err)
+		return fmt.Errorf("cluster create: failed to update TfJob phase (%v): %v", spec.TfJobPhaseCreating, err)
 	}
 	log.Infof("Creating job: %v with Spec (%#v), Status (%#v)", j.job.Metadata.Name, j.job.Spec, j.job.Status)
 

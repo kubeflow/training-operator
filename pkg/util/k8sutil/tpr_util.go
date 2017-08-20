@@ -120,7 +120,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 	// Set the TypeMeta or we will get a BadRequest
 	j.TypeMeta.APIVersion = fmt.Sprintf("%v/%v", spec.CRDGroup, spec.CRDVersion)
 	j.TypeMeta.Kind = spec.CRDKind
-	b, err := c.restcli.Put().Resource(spec.CRDKindPlural).Namespace(ns).Body(j).DoRaw()
+	b, err := c.restcli.Put().Resource(spec.CRDKindPlural).Namespace(ns).Name(j.Metadata.Name).Body(j).DoRaw()
 	if err != nil {
 		return nil, err
 	}
