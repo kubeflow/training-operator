@@ -14,5 +14,6 @@ spec:
       command:
         - /opt/mlkube/test/e2e
         - -alsologtostderr
+        - --image={{ .Values.test_image }}
         - -v=1
   restartPolicy: Never
