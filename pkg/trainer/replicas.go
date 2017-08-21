@@ -10,10 +10,12 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
+	// TOOO(jlewi): Rename to apiErrors
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"github.com/jlewi/mlkube.io/pkg/util"
 )
@@ -116,7 +118,7 @@ func (s *TFReplicaSet) Create() error {
 			if k8s_errors.IsAlreadyExists(err) {
 				log.Infof("Service %v already exists.", s.jobName(index))
 			} else {
-				return err
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", service.ObjectMeta.Name), err})
 			}
 		}
 
@@ -189,7 +191,7 @@ func (s *TFReplicaSet) Create() error {
 				log.Infof("%v already exists.", s.jobName(index))
 
 			} else {
-				return err
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", newJ.ObjectMeta.Name), err})
 			}
 		}
 	}
@@ -245,7 +247,6 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 	log.V(1).Infof("Get replicaStatus from PodList: %v", util.Pformat(l))
 	var latest *v1.Pod
 	for _, i := range l.Items {
-		log.Infof("latest: %v", latest)
 		if latest == nil {
 			latest = &i
 			continue
@@ -259,48 +260,44 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 		return spec.ReplicaStateRunning
 	}
 
-	found := false
-	var terminated v1.ContainerState
+	var tfState v1.ContainerState
 
 	for _, i := range latest.Status.ContainerStatuses {
 		if i.Name != string(name) {
 			continue
 		}
-		for _, s := range []v1.ContainerState{i.State, i.LastTerminationState} {
-			if s.Terminated == nil {
-				continue
-			}
 
-			if !found {
-				found = true
-				terminated = s
-				continue
-			}
+		// We need to decide whether to use the current state or the previous termination state.
+		tfState = i.State
 
-			if terminated.Terminated.StartedAt.Before(s.Terminated.StartedAt) {
-				terminated = s
-			}
+		// If the container previously terminated we will look at the termination to decide whether it is a retryable
+		// or permanenent error.
+		if i.LastTerminationState.Terminated != nil {
+			tfState = i.LastTerminationState
 		}
 	}
 
-	if !found {
-		log.Warningf("No container named: %v found for pod; assuming POD is running", name)
+
+	if tfState.Running != nil || tfState.Waiting != nil {
 		return spec.ReplicaStateRunning
 	}
 
-	log.V(1).Infof("Terminated container: %v", terminated)
+	if tfState.Terminated != nil {
+		if tfState.Terminated.ExitCode == 0 {
+			return spec.ReplicaStateSucceeded
+		}
 
-	if terminated.Terminated.ExitCode == 0 {
-		return spec.ReplicaStateSucceeded
+
+		if isRetryableTerminationState(tfState.Terminated) {
+			// Since its a retryable error just return RUNNING.
+			// We can just let Kubernetes restart the container to retry.
+			return spec.ReplicaStateRunning
+		}
+
+		return spec.ReplicaStateFailed
 	}
 
-	if isRetryableTerminationState(terminated.Terminated) {
-		// Since its a retryable error just return RUNNING.
-		// We can just let Kubernetes restart the container to retry.
-		return spec.ReplicaStateRunning
-	}
-
-	return spec.ReplicaStateFailed
+	return spec.ReplicaStateUnknown
 }
 
 // Status returns the status of the replica set.
@@ -344,7 +341,6 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 			continue
 		}
 
-		log.V(1).Infof("Using filter %v", selector)
 		// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
 		l, err := s.ClientSet.CoreV1().Pods(NAMESPACE).List(meta_v1.ListOptions{
 			// TODO(jlewi): Why isn't the label selector working?

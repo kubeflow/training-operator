@@ -105,12 +105,12 @@ func (c *Controller) Run() error {
 	eventCh, errCh := c.watch(watchVersion)
 
 	go func() {
-		pt := newPanicTimer(time.Minute, "unexpected long blocking (> 1 Minute) when handling cluster event")
+		pt := newPanicTimer(time.Minute, "unexpected long blocking (> 1 Minute) when handling TfJob event")
 
 		for ev := range eventCh {
 			pt.start()
-			if err := c.handleClusterEvent(ev); err != nil {
-				log.Warningf("fail to handle event: %v", err)
+			if err := c.handleTfJobEvent(ev); err != nil {
+				log.Warningf("fail to handle event: %v, error %v", util.Pformat(ev), err)
 			}
 			pt.stop()
 		}
@@ -118,7 +118,7 @@ func (c *Controller) Run() error {
 	return <-errCh
 }
 
-func (c *Controller) handleClusterEvent(event *Event) error {
+func (c *Controller) handleTfJobEvent(event *Event) error {
 	clus := event.Object
 
 	if clus.Status.IsFailed() {
@@ -127,7 +127,7 @@ func (c *Controller) handleClusterEvent(event *Event) error {
 			delete(c.jobRVs, clus.Metadata.Name)
 			return nil
 		}
-		return fmt.Errorf("ignore failed cluster (%s). Please delete its CRD", clus.Metadata.Name)
+		return fmt.Errorf("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
 	}
 
 	// TODO: add validation to spec update.

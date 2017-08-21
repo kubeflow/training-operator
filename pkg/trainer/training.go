@@ -92,19 +92,32 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 		gc:          garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
 	}
 
-	for _, t := range j.job.Spec.ReplicaSpecs {
-		r, err := NewTFReplicaSet(j.KubeCli, *t, j)
-		if err != nil {
-			return nil, err
+	err := func () error {
+		for _, t := range j.job.Spec.ReplicaSpecs {
+			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+			if err != nil {
+				return err
+			}
+			j.Replicas = append(j.Replicas, r)
 		}
-		j.Replicas = append(j.Replicas, r)
-	}
 
-	tb, err := initTensorBoard(kubeCli, job, j)
+		tb, err := initTensorBoard(kubeCli, job, j)
+		if err != nil {
+			return err
+		}
+		j.TensorBoard = tb
+		return nil
+	} ()
+
 	if err != nil {
+		j.status.SetReason(fmt.Sprintf("Couldn't initialize job. Error: %v", util.Pformat(err.Error())))
+		j.status.SetPhase(spec.TfJobPhaseFailed)
+		j.status.SetState(spec.StateFailed)
+		if err := j.updateTPRStatus(); err != nil {
+			log.Errorf("failed to update cluster phase (%v): %v", spec.TfJobPhaseFailed, err)
+		}
 		return nil, err
 	}
-	j.TensorBoard = tb
 
 	return j, nil
 }
@@ -119,7 +132,7 @@ func initTensorBoard(clientSet kubernetes.Interface, js *spec.TfJob, tj *Trainin
 func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup, config *spec.ControllerConfig) (*TrainingJob, error) {
 	j, err := initJob(kubeCli, tfJobClient, job, stopC, wg)
 	if err != nil {
-		return j, err
+		return nil, err
 	}
 	// Increment the wait group which the controller uses to monitor the job processing.
 	wg.Add(1)
@@ -161,8 +174,6 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 
 // createResources creates all the replicas and TensorBoard if requested
 func (j *TrainingJob) createResources() error {
-	log.Infof("TrainingJob.Create() for RuntimeId: %v", j.job.Spec.RuntimeId)
-	log.Infof("replicas: %v", len(j.Replicas))
 	for _, r := range j.Replicas {
 		if err := r.Create(); err != nil {
 			return err
@@ -180,7 +191,6 @@ func (j *TrainingJob) createResources() error {
 
 // deleteResources deletes the replicas and TensorBoard it it was created
 func (j *TrainingJob) deleteResources() error {
-	log.Infof("TrainingJob.Delete() for RuntimeId: %v", j.job.Spec.RuntimeId)
 	for _, r := range j.Replicas {
 		if err := r.Delete(); err != nil {
 			return err
@@ -423,7 +433,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 		if clusterFailed {
 			j.reportFailedStatus()
 
-			log.Infof("deleting the failed cluster")
+			log.Infof("Deleting the failed TfJob")
 			j.delete()
 		}
 
@@ -476,7 +486,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			if j.job.Status.Phase == spec.TfJobPhaseRunning {
 				// We call Create to make sure all the resources exist and are running.
 				if cErr := j.createResources(); cErr != nil {
-					log.Errorf("trainingJobcCreateReplicas() error; %v", cErr)
+					log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
 				}
 
 				state, replicaStatuses, err := j.GetStatus()
@@ -495,18 +505,18 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 					j.status.SetPhase(spec.TfJobPhaseDone)
 					j.status.SetState(spec.StateSucceeded)
 				} else {
-					log.Infof("Job %v status=%v", j.job.Metadata.Name, util.Pformat(j.status))
+					log.V(1).Infof("Job %v status=%v", j.job.Metadata.Name, util.Pformat(j.status))
 				}
 			}
 
 			// If the phase changed we should update the TPR.
 			if err := j.updateTPRStatus(); err != nil {
-				log.Warningf("failed to update TPR status: %v", err)
+				log.Warningf("Job %v, failed to update TPR status error: %v", j.job.Metadata.Name, err)
 			}
 
 			if j.job.Status.Phase == spec.TfJobPhaseCleanUp {
 				if cErr := j.deleteResources(); cErr != nil {
-					log.Errorf("trainingJob.Delete() error; %v", cErr)
+					log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.Metadata.Name, cErr)
 				}
 				// j.status.SetPhase(spec.TfJobPhaseDone)
 				// Return from run because we want to stop reconciling the object.
@@ -514,7 +524,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			}
 
 			if rerr != nil {
-				log.Errorf("failed to reconcile: %v", rerr)
+				log.Errorf("failed to reconcile job %v, error: %v", j.job.Metadata.Name, rerr)
 				break
 			}
 
@@ -522,7 +532,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			// doesn't match c.Cluster.status. So you can chang c.Status in order to propogate
 			// changes to the TPR status.
 			if err := j.updateTPRStatus(); err != nil {
-				log.Warningf("failed to update TPR status: %v", err)
+				log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
 			}
 		}
 
