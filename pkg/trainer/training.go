@@ -92,39 +92,12 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 		gc:          garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
 	}
 
-	err := func () error {
-		for _, t := range j.job.Spec.ReplicaSpecs {
-			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
-			if err != nil {
-				return err
-			}
-			j.Replicas = append(j.Replicas, r)
-		}
-
-		tb, err := initTensorBoard(kubeCli, job, j)
-		if err != nil {
-			return err
-		}
-		j.TensorBoard = tb
-		return nil
-	} ()
-
-	if err != nil {
-		j.status.SetReason(fmt.Sprintf("Couldn't initialize job. Error: %v", util.Pformat(err.Error())))
-		j.status.SetPhase(spec.TfJobPhaseFailed)
-		j.status.SetState(spec.StateFailed)
-		if err := j.updateTPRStatus(); err != nil {
-			log.Errorf("failed to update cluster phase (%v): %v", spec.TfJobPhaseFailed, err)
-		}
-		return nil, err
-	}
-
 	return j, nil
 }
 
-func initTensorBoard(clientSet kubernetes.Interface, js *spec.TfJob, tj *TrainingJob) (*TBReplicaSet, error) {
-	if js.Spec.TensorBoard != nil {
-		return NewTBReplicaSet(clientSet, *js.Spec.TensorBoard, tj)
+func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplicaSet, error) {
+	if tj.job.Spec.TensorBoard != nil {
+		return NewTBReplicaSet(clientSet, *tj.job.Spec.TensorBoard, tj)
 	}
 	return nil, nil
 }
@@ -320,10 +293,29 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) error {
 		return fmt.Errorf("job.Spec can't be nil")
 	}
 
-	err := j.job.Spec.Validate()
+	err := j.job.Spec.SetDefaults()
+	if err != nil {
+		return fmt.Errorf("there was a problem setting defaults for job spec: %v", err)
+	}
+
+	err = j.job.Spec.Validate()
 	if err != nil {
 		return fmt.Errorf("invalid job spec: %v", err)
 	}
+
+	for _, t := range j.job.Spec.ReplicaSpecs {
+		r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+		if err != nil {
+			return err
+		}
+		j.Replicas = append(j.Replicas, r)
+	}
+
+	tb, err := initTensorBoard(j.KubeCli, j)
+	if err != nil {
+		return err
+	}
+	j.TensorBoard = tb
 
 	if err := j.job.Spec.ConfigureAccelerators(config.Accelerators); err != nil {
 		return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)

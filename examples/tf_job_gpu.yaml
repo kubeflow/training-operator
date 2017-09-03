@@ -4,9 +4,7 @@ metadata:
   name: "tf-smoke-gpu"
 spec:
   replicaSpecs:
-    - replicas: 1
-      tfPort: 2222
-      tfReplicaType: MASTER
+    - tfReplicaType: MASTER
       template:
         spec:
           containers:
