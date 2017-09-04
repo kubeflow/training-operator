@@ -15,6 +15,8 @@ import re
 import tensorflow as tf
 import time
 
+# TODO(jlewi): This is a bit of a hack to test custom logger
+import sitecustomize
 
 def parse_args():
   """Parse the command line arguments."""
@@ -41,7 +43,6 @@ def run(server, cluster_spec):
   Raises:
     RuntimeError: If the expected log entries aren't found.
   """
-
   # construct the graph and create a saver object
   with tf.Graph().as_default():
     # The initial value should be such that type is correctly inferred as

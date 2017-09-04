@@ -1,3 +1,5 @@
+# TODO(jlewi): Should we produce this from a jinja template so we can easily rewrite the image when we build a new
+# image?
 apiVersion: "mlkube.io/v1beta1"
 kind: "TfJob"
 metadata:
@@ -10,7 +12,7 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:81f3e2e-dirty-9519887
               name: tensorflow
           restartPolicy: OnFailure
     - replicas: 1
@@ -19,6 +21,6 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:81f3e2e-dirty-9519887
               name: tensorflow
           restartPolicy: OnFailure
