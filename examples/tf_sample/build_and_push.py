@@ -68,7 +68,7 @@ if __name__ == "__main__":
     sources = [
         # TODO(jlewi): Should we build a pip package?
         "examples/tf_sample/tf_sample/tf_smoke.py",
-        "py/sitecustomize.py"
+        "py"
     ]
 
     for s in sources:
@@ -76,8 +76,13 @@ if __name__ == "__main__":
         dest_path = os.path.join(context_dir, os.path.basename(s))
         if os.path.exists(dest_path):
             os.unlink(dest_path)
-        shutil.copyfile(src_path, dest_path)
+        if os.path.isdir(src_path):
+            shutil.copytree(src_path, dest_path)
+        else:
+            shutil.copyfile(src_path, dest_path)
 
+    # Build the mlkube package
+    subprocess.check_call(["python", "setup.py", "sdist"], cwd=os.path.join(context_dir, "py"))
     image = args.registry + "/tf_sample"
     if args.mode == "gpu":
         image = args.registry + "/tf_sample_gpu"

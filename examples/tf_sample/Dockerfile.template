@@ -1,6 +1,7 @@
 FROM gcr.io/tensorflow/tensorflow:1.3.0-rc2
 RUN mkdir -p /opt/mlkube
-RUN pip install python-json-logger wrapt
+COPY py/dist/mlkube-0.1.1.tar.gz /tmp
+RUN pip install /tmp/mlkube-0.1.1.tar.gz && \
+    rm /tmp/mlkube-0.1.1.tar.gz
 COPY tf_smoke.py /opt/mlkube/
-COPY sitecustomize.py /opt/mlkube/
 ENTRYPOINT ["python", "/opt/mlkube/tf_smoke.py"]

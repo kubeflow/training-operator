@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Site level customizations.
+"""A module for formatting TfJob logs.
 
 This script is imported by python when any python script is run.
 https://docs.python.org/2/library/site.html.
@@ -129,8 +129,3 @@ def reconfigure_tf_logger(unused_module):
   tf_logger = logging.getLogger('tensorflow')
   while tf_logger.handlers:
     tf_logger.removeHandler(tf_logger.handlers[0])
-
-# Turn on logging
-configure_logger()
-
-

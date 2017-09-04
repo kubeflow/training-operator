@@ -15,8 +15,7 @@ import re
 import tensorflow as tf
 import time
 
-# TODO(jlewi): This is a bit of a hack to test custom logger
-import sitecustomize
+from mlkube import tf_job_logging
 
 def parse_args():
   """Parse the command line arguments."""
@@ -142,5 +141,5 @@ def main():
 
 
 if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+  tf_job_logging.configure_logger()
   main()
