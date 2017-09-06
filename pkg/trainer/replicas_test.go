@@ -63,7 +63,7 @@ func TestTFReplicaSet(t *testing.T) {
 		}
 
 		// Check that a service was created.
-		sList, err := clientSet.CoreV1().Services(NAMESPACE).List(meta_v1.ListOptions{})
+		sList, err := clientSet.CoreV1().Services(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
 		if err != nil {
 			t.Fatalf("List services error; %v", err)
 		}
@@ -84,7 +84,7 @@ func TestTFReplicaSet(t *testing.T) {
 		}
 
 		// Check that a job was created.
-		l, err := clientSet.BatchV1().Jobs(NAMESPACE).List(meta_v1.ListOptions{})
+		l, err := clientSet.BatchV1().Jobs(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
 		if err != nil {
 			t.Fatalf("List jobs error; %v", err)
 		}
