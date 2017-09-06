@@ -12,15 +12,36 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:81f3e2e-dirty-9519887
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:4b05769-dirty-f1d189f
               name: tensorflow
+              command:
+                # Have to run in a shell in order to redirect stdout/stderr
+                - /bin/sh
+                - -c
+                - "/usr/bin/python /opt/mlkube/tf_smoke.py 1>/logs/stdout 2>/logs/stderr"
+              volumeMounts:
+                - mountPath: /logs
+                  name: log-volume
+            - image: gcr.io/tf-on-k8s-dogfood/tf_operator:4b05769-dirty-ff9626b
+              name: logger
+              command:
+                - /opt/mlkube/logger
+                - --stdout=/logs/stdout
+                - --stderr=/logs/stderr
+                - --labels=TfReplicaType=MASTER,TfReplicaIndex=0,TfJob=example-job
+              volumeMounts:
+                - mountPath: /logs
+                  name: log-volume
           restartPolicy: OnFailure
+          volumes:
+            - name: log-volume
+              emptyDir: {}
     - replicas: 1
       tfPort: 2222
       tfReplicaType: WORKER
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:81f3e2e-dirty-9519887
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:4b05769-dirty-f1d189f
               name: tensorflow
           restartPolicy: OnFailure
