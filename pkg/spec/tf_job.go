@@ -2,12 +2,14 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -18,6 +20,10 @@ const (
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
+
+	// Defaults for the Spec
+	TfPort = 2222
+	Replicas = 1
 )
 
 func CRDName() string {
@@ -95,6 +101,7 @@ type TensorBoardSpec struct {
 	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
+// Validate checks that the TfJobSpec is valid.
 func (c *TfJobSpec) Validate() error {
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
@@ -102,6 +109,30 @@ func (c *TfJobSpec) Validate() error {
 		if r.Template == nil {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
+
+		if r.TfReplicaType == MASTER && *r.Replicas != 1 {
+			return errors.New("The MASTER must have Replicas = 1")
+		}
+
+		if r.TfPort == nil {
+			return errors.New("tfReplicaSpec.TfPort can't be nil.")
+		}
+
+		// Make sure the replica type is valid.
+		validReplicaTypes := []TfReplicaType{MASTER, PS, WORKER}
+
+		isValidReplicaType := false
+		for _, t := range validReplicaTypes {
+			if t == r.TfReplicaType {
+				isValidReplicaType = true
+				break
+			}
+		}
+
+		if !isValidReplicaType {
+			return fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", r.TfReplicaType, validReplicaTypes)
+		}
+
 		for _, c := range r.Template.Spec.Containers {
 			if c.Name == string(TENSORFLOW) {
 				found = true
@@ -167,6 +198,29 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 				r.Template.Spec.Containers[i] = c
 				break
 			}
+		}
+	}
+	return nil
+}
+
+// SetDefaults sets any unspecified values to defaults
+func (c *TfJobSpec) SetDefaults() error {
+	// Check that each replica has a TensorFlow container.
+	for _, r := range c.ReplicaSpecs {
+		if r.Template == nil {
+			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+		}
+
+		if r.TfPort == nil {
+			r.TfPort = proto.Int32(TfPort)
+		}
+
+		if string(r.TfReplicaType) == "" {
+			r.TfReplicaType = MASTER
+		}
+
+		if r.Replicas == nil {
+			r.Replicas = proto.Int32(Replicas)
 		}
 	}
 	return nil
