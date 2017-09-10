@@ -68,7 +68,6 @@ if __name__ == "__main__":
     sources = [
         # TODO(jlewi): Should we build a pip package?
         "examples/tf_sample/tf_sample/tf_smoke.py",
-        "py"
     ]
 
     for s in sources:
@@ -81,11 +80,9 @@ if __name__ == "__main__":
         else:
             shutil.copyfile(src_path, dest_path)
 
-    # Build the mlkube package
-    subprocess.check_call(["python", "setup.py", "sdist"], cwd=os.path.join(context_dir, "py"))
     image = args.registry + "/tf_sample"
     if args.mode == "gpu":
-        image = args.registry + "/tf_sample_gpu"
+       image = args.registry + "/tf_sample_gpu"
 
     image += ":" + GetGitHash()
     subprocess.check_call(["docker", "build", "-t", image,  context_dir])

@@ -3,9 +3,11 @@ package logger
 
 import (
   "encoding/json"
-  "os"
   log "github.com/golang/glog"
   "github.com/hpcloud/tail"
+  "fmt"
+  "regexp"
+  "io"
 )
 
 // JsonLogEntry represents a log entry in json format.
@@ -14,12 +16,29 @@ type JsonLogEntry map[string] interface{}
 // Enum defining standard fields in a log message.
 type FieldName string
 
+func (e *JsonLogEntry) SetField(f FieldName, v interface{}) {
+  (*e)[string(f)] = v
+}
+
+func (e * JsonLogEntry) Write(f io.Writer) {
+
+  b, err := json.Marshal(e)
+  if err != nil {
+    log.Warningf("Couldn't marshal value %v, error: %v", e, err)
+  }
+  f.Write(b)
+  f.Write([]byte("\n"))
+}
+
 const (
-  Message FieldName = "message"
   Created FieldName = "created"
+  Level FieldName = "level"
+  Message FieldName = "message"
+
 )
 
 type LogLabels map[string]string
+
 
 // ParseJson a log entry as a JsonLogEntry. Returns nil if the log entry can't be processed as json.
 func ParseJson(b []byte) *JsonLogEntry {
@@ -32,39 +51,73 @@ func ParseJson(b []byte) *JsonLogEntry {
   return e
 }
 
-// TailLogs reads logs from the source, processes them and rewrites them to the sink.
+// DockerLogEntry is an entry in the json formatted Docker container logs.
+type DockerLogEntry struct {
+  Log string `json:"log"`
+  Stream string `json: "stream"`
+  Time string `json: "time"`
+}
+
+var defPyRegex *regexp.Regexp
+
+func init() {
+  // Regex matching default Python logger output.
+  var err error
+  defPyRegex, err  = regexp.Compile("(INFO|WARNING|ERROR|CRITICAL|FATAL):([^:]*:.*)")
+
+  if err != nil {
+    log.Fatalf("Could not compile regex to match default python logger; %v", err)
+  }
+}
+
+// TailLogs reads log lines from in, processes them and rewrites them to the sink.
+// The function keeps reading until the channel is closed.
 //
 // TODO(jlewi): We should rewrite this to make it easier to test. We probably want to change the input
 // so that the function can terminate after processing all the input entries rather than running forever.
-func TailLogs(in string, labels LogLabels, out *os.File) {
-  log.Infof("Reading from; %v", in)
-  t, err := tail.TailFile(in, tail.Config{Follow: true, ReOpen: true, })
+func TailLogs(in chan *tail.Line, labels LogLabels, stdOut io.Writer, stdErr io.Writer) {
 
-  if err != nil {
-    log.Fatalf("There was a problem tailing file: %v; error: %v", in, err)
-  }
+  // TO
 
   // TODO(jlewi): Need to handle multi-line non Json.
-  for line := range t.Lines {
-    e := ParseJson([]byte(line.Text))
-    if e == nil {
-      // Message isn't json.
-      e = &JsonLogEntry{
-        string(Message): line.Text,
-      }
-    }
+  for line := range in {
+    entry := &DockerLogEntry{}
+
+    outEntry := &JsonLogEntry{}
 
     // Add labels.
     for k, v := range labels {
-      (*e)[k] = v
+      (*outEntry)[k] = v
     }
 
-    b, err := json.Marshal(e)
-    if err != nil {
-      log.Warningf("Couldn't marshal value %v, error: %v", e, err)
+    if err := json.Unmarshal([]byte(line.Text), entry); err != nil {
+      // Output a log message indicating an error parsing the message.
+
+      outEntry.SetField(Message, fmt.Sprintf("There was a problem parsing log entry; %v, Error; %v", line.Text, err))
+      outEntry.SetField(Created,line.Time)
+      outEntry.Write(stdErr)
       continue
     }
-    out.Write(b)
-    out.Write([]byte("\n"))
+
+    // Try matching the entry.
+    m := defPyRegex.FindStringSubmatch(entry.Log)
+    if m != nil {
+      outEntry.SetField(Level, m[1])
+      outEntry.SetField(Message, m[2])
+    }
+
+    outEntry.SetField(Created,line.Time)
+
+    outEntry.Write(stdOut)
+
+    //e := ParseJson([]byte(line.Text))
+    //if e == nil {
+    //  // Message isn't json.
+    //  e = &JsonLogEntry{
+    //    string(Message): line.Text,
+    //  }
+    //}
+
+
   }
 }

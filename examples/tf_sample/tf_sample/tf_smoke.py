@@ -15,8 +15,6 @@ import re
 import tensorflow as tf
 import time
 
-from mlkube import tf_job_logging
-
 def parse_args():
   """Parse the command line arguments."""
   parser = argparse.ArgumentParser()
@@ -141,5 +139,5 @@ def main():
 
 
 if __name__ == "__main__":
-  tf_job_logging.configure_logger()
+  logging.getLogger().setLevel(logging.INFO)
   main()
