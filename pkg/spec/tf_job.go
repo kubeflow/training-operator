@@ -6,23 +6,23 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/jlewi/mlkube.io/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
-	CRDKind  = "TfJob"
-	CRDKindPlural  = "tfjobs"
-	CRDGroup       = "mlkube.io"
-	CRDVersion     = "v1beta1"
+	CRDKind       = "TfJob"
+	CRDKindPlural = "tfjobs"
+	CRDGroup      = "mlkube.io"
+	CRDVersion    = "v1beta1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
 
 	// Defaults for the Spec
-	TfPort = 2222
+	TfPort   = 2222
 	Replicas = 1
 )
 
@@ -76,6 +76,7 @@ type ContainerName string
 
 const (
 	TENSORFLOW ContainerName = "tensorflow"
+	PsDefaultImage = "wbuchwalter/mlkube-tensorflow-ps"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
@@ -91,6 +92,8 @@ type TfReplicaSpec struct {
 	// TfPort is the port to use for TF services.
 	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
+	//TfVersion is only used when TfReplicaType == PS to automatically start a PS server
+	TfVersion *string `json:"tfVersion"`
 }
 
 type TensorBoardSpec struct {
@@ -106,8 +109,12 @@ func (c *TfJobSpec) Validate() error {
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
 		found := false
-		if r.Template == nil {
+		if r.Template == nil && r.TfReplicaType != PS {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+		}
+
+		if r.TfReplicaType == PS && r.Template == nil && r.TfVersion == nil {
+			return errors.New("PS must either have TfVersion or Template specified.")
 		}
 
 		if r.TfReplicaType == MASTER && *r.Replicas != 1 {
@@ -221,6 +228,19 @@ func (c *TfJobSpec) SetDefaults() error {
 
 		if r.Replicas == nil {
 			r.Replicas = proto.Int32(Replicas)
+		}
+
+		if r.TfReplicaType == PS && r.Template == nil{
+			r.Template = &v1.PodTemplateSpec{
+				Spec: &v1.PodSpec{
+					Containers: []v1.Container{
+						&v1.Container{
+							Image: fmt.Sprintf("%s:%s", PsDefaultImage, r.TfVersion)
+							Name: "tensorflow-ps"
+						}
+					}
+				}
+			}
 		}
 	}
 	return nil

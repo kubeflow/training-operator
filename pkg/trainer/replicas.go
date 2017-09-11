@@ -11,13 +11,13 @@ import (
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	// TOOO(jlewi): Rename to apiErrors
+	"github.com/jlewi/mlkube.io/pkg/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -53,8 +53,8 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
 	}
 
-	if tfReplicaSpec.Template == nil {
-		return nil, errors.New("tfReplicaSpec.Template can't be nil.")
+	if tfReplicaSpec.Template == nil && tfReplicaSpec.TfReplicaType != spec.PS {
+		return nil, fmt.Errorf("tfReplicaSpec.Template can't be nil for replica type %v.", tfReplicaSpec.TfReplicaType)
 	}
 
 	// Make sure the replica type is valid.
@@ -71,6 +71,7 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 	if !isValidReplicaType {
 		return nil, fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", tfReplicaSpec.TfReplicaType, validReplicaTypes)
 	}
+
 	return &TFReplicaSet{
 		ClientSet: clientSet,
 		Job:       job,
@@ -277,7 +278,6 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 		}
 	}
 
-
 	if tfState.Running != nil || tfState.Waiting != nil {
 		return spec.ReplicaStateRunning
 	}
@@ -286,7 +286,6 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 		if tfState.Terminated.ExitCode == 0 {
 			return spec.ReplicaStateSucceeded
 		}
-
 
 		if isRetryableTerminationState(tfState.Terminated) {
 			// Since its a retryable error just return RUNNING.
