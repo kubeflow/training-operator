@@ -1,5 +1,5 @@
-hash: b9c34817e80d7914b889e41fb456c8b0595f707cf3d2923da3f7b2ac6a6de44a
-updated: 2017-08-16T11:49:07.068368434-07:00
+hash: f1f7190fa1f209819acbcb2dc0441cbc92778cacb3c7112329bf4b5eb86d5f39
+updated: 2017-09-09T16:39:43.681165229-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -21,6 +21,8 @@ imports:
   - log
 - name: github.com/emicklei/go-restful-swagger12
   version: dcef7f55730566d41eae5db10e7d6981829720f6
+- name: github.com/fsnotify/fsnotify
+  version: 629574ca2a5df945712d3079857300b5e4da0236
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-openapi/analysis
@@ -54,6 +56,13 @@ imports:
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
+- name: github.com/hpcloud/tail
+  version: 37f4271387456dd1bf82ab1ad9229f060cc45386
+  subpackages:
+  - ratelimiter
+  - util
+  - watch
+  - winfile
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/juju/ratelimit
@@ -129,8 +138,12 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
+- name: gopkg.in/fsnotify.v1
+  version: 7be54206639f256967dd82fa767397ba5f8f48f5
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/tomb.v1
+  version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/apiextensions-apiserver

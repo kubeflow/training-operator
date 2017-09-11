@@ -15,7 +15,6 @@ import re
 import tensorflow as tf
 import time
 
-
 def parse_args():
   """Parse the command line arguments."""
   parser = argparse.ArgumentParser()
@@ -41,7 +40,6 @@ def run(server, cluster_spec):
   Raises:
     RuntimeError: If the expected log entries aren't found.
   """
-
   # construct the graph and create a saver object
   with tf.Graph().as_default():
     # The initial value should be such that type is correctly inferred as

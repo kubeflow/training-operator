@@ -1,3 +1,5 @@
+# TODO(jlewi): Should we produce this from a jinja template so we can easily rewrite the image when we build a new
+# image?
 apiVersion: "mlkube.io/v1beta1"
 kind: "TfJob"
 metadata:
@@ -9,14 +11,56 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:d4ef871-dirty-991dde4
               name: tensorflow
+              command:
+                - /usr/bin/python
+                - /opt/mlkube/tf_smoke.py
+              volumeMounts:
+                - mountPath: /logs
+                  name: log-volume
+            - image: gcr.io/tf-on-k8s-dogfood/tf_operator:d4ef871-dirty-261d819
+              name: logger
+              command:
+#                 - tail
+#                 - -f
+#                 - /dev/null
+                - /opt/mlkube/logger
+                - --labels=TfReplicaType=MASTER,TfReplicaIndex=0,TfJob=example-job
+              env:
+                - name: MY_POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: MY_POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+              volumeMounts:
+                - mountPath: /logs
+                  name: log-volume
+                - name: varlibdockercontainers
+                  mountPath: /var/lib/docker/containers
+                  readOnly: true
+                - name: varlogpods
+                  mountPath: /var/log/pods
+                  readOnly: true
           restartPolicy: OnFailure
+          volumes:
+            - name: log-volume
+              emptyDir: {}
+            - name: varlibdockercontainers
+              hostPath:
+                path: /var/lib/docker/containers
+            - name: varlogpods
+              hostPath:
+                path: /var/log/pods
+
     - replicas: 1
       tfReplicaType: WORKER
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:4b05769-dirty-f1d189f
               name: tensorflow
           restartPolicy: OnFailure
