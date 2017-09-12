@@ -75,8 +75,8 @@ const (
 type ContainerName string
 
 const (
-	TENSORFLOW ContainerName = "tensorflow"
-	PsDefaultImage = "wbuchwalter/mlkube-tensorflow-ps"
+	TENSORFLOW     ContainerName = "tensorflow"
+	PsDefaultImage               = "wbuchwalter/mlkube-tensorflow-ps"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
@@ -214,8 +214,8 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 func (c *TfJobSpec) SetDefaults() error {
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
-		if r.Template == nil {
-			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+		if r.Template == nil && r.TfReplicaType != PS {
+			return fmt.Errorf("ReplicaType: %v, Replica is missing Template; %v", r.TfReplicaType, util.Pformat(r))
 		}
 
 		if r.TfPort == nil {
@@ -230,16 +230,17 @@ func (c *TfJobSpec) SetDefaults() error {
 			r.Replicas = proto.Int32(Replicas)
 		}
 
-		if r.TfReplicaType == PS && r.Template == nil{
+		if r.Template == nil && r.TfReplicaType == PS {
 			r.Template = &v1.PodTemplateSpec{
-				Spec: &v1.PodSpec{
+				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						&v1.Container{
-							Image: fmt.Sprintf("%s:%s", PsDefaultImage, r.TfVersion)
-							Name: "tensorflow-ps"
-						}
-					}
-				}
+						v1.Container{
+							Image: fmt.Sprintf("%s:%s", PsDefaultImage, *r.TfVersion),
+							Name:  "tensorflow",
+						},
+					},
+					RestartPolicy: v1.RestartPolicyOnFailure,
+				},
 			}
 		}
 	}
