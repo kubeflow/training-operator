@@ -1,13 +1,14 @@
 package spec
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/jlewi/mlkube.io/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 func TestAddAccelertor(t *testing.T) {
@@ -238,6 +239,9 @@ func TestSetDefaults(t *testing.T) {
 		expected *TfJobSpec
 	}
 
+	defaultPsImage := "wbuchwalter/mlkube-tensorflow-ps"
+	tag := "1.3.0"
+
 	testCases := []testCase{
 		{
 			in: &TfJobSpec{
@@ -270,6 +274,37 @@ func TestSetDefaults(t *testing.T) {
 							},
 						},
 						TfReplicaType: MASTER,
+					},
+				},
+			},
+		},
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						TfReplicaType: PS,
+						TfVersion:     tag,
+					},
+				},
+			},
+			expected: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Replicas: proto.Int32(1),
+						TfPort:   proto.Int32(2222),
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name:  "tensorflow",
+										Image: fmt.Sprintf("%s:%s", defaultPsImage, tag),
+									},
+								},
+								RestartPolicy: v1.RestartPolicyOnFailure,
+							},
+						},
+						TfReplicaType: PS,
+						TfVersion:     tag,
 					},
 				},
 			},

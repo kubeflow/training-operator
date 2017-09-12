@@ -93,7 +93,7 @@ type TfReplicaSpec struct {
 	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
 	//TfVersion is only used when TfReplicaType == PS to automatically start a PS server
-	TfVersion *string `json:"tfVersion"`
+	TfVersion string `json:"tfVersion,omitempty"`
 }
 
 type TensorBoardSpec struct {
@@ -113,7 +113,7 @@ func (c *TfJobSpec) Validate() error {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
-		if r.TfReplicaType == PS && r.Template == nil && r.TfVersion == nil {
+		if r.TfReplicaType == PS && r.Template == nil && r.TfVersion == "" {
 			return errors.New("PS must either have TfVersion or Template specified.")
 		}
 
@@ -235,7 +235,7 @@ func (c *TfJobSpec) SetDefaults() error {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						v1.Container{
-							Image: fmt.Sprintf("%s:%s", PsDefaultImage, *r.TfVersion),
+							Image: fmt.Sprintf("%s:%s", PsDefaultImage, r.TfVersion),
 							Name:  "tensorflow",
 						},
 					},
