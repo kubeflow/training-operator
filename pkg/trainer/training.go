@@ -160,9 +160,9 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	clusterSpec := make(ClusterSpec)
 
 	for _, p := range j.Replicas {
-		replicaNames := make([]string, 0, *p.Spec.Replicas)
+		replicaNames := make([]string, 0, p.Spec.Replicas)
 
-		for i := int32(0); i < *p.Spec.Replicas; i++ {
+		for i := int32(0); i < p.Spec.Replicas; i++ {
 			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.jobName(i), p.Spec.TfPort))
 		}
 

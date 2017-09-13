@@ -81,7 +81,7 @@ type TfReplicaSpec struct {
 	// Defaults to 1.
 	// More info: http://kubernetes.io/docs/user-guide/replication-controller#what-is-a-replication-controller
 	// +optional
-	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
+	Replicas      int32          `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 	// TfPort is the port to use for TF services.
 	TfPort        int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`

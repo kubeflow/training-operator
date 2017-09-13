@@ -45,7 +45,7 @@ type TfConfig struct {
 }
 
 func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
-	if tfReplicaSpec.TfReplicaType == spec.MASTER && *tfReplicaSpec.Replicas != 1 {
+	if tfReplicaSpec.TfReplicaType == spec.MASTER && tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
 
@@ -89,7 +89,7 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 }
 
 func (s *TFReplicaSet) Create() error {
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
+	for index := int32(0); index < s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
 
@@ -227,7 +227,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// Services doesn't support DeleteCollection so we delete them individually.
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
+	for index := int32(0); index < s.Spec.Replicas; index++ {
 		err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
@@ -318,7 +318,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 		}
 	}
 
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
+	for index := int32(0); index < s.Spec.Replicas; index++ {
 
 		j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
@@ -372,7 +372,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 	}
 
 	// If all of the replicas succeeded consider it success.
-	if v, ok := status.ReplicasStates[spec.ReplicaStateSucceeded]; ok && int32(v) == *s.Spec.Replicas {
+	if v, ok := status.ReplicasStates[spec.ReplicaStateSucceeded]; ok && int32(v) == s.Spec.Replicas {
 		status.State = spec.ReplicaStateSucceeded
 		return status, nil
 	}
