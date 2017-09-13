@@ -49,8 +49,8 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
 
-	if tfReplicaSpec.TfPort == nil {
-		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
+	if tfReplicaSpec.TfPort == 0 {
+		return nil, errors.New("tfReplicaSpec.TfPort can't be 0.")
 	}
 
 	if tfReplicaSpec.Template == nil {
@@ -104,7 +104,7 @@ func (s *TFReplicaSet) Create() error {
 				Ports: []v1.ServicePort{
 					{
 						Name: "tf-port",
-						Port: *s.Spec.TfPort,
+						Port: s.Spec.TfPort,
 					},
 				},
 			},

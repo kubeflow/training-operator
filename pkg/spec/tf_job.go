@@ -84,7 +84,7 @@ type TfReplicaSpec struct {
 	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 	// TfPort is the port to use for TF services.
-	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
+	TfPort        int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
 }
 
