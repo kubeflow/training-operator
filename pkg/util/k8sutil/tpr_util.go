@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"github.com/jlewi/mlkube.io/pkg/util"
 	log "github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TFJobClient defines an interface for working with TfJob CRDs.
@@ -54,6 +55,28 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 		return nil, err
 	}
 	config.GroupVersion = &spec.SchemeGroupVersion
+	config.APIPath = "/apis"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+
+	restcli, err := rest.RESTClientFor(config)
+	if err != nil {
+		return nil, err
+	}
+
+	cli := &TfJobRestClient{
+		restcli: restcli,
+	}
+	return cli, nil
+}
+
+// New TFJob client for out-of-cluster
+func NewTfJobClientExternal(config *rest.Config) (*TfJobRestClient, error) {
+
+	config.GroupVersion = &schema.GroupVersion{
+		Group:   spec.CRDGroup,
+		Version: spec.CRDVersion,
+	}
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
