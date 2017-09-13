@@ -15,6 +15,7 @@ const (
 	CRDKindPlural  = "tfjobs"
 	CRDGroup       = "mlkube.io"
 	CRDVersion     = "v1beta1"
+	CRDApiVersion  = CRDGroup + "/" + CRDVersion    // "mlkube.io/v1beta1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
