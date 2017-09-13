@@ -50,8 +50,8 @@ if __name__ == "__main__":
     loader = jinja2.FileSystemLoader(images_dir)
 
     base_images = {
-        "cpu": "gcr.io/tensorflow/tensorflow:1.3.0-rc2",
-        "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-rc2-gpu",
+        "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
+        "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
     }
     dockerfile_contents = jinja2.Environment(loader=loader).get_template(filename).render(base_image=base_images[args.mode])
     context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
