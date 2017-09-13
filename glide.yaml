@@ -1,6 +1,6 @@
-package: github.com/jlewi/mlkube.io
+package: github.com/deepinsight/mlkube.io
 ignore:
-- github.com/jlewi/mlkube.io
+- github.com/deepinsight/mlkube.io
 import:
 - package: k8s.io/client-go
   version: v4.0.0-beta.0

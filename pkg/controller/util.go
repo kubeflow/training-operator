@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwatch "k8s.io/apimachinery/pkg/watch"

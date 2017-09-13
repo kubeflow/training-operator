@@ -67,7 +67,7 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 1. Clone the repository
 
     ```
-    git clone https://github.com/jlewi/mlkube.io/
+    git clone https://github.com/deepinsight/mlkube.io/
     ```
 
 1. Deploy the operator
@@ -289,11 +289,11 @@ The helm package provides some basic E2E tests.
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
     ```
-    mkdir -p ${GOPATH}/src/github.com/jlewi
+    mkdir -p ${GOPATH}/src/github.com/deepinsight
     ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
     ```
 
-  * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
+  * GIT_TRAINING should be the location where you checked out https://github.com/deepinsight/mlkube.io
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
@@ -304,7 +304,7 @@ glide install
 Build it
 
 ```
-go install github.com/jlewi/mlkube.io/cmd/tf_operator
+go install github.com/deepinsight/mlkube.io/cmd/tf_operator
 ```
 
 ## Runing the Operator Locally

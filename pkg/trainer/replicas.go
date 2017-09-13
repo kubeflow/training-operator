@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker

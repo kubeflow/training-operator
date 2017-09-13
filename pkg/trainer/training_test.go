@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	tfJobFake "github.com/deepinsight/mlkube.io/pkg/util/k8sutil/fake"
 	"sync"
 )
 

@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 	log "github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 	"k8s.io/client-go/kubernetes"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/trainer"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/trainer"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil"
 	"net/http"
 	"reflect"
 	"sync"
@@ -23,7 +23,7 @@ import (
 	kwatch "k8s.io/apimachinery/pkg/watch"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 )
 
 var (

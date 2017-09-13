@@ -7,7 +7,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 )
 
 const (

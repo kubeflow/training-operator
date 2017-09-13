@@ -10,13 +10,13 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/jlewi/mlkube.io/pkg/controller"
-	"github.com/jlewi/mlkube.io/pkg/garbagecollection"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election/resourcelock"
-	"github.com/jlewi/mlkube.io/version"
+	"github.com/deepinsight/mlkube.io/pkg/controller"
+	"github.com/deepinsight/mlkube.io/pkg/garbagecollection"
+	"github.com/deepinsight/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil/election"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil/election/resourcelock"
+	"github.com/deepinsight/mlkube.io/version"
 
 	log "github.com/golang/glog"
 
@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 )
 
 var (

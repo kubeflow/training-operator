@@ -7,17 +7,17 @@ import (
 	"reflect"
 
 	log "github.com/golang/glog"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
-	"github.com/jlewi/mlkube.io/pkg/util/retryutil"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil"
+	"github.com/deepinsight/mlkube.io/pkg/util/retryutil"
 
 	"math"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/jlewi/mlkube.io/pkg/garbagecollection"
+	"github.com/deepinsight/mlkube.io/pkg/garbagecollection"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
