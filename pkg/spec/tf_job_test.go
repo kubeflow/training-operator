@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -239,9 +238,6 @@ func TestSetDefaults(t *testing.T) {
 		expected *TfJobSpec
 	}
 
-	defaultPsImage := "wbuchwalter/mlkube-tensorflow-ps"
-	tag := "1.3.0"
-
 	testCases := []testCase{
 		{
 			in: &TfJobSpec{
@@ -283,7 +279,7 @@ func TestSetDefaults(t *testing.T) {
 				ReplicaSpecs: []*TfReplicaSpec{
 					{
 						TfReplicaType: PS,
-						TfVersion:     tag,
+						TfImage:       "tensorflow/tensorflow:1.3.",
 					},
 				},
 			},
@@ -295,16 +291,35 @@ func TestSetDefaults(t *testing.T) {
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
-									{
+									v1.Container{
+										Image: "tensorflow/tensorflow:1.3.",
 										Name:  "tensorflow",
-										Image: fmt.Sprintf("%s:%s", defaultPsImage, tag),
+										VolumeMounts: []v1.VolumeMount{
+											v1.VolumeMount{
+												Name:      "ps-config-volume",
+												MountPath: "/ps-server",
+											},
+										},
+										Command: []string{"python", "/ps-server/start_server.py"},
+									},
+								},
+								Volumes: []v1.Volume{
+									v1.Volume{
+										Name: "ps-config-volume",
+										VolumeSource: v1.VolumeSource{
+											ConfigMap: &v1.ConfigMapVolumeSource{
+												LocalObjectReference: v1.LocalObjectReference{
+													Name: PSConfigMapName(),
+												},
+											},
+										},
 									},
 								},
 								RestartPolicy: v1.RestartPolicyOnFailure,
 							},
 						},
 						TfReplicaType: PS,
-						TfVersion:     tag,
+						TfImage:       "tensorflow/tensorflow:1.3.",
 					},
 				},
 			},

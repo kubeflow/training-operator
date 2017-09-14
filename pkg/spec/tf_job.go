@@ -30,6 +30,10 @@ func CRDName() string {
 	return fmt.Sprintf("%s.%s", CRDKindPlural, CRDGroup)
 }
 
+func PSConfigMapName() string {
+	return fmt.Sprintf("%s-%s", CRDName(), "ps")
+}
+
 type TfJob struct {
 	metav1.TypeMeta `json:",inline"`
 	Metadata        metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -92,8 +96,8 @@ type TfReplicaSpec struct {
 	// TfPort is the port to use for TF services.
 	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
-	//TfVersion is only used when TfReplicaType == PS to automatically start a PS server
-	TfVersion string `json:"tfVersion,omitempty"`
+	//TfImage is only used when TfReplicaType == PS to automatically start a PS server
+	TfImage string `json:"tfImage,omitempty"`
 }
 
 type TensorBoardSpec struct {
@@ -113,8 +117,8 @@ func (c *TfJobSpec) Validate() error {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
-		if r.TfReplicaType == PS && r.Template == nil && r.TfVersion == "" {
-			return errors.New("PS must either have TfVersion or Template specified.")
+		if r.TfReplicaType == PS && r.Template == nil && r.TfImage == "" {
+			return errors.New("PS must either have TfImage or Template specified.")
 		}
 
 		if r.TfReplicaType == MASTER && *r.Replicas != 1 {
@@ -230,13 +234,33 @@ func (c *TfJobSpec) SetDefaults() error {
 			r.Replicas = proto.Int32(Replicas)
 		}
 
-		if r.Template == nil && r.TfReplicaType == PS {
+		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
+		if r.Template == nil && r.TfReplicaType == PS && r.TfImage != "" {
 			r.Template = &v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						v1.Container{
-							Image: fmt.Sprintf("%s:%s", PsDefaultImage, r.TfVersion),
+							Image: r.TfImage,
 							Name:  "tensorflow",
+							VolumeMounts: []v1.VolumeMount{
+								v1.VolumeMount{
+									Name:      "ps-config-volume",
+									MountPath: "/ps-server",
+								},
+							},
+							Command: []string{"python", "/ps-server/start_server.py"},
+						},
+					},
+					Volumes: []v1.Volume{
+						v1.Volume{
+							Name: "ps-config-volume",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: PSConfigMapName(),
+									},
+								},
+							},
 						},
 					},
 					RestartPolicy: v1.RestartPolicyOnFailure,

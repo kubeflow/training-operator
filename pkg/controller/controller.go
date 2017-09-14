@@ -6,24 +6,27 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/client-go/kubernetes"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/trainer"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"sync"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/trainer"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"k8s.io/client-go/kubernetes"
+
 	log "github.com/golang/glog"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kwatch "k8s.io/apimachinery/pkg/watch"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	kwatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 var (
@@ -66,7 +69,7 @@ func New(kubeCli kubernetes.Interface, apiCli apiextensionsclient.Interface, tfJ
 	return &Controller{
 		Namespace:   ns,
 		KubeCli:     kubeCli,
-		ApiCli:  		apiCli,
+		ApiCli:      apiCli,
 		TfJobClient: tfJobClient,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:      make(map[string]*trainer.TrainingJob),
@@ -226,7 +229,57 @@ func (c *Controller) initResource() (string, error) {
 			return "", fmt.Errorf("fail to create CRD: %v", err)
 		}
 	}
+
+	err = c.createPSConfigMap()
+	if err != nil {
+		log.Errorf("createPSConfigMap() returned error: %v", err)
+	}
+
 	return watchVersion, nil
+}
+
+//Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
+//that will be used as default PS
+func (c *Controller) createPSConfigMap() error {
+	//If a ConfigMap with the same name already exists, it was created by an earlier operator
+	//we delete and recreate it in case the grpc_tensorflow_server.py was updated in the meantime
+	cm, err := c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Get(spec.PSConfigMapName(), metav1.GetOptions{})
+	if err != nil {
+		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
+			return err
+		}
+	} else {
+		err = c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Delete(spec.PSConfigMapName(), &metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+	}
+
+	cm = &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: spec.PSConfigMapName(),
+		},
+		Data: make(map[string]string),
+	}
+
+	//grab server sources from files
+	filePaths := map[string]string{
+		"start_server.py":           "./grpc_tensorflow_server/start_server.py",
+		"grpc_tensorflow_server.py": "./grpc_tensorflow_server/grpc_tensorflow_server.py",
+	}
+	for n, fp := range filePaths {
+		data, err := ioutil.ReadFile(fp)
+		if err != nil {
+			return err
+		}
+		cm.Data[n] = string(data)
+	}
+
+	_, err = c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Create(cm)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Controller) createCRD() error {
@@ -235,16 +288,16 @@ func (c *Controller) createCRD() error {
 			Name: spec.CRDName(),
 		},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group: spec.CRDGroup,
+			Group:   spec.CRDGroup,
 			Version: spec.CRDVersion,
-			 Scope: v1beta1.NamespaceScoped,
-				Names: v1beta1.CustomResourceDefinitionNames{
-					Plural: spec.CRDKindPlural,
-					// TODO(jlewi): Do we want to set the singular name?
-					// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
-					Kind:   reflect.TypeOf(spec.TfJob{}).Name(),
-				},
+			Scope:   v1beta1.NamespaceScoped,
+			Names: v1beta1.CustomResourceDefinitionNames{
+				Plural: spec.CRDKindPlural,
+				// TODO(jlewi): Do we want to set the singular name?
+				// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
+				Kind: reflect.TypeOf(spec.TfJob{}).Name(),
 			},
+		},
 	}
 
 	_, err := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
