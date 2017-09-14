@@ -13,8 +13,8 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	tfJobFake "github.com/deepinsight/mlkube.io/pkg/util/k8sutil/fake"
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -63,7 +63,7 @@ func TestTFReplicaSet(t *testing.T) {
 		}
 
 		// Check that a service was created.
-		sList, err := clientSet.CoreV1().Services(NAMESPACE).List(meta_v1.ListOptions{})
+		sList, err := clientSet.CoreV1().Services(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
 		if err != nil {
 			t.Fatalf("List services error; %v", err)
 		}
@@ -84,7 +84,7 @@ func TestTFReplicaSet(t *testing.T) {
 		}
 
 		// Check that a job was created.
-		l, err := clientSet.BatchV1().Jobs(NAMESPACE).List(meta_v1.ListOptions{})
+		l, err := clientSet.BatchV1().Jobs(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
 		if err != nil {
 			t.Fatalf("List jobs error; %v", err)
 		}

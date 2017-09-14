@@ -9,7 +9,7 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: 10.199.192.16/tensorflow/tf_sample:dc944ff
               name: tensorflow
           restartPolicy: OnFailure
     - replicas: 1
@@ -17,6 +17,6 @@ spec:
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+            - image: 10.199.192.16/tensorflow/tf_sample:dc944ff
               name: tensorflow
           restartPolicy: OnFailure

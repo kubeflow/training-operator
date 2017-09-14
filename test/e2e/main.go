@@ -19,9 +19,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/golang/glog"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"

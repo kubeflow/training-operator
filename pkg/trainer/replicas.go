@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -45,12 +45,12 @@ type TfConfig struct {
 }
 
 func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
-	if tfReplicaSpec.TfReplicaType == spec.MASTER && *tfReplicaSpec.Replicas != 1 {
+	if tfReplicaSpec.TfReplicaType == spec.MASTER && tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
 
-	if tfReplicaSpec.TfPort == nil {
-		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
+	if tfReplicaSpec.TfPort == 0 {
+		return nil, errors.New("tfReplicaSpec.TfPort can't be 0.")
 	}
 
 	if tfReplicaSpec.Template == nil {
@@ -89,7 +89,7 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 }
 
 func (s *TFReplicaSet) Create() error {
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
+	for index := int32(0); index < s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
 
@@ -104,14 +104,14 @@ func (s *TFReplicaSet) Create() error {
 				Ports: []v1.ServicePort{
 					{
 						Name: "tf-port",
-						Port: *s.Spec.TfPort,
+						Port: s.Spec.TfPort,
 					},
 				},
 			},
 		}
 
 		log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-		_, err := s.ClientSet.CoreV1().Services(NAMESPACE).Create(service)
+		_, err := s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Create(service)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -183,7 +183,7 @@ func (s *TFReplicaSet) Create() error {
 		}
 
 		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		_, err = s.ClientSet.BatchV1().Jobs(NAMESPACE).Create(newJ)
+		_, err = s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Create(newJ)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -211,7 +211,7 @@ func (s *TFReplicaSet) Delete() error {
 		LabelSelector: selector,
 	}
 
-	err = s.ClientSet.BatchV1().Jobs(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, options)
+	err = s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
 		log.Errorf("There was a problem deleting the jobs; %v", err)
@@ -219,7 +219,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// We need to delete the completed pods.
-	err = s.ClientSet.CoreV1().Pods(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, options)
+	err = s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
 		log.Errorf("There was a problem deleting the pods; %v", err)
@@ -227,8 +227,8 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// Services doesn't support DeleteCollection so we delete them individually.
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
-		err = s.ClientSet.CoreV1().Services(NAMESPACE).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
+	for index := int32(0); index < s.Spec.Replicas; index++ {
+		err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
 			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
@@ -318,9 +318,9 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 		}
 	}
 
-	for index := int32(0); index < *s.Spec.Replicas; index++ {
+	for index := int32(0); index < s.Spec.Replicas; index++ {
 
-		j, err := s.ClientSet.BatchV1().Jobs(NAMESPACE).Get(s.jobName(index), meta_v1.GetOptions{})
+		j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
 		if err != nil {
 			increment(spec.ReplicaStateUnknown)
@@ -342,7 +342,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 		}
 
 		// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
-		l, err := s.ClientSet.CoreV1().Pods(NAMESPACE).List(meta_v1.ListOptions{
+		l, err := s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{
 			// TODO(jlewi): Why isn't the label selector working?
 			LabelSelector: selector,
 		})
@@ -372,7 +372,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 	}
 
 	// If all of the replicas succeeded consider it success.
-	if v, ok := status.ReplicasStates[spec.ReplicaStateSucceeded]; ok && int32(v) == *s.Spec.Replicas {
+	if v, ok := status.ReplicasStates[spec.ReplicaStateSucceeded]; ok && int32(v) == s.Spec.Replicas {
 		status.State = spec.ReplicaStateSucceeded
 		return status, nil
 	}

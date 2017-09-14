@@ -19,13 +19,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 	log "github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TFJobClient defines an interface for working with TfJob CRDs.
@@ -69,14 +70,36 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	return cli, nil
 }
 
+// New TFJob client for out-of-cluster
+func NewTfJobClientExternal(config *rest.Config) (*TfJobRestClient, error) {
+
+	config.GroupVersion = &schema.GroupVersion{
+		Group:   spec.CRDGroup,
+		Version: spec.CRDVersion,
+	}
+	config.APIPath = "/apis"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+
+	restcli, err := rest.RESTClientFor(config)
+	if err != nil {
+		return nil, err
+	}
+
+	cli := &TfJobRestClient{
+		restcli: restcli,
+	}
+	return cli, nil
+}
+
 // HttpClient returns the http client used.
 func (c *TfJobRestClient) Client() *http.Client {
 	return c.restcli.Client
 }
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
-	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
-		host, spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, resourceVersion))
+	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/%s?watch=true&resourceVersion=%s",
+		host, spec.CRDGroup, spec.CRDVersion, spec.CRDKindPlural, resourceVersion))
 }
 
 func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {

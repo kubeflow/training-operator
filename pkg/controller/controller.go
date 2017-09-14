@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 	"k8s.io/client-go/kubernetes"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/trainer"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/deepinsight/mlkube.io/pkg/spec"
+	"github.com/deepinsight/mlkube.io/pkg/trainer"
+	"github.com/deepinsight/mlkube.io/pkg/util/k8sutil"
 	"net/http"
 	"reflect"
 	"sync"
@@ -23,7 +23,7 @@ import (
 	kwatch "k8s.io/apimachinery/pkg/watch"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/deepinsight/mlkube.io/pkg/util"
 )
 
 var (
@@ -146,21 +146,21 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 		//NewJob(kubeCli kubernetes.Interface, job spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup)
 
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 
 	//case kwatch.Modified:
-	//  if _, ok := c.jobs[clus.Metadata.Name]; !ok {
+	//  if _, ok := c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name]; !ok {
 	//    return fmt.Errorf("unsafe state. cluster was never created but we received event (%s)", event.Type)
 	//  }
-	//  c.jobs[clus.Metadata.Name].Update(clus)
+	//  c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name].Update(clus)
 	//  c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	//
 	case kwatch.Deleted:
-		if _, ok := c.jobs[clus.Metadata.Name]; !ok {
+		if _, ok := c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name]; !ok {
 			return fmt.Errorf("unsafe state. TfJob was never created but we received event (%s)", event.Type)
 		}
-		c.jobs[clus.Metadata.Name].Delete()
+		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name].Delete()
 		delete(c.jobs, clus.Metadata.Name)
 		delete(c.jobRVs, clus.Metadata.Name)
 	}
@@ -193,7 +193,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 			continue
 		}
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	}
 
