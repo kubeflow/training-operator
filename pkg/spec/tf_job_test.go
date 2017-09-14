@@ -231,3 +231,57 @@ func TestAddAccelertor(t *testing.T) {
 		}
 	}
 }
+
+func TestSetDefaults(t *testing.T) {
+	type testCase struct {
+		in       *TfJobSpec
+		expected *TfJobSpec
+	}
+
+	testCases := []testCase{
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Replicas: proto.Int32(1),
+						TfPort:   proto.Int32(2222),
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TfReplicaType: MASTER,
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range testCases {
+		if err := c.in.SetDefaults(); err != nil {
+			t.Errorf("SetDefaults error; %v", err)
+		}
+		if !reflect.DeepEqual(c.in, c.expected) {
+			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
+		}
+	}
+}

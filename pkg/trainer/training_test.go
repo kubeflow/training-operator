@@ -87,19 +87,43 @@ func TestClusterSpec(t *testing.T) {
 						{
 							Replicas:      proto.Int32(2),
 							TfPort:        proto.Int32(22),
-							Template:      &v1.PodTemplateSpec{},
+							Template:      &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
 							TfReplicaType: spec.PS,
 						},
 						{
 							Replicas:      proto.Int32(1),
 							TfPort:        proto.Int32(42),
-							Template:      &v1.PodTemplateSpec{},
+							Template:      &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
 							TfReplicaType: spec.MASTER,
 						},
 						{
 							Replicas:      proto.Int32(3),
 							TfPort:        proto.Int32(40),
-							Template:      &v1.PodTemplateSpec{},
+							Template:      &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
 							TfReplicaType: spec.WORKER,
 						},
 					},
@@ -125,6 +149,10 @@ func TestClusterSpec(t *testing.T) {
 
 		if err != nil {
 			t.Fatalf("initJob failed: %v", err)
+		}
+
+		if err := job.setup(&spec.ControllerConfig{}); err != nil {
+			t.Fatalf("job.setup() failed: %v", err)
 		}
 
 		actual := job.ClusterSpec()

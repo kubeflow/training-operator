@@ -1,7 +1,3 @@
 # Docker image to use.
-image: 10.199.192.16/tensorflow/tf-operator:8b3812d
-test_image: 10.199.192.16/tensorflow/tf_sample:dc944ff
-
-
-
-
+image: gcr.io/tf-on-k8s-dogfood/tf_operator:4dd012d
+test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
