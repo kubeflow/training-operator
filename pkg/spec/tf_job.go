@@ -98,6 +98,8 @@ type TfReplicaSpec struct {
 	TfReplicaType `json:"tfReplicaType"`
 	//TfImage is only used when TfReplicaType == PS to automatically start a PS server
 	TfImage string `json:"tfImage,omitempty"`
+	//IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
+	IsDefaultPS bool
 }
 
 type TensorBoardSpec struct {
@@ -236,36 +238,7 @@ func (c *TfJobSpec) SetDefaults() error {
 
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
 		if r.Template == nil && r.TfReplicaType == PS && r.TfImage != "" {
-			r.Template = &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Image: r.TfImage,
-							Name:  "tensorflow",
-							VolumeMounts: []v1.VolumeMount{
-								v1.VolumeMount{
-									Name:      "ps-config-volume",
-									MountPath: "/ps-server",
-								},
-							},
-							Command: []string{"python", "/ps-server/start_server.py"},
-						},
-					},
-					Volumes: []v1.Volume{
-						v1.Volume{
-							Name: "ps-config-volume",
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{
-										Name: PSConfigMapName(),
-									},
-								},
-							},
-						},
-					},
-					RestartPolicy: v1.RestartPolicyOnFailure,
-				},
-			}
+			r.setDefaultPSPodTemplateSpec()
 		}
 	}
 	return nil
@@ -276,6 +249,39 @@ func (c *TfJobSpec) SetDefaults() error {
 func (c *TfJobSpec) Cleanup() {
 	// TODO(jlewi): Add logic to cleanup user provided spec; e.g. by filling in defaults.
 	// We should have default container images so user doesn't have to provide these.
+}
+
+func (r *TfReplicaSpec) setDefaultPSPodTemplateSpec() {
+	r.IsDefaultPS = true
+	r.Template = &v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Image: r.TfImage,
+					Name:  "tensorflow",
+					VolumeMounts: []v1.VolumeMount{
+						v1.VolumeMount{
+							Name:      "ps-config-volume",
+							MountPath: "/ps-server",
+						},
+					},
+				},
+			},
+			Volumes: []v1.Volume{
+				v1.Volume{
+					Name: "ps-config-volume",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: PSConfigMapName(),
+							},
+						},
+					},
+				},
+			},
+			RestartPolicy: v1.RestartPolicyOnFailure,
+		},
+	}
 }
 
 type TfJobPhase string

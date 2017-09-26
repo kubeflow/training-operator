@@ -1,6 +1,7 @@
 package trainer
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -89,6 +90,32 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"runtime_id": s.Job.job.Spec.RuntimeId})
 }
 
+// Transforms the tfconfig to work with grpc_tensorflow_server
+func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
+	var buf bytes.Buffer
+	isFirstJob := true
+	for k, v := range clusterSpec {
+		if !isFirstJob {
+			//separator between different job kinds
+			buf.WriteString(",")
+		}
+		isFirstJob = false
+		buf.WriteString(k)
+		//separator between job name and it's element
+		buf.WriteString("|")
+		isFirstElement := true
+		for _, e := range v {
+			if !isFirstElement {
+				//separator between different elements with same job type
+				buf.WriteString(";")
+			}
+			isFirstElement = false
+			buf.WriteString(e)
+		}
+	}
+	return buf.String()
+}
+
 func (s *TFReplicaSet) Create() error {
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
@@ -138,6 +165,14 @@ func (s *TFReplicaSet) Create() error {
 		if err != nil {
 			log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.Metadata.Name, util.Pformat(tfConfig), err)
 			return err
+		}
+
+		if s.Spec.IsDefaultPS {
+			// grpc_tensorflow_server.py requires the clusterSpec to be passed as argument in a specific format.
+			// We do the appropriate transformations here
+			cs := transformClusterSpecForDefaultPS(s.Job.ClusterSpec())
+			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py"}
+			s.Spec.Template.Spec.Containers[0].Args = []string{"--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
 		}
 
 		// Make a copy of the template because we will modify it below.

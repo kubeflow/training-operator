@@ -1,3 +1,6 @@
+""" TODO: Once grpc_tensorflow_server.py is included in tensorflow
+docker image we should use it instead" """
+
 #!/usr/bin/python
 # Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 #

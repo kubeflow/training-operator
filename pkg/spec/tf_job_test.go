@@ -300,7 +300,6 @@ func TestSetDefaults(t *testing.T) {
 												MountPath: "/ps-server",
 											},
 										},
-										Command: []string{"python", "/ps-server/start_server.py"},
 									},
 								},
 								Volumes: []v1.Volume{
@@ -320,6 +319,7 @@ func TestSetDefaults(t *testing.T) {
 						},
 						TfReplicaType: PS,
 						TfImage:       "tensorflow/tensorflow:1.3.",
+						IsDefaultPS:   true,
 					},
 				},
 			},

@@ -264,7 +264,6 @@ func (c *Controller) createPSConfigMap() error {
 
 	//grab server sources from files
 	filePaths := map[string]string{
-		"start_server.py":           "./grpc_tensorflow_server/start_server.py",
 		"grpc_tensorflow_server.py": "./grpc_tensorflow_server/grpc_tensorflow_server.py",
 	}
 	for n, fp := range filePaths {
