@@ -168,7 +168,6 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 }
 
 func (c *Controller) findAllTfJobs() (string, error) {
-	// TODO(jlewi): Need to implement this function.
 	log.Info("finding existing jobs...")
 	jobList, err := c.TfJobClient.List(c.Namespace)
 	if err != nil {
@@ -215,16 +214,18 @@ func (c *Controller) initResource() (string, error) {
 	err := c.createCRD()
 	if err != nil {
 		if k8sutil.IsKubernetesResourceAlreadyExistError(err) {
-			// CRD has been initialized before. We need to recover existing cluster.
-			watchVersion, err = c.findAllTfJobs()
-			if err != nil {
-				log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
-				return "", err
-			}
+			log.Infof("TfJob CRD already exists.")
 		} else {
 			log.Errorf("createCRD() returned error: %v", err)
 			return "", fmt.Errorf("fail to create CRD: %v", err)
 		}
+	}
+	// In the event CRD was already initialized, we want to find any existing jobs and instantiate controllers
+	// for them.
+	watchVersion, err = c.findAllTfJobs()
+	if err != nil {
+		log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
+		return "", err
 	}
 	return watchVersion, nil
 }
