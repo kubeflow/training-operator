@@ -124,12 +124,12 @@ func (s *TFReplicaSet) Create() error {
 		// Create the ConfigMap containing the sources for the default Parameter Server
 		err, cm := s.getDefaultPSConfigMap()
 		if err != nil {
-			log.Infof("Error building PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			log.Errorf("Error building PS ConfigMap: %v", err)
 			return err
 		}
 		_, err = s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Create(cm)
 		if err != nil {
-			log.Infof("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
 			return err
 		}
 
@@ -272,7 +272,7 @@ func (s *TFReplicaSet) getDefaultPSConfigMap() (error, *v1.ConfigMap) {
 
 	//grab server sources from files
 	filePaths := map[string]string{
-		"grpc_tensorflow_server.py": "./grpc_tensorflow_server/grpc_tensorflow_server.py",
+		"grpc_tensorflow_server.py": "/opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py",
 	}
 	for n, fp := range filePaths {
 		data, err := ioutil.ReadFile(fp)

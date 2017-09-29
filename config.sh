@@ -2,4 +2,4 @@
 
 # Set REGISTRY to the Docker registry where Docker images will
 # be pushed.
-REGISTRY=wbuchwalter
+REGISTRY=gcr.io/tf-on-k8s-dogfood
