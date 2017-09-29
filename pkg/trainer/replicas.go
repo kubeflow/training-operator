@@ -133,6 +133,7 @@ func (s *TFReplicaSet) Create() error {
 				"index": index,
 			},
 		}
+
 		tfConfigJson, err := json.Marshal(tfConfig)
 		if err != nil {
 			log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.Metadata.Name, util.Pformat(tfConfig), err)
