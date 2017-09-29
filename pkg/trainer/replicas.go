@@ -119,10 +119,10 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 	return buf.String()
 }
 
-func (s *TFReplicaSet) Create() error {
+func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 	if s.Spec.IsDefaultPS {
 		// Create the ConfigMap containing the sources for the default Parameter Server
-		err, cm := s.getDefaultPSConfigMap()
+		err, cm := s.getDefaultPSConfigMap(config)
 		if err != nil {
 			log.Errorf("Error building PS ConfigMap: %v", err)
 			return err
@@ -262,7 +262,7 @@ func (s *TFReplicaSet) Create() error {
 
 // Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
 // that will be used as default PS
-func (s *TFReplicaSet) getDefaultPSConfigMap() (error, *v1.ConfigMap) {
+func (s *TFReplicaSet) getDefaultPSConfigMap(config *spec.ControllerConfig) (error, *v1.ConfigMap) {
 	cm := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: s.defaultPSConfigMapName(),
@@ -272,7 +272,7 @@ func (s *TFReplicaSet) getDefaultPSConfigMap() (error, *v1.ConfigMap) {
 
 	//grab server sources from files
 	filePaths := map[string]string{
-		"grpc_tensorflow_server.py": "/opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py",
+		"grpc_tensorflow_server.py": config.GrpcServerFilePath,
 	}
 	for n, fp := range filePaths {
 		data, err := ioutil.ReadFile(fp)

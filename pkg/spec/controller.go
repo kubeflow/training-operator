@@ -5,6 +5,9 @@ type ControllerConfig struct {
 	// This should match the value specified as a container limit.
 	// e.g. alpha.kubernetes.io/nvidia-gpu
 	Accelerators map[string]AcceleratorConfig
+
+	// Path to the file containing the grpc server sources
+	GrpcServerFilePath string
 }
 
 // AcceleratorVolume represents a host path that must be mounted into
