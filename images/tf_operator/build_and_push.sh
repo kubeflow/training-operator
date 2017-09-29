@@ -11,7 +11,7 @@ GITHASH=$(git rev-parse --short HEAD)
 CHANGES=$(git diff-index --quiet HEAD -- || echo "untracked")
 if [ -n "$CHANGES" ]; then
   # Get the hash of the diff.
-  DIFFHASH=$(git diff  | sha256sum)
+  DIFFHASH=$(git diff  | shasum -a 256)
   DIFFHASH=${DIFFHASH:0:7}
   GITHASH=${GITHASH}-dirty-${DIFFHASH}
 fi

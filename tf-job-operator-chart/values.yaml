@@ -1,5 +1,5 @@
 # Docker image to use.
-image: gcr.io/tf-on-k8s-dogfood/tf_operator:4dd012d
+image: wbuchwalter/tf_operator:8082db3-dirty-16f460e
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 
 

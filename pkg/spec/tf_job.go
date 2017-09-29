@@ -30,10 +30,6 @@ func CRDName() string {
 	return fmt.Sprintf("%s.%s", CRDKindPlural, CRDGroup)
 }
 
-func PSConfigMapName() string {
-	return fmt.Sprintf("%s-%s", CRDName(), "ps")
-}
-
 type TfJob struct {
 	metav1.TypeMeta `json:",inline"`
 	Metadata        metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -64,6 +60,10 @@ type TfJobSpec struct {
 
 	// ReplicaSpecs specifies the TF replicas to run.
 	ReplicaSpecs []*TfReplicaSpec `json:"replicaSpecs"`
+
+	// TfImage defines the tensorflow docker image that should be used for Tensorboard
+	// and the default parameter server
+	TfImage string `json:"tfImage,omitempty"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -80,7 +80,7 @@ type ContainerName string
 
 const (
 	TENSORFLOW     ContainerName = "tensorflow"
-	PsDefaultImage               = "wbuchwalter/mlkube-tensorflow-ps"
+	DefaultTFImage               = "tensorflow/tensorflow:latest"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
@@ -96,9 +96,7 @@ type TfReplicaSpec struct {
 	// TfPort is the port to use for TF services.
 	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
-	//TfImage is only used when TfReplicaType == PS to automatically start a PS server
-	TfImage string `json:"tfImage,omitempty"`
-	//IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
+	// IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
 	IsDefaultPS bool
 }
 
@@ -117,10 +115,6 @@ func (c *TfJobSpec) Validate() error {
 		found := false
 		if r.Template == nil && r.TfReplicaType != PS {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
-		}
-
-		if r.TfReplicaType == PS && r.Template == nil && r.TfImage == "" {
-			return errors.New("PS must either have TfImage or Template specified.")
 		}
 
 		if r.TfReplicaType == MASTER && *r.Replicas != 1 {
@@ -218,6 +212,10 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 
 // SetDefaults sets any unspecified values to defaults
 func (c *TfJobSpec) SetDefaults() error {
+	if c.TfImage == "" {
+		c.TfImage = DefaultTFImage
+	}
+
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
 		if r.Template == nil && r.TfReplicaType != PS {
@@ -237,8 +235,8 @@ func (c *TfJobSpec) SetDefaults() error {
 		}
 
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
-		if r.Template == nil && r.TfReplicaType == PS && r.TfImage != "" {
-			r.setDefaultPSPodTemplateSpec()
+		if r.Template == nil && r.TfReplicaType == PS {
+			r.setDefaultPSPodTemplateSpec(c.TfImage)
 		}
 	}
 	return nil
@@ -251,30 +249,18 @@ func (c *TfJobSpec) Cleanup() {
 	// We should have default container images so user doesn't have to provide these.
 }
 
-func (r *TfReplicaSpec) setDefaultPSPodTemplateSpec() {
+func (r *TfReplicaSpec) setDefaultPSPodTemplateSpec(tfImage string) {
 	r.IsDefaultPS = true
 	r.Template = &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				v1.Container{
-					Image: r.TfImage,
+					Image: tfImage,
 					Name:  "tensorflow",
 					VolumeMounts: []v1.VolumeMount{
 						v1.VolumeMount{
 							Name:      "ps-config-volume",
 							MountPath: "/ps-server",
-						},
-					},
-				},
-			},
-			Volumes: []v1.Volume{
-				v1.Volume{
-					Name: "ps-config-volume",
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
-								Name: PSConfigMapName(),
-							},
 						},
 					},
 				},

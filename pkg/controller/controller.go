@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"sync"
@@ -26,7 +25,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kwatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 var (
@@ -230,55 +228,7 @@ func (c *Controller) initResource() (string, error) {
 		}
 	}
 
-	err = c.createPSConfigMap()
-	if err != nil {
-		log.Errorf("createPSConfigMap() returned error: %v", err)
-	}
-
 	return watchVersion, nil
-}
-
-//Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
-//that will be used as default PS
-func (c *Controller) createPSConfigMap() error {
-	//If a ConfigMap with the same name already exists, it was created by an earlier operator
-	//we delete and recreate it in case the grpc_tensorflow_server.py was updated in the meantime
-	cm, err := c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Get(spec.PSConfigMapName(), metav1.GetOptions{})
-	if err != nil {
-		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
-			return err
-		}
-	} else {
-		err = c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Delete(spec.PSConfigMapName(), &metav1.DeleteOptions{})
-		if err != nil {
-			return err
-		}
-	}
-
-	cm = &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: spec.PSConfigMapName(),
-		},
-		Data: make(map[string]string),
-	}
-
-	//grab server sources from files
-	filePaths := map[string]string{
-		"grpc_tensorflow_server.py": "./grpc_tensorflow_server/grpc_tensorflow_server.py",
-	}
-	for n, fp := range filePaths {
-		data, err := ioutil.ReadFile(fp)
-		if err != nil {
-			return err
-		}
-		cm.Data[n] = string(data)
-	}
-
-	_, err = c.KubeCli.CoreV1().ConfigMaps(c.Namespace).Create(cm)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *Controller) createCRD() error {

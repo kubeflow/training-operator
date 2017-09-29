@@ -1,6 +1,3 @@
-""" TODO: Once grpc_tensorflow_server.py is included in tensorflow
-docker image we should use it instead" """
-
 #!/usr/bin/python
 # Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 #
@@ -16,7 +13,11 @@ docker image we should use it instead" """
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Python-based TensorFlow GRPC server.
+"""
+TODO: Once grpc_tensorflow_server.py is included in tensorflow
+docker image we should use it instead" 
+
+Python-based TensorFlow GRPC server.
 
 Takes input arguments cluster_spec, job_name and task_id, and start a blocking
 TensorFlow GRPC server.

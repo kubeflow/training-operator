@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
+
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
 
@@ -117,6 +120,32 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 }
 
 func (s *TFReplicaSet) Create() error {
+	if s.Spec.IsDefaultPS {
+		// Create the ConfigMap containing the sources for the default Parameter Server
+		err, cm := s.getDefaultPSConfigMap()
+		if err != nil {
+			log.Infof("Error building PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			return err
+		}
+		_, err = s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Create(cm)
+		if err != nil {
+			log.Infof("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			return err
+		}
+
+		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
+		s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: "ps-config-volume",
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: s.defaultPSConfigMapName(),
+					},
+				},
+			},
+		})
+	}
+
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
@@ -168,11 +197,8 @@ func (s *TFReplicaSet) Create() error {
 		}
 
 		if s.Spec.IsDefaultPS {
-			// grpc_tensorflow_server.py requires the clusterSpec to be passed as argument in a specific format.
-			// We do the appropriate transformations here
 			cs := transformClusterSpecForDefaultPS(s.Job.ClusterSpec())
-			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py"}
-			s.Spec.Template.Spec.Containers[0].Args = []string{"--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
+			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py", "--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
 		}
 
 		// Make a copy of the template because we will modify it below.
@@ -234,6 +260,31 @@ func (s *TFReplicaSet) Create() error {
 	return nil
 }
 
+// Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
+// that will be used as default PS
+func (s *TFReplicaSet) getDefaultPSConfigMap() (error, *v1.ConfigMap) {
+	cm := &v1.ConfigMap{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: s.defaultPSConfigMapName(),
+		},
+		Data: make(map[string]string),
+	}
+
+	//grab server sources from files
+	filePaths := map[string]string{
+		"grpc_tensorflow_server.py": "./grpc_tensorflow_server/grpc_tensorflow_server.py",
+	}
+	for n, fp := range filePaths {
+		data, err := ioutil.ReadFile(fp)
+		if err != nil {
+			return err, nil
+		}
+		cm.Data[n] = string(data)
+	}
+
+	return nil, cm
+}
+
 // Delete deletes the replicas
 func (s *TFReplicaSet) Delete() error {
 	selector, err := s.Labels().ToSelector()
@@ -270,6 +321,16 @@ func (s *TFReplicaSet) Delete() error {
 			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
 			failures = true
 		}
+	}
+
+	// If the ConfigMap for the default parameter server exists, we delete it
+	_, err = s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
+	if err != nil {
+		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
+			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
+		}
+	} else {
+		s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 	}
 
 	if failures {
@@ -416,4 +477,8 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 
 func (s *TFReplicaSet) jobName(index int32) string {
 	return fmt.Sprintf("%v-%v-%v", strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
+}
+
+func (s *TFReplicaSet) defaultPSConfigMapName() string {
+	return fmt.Sprintf("cm-ps-%v", s.Job.job.Spec.RuntimeId)
 }

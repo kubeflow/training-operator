@@ -73,7 +73,6 @@ func run() error {
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(2222),
 					TfReplicaType: spec.PS,
-					TfVersion:     "1.3.0",
 				},
 				{
 					Replicas:      proto.Int32(1),
