@@ -25,7 +25,7 @@ func TestIsRetryableTerminationState(t *testing.T) {
 			State: v1.ContainerStateTerminated{
 				ExitCode: 0,
 			},
-			Expected: true,
+			Expected: false,
 		},
 		{
 			State: v1.ContainerStateTerminated{
@@ -42,11 +42,10 @@ func TestIsRetryableTerminationState(t *testing.T) {
 			Expected: false,
 		},
 		{
-			// Since Reason is empty we don't trust the exit code.
 			State: v1.ContainerStateTerminated{
 				ExitCode: 1,
 			},
-			Expected: true,
+			Expected: false,
 		},
 		{
 			State: v1.ContainerStateTerminated{
