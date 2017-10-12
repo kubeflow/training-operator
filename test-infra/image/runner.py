@@ -46,9 +46,17 @@ if __name__ == "__main__":
   # TODO(jlewi): How can we figure out what branch
   run(["git", "clone",  repo, dest])
 
-  pull_sha = os.getenv('PULL_PULL_SHA')
-  if pull_sha:
-    run(["git", "checkout", pull_sha], cwd=dest)
+  # If this is a presubmit PULL_PULL_SHA will be set
+  # see:
+  # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
+  sha = os.getenv('PULL_PULL_SHA')
+
+  if not sha:
+    # For postsubmits PULL_BASE_SHA will be set.
+    sha = os.getenv('PULL_BASE_SHA')
+
+  if sha:
+    run(["git", "checkout", sha], cwd=dest)
 
   # Install dependencies
   run(["glide", "install"], cwd=dest)
