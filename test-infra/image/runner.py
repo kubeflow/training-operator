@@ -29,6 +29,12 @@ if __name__ == "__main__":
   repo_owner = os.getenv("REPO_OWNER")
   repo_name = os.getenv("REPO_NAME")
 
+  # Activate the service account for gcloud
+  logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
+               os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+  run(["gcloud", "auth", "activate-service-account",
+       "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
+
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
   logging.info("repo %s", repo)

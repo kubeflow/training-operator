@@ -36,3 +36,14 @@ Generate the ProwJob Config
     * This binary will prompt for needed information like the sha #
     * The output will be a ProwJob spec which can be instantiated using
        kubectl
+
+Create the ProwJob
+
+```
+kubectl create -f ${PROW_JOB_YAML_FILE}
+```
+
+    * To rerun the job bump metadata.name and status.startTime
+
+To monitor the job open Prow's UI by navigating to the exteral IP
+associated with the ingress for your Prow cluster.
