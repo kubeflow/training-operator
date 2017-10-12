@@ -30,7 +30,8 @@ presubmits:
     - master
     spec:
       containers:
-      - image: gcr.io/mlkube-testing/builder:v20171012-a1738ca-dirty
+      # TODO(jlewi): Replace latest with a specific tag once the images stabilize.
+      - image: gcr.io/mlkube-testing/builder:latest
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /etc/service-account/service-account.json
@@ -59,7 +60,8 @@ postsubmits:
     - master
     spec:
       containers:
-      - image: gcr.io/mlkube-testing/builder:v20171012-a1738ca-dirty
+      # TODO(jlewi): Replace latest with a specific tag once the images stabilize.
+      - image: gcr.io/mlkube-testing/builder:latest
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /etc/service-account/service-account.json

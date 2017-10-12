@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import argparse
 import hashlib
-import jinja2
 import logging
 import os
 import re
