@@ -12,58 +12,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Run an E2E test.
 
-An E2E test consists of the following steps
-
-1. Clone code from github
-  * This step is skipped if environment variables specifiying the repo aren't
-    set.
-  * In this case the code should already be mounted inside the container.
-  * Skipping cloning the repo is useful if you want to run an E2E test
-    using your local changes.
-
-2. Build and push a Docker image for the CRD.
-"""
 import logging
 import subprocess
 import os
 import shutil
 
-# Default name for the repo and name.
-# This should match the values used in Go imports.
-GO_REPO_OWNER = "jlewi"
-GO_REPO_NAME = "mlkube.io"
-
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
 
-def clone_repo():
+if __name__ == "__main__":
+  logging.getLogger().setLevel(logging.INFO)
+
   go_path = os.getenv("GOPATH")
-  # REPO_OWNER and REPO_NAME are the environment variables set by Prow.
   repo_owner = os.getenv("REPO_OWNER")
   repo_name = os.getenv("REPO_NAME")
 
-  if bool(repo_owner) != bool(repo_name):
-    raise ValueError("Either set both environment variables "
-                     "REPO_OWNER and REPO_NAME or set neither.")
-
-  src_dir = os.path.join(go_path, "src/github.com", GO_REPO_OWNER)
-  dest = os.path.join(src_dir, GO_REPO_NAME)
-
-  if not repo_owner and not_repo_name:
-    logging.info("Environment variables REPO_OWNER and REPO_NAME not set; "
-                 "not checking out code.")
-    if not os.path.exists(dest):
-      raise ValueError("No code found at %s", dest)
-    return
+  # Activate the service account for gcloud
+  logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
+               os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+  run(["gcloud", "auth", "activate-service-account",
+       "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
 
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
   logging.info("repo %s", repo)
 
+  src_dir = os.path.join(go_path, "src/github.com/jlewi")
   os.makedirs(src_dir)
+  dest = os.path.join(src_dir, "mlkube.io")
 
   # TODO(jlewi): How can we figure out what branch
   run(["git", "clone",  repo, dest])
@@ -80,7 +58,6 @@ def clone_repo():
   if sha:
     run(["git", "checkout", sha], cwd=dest)
 
-
   # Install dependencies
   run(["glide", "install"], cwd=dest)
 
@@ -89,38 +66,9 @@ def clone_repo():
   shutil.rmtree(os.path.join(dest,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
-
-  parser = argparse.ArgumentParser(
-    description="Run E2E tests for the TfJob CRD.")
-
-  parser.add_argument(
-    "--project",
-      default="mlkube-testing",
-      type=str,
-      help="Google project to use for GCR and GKE.")
-
-  args = parser.parse_args()
-
-  # Activate the service account for gcloud
-  # If you don't activate it then you should already be logged in.
-  if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-    logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
-                 os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-    run(["gcloud", "auth", "activate-service-account",
-         "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
-
-  clone_repo()
-
   # Build and push the image
   # We use Google Container Builder because Prow currently doesn't allow using
   # docker build.
-  # TODO(jlewi): Add an option to not build with GCB. This will be convenient
-  # for running the test on local changes.
-  registry = "gcr.io/" + args.project
   run(["./images/tf_operator/build_and_push.py", "--gcb",
-       "--project=" + args.project,
+       "--project=mlkube-testing",
        "--registry=gcr.io/mlkube-testing"], cwd=dest)
-
-  # Create a GKE cluster.
