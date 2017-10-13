@@ -19,6 +19,9 @@ Follow Prow's
 [getting started guide](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md)
 to create your own prow cluster.
 
+    * TODO(jlewi): We don't really need the ingress. You can connect
+      over kubectl or some other mechanism.
+
 Checkout [kubernetes/test-infra](https://github.com/kubernetes/test-infra).
 
 ```
@@ -54,6 +57,9 @@ associated with the ingress for your Prow cluster.
 ## Integration with K8s Prow Infrastructure.
 
 We rely on K8s instance of Prow to actually run our jobs.
+
+Here's [a dashboard](https://k8s-testgrid.appspot.com/sig-big-data) with
+the results.
 
 Our jobs should be added to
 [K8s config](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
