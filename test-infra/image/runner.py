@@ -67,5 +67,6 @@ if __name__ == "__main__":
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
   # Build and push the image
-  run(["./images/tf_operator/build_and_push.py",
+  # We use Google Container Builder because Prow currently doesn't allow using docker build.
+  run(["./images/tf_operator/build_and_push.py", "--gcb",
        "--registry=gcr.io/mlkube-testing"], cwd=dest)

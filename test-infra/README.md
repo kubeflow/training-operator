@@ -6,9 +6,10 @@ K8s continuous integration tool.
 Prow is a set of binaries that run on Kubernetes and respond to
 GitHub events.
 
-[config.yaml](config.yaml) defines the ProwJobs we want to run.
+[config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
+defines the ProwJobs for a cluster.
 
-    * This is a copy of the jobs useful for debugging/testing.
+    * Search for mlkube to find mlkube related jobs
 
 Our ProwJobs use the Docker image defined in [image](image)
 

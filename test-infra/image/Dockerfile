@@ -60,12 +60,6 @@ RUN wget -q https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.ta
     gcloud components install alpha beta kubectl && \
     gcloud info | tee /workspace/gcloud-info.txt
 
-# Install docker
-# Note: 1.11+ changes the tarball format
-RUN curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" \
-    | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
-
-
 # Install glide
 RUN cd /tmp && \
     wget -O glide-v0.13.0-linux-amd64.tar.gz \
