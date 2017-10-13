@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
 
-[Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+[Prow Test Results Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+[Prow mlkube Jobs](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
 
 ## Requirements
 
