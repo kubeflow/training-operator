@@ -1,11 +1,13 @@
 #!/usr/bin/python
 import argparse
+import datetime
 import hashlib
 import logging
 import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 
 
@@ -24,6 +26,10 @@ def GetGitHash():
     git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
   return git_hash
 
+def run(command, cwd=None):
+  logging.info("Running: %s", " ".join(command))
+  subprocess.check_call(command, cwd=cwd)
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
@@ -35,8 +41,23 @@ if __name__ == "__main__":
       type=str,
       help="The docker registry to use.")
 
+  parser.add_argument(
+    "--project",
+      default="",
+      type=str,
+      help="Project to use with Google Container Builder when using GCB.")
+
+  parser.add_argument("--gcb", dest="use_gcb", action="store_true",
+                      help="Use Google Container Builder to build the image.")
+  parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
+                      help="Use Docker to build the image.")
+  parser.set_defaults(feature=False)
+
   args = parser.parse_args()
 
+  if args.use_gcb and not args.project:
+    logging.fatal("--project must be set when using Google Container Builder")
+    sys.exit(-1)
 
   this_file = __file__
   images_dir = os.path.dirname(this_file)
@@ -77,8 +98,13 @@ if __name__ == "__main__":
 
   image_base = args.registry + "/tf_operator"
 
-  image = image_base + ":" + GetGitHash()
-  subprocess.check_call(["docker", "build", "-t", image,  context_dir])
-  logging.info("Built image: %s", image)
-  subprocess.check_call(["gcloud", "docker", "--", "push", image])
-  logging.info("Pushed image: %s", image)
+  n = datetime.datetime.now()
+  image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash()
+  if args.use_gcb:
+    run(["gcloud", "container", "builds", "submit", context_dir,
+         "--tag=" + image, "--project=" + args.project ])
+  else:
+    run(["docker", "build", "-t", image,  context_dir])
+    logging.info("Built image: %s", image)
+    run(["gcloud", "docker", "--", "push", image])
+    logging.info("Pushed image: %s", image)
