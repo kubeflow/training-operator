@@ -328,4 +328,7 @@ if __name__ == "__main__":
     deploy_and_test(image, test_dir)
 
   finally:
-    delete_cluster(gke, args.cluster, args.project, args.zone)
+    # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
+    # facilitate debugging the test.
+    pass
+    # delete_cluster(gke, args.cluster, args.project, args.zone)

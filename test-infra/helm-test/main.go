@@ -273,14 +273,15 @@ func doMain() int {
       return nil
     })
 
-    // TODO(jlewi): DO NOT SUBMIT. Uncomment the following lines. We commented them out just to facilitate testing
-    xmlWrap(fmt.Sprintf("Delete & purge %s", path.Base(chartPath)), func() error {
-      o, execErr := output(exec.Command(*helmPath, "delete", rel, "--purge"))
-      if execErr != nil {
-        return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
-      }
-      return nil
-    })
+    // TODO(jlewi): DO NOT SUBMIT. Uncomment the following lines. We commented them out just to facilitate debuging
+    // the test.
+    //xmlWrap(fmt.Sprintf("Delete & purge %s", path.Base(chartPath)), func() error {
+    //  o, execErr := output(exec.Command(*helmPath, "delete", rel, "--purge"))
+    //  if execErr != nil {
+    //    return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
+    //  }
+    //  return nil
+    //})
 
     // TODO(jlewi): We should delete the namespace when we start deploying the chart in its won namespace.
     //xmlWrap(fmt.Sprintf("Deleting namespace for %s", path.Base(chartPath)), func() error {
