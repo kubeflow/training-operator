@@ -266,6 +266,31 @@ def deploy_and_test(image, test_dir):
   binary = os.path.join(os.getenv("GOPATH"), "bin", "helm-test")
   run([binary, "--image=" + image, "--output_dir=" + test_dir])
 
+def get_gcs_output():
+  """Return the GCS directory where test outputs should be."""
+  job_name = os.getenv("JOB_NAME")
+
+  # GCS layout is defined here:
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  pull_number = os.getenv("PULL_NUMBER")
+  if pull_number:
+    output = ("gs://kubernetes-jenkins/pr-logs/pull/{owner}_{repo}/"
+              "{pull_number}/{job}/{build}").format(
+                owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
+                pull_number=pull_number,
+                job=job_name,
+                build=os.getenv("BUILD_NUMBER"))
+    return output
+  else:
+    # Its a periodic or postsubmit job
+    output = ("gs://kubernetes-jenkins/logs/"
+              "{job}/{build}").format(
+              owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
+              pull_number=pull_number,
+              job=job_name,
+              build=os.getenv("BUILD_NUMBER"))
+    return output
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
@@ -331,6 +356,16 @@ if __name__ == "__main__":
 
   src_dir = clone_repo()
 
+  output_dir = get_gcs_output()
+  logging.info("Artifacts will be saved to: %s", output_dir)
+
+  # TODO(jlewi): We should consider moving all the code below into a script
+  # that is invoked in the src_dir. Currently runner.py is baked into
+  # the Docker image invoked by the prow job. So the version of runner.py
+  # doesn't match the version of the repo cloned above. If we instead move
+  # it into a script inside the repo and invoke the repo then we will be
+  # invoking the script at the CL we have checked out. I think that's better
+  # because then presubmits automatically test any changes to the test script.
   image = build_container(args.use_gcb, src_dir, test_dir)
   logging.info("Created image: %s", image)
 
@@ -353,6 +388,8 @@ if __name__ == "__main__":
     #drwxrwxrwt 17 root root 4096 Oct 16 21:28 ..
     #-rw-r--r--  1 root root   77 Oct 16 21:28 build_info.yaml
     #-rw-r--r--  1 root root  722 Oct 16 21:32 junit_01.xml
+    # Example artifacts directory for a presubmit job
+    # gs://kubernetes-jenkins/pr-logs/pull/jlewi_mlkube.io/49/mlkube-build-presubmit/12
 
     # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
     # facilitate debugging the test.

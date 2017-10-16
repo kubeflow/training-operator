@@ -214,21 +214,14 @@ func doMain() int {
     <-interrupt.C // Drain value
   }
 
-
-  // TODO(jlewi): Need to make execution of helm more robust.
-  // Right now it will keep retrying forever even if there is a permanent error. For example, if "helm"
-  // doesn't exist it will just keep running helm version forever.
-  xmlWrap(fmt.Sprintf("Helm Init"), func() error {
-    _, execErr := output(exec.Command(*helmPath, "init"))
-    return execErr
-  })
-
   // Ensure helm is completely initialized before starting tests.
   // TODO: replace with helm init --wait after
   // https://github.com/kubernetes/helm/issues/2114
   xmlWrap(fmt.Sprintf("Wait for helm initialization to complete"), func() error {
     initErr := fmt.Errorf("Not Initialized")
-    for initErr != nil {
+    endTime := time.Now().Add(time.Minute *2)
+    for initErr != nil && time.Now().Before(endTime){
+      output(exec.Command(*helmPath, "init"))
       _, initErr = output(exec.Command(*helmPath, "version"))
       time.Sleep(2 * time.Second)
     }
