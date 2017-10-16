@@ -25,10 +25,20 @@ An E2E test consists of the following steps
 
 2. Build and push a Docker image for the CRD.
 """
+import argparse
+import datetime
 import logging
 import subprocess
 import os
 import shutil
+import tempfile
+import time
+import uuid
+import yaml
+
+from googleapiclient import discovery
+from googleapiclient import errors
+from oauth2client.client import GoogleCredentials
 
 # Default name for the repo and name.
 # This should match the values used in Go imports.
@@ -52,12 +62,12 @@ def clone_repo():
   src_dir = os.path.join(go_path, "src/github.com", GO_REPO_OWNER)
   dest = os.path.join(src_dir, GO_REPO_NAME)
 
-  if not repo_owner and not_repo_name:
+  if not repo_owner and not repo_name:
     logging.info("Environment variables REPO_OWNER and REPO_NAME not set; "
                  "not checking out code.")
     if not os.path.exists(dest):
       raise ValueError("No code found at %s", dest)
-    return
+    return dest
 
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
@@ -89,6 +99,125 @@ def clone_repo():
   shutil.rmtree(os.path.join(dest,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
+  return dest
+
+class TimeoutError(Exception):
+  """An error indicating an operation timed out."""
+
+def wait_for_operation(client,
+                       project,
+                       zone,
+                       op_id,
+                       timeout=datetime.timedelta(hours=1),
+                       polling_interval=datetime.timedelta(seconds=5)):
+  """Wait for the specified operation to complete.
+
+  Args:
+    client: Client for the API that owns the operation.
+    project: project
+    zone: Zone. Set to none if its a global operation
+    op_id: Operation id.
+    timeout: A datetime.timedelta expressing the amount of time to wait before
+      giving up.
+    polling_interval: A datetime.timedelta to represent the amount of time to
+      wait between requests polling for the operation status.
+
+  Returns:
+    op: The final operation.
+
+  Raises:
+    TimeoutError: if we timeout waiting for the operation to complete.
+  """
+  endtime = datetime.datetime.now() + timeout
+  while True:
+    if zone:
+      op = client.projects().zones().operations().get(
+        projectId=project, zone=zone,
+              operationId=op_id).execute()
+    else:
+      op = client.globalOperations().get(project=project,
+                                         operation=op_id).execute()
+
+    status = op.get("status", "")
+    # Need to handle other status's
+    if status == "DONE":
+      return op
+    if datetime.datetime.now() > endtime:
+      raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
+        op_id))
+    time.sleep(polling_interval.total_seconds())
+
+
+def create_cluster(gke, name, project, zone):  # pylint: disable=redefined-outer-name
+  """Create the cluster.
+
+  Args:
+    gke: Client for GKE.
+
+  """
+  cluster_request = {
+    "cluster": {
+       "name": args.cluster,
+          "description": "A GKE cluster for testing GPUs with Cloud ML",
+          "initialNodeCount": 1,
+          "nodeConfig": {
+            "machineType": "n1-standard-8",
+          },
+     }
+  }
+  request = gke.projects().zones().clusters().create(body=cluster_request,
+                                                     projectId=args.project,
+                                                     zone=args.zone)
+
+  try:
+    response = request.execute()
+    logging.info("Response %s", response)
+    create_op = wait_for_operation(gke, args.project, args.zone, response["name"])
+    logging.info("Cluster creation done.\n %s", create_op)
+
+  except errors.HttpError as e:
+    if e.resp["status"] == 409:
+      # TODO(jlewi): What should we do if the cluster already exits?
+      pass
+
+  logging.info("Configuring kubectl")
+  run(["gcloud", "--project=" + args.project, "container",
+       "clusters", "--zone=" + args.zone, "get-credentials",
+       args.cluster])
+
+def build_container(use_gcb, src_dir, test_dir):
+  """Build the CRD container.
+
+  Args:
+    use_gcb: Boolean indicating whether to build the image with GCB or Docker.
+    src_dir: The directory containing the source.
+    test_dir: Scratch directory for runner.py.
+
+  Returns:
+    image: The URI of the newly built image.
+  """
+  # Build and push the image
+  # We use Google Container Builder because Prow currently doesn't allow using
+  # docker build.
+  # TODO(jlewi): Add an option to not build with GCB. This will be convenient
+  # for running the test on local changes.
+  registry = "gcr.io/" + args.project
+  if use_gcb:
+    gcb_arg = "--gcb"
+  else:
+    gcb_arg = "--no-gcb"
+
+  build_info_file = os.path.join(test_dir, "build_info.yaml")
+  run(["./images/tf_operator/build_and_push.py", gcb_arg,
+       "--project=" + args.project,
+       "--registry=gcr.io/mlkube-testing",
+       "--output=" + build_info_file], cwd=src_dir)
+
+  with open(build_info_file) as hf:
+    build_info = yaml.load(hf)
+
+  return build_info["image"]
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
@@ -97,11 +226,35 @@ if __name__ == "__main__":
 
   parser.add_argument(
     "--project",
-      default="mlkube-testing",
+    default="mlkube-testing",
       type=str,
       help="Google project to use for GCR and GKE.")
 
+  n = datetime.datetime.now()
+
+  parser.add_argument(
+    "--cluster",
+    default=n.strftime("v%Y%m%d") + "-" + uuid.uuid4().hex[0:4],
+      type=str,
+      help="Name for the cluster")
+
+  parser.add_argument(
+    "--zone",
+    default="us-central1-f",
+      type=str,
+      help="Zone to use for spinning up the GKE cluster.")
+
+
+  parser.add_argument("--gcb", dest="use_gcb", action="store_true",
+                      help="Use Google Container Builder to build the image.")
+  parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
+                      help="Use Docker to build the image.")
+  parser.set_defaults(feature=False)
+
   args = parser.parse_args()
+
+  test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+  logging.info("test_dir: %s", test_dir)
 
   # Activate the service account for gcloud
   # If you don't activate it then you should already be logged in.
@@ -111,16 +264,17 @@ if __name__ == "__main__":
     run(["gcloud", "auth", "activate-service-account",
          "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
 
-  clone_repo()
+  src_dir = clone_repo()
 
-  # Build and push the image
-  # We use Google Container Builder because Prow currently doesn't allow using
-  # docker build.
-  # TODO(jlewi): Add an option to not build with GCB. This will be convenient
-  # for running the test on local changes.
-  registry = "gcr.io/" + args.project
-  run(["./images/tf_operator/build_and_push.py", "--gcb",
-       "--project=" + args.project,
-       "--registry=gcr.io/mlkube-testing"], cwd=dest)
+  image = build_container(args.use_gcb, src_dir, test_dir)
+  logging.info("Created image: %s", image)
+
+  credentials = GoogleCredentials.get_application_default()
+  gke = discovery.build("container", "v1", credentials=credentials)
 
   # Create a GKE cluster.
+  create_cluster(gke, args.cluster, args.project, args.zone)
+
+  # TODO(jlewi): Need to use
+  # https://github.com/kubernetes/charts/blob/master/test/helm-test/main.go
+  # to deploy the CRD and run the test.
