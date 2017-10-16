@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python-pip \
     && apt-get clean
 
+RUN pip install pyyaml
+
 # Install gcloud
 
 ENV PATH=/google-cloud-sdk/bin:/workspace:${PATH} \
