@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-
+import yaml
 
 def GetGitHash():
   # The image tag is based on the githash.
@@ -47,6 +47,12 @@ if __name__ == "__main__":
       type=str,
       help="Project to use with Google Container Builder when using GCB.")
 
+  parser.add_argument(
+    "--output",
+      default="",
+      type=str,
+      help="Path to write a YAML file with build info.")
+
   parser.add_argument("--gcb", dest="use_gcb", action="store_true",
                       help="Use Google Container Builder to build the image.")
   parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
@@ -62,7 +68,7 @@ if __name__ == "__main__":
   this_file = __file__
   images_dir = os.path.dirname(this_file)
 
-  context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContentxt")
+  context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)
@@ -108,3 +114,9 @@ if __name__ == "__main__":
     logging.info("Built image: %s", image)
     run(["gcloud", "docker", "--", "push", image])
     logging.info("Pushed image: %s", image)
+
+  if args.output:
+    logging.info("Writing build information to %s", args.output)
+    output = { "image": image }
+    with open(args.output, mode='w') as hf:
+      yaml.dump(output, hf)
