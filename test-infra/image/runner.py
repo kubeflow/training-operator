@@ -50,6 +50,11 @@ def run(command, cwd=None):
   subprocess.check_call(command, cwd=cwd)
 
 def clone_repo():
+  """Clone the repo.
+
+  Returns:
+    src_path: This is the root path for the training code.
+  """
   go_path = os.getenv("GOPATH")
   # REPO_OWNER and REPO_NAME are the environment variables set by Prow.
   repo_owner = os.getenv("REPO_OWNER")
@@ -89,7 +94,6 @@ def clone_repo():
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
-
 
   # Install dependencies
   run(["glide", "install"], cwd=dest)
@@ -218,6 +222,21 @@ def build_container(use_gcb, src_dir, test_dir):
 
   return build_info["image"]
 
+def deploy_and_test(image, test_dir):
+  """Deploy and test the CRD.
+
+  Args:
+    image: The Docker image for the CRD to use.
+    test_dir: The directory where test outputs should be written.
+  """
+
+  target = os.path.join("github.com", GO_REPO_OWNER, GO_REPO_NAME,
+                        "test-infra", "helm-test")
+  run(["go", "install", target])
+
+  binary = os.path.join(os.getenv("GOPATH"), "bin", "helm-test")
+  run([binary, "--image=" + image, "--output_dir=" + test_dir])
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
@@ -275,6 +294,4 @@ if __name__ == "__main__":
   # Create a GKE cluster.
   create_cluster(gke, args.cluster, args.project, args.zone)
 
-  # TODO(jlewi): Need to use
-  # https://github.com/kubernetes/charts/blob/master/test/helm-test/main.go
-  # to deploy the CRD and run the test.
+  deploy_and_test(image, test_dir)

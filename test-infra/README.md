@@ -63,3 +63,12 @@ the results.
 
 Our jobs should be added to
 [K8s config](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
+
+## Running the tests locally.
+
+* The ProwJobs invoke [runner.py](image/runner.py) inside this [container.](image/Dockerfile)
+* You can invoke runner.py to run the E2E tests on your local Changes
+    * You will need to set the arguments to use a GKE cluster in a project
+      you have access too.
+* You can also run it inside the same Docker image,
+  gcr.io/mlkube-testing/builder:latest, used by prow
