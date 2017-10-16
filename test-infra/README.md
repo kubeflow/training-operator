@@ -81,3 +81,23 @@ Our jobs should be added to
   gcloud auth application-default login
   python runner.py --no-gcb
   ```
+
+## Notes adding mlkube.io to K8s Prow Instance
+
+Below is some notes on what it took to integrate with K8s Prow instance.
+
+1. Define ProwJobs see [pull/4951](https://github.com/kubernetes/test-infra/pull/4951)
+
+    * Add prow jobs to [prow/config.yaml](https://github.com/kubernetes/test-infra/pull/4951/files#diff-406185368ba7839d1459d3d51424f104)
+    * Add trigger plugin to [prow/plugins.yaml](https://github.com/kubernetes/test-infra/pull/4951/files#diff-ae83e55ccb05896d5229df577d34255d)
+    * Add test dashboards to [testgrid/config/config.yaml](https://github.com/kubernetes/test-infra/pull/4951/files#diff-49f154cd90facc43fda49a99885e6d17)
+    * Modify [testgrid/jenkins_verify/jenkins_validat.go](https://github.com/kubernetes/test-infra/pull/4951/files#diff-7fb4731a02dd681bbd0daada8dd2f908)
+       to allow presubmits for the new repo.
+
+1. For mlkube.io configure webhooks by following these [instructions](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md#add-the-webhook-to-github)
+
+    * Use https://prow.k8s.io/hook as the target
+    * Get HMAC token from k8s test team
+
+1. TODO(jlewi): Follow [instructions](https://github.com/kubernetes/test-infra/tree/master/gubernator#adding-a-repository-to-the-pr-dashboard) for adding a repository to the PR
+   dashboard.

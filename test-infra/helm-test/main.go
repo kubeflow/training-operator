@@ -141,6 +141,7 @@ func output(cmd *exec.Cmd) ([]byte, error) {
   finished := make(chan result)
   go func() {
     b, err := cmd.Output()
+    log.Printf(string(b))
     finished <- result{b, err}
   }()
   for {

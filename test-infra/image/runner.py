@@ -181,11 +181,18 @@ def create_cluster(gke, name, project, zone):
     logging.info("Cluster creation done.\n %s", create_op)
 
   except errors.HttpError as e:
-    if e.resp["status"] == 409:
+    logging.error("Exception occured creating cluster: %s, status: %s",
+                    e, e.resp["status"])
+    # Status appears to be a string.
+    if e.resp["status"] == '409':
       # TODO(jlewi): What should we do if the cluster already exits?
       pass
     else:
       raise
+
+  logging.info("Configuring kubectl")
+  run(["gcloud", "--project=" + project, "container",
+       "clusters", "--zone=" + zone, "get-credentials", name])
 
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
@@ -302,6 +309,15 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
+  # Print environment variables.
+  # This is useful for debugging and understanding the information set by prow.
+  names = os.environ.keys()
+  names.sort()
+  logging.info("Environment Variables")
+  for n in names:
+    logging.info("%s=%s", n, os.environ[n])
+  logging.info("End Environment Variables")
+
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
   logging.info("test_dir: %s", test_dir)
 
@@ -328,6 +344,16 @@ if __name__ == "__main__":
     deploy_and_test(image, test_dir)
 
   finally:
+    # TODO(jlewi): We need to copy the _artifacts dir to GCS
+    # See: https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+    # test_dir mentioned above ends up looking like
+    #ls -la /tmp/tmpTfCrdTestyELzn1/
+    #total 16
+    #drwx------  2 root root 4096 Oct 16 21:32 .
+    #drwxrwxrwt 17 root root 4096 Oct 16 21:28 ..
+    #-rw-r--r--  1 root root   77 Oct 16 21:28 build_info.yaml
+    #-rw-r--r--  1 root root  722 Oct 16 21:32 junit_01.xml
+
     # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
     # facilitate debugging the test.
     pass
