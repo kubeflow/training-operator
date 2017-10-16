@@ -169,19 +169,23 @@ def create_cluster(gke, name, project, zone):
      }
   }
   request = gke.projects().zones().clusters().create(body=cluster_request,
-                                                     projectId=args.project,
-                                                     zone=args.zone)
+                                                     projectId=project,
+                                                     zone=zone)
 
   try:
+    logging.info("Creating cluster; project=%s, zone=%s, name=%s", project,
+                 zone, name)
     response = request.execute()
     logging.info("Response %s", response)
-    create_op = wait_for_operation(gke, args.project, args.zone, response["name"])
+    create_op = wait_for_operation(gke, project, zone, response["name"])
     logging.info("Cluster creation done.\n %s", create_op)
 
   except errors.HttpError as e:
     if e.resp["status"] == 409:
       # TODO(jlewi): What should we do if the cluster already exits?
       pass
+    else:
+      raise
 
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
@@ -194,13 +198,13 @@ def delete_cluster(gke, name, project, zone):
   """
 
   request = gke.projects().zones().clusters().delete(clusterId=name,
-                                                     projectId=args.project,
-                                                     zone=args.zone)
+                                                     projectId=project,
+                                                     zone=zone)
 
   try:
     response = request.execute()
     logging.info("Response %s", response)
-    delete_op = wait_for_operation(gke, args.project, args.zone, response["name"])
+    delete_op = wait_for_operation(gke, project, zone, response["name"])
     logging.info("Cluster deletion done.\n %s", delete_op)
 
   except errors.HttpError as e:
