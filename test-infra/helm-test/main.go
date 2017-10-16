@@ -214,6 +214,9 @@ func doMain() int {
   }
 
 
+  // TODO(jlewi): Need to make execution of helm more robust.
+  // Right now it will keep retrying forever even if there is a permanent error. For example, if "helm"
+  // doesn't exist it will just keep running helm version forever.
   xmlWrap(fmt.Sprintf("Helm Init"), func() error {
     _, execErr := output(exec.Command(*helmPath, "init"))
     return execErr

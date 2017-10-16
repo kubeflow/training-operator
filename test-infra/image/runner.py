@@ -151,8 +151,7 @@ def wait_for_operation(client,
         op_id))
     time.sleep(polling_interval.total_seconds())
 
-
-def create_cluster(gke, name, project, zone):  # pylint: disable=redefined-outer-name
+def create_cluster(gke, name, project, zone):
   """Create the cluster.
 
   Args:
@@ -184,10 +183,29 @@ def create_cluster(gke, name, project, zone):  # pylint: disable=redefined-outer
       # TODO(jlewi): What should we do if the cluster already exits?
       pass
 
-  logging.info("Configuring kubectl")
-  run(["gcloud", "--project=" + args.project, "container",
-       "clusters", "--zone=" + args.zone, "get-credentials",
-       args.cluster])
+def delete_cluster(gke, name, project, zone):
+  """Delete the cluster.
+
+  Args:
+    gke: Client for GKE.
+    name: Name of the cluster.
+    project: Project that owns the cluster.
+    zone: Zone where the cluster is running.
+  """
+
+  request = gke.projects().zones().clusters().delete(clusterId=name,
+                                                     projectId=args.project,
+                                                     zone=args.zone)
+
+  try:
+    response = request.execute()
+    logging.info("Response %s", response)
+    delete_op = wait_for_operation(gke, args.project, args.zone, response["name"])
+    logging.info("Cluster deletion done.\n %s", delete_op)
+
+  except errors.HttpError as e:
+    logging.error("Exception occured deleting cluster: %s, status: %s",
+                  e, e.resp["status"])
 
 def build_container(use_gcb, src_dir, test_dir):
   """Build the CRD container.
@@ -268,7 +286,15 @@ if __name__ == "__main__":
                       help="Use Google Container Builder to build the image.")
   parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
                       help="Use Docker to build the image.")
-  parser.set_defaults(feature=False)
+  parser.set_defaults(use_gcb=True)
+
+  parser.add_argument("--gke", dest="use_gke", action="store_true",
+                      help="Use Google Container Engine to create acluster.")
+  parser.add_argument("--no-gke", dest="use_gke", action="store_false",
+                      help=("Do not use GKE to create a cluster. "
+                            "A cluster must already exist and be accessible "
+                            "with kubectl."))
+  parser.set_defaults(use_gke=True)
 
   args = parser.parse_args()
 
@@ -291,7 +317,11 @@ if __name__ == "__main__":
   credentials = GoogleCredentials.get_application_default()
   gke = discovery.build("container", "v1", credentials=credentials)
 
-  # Create a GKE cluster.
-  create_cluster(gke, args.cluster, args.project, args.zone)
+  try:
+    # Create a GKE cluster.
+    create_cluster(gke, args.cluster, args.project, args.zone)
 
-  deploy_and_test(image, test_dir)
+    deploy_and_test(image, test_dir)
+
+  finally:
+    delete_cluster(gke, args.cluster, args.project, args.zone)

@@ -72,3 +72,12 @@ Our jobs should be added to
       you have access too.
 * You can also run it inside the same Docker image,
   gcr.io/mlkube-testing/builder:latest, used by prow
+
+  ```
+  docker run -ti -v ${TRAINING_PATH}:/go/src/github.com/jlewi/mlkube.io \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --entrypoint=/bin/bash gcr.io/mlkube-testing/builder:latest
+  gcloud auth login
+  gcloud auth application-default login
+  python runner.py --no-gcb
+  ```

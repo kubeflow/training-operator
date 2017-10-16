@@ -57,7 +57,7 @@ if __name__ == "__main__":
                       help="Use Google Container Builder to build the image.")
   parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
                       help="Use Docker to build the image.")
-  parser.set_defaults(feature=False)
+  parser.set_defaults(use_gcb=False)
 
   args = parser.parse_args()
 
