@@ -24,6 +24,9 @@ An E2E test consists of the following steps
     using your local changes.
 
 2. Build and push a Docker image for the CRD.
+
+TODO(jlewi): Will we be able to eventually replace this with the bootstrap
+program in https://github.com/kubernetes/test-infra/tree/master/bootstrap
 """
 import argparse
 import datetime
@@ -54,6 +57,7 @@ def clone_repo():
 
   Returns:
     src_path: This is the root path for the training code.
+    sha: The sha number of the repo.
   """
   go_path = os.getenv("GOPATH")
   # REPO_OWNER and REPO_NAME are the environment variables set by Prow.
@@ -72,7 +76,8 @@ def clone_repo():
                  "not checking out code.")
     if not os.path.exists(dest):
       raise ValueError("No code found at %s", dest)
-    return dest
+    # TODO(jlewi): We should get the sha number and add "-dirty" if needed
+    return dest, ""
 
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
@@ -103,7 +108,7 @@ def clone_repo():
   shutil.rmtree(os.path.join(dest,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
-  return dest
+  return dest, sha
 
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
@@ -291,6 +296,26 @@ def get_gcs_output():
               build=os.getenv("BUILD_NUMBER"))
     return output
 
+def create_started(output_dir, sha):
+  """Create the started output in GCS.
+
+  Args:
+    output_dir: The GCS directory where the output should be written.
+    sha: Sha for the mlkube.io repo
+  """
+  # See https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  # For a list of fields expected by gubernator
+  started = {
+    "timestamp": str(time.time()),
+    "pull": os.getenv("PULL_REFS", ""),
+    "repos": {
+        # List all repos used and their versions.
+        GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
+     },
+  }
+
+  # TODO(jlewi): Need to write started to GCS.
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
@@ -354,9 +379,11 @@ if __name__ == "__main__":
     run(["gcloud", "auth", "activate-service-account",
          "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
 
-  src_dir = clone_repo()
+  src_dir, sha = clone_repo()
 
   output_dir = get_gcs_output()
+  create_started(output_dir, sha)
+
   logging.info("Artifacts will be saved to: %s", output_dir)
 
   # TODO(jlewi): We should consider moving all the code below into a script
