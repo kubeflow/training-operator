@@ -254,6 +254,7 @@ func TestSetDefaults(t *testing.T) {
 						},
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 			expected: &TfJobSpec{
 				ReplicaSpecs: []*TfReplicaSpec{
@@ -272,6 +273,7 @@ func TestSetDefaults(t *testing.T) {
 						TfReplicaType: MASTER,
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 		},
 		{
@@ -279,9 +281,9 @@ func TestSetDefaults(t *testing.T) {
 				ReplicaSpecs: []*TfReplicaSpec{
 					{
 						TfReplicaType: PS,
-						TfImage:       "tensorflow/tensorflow:1.3.",
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 			expected: &TfJobSpec{
 				ReplicaSpecs: []*TfReplicaSpec{
@@ -292,7 +294,7 @@ func TestSetDefaults(t *testing.T) {
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
 									v1.Container{
-										Image: "tensorflow/tensorflow:1.3.",
+										Image: "tensorflow/tensorflow:1.3.0",
 										Name:  "tensorflow",
 										VolumeMounts: []v1.VolumeMount{
 											v1.VolumeMount{
@@ -302,26 +304,14 @@ func TestSetDefaults(t *testing.T) {
 										},
 									},
 								},
-								Volumes: []v1.Volume{
-									v1.Volume{
-										Name: "ps-config-volume",
-										VolumeSource: v1.VolumeSource{
-											ConfigMap: &v1.ConfigMapVolumeSource{
-												LocalObjectReference: v1.LocalObjectReference{
-													Name: PSConfigMapName(),
-												},
-											},
-										},
-									},
-								},
 								RestartPolicy: v1.RestartPolicyOnFailure,
 							},
 						},
 						TfReplicaType: PS,
-						TfImage:       "tensorflow/tensorflow:1.3.",
 						IsDefaultPS:   true,
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 		},
 	}

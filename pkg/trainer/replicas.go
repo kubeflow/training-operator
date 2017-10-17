@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 
 	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
@@ -95,9 +96,17 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 
 // Transforms the tfconfig to work with grpc_tensorflow_server
 func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
+
+	// sort by keys to make unit testing easier
+	keys := []string{}
+	for k := range clusterSpec {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var buf bytes.Buffer
 	isFirstJob := true
-	for k, v := range clusterSpec {
+	for _, k := range keys {
 		if !isFirstJob {
 			//separator between different job kinds
 			buf.WriteString(",")
@@ -107,7 +116,7 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 		//separator between job name and it's element
 		buf.WriteString("|")
 		isFirstElement := true
-		for _, e := range v {
+		for _, e := range clusterSpec[k] {
 			if !isFirstElement {
 				//separator between different elements with same job type
 				buf.WriteString(";")
