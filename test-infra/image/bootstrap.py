@@ -20,6 +20,7 @@ the repository we can invoke the E2E test runner.
 TODO(jlewi): Will we be able to eventually replace this with the bootstrap
 program in https://github.com/kubernetes/test-infra/tree/master/bootstrap?
 """
+import json
 import logging
 import subprocess
 import os
@@ -95,6 +96,17 @@ def clone_repo():
   return dest, sha
 
 def main():
+  this_dir = os.path.dirname(__file__)
+  version_file = os.path.join(this_dir, "version.json")
+  if os.path.exists(version_file):
+    # Print out version information so we know what container we ran in.
+    with open(version_file) as hf:
+      version = json.load(hf)
+      logging.info("Image info:\n%s", json.dumps(version, indent=2,
+                                                 sort_keys=True))
+  else:
+    logging.warn("Could not find file: %s", version_file)
+
   src_dir, sha = clone_repo()
 
   # Execute the runner.

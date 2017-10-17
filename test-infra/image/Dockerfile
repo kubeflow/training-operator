@@ -85,5 +85,6 @@ RUN wget -O /tmp/get_helm.sh \
     rm /tmp/get_helm.sh
 
 ADD ["bootstrap.py", "/workspace/"]
+ADD ["version.json", "/workspace/"]
 
 ENTRYPOINT ["python", "/workspace/bootstrap.py"]

@@ -308,6 +308,8 @@ def create_finished(gcs_client, output_dir, success):
       "timestamp": int(time.time()),
       "result": result,
       # Dictionary of extra key value pairs to display to the user.
+      # TODO(jlewi): Perhaps we should add the GCR path of the Docker image
+      # we are running in. We'd have to plumb this in from bootstrap.
       "metadata": {},
   }
 
