@@ -332,7 +332,7 @@ def create_started(gcs_client, output_dir, sha):
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
-  blob = bucket.get_blob(os.path.join(path, "started.json"))
+  blob = bucket.blob(os.path.join(path, "started.json"))
   blob.upload_from_string(json.dumps(started))
 
 def create_finished(gcs_client, output_dir, success):
