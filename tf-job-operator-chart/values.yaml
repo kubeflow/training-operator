@@ -2,6 +2,7 @@
 image: gcr.io/tf-on-k8s-dogfood/tf_operator:10b10fd
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 
-
-
-
+## Install Default RBAC roles and bindings
+rbac:
+  install: false
+  apiVersion: v1beta1

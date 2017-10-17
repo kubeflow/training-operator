@@ -14,9 +14,7 @@ data:
           - name: nvidia-debug-tools # optional
             mountPath: /usr/local/bin/nvidia
             hostPath: /home/kubernetes/bin/nvidia/bin
-
 ---
-
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -28,6 +26,9 @@ spec:
       labels:
         name: tf-job-operator
     spec:
+{{- if .Values.rbac.install }}
+      serviceAccountName: tf-job-operator
+{{- end }}
       containers:
       - name: tf-job-operator
         image: {{ .Values.image }}
