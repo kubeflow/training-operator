@@ -25,6 +25,12 @@ rules:
   verbs:
   - "*"
 - apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - "*"
+- apiGroups:
   - ""
   resources:
   - pods
@@ -36,6 +42,7 @@ rules:
   - "*"
 - apiGroups:
   - apps
+  - extensions
   resources:
   - deployments
   verbs:
