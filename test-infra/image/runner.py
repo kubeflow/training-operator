@@ -30,6 +30,7 @@ program in https://github.com/kubernetes/test-infra/tree/master/bootstrap
 """
 import argparse
 import datetime
+import json
 import logging
 import subprocess
 import os
