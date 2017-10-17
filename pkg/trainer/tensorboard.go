@@ -67,7 +67,7 @@ func (s *TBReplicaSet) Create() error {
 	}
 
 	log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-	_, err := s.ClientSet.CoreV1().Services(NAMESPACE).Create(service)
+	_, err := s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Create(service)
 
 	// If the job already exists do nothing.
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *TBReplicaSet) Create() error {
 	}
 
 	log.Infof("Creating Deployment: %v", newD.ObjectMeta.Name)
-	_, err = s.ClientSet.ExtensionsV1beta1().Deployments(NAMESPACE).Create(newD)
+	_, err = s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.Metadata.Namespace).Create(newD)
 
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
@@ -109,7 +109,7 @@ func (s *TBReplicaSet) Delete() error {
 	failures := false
 
 	delProp := meta_v1.DeletePropagationForeground
-	err := s.ClientSet.ExtensionsV1beta1().Deployments(NAMESPACE).Delete(s.jobName(), &meta_v1.DeleteOptions{
+	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{
 		PropagationPolicy: &delProp,
 	})
 	if err != nil {
@@ -117,7 +117,7 @@ func (s *TBReplicaSet) Delete() error {
 		failures = true
 	}
 
-	err = s.ClientSet.CoreV1().Services(NAMESPACE).Delete(s.jobName(), &meta_v1.DeleteOptions{})
+	err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Errorf("Error deleting service: %v; %v", s.jobName(), err)
 		failures = true

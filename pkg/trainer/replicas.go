@@ -168,7 +168,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		}
 
 		log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-		_, err := s.ClientSet.CoreV1().Services(NAMESPACE).Create(service)
+		_, err := s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Create(service)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -190,6 +190,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 				"index": index,
 			},
 		}
+
 		tfConfigJson, err := json.Marshal(tfConfig)
 		if err != nil {
 			log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.Metadata.Name, util.Pformat(tfConfig), err)
@@ -245,7 +246,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		}
 
 		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		_, err = s.ClientSet.BatchV1().Jobs(NAMESPACE).Create(newJ)
+		_, err = s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Create(newJ)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -298,7 +299,7 @@ func (s *TFReplicaSet) Delete() error {
 		LabelSelector: selector,
 	}
 
-	err = s.ClientSet.BatchV1().Jobs(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, options)
+	err = s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
 		log.Errorf("There was a problem deleting the jobs; %v", err)
@@ -306,7 +307,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// We need to delete the completed pods.
-	err = s.ClientSet.CoreV1().Pods(NAMESPACE).DeleteCollection(&meta_v1.DeleteOptions{}, options)
+	err = s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
 		log.Errorf("There was a problem deleting the pods; %v", err)
@@ -315,7 +316,7 @@ func (s *TFReplicaSet) Delete() error {
 
 	// Services doesn't support DeleteCollection so we delete them individually.
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-		err = s.ClientSet.CoreV1().Services(NAMESPACE).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
+		err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
 			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
@@ -415,7 +416,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 
-		j, err := s.ClientSet.BatchV1().Jobs(NAMESPACE).Get(s.jobName(index), meta_v1.GetOptions{})
+		j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
 		if err != nil {
 			increment(spec.ReplicaStateUnknown)
@@ -437,7 +438,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 		}
 
 		// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
-		l, err := s.ClientSet.CoreV1().Pods(NAMESPACE).List(meta_v1.ListOptions{
+		l, err := s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{
 			// TODO(jlewi): Why isn't the label selector working?
 			LabelSelector: selector,
 		})

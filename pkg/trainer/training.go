@@ -251,15 +251,6 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 		return false
 	}
 
-	if s.Message == "" {
-		// launcher.sh should produce a termination log message. So if Kubernetes
-		// doesn't report a termmination message then we can infer that
-		// launcher.sh didn't exit cleanly. For example, the container might
-		// have failed to start. We consider this a retryable error regardless
-		// of the actual exit code.
-		return true
-	}
-
 	// TODO(jlewi): Should we use the exit code reported in the termination
 	// log message and not the ExitCode reported by the container.
 

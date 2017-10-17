@@ -86,6 +86,7 @@ func (c *Controller) Run() error {
 	for {
 		watchVersion, err = c.initResource()
 		if err == nil {
+			log.Info("Starting watch at version %v", watchVersion)
 			break
 		}
 		log.Errorf("initialization failed: %v", err)
@@ -147,21 +148,21 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 		//NewJob(kubeCli kubernetes.Interface, job spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup)
 
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 
 	//case kwatch.Modified:
-	//  if _, ok := c.jobs[clus.Metadata.Name]; !ok {
+	//  if _, ok := c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name]; !ok {
 	//    return fmt.Errorf("unsafe state. cluster was never created but we received event (%s)", event.Type)
 	//  }
-	//  c.jobs[clus.Metadata.Name].Update(clus)
+	//  c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name].Update(clus)
 	//  c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	//
 	case kwatch.Deleted:
-		if _, ok := c.jobs[clus.Metadata.Name]; !ok {
+		if _, ok := c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name]; !ok {
 			return fmt.Errorf("unsafe state. TfJob was never created but we received event (%s)", event.Type)
 		}
-		c.jobs[clus.Metadata.Name].Delete()
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name].Delete()
 		delete(c.jobs, clus.Metadata.Name)
 		delete(c.jobRVs, clus.Metadata.Name)
 	}
@@ -169,7 +170,6 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 }
 
 func (c *Controller) findAllTfJobs() (string, error) {
-	// TODO(jlewi): Need to implement this function.
 	log.Info("finding existing jobs...")
 	jobList, err := c.TfJobClient.List(c.Namespace)
 	if err != nil {
@@ -194,7 +194,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 			continue
 		}
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	}
 
@@ -216,18 +216,19 @@ func (c *Controller) initResource() (string, error) {
 	err := c.createCRD()
 	if err != nil {
 		if k8sutil.IsKubernetesResourceAlreadyExistError(err) {
-			// CRD has been initialized before. We need to recover existing cluster.
-			watchVersion, err = c.findAllTfJobs()
-			if err != nil {
-				log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
-				return "", err
-			}
+			log.Infof("TfJob CRD already exists.")
 		} else {
 			log.Errorf("createCRD() returned error: %v", err)
 			return "", fmt.Errorf("fail to create CRD: %v", err)
 		}
 	}
-
+	// In the event CRD was already initialized, we want to find any existing jobs and instantiate controllers
+	// for them.
+	watchVersion, err = c.findAllTfJobs()
+	if err != nil {
+		log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
+		return "", err
+	}
 	return watchVersion, nil
 }
 

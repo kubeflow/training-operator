@@ -75,8 +75,8 @@ func (c *TfJobRestClient) Client() *http.Client {
 }
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
-	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/namespaces/%s/%s?watch=true&resourceVersion=%s",
-		host, spec.CRDGroup, spec.CRDVersion, ns, spec.CRDKindPlural, resourceVersion))
+	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/%s?watch=true&resourceVersion=%s",
+		host, spec.CRDGroup, spec.CRDVersion, spec.CRDKindPlural, resourceVersion))
 }
 
 func (c *TfJobRestClient) List(ns string) (*spec.TfJobList, error) {
