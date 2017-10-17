@@ -33,6 +33,7 @@ import datetime
 import logging
 import subprocess
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -42,11 +43,14 @@ import yaml
 from googleapiclient import discovery
 from googleapiclient import errors
 from oauth2client.client import GoogleCredentials
+from google.cloud import storage
 
 # Default name for the repo and name.
 # This should match the values used in Go imports.
 GO_REPO_OWNER = "jlewi"
 GO_REPO_NAME = "mlkube.io"
+
+GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
 
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
@@ -296,10 +300,11 @@ def get_gcs_output():
               build=os.getenv("BUILD_NUMBER"))
     return output
 
-def create_started(output_dir, sha):
+def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
 
   Args:
+    gcs_client: GCS client
     output_dir: The GCS directory where the output should be written.
     sha: Sha for the mlkube.io repo
   """
@@ -314,7 +319,13 @@ def create_started(output_dir, sha):
      },
   }
 
-  # TODO(jlewi): Need to write started to GCS.
+  m = GCS_REGEX.match(output_dir)
+  bucket = m.group(1)
+  path = m.group(2)
+
+  bucket = gcs_client.get_bucket(bucket)
+  blob = bucket.get_blob(os.path.join(path, "started.json"))
+  blob.upload_from_string(json.dumps(started))
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
@@ -382,7 +393,9 @@ if __name__ == "__main__":
   src_dir, sha = clone_repo()
 
   output_dir = get_gcs_output()
-  create_started(output_dir, sha)
+  gcs_client = storage.Client()
+
+  create_started(gcs_client, output_dir, sha)
 
   logging.info("Artifacts will be saved to: %s", output_dir)
 

@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python-pip \
     && apt-get clean
 
-RUN pip install pyyaml google-api-python-client
+RUN pip install pyyaml google-api-python-client google-cloud-storage
 
 # Install gcloud
 
