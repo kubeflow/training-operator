@@ -398,6 +398,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
     blob = bucket.blob(os.path.join(path, "artifacts", "junit_01.xml"))
     blob.upload_from_filename(junit_file)
 
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
