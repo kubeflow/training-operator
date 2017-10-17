@@ -16,17 +16,23 @@
 
 An E2E test consists of the following steps
 
-1. Clone code from github
-  * This step is skipped if environment variables specifiying the repo aren't
-    set.
-  * In this case the code should already be mounted inside the container.
-  * Skipping cloning the repo is useful if you want to run an E2E test
-    using your local changes.
+1. Build and push a Docker image for the CRD.
 
-2. Build and push a Docker image for the CRD.
+2. Create a GKE cluster
+
+3. Deploy the helm package on the cluster
+
+4. Run the helm tests
+
+5. Upload test artifacts to GCS for gubernator
+
+6. Delete the cluster
 
 TODO(jlewi): Will we be able to eventually replace this with the bootstrap
-program in https://github.com/kubernetes/test-infra/tree/master/bootstrap
+program in https://github.com/kubernetes/test-infra/tree/master/bootstrap?
+We should probably rewrite this in go and merge it with helm-test/main.go.
+There's really no reason to split the code across Python and Go. This is
+just a legacy of trying to incorporate this as another Kubernetes chart test.
 """
 import argparse
 import datetime
@@ -46,19 +52,22 @@ from googleapiclient import errors
 from oauth2client.client import GoogleCredentials
 from google.cloud import storage
 
-# Default name for the repo and name.
+# Default repository organization and name.
 # This should match the values used in Go imports.
 GO_REPO_OWNER = "jlewi"
 GO_REPO_NAME = "mlkube.io"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
 
+
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
 
+
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
+
 
 def wait_for_operation(client,
                        project,
@@ -88,8 +97,8 @@ def wait_for_operation(client,
   while True:
     if zone:
       op = client.projects().zones().operations().get(
-        projectId=project, zone=zone,
-              operationId=op_id).execute()
+          projectId=project, zone=zone,
+          operationId=op_id).execute()
     else:
       op = client.globalOperations().get(project=project,
                                          operation=op_id).execute()
@@ -100,8 +109,9 @@ def wait_for_operation(client,
       return op
     if datetime.datetime.now() > endtime:
       raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
-        op_id))
+          op_id))
     time.sleep(polling_interval.total_seconds())
+
 
 def create_cluster(gke, name, project, zone):
   """Create the cluster.
@@ -111,14 +121,14 @@ def create_cluster(gke, name, project, zone):
 
   """
   cluster_request = {
-    "cluster": {
-       "name": args.cluster,
+      "cluster": {
+          "name": args.cluster,
           "description": "A GKE cluster for testing GPUs with Cloud ML",
           "initialNodeCount": 1,
           "nodeConfig": {
-            "machineType": "n1-standard-8",
+              "machineType": "n1-standard-8",
           },
-     }
+      }
   }
   request = gke.projects().zones().clusters().create(body=cluster_request,
                                                      projectId=project,
@@ -134,7 +144,7 @@ def create_cluster(gke, name, project, zone):
 
   except errors.HttpError as e:
     logging.error("Exception occured creating cluster: %s, status: %s",
-                    e, e.resp["status"])
+                  e, e.resp["status"])
     # Status appears to be a string.
     if e.resp["status"] == '409':
       # TODO(jlewi): What should we do if the cluster already exits?
@@ -145,6 +155,7 @@ def create_cluster(gke, name, project, zone):
   logging.info("Configuring kubectl")
   run(["gcloud", "--project=" + project, "container",
        "clusters", "--zone=" + zone, "get-credentials", name])
+
 
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
@@ -170,6 +181,7 @@ def delete_cluster(gke, name, project, zone):
     logging.error("Exception occured deleting cluster: %s, status: %s",
                   e, e.resp["status"])
 
+
 def build_container(use_gcb, src_dir, test_dir):
   """Build the CRD container.
 
@@ -184,8 +196,6 @@ def build_container(use_gcb, src_dir, test_dir):
   # Build and push the image
   # We use Google Container Builder because Prow currently doesn't allow using
   # docker build.
-  # TODO(jlewi): Add an option to not build with GCB. This will be convenient
-  # for running the test on local changes.
   registry = "gcr.io/" + args.project
   if use_gcb:
     gcb_arg = "--gcb"
@@ -202,6 +212,7 @@ def build_container(use_gcb, src_dir, test_dir):
     build_info = yaml.load(hf)
 
   return build_info["image"]
+
 
 def deploy_and_test(image, test_dir):
   """Deploy and test the CRD.
@@ -226,8 +237,9 @@ def deploy_and_test(image, test_dir):
     return False
   return True
 
+
 def get_gcs_output():
-  """Return the GCS directory where test outputs should be."""
+  """Return the GCS directory where test outputs should be written to."""
   job_name = os.getenv("JOB_NAME")
 
   # GCS layout is defined here:
@@ -236,20 +248,21 @@ def get_gcs_output():
   if pull_number:
     output = ("gs://kubernetes-jenkins/pr-logs/pull/{owner}_{repo}/"
               "{pull_number}/{job}/{build}").format(
-                owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
-                pull_number=pull_number,
-                job=job_name,
-                build=os.getenv("BUILD_NUMBER"))
+                  owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
+                  pull_number=pull_number,
+                  job=job_name,
+                  build=os.getenv("BUILD_NUMBER"))
     return output
   else:
-    # Its a periodic or postsubmit job
+    # It is a periodic or postsubmit job
     output = ("gs://kubernetes-jenkins/logs/"
               "{job}/{build}").format(
-              owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
-              pull_number=pull_number,
-              job=job_name,
-              build=os.getenv("BUILD_NUMBER"))
+                  owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
+                  pull_number=pull_number,
+                  job=job_name,
+                  build=os.getenv("BUILD_NUMBER"))
     return output
+
 
 def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
@@ -259,15 +272,16 @@ def create_started(gcs_client, output_dir, sha):
     output_dir: The GCS directory where the output should be written.
     sha: Sha for the mlkube.io repo
   """
-  # See https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  # See:
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
   # For a list of fields expected by gubernator
   started = {
-    "timestamp": int(time.time()),
-    "pull": os.getenv("PULL_REFS", ""),
-    "repos": {
-        # List all repos used and their versions.
-        GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
-     },
+      "timestamp": int(time.time()),
+      "pull": os.getenv("PULL_REFS", ""),
+      "repos": {
+          # List all repos used and their versions.
+          GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
+      },
   }
 
   m = GCS_REGEX.match(output_dir)
@@ -277,6 +291,7 @@ def create_started(gcs_client, output_dir, sha):
   bucket = gcs_client.get_bucket(bucket)
   blob = bucket.blob(os.path.join(path, "started.json"))
   blob.upload_from_string(json.dumps(started))
+
 
 def create_finished(gcs_client, output_dir, success):
   """Create the finished output in GCS.
@@ -290,10 +305,10 @@ def create_finished(gcs_client, output_dir, success):
   if success:
     result = "SUCCESS"
   finished = {
-    "timestamp": int(time.time()),
-    "result": result,
-    # Dictionary of extra key value pairs to display to the user.
-    "metadata": {},
+      "timestamp": int(time.time()),
+      "result": result,
+      # Dictionary of extra key value pairs to display to the user.
+      "metadata": {},
   }
 
   m = GCS_REGEX.match(output_dir)
@@ -304,21 +319,8 @@ def create_finished(gcs_client, output_dir, success):
   blob = bucket.blob(os.path.join(path, "finished.json"))
   blob.upload_from_string(json.dumps(finished))
 
-def upload_outputs(gcs_client, output_dir, test_dir):
-  # TODO(jlewi): We need to copy the _artifacts dir to GCS
-  # See: https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
-  # test_dir mentioned above ends up looking like
-  #ls -la /tmp/tmpTfCrdTestyELzn1/
-  #total 16
-  #drwx------  2 root root 4096 Oct 16 21:32 .
-  #drwxrwxrwt 17 root root 4096 Oct 16 21:28 ..
-  #-rw-r--r--  1 root root   77 Oct 16 21:28 build_info.yaml
-  #-rw-r--r--  1 root root  722 Oct 16 21:32 junit_01.xml
-  # Example artifacts directory for a presubmit job
-  # gs://kubernetes-jenkins/pr-logs/pull/jlewi_mlkube.io/49/mlkube-build-presubmit/12
 
-  # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
-  # facilitate debugging the test.
+def upload_outputs(gcs_client, output_dir, test_dir):
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)
@@ -346,37 +348,37 @@ if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
 
   parser = argparse.ArgumentParser(
-    description="Run E2E tests for the TfJob CRD.")
+      description="Run E2E tests for the TfJob CRD.")
 
   parser.add_argument(
-    "--project",
-    default="mlkube-testing",
+      "--project",
+      default="mlkube-testing",
       type=str,
       help="Google project to use for GCR and GKE.")
 
   n = datetime.datetime.now()
 
   parser.add_argument(
-    "--cluster",
-    default=n.strftime("v%Y%m%d") + "-" + uuid.uuid4().hex[0:4],
+      "--cluster",
+      default=n.strftime("v%Y%m%d") + "-" + uuid.uuid4().hex[0:4],
       type=str,
       help="Name for the cluster")
 
   parser.add_argument(
-    "--zone",
-    default="us-central1-f",
+      "--zone",
+      default="us-central1-f",
       type=str,
       help="Zone to use for spinning up the GKE cluster.")
 
   parser.add_argument(
-    "--src_dir",
-    default="",
+      "--src_dir",
+      default="",
       type=str,
       help="The source directory.")
 
   parser.add_argument(
-    "--sha",
-    default="",
+      "--sha",
+      default="",
       type=str,
       help="The sha of the code.")
 
@@ -429,13 +431,6 @@ if __name__ == "__main__":
 
   logging.info("Artifacts will be saved to: %s", output_dir)
 
-  # TODO(jlewi): We should consider moving all the code below into a script
-  # that is invoked in the src_dir. Currently runner.py is baked into
-  # the Docker image invoked by the prow job. So the version of runner.py
-  # doesn't match the version of the repo cloned above. If we instead move
-  # it into a script inside the repo and invoke the repo then we will be
-  # invoking the script at the CL we have checked out. I think that's better
-  # because then presubmits automatically test any changes to the test script.
   image = build_container(args.use_gcb, src_dir, test_dir)
   logging.info("Created image: %s", image)
 
@@ -452,5 +447,4 @@ if __name__ == "__main__":
   finally:
     create_finished(gcs_client, output_dir, success)
     upload_outputs(gcs_client, output_dir, test_dir)
-    # TODO(jlewi): DO NOT SUBMIT uncomment.
-    # delete_cluster(gke, args.cluster, args.project, args.zone)
+    delete_cluster(gke, args.cluster, args.project, args.zone)

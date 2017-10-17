@@ -12,48 +12,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Run an E2E test.
+"""Bootstrap an E2E test.
 
-An E2E test consists of the following steps
-
-1. Clone code from github
-  * This step is skipped if environment variables specifiying the repo aren't
-    set.
-  * In this case the code should already be mounted inside the container.
-  * Skipping cloning the repo is useful if you want to run an E2E test
-    using your local changes.
-
-2. Build and push a Docker image for the CRD.
+We bootstrap a test by checking out the repository. Once we've checked out
+the repository we can invoke the E2E test runner.
 
 TODO(jlewi): Will we be able to eventually replace this with the bootstrap
-program in https://github.com/kubernetes/test-infra/tree/master/bootstrap
+program in https://github.com/kubernetes/test-infra/tree/master/bootstrap?
 """
-import argparse
-import datetime
-import json
 import logging
 import subprocess
 import os
-import re
 import shutil
-import tempfile
-import time
-import uuid
-import yaml
 
-from googleapiclient import discovery
-from googleapiclient import errors
-from oauth2client.client import GoogleCredentials
-from google.cloud import storage
-
-# Default name for the repo and name.
+# Default name for the repo organization and name.
 # This should match the values used in Go imports.
 GO_REPO_OWNER = "jlewi"
 GO_REPO_NAME = "mlkube.io"
 
+
 def run(command, cwd=None):
+  """Run the command as a subprocess"""
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
+
 
 def clone_repo():
   """Clone the repo.
@@ -89,10 +71,9 @@ def clone_repo():
   os.makedirs(src_dir)
 
   # TODO(jlewi): How can we figure out what branch
-  run(["git", "clone",  repo, dest])
+  run(["git", "clone", repo, dest])
 
-  # If this is a presubmit PULL_PULL_SHA will be set
-  # see:
+  # If this is a presubmit PULL_PULL_SHA will be set see:
   # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
   sha = os.getenv('PULL_PULL_SHA')
 
@@ -113,17 +94,13 @@ def clone_repo():
 
   return dest, sha
 
-
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
-
-  parser = argparse.ArgumentParser(
-    description="Run E2E tests for the TfJob CRD.")
-
-  args = parser.parse_args()
-
+def main():
   src_dir, sha = clone_repo()
 
   # Execute the runner.
   runner = os.path.join(src_dir, "test-infra", "runner.py")
   run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha])
+
+if __name__ == "__main__":
+  logging.getLogger().setLevel(logging.INFO)
+  main()

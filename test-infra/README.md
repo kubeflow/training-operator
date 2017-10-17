@@ -1,19 +1,84 @@
 # mlkube Test Infrastructure
 
-We use [Prow](https://github.com/kubernetes/test-infra/tree/master/prow)
-K8s continuous integration tool.
+We use [Prow](https://github.com/kubernetes/test-infra/tree/master/prow),
+K8s' continuous integration tool.
 
-Prow is a set of binaries that run on Kubernetes and respond to
+  * Prow is a set of binaries that run on Kubernetes and respond to
 GitHub events.
 
-[config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
-defines the ProwJobs for a cluster.
+We use Prow to run:
 
-    * Search for mlkube to find mlkube related jobs
+  * Presubmit jobs
+  * Postsubmit jobs
+  * Periodic tests
 
-Our ProwJobs use the Docker image defined in [image](image)
+Quick Links
+ * [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
+defines the ProwJobs.
+  * Search for mlkube to find mlkube related jobs
+ * [mlkube Test Results Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+ * [mlkube Prow Jobs dashboard](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
+
+## Anatomy of our Prow Jobs
+
+* Our prow jobs are defined in [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
+* Each prow job defines a K8s PodSpec indicating
+* Our prow jobs use [bootstrap.py](image/bootstrap.py) to checkout at
+  the repository at the commit being tested.
+*  [bootstrap.py](image/bootstrap.py) will then invoke
+   [runner.py](runner.py)
+* [runner.py](runner.py) runs the test
+    * Builds and pushes a Docker image for the CRD
+    * Creates a GKE cluster
+    * Invokes [helm-test/main.go](helm-test/main.go) to deploy the
+      helm package and run the helm tests
+    * Delete the GKE cluster
+    * Copy test results/artifacts to GCS for gubernator
+    * TODO(jlewi): runner.py and main.go should be merged into a single
+      go program.
+
+## Running the E2E tests manually.
+
+[runner.py](runner.py) can be invoked directly without using Prow
+to easily test your local changes.
+
+```
+python ./test-infra/runner.py --project=${PROJECT} --zone=${ZONE}
+  --src_dir=${REPO_PATH}
+```
+
+* Specify a project and zone where the GKE cluster will be created.
+
+If you don't want to use a GKE cluster
+
+```
+python ./test-infra/runner.py --no-gke--src_dir=${SRC_PATH}
+```
+
+* In this case the test will use whatever cluster kubectl is configured
+   to use.
+
+You can also run the tests inside the Docker image,
+  gcr.io/mlkube-testing/builder:latest, used by prow
+    * This can be useful for debugging or testing changes
+
+  ```
+  docker run -ti -v ${REPO_PATH}:/go/src/github.com/jlewi/mlkube.io \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --entrypoint=/bin/bash gcr.io/mlkube-testing/builder:latest
+  gcloud auth login
+  gcloud auth application-default login
+  python ${REPO_PATH}/test-infra/runner.py --no-gcb
+  ```
 
 ## Testing Changes to the ProwJobs
+
+Changes to our ProwJob configs in [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
+should be relatively infrequent since most of the code invoked
+as part of our tests lives in the repository.
+
+However, in the event we need to make changes here are some instructions
+for testing them.
 
 Follow Prow's
 [getting started guide](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md)
@@ -52,7 +117,8 @@ kubectl create -f ${PROW_JOB_YAML_FILE}
     * To rerun the job bump metadata.name and status.startTime
 
 To monitor the job open Prow's UI by navigating to the exteral IP
-associated with the ingress for your Prow cluster.
+associated with the ingress for your Prow cluster or using
+kubectl proxy.
 
 ## Integration with K8s Prow Infrastructure.
 
@@ -63,24 +129,6 @@ the results.
 
 Our jobs should be added to
 [K8s config](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
-
-## Running the tests locally.
-
-* The ProwJobs invoke [runner.py](image/runner.py) inside this [container.](image/Dockerfile)
-* You can invoke runner.py to run the E2E tests on your local Changes
-    * You will need to set the arguments to use a GKE cluster in a project
-      you have access too.
-* You can also run it inside the same Docker image,
-  gcr.io/mlkube-testing/builder:latest, used by prow
-
-  ```
-  docker run -ti -v ${TRAINING_PATH}:/go/src/github.com/jlewi/mlkube.io \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --entrypoint=/bin/bash gcr.io/mlkube-testing/builder:latest
-  gcloud auth login
-  gcloud auth application-default login
-  python runner.py --no-gcb
-  ```
 
 ## Notes adding mlkube.io to K8s Prow Instance
 
