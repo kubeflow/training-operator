@@ -32,7 +32,7 @@ are customized for TensorFlow. The spec allows specifying the Docker image and a
 replica (i.e. master, worker, and parameter server). The status provides relevant information such as the number of
 replicas in various states.
 
-Using a TPR gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
+Using a CRD gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
 create a job
 
 ```
@@ -62,7 +62,7 @@ with Kubernetes.
 
 Leader election allows a K8s deployment resource to be used to upgrade the operator.
 
-## Installing the TPR and operator on your k8s cluster
+## Installing the CRD and operator on your k8s cluster
 
 1. Clone the repository
 
