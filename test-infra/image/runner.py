@@ -384,7 +384,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
   bucket = gcs_client.get_bucket(bucket)
 
   build_file = os.path.join(test_dir, "build_info.yaml")
-  if not os.patth.exists(build_file):
+  if not os.path.exists(build_file):
     logging.error("File %s doesn't exist.", build_file)
   else:
     logging.info("Uploading file %s.", build_file)
@@ -392,7 +392,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
     blob.upload_from_filename(build_file)
 
   junit_file = os.path.join(test_dir, "junit_01.xml")
-  if not os.patth.exists(junit_file):
+  if not os.path.exists(junit_file):
     logging.error("File %s doesn't exist.", junit_file)
   else:
     logging.info("Uploading file %s.", junit_file)
@@ -495,4 +495,5 @@ if __name__ == "__main__":
   finally:
     create_finished(gcs_client, output_dir, success)
     upload_outputs(gcs_client, output_dir, test_dir)
+    # TODO(jlewi): DO NOT SUBMIT uncomment.
     # delete_cluster(gke, args.cluster, args.project, args.zone)
