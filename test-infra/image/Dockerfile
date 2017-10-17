@@ -84,6 +84,6 @@ RUN wget -O /tmp/get_helm.sh \
     /tmp/get_helm.sh && \
     rm /tmp/get_helm.sh
 
-ADD ["runner.py", "/workspace/"]
+ADD ["bootstrap.py", "/workspace/"]
 
-ENTRYPOINT ["python", "/workspace/runner.py"]
+ENTRYPOINT ["python", "/workspace/bootstrap.py"]
