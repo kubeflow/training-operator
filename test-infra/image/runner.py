@@ -266,6 +266,9 @@ def deploy_and_test(image, test_dir):
   Args:
     image: The Docker image for the CRD to use.
     test_dir: The directory where test outputs should be written.
+
+  Returns:
+    success: Boolean indicating success or failure
   """
 
   target = os.path.join("github.com", GO_REPO_OWNER, GO_REPO_NAME,
@@ -273,7 +276,12 @@ def deploy_and_test(image, test_dir):
   run(["go", "install", target])
 
   binary = os.path.join(os.getenv("GOPATH"), "bin", "helm-test")
-  run([binary, "--image=" + image, "--output_dir=" + test_dir])
+  try:
+    run([binary, "--image=" + image, "--output_dir=" + test_dir])
+  except subprocess.CalledProcessError as e:
+    logging.error("helm-test failed; %s", e)
+    return False
+  return True
 
 def get_gcs_output():
   """Return the GCS directory where test outputs should be."""
@@ -311,7 +319,7 @@ def create_started(gcs_client, output_dir, sha):
   # See https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
   # For a list of fields expected by gubernator
   started = {
-    "timestamp": str(time.time()),
+    "timestamp": int(time.time()),
     "pull": os.getenv("PULL_REFS", ""),
     "repos": {
         # List all repos used and their versions.
@@ -326,6 +334,69 @@ def create_started(gcs_client, output_dir, sha):
   bucket = gcs_client.get_bucket(bucket)
   blob = bucket.get_blob(os.path.join(path, "started.json"))
   blob.upload_from_string(json.dumps(started))
+
+def create_finished(gcs_client, output_dir, success):
+  """Create the finished output in GCS.
+
+  Args:
+    gcs_client: GCS client
+    output_dir: The GCS directory where the output should be written.
+    success: Boolean indicating whether the test was successful.
+  """
+  result = "FAILURE"
+  if success:
+    result = "SUCCESS"
+  finished = {
+    "timestamp": int(time.time()),
+    "result": result,
+    # Dictionary of extra key value pairs to display to the user.
+    "metadata": {},
+  }
+
+  m = GCS_REGEX.match(output_dir)
+  bucket = m.group(1)
+  path = m.group(2)
+
+  bucket = gcs_client.get_bucket(bucket)
+  blob = bucket.get_blob(os.path.join(path, "finished.json"))
+  blob.upload_from_string(json.dumps(finished))
+
+def upload_outputs(gcs_client, output_dir, test_dir):
+  # TODO(jlewi): We need to copy the _artifacts dir to GCS
+  # See: https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  # test_dir mentioned above ends up looking like
+  #ls -la /tmp/tmpTfCrdTestyELzn1/
+  #total 16
+  #drwx------  2 root root 4096 Oct 16 21:32 .
+  #drwxrwxrwt 17 root root 4096 Oct 16 21:28 ..
+  #-rw-r--r--  1 root root   77 Oct 16 21:28 build_info.yaml
+  #-rw-r--r--  1 root root  722 Oct 16 21:32 junit_01.xml
+  # Example artifacts directory for a presubmit job
+  # gs://kubernetes-jenkins/pr-logs/pull/jlewi_mlkube.io/49/mlkube-build-presubmit/12
+
+  # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
+  # facilitate debugging the test.
+  m = GCS_REGEX.match(output_dir)
+  bucket = m.group(1)
+  path = m.group(2)
+
+  bucket = gcs_client.get_bucket(bucket)
+
+  build_file = os.path.join(test_dir, "build_info.yaml")
+  if not os.patth.exists(build_file):
+    logging.error("File %s doesn't exist.", build_file)
+  else:
+    logging.info("Uploading file %s.", build_file)
+    blob = bucket.get_blob(os.path.join(path, "build_info.yaml"))
+    blob.upload_from_filename(build_file)
+
+  junit_file = os.path.join(test_dir, "junit_01.xml")
+  if not os.patth.exists(junit_file):
+    logging.error("File %s doesn't exist.", junit_file)
+  else:
+    logging.info("Uploading file %s.", junit_file)
+    blob = bucket.get_blob(os.path.join(path, "artifacts", "junit_01.xml"))
+    blob.upload_from_filename(junit_file)
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
@@ -412,26 +483,14 @@ if __name__ == "__main__":
   credentials = GoogleCredentials.get_application_default()
   gke = discovery.build("container", "v1", credentials=credentials)
 
+  success = False
   try:
     # Create a GKE cluster.
     create_cluster(gke, args.cluster, args.project, args.zone)
 
-    deploy_and_test(image, test_dir)
+    success = deploy_and_test(image, test_dir)
 
   finally:
-    # TODO(jlewi): We need to copy the _artifacts dir to GCS
-    # See: https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
-    # test_dir mentioned above ends up looking like
-    #ls -la /tmp/tmpTfCrdTestyELzn1/
-    #total 16
-    #drwx------  2 root root 4096 Oct 16 21:32 .
-    #drwxrwxrwt 17 root root 4096 Oct 16 21:28 ..
-    #-rw-r--r--  1 root root   77 Oct 16 21:28 build_info.yaml
-    #-rw-r--r--  1 root root  722 Oct 16 21:32 junit_01.xml
-    # Example artifacts directory for a presubmit job
-    # gs://kubernetes-jenkins/pr-logs/pull/jlewi_mlkube.io/49/mlkube-build-presubmit/12
-
-    # TODO(jlewi): DO NOT SUBMIT. We only want to leave cluster up to
-    # facilitate debugging the test.
-    pass
+    create_finished(gcs_client, output_dir, success)
+    upload_outputs(gcs_client, output_dir, test_dir)
     # delete_cluster(gke, args.cluster, args.project, args.zone)

@@ -40,11 +40,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils \
     zlib1g-dev \
     python \
+    python-setuptools \
     python-openssl \
-    python-pip \
     && apt-get clean
 
-RUN pip install pyyaml google-api-python-client google-cloud-storage
+RUN easy_install pip
+RUN pip install --upgrade six pyyaml google-api-python-client \
+    google-cloud-storage
 
 # Install gcloud
 
