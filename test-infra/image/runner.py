@@ -358,7 +358,7 @@ def create_finished(gcs_client, output_dir, success):
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
-  blob = bucket.get_blob(os.path.join(path, "finished.json"))
+  blob = bucket.blob(os.path.join(path, "finished.json"))
   blob.upload_from_string(json.dumps(finished))
 
 def upload_outputs(gcs_client, output_dir, test_dir):
@@ -387,7 +387,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
     logging.error("File %s doesn't exist.", build_file)
   else:
     logging.info("Uploading file %s.", build_file)
-    blob = bucket.get_blob(os.path.join(path, "build_info.yaml"))
+    blob = bucket.blob(os.path.join(path, "build_info.yaml"))
     blob.upload_from_filename(build_file)
 
   junit_file = os.path.join(test_dir, "junit_01.xml")
@@ -395,7 +395,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
     logging.error("File %s doesn't exist.", junit_file)
   else:
     logging.info("Uploading file %s.", junit_file)
-    blob = bucket.get_blob(os.path.join(path, "artifacts", "junit_01.xml"))
+    blob = bucket.blob(os.path.join(path, "artifacts", "junit_01.xml"))
     blob.upload_from_filename(junit_file)
 
 if __name__ == "__main__":
