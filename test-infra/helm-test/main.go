@@ -232,8 +232,12 @@ func doMain() int {
   // Not sure that makes sense anymore because we have a single helm chart for the operator. Furthermore, the chart
   // requires arguments; i.e. the Docker image to deploy. So not sure how we would extend that to multiple charts.
   for _, dir := range chartList {
-    // TODO(jlewi): Consider installing the TfJob operator in a namespace to verify that works.
+    // TODO(jlewi): Consider installing the TfJob operator in a non default namespace to verify that works.
     // ns := randStringRunes(10)
+    // TODO(jlewi): We explicitly set the namespace because otherwise it ends up deploying the operator in namespace
+    // test-pods when running under Prow. My conjecture is that this happens because helm ends up defaulting to
+    // the namespace we are running under when running on Kubernetes.
+    ns := "default"
     rel := randStringRunes(3)
     chartPath := path.Join(chartsBasePath, dir)
 
@@ -252,7 +256,7 @@ func doMain() int {
 
     xmlWrap(fmt.Sprintf("Helm Install %s", path.Base(chartPath)), func() error {
       // TODO(jlewi): Consider deploying the operator ina namespace and then verifying that works.
-      o, execErr := output(exec.Command(*helmPath, "install", "--set",  "image=" + *image, chartPath, "--name", rel, "--wait"))
+      o, execErr := output(exec.Command(*helmPath, "install", "--set",  "image=" + *image, chartPath, "--namespace", ns, "--name", rel, "--wait"))
       if execErr != nil {
         return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
       }
