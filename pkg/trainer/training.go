@@ -24,10 +24,6 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-const (
-	NAMESPACE string = "default"
-)
-
 var (
 	reconcileInterval = 8 * time.Second
 )

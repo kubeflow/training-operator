@@ -6,7 +6,7 @@ type ControllerConfig struct {
 	// e.g. alpha.kubernetes.io/nvidia-gpu
 	Accelerators map[string]AcceleratorConfig
 
-	// Path to the file containing the grpc server sources
+	// Path to the file containing the grpc server source
 	GrpcServerFilePath string
 }
 

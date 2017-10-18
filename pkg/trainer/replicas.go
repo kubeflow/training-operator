@@ -1,7 +1,6 @@
 package trainer
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -104,28 +103,17 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 	}
 	sort.Strings(keys)
 
-	var buf bytes.Buffer
-	isFirstJob := true
-	for _, k := range keys {
-		if !isFirstJob {
-			//separator between different job kinds
-			buf.WriteString(",")
+	jobs := []string{}
+	for _, jobType := range keys {
+		hosts := []string{}
+		for _, h := range clusterSpec[jobType] {
+			hosts = append(hosts, h)
 		}
-		isFirstJob = false
-		buf.WriteString(k)
-		//separator between job name and it's element
-		buf.WriteString("|")
-		isFirstElement := true
-		for _, e := range clusterSpec[k] {
-			if !isFirstElement {
-				//separator between different elements with same job type
-				buf.WriteString(";")
-			}
-			isFirstElement = false
-			buf.WriteString(e)
-		}
+		s := jobType + "|" + strings.Join(hosts, ";")
+		jobs = append(jobs, s)
 	}
-	return buf.String()
+
+	return strings.Join(jobs, ",")
 }
 
 func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
@@ -136,7 +124,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 			log.Errorf("Error building PS ConfigMap: %v", err)
 			return err
 		}
-		_, err = s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Create(cm)
+		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Create(cm)
 		if err != nil {
 			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
 			return err
@@ -334,13 +322,13 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// If the ConfigMap for the default parameter server exists, we delete it
-	_, err = s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
+	_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
 	if err != nil {
 		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
 			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
 		}
 	} else {
-		s.ClientSet.CoreV1().ConfigMaps(NAMESPACE).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
+		s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 	}
 
 	if failures {

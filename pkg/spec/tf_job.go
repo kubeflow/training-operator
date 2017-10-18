@@ -80,7 +80,7 @@ type ContainerName string
 
 const (
 	TENSORFLOW     ContainerName = "tensorflow"
-	DefaultTFImage               = "tensorflow/tensorflow:latest"
+	DefaultTFImage               = "tensorflow/tensorflow:1.3.0"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
