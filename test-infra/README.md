@@ -141,11 +141,11 @@ Below is some notes on what it took to integrate with K8s Prow instance.
     * Add test dashboards to [testgrid/config/config.yaml](https://github.com/kubernetes/test-infra/pull/4951/files#diff-49f154cd90facc43fda49a99885e6d17)
     * Modify [testgrid/jenkins_verify/jenkins_validat.go](https://github.com/kubernetes/test-infra/pull/4951/files#diff-7fb4731a02dd681bbd0daada8dd2f908)
        to allow presubmits for the new repo.
-
 1. For mlkube.io configure webhooks by following these [instructions](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md#add-the-webhook-to-github)
-
     * Use https://prow.k8s.io/hook as the target
     * Get HMAC token from k8s test team
-
+1. Add the k8s bot account, k8s-ci-robot, as an admin on the repository
+    * Admin privileges are needed to update status (but not comment)
+    * Someone with access to the bot will need to accept the request.
 1. TODO(jlewi): Follow [instructions](https://github.com/kubernetes/test-infra/tree/master/gubernator#adding-a-repository-to-the-pr-dashboard) for adding a repository to the PR
    dashboard.
