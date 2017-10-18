@@ -40,9 +40,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils \
     zlib1g-dev \
     python \
+    python-setuptools \
     python-openssl \
-    python-pip \
     && apt-get clean
+
+RUN easy_install pip
+RUN pip install --upgrade six pyyaml google-api-python-client \
+    google-cloud-storage
 
 # Install gcloud
 
@@ -67,7 +71,20 @@ RUN cd /tmp && \
     tar -xvf glide-v0.13.0-linux-amd64.tar.gz && \
     mv ./linux-amd64/glide /usr/local/bin/
 
-ADD ["runner.py", \
-    "/workspace/"]
+# Install docker
+# Docker is used when running locally to build the images.
+# Note: 1.11+ changes the tarball format
+RUN curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" \
+    | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
 
-ENTRYPOINT ["python", "/workspace/runner.py"]
+# Install Helm
+RUN wget -O /tmp/get_helm.sh \
+    https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get && \
+    chmod 700 /tmp/get_helm.sh && \
+    /tmp/get_helm.sh && \
+    rm /tmp/get_helm.sh
+
+ADD ["bootstrap.py", "/workspace/"]
+ADD ["version.json", "/workspace/"]
+
+ENTRYPOINT ["python", "/workspace/bootstrap.py"]

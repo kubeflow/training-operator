@@ -18,9 +18,11 @@ TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
 all: build
 
 build:
+	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
 	docker build -t $(IMG):$(TAG) .
 	docker tag $(IMG):$(TAG) $(IMG):latest
 	@echo Built $(IMG):$(TAG) and tagged with latest
+	rm -f version.json
 
 push: build
 	gcloud docker -- push $(IMG):$(TAG)
