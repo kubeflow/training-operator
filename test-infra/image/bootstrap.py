@@ -47,8 +47,10 @@ def clone_repo():
   """
   go_path = os.getenv("GOPATH")
   # REPO_OWNER and REPO_NAME are the environment variables set by Prow.
-  repo_owner = os.getenv("REPO_OWNER")
-  repo_name = os.getenv("REPO_NAME")
+  # REPO_OWNER and REPO_NAME won't be set for periodic jobs so we resort
+  # to default values.
+  repo_owner = os.getenv("REPO_OWNER", GO_REPO_OWNER)
+  repo_name = os.getenv("REPO_NAME", GO_REPO_NAME)
 
   if bool(repo_owner) != bool(repo_name):
     raise ValueError("Either set both environment variables "
@@ -56,14 +58,6 @@ def clone_repo():
 
   src_dir = os.path.join(go_path, "src/github.com", GO_REPO_OWNER)
   dest = os.path.join(src_dir, GO_REPO_NAME)
-
-  if not repo_owner and not repo_name:
-    logging.info("Environment variables REPO_OWNER and REPO_NAME not set; "
-                 "not checking out code.")
-    if not os.path.exists(dest):
-      raise ValueError("No code found at %s", dest)
-    # TODO(jlewi): We should get the sha number and add "-dirty" if needed
-    return dest, ""
 
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
