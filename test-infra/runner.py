@@ -350,7 +350,7 @@ def create_latest(gcs_client, job_name, sha):
   """Create a file in GCS with information about the latest passing postsubmit.
   """
   m = GCS_REGEX.match(output_dir)
-  bucket_name = "postsubmit-results"
+  bucket_name = "mlkube-testing-results"
   path = os.path.join(job_name, "latest_green.json")
 
   bucket = gcs_client.get_bucket(bucket_name)
