@@ -362,6 +362,7 @@ def create_latest(gcs_client, job_name, sha):
     "job": job_name,
     "sha": sha,
   }
+  blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
 
 if __name__ == "__main__":
