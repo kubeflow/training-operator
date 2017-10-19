@@ -13,10 +13,10 @@ import yaml
 
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
-  git_hash = run(["git", "rev-parse", "--short", "HEAD"], cwd=root_dir)
+  git_hash = run_and_output(["git", "rev-parse", "--short", "HEAD"], cwd=root_dir)
   git_hash=git_hash.strip()
-  modified_files = run(["git", "ls-files", "--modified"], cwd=root_dir)
-  untracked_files = run(
+  modified_files = run_and_output(["git", "ls-files", "--modified"], cwd=root_dir)
+  untracked_files = run_and_output(
       ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   unfiltered = []
   unfiltered.extend(modified_files.split())
@@ -36,7 +36,7 @@ def GetGitHash(root_dir):
       filtered.append(f)
 
   if filtered:
-    diff= subprocess.check_output(["git", "diff"])
+    diff= run_and_output(["git", "diff"], cwd=root_dir)
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
@@ -45,7 +45,13 @@ def GetGitHash(root_dir):
 
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
-  output=subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  subprocess.check_call(command, cwd=cwd)
+
+def run_and_output(command, cwd=None):
+  logging.info("Running: %s", " ".join(command))
+  # The output won't be available until the command completes.
+  # So prefer using run if we don't need to return the output.
+  output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
   print(output)
   return output
 

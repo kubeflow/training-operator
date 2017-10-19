@@ -33,10 +33,16 @@ GO_REPO_NAME = "mlkube.io"
 
 
 def run(command, cwd=None):
-  """Run the command as a subprocess"""
   logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
+  subprocess.check_call(command, cwd=cwd).decode("utf-8")
 
+def run_and_output(command, cwd=None):
+  logging.info("Running: %s", " ".join(command))
+  # The output won't be available until the command completes.
+  # So prefer using run if we don't need to return the output.
+  output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  print(output)
+  return output
 
 def clone_repo():
   """Clone the repo.
@@ -70,14 +76,26 @@ def clone_repo():
 
   # If this is a presubmit PULL_PULL_SHA will be set see:
   # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
-  sha = os.getenv('PULL_PULL_SHA')
+  sha = ""
+  pull_number = os.getenv("PULL_NUMBER", "")
 
-  if not sha:
-    # For postsubmits PULL_BASE_SHA will be set.
-    sha = os.getenv('PULL_BASE_SHA')
+  if pull_number:
+    sha = os.getenv("PULL_PULL_SHA", "")
+    # Its a presubmit job sob since we are testing a Pull request.
+    run(["git", "fetch", "origin",
+         "pull/{0}/head:pr".format(pull_number)],
+        cwd=dest)
+  else:
+    # For postsubmits PULL_BASE_SHA will be set
+    sha = os.getenv("PULL_BASE_SHA", "")
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
+
+  # Get the actual git hash.
+  # This ensures even for periodic jobs which don't set the sha we know
+  # the version of the code tested.
+  sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
 
   # Install dependencies
   run(["glide", "install"], cwd=dest)
@@ -100,6 +118,15 @@ def main():
                                                  sort_keys=True))
   else:
     logging.warn("Could not find file: %s", version_file)
+
+  # Print environment variables.
+  # This is useful for debugging and understanding the information set by prow.
+  names = os.environ.keys()
+  names.sort()
+  logging.info("Environment Variables")
+  for n in names:
+    logging.info("%s=%s", n, os.environ[n])
+  logging.info("End Environment Variables")
 
   src_dir, sha = clone_repo()
 
