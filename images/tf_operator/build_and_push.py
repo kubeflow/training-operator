@@ -11,14 +11,31 @@ import sys
 import tempfile
 import yaml
 
-def GetGitHash():
+def GetGitHash(root_dir):
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+  git_hash = run(["git", "rev-parse", "--short", "HEAD"], cwd=root_dir)
   git_hash=git_hash.strip()
-  modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
-  untracked_files = subprocess.check_output(
-      ["git", "ls-files", "--others", "--exclude-standard"])
-  if modified_files or untracked_files:
+  modified_files = run(["git", "ls-files", "--modified"], cwd=root_dir)
+  untracked_files = run(
+      ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
+  unfiltered = []
+  unfiltered.extend(modified_files.split())
+  unfiltered.extend(untracked_files)
+
+  # exclude the training-job-chart files since the chart code isn't in
+  # the image. This allows us to modify the helm chart to point at a new image
+  # without the hash ending up "dirty".
+  exclude_dirs = ["tf-job-operator-chart"]
+  filtered = []
+  for f in unfiltered:
+    exclude = False
+    for d in exclude_dirs:
+      if f.startswith(d):
+        exclude = True
+    if not exclude:
+      filtered.append(f)
+
+  if filtered:
     diff= subprocess.check_output(["git", "diff"])
     sha = hashlib.sha256()
     sha.update(diff)
@@ -28,7 +45,9 @@ def GetGitHash():
 
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
+  output=subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  print(output)
+  return output
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
@@ -67,6 +86,7 @@ if __name__ == "__main__":
 
   this_file = __file__
   images_dir = os.path.dirname(this_file)
+  root_dir = os.path.abspath(os.path.join(images_dir, os.pardir, os.pardir))
 
   context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
   logging.info("context_dir: %s", context_dir)
@@ -105,7 +125,7 @@ if __name__ == "__main__":
   image_base = args.registry + "/tf_operator"
 
   n = datetime.datetime.now()
-  image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash()
+  image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash(root_dir)
   if args.use_gcb:
     run(["gcloud", "container", "builds", "submit", context_dir,
          "--tag=" + image, "--project=" + args.project ])
