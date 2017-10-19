@@ -348,7 +348,7 @@ def upload_outputs(gcs_client, output_dir, test_dir):
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
-
+  logging.info("Starting runner.py")
   parser = argparse.ArgumentParser(
       description="Run E2E tests for the TfJob CRD.")
 
@@ -405,15 +405,6 @@ if __name__ == "__main__":
 
   src_dir = args.src_dir
   sha = args.sha
-
-  # Print environment variables.
-  # This is useful for debugging and understanding the information set by prow.
-  names = os.environ.keys()
-  names.sort()
-  logging.info("Environment Variables")
-  for n in names:
-    logging.info("%s=%s", n, os.environ[n])
-  logging.info("End Environment Variables")
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
   logging.info("test_dir: %s", test_dir)
