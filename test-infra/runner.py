@@ -346,6 +346,25 @@ def upload_outputs(gcs_client, output_dir, test_dir):
     blob.upload_from_filename(junit_file)
 
 
+def create_latest(gcs_client, job_name, sha):
+  """Create a file in GCS with information about the latest passing postsubmit.
+  """
+  m = GCS_REGEX.match(output_dir)
+  bucket_name = "mlkube-testing-results"
+  path = os.path.join(job_name, "latest_green.json")
+
+  bucket = gcs_client.get_bucket(bucket_name)
+
+  logging.info("Creating GCS output: bucket: %s, path: %s.", bucket_name, path)
+
+  data = {
+    "status": "passing",
+    "job": job_name,
+    "sha": sha,
+  }
+  blob = bucket.blob(path)
+  blob.upload_from_string(json.dumps(data))
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   logging.info("Starting runner.py")
@@ -404,7 +423,7 @@ if __name__ == "__main__":
     raise ValueError("--src_dir must be specified.")
 
   src_dir = args.src_dir
-  sha = args.sha
+  sha = args.sha.strip()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
   logging.info("test_dir: %s", test_dir)
@@ -436,6 +455,10 @@ if __name__ == "__main__":
     create_cluster(gke, args.cluster, args.project, args.zone)
 
     success = deploy_and_test(image, test_dir)
+
+    if success:
+      job_name = os.getenv("JOB_NAME", "unknown")
+      create_latest(gcs_client, job_name, sha)
 
   finally:
     create_finished(gcs_client, output_dir, success)
