@@ -117,11 +117,11 @@ if __name__ == "__main__":
          "--tag=" + image, "--project=" + args.project ])
   else:
     run(["docker", "build", "-t", image,  context_dir])
-    logging.info("Built image: %s", image)
-  
-  if args.should_push:
-    run(["gcloud", "docker", "--", "push", image])
-    logging.info("Pushed image: %s", image)
+    logging.info("Built image: %s", image)  
+    
+    if args.should_push:
+      run(["gcloud", "docker", "--", "push", image])
+      logging.info("Pushed image: %s", image)
 
   if args.output:
     logging.info("Writing build information to %s", args.output)
