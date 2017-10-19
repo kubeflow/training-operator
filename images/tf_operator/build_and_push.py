@@ -14,7 +14,7 @@ import yaml
 def GetGitHash():
   # The image tag is based on the githash.
   git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode("utf-8") 
-  git_hash=git_hash.strip()
+  git_hash = git_hash.strip()
   
   modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
   untracked_files = subprocess.check_output(
