@@ -423,7 +423,7 @@ if __name__ == "__main__":
     raise ValueError("--src_dir must be specified.")
 
   src_dir = args.src_dir
-  sha = args.sha
+  sha = args.sha.strip()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
   logging.info("test_dir: %s", test_dir)
