@@ -4,20 +4,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"sort"
 	"strings"
+
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 
 	"github.com/jlewi/mlkube.io/pkg/spec"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	// TOOO(jlewi): Rename to apiErrors
+	"github.com/jlewi/mlkube.io/pkg/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -53,8 +57,8 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
 	}
 
-	if tfReplicaSpec.Template == nil {
-		return nil, errors.New("tfReplicaSpec.Template can't be nil.")
+	if tfReplicaSpec.Template == nil && tfReplicaSpec.TfReplicaType != spec.PS {
+		return nil, fmt.Errorf("tfReplicaSpec.Template can't be nil for replica type %v.", tfReplicaSpec.TfReplicaType)
 	}
 
 	// Make sure the replica type is valid.
@@ -71,6 +75,7 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 	if !isValidReplicaType {
 		return nil, fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", tfReplicaSpec.TfReplicaType, validReplicaTypes)
 	}
+
 	return &TFReplicaSet{
 		ClientSet: clientSet,
 		Job:       job,
@@ -88,7 +93,56 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"runtime_id": s.Job.job.Spec.RuntimeId})
 }
 
-func (s *TFReplicaSet) Create() error {
+// Transforms the tfconfig to work with grpc_tensorflow_server
+func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
+
+	// sort by keys to make unit testing easier
+	keys := []string{}
+	for k := range clusterSpec {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	jobs := []string{}
+	for _, jobType := range keys {
+		hosts := []string{}
+		for _, h := range clusterSpec[jobType] {
+			hosts = append(hosts, h)
+		}
+		s := jobType + "|" + strings.Join(hosts, ";")
+		jobs = append(jobs, s)
+	}
+
+	return strings.Join(jobs, ",")
+}
+
+func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
+	if s.Spec.IsDefaultPS {
+		// Create the ConfigMap containing the sources for the default Parameter Server
+		err, cm := s.getDefaultPSConfigMap(config)
+		if err != nil {
+			log.Errorf("Error building PS ConfigMap: %v", err)
+			return err
+		}
+		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Create(cm)
+		if err != nil {
+			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			return err
+		}
+
+		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
+		s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: "ps-config-volume",
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: s.defaultPSConfigMapName(),
+					},
+				},
+			},
+		})
+	}
+
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
@@ -138,6 +192,11 @@ func (s *TFReplicaSet) Create() error {
 		if err != nil {
 			log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.Metadata.Name, util.Pformat(tfConfig), err)
 			return err
+		}
+
+		if s.Spec.IsDefaultPS {
+			cs := transformClusterSpecForDefaultPS(s.Job.ClusterSpec())
+			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py", "--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
 		}
 
 		// Make a copy of the template because we will modify it below.
@@ -199,6 +258,31 @@ func (s *TFReplicaSet) Create() error {
 	return nil
 }
 
+// Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
+// that will be used as default PS
+func (s *TFReplicaSet) getDefaultPSConfigMap(config *spec.ControllerConfig) (error, *v1.ConfigMap) {
+	cm := &v1.ConfigMap{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: s.defaultPSConfigMapName(),
+		},
+		Data: make(map[string]string),
+	}
+
+	//grab server sources from files
+	filePaths := map[string]string{
+		"grpc_tensorflow_server.py": config.GrpcServerFilePath,
+	}
+	for n, fp := range filePaths {
+		data, err := ioutil.ReadFile(fp)
+		if err != nil {
+			return err, nil
+		}
+		cm.Data[n] = string(data)
+	}
+
+	return nil, cm
+}
+
 // Delete deletes the replicas
 func (s *TFReplicaSet) Delete() error {
 	selector, err := s.Labels().ToSelector()
@@ -235,6 +319,16 @@ func (s *TFReplicaSet) Delete() error {
 			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
 			failures = true
 		}
+	}
+
+	// If the ConfigMap for the default parameter server exists, we delete it
+	_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
+	if err != nil {
+		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
+			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
+		}
+	} else {
+		s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 	}
 
 	if failures {
@@ -278,7 +372,6 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 		}
 	}
 
-
 	if tfState.Running != nil || tfState.Waiting != nil {
 		return spec.ReplicaStateRunning
 	}
@@ -287,7 +380,6 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 		if tfState.Terminated.ExitCode == 0 {
 			return spec.ReplicaStateSucceeded
 		}
-
 
 		if isRetryableTerminationState(tfState.Terminated) {
 			// Since its a retryable error just return RUNNING.
@@ -383,4 +475,8 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 
 func (s *TFReplicaSet) jobName(index int32) string {
 	return fmt.Sprintf("%v-%v-%v", strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
+}
+
+func (s *TFReplicaSet) defaultPSConfigMapName() string {
+	return fmt.Sprintf("cm-ps-%v", s.Job.job.Spec.RuntimeId)
 }

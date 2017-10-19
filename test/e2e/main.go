@@ -73,17 +73,6 @@ func run() error {
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(2222),
 					TfReplicaType: spec.PS,
-					Template: &v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "tensorflow",
-									Image: *image,
-								},
-							},
-							RestartPolicy: v1.RestartPolicyOnFailure,
-						},
-					},
 				},
 				{
 					Replicas:      proto.Int32(1),

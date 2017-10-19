@@ -24,10 +24,6 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-const (
-	NAMESPACE string = "default"
-)
-
 var (
 	reconcileInterval = 8 * time.Second
 )
@@ -123,7 +119,7 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *
 			}
 			return
 		}
-		j.run(stopC)
+		j.run(config, stopC)
 	}()
 
 	return j, nil
@@ -146,9 +142,9 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 }
 
 // createResources creates all the replicas and TensorBoard if requested
-func (j *TrainingJob) createResources() error {
+func (j *TrainingJob) createResources(config *spec.ControllerConfig) error {
 	for _, r := range j.Replicas {
-		if err := r.Create(); err != nil {
+		if err := r.Create(config); err != nil {
 			return err
 		}
 	}
@@ -408,7 +404,7 @@ func (j *TrainingJob) updateTPRStatus() error {
 	return nil
 }
 
-func (j *TrainingJob) run(stopC <-chan struct{}) {
+func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) {
 	// TODO(jlewi): What does the run function do?
 	clusterFailed := false
 
@@ -468,7 +464,7 @@ func (j *TrainingJob) run(stopC <-chan struct{}) {
 			// now we always call Create.
 			if j.job.Status.Phase == spec.TfJobPhaseRunning {
 				// We call Create to make sure all the resources exist and are running.
-				if cErr := j.createResources(); cErr != nil {
+				if cErr := j.createResources(config); cErr != nil {
 					log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
 				}
 

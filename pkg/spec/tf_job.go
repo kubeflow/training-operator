@@ -6,23 +6,23 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/jlewi/mlkube.io/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
-	CRDKind  = "TfJob"
-	CRDKindPlural  = "tfjobs"
-	CRDGroup       = "mlkube.io"
-	CRDVersion     = "v1beta1"
+	CRDKind       = "TfJob"
+	CRDKindPlural = "tfjobs"
+	CRDGroup      = "mlkube.io"
+	CRDVersion    = "v1beta1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
 
 	// Defaults for the Spec
-	TfPort = 2222
+	TfPort   = 2222
 	Replicas = 1
 )
 
@@ -60,6 +60,10 @@ type TfJobSpec struct {
 
 	// ReplicaSpecs specifies the TF replicas to run.
 	ReplicaSpecs []*TfReplicaSpec `json:"replicaSpecs"`
+
+	// TfImage defines the tensorflow docker image that should be used for Tensorboard
+	// and the default parameter server
+	TfImage string `json:"tfImage,omitempty"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -75,7 +79,8 @@ const (
 type ContainerName string
 
 const (
-	TENSORFLOW ContainerName = "tensorflow"
+	TENSORFLOW     ContainerName = "tensorflow"
+	DefaultTFImage               = "tensorflow/tensorflow:1.3.0"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
@@ -91,6 +96,8 @@ type TfReplicaSpec struct {
 	// TfPort is the port to use for TF services.
 	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
+	// IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
+	IsDefaultPS bool
 }
 
 type TensorBoardSpec struct {
@@ -106,7 +113,7 @@ func (c *TfJobSpec) Validate() error {
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
 		found := false
-		if r.Template == nil {
+		if r.Template == nil && r.TfReplicaType != PS {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
@@ -205,10 +212,14 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 
 // SetDefaults sets any unspecified values to defaults
 func (c *TfJobSpec) SetDefaults() error {
+	if c.TfImage == "" {
+		c.TfImage = DefaultTFImage
+	}
+
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
-		if r.Template == nil {
-			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
+		if r.Template == nil && r.TfReplicaType != PS {
+			return fmt.Errorf("ReplicaType: %v, Replica is missing Template; %v", r.TfReplicaType, util.Pformat(r))
 		}
 
 		if r.TfPort == nil {
@@ -222,6 +233,11 @@ func (c *TfJobSpec) SetDefaults() error {
 		if r.Replicas == nil {
 			r.Replicas = proto.Int32(Replicas)
 		}
+
+		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
+		if r.Template == nil && r.TfReplicaType == PS {
+			r.setDefaultPSPodTemplateSpec(c.TfImage)
+		}
 	}
 	return nil
 }
@@ -231,6 +247,27 @@ func (c *TfJobSpec) SetDefaults() error {
 func (c *TfJobSpec) Cleanup() {
 	// TODO(jlewi): Add logic to cleanup user provided spec; e.g. by filling in defaults.
 	// We should have default container images so user doesn't have to provide these.
+}
+
+func (r *TfReplicaSpec) setDefaultPSPodTemplateSpec(tfImage string) {
+	r.IsDefaultPS = true
+	r.Template = &v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Image: tfImage,
+					Name:  "tensorflow",
+					VolumeMounts: []v1.VolumeMount{
+						v1.VolumeMount{
+							Name:      "ps-config-volume",
+							MountPath: "/ps-server",
+						},
+					},
+				},
+			},
+			RestartPolicy: v1.RestartPolicyOnFailure,
+		},
+	}
 }
 
 type TfJobPhase string

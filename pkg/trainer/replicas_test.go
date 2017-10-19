@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	tfJobFake "github.com/jlewi/mlkube.io/pkg/util/k8sutil/fake"
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -49,7 +49,7 @@ func TestTFReplicaSet(t *testing.T) {
 		t.Fatalf("NewTFReplicaSet failed: %v", err)
 	}
 
-	if err := replica.Create(); err != nil {
+	if err := replica.Create(&spec.ControllerConfig{}); err != nil {
 		t.Fatalf("replica.Create() error; %v", err)
 	}
 
@@ -268,5 +268,21 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 		if status != c.Expected {
 			t.Errorf("replicaStatusFromPodList(%+v, %v)=%v ; want %v", c.PodList, c.Name, status, c.Expected)
 		}
+	}
+}
+
+func TestTransformClusterSpecForDefaultPS(t *testing.T) {
+
+	cs := ClusterSpec{
+		"master": {"master-0:2222"},
+		"worker": {"worker-0:2222", "worker-1:2222"},
+		"ps":     {"localhost:2222", "ps-1:2222"},
+	}
+	expected := "master|master-0:2222,ps|localhost:2222;ps-1:2222,worker|worker-0:2222;worker-1:2222"
+
+	tx := transformClusterSpecForDefaultPS(cs)
+
+	if tx != expected {
+		t.Errorf("transformClusterSpecForDefaultPS() expected: %v, received: %v", expected, tx)
 	}
 }

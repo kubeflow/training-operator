@@ -22,10 +22,10 @@ import (
 
 	"io/ioutil"
 
+	"github.com/jlewi/mlkube.io/pkg/spec"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
-	"github.com/jlewi/mlkube.io/pkg/spec"
 )
 
 var (
@@ -36,6 +36,7 @@ var (
 	chaosLevel           int
 	controllerConfigFile string
 	printVersion         bool
+	grpcServerFile       string
 )
 
 var (
@@ -52,7 +53,6 @@ func init() {
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
 	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
-
 	flag.Parse()
 
 	// Workaround for watching TPR resource.
@@ -84,6 +84,7 @@ func init() {
 	} else {
 		log.Info("No controller_config_file provided; using empty config.")
 	}
+
 }
 
 func main() {

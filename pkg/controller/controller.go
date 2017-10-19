@@ -6,24 +6,25 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/client-go/kubernetes"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/trainer"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
 	"net/http"
 	"reflect"
 	"sync"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/jlewi/mlkube.io/pkg/trainer"
+	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"k8s.io/client-go/kubernetes"
+
 	log "github.com/golang/glog"
+	"github.com/jlewi/mlkube.io/pkg/util"
+	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kwatch "k8s.io/apimachinery/pkg/watch"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	kwatch "k8s.io/apimachinery/pkg/watch"
 )
 
 var (
@@ -66,7 +67,7 @@ func New(kubeCli kubernetes.Interface, apiCli apiextensionsclient.Interface, tfJ
 	return &Controller{
 		Namespace:   ns,
 		KubeCli:     kubeCli,
-		ApiCli:  		apiCli,
+		ApiCli:      apiCli,
 		TfJobClient: tfJobClient,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:      make(map[string]*trainer.TrainingJob),
@@ -147,7 +148,7 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 		//NewJob(kubeCli kubernetes.Interface, job spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup)
 
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 
 	//case kwatch.Modified:
@@ -158,10 +159,10 @@ func (c *Controller) handleTfJobEvent(event *Event) error {
 	//  c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	//
 	case kwatch.Deleted:
-		if _, ok := c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name]; !ok {
+		if _, ok := c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name]; !ok {
 			return fmt.Errorf("unsafe state. TfJob was never created but we received event (%s)", event.Type)
 		}
-		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name].Delete()
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name].Delete()
 		delete(c.jobs, clus.Metadata.Name)
 		delete(c.jobRVs, clus.Metadata.Name)
 	}
@@ -193,7 +194,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 			continue
 		}
 		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name] = nc
+		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
 		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
 	}
 
@@ -237,16 +238,16 @@ func (c *Controller) createCRD() error {
 			Name: spec.CRDName(),
 		},
 		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group: spec.CRDGroup,
+			Group:   spec.CRDGroup,
 			Version: spec.CRDVersion,
-			 Scope: v1beta1.NamespaceScoped,
-				Names: v1beta1.CustomResourceDefinitionNames{
-					Plural: spec.CRDKindPlural,
-					// TODO(jlewi): Do we want to set the singular name?
-					// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
-					Kind:   reflect.TypeOf(spec.TfJob{}).Name(),
-				},
+			Scope:   v1beta1.NamespaceScoped,
+			Names: v1beta1.CustomResourceDefinitionNames{
+				Plural: spec.CRDKindPlural,
+				// TODO(jlewi): Do we want to set the singular name?
+				// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
+				Kind: reflect.TypeOf(spec.TfJob{}).Name(),
 			},
+		},
 	}
 
 	_, err := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)

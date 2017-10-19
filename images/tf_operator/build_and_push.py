@@ -13,8 +13,9 @@ import yaml
 
 def GetGitHash():
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode("utf-8") 
   git_hash = git_hash.strip()
+  
   modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
   untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"])
@@ -23,7 +24,8 @@ def GetGitHash():
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
-    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
+    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash) 
+    
   return git_hash
 
 def run(command, cwd=None):
@@ -57,6 +59,9 @@ if __name__ == "__main__":
                       help="Use Google Container Builder to build the image.")
   parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
                       help="Use Docker to build the image.")
+  parser.add_argument("--no-push", dest="should_push", action="store_false",
+                      help="Do not push the image once build is finished.")
+
   parser.set_defaults(use_gcb=False)
 
   args = parser.parse_args()
@@ -90,6 +95,7 @@ if __name__ == "__main__":
       "images/tf_operator/Dockerfile",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
+      "grpc_tensorflow_server/grpc_tensorflow_server.py"
     ]
 
   for s in sources:
@@ -111,9 +117,11 @@ if __name__ == "__main__":
          "--tag=" + image, "--project=" + args.project ])
   else:
     run(["docker", "build", "-t", image,  context_dir])
-    logging.info("Built image: %s", image)
-    run(["gcloud", "docker", "--", "push", image])
-    logging.info("Pushed image: %s", image)
+    logging.info("Built image: %s", image)  
+    
+    if args.should_push:
+      run(["gcloud", "docker", "--", "push", image])
+      logging.info("Pushed image: %s", image)
 
   if args.output:
     logging.info("Writing build information to %s", args.output)
