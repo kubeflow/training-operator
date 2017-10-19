@@ -35,7 +35,7 @@ GO_REPO_NAME = "mlkube.io"
 def run(command, cwd=None):
   """Run the command as a subprocess"""
   logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
+  return subprocess.check_output(command, cwd=cwd).decode("utf-8")
 
 
 def clone_repo():
