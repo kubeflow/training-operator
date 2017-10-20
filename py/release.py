@@ -5,10 +5,12 @@ This script should be run from the root directory of the repo.
 """
 
 import argparse
+import glob
 from google.cloud import storage
 import logging
 import json
 import os
+import tarfile
 import tempfile
 from py import util
 import yaml
@@ -42,10 +44,20 @@ def update_values(values_file, image):
 
   with open(values_file, "w") as hf:
     for l in lines:
-      if l.startswitth("image:"):
+      if l.startswith("image:"):
         hf.write("image: {0}\n".format(image))
       else:
         hf.write(l)
+
+def update_chart(chart_file, version):
+  """Append the version number to the version number in chart.yaml"""
+  with open(chart_file) as hf:
+    info = yaml.load(hf)
+  info["version"] += "-" + version
+  info["appVersion"] += "-" + version
+
+  with open(chart_file, "w") as hf:
+    yaml.dump(info, hf)
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
@@ -53,12 +65,13 @@ if __name__ == "__main__":
       description="Release artifacts for TfJob.")
 
   parser.add_argument(
-      "--registry",
-      default="gcr.io/tf-on-k8s-dogfood",
+      "--releases_bucket",
+      default="tf-on-k8s-dogfood-releases",
       type=str,
-      help="The docker registry to use.")
+      help="The bucket to publish releases to.")
 
-  _, unknown_args = parser.parse_known_args()
+  # TODO(jlewi): Should pass along unknown arguments to build and push.
+  args, _ = parser.parse_known_args()
 
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
@@ -78,5 +91,36 @@ if __name__ == "__main__":
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
 
-  print("do not submit")
+  version = build_info["image"].split(":")[-1]
+  values_file = os.path.join(src_dir, "tf-job-operator-chart", "values.yaml")
+  update_values(values_file, build_info["image"])
 
+  chart_file = os.path.join(src_dir, "tf-job-operator-chart", "Chart.yaml")
+  update_chart(chart_file, version)
+
+  util.run(["helm", "package", "./tf-job-operator-chart"], cwd=src_dir)
+
+  matches = glob.glob(os.path.join(src_dir, "tf-job-operator-chart*.tgz"))
+
+  if len(matches) != 1:
+    raise ValueError("Expected 1 chart archive to match but found {0}".format(matches))
+
+  chart_archive = matches[0]
+
+  release_path = version
+
+  bucket = gcs_client.get_bucket(args.releases_bucket)
+
+  targets = [
+    os.path.join(release_path, os.path.basename(chart_archive)),
+    "latest/tf-job-operator-chart-latest.tgz",
+  ]
+
+  for t in targets:
+    blob = bucket.blob(t)
+    gcs_path = util.to_gcs_uri(args.releases_bucket, t)
+    if blob.exists() and not t.startswith("latest"):
+      logging.warn("%s already exists", gcs_path)
+      continue
+    logging.info("Uploading %s to %s.", chart_archive, gcs_path)
+    blob.upload_from_filename(chart_archive)

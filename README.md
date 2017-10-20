@@ -40,7 +40,7 @@ Using a CRD gives users the ability to create and manage TF Jobs just like built
 create a job
 
 ```
-kubectl create -f examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml
 ```
 
 To list jobs
@@ -68,23 +68,31 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 
 ## Installing the CRD and operator on your k8s cluster
 
-1. Clone the repository
-
-    ```
-    git clone https://github.com/jlewi/mlkube.io/
-    ```
-
 1. Deploy the operator
 
    For non-RBAC enabled clusters:
    ```
-   helm install tf-job-operator-chart -n tf-job --wait --replace
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace
    ```
 
    For RBAC-enabled clusters:
    ```
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
    helm install tf-job-operator-chart -n tf-job --wait --replace --set rbac.install=true
    ```
+
+    * The above instructions use the latest release.
+    * Releases are versioned
+    * You can see a list of versions
+    ```
+    gsutil ls  gs://tf-on-k8s-dogfood-releases
+    ```
+    * **Avoiding Breakages**
+      * During Alpha there is no guarantees about TfJob API
+        compaitibility.
+      * To avoid being broken by changes you can pin to particular
+        version of the helm chart and control when you upgrade.
 
 1. Make sure the operator is running
 
@@ -93,7 +101,6 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
 
     NAME                               READY     STATUS    RESTARTS   AGE
     tf-job-operator-3083500267-wxj43   1/1       Running   0          48m
-
     ```
 
 1. Run the helm tests
@@ -225,7 +232,7 @@ A simplistic TF program is in the directory tf_sample.
 1. Start the example
 
     ```
-    helm install --name=tf-job ./examples/tf_job
+    kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml
     ```
 
 1. Check the job

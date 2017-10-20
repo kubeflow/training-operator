@@ -55,3 +55,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
   return dest, sha
+
+def to_gcs_uri(bucket, path):
+  """Convert bucket and path to a GCS URI."""
+  return "gs://" + os.path.join(bucket, path)
