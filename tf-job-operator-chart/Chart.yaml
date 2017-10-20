@@ -1,7 +1,7 @@
 name: tf-job-operator-chart
 home: https://github.com/jlewi/mlkube.io
-version: v1alpha1
-appVersion: v1alpha1
+version: 0.1.0
+appVersion: 0.1.0
 description: K8s Custom Resource  and Operator For TensorFlow jobs
 sources:
   - https://github.com/jlewi/mlkube.io
