@@ -13,34 +13,22 @@ import yaml
 
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
-  git_hash = run_and_output(["git", "rev-parse", "--short", "HEAD"], cwd=root_dir)
-  git_hash=git_hash.strip()
-  modified_files = run_and_output(["git", "ls-files", "--modified"], cwd=root_dir)
-  untracked_files = run_and_output(
+  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
+                                     cwd=root_dir).decode("utf-8")
+  git_hash = git_hash.strip()
+
+  modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
+                                           cwd=root_dir)
+  untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
-  unfiltered = []
-  unfiltered.extend(modified_files.split())
-  unfiltered.extend(untracked_files)
+  if modified_files or untracked_files:
+    diff= subprocess.check_output(["git", "diff"], cwd=root_dir)
 
-  # exclude the training-job-chart files since the chart code isn't in
-  # the image. This allows us to modify the helm chart to point at a new image
-  # without the hash ending up "dirty".
-  exclude_dirs = ["tf-job-operator-chart"]
-  filtered = []
-  for f in unfiltered:
-    exclude = False
-    for d in exclude_dirs:
-      if f.startswith(d):
-        exclude = True
-    if not exclude:
-      filtered.append(f)
-
-  if filtered:
-    diff= run_and_output(["git", "diff"], cwd=root_dir)
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
     git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
+
   return git_hash
 
 def run(command, cwd=None):
@@ -82,6 +70,9 @@ if __name__ == "__main__":
                       help="Use Google Container Builder to build the image.")
   parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
                       help="Use Docker to build the image.")
+  parser.add_argument("--no-push", dest="should_push", action="store_false",
+                      help="Do not push the image once build is finished.")
+
   parser.set_defaults(use_gcb=False)
 
   args = parser.parse_args()
@@ -116,6 +107,7 @@ if __name__ == "__main__":
       "images/tf_operator/Dockerfile",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
+      "grpc_tensorflow_server/grpc_tensorflow_server.py"
     ]
 
   for s in sources:
@@ -138,8 +130,10 @@ if __name__ == "__main__":
   else:
     run(["docker", "build", "-t", image,  context_dir])
     logging.info("Built image: %s", image)
-    run(["gcloud", "docker", "--", "push", image])
-    logging.info("Pushed image: %s", image)
+
+    if args.should_push:
+      run(["gcloud", "docker", "--", "push", image])
+      logging.info("Pushed image: %s", image)
 
   if args.output:
     logging.info("Writing build information to %s", args.output)

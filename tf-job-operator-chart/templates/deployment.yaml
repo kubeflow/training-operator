@@ -5,6 +5,7 @@ metadata:
   namespace: default
 data:
   controller_config_file.yaml: |
+    grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
     accelerators:
       alpha.kubernetes.io/nvidia-gpu:
         volumes:

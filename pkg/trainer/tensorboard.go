@@ -88,7 +88,7 @@ func (s *TBReplicaSet) Create() error {
 				MatchLabels: s.Labels(),
 			},
 			Replicas: proto.Int32(1),
-			Template: s.getDeploymentSpecTemplate(),
+			Template: s.getDeploymentSpecTemplate(s.Job.job.Spec.TfImage),
 		},
 	}
 
@@ -129,11 +129,11 @@ func (s *TBReplicaSet) Delete() error {
 	return nil
 }
 
-func (s *TBReplicaSet) getDeploymentSpecTemplate() v1.PodTemplateSpec {
+func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpec {
 	// TODO: make the TensorFlow image a parameter of the job operator.
 	c := &v1.Container{
 		Name:  s.jobName(),
-		Image: "tensorflow/tensorflow",
+		Image: image,
 		Command: []string{
 			"tensorboard", "--logdir", s.Spec.LogDir, "--host", "0.0.0.0",
 		},

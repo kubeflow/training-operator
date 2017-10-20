@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/jlewi/mlkube.io/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
-	"github.com/jlewi/mlkube.io/pkg/util"
 )
 
 func TestAddAccelertor(t *testing.T) {
@@ -254,6 +254,7 @@ func TestSetDefaults(t *testing.T) {
 						},
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 			expected: &TfJobSpec{
 				ReplicaSpecs: []*TfReplicaSpec{
@@ -272,6 +273,45 @@ func TestSetDefaults(t *testing.T) {
 						TfReplicaType: MASTER,
 					},
 				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
+			},
+		},
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						TfReplicaType: PS,
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
+			},
+			expected: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Replicas: proto.Int32(1),
+						TfPort:   proto.Int32(2222),
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									v1.Container{
+										Image: "tensorflow/tensorflow:1.3.0",
+										Name:  "tensorflow",
+										VolumeMounts: []v1.VolumeMount{
+											v1.VolumeMount{
+												Name:      "ps-config-volume",
+												MountPath: "/ps-server",
+											},
+										},
+									},
+								},
+								RestartPolicy: v1.RestartPolicyOnFailure,
+							},
+						},
+						TfReplicaType: PS,
+						IsDefaultPS:   true,
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
 			},
 		},
 	}
