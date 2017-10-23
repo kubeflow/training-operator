@@ -255,7 +255,7 @@ def get_gcs_output():
     return output
   else:
     # It is a periodic or postsubmit job
-    output = ("gs://kubernetes-jenkins/logs/"
+    output = ("gs://kubernetes-jenkins/logs/{owner}_{repo}/"
               "{job}/{build}").format(
                   owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
                   pull_number=pull_number,
