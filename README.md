@@ -38,23 +38,31 @@ Custom Resources require Kubernetes 1.7
 
 ## Installing the CRD and operator on your k8s cluster
 
-1. Clone the repository
-
-    ```
-    git clone https://github.com/jlewi/mlkube.io/
-    ```
-
 1. Deploy the operator
 
    For non-RBAC enabled clusters:
    ```
-   helm install tf-job-operator-chart -n tf-job --wait --replace
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace
    ```
 
    For RBAC-enabled clusters:
    ```
-   helm install tf-job-operator-chart -n tf-job --wait --replace --set rbac.install=true
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true
    ```
+
+    * The above instructions use the latest release.
+    * Releases are versioned
+    * You can see a list of versions
+    ```
+    gsutil ls  gs://tf-on-k8s-dogfood-releases
+    ```
+    * **Avoiding Breakages**
+      * During Alpha there is no guarantees about TfJob API
+        compaitibility.
+      * To avoid being broken by changes you can pin to particular
+        version of the helm chart and control when you upgrade.
 
 1. Make sure the operator is running
 
