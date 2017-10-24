@@ -268,6 +268,19 @@ def get_gcs_output():
               build=os.getenv("BUILD_NUMBER"))
     return output
 
+def get_symlink_output(pull_number, job_name, build_number):
+  """Return the location where the symlink should be created."""
+  # GCS layout is defined here:
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  if not pull_number:
+    # Symlinks are only created for pull requests.
+    return ""
+  output = ("gs://kubernetes-jenkins/pr-logs/directory/"
+            "{job}/{build}.txt").format(
+                job=job_name,
+                build=build_number)
+  return output
+
 def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
 
@@ -275,6 +288,9 @@ def create_started(gcs_client, output_dir, sha):
     gcs_client: GCS client
     output_dir: The GCS directory where the output should be written.
     sha: Sha for the mlkube.io repo
+
+  Returns:
+    blob: The created blob.
   """
   # See:
   # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
@@ -301,34 +317,58 @@ def create_started(gcs_client, output_dir, sha):
 
   return blob
 
-def create_finished(gcs_client, output_dir, success):
-  """Create the finished output in GCS.
+def create_started(gcs_client, output_dir, sha):
+  """Create the started output in GCS.
 
   Args:
     gcs_client: GCS client
     output_dir: The GCS directory where the output should be written.
-    success: Boolean indicating whether the test was successful.
+    sha: Sha for the mlkube.io repo
+
+  Returns:
+    blob: The created blob.
   """
-  result = "FAILURE"
-  if success:
-    result = "SUCCESS"
-  finished = {
+  # See:
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
+  # For a list of fields expected by gubernator
+  started = {
       "timestamp": int(time.time()),
-      "result": result,
-      # Dictionary of extra key value pairs to display to the user.
-      # TODO(jlewi): Perhaps we should add the GCR path of the Docker image
-      # we are running in. We'd have to plumb this in from bootstrap.
-      "metadata": {},
+      "repos": {
+          # List all repos used and their versions.
+          GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
+      },
   }
+
+  PULL_REFS = os.getenv("PULL_REFS", "")
+  if PULL_REFS:
+    started["pull"] = PULL_REFS
 
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
-  blob = bucket.blob(os.path.join(path, "finished.json"))
-  blob.upload_from_string(json.dumps(finished))
+  blob = bucket.blob(os.path.join(path, "started.json"))
+  blob.upload_from_string(json.dumps(started))
 
+  return blob
+
+def create_symlink(gcs_client, symlink, output):
+  """Create a 'symlink' to the output directory.
+
+  Args:
+    gcs_client: GCS client
+    symling: GCS path of the object to server as the link
+    output: The location to point to.
+  """
+  m = GCS_REGEX.match(symlink)
+  bucket = m.group(1)
+  path = m.group(2)
+
+  bucket = gcs_client.get_bucket(bucket)
+  blob = bucket.blob(path)
+  blob.upload_from_string(output)
+  return blob
 
 def upload_outputs(gcs_client, output_dir, test_dir):
   m = GCS_REGEX.match(output_dir)
@@ -443,13 +483,18 @@ if __name__ == "__main__":
                  os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
     run(["gcloud", "auth", "activate-service-account",
          "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
-
+  job_name = os.getenv("JOB_NAME", "")
+  build_number = os.getenv("BUILD_NUMBER")
+  pull_number = os.getenv("PULL_NUMBER")
   output_dir = get_gcs_output()
-  gcs_client = storage.Client()
+  logging.info("Artifacts will be saved to: %s", output_dir)
 
+  gcs_client = storage.Client()
   create_started(gcs_client, output_dir, sha)
 
-  logging.info("Artifacts will be saved to: %s", output_dir)
+  symlink = get_symlink_output(pull_number, job_name, build_number)
+  if symlink:
+    create_symlink(gcs_client, symlink, output_dir)
 
   image = build_container(args.use_gcb, src_dir, test_dir)
   logging.info("Created image: %s", image)

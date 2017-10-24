@@ -22,5 +22,19 @@ class TestRunner(unittest.TestCase):
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
 
+  def testGetSymlinkOutput(self):
+    location = runner.get_symlink_output("10", "mlkube-build-presubmit", "20")
+    self.assertEquals(
+      "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
+      location)
+
+  def testCreateSymlinkOutput(self):
+    """Test create started for periodic job."""
+    gcs_client = mock.MagicMock(spec=storage.Client)
+    blob = runner.create_symlink(gcs_client, "gs://bucket/symlink",
+                                 "gs://bucket/output")
+
+    blob.upload_from_string.assert_called_once_with("gs://bucket/output")
+
 if __name__ == "__main__":
   unittest.main()
