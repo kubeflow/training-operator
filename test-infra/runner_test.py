@@ -7,6 +7,20 @@ from google.cloud import storage
 
 class TestRunner(unittest.TestCase):
   @mock.patch("runner.time.time")
+  def testCreateFinished(self, mock_time):
+    """Test create finished"""
+    mock_time.return_value = 1000
+    gcs_client = mock.MagicMock(spec=storage.Client)
+    blob = runner.create_finished(gcs_client, "gs://bucket/output", True)
+
+    expected = {
+      "timestamp": 1000,
+      "result": "SUCCESS",
+      "metadata": {},
+    }
+    blob.upload_from_string.assert_called_once_with(json.dumps(expected))
+
+  @mock.patch("runner.time.time")
   def testCreateStartedPeriodic(self, mock_time):
     """Test create started for periodic job."""
     mock_time.return_value = 1000

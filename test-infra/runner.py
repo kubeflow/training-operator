@@ -317,40 +317,36 @@ def create_started(gcs_client, output_dir, sha):
 
   return blob
 
-def create_started(gcs_client, output_dir, sha):
-  """Create the started output in GCS.
+def create_finished(gcs_client, output_dir, success):
+  """Create the finished output in GCS.
 
   Args:
     gcs_client: GCS client
     output_dir: The GCS directory where the output should be written.
-    sha: Sha for the mlkube.io repo
+    success: Boolean indicating whether the test was successful.
 
   Returns:
-    blob: The created blob.
+    blob: The blob object that we created.
   """
-  # See:
-  # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
-  # For a list of fields expected by gubernator
-  started = {
+  result = "FAILURE"
+  if success:
+    result = "SUCCESS"
+  finished = {
       "timestamp": int(time.time()),
-      "repos": {
-          # List all repos used and their versions.
-          GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
-      },
+      "result": result,
+      # Dictionary of extra key value pairs to display to the user.
+      # TODO(jlewi): Perhaps we should add the GCR path of the Docker image
+      # we are running in. We'd have to plumb this in from bootstrap.
+      "metadata": {},
   }
-
-  PULL_REFS = os.getenv("PULL_REFS", "")
-  if PULL_REFS:
-    started["pull"] = PULL_REFS
 
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
-  blob = bucket.blob(os.path.join(path, "started.json"))
-  blob.upload_from_string(json.dumps(started))
-
+  blob = bucket.blob(os.path.join(path, "finished.json"))
+  blob.upload_from_string(json.dumps(finished))
   return blob
 
 def create_symlink(gcs_client, symlink, output):
