@@ -11,26 +11,37 @@ import sys
 import tempfile
 import yaml
 
-def GetGitHash():
+def GetGitHash(root_dir):
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode("utf-8") 
+  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
+                                     cwd=root_dir).decode("utf-8")
   git_hash = git_hash.strip()
-  
-  modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
+
+  modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
+                                           cwd=root_dir)
   untracked_files = subprocess.check_output(
-      ["git", "ls-files", "--others", "--exclude-standard"])
+      ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   if modified_files or untracked_files:
-    diff= subprocess.check_output(["git", "diff"])
+    diff= subprocess.check_output(["git", "diff"], cwd=root_dir)
+
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
-    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash) 
-    
+    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
+
   return git_hash
 
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
+
+def run_and_output(command, cwd=None):
+  logging.info("Running: %s", " ".join(command))
+  # The output won't be available until the command completes.
+  # So prefer using run if we don't need to return the output.
+  output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  print(output)
+  return output
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
@@ -72,6 +83,7 @@ if __name__ == "__main__":
 
   this_file = __file__
   images_dir = os.path.dirname(this_file)
+  root_dir = os.path.abspath(os.path.join(images_dir, os.pardir, os.pardir))
 
   context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
   logging.info("context_dir: %s", context_dir)
@@ -111,14 +123,14 @@ if __name__ == "__main__":
   image_base = args.registry + "/tf_operator"
 
   n = datetime.datetime.now()
-  image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash()
+  image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash(root_dir)
   if args.use_gcb:
     run(["gcloud", "container", "builds", "submit", context_dir,
          "--tag=" + image, "--project=" + args.project ])
   else:
     run(["docker", "build", "-t", image,  context_dir])
-    logging.info("Built image: %s", image)  
-    
+    logging.info("Built image: %s", image)
+
     if args.should_push:
       run(["gcloud", "docker", "--", "push", image])
       logging.info("Pushed image: %s", image)

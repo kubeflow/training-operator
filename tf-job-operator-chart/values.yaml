@@ -1,5 +1,5 @@
 # Docker image to use.
-image: gcr.io/tf-on-k8s-dogfood/tf_operator:v20171019-7a05c26
+image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 
 ## Install Default RBAC roles and bindings

@@ -33,10 +33,16 @@ GO_REPO_NAME = "mlkube.io"
 
 
 def run(command, cwd=None):
-  """Run the command as a subprocess"""
   logging.info("Running: %s", " ".join(command))
-  return subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  subprocess.check_call(command, cwd=cwd).decode("utf-8")
 
+def run_and_output(command, cwd=None):
+  logging.info("Running: %s", " ".join(command))
+  # The output won't be available until the command completes.
+  # So prefer using run if we don't need to return the output.
+  output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
+  print(output)
+  return output
 
 def clone_repo():
   """Clone the repo.
@@ -89,7 +95,7 @@ def clone_repo():
   # Get the actual git hash.
   # This ensures even for periodic jobs which don't set the sha we know
   # the version of the code tested.
-  sha = run(["git", "rev-parse", "HEAD"], cwd=dest)
+  sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
 
   # Install dependencies
   run(["glide", "install"], cwd=dest)
