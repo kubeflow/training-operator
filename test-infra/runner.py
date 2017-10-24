@@ -288,7 +288,7 @@ def create_started(gcs_client, output_dir, sha):
   }
 
   PULL_REFS = os.getenv("PULL_REFS", "")
-  if started:
+  if PULL_REFS:
     started["pull"] = PULL_REFS
 
   m = GCS_REGEX.match(output_dir)
@@ -299,6 +299,7 @@ def create_started(gcs_client, output_dir, sha):
   blob = bucket.blob(os.path.join(path, "started.json"))
   blob.upload_from_string(json.dumps(started))
 
+  return blob
 
 def create_finished(gcs_client, output_dir, success):
   """Create the finished output in GCS.
