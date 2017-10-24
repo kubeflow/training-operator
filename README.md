@@ -6,35 +6,10 @@
 
 [Prow Jobs](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
 
-## Requirements
+## Overview
 
-Custom Resources require Kubernetes 1.7
-
-## Motivation
-
-Distributed TensorFlow training jobs require managing multiple sets of TensorFlow replicas.
-Each set of replicas usually has a different role in the job. For example, one set acts
- as parameter servers, another provides workers and another provides a controller.
-
-K8s makes it easy to configure and deploy each set of TF replicas. Various tools like
- [helm](https://github.com/kubernetes/helm) and [ksonnet](http://ksonnet.heptio.com/) can
- be used to simplify generating the configs for a TF job.
-
- However, in addition to generating the configs we need some custom control logic because
- K8s built-in controllers (Jobs, ReplicaSets, StatefulSets, etc...) don't provide the semantics
- needed for managing TF jobs.
-
- To solve this we define a
- [K8S Custom Resource](https://kubernetes.io/docs/concepts/api-extension/custom-resources/)
- and [Operator](https://coreos.com/blog/introducing-operators.html) to manage a TensorFlow
- job on K8s.
-
-
-TfJob provides a K8s resource representing a single, distributed, TensorFlow job.
-The Spec and Status (defined in [tf_job.go](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go))
-are customized for TensorFlow. The spec allows specifying the Docker image and arguments to use for each TensorFlow
-replica (i.e. master, worker, and parameter server). The status provides relevant information such as the number of
-replicas in various states.
+TfJob provides a Kubernetes custom resource that makes it easy to
+run distributed or non-distributed TensorFlow jobs on Kubernetes.
 
 Using a CRD gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
 create a job
@@ -52,39 +27,42 @@ NAME          KINDS
 example-job   TfJob.v1beta1.mlkube.io
 ```
 
-## Design
+For additional information about motivation and design for the
+CRD please refer to
+[tf_job_design_doc.md](tf_job_design_doc.md).
 
-The code is closely modeled on Coreos's [etcd-operator](https://github.com/coreos/etcd-operator).
+### Requirements
 
-The TfJob Spec(defined in [tf_job.go](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go))
-reuses the existing Kubernetes structure PodTemplateSpec to describe TensorFlow processes.
-We use PodTemplateSpec because we want to make it easy for users to
-  configure the processes; for example setting resource requirements or adding volumes.
-  We expect
-helm or ksonnet could be used to add syntactic sugar to create more convenient APIs for users not familiar
-with Kubernetes.
+Custom Resources require Kubernetes >= 1.7
 
-Leader election allows a K8s deployment resource to be used to upgrade the operator.
 
 ## Installing the CRD and operator on your k8s cluster
-
-1. Clone the repository
-
-    ```
-    git clone https://github.com/jlewi/mlkube.io/
-    ```
 
 1. Deploy the operator
 
    For non-RBAC enabled clusters:
    ```
-   helm install tf-job-operator-chart -n tf-job --wait --replace
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace
    ```
 
    For RBAC-enabled clusters:
    ```
-   helm install tf-job-operator-chart -n tf-job --wait --replace --set rbac.install=true
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true
    ```
+
+    * The above instructions use the latest release.
+    * Releases are versioned
+    * You can see a list of versions
+    ```
+    gsutil ls  gs://tf-on-k8s-dogfood-releases
+    ```
+    * **Avoiding Breakages**
+      * During Alpha there is no guarantees about TfJob API
+        compaitibility.
+      * To avoid being broken by changes you can pin to a particular
+        version of the helm chart and control when you upgrade.
 
 1. Make sure the operator is running
 
@@ -104,23 +82,18 @@ Leader election allows a K8s deployment resource to be used to upgrade the opera
     PASSED: tf-job-tfjob-test-pqxkwk
     ```
 
-## Using GPUs
+### Configuring the CRD
 
-The use of GPUs and K8s is still in flux. The following works with GKE & K8s 1.7.2. If this doesn't work on
-your setup please consider opening an issue.
+The CRD can be configured via a [ConfigMap](https://kubernetes.io/docs/api-reference/v1.8/#configmap-v1-core)
+that provides a [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go) serialized
+as YAML. The config controls how the CRD manages TensorFlow jobs.
 
-### Prerequisites
-
-We assume GPU device drivers have been installed on nodes on your cluster and resources have been defined for
-GPUs.
-
-Typically the NVIDIA drivers are installed on the host and mapped into containers because there are kernel and user
-space drivers that need to be in sync. The kernel driver must be installed on the host and not in the container.
-
-### Mounting NVIDIA libraries from the host.
+Currently, the most important use for [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go)
+is specifying environment variables and volumes that must be mounted from the
+host into containers to configure GPUS.
 
 The TfJob controller can be configured with a list of volumes that should be mounted from the host into the container
-to make GPUs work. Here's an example:
+to make GPUs work. Here's an example [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go):
 
 ```
 accelerators:
@@ -138,13 +111,99 @@ Here **alpha.kubernetes.io/nvidia-gpu** is the K8s resource name used for a GPU.
 any container which uses this resource should have the volumes mentioned mounted into the container
 from the host.
 
-The config is usually specified using a K8s ConfigMap and then passing the config into the controller via
-the --controller_config_file.
+The config is usually specified using a K8s ConfigMap to stage the config
+on a valume mounted into the Pod running the controller, and then passing
+the config into the controller via the --controller_config_file flag.
 
-The helm package for the controller includes a config map suitable for GKE. This ConfigMap may need to be modified
-for your cluster if you aren't using GKE.
+The helm package for the controller includes a config map suitable for GKE.
+This ConfigMap may need to be modified for your cluster if you aren't using
+GKE.
+
+There's an open [issue](https://github.com/jlewi/mlkube.io/issues/71) to
+better support non GKE clusters
+
+
+## Creating a job
+
+You create a job by defining a TfJob and then creating it with.
+
+```
+kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml
+```
+
+In this case the job spec looks like the following
+
+```
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: "example-job"
+spec:
+  replicaSpecs:
+    - replicas: 1
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 1
+      tfReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 2
+      tfReplicaType: PS
+```
+
+Each replicaSpec defines a set of TensorFlow processes.
+The tfReplicaType defines the semantics for the set of processes.
+The semantics are as follows
+
+**master**
+  * A job must have 1 and only 1 master
+  * The pod must contain a container named tensorflow
+  * The overall status of the TfJob is determined by the exit code of the
+    tensorflow container
+      * 0 = success
+      * 1-127 = permanent error
+      * 128-255 = retryable error
+
+**worker**
+  * A job can have 0 to N workers
+  * The pod must contain a container named tensorflow
+  * Workers are automatically restarted if they exit
+
+**ps**
+  * A job can have 0 to N parameter servers
+  * parameter servers are automatically restarted if they exit
+  * If you do not specify a container named tensorflow the TfJob
+    will automatically add a container to the pod that starts a
+    standard TensorFlow gRPC server for each PS.
+
+
+For each replica you define a **template** which is a K8s
+[PodTemplateSpec](https://kubernetes.io/docs/api-reference/v1.8/#podtemplatespec-v1-core).
+The template allows you to specify the containers, volumes, etc... that
+should be created for each replica.
+
 
 ### Using GPUs
+
+**Note** The use of GPUs and K8s is still in flux.
+The following works with GKE & K8s 1.7.2. If this doesn't work on
+your setup please consider opening an issue.
+
+Ensure your K8s cluster is properly configured to use GPUs
+  * Nodes must have GPUs attached
+  * K8s cluster must recognize the nvidia-gpu resource type
+  * GPU drivers must be installed on the cluster.
+  * Your TfJob controller must be configured to properly attach
+    volumes and set environment variables needed for GPUs.
 
 To attach GPUs specify the GPU resource on the container e.g.
 
@@ -169,10 +228,15 @@ spec:
           restartPolicy: OnFailure
 ```
 
+Follow TensorFlow's [instructions](https://www.tensorflow.org/tutorials/using_gpu)
+for using GPUs.
+
 ### Requesting a TensorBoard instance
 
-You can also ask the `TfJob` operator to create a TensorBoard instance to monitor your training.
-Here are the configuration options for TensorBoard:
+You can also ask the `TfJob` operator to create a TensorBoard instance
+by including a [TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103)
+in your job. The table below describes the important fields in
+[TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103).
 
 | Name | Description | Required | Default |
 |---|---|---|---|
@@ -181,7 +245,10 @@ Here are the configuration options for TensorBoard:
 | `volumeMounts` | `VolumeMounts` information that will be passed to the TensorBoard `deployment` | No | [] |
 | `serviceType` | `ServiceType` information that will be passed to the TensorBoard `service`| No | `ClusterIP` |
 
-For example:
+#### TensorBoard on Azure
+
+On Azure you can store your event files on an azure file and use
+volumes to make them available to TensorBoard.
 
 ```
 apiVersion: "mlkube.io/v1beta1"
@@ -217,134 +284,259 @@ spec:
 
 ```
 
+#### TensorBoard on GKE
 
-## Run the example
-
-A simplistic TF program is in the directory tf_sample.
-
-1. Start the example
-
-    ```
-    helm install --name=tf-job ./examples/tf_job
-    ```
-
-1. Check the job
-
-    ```
-    kubectl get tfjobs -o yaml
-    ```
-
-## Project Status
-
-This is very much a prototype.
-
-### Logging
-
-Logging still needs work.
-
-We'd like to tag log entries with semantic information suitable for TensorFlow. For example, we'd like to tag entries with metadata indicating the
-replica that produced the log entry. There are two issues here
-
-1. Tagging Tensorflow entries with appropriate semantic information
-
-    * Usinge Python sitecustomize.py might facilitate injecting a custom log handler that outputs json entries.
-    * For parameter servers, we might want to just run the TensorFlow standard server and its not clear how we
-      would convert those logs to json.
-
-1. Integrate with Kubernetes cluster level logging.
-
-    * We'd like the logs to integrate nicely with whatever cluster level logging users configure.
-    * For example, on GCP we'd like the log entries to be automatically streamed to Stackdriver and indexed by the
-      TensorFlow metadata to facilitate querying e.g. by replica.
-    * GCP's fluentd logger is supposed to automatically handle JSON logs
-
-Additionally, we'd like TensorFlow logs to be available via
+On GKE you can store your event files on GCS and TensorBoard/TensorFlow
+can read/write directly to GCS.
 
 ```
-kubectl logs
-```
-
-So that users don't need to depend on cluster level logging just to see basic logs.
-
-In the current implementation, pods aren't deleted until the TfJob is deleted. This allows standard out/error to be fetched
-via kubectl. Unfortunately, this leaves PODs in the RUNNING state when the TfJob is marked as done which is confusing.
-
-### Status information
-
-The status information reported by the operator is hacky and not well thought out. In particular, we probably
-need to figure out what the proper phases and conditions to report are.
-
-### Failure/Termination Semantics
-
-The semantics for aggregating status of individual replicas into overall TfJob status needs to be thought out.
-
-### Dead/Unnecessary code
-
-There is a lot of code from earlier versions (including the ETCD operator) that still needs to be cleaned up.
-
-### Testing
-
-There is minimal testing.
-
-#### Unittests
-
-There are some unittests.
-
-#### E2E tests
-
-The helm package provides some basic E2E tests.
-
-## Building the Operator
-
-Create a symbolic link inside your GOPATH to the location you checked out the code
-
-    ```
-    mkdir -p ${GOPATH}/src/github.com/jlewi
-    ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
-    ```
-
-  * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
-
-Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
+apiVersion: "mlkube.io/v1beta1"
+kind: "TfJob"
+metadata:
+  name: "tf-smoke-gpu"
+spec:
+  replica_specs:
+    - replicas: 1
+      tfPort: 2222
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
+              name: tensorflow
+              args:
+                - --log_dir=gs://my-bucket/logdir
+              resources:
+                limits:
+                  alpha.kubernetes.io/nvidia-gpu: 1
+          restartPolicy: OnFailure
+  tensorboard:
+    logDir: gs://my-bucket/logdir
 
 ```
-glide install
+
+#### Connecting to TensorBoard
+
+The TfJob operator will create a service named
+**tensorboard-$RUNTIME_ID** for your job. You can connect to it
+using the Kubernetes API Server porxy as follows
+
+Start the K8s proxy
+```
+kubectl proxy
 ```
 
-Build it
+In a web-browser open up
 
 ```
-go install github.com/jlewi/mlkube.io/cmd/tf_operator
+http://${PROXY}:8001/api/v1/proxy/namespaces/default/services/tensorboard-${RUNTIMEID}:80/
 ```
 
-## Runing the Operator Locally
+Depending on how you configure the service for TensorBoard and cluster
+you can make TensorBoard available without using the K8s proxy.
 
-Running the operator locally (as opposed to deploying it on a K8s cluster) is convenient for debugging/development.
+## Monitoring your job
 
-We can configure the operator to run locally using the configuration available in your kubeconfig to communicate with
-a K8s cluster.
-
-Set your environment
-```
-export USE_KUBE_CONFIG=$(echo ~/.kube/config)
-export MY_POD_NAMESPACE=default
-export MY_POD_NAME=my-pod
-```
-
-    * MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
-      set the corresponding namespace for the resource.
-
-TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
-
-## Go version
-
-On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
-
-## Vendoring
-
-You may need to remove the vendor directory of dependencies that also vendor dependencies as these may produce conflicts
-with the versions vendored by mlkube; e.g.
+To get the status of your job
 
 ```
-rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
+kubectl get -o yaml tfjobs $JOB
 ```
+
+Here is sample output for an example job
+
+```
+apiVersion: mlkube.io/v1beta1
+kind: TfJob
+metadata:
+  clusterName: ""
+  creationTimestamp: 2017-10-20T22:27:38Z
+  generation: 0
+  name: example-job
+  namespace: default
+  resourceVersion: "1881"
+  selfLink: /apis/mlkube.io/v1beta1/namespaces/default/tfjobs/example-job
+  uid: e11f9577-b5e5-11e7-8522-42010a8e01a4
+spec:
+  RuntimeId: 76no
+  replicaSpecs:
+  - IsDefaultPS: false
+    replicas: 1
+    template:
+      metadata:
+        creationTimestamp: null
+      spec:
+        containers:
+        - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+          name: tensorflow
+          resources: {}
+        restartPolicy: OnFailure
+    tfPort: 2222
+    tfReplicaType: MASTER
+  - IsDefaultPS: false
+    replicas: 1
+    template:
+      metadata:
+        creationTimestamp: null
+      spec:
+        containers:
+        - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+          name: tensorflow
+          resources: {}
+        restartPolicy: OnFailure
+    tfPort: 2222
+    tfReplicaType: WORKER
+  - IsDefaultPS: true
+    replicas: 2
+    template:
+      metadata:
+        creationTimestamp: null
+      spec:
+        containers:
+        - image: tensorflow/tensorflow:1.3.0
+          name: tensorflow
+          resources: {}
+          volumeMounts:
+          - mountPath: /ps-server
+            name: ps-config-volume
+        restartPolicy: OnFailure
+    tfPort: 2222
+    tfReplicaType: PS
+  tensorboard:
+    logDir: /tmp/tensorflow
+    serviceType: ""
+    volumeMounts: null
+    volumes: null
+  tfImage: tensorflow/tensorflow:1.3.0
+status:
+  conditions: null
+  controlPaused: false
+  phase: Done
+  reason: ""
+  replicaStatuses:
+  - ReplicasStates:
+      Succeeded: 1
+    state: Succeeded
+    tf_replica_type: MASTER
+  - ReplicasStates:
+      Running: 1
+    state: Running
+    tf_replica_type: WORKER
+  - ReplicasStates:
+      Running: 2
+    state: Running
+    tf_replica_type: PS
+  state: Succeeded
+
+```
+
+The first thing to note is the **RuntimeId**. This is a random unique
+string which is used to give names to all the K8s resouces
+(e.g Job controllers & services) that are created by the TfJob.
+
+As with other K8s resources status provides information about the state
+of the resource.
+
+**phase** - Indicates the phase of a job and will be one of
+ - Creating
+ - Running
+ - CleanUp
+ - Failed
+ - Done
+
+**state** - Provides the overall status of the job and will be one of
+  - Running
+  - Succeeded
+  - Failed
+
+For each replica type in the job, there will be a ReplicaStatus that
+provides the number of replicas of that type in each state.
+
+For each replica type, the job creates a set of K8s
+[Job Controllers](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
+named
+
+```
+${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}
+```
+
+For example, if you have 2 parameter servers and runtime id 76n0 TfJob
+will create the jobs
+
+```
+ps-76no-0
+ps-76no-1
+```
+
+### TensorFlow Logs
+
+Logging follows standard K8s logging practices.
+
+You can use kubectl to get standard output/error for any of
+your containers.
+
+First find the pod created by the job controller for the replica of
+index. Pods will be named
+
+```
+${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}-${RANDOM}
+```
+
+where RANDOM is a unique id generated by K8s to uniquely identify each
+pod.
+
+Once you've identified your pod you can get the logs using kubectl.
+
+```
+kubectl logs ${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}-${RADNOM}
+```
+
+If your cluster takes advantage of K8s
+[logging infrastructure](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
+then your logs may also be shipped to an appropriate data store for
+further analysis.
+
+#### GKE
+
+The default on GKE is send logs to
+[Stackdriver logging](https://cloud.google.com/logging/docs/).
+
+To get the logs for a particular pod you can use the following
+advanced filter in Stackdriver logging's search UI.
+
+```
+resource.type="container"
+resource.labels.pod_id=${POD_NAME}
+```
+
+where ${POD_NAME} is the name of the pod.
+
+**Tip** If you don't know the id of the pod, just enter the RuntimeId
+for your job into the Stackdriver logging search UI. This will find all
+log entries with the RuntimeId anywhere in the log entry. Since the
+RuntimeId is a random string, the only matches will be the log entries
+for your job.
+
+**Tip** If your program outputs an easily searchable log message with
+the replica type and index then you can search for this log message
+and use it to determine the ${POD_NAME} for a particular pod; e.g
+
+```
+cluster_json = os.getenv('TF_CONFIG')
+cluster = json.loads(cluster)
+logging.info("REPLICA_TYPE=%s,REPLICA_INDEX=%s", cluster["task"]["type"], cluster["task"]["index"])
+```
+
+This would log a message like
+
+```
+REPLICA_TYPE=worker,REPLICA_INDEX=0
+```
+
+which you could then search for in the StackDriver UI. Once you find
+the entry you can expand it to see **resource.labels.pod_id**.
+
+
+## Contributing
+
+Please refer to the [developer_guide](developer_guide.md)
