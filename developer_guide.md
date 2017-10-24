@@ -14,7 +14,12 @@ Resolve dependencies (if you don't have glide install, check how to do it [here]
 
 ```
 glide install
+rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
 ```
+
+  * The **rm** is needed to remove the vendor directory of dependencies
+    that also vendor dependencies as these produce conflicts
+    with the versions vendored by mlkube
 
 Build it
 
@@ -44,12 +49,3 @@ TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 ## Go version
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
-
-## Vendoring
-
-You may need to remove the vendor directory of dependencies that also vendor dependencies as these may produce conflicts
-with the versions vendored by mlkube; e.g.
-
-```
-rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
-```
