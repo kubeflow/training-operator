@@ -253,16 +253,20 @@ def get_gcs_output():
                   job=job_name,
                   build=os.getenv("BUILD_NUMBER"))
     return output
-  else:
-    # It is a periodic or postsubmit job
+  elif os.getenv("REPO_OWNER"):
+    # It is a postsubmit job
     output = ("gs://kubernetes-jenkins/logs/{owner}_{repo}/"
               "{job}/{build}").format(
                   owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
-                  pull_number=pull_number,
                   job=job_name,
                   build=os.getenv("BUILD_NUMBER"))
     return output
-
+  else:
+    # Its a periodic job
+    output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
+              job=job_name,
+              build=os.getenv("BUILD_NUMBER"))
+    return output
 
 def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
@@ -277,12 +281,15 @@ def create_started(gcs_client, output_dir, sha):
   # For a list of fields expected by gubernator
   started = {
       "timestamp": int(time.time()),
-      "pull": os.getenv("PULL_REFS", ""),
       "repos": {
           # List all repos used and their versions.
           GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
       },
   }
+
+  PULL_REFS = os.getenv("PULL_REFS", "")
+  if started:
+    started["pull"] = PULL_REFS
 
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
