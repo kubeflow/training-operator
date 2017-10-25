@@ -95,8 +95,8 @@ if __name__ == "__main__":
   go_path = os.environ["GOPATH"]
 
   targets = [
-      "github.com/jlewi/mlkube.io/cmd/tf_operator",
-      "github.com/jlewi/mlkube.io/test/e2e",
+      "github.com/tensorflow/k8s/cmd/tf_operator",
+      "github.com/tensorflow/k8s/test/e2e",
     ]
   for t in targets:
     subprocess.check_call(["go", "install", t])

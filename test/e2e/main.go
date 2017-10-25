@@ -7,7 +7,7 @@
 // TODO(jlewi): Do we need to make the test output conform to the TAP(https://testanything.org/)
 // protocol so we can fit into the K8s dashboard
 //
-// TODO(https://github.com/jlewi/mlkube.io/issues/21) The E2E test should actually run distributed TensorFlow.
+// TODO(https://github.com/tensorflow/k8s/issues/21) The E2E test should actually run distributed TensorFlow.
 package main
 
 import (
@@ -19,9 +19,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/golang/glog"
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
