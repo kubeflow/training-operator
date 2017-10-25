@@ -4,7 +4,7 @@
 
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 
-[Prow Jobs](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
+[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
 ## Overview
 
