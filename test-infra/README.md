@@ -1,4 +1,4 @@
-# mlkube Test Infrastructure
+# Test Infrastructure
 
 We use [Prow](https://github.com/kubernetes/test-infra/tree/master/prow),
 K8s' continuous integration tool.
@@ -15,9 +15,9 @@ We use Prow to run:
 Quick Links
  * [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
 defines the ProwJobs.
-  * Search for mlkube to find mlkube related jobs
- * [mlkube Test Results Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
- * [mlkube Prow Jobs dashboard](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
+  * Search for tf-k8s to find tf-k8s related jobs
+ * [tf-k8s Test Results Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+ * [tf-k8s Prow Jobs dashboard](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
 ## Anatomy of our Prow Jobs
 
@@ -63,7 +63,7 @@ You can also run the tests inside the Docker image,
     * This can be useful for debugging or testing changes
 
   ```
-  docker run -ti -v ${REPO_PATH}:/go/src/github.com/jlewi/mlkube.io \
+  docker run -ti -v ${REPO_PATH}:/go/src/github.com/tensorflow/k8s \
     -v /var/run/docker.sock:/var/run/docker.sock \
     --entrypoint=/bin/bash gcr.io/mlkube-testing/builder:latest
   gcloud auth login
@@ -130,7 +130,7 @@ the results.
 Our jobs should be added to
 [K8s config](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
 
-## Notes adding mlkube.io to K8s Prow Instance
+## Notes adding tensorflow/k8s to K8s Prow Instance
 
 Below is some notes on what it took to integrate with K8s Prow instance.
 
@@ -141,7 +141,7 @@ Below is some notes on what it took to integrate with K8s Prow instance.
     * Add test dashboards to [testgrid/config/config.yaml](https://github.com/kubernetes/test-infra/pull/4951/files#diff-49f154cd90facc43fda49a99885e6d17)
     * Modify [testgrid/jenkins_verify/jenkins_validat.go](https://github.com/kubernetes/test-infra/pull/4951/files#diff-7fb4731a02dd681bbd0daada8dd2f908)
        to allow presubmits for the new repo.
-1. For mlkube.io configure webhooks by following these [instructions](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md#add-the-webhook-to-github)
+1. For tensorflow/k8s configure webhooks by following these [instructions](https://github.com/kubernetes/test-infra/blob/master/prow/getting_started.md#add-the-webhook-to-github)
     * Use https://prow.k8s.io/hook as the target
     * Get HMAC token from k8s test team
 1. Add the k8s bot account, k8s-ci-robot, as an admin on the repository
