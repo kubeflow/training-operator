@@ -2,7 +2,7 @@
 package fake
 
 import (
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/spec"
 	"net/http"
 	"time"
 )

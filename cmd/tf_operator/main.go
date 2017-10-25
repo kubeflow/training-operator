@@ -10,19 +10,19 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/jlewi/mlkube.io/pkg/controller"
-	"github.com/jlewi/mlkube.io/pkg/garbagecollection"
-	"github.com/jlewi/mlkube.io/pkg/util"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil/election/resourcelock"
-	"github.com/jlewi/mlkube.io/version"
+	"github.com/tensorflow/k8s/pkg/controller"
+	"github.com/tensorflow/k8s/pkg/garbagecollection"
+	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil/election"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil/election/resourcelock"
+	"github.com/tensorflow/k8s/version"
 
 	log "github.com/golang/glog"
 
 	"io/ioutil"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/spec"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
