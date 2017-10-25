@@ -8,14 +8,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/spec"
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	// TOOO(jlewi): Rename to apiErrors
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/tensorflow/k8s/pkg/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"

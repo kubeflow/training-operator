@@ -1,10 +1,10 @@
 # K8s Custom Resource and Operator For TensorFlow jobs
 
-[![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
+[![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
 
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 
-[Prow Jobs](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
+[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
 ## Overview
 
@@ -85,15 +85,15 @@ Custom Resources require Kubernetes >= 1.7
 ### Configuring the CRD
 
 The CRD can be configured via a [ConfigMap](https://kubernetes.io/docs/api-reference/v1.8/#configmap-v1-core)
-that provides a [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go) serialized
+that provides a [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go) serialized
 as YAML. The config controls how the CRD manages TensorFlow jobs.
 
-Currently, the most important use for [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go)
+Currently, the most important use for [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go)
 is specifying environment variables and volumes that must be mounted from the
 host into containers to configure GPUS.
 
 The TfJob controller can be configured with a list of volumes that should be mounted from the host into the container
-to make GPUs work. Here's an example [ControllerConfig](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/controller.go):
+to make GPUs work. Here's an example [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go):
 
 ```
 accelerators:
@@ -119,7 +119,7 @@ The helm package for the controller includes a config map suitable for GKE.
 This ConfigMap may need to be modified for your cluster if you aren't using
 GKE.
 
-There's an open [issue](https://github.com/jlewi/mlkube.io/issues/71) to
+There's an open [issue](https://github.com/tensorflow/k8s/issues/71) to
 better support non GKE clusters
 
 
@@ -128,7 +128,7 @@ better support non GKE clusters
 You create a job by defining a TfJob and then creating it with.
 
 ```
-kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
 ```
 
 In this case the job spec looks like the following
@@ -234,9 +234,9 @@ for using GPUs.
 ### Requesting a TensorBoard instance
 
 You can also ask the `TfJob` operator to create a TensorBoard instance
-by including a [TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103)
+by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103)
 in your job. The table below describes the important fields in
-[TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103).
+[TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103).
 
 | Name | Description | Required | Default |
 |---|---|---|---|
