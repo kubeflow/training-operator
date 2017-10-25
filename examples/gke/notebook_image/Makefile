@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMG = gcr.io/mlkube-testing/builder
+IMG = gcr.io/tf-on-k8s-dogfood/gke-datalab
 TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
 
 all: build

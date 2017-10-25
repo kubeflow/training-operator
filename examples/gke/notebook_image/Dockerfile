@@ -28,6 +28,9 @@ RUN pip install kubernetes
 RUN curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" \
     | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
 
+# Install kubectl
+RUN gcloud components install -q kubectl
+
 # Install Helm
 RUN wget -O /tmp/get_helm.sh \
     https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get && \
