@@ -20,7 +20,7 @@ def run(command, cwd=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
 
   try:
-    ouput = subprocess.check_output(command, cwd=cwd)
+    output = subprocess.check_output(command, cwd=cwd)
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)

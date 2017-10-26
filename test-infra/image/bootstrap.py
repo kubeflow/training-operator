@@ -34,9 +34,11 @@ GO_REPO_OWNER = "tensorflow"
 GO_REPO_NAME = "k8s"
 
 
-def run(command, cwd=None):
+def run(command, cwd=None, env=None):
   logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
+  if not env:
+    env = os.environ
+  subprocess.check_call(command, cwd=cwd, env=env)
 
 
 def run_and_output(command, cwd=None):
@@ -139,9 +141,15 @@ def main():
 
   # Execute the runner.
   runner = os.path.join(src_dir, "test-infra", "runner.py")
-  # We run from the root of the source tree. This way it will be added to
-  # the Python path which is necessary so we can import modules in py/.
-  run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha], cwd=src_dir)
+  # Ensure src_dir ends up on the path.
+  new_env = os.environ.copy()
+  py_path = new_env.get("PYTHONPATH", "")
+  if py_path:
+    py_path += ":"
+  py_path += src_dir
+  new_env["PYTHONPATH"] = py_path
+  run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha], cwd=src_dir,
+      env=new_env)
 
 
 if __name__ == "__main__":
