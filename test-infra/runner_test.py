@@ -2,14 +2,14 @@ import json
 import unittest
 
 import mock
-from google.cloud import storage
+from google.cloud import storage  # pylint: disable=no-name-in-module, import-error
 
 import runner
 
 
 class TestRunner(unittest.TestCase):
   @mock.patch("runner.time.time")
-  def testCreateFinished(self, mock_time):
+  def testCreateFinished(self, mock_time):  # pylint: disable=no-self-use
     """Test create finished"""
     mock_time.return_value = 1000
     gcs_client = mock.MagicMock(spec=storage.Client)
@@ -23,7 +23,7 @@ class TestRunner(unittest.TestCase):
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
   @mock.patch("runner.time.time")
-  def testCreateStartedPeriodic(self, mock_time):
+  def testCreateStartedPeriodic(self, mock_time):  # pylint: disable=no-self-use
     """Test create started for periodic job."""
     mock_time.return_value = 1000
     gcs_client = mock.MagicMock(spec=storage.Client)
@@ -43,7 +43,7 @@ class TestRunner(unittest.TestCase):
         "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
         location)
 
-  def testCreateSymlinkOutput(self):
+  def testCreateSymlinkOutput(self):  # pylint: disable=no-self-use
     """Test create started for periodic job."""
     gcs_client = mock.MagicMock(spec=storage.Client)
     blob = runner.create_symlink(gcs_client, "gs://bucket/symlink",

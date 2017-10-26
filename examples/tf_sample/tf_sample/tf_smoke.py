@@ -11,8 +11,6 @@ import argparse
 import json
 import logging
 import os
-import re
-import time
 
 import tensorflow as tf
 
@@ -33,7 +31,7 @@ def parse_args():
   return args
 
 
-def run(server, cluster_spec):
+def run(server, cluster_spec):  # pylint: disable=too-many-statements, too-many-locals
   """Build the graph and run the example.
 
   Args:
@@ -44,7 +42,7 @@ def run(server, cluster_spec):
   """
 
   # construct the graph and create a saver object
-  with tf.Graph().as_default():
+  with tf.Graph().as_default():  # pylint: disable=not-context-manager
     # The initial value should be such that type is correctly inferred as
     # float.
     width = 10
@@ -97,7 +95,6 @@ def main():
   cluster_spec = tf_config.get("cluster", {})
   logging.info("cluster_spec: %s", cluster_spec)
 
-  args = parse_args()
   server = None
   device_func = None
   if cluster_spec:

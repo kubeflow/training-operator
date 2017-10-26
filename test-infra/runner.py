@@ -40,14 +40,13 @@ import json
 import logging
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import time
 import uuid
 
 import yaml
-from google.cloud import storage
+from google.cloud import storage  # pylint: disable=no-name-in-module, import-error
 from googleapiclient import discovery, errors
 from oauth2client.client import GoogleCredentials
 
@@ -121,7 +120,7 @@ def create_cluster(gke, name, project, zone):
   """
   cluster_request = {
       "cluster": {
-          "name": args.cluster,
+          "name": name,
           "description": "A GKE cluster for testing GPUs with Cloud ML",
           "initialNodeCount": 1,
           "nodeConfig": {
@@ -181,21 +180,20 @@ def delete_cluster(gke, name, project, zone):
                   e, e.resp["status"])
 
 
-def build_container(use_gcb, src_dir, test_dir):
+def build_container(use_gcb, src_dir, test_dir, project):
   """Build the CRD container.
 
   Args:
     use_gcb: Boolean indicating whether to build the image with GCB or Docker.
     src_dir: The directory containing the source.
     test_dir: Scratch directory for runner.py.
-
+    project: Project to use.
   Returns:
     image: The URI of the newly built image.
   """
   # Build and push the image
   # We use Google Container Builder because Prow currently doesn't allow using
   # docker build.
-  registry = "gcr.io/" + args.project
   if use_gcb:
     gcb_arg = "--gcb"
   else:
@@ -203,7 +201,7 @@ def build_container(use_gcb, src_dir, test_dir):
 
   build_info_file = os.path.join(test_dir, "build_info.yaml")
   run(["./images/tf_operator/build_and_push.py", gcb_arg,
-       "--project=" + args.project,
+       "--project=" + project,
        "--registry=gcr.io/mlkube-testing",
        "--output=" + build_info_file], cwd=src_dir)
 
@@ -260,12 +258,12 @@ def get_gcs_output():
                   job=job_name,
                   build=os.getenv("BUILD_NUMBER"))
     return output
-  else:
-    # Its a periodic job
-    output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
-        job=job_name,
-        build=os.getenv("BUILD_NUMBER"))
-    return output
+
+  # Its a periodic job
+  output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
+      job=job_name,
+      build=os.getenv("BUILD_NUMBER"))
+  return output
 
 
 def get_symlink_output(pull_number, job_name, build_number):
@@ -397,7 +395,6 @@ def upload_outputs(gcs_client, output_dir, test_dir):
 def create_latest(gcs_client, job_name, sha):
   """Create a file in GCS with information about the latest passing postsubmit.
   """
-  m = GCS_REGEX.match(output_dir)
   bucket_name = "mlkube-testing-results"
   path = os.path.join(job_name, "latest_green.json")
 
@@ -414,7 +411,7 @@ def create_latest(gcs_client, job_name, sha):
   blob.upload_from_string(json.dumps(data))
 
 
-if __name__ == "__main__":
+def main():  # pylint: disable=too-many-statements, too-many-locals
   logging.getLogger().setLevel(logging.INFO)
   logging.info("Starting runner.py")
   parser = argparse.ArgumentParser(
@@ -497,7 +494,7 @@ if __name__ == "__main__":
   if symlink:
     create_symlink(gcs_client, symlink, output_dir)
 
-  image = build_container(args.use_gcb, src_dir, test_dir)
+  image = build_container(args.use_gcb, src_dir, test_dir, args.project)
   logging.info("Created image: %s", image)
 
   credentials = GoogleCredentials.get_application_default()
@@ -518,3 +515,6 @@ if __name__ == "__main__":
     create_finished(gcs_client, output_dir, success)
     upload_outputs(gcs_client, output_dir, test_dir)
     delete_cluster(gke, args.cluster, args.project, args.zone)
+
+if __name__ == "__main__":
+  main()

@@ -3,7 +3,6 @@ import argparse
 import hashlib
 import logging
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     image = args.registry + "/tf_sample_gpu"
 
   image += ":" + GetGitHash()
-  subprocess.check_call(["docker", "build", "-t", image,  context_dir])
+  subprocess.check_call(["docker", "build", "-t", image, context_dir])
   logging.info("Built image: %s", image)
   subprocess.check_call(["gcloud", "docker", "--", "push", image])
   logging.info("Pushed image: %s", image)

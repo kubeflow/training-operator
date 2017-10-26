@@ -1,10 +1,11 @@
 #!/usr/bin/python
+from __future__ import print_function
+
 import argparse
 import datetime
 import hashlib
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -48,8 +49,8 @@ def run_and_output(command, cwd=None):
   return output
 
 
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+def main():  # pylint: disable=too-many-locals, too-many-statements
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
       description="Build docker image for TfJob CRD.")
 
@@ -94,7 +95,6 @@ if __name__ == "__main__":
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)
-  dockerfile = os.path.join(context_dir, 'Dockerfile')
 
   # Build the go binaries
   go_path = os.environ["GOPATH"]
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     run(["gcloud", "container", "builds", "submit", context_dir,
          "--tag=" + image, "--project=" + args.project])
   else:
-    run(["docker", "build", "-t", image,  context_dir])
+    run(["docker", "build", "-t", image, context_dir])
     logging.info("Built image: %s", image)
 
     if args.should_push:
@@ -145,3 +145,6 @@ if __name__ == "__main__":
     output = {"image": image}
     with open(args.output, mode='w') as hf:
       yaml.dump(output, hf)
+
+if __name__ == "__main__":
+  main()

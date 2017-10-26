@@ -23,3 +23,4 @@ script:
   # With go 1.9 vendor will be automatically excluded.
   # For now though we just run all tests in pkg.
   - go test -v ./pkg/...
+  - ./lint.sh

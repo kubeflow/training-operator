@@ -20,6 +20,8 @@ the repository we can invoke the E2E test runner.
 TODO(jlewi): Will we be able to eventually replace this with the bootstrap
 program in https://github.com/kubernetes/test-infra/tree/master/bootstrap?
 """
+from __future__ import print_function
+
 import json
 import logging
 import os

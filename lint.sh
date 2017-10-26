@@ -14,10 +14,16 @@
 # limitations under the License.
 
 set -o errexit -o pipefail -o nounset
-pylint ./py
 
-find . -name "*.txt" -print0 | while read -d $'\0' file
+shopt -s extglob
+status=0
+
+for file in $(find . -name "*.py" ! -path "./vendor/*")
 do
-    …code using "$file"
+    echo pylint $file
+    if ! pylint $file; then
+      status=1
+    fi
 done
 
+exit $status
