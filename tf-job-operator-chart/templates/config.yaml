@@ -1,0 +1,45 @@
+{{- $cloud := .Values.cloud | default "" -}}
+
+{{ if eq $cloud "azure" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tf-job-operator-config
+  namespace: default
+data:
+  controller_config_file.yaml: |
+    grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
+    accelerators:
+      alpha.kubernetes.io/nvidia-gpu:
+        envVars:
+          - name: LD_LIBRARY_PATH
+            value: /usr/lib/nvidia:/usr/lib/x86_64-linux-gnu
+        volumes:
+          - name: lib
+            mountPath: /usr/lib/nvidia
+            hostPath:  /usr/lib/nvidia-384
+          - name: bin
+            mountPath: /usr/local/nvidia/bin 
+            hostPath: /usr/lib/nvidia-384/bin
+          - name: libcuda
+            mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
+            hostPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1 
+{{ else if eq $cloud "gke" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tf-job-operator-config
+  namespace: default
+data:
+  controller_config_file.yaml: |
+    grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
+    accelerators:
+      alpha.kubernetes.io/nvidia-gpu:
+        volumes:
+          - name: nvidia-libraries
+            mountPath: /usr/local/nvidia/lib64 # This path is special; it is expected to be present in `/etc/ld.so.conf` inside the container image.
+            hostPath: /home/kubernetes/bin/nvidia/lib
+          - name: nvidia-debug-tools # optional
+            mountPath: /usr/local/bin/nvidia
+            hostPath: /home/kubernetes/bin/nvidia/bin
+{{ end }}
