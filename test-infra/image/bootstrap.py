@@ -139,7 +139,9 @@ def main():
 
   # Execute the runner.
   runner = os.path.join(src_dir, "test-infra", "runner.py")
-  run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha])
+  # We run from the root of the source tree. This way it will be added to
+  # the Python path which is necessary so we can import modules in py/.
+  run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha], cwd=src_dir)
 
 
 if __name__ == "__main__":
