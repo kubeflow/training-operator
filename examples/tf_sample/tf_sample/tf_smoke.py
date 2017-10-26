@@ -12,8 +12,9 @@ import json
 import logging
 import os
 import re
-import tensorflow as tf
 import time
+
+import tensorflow as tf
 
 
 def parse_args():

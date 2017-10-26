@@ -1,4 +1,6 @@
 """Utilities used by our python scripts for building and releasing."""
+from __future__ import print_function
+
 import logging
 import os
 import shutil

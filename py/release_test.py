@@ -1,9 +1,9 @@
-import os
-from py import release
-import tarfile
 import tempfile
 import unittest
+
 import yaml
+
+from py import release
 
 
 class ReleaseTest(unittest.TestCase):

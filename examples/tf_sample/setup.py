@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A setup.py file for the tf_sample package."""
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 REQUIRED_PACKAGES = []
 

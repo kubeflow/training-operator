@@ -22,9 +22,9 @@ program in https://github.com/kubernetes/test-infra/tree/master/bootstrap?
 """
 import json
 import logging
-import subprocess
 import os
 import shutil
+import subprocess
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.

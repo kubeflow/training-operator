@@ -1,9 +1,10 @@
 import json
-import mock
-import runner
 import unittest
 
+import mock
 from google.cloud import storage
+
+import runner
 
 
 class TestRunner(unittest.TestCase):

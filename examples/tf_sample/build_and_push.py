@@ -1,13 +1,14 @@
 #!/usr/bin/python
 import argparse
 import hashlib
-import jinja2
 import logging
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+
+import jinja2
 
 
 def GetGitHash():

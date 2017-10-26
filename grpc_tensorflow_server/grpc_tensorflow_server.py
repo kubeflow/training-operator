@@ -33,15 +33,12 @@ Where:
     PORT is a port number
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import argparse
 import sys
 
-from tensorflow.core.protobuf import config_pb2
-from tensorflow.core.protobuf import tensorflow_server_pb2
+from tensorflow.core.protobuf import config_pb2, tensorflow_server_pb2
 from tensorflow.python.platform import app
 from tensorflow.python.training import server_lib
 

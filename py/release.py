@@ -9,11 +9,10 @@ import glob
 import json
 import logging
 import os
-import tarfile
 import tempfile
 
 import yaml
-from google.cloud import storage
+from google.cloud import storage  # pylint: disable=import-error, no-name-in-module
 
 from py import util
 
@@ -26,7 +25,6 @@ JOB_NAME = "mlkube-build-postsubmit"
 
 def get_latest_green_presubmit(gcs_client):
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
-  latest_results = os.path.join(JOB_NAME)
   blob = bucket.blob(os.path.join(JOB_NAME, "latest_green.json"))
   contents = blob.download_as_string()
 
@@ -64,8 +62,8 @@ def update_chart(chart_file, version):
     yaml.dump(info, hf)
 
 
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
   parser = argparse.ArgumentParser(
       description="Release artifacts for TfJob.")
 
@@ -130,3 +128,6 @@ if __name__ == "__main__":
       continue
     logging.info("Uploading %s to %s.", chart_archive, gcs_path)
     blob.upload_from_filename(chart_archive)
+
+if __name__ == "__main__":
+  main()

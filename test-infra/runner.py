@@ -38,19 +38,18 @@ import argparse
 import datetime
 import json
 import logging
-import subprocess
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import time
 import uuid
-import yaml
 
-from googleapiclient import discovery
-from googleapiclient import errors
-from oauth2client.client import GoogleCredentials
+import yaml
 from google.cloud import storage
+from googleapiclient import discovery, errors
+from oauth2client.client import GoogleCredentials
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
