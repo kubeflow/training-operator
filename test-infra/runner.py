@@ -429,7 +429,7 @@ def run_lint(src_dir):
     success: Boolean indicating success or failure
   """
   try:
-    run(["lint.sh"], cwd=src_dir)
+    run(["./lint.sh"], cwd=src_dir)
   except subprocess.CalledProcessError as e:
     logging.error("Lint checks failed; %s", e)
     return False
@@ -502,7 +502,7 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
 
   build_log = os.path.join(test_dir, "build-log.txt")
   fileHandler = logging.FileHandler(build_log)
-  fileHandler.setFormatter(logFormatter)
+  # TODO(jlewi): Should we set the formatter?
   rootLogger.addHandler(fileHandler)
 
   logging.info("test_dir: %s", test_dir)
@@ -553,19 +553,19 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
       job_name = os.getenv("JOB_NAME", "unknown")
       create_latest(gcs_client, job_name, sha)
 
-  except Exception as e:
+  except Exception as e: # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
   try:
     create_finished(gcs_client, output_dir, success)
-  except Exception as e:
+  except Exception as e: # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
   try:
     delete_cluster(gke, args.cluster, args.project, args.zone)
-  except Exception as e:
+  except Exception as e: # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
