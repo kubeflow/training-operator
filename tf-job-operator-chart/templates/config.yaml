@@ -24,7 +24,7 @@ data:
           - name: libcuda
             mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
             hostPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1 
-{{ else if eq $cloud "gce" }}
+{{ else if eq $cloud "gke" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -43,13 +43,13 @@ Custom Resources require Kubernetes >= 1.7
    For non-RBAC enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
-   helm install ${CHART} -n tf-job --wait --replace --set cloud=<gce or azure>
+   helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>
    ```
 
    For RBAC-enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
-   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true cloud=<gce or azure>
+   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true cloud=<gke or azure>
    ```
 
     * The above instructions use the latest release.
@@ -87,12 +87,12 @@ Custom Resources require Kubernetes >= 1.7
 The CRD must be configured properly to work with your specific Kubernetes cluster.
 Since it will be mounting GPU drivers into your pods, the CRD needs to know where to find them on the Kubernetes agents. It also needs to know which environment variable needs to be injected in the pods.
 
-If your Kubernetes cluster is running on GCE (GKE) or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `values.yaml`).
+If your Kubernetes cluster is running on GKE or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `values.yaml`).
 
-For **GCE**
+For **GKE**
 
 ```
-helm install ${CHART} -n tf-job --wait --replace --set cloud=gce
+helm install ${CHART} -n tf-job --wait --replace --set cloud=gke
 ```
 
 For **Azure**:
@@ -101,7 +101,7 @@ For **Azure**:
 helm install ${CHART} -n tf-job --wait --replace --set cloud=azure
 ```
 
-If the cluster is not hosted on GCE or Azure, you will need specify a custom configuration.
+If the cluster is not hosted on GKE or Azure, you will need specify a custom configuration.
 To do so edit `${CHART}\custom-config.yaml` with your desired settings.
 
 This is the structure of the configuration file:

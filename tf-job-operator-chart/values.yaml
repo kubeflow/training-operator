@@ -3,7 +3,7 @@ image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 
 # Which cloud provider is kubernetes hosted on.
-# Supported values are gce or azure.
+# Supported values are gke or azure.
 # If no value is provided, the configuration specified in custom-config.yaml will be applied
 cloud: 
 

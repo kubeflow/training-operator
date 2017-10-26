@@ -1,6 +1,6 @@
 # In this file you can specify a custom configuration for TfJob, such as specific driver mounts
 # and environment variable.
-# Note that configurations for GCE and Azure (ACS, acs-engine, AKS) are already available: simply set cloud=gce
+# Note that configurations for GKE and Azure (ACS, acs-engine, AKS) are already available: simply set cloud=gke
 # or cloud=azure in values.yaml
 apiVersion: v1
 kind: ConfigMap
