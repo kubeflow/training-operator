@@ -48,7 +48,7 @@ import uuid
 from py import util  # pylint: disable=no-name-in-module
 
 import yaml
-from google.cloud import storage  # pylint: disable=no-name-in-module, import-error
+from google.cloud import storage  # pylint: disable=no-name-in-module
 from googleapiclient import discovery, errors
 from oauth2client.client import GoogleCredentials
 

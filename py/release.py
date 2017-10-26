@@ -12,7 +12,7 @@ import os
 import tempfile
 
 import yaml
-from google.cloud import storage  # pylint: disable=import-error, no-name-in-module
+from google.cloud import storage  # pylint: disable=no-name-in-module
 
 from py import util
 
