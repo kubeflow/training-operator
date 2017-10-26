@@ -15,6 +15,9 @@ install:
   - glide install
   # We need to remove the vendored dependencies of apiextensions otherwise we get type conflicts.
   - rm -rf vendor/k8s.io/apiextensions-apiserver/vendor
+  # We need pylint for lint
+  - pip install pylint
+
 
 script:
   # We customize the build step because by default
