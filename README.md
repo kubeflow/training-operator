@@ -101,29 +101,37 @@ For **Azure**:
 helm install ${CHART} -n tf-job --wait --replace --set cloud=azure
 ```
 
-If the cluster is not hosted on GKE or Azure, you will need specify a custom configuration.
-To do so edit `${CHART}\custom-config.yaml` with your desired settings.
+If the cluster is not hosted on GKE or Azure, you will need to specify a custom configuration.
+To do so create a `ConfigMap` with your desired settings.
 
-This is the structure of the configuration file:
+This is the structure of the expected configuration file:
 
 ```yaml
-accelerators:
-  alpha.kubernetes.io/nvidia-gpu:
-    volumes:
-      - name: <volume-name> # Desired name of the volume, ex: nvidia-libs
-        mountPath: <mount-path> # Path where this should be mounted
-        hostPath: <host-path> # Path on the host machine
-      - name: <volume2-name> # optional
-        mountPath: <mount-path>
-        hostPath: <host-path>
-    envVars:
-      - name: <env-var-name> # Name of the environment variable, ex: LD_LIBRARY_PATH
-        value: <env-value> # Value of the environment variable
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tf-job-operator-config
+  namespace: default
+data:
+  controller_config_file.yaml: |
+    accelerators:
+      alpha.kubernetes.io/nvidia-gpu:
+        volumes:
+          - name: <volume-name> # Desired name of the volume, ex: nvidia-libs
+            mountPath: <mount-path> # Path where this should be mounted
+            hostPath: <host-path> # Path on the host machine
+          - name: <volume2-name> # optional
+            mountPath: <mount-path>
+            hostPath: <host-path>
+        envVars:
+          - name: <env-var-name> # Name of the environment variable, ex: LD_LIBRARY_PATH
+            value: <env-value> # Value of the environment variable
 ```
 
-Then simply install the Helm chart without specifying any cloud provider:
+Then simply create the `ConfigMap` and install the Helm chart (**the order matters**) without specifying any cloud provider:
 
 ```
+kubectl create configmap tf-job-operator-config --from-file <your-configmap-path>
 helm install ${CHART} -n tf-job --wait --replace
 ```
 

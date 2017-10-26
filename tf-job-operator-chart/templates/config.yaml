@@ -42,6 +42,4 @@ data:
           - name: nvidia-debug-tools # optional
             mountPath: /usr/local/bin/nvidia
             hostPath: /home/kubernetes/bin/nvidia/bin
-{{ else if eq $cloud ""}}
-{{ .Files.Get "custom-config.yaml"}}
 {{ end }}
