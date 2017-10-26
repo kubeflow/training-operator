@@ -45,6 +45,7 @@ import sys
 import tempfile
 import time
 import uuid
+from py import util  # pylint: disable=no-name-in-module
 
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module, import-error
@@ -57,11 +58,6 @@ GO_REPO_OWNER = "tensorflow"
 GO_REPO_NAME = "k8s"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
-
-
-def run(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
 
 
 class TimeoutError(Exception):
@@ -152,8 +148,8 @@ def create_cluster(gke, name, project, zone):
       raise
 
   logging.info("Configuring kubectl")
-  run(["gcloud", "--project=" + project, "container",
-       "clusters", "--zone=" + zone, "get-credentials", name])
+  util.run(["gcloud", "--project=" + project, "container",
+            "clusters", "--zone=" + zone, "get-credentials", name])
 
 
 def delete_cluster(gke, name, project, zone):
@@ -201,10 +197,10 @@ def build_container(use_gcb, src_dir, test_dir, project):
     gcb_arg = "--no-gcb"
 
   build_info_file = os.path.join(test_dir, "build_info.yaml")
-  run(["./images/tf_operator/build_and_push.py", gcb_arg,
-       "--project=" + project,
-       "--registry=gcr.io/mlkube-testing",
-       "--output=" + build_info_file], cwd=src_dir)
+  util.run(["./images/tf_operator/build_and_push.py", gcb_arg,
+            "--project=" + project,
+            "--registry=gcr.io/mlkube-testing",
+            "--output=" + build_info_file], cwd=src_dir)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
@@ -225,11 +221,11 @@ def deploy_and_test(image, test_dir):
 
   target = os.path.join("github.com", GO_REPO_OWNER, GO_REPO_NAME,
                         "test-infra", "helm-test")
-  run(["go", "install", target])
+  util.run(["go", "install", target])
 
   binary = os.path.join(os.getenv("GOPATH"), "bin", "helm-test")
   try:
-    run([binary, "--image=" + image, "--output_dir=" + test_dir])
+    util.run([binary, "--image=" + image, "--output_dir=" + test_dir])
   except subprocess.CalledProcessError as e:
     logging.error("helm-test failed; %s", e)
     return False
@@ -429,11 +425,12 @@ def run_lint(src_dir):
     success: Boolean indicating success or failure
   """
   try:
-    run(["./lint.sh"], cwd=src_dir)
+    util.run(["./lint.sh"], cwd=src_dir)
   except subprocess.CalledProcessError as e:
     logging.error("Lint checks failed; %s", e)
     return False
   return True
+
 
 def main():  # pylint: disable=too-many-statements, too-many-locals
   logging.getLogger().setLevel(logging.INFO)
@@ -512,8 +509,8 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
   if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
                  os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-    run(["gcloud", "auth", "activate-service-account",
-         "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
+    util.run(["gcloud", "auth", "activate-service-account",
+              "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
   job_name = os.getenv("JOB_NAME", "")
   build_number = os.getenv("BUILD_NUMBER")
   pull_number = os.getenv("PULL_NUMBER")
@@ -553,19 +550,19 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
       job_name = os.getenv("JOB_NAME", "unknown")
       create_latest(gcs_client, job_name, sha)
 
-  except Exception as e: # pylint: disable=broad-except
+  except Exception as e:  # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
   try:
     create_finished(gcs_client, output_dir, success)
-  except Exception as e: # pylint: disable=broad-except
+  except Exception as e:  # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
   try:
     delete_cluster(gke, args.cluster, args.project, args.zone)
-  except Exception as e: # pylint: disable=broad-except
+  except Exception as e:  # pylint: disable=broad-except
     success = False
     logging.error("Failure occured. %s", e)
 
@@ -577,6 +574,7 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
     logging.error("One or more test steps failed exiting with non-zero exit "
                   "code.")
     sys.exit(1)
+
 
 if __name__ == "__main__":
   main()
