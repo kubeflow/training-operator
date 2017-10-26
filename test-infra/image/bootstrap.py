@@ -36,6 +36,7 @@ def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
 
+
 def run_and_output(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   # The output won't be available until the command completes.
@@ -43,6 +44,7 @@ def run_and_output(command, cwd=None):
   output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
   print(output)
   return output
+
 
 def clone_repo():
   """Clone the repo.
@@ -107,6 +109,7 @@ def clone_repo():
 
   return dest, sha
 
+
 def main():
   this_dir = os.path.dirname(__file__)
   version_file = os.path.join(this_dir, "version.json")
@@ -133,6 +136,7 @@ def main():
   # Execute the runner.
   runner = os.path.join(src_dir, "test-infra", "runner.py")
   run(["python", runner, "--src_dir=" + src_dir, "--sha=" + sha])
+
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)

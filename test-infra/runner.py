@@ -264,9 +264,10 @@ def get_gcs_output():
   else:
     # Its a periodic job
     output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
-              job=job_name,
-              build=os.getenv("BUILD_NUMBER"))
+        job=job_name,
+        build=os.getenv("BUILD_NUMBER"))
     return output
+
 
 def get_symlink_output(pull_number, job_name, build_number):
   """Return the location where the symlink should be created."""
@@ -280,6 +281,7 @@ def get_symlink_output(pull_number, job_name, build_number):
                 job=job_name,
                 build=build_number)
   return output
+
 
 def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
@@ -317,6 +319,7 @@ def create_started(gcs_client, output_dir, sha):
 
   return blob
 
+
 def create_finished(gcs_client, output_dir, success):
   """Create the finished output in GCS.
 
@@ -349,6 +352,7 @@ def create_finished(gcs_client, output_dir, success):
   blob.upload_from_string(json.dumps(finished))
   return blob
 
+
 def create_symlink(gcs_client, symlink, output):
   """Create a 'symlink' to the output directory.
 
@@ -365,6 +369,7 @@ def create_symlink(gcs_client, symlink, output):
   blob = bucket.blob(path)
   blob.upload_from_string(output)
   return blob
+
 
 def upload_outputs(gcs_client, output_dir, test_dir):
   m = GCS_REGEX.match(output_dir)
@@ -402,12 +407,13 @@ def create_latest(gcs_client, job_name, sha):
   logging.info("Creating GCS output: bucket: %s, path: %s.", bucket_name, path)
 
   data = {
-    "status": "passing",
-    "job": job_name,
-    "sha": sha,
+      "status": "passing",
+      "job": job_name,
+      "sha": sha,
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
+
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)

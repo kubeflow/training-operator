@@ -9,9 +9,11 @@ import subprocess
 MASTER_REPO_OWNER = "jlewi"
 MASTER_REPO_NAME = "mlkube.io"
 
+
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
+
 
 def run_and_output(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
@@ -20,6 +22,7 @@ def run_and_output(command, cwd=None):
   output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
   print(output)
   return output
+
 
 def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                sha=None):
@@ -55,6 +58,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
   return dest, sha
+
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""

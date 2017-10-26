@@ -5,6 +5,7 @@ import unittest
 
 from google.cloud import storage
 
+
 class TestRunner(unittest.TestCase):
   @mock.patch("runner.time.time")
   def testCreateFinished(self, mock_time):
@@ -14,9 +15,9 @@ class TestRunner(unittest.TestCase):
     blob = runner.create_finished(gcs_client, "gs://bucket/output", True)
 
     expected = {
-      "timestamp": 1000,
-      "result": "SUCCESS",
-      "metadata": {},
+        "timestamp": 1000,
+        "result": "SUCCESS",
+        "metadata": {},
     }
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
@@ -28,19 +29,18 @@ class TestRunner(unittest.TestCase):
     blob = runner.create_started(gcs_client, "gs://bucket/output", "abcd")
 
     expected = {
-      "timestamp": 1000,
+        "timestamp": 1000,
         "repos": {
-          "jlewi/mlkube.io": "abcd",
+            "jlewi/mlkube.io": "abcd",
         },
     }
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
-
   def testGetSymlinkOutput(self):
     location = runner.get_symlink_output("10", "mlkube-build-presubmit", "20")
     self.assertEquals(
-      "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
-      location)
+        "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
+        location)
 
   def testCreateSymlinkOutput(self):
     """Test create started for periodic job."""
@@ -49,6 +49,7 @@ class TestRunner(unittest.TestCase):
                                  "gs://bucket/output")
 
     blob.upload_from_string.assert_called_once_with("gs://bucket/output")
+
 
 if __name__ == "__main__":
   unittest.main()

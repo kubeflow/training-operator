@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import yaml
 
+
 class ReleaseTest(unittest.TestCase):
   def test_update_values(self):
     with tempfile.NamedTemporaryFile(delete=False) as hf:
@@ -46,12 +47,13 @@ appVersion: 0.1.0
     with open(chart_file) as hf:
       output = yaml.load(hf)
     expected = {
-      "name": "tf-job-operator-chart",
-      "home": "https://github.com/jlewi/mlkube.io",
-      "version": "0.1.0-v20171019",
-      "appVersion": "0.1.0-v20171019",
+        "name": "tf-job-operator-chart",
+        "home": "https://github.com/jlewi/mlkube.io",
+        "version": "0.1.0-v20171019",
+        "appVersion": "0.1.0-v20171019",
     }
     self.assertEquals(expected, output)
+
 
 if __name__ == "__main__":
   unittest.main()

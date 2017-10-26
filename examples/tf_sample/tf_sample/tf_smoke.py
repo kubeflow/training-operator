@@ -21,10 +21,10 @@ def parse_args():
   parser = argparse.ArgumentParser()
 
   parser.add_argument(
-        "--sleep_secs",
-        default=0,
-        type=int,
-        help=("Amount of time to sleep at the end"))
+      "--sleep_secs",
+      default=0,
+      type=int,
+      help=("Amount of time to sleep at the end"))
 
   # TODO(jlewi): We ignore unknown arguments because the backend is currently
   # setting some flags to empty values like metadata path.
@@ -70,7 +70,7 @@ def run(server, cluster_spec):
 
     logging.info("Server target: %s", target)
     with tf.Session(
-        target, config=tf.ConfigProto(log_device_placement=True)) as sess:
+            target, config=tf.ConfigProto(log_device_placement=True)) as sess:
       sess.run(init_op)
       for r in results:
         result = sess.run(r)
@@ -125,7 +125,7 @@ def main():
     device_func = tf.train.replica_device_setter()
 
   job_type = task.get("type", "").lower()
-  if job_type  == "ps":
+  if job_type == "ps":
     logging.info("Running PS code.")
     server.join()
   elif job_type == "worker":
