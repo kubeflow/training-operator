@@ -30,7 +30,7 @@ def GetGitHash():
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
-      description="Build Docker images for examples.")
+      description="Build Docker images based off of TensorFlow.")
 
   parser.add_argument(
       "--image",
