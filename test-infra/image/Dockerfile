@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN easy_install pip
 RUN pip install --upgrade six pyyaml google-api-python-client \
-    google-cloud-storage
+    google-cloud-storage pylint
 
 # Install gcloud
 

@@ -411,6 +411,22 @@ def create_latest(gcs_client, job_name, sha):
   blob.upload_from_string(json.dumps(data))
 
 
+def run_lint(src_dir):
+  """Run lint.
+
+  Args:
+    src_dir: the directory containing the source.
+
+  Returns:
+    success: Boolean indicating success or failure
+  """
+  try:
+    run(["lint.sh"], cwd=src_dir)
+  except subprocess.CalledProcessError as e:
+    logging.error("Lint checks failed; %s", e)
+    return False
+  return True
+
 def main():  # pylint: disable=too-many-statements, too-many-locals
   logging.getLogger().setLevel(logging.INFO)
   logging.info("Starting runner.py")
@@ -502,12 +518,16 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
 
   success = False
   try:
+    # TODO(jlewi): We should run the test and lint checks in parallel.
     # Create a GKE cluster.
     create_cluster(gke, args.cluster, args.project, args.zone)
 
     success = deploy_and_test(image, test_dir)
 
-    if success:
+    # Run lint checks
+    lint_success = run_lint(args.src_dir)
+
+    if success and lint_success:
       job_name = os.getenv("JOB_NAME", "unknown")
       create_latest(gcs_client, job_name, sha)
 

@@ -23,10 +23,8 @@ pylint --version
 
 for file in $(find . -name "*.py" ! -path "./vendor/*")
 do
-    # When running on Travis it complains about not finding .pylintrc file
-    # so we explicitly set rcfile.
-    echo pylint --rcfile=.pylintrc $file
-    if ! pylint --rcfile=.pylintrc  $file; then
+    echo pylint $file
+    if ! pylint $file; then
       status=1
     fi
 done
