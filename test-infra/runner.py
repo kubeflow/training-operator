@@ -54,8 +54,8 @@ from google.cloud import storage
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
-GO_REPO_OWNER = "jlewi"
-GO_REPO_NAME = "mlkube.io"
+GO_REPO_OWNER = "tensorflow"
+GO_REPO_NAME = "k8s"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
 

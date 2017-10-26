@@ -28,13 +28,13 @@ import shutil
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
-GO_REPO_OWNER = "jlewi"
-GO_REPO_NAME = "mlkube.io"
+GO_REPO_OWNER = "tensorflow"
+GO_REPO_NAME = "k8s"
 
 
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd).decode("utf-8")
+  subprocess.check_call(command, cwd=cwd)
 
 def run_and_output(command, cwd=None):
   logging.info("Running: %s", " ".join(command))

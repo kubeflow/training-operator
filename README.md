@@ -1,10 +1,10 @@
 # K8s Custom Resource and Operator For TensorFlow jobs
 
-[![Build Status](https://travis-ci.org/jlewi/mlkube.io.svg?branch=master)](https://travis-ci.org/jlewi/mlkube.io)
+[![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
 
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 
-[Prow Jobs](https://prow.k8s.io/?repo=jlewi%2Fmlkube.io)
+[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
 ## Overview
 
@@ -89,14 +89,12 @@ Since it will be mounting GPU drivers into your pods, the CRD needs to know wher
 
 If your Kubernetes cluster is running on GKE or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `values.yaml`).
 
-For **GKE**
-
+For **GKE**:
 ```
 helm install ${CHART} -n tf-job --wait --replace --set cloud=gke
 ```
 
 For **Azure**:
-
 ```
 helm install ${CHART} -n tf-job --wait --replace --set cloud=azure
 ```
@@ -142,7 +140,7 @@ Subsequently, any pod requesting a resource of type `alpha.kubernetes.io/nvidia-
 You create a job by defining a TfJob and then creating it with.
 
 ```
-kubectl create -f https://raw.githubusercontent.com/jlewi/mlkube.io/master/examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
 ```
 
 In this case the job spec looks like the following
@@ -248,9 +246,9 @@ for using GPUs.
 ### Requesting a TensorBoard instance
 
 You can also ask the `TfJob` operator to create a TensorBoard instance
-by including a [TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103)
+by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103)
 in your job. The table below describes the important fields in
-[TensorBoardSpec](https://github.com/jlewi/mlkube.io/blob/master/pkg/spec/tf_job.go#L103).
+[TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103).
 
 | Name | Description | Required | Default |
 |---|---|---|---|
