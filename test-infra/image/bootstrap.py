@@ -102,6 +102,8 @@ def clone_repo():
   sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
 
   # Install dependencies
+  # TODO(jlewi): We should probably move this into runner.py so that
+  # output is captured in build-log.txt
   run(["glide", "install"], cwd=dest)
 
   # We need to remove the vendored dependencies of apiextensions otherwise we

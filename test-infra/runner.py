@@ -41,6 +41,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -368,12 +369,19 @@ def create_symlink(gcs_client, symlink, output):
   return blob
 
 
-def upload_outputs(gcs_client, output_dir, test_dir):
+def upload_outputs(gcs_client, output_dir, test_dir, build_log):
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
+
+  if not os.path.exists(build_log):
+    logging.error("File %s doesn't exist.", build_log)
+  else:
+    logging.info("Uploading file %s.", build_log)
+    blob = bucket.blob(os.path.join(path, "build-log.txt"))
+    blob.upload_from_filename(build_log)
 
   build_file = os.path.join(test_dir, "build_info.yaml")
   if not os.path.exists(build_file):
@@ -488,6 +496,15 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
   sha = args.sha.strip()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+
+  # Setup a logging file handler. This file will be the build log.
+  rootLogger = logging.getLogger()
+
+  build_log = os.path.join(test_dir, "build-log.txt")
+  fileHandler = logging.FileHandler(build_log)
+  fileHandler.setFormatter(logFormatter)
+  rootLogger.addHandler(fileHandler)
+
   logging.info("test_dir: %s", test_dir)
 
   # Activate the service account for gcloud
@@ -516,25 +533,50 @@ def main():  # pylint: disable=too-many-statements, too-many-locals
   credentials = GoogleCredentials.get_application_default()
   gke = discovery.build("container", "v1", credentials=credentials)
 
-  success = False
+  success = True
   try:
     # TODO(jlewi): We should run the test and lint checks in parallel.
     # Create a GKE cluster.
     create_cluster(gke, args.cluster, args.project, args.zone)
 
-    success = deploy_and_test(image, test_dir)
+    e2e_success = deploy_and_test(image, test_dir)
+
+    if not e2e_success:
+      success = False
 
     # Run lint checks
     lint_success = run_lint(args.src_dir)
+    if not lint_success:
+      success = False
 
-    if success and lint_success:
+    if e2e_success and lint_success:
       job_name = os.getenv("JOB_NAME", "unknown")
       create_latest(gcs_client, job_name, sha)
 
-  finally:
+  except Exception as e:
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  try:
     create_finished(gcs_client, output_dir, success)
-    upload_outputs(gcs_client, output_dir, test_dir)
+  except Exception as e:
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  try:
     delete_cluster(gke, args.cluster, args.project, args.zone)
+  except Exception as e:
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  fileHandler.flush()
+  upload_outputs(gcs_client, output_dir, test_dir, build_log)
+
+  if not success:
+    # Exit with a non-zero exit code by raising an exception.
+    logging.error("One or more test steps failed exiting with non-zero exit "
+                  "code.")
+    sys.exit(1)
 
 if __name__ == "__main__":
   main()

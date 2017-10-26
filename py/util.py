@@ -13,16 +13,20 @@ MASTER_REPO_NAME = "mlkube.io"
 
 
 def run(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
+  logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
+  # TODO(jlewi): I think we want to always use run_and_output so that
+  # output is captured by the logging module. If we don't go through logging
+  # it won't be captured by the filehandler that we use to produce the
+  # the build log output.
   subprocess.check_call(command, cwd=cwd)
 
 
 def run_and_output(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
+  logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
   # The output won't be available until the command completes.
   # So prefer using run if we don't need to return the output.
   output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
-  print(output)
+  logging.info("Subprocess output:\n%s", output)
   return output
 
 
