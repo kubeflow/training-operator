@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jlewi/mlkube.io/pkg/spec"
-	"github.com/jlewi/mlkube.io/pkg/trainer"
-	"github.com/jlewi/mlkube.io/pkg/util/k8sutil"
+	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/trainer"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	"k8s.io/client-go/kubernetes"
 
 	log "github.com/golang/glog"
-	"github.com/jlewi/mlkube.io/pkg/util"
+	"github.com/tensorflow/k8s/pkg/util"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

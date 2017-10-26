@@ -8,7 +8,7 @@ Create a symbolic link inside your GOPATH to the location you checked out the co
     ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
     ```
 
-  * GIT_TRAINING should be the location where you checked out https://github.com/jlewi/mlkube.io
+  * GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
@@ -24,7 +24,7 @@ rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
 Build it
 
 ```
-go install github.com/jlewi/mlkube.io/cmd/tf_operator
+go install github.com/tensorflow/k8s/cmd/tf_operator
 ```
 
 ## Runing the Operator Locally

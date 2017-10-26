@@ -107,7 +107,7 @@ var (
 	TEST_FAILURE_CODE         = 2
 
 	// File path constants
-	chartsBasePath = path.Join(os.Getenv("GOPATH"), "src", "/github.com/jlewi/mlkube.io")
+	chartsBasePath = path.Join(os.Getenv("GOPATH"), "src", "/github.com/tensorflow/k8s")
 
 	image       = flag.String("image", "", "The Docker image for Tfjob to use.")
 	outputPath  = flag.String("output_dir", "", "The directory where test output should be written.")
