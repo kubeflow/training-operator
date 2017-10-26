@@ -18,10 +18,15 @@ set -o errexit -o pipefail -o nounset
 shopt -s extglob
 status=0
 
+echo pylint --version
+pylint --version
+
 for file in $(find . -name "*.py" ! -path "./vendor/*")
 do
-    echo pylint $file
-    if ! pylint $file; then
+    # When running on Travis it complains about not finding .pylintrc file
+    # so we explicitly set rcfile.
+    echo pylint --rcfile=.pylintrc $file
+    if ! pylint --rcfile=.pylintrc  $file; then
       status=1
     fi
 done
