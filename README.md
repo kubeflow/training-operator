@@ -60,7 +60,7 @@ Custom Resources require Kubernetes >= 1.7
     ```
     * **Avoiding Breakages**
       * During Alpha there is no guarantees about TfJob API
-        compaitibility.
+        compatibility.
       * To avoid being broken by changes you can pin to a particular
         version of the helm chart and control when you upgrade.
 
