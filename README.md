@@ -11,7 +11,7 @@
 TfJob provides a Kubernetes custom resource that makes it easy to
 run distributed or non-distributed TensorFlow jobs on Kubernetes.
 
-Using a CRD gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
+Using a Custom Resource Definition (CRD) gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
 create a job
 
 ```
@@ -36,20 +36,20 @@ CRD please refer to
 Custom Resources require Kubernetes >= 1.7
 
 
-## Installing the CRD and operator on your k8s cluster
+## Installing the TfJob CRD and operator on your k8s cluster
 
 1. Deploy the operator
 
    For non-RBAC enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
-   helm install ${CHART} -n tf-job --wait --replace
+   helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>
    ```
 
    For RBAC-enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
-   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true
+   helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true cloud=<gke or azure>
    ```
 
     * The above instructions use the latest release.
@@ -84,44 +84,56 @@ Custom Resources require Kubernetes >= 1.7
 
 ### Configuring the CRD
 
-The CRD can be configured via a [ConfigMap](https://kubernetes.io/docs/api-reference/v1.8/#configmap-v1-core)
-that provides a [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go) serialized
-as YAML. The config controls how the CRD manages TensorFlow jobs.
+The CRD must be configured properly to work with your specific Kubernetes cluster.
+Since it will be mounting GPU drivers into your pods, the CRD needs to know where to find them on the Kubernetes agents. It also needs to know which environment variable needs to be injected in the pods.
 
-Currently, the most important use for [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go)
-is specifying environment variables and volumes that must be mounted from the
-host into containers to configure GPUS.
+If your Kubernetes cluster is running on GKE or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `values.yaml`).
 
-The TfJob controller can be configured with a list of volumes that should be mounted from the host into the container
-to make GPUs work. Here's an example [ControllerConfig](https://github.com/tensorflow/k8s/blob/master/pkg/spec/controller.go):
-
+For **GKE**:
 ```
-accelerators:
-  alpha.kubernetes.io/nvidia-gpu:
-    volumes:
-      - name: nvidia-libraries
-        mountPath: /usr/local/nvidia/lib64 # This path is special; it is expected to be present in `/etc/ld.so.conf` inside the container image.
-        hostPath: /home/kubernetes/bin/nvidia/lib
-      - name: nvidia-debug-tools # optional
-        mountPath: /usr/local/bin/nvidia
-        hostPath: /home/kubernetes/bin/nvidia/bin
+helm install ${CHART} -n tf-job --wait --replace --set cloud=gke
 ```
 
-Here **alpha.kubernetes.io/nvidia-gpu** is the K8s resource name used for a GPU. The config above says that
-any container which uses this resource should have the volumes mentioned mounted into the container
-from the host.
+For **Azure**:
+```
+helm install ${CHART} -n tf-job --wait --replace --set cloud=azure
+```
 
-The config is usually specified using a K8s ConfigMap to stage the config
-on a valume mounted into the Pod running the controller, and then passing
-the config into the controller via the --controller_config_file flag.
+If the cluster is not hosted on GKE or Azure, you will need to specify a custom configuration.
+To do so create a `ConfigMap` with your desired settings.
 
-The helm package for the controller includes a config map suitable for GKE.
-This ConfigMap may need to be modified for your cluster if you aren't using
-GKE.
+This is the structure of the expected configuration file:
 
-There's an open [issue](https://github.com/tensorflow/k8s/issues/71) to
-better support non GKE clusters
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tf-job-operator-config
+  namespace: default
+data:
+  controller_config_file.yaml: |
+    accelerators:
+      alpha.kubernetes.io/nvidia-gpu:
+        volumes:
+          - name: <volume-name> # Desired name of the volume, ex: nvidia-libs
+            mountPath: <mount-path> # Path where this should be mounted
+            hostPath: <host-path> # Path on the host machine
+          - name: <volume2-name> # optional
+            mountPath: <mount-path>
+            hostPath: <host-path>
+        envVars:
+          - name: <env-var-name> # Name of the environment variable, ex: LD_LIBRARY_PATH
+            value: <env-value> # Value of the environment variable
+```
 
+Then simply create the `ConfigMap` and install the Helm chart (**the order matters**) without specifying any cloud provider:
+
+```
+kubectl create configmap tf-job-operator-config --from-file <your-configmap-path>
+helm install ${CHART} -n tf-job --wait --replace
+```
+
+Subsequently, any pod requesting a resource of type `alpha.kubernetes.io/nvidia-gpu` will have these Volumes\VolumeMounts and environment variables injected at creation.
 
 ## Creating a job
 
@@ -247,7 +259,7 @@ in your job. The table below describes the important fields in
 
 #### TensorBoard on Azure
 
-On Azure you can store your event files on an azure file and use
+On Azure you can store your event files on an Azure Files and use
 volumes to make them available to TensorBoard.
 
 ```
@@ -258,7 +270,6 @@ metadata:
 spec:
   replica_specs:
     - replicas: 1
-      tfPort: 2222
       tfReplicaType: MASTER
       template:
         spec:
@@ -271,7 +282,6 @@ spec:
           restartPolicy: OnFailure
   tensorboard:
     logDir: /tmp/tensorflow
-    serviceType: LoadBalancer
     volumes:
       - name: azurefile
         azureFile:
