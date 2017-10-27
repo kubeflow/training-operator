@@ -46,6 +46,9 @@ type TfConfig struct {
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpechttps://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
 	Cluster ClusterSpec            `json:"cluster"`
 	Task    map[string]interface{} `json:"task"`
+	// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
+	// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
+	Environment string             `json:"environment"`
 }
 
 func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
@@ -177,15 +180,14 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		}
 
 		// Configure the TFCONFIG environment variable.
-		//
-		// TODO(jlewi): We would need to add support for hyperparameter jobs to support CMLE
-		// hyperparameter tuning.
 		tfConfig := TfConfig{
 			Cluster: s.Job.ClusterSpec(),
 			Task: map[string]interface{}{
 				"type":  strings.ToLower(string(s.Spec.TfReplicaType)),
 				"index": index,
 			},
+			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
+			Environment: "cloud",
 		}
 
 		tfConfigJson, err := json.Marshal(tfConfig)
@@ -203,7 +205,6 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		// TODO(jlewi): I don't fully understand why this works but setting Template: *s.Spec.Template
 		// leads to TF_CONFIG being added multiples as an environment variable.
 		newPodSpecTemplate := *s.Spec.Template
-		// TODO(jlewi): We need to set environment variable TF_CONFIG.
 		newJ := &batch.Job{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),
