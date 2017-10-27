@@ -15,7 +15,7 @@
 # ==============================================================================
 """
 TODO: Once grpc_tensorflow_server.py is included in tensorflow
-docker image we should use it instead" 
+docker image we should use it instead.
 
 Python-based TensorFlow GRPC server.
 
@@ -33,17 +33,14 @@ Where:
     PORT is a port number
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import argparse
 import sys
 
-from tensorflow.core.protobuf import config_pb2
-from tensorflow.core.protobuf import tensorflow_server_pb2
-from tensorflow.python.platform import app
-from tensorflow.python.training import server_lib
+from tensorflow.core.protobuf import config_pb2, tensorflow_server_pb2  # pylint: disable=no-name-in-module
+from tensorflow.python.platform import app  # pylint: disable=no-name-in-module
+from tensorflow.python.training import server_lib  # pylint: disable=no-name-in-module
 
 
 def parse_cluster_spec(cluster_spec, cluster, verbose=False):
@@ -81,7 +78,7 @@ def parse_cluster_spec(cluster_spec, cluster, verbose=False):
       print("Added job named \"%s\"" % job_name)
 
     job_tasks = job_string.split("|")[1].split(";")
-    for i in range(len(job_tasks)):
+    for i in range(len(job_tasks)):  # pylint: disable=consider-using-enumerate
       if not job_tasks[i]:
         raise ValueError("Empty task string at position %d" % i)
 
@@ -91,7 +88,7 @@ def parse_cluster_spec(cluster_spec, cluster, verbose=False):
         print("  Added task \"%s\" to job \"%s\"" % (job_tasks[i], job_name))
 
 
-def main(unused_args):
+def main(_):
   # Create Protobuf ServerDef
   server_def = tensorflow_server_pb2.ServerDef(protocol="grpc")
 

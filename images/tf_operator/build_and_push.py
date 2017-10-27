@@ -1,15 +1,18 @@
 #!/usr/bin/python
+from __future__ import print_function
+
 import argparse
 import datetime
 import hashlib
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
 import tempfile
+
 import yaml
+
 
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
@@ -22,7 +25,7 @@ def GetGitHash(root_dir):
   untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   if modified_files or untracked_files:
-    diff= subprocess.check_output(["git", "diff"], cwd=root_dir)
+    diff = subprocess.check_output(["git", "diff"], cwd=root_dir)
 
     sha = hashlib.sha256()
     sha.update(diff)
@@ -31,9 +34,11 @@ def GetGitHash(root_dir):
 
   return git_hash
 
+
 def run(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
   subprocess.check_call(command, cwd=cwd)
+
 
 def run_and_output(command, cwd=None):
   logging.info("Running: %s", " ".join(command))
@@ -43,8 +48,9 @@ def run_and_output(command, cwd=None):
   print(output)
   return output
 
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+
+def main():  # pylint: disable=too-many-locals, too-many-statements
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
       description="Build docker image for TfJob CRD.")
 
@@ -55,13 +61,13 @@ if __name__ == "__main__":
       help="The docker registry to use.")
 
   parser.add_argument(
-    "--project",
+      "--project",
       default="",
       type=str,
       help="Project to use with Google Container Builder when using GCB.")
 
   parser.add_argument(
-    "--output",
+      "--output",
       default="",
       type=str,
       help="Path to write a YAML file with build info.")
@@ -89,7 +95,6 @@ if __name__ == "__main__":
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)
-  dockerfile = os.path.join(context_dir, 'Dockerfile')
 
   # Build the go binaries
   go_path = os.environ["GOPATH"]
@@ -97,7 +102,7 @@ if __name__ == "__main__":
   targets = [
       "github.com/tensorflow/k8s/cmd/tf_operator",
       "github.com/tensorflow/k8s/test/e2e",
-    ]
+  ]
   for t in targets:
     subprocess.check_call(["go", "install", t])
 
@@ -108,7 +113,7 @@ if __name__ == "__main__":
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       "grpc_tensorflow_server/grpc_tensorflow_server.py"
-    ]
+  ]
 
   for s in sources:
     src_path = os.path.join(root_dir, s)
@@ -126,9 +131,9 @@ if __name__ == "__main__":
   image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash(root_dir)
   if args.use_gcb:
     run(["gcloud", "container", "builds", "submit", context_dir,
-         "--tag=" + image, "--project=" + args.project ])
+         "--tag=" + image, "--project=" + args.project])
   else:
-    run(["docker", "build", "-t", image,  context_dir])
+    run(["docker", "build", "-t", image, context_dir])
     logging.info("Built image: %s", image)
 
     if args.should_push:
@@ -137,6 +142,9 @@ if __name__ == "__main__":
 
   if args.output:
     logging.info("Writing build information to %s", args.output)
-    output = { "image": image }
+    output = {"image": image}
     with open(args.output, mode='w') as hf:
       yaml.dump(output, hf)
+
+if __name__ == "__main__":
+  main()

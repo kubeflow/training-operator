@@ -6,14 +6,15 @@ This script should be run from the root directory of the repo.
 
 import argparse
 import glob
-from google.cloud import storage
-import logging
 import json
+import logging
 import os
-import tarfile
 import tempfile
-from py import util
+
 import yaml
+from google.cloud import storage  # pylint: disable=no-name-in-module
+
+from py import util
 
 REPO_ORG = "jlewi"
 REPO_NAME = "mlkube.io"
@@ -21,9 +22,9 @@ REPO_NAME = "mlkube.io"
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "mlkube-build-postsubmit"
 
+
 def get_latest_green_presubmit(gcs_client):
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
-  latest_results = os.path.join(JOB_NAME)
   blob = bucket.blob(os.path.join(JOB_NAME, "latest_green.json"))
   contents = blob.download_as_string()
 
@@ -49,6 +50,7 @@ def update_values(values_file, image):
       else:
         hf.write(l)
 
+
 def update_chart(chart_file, version):
   """Append the version number to the version number in chart.yaml"""
   with open(chart_file) as hf:
@@ -59,8 +61,9 @@ def update_chart(chart_file, version):
   with open(chart_file, "w") as hf:
     yaml.dump(info, hf)
 
-if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
   parser = argparse.ArgumentParser(
       description="Release artifacts for TfJob.")
 
@@ -103,7 +106,8 @@ if __name__ == "__main__":
   matches = glob.glob(os.path.join(src_dir, "tf-job-operator-chart*.tgz"))
 
   if len(matches) != 1:
-    raise ValueError("Expected 1 chart archive to match but found {0}".format(matches))
+    raise ValueError(
+        "Expected 1 chart archive to match but found {0}".format(matches))
 
   chart_archive = matches[0]
 
@@ -112,8 +116,8 @@ if __name__ == "__main__":
   bucket = gcs_client.get_bucket(args.releases_bucket)
 
   targets = [
-    os.path.join(release_path, os.path.basename(chart_archive)),
-    "latest/tf-job-operator-chart-latest.tgz",
+      os.path.join(release_path, os.path.basename(chart_archive)),
+      "latest/tf-job-operator-chart-latest.tgz",
   ]
 
   for t in targets:
@@ -124,3 +128,6 @@ if __name__ == "__main__":
       continue
     logging.info("Uploading %s to %s.", chart_archive, gcs_path)
     blob.upload_from_filename(chart_archive)
+
+if __name__ == "__main__":
+  main()

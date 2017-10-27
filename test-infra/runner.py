@@ -38,19 +38,19 @@ import argparse
 import datetime
 import json
 import logging
-import subprocess
 import os
 import re
-import shutil
+import subprocess
+import sys
 import tempfile
 import time
 import uuid
-import yaml
+from py import util  # pylint: disable=no-name-in-module
 
-from googleapiclient import discovery
-from googleapiclient import errors
+import yaml
+from google.cloud import storage  # pylint: disable=no-name-in-module
+from googleapiclient import discovery, errors
 from oauth2client.client import GoogleCredentials
-from google.cloud import storage
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
@@ -58,11 +58,6 @@ GO_REPO_OWNER = "tensorflow"
 GO_REPO_NAME = "k8s"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
-
-
-def run(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
 
 
 class TimeoutError(Exception):
@@ -122,7 +117,7 @@ def create_cluster(gke, name, project, zone):
   """
   cluster_request = {
       "cluster": {
-          "name": args.cluster,
+          "name": name,
           "description": "A GKE cluster for testing GPUs with Cloud ML",
           "initialNodeCount": 1,
           "nodeConfig": {
@@ -153,8 +148,8 @@ def create_cluster(gke, name, project, zone):
       raise
 
   logging.info("Configuring kubectl")
-  run(["gcloud", "--project=" + project, "container",
-       "clusters", "--zone=" + zone, "get-credentials", name])
+  util.run(["gcloud", "--project=" + project, "container",
+            "clusters", "--zone=" + zone, "get-credentials", name])
 
 
 def delete_cluster(gke, name, project, zone):
@@ -182,31 +177,30 @@ def delete_cluster(gke, name, project, zone):
                   e, e.resp["status"])
 
 
-def build_container(use_gcb, src_dir, test_dir):
+def build_container(use_gcb, src_dir, test_dir, project):
   """Build the CRD container.
 
   Args:
     use_gcb: Boolean indicating whether to build the image with GCB or Docker.
     src_dir: The directory containing the source.
     test_dir: Scratch directory for runner.py.
-
+    project: Project to use.
   Returns:
     image: The URI of the newly built image.
   """
   # Build and push the image
   # We use Google Container Builder because Prow currently doesn't allow using
   # docker build.
-  registry = "gcr.io/" + args.project
   if use_gcb:
     gcb_arg = "--gcb"
   else:
     gcb_arg = "--no-gcb"
 
   build_info_file = os.path.join(test_dir, "build_info.yaml")
-  run(["./images/tf_operator/build_and_push.py", gcb_arg,
-       "--project=" + args.project,
-       "--registry=gcr.io/mlkube-testing",
-       "--output=" + build_info_file], cwd=src_dir)
+  util.run(["./images/tf_operator/build_and_push.py", gcb_arg,
+            "--project=" + project,
+            "--registry=gcr.io/mlkube-testing",
+            "--output=" + build_info_file], cwd=src_dir)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
@@ -227,11 +221,11 @@ def deploy_and_test(image, test_dir):
 
   target = os.path.join("github.com", GO_REPO_OWNER, GO_REPO_NAME,
                         "test-infra", "helm-test")
-  run(["go", "install", target])
+  util.run(["go", "install", target])
 
   binary = os.path.join(os.getenv("GOPATH"), "bin", "helm-test")
   try:
-    run([binary, "--image=" + image, "--output_dir=" + test_dir])
+    util.run([binary, "--image=" + image, "--output_dir=" + test_dir])
   except subprocess.CalledProcessError as e:
     logging.error("helm-test failed; %s", e)
     return False
@@ -261,12 +255,13 @@ def get_gcs_output():
                   job=job_name,
                   build=os.getenv("BUILD_NUMBER"))
     return output
-  else:
-    # Its a periodic job
-    output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
-              job=job_name,
-              build=os.getenv("BUILD_NUMBER"))
-    return output
+
+  # Its a periodic job
+  output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
+      job=job_name,
+      build=os.getenv("BUILD_NUMBER"))
+  return output
+
 
 def get_symlink_output(pull_number, job_name, build_number):
   """Return the location where the symlink should be created."""
@@ -280,6 +275,7 @@ def get_symlink_output(pull_number, job_name, build_number):
                 job=job_name,
                 build=build_number)
   return output
+
 
 def create_started(gcs_client, output_dir, sha):
   """Create the started output in GCS.
@@ -317,6 +313,7 @@ def create_started(gcs_client, output_dir, sha):
 
   return blob
 
+
 def create_finished(gcs_client, output_dir, success):
   """Create the finished output in GCS.
 
@@ -349,6 +346,7 @@ def create_finished(gcs_client, output_dir, success):
   blob.upload_from_string(json.dumps(finished))
   return blob
 
+
 def create_symlink(gcs_client, symlink, output):
   """Create a 'symlink' to the output directory.
 
@@ -366,12 +364,20 @@ def create_symlink(gcs_client, symlink, output):
   blob.upload_from_string(output)
   return blob
 
-def upload_outputs(gcs_client, output_dir, test_dir):
+
+def upload_outputs(gcs_client, output_dir, test_dir, build_log):
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)
 
   bucket = gcs_client.get_bucket(bucket)
+
+  if not os.path.exists(build_log):
+    logging.error("File %s doesn't exist.", build_log)
+  else:
+    logging.info("Uploading file %s.", build_log)
+    blob = bucket.blob(os.path.join(path, "build-log.txt"))
+    blob.upload_from_filename(build_log)
 
   build_file = os.path.join(test_dir, "build_info.yaml")
   if not os.path.exists(build_file):
@@ -393,7 +399,6 @@ def upload_outputs(gcs_client, output_dir, test_dir):
 def create_latest(gcs_client, job_name, sha):
   """Create a file in GCS with information about the latest passing postsubmit.
   """
-  m = GCS_REGEX.match(output_dir)
   bucket_name = "mlkube-testing-results"
   path = os.path.join(job_name, "latest_green.json")
 
@@ -402,14 +407,32 @@ def create_latest(gcs_client, job_name, sha):
   logging.info("Creating GCS output: bucket: %s, path: %s.", bucket_name, path)
 
   data = {
-    "status": "passing",
-    "job": job_name,
-    "sha": sha,
+      "status": "passing",
+      "job": job_name,
+      "sha": sha,
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
 
-if __name__ == "__main__":
+
+def run_lint(src_dir):
+  """Run lint.
+
+  Args:
+    src_dir: the directory containing the source.
+
+  Returns:
+    success: Boolean indicating success or failure
+  """
+  try:
+    util.run(["./lint.sh"], cwd=src_dir)
+  except subprocess.CalledProcessError as e:
+    logging.error("Lint checks failed; %s", e)
+    return False
+  return True
+
+
+def main():  # pylint: disable=too-many-statements, too-many-locals
   logging.getLogger().setLevel(logging.INFO)
   logging.info("Starting runner.py")
   parser = argparse.ArgumentParser(
@@ -470,6 +493,15 @@ if __name__ == "__main__":
   sha = args.sha.strip()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+
+  # Setup a logging file handler. This file will be the build log.
+  rootLogger = logging.getLogger()
+
+  build_log = os.path.join(test_dir, "build-log.txt")
+  fileHandler = logging.FileHandler(build_log)
+  # TODO(jlewi): Should we set the formatter?
+  rootLogger.addHandler(fileHandler)
+
   logging.info("test_dir: %s", test_dir)
 
   # Activate the service account for gcloud
@@ -477,8 +509,8 @@ if __name__ == "__main__":
   if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
                  os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-    run(["gcloud", "auth", "activate-service-account",
-         "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
+    util.run(["gcloud", "auth", "activate-service-account",
+              "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
   job_name = os.getenv("JOB_NAME", "")
   build_number = os.getenv("BUILD_NUMBER")
   pull_number = os.getenv("PULL_NUMBER")
@@ -492,24 +524,57 @@ if __name__ == "__main__":
   if symlink:
     create_symlink(gcs_client, symlink, output_dir)
 
-  image = build_container(args.use_gcb, src_dir, test_dir)
+  image = build_container(args.use_gcb, src_dir, test_dir, args.project)
   logging.info("Created image: %s", image)
 
   credentials = GoogleCredentials.get_application_default()
   gke = discovery.build("container", "v1", credentials=credentials)
 
-  success = False
+  success = True
   try:
+    # TODO(jlewi): We should run the test and lint checks in parallel.
     # Create a GKE cluster.
     create_cluster(gke, args.cluster, args.project, args.zone)
 
-    success = deploy_and_test(image, test_dir)
+    e2e_success = deploy_and_test(image, test_dir)
 
-    if success:
+    if not e2e_success:
+      success = False
+
+    # Run lint checks
+    lint_success = run_lint(args.src_dir)
+    if not lint_success:
+      success = False
+
+    if e2e_success and lint_success:
       job_name = os.getenv("JOB_NAME", "unknown")
       create_latest(gcs_client, job_name, sha)
 
-  finally:
+  except Exception as e:  # pylint: disable=broad-except
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  try:
     create_finished(gcs_client, output_dir, success)
-    upload_outputs(gcs_client, output_dir, test_dir)
+  except Exception as e:  # pylint: disable=broad-except
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  try:
     delete_cluster(gke, args.cluster, args.project, args.zone)
+  except Exception as e:  # pylint: disable=broad-except
+    success = False
+    logging.error("Failure occured. %s", e)
+
+  fileHandler.flush()
+  upload_outputs(gcs_client, output_dir, test_dir, build_log)
+
+  if not success:
+    # Exit with a non-zero exit code by raising an exception.
+    logging.error("One or more test steps failed exiting with non-zero exit "
+                  "code.")
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+  main()

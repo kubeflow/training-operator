@@ -1,4 +1,6 @@
 """Utilities used by our python scripts for building and releasing."""
+from __future__ import print_function
+
 import logging
 import os
 import shutil
@@ -9,17 +11,33 @@ import subprocess
 MASTER_REPO_OWNER = "jlewi"
 MASTER_REPO_NAME = "mlkube.io"
 
+
 def run(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
-  subprocess.check_call(command, cwd=cwd)
+  """Run a subprocess.
+
+  Any subprocess output is emitted through the logging modules.
+  """
+  logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
+
+  try:
+    output = subprocess.check_output(command, cwd=cwd)
+    logging.info("Subprocess output:\n%s", output)
+  except subprocess.CalledProcessError as e:
+    logging.info("Subprocess output:\n%s", e.output)
+    raise
 
 def run_and_output(command, cwd=None):
-  logging.info("Running: %s", " ".join(command))
+  logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
   # The output won't be available until the command completes.
   # So prefer using run if we don't need to return the output.
-  output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
-  print(output)
+  try:
+    output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
+    logging.info("Subprocess output:\n%s", output)
+  except subprocess.CalledProcessError as e:
+    logging.info("Subprocess output:\n%s", e.output)
+    raise
   return output
+
 
 def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                sha=None):
@@ -55,6 +73,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
 
   return dest, sha
+
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
