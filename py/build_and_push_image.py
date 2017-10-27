@@ -27,6 +27,40 @@ def GetGitHash():
     git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
   return git_hash
 
+def build_and_push(dockerfile_template, image, modes=["cpu", "gpu"],
+                   skip_push=False, base_images=None):
+  loader = jinja2.FileSystemLoader(os.path.dirname(dockerfile_template))
+
+  if not base_images:
+    raise ValueError("base_images must be provided.")
+
+  images = {}
+  for mode in modes:
+    dockerfile_contents = jinja2.Environment(loader=loader).get_template(
+      os.path.basename(dockerfile_template)).render(base_image=base_images[mode])
+    context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
+    logging.info("context_dir: %s", context_dir)
+    shutil.rmtree(context_dir)
+    shutil.copytree(os.path.dirname(dockerfile_template), context_dir)
+    dockerfile = os.path.join(context_dir, 'Dockerfile')
+    with open(dockerfile, 'w') as hf:
+      hf.write(dockerfile_contents)
+
+    full_image = image + "-" + mode
+
+    full_image += ":" + GetGitHash()
+    subprocess.check_call(["docker", "build", "-t", full_image,  context_dir])
+    logging.info("Built image: %s", full_image)
+
+    images[mode] = full_image
+    if not skip_push:
+      if "gcr.io" in full_image:
+        subprocess.check_call(["gcloud", "docker", "--", "push", full_image])
+      else:
+        subprocess.check_call(["docker", "--", "push", full_image])
+      logging.info("Pushed image: %s", full_image)
+  return images
+
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
@@ -58,33 +92,9 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  loader = jinja2.FileSystemLoader(os.path.dirname(args.dockerfile))
-
   base_images = {
-      "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
-      "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
-    }
+    "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
+    "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
+  }
 
-  for mode in args.modes:
-    dockerfile_contents = jinja2.Environment(loader=loader).get_template(
-      os.path.basename(args.dockerfile)).render(base_image=base_images[mode])
-    context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
-    logging.info("context_dir: %s", context_dir)
-    shutil.rmtree(context_dir)
-    shutil.copytree(os.path.dirname(args.dockerfile), context_dir)
-    dockerfile = os.path.join(context_dir, 'Dockerfile')
-    with open(dockerfile, 'w') as hf:
-      hf.write(dockerfile_contents)
-
-    image = args.image + "-" + mode
-
-    image += ":" + GetGitHash()
-    subprocess.check_call(["docker", "build", "-t", image,  context_dir])
-    logging.info("Built image: %s", image)
-
-    if args.should_push:
-      if "gcr.io" in args.image:
-        subprocess.check_call(["gcloud", "docker", "--", "push", image])
-      else:
-        subprocess.check_call(["docker", "--", "push", image])
-      logging.info("Pushed image: %s", image)
+  build_and_push(args.dockerfile, args.modes, not args.should_push, base_images)
