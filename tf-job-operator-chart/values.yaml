@@ -1,5 +1,5 @@
 # Docker image to use.
-image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
+image: gcr.io/cloud-ml-dev/tf_operator:v20171027-e3afe3d-dirty-9334200
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 
 # Which cloud provider is kubernetes hosted on.

@@ -27,6 +27,24 @@ def GetGitHash():
     git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
   return git_hash
 
+def run_and_stream(cmd):
+  logging.info("Running %s", " ".join(cmd))
+  process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+  while process.poll() is None:
+    process.stdout.flush()
+    for line in iter(process.stdout.readline, ''):
+      logging.info(line)
+
+  process.stdout.flush()
+  for line in iter(process.stdout.readline, ''):
+    logging.info(line)
+
+  if process.returncode != 0:
+    raise ValueError("cmd: {0} exited with code {1}".format(
+      " ".join(cmd), process.returncode))
+
 def build_and_push(dockerfile_template, image, modes=["cpu", "gpu"],
                    skip_push=False, base_images=None):
   loader = jinja2.FileSystemLoader(os.path.dirname(dockerfile_template))
@@ -49,15 +67,15 @@ def build_and_push(dockerfile_template, image, modes=["cpu", "gpu"],
     full_image = image + "-" + mode
 
     full_image += ":" + GetGitHash()
-    subprocess.check_call(["docker", "build", "-t", full_image,  context_dir])
+    run_and_stream(["docker", "build", "-t", full_image,  context_dir])
     logging.info("Built image: %s", full_image)
 
     images[mode] = full_image
     if not skip_push:
       if "gcr.io" in full_image:
-        subprocess.check_call(["gcloud", "docker", "--", "push", full_image])
+        run_and_stream(["gcloud", "docker", "--", "push", full_image])
       else:
-        subprocess.check_call(["docker", "--", "push", full_image])
+        run_and_stream(["docker", "--", "push", full_image])
       logging.info("Pushed image: %s", full_image)
   return images
 
