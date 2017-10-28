@@ -35,11 +35,11 @@ def run_and_stream(cmd):
   while process.poll() is None:
     process.stdout.flush()
     for line in iter(process.stdout.readline, ''):
-      logging.info(line)
+      logging.info(line.strip())
 
   process.stdout.flush()
   for line in iter(process.stdout.readline, ''):
-    logging.info(line)
+    logging.info(line.strip())
 
   if process.returncode != 0:
     raise ValueError("cmd: {0} exited with code {1}".format(

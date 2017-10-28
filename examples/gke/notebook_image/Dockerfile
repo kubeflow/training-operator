@@ -21,6 +21,9 @@ LABEL authors="Jeremy Lewi <jeremy@lewi.us>"
 # Install Python K8s client library
 RUN pip install kubernetes
 
+# Upgrade some of the GCP client librarys
+RUN pip install --upgrade google-cloud-logging==1.3.0
+
 # Install docker
 # Docker is used when running locally to build the images.
 # Note: 1.11+ changes the tarball format
