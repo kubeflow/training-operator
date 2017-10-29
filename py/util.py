@@ -21,7 +21,7 @@ def run(command, cwd=None):
 
   try:
     output = subprocess.check_output(command, cwd=cwd,
-                                     stderr = subprocess.STDOUT)
+                                     stderr=subprocess.STDOUT)
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
@@ -33,7 +33,7 @@ def run_and_output(command, cwd=None):
   # So prefer using run if we don't need to return the output.
   try:
     output = subprocess.check_output(command, cwd=cwd,
-                                     stderr = subprocess.STDOUT).decode("utf-8")
+                                     stderr=subprocess.STDOUT).decode("utf-8")
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
