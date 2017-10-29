@@ -12,9 +12,9 @@ import (
 
 	"github.com/tensorflow/k8s/pkg/spec"
 
-	"k8s.io/apimachinery/pkg/conversion"
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
+	"k8s.io/apimachinery/pkg/conversion"
 	// TOOO(jlewi): Rename to apiErrors
 	"github.com/tensorflow/k8s/pkg/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -45,11 +45,11 @@ type TFReplicaSetInterface interface {
 type TfConfig struct {
 	// Cluster represents a TensorFlow ClusterSpec.
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpechttps://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
-	Cluster ClusterSpec            `json:"cluster"`
-	Task    TaskSpec `json:"task"`
+	Cluster ClusterSpec `json:"cluster"`
+	Task    TaskSpec    `json:"task"`
 	// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
 	// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
-	Environment string             `json:"environment"`
+	Environment string `json:"environment"`
 }
 
 func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
@@ -184,7 +184,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		// Configure the TFCONFIG environment variable.
 		tfConfig := TfConfig{
 			Cluster: s.Job.ClusterSpec(),
-			Task: TaskSpec {
+			Task: TaskSpec{
 				Type:  strings.ToLower(string(s.Spec.TfReplicaType)),
 				Index: int(index),
 			},

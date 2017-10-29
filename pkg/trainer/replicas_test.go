@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
 	"github.com/tensorflow/k8s/pkg/spec"
 	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"encoding/json"
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -26,10 +26,10 @@ func TestTFReplicaSet(t *testing.T) {
 			RuntimeId: "some-runtime",
 			ReplicaSpecs: []*spec.TfReplicaSpec{
 				{
-					Replicas:      proto.Int32(2),
-					TfPort:        proto.Int32(10),
-					Template:      &v1.PodTemplateSpec{
-						Spec: v1.PodSpec {
+					Replicas: proto.Int32(2),
+					TfPort:   proto.Int32(10),
+					Template: &v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
 							Containers: []v1.Container{
 								{
 									Name: "tensorflow",
@@ -126,7 +126,7 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Could not unmarshal TfConfig %v", err)
 		}
 
-		expectedTfConfig := &TfConfig {
+		expectedTfConfig := &TfConfig{
 			Cluster: ClusterSpec{},
 			Task: TaskSpec{
 				Type:  "ps",

@@ -76,8 +76,8 @@ type TrainingJob struct {
 type ClusterSpec map[string][]string
 
 type TaskSpec struct {
-	Type string    `json:"type"`
-	Index int      `json:"index"`
+	Type  string `json:"type"`
+	Index int    `json:"index"`
 }
 
 func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
