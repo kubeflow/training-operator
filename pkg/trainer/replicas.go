@@ -12,6 +12,7 @@ import (
 
 	"github.com/tensorflow/k8s/pkg/spec"
 
+	"k8s.io/apimachinery/pkg/conversion"
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	// TOOO(jlewi): Rename to apiErrors
@@ -45,7 +46,7 @@ type TfConfig struct {
 	// Cluster represents a TensorFlow ClusterSpec.
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpechttps://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
 	Cluster ClusterSpec            `json:"cluster"`
-	Task    map[string]interface{} `json:"task"`
+	Task    TaskSpec `json:"task"`
 	// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
 	// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
 	Environment string             `json:"environment"`
@@ -120,6 +121,7 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 }
 
 func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
+	cloner := conversion.NewCloner()
 	if s.Spec.IsDefaultPS {
 		// Create the ConfigMap containing the sources for the default Parameter Server
 		err, cm := s.getDefaultPSConfigMap(config)
@@ -182,9 +184,9 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		// Configure the TFCONFIG environment variable.
 		tfConfig := TfConfig{
 			Cluster: s.Job.ClusterSpec(),
-			Task: map[string]interface{}{
-				"type":  strings.ToLower(string(s.Spec.TfReplicaType)),
-				"index": index,
+			Task: TaskSpec {
+				Type:  strings.ToLower(string(s.Spec.TfReplicaType)),
+				Index: int(index),
 			},
 			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
 			Environment: "cloud",
@@ -201,10 +203,12 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py", "--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
 		}
 
-		// Make a copy of the template because we will modify it below.
-		// TODO(jlewi): I don't fully understand why this works but setting Template: *s.Spec.Template
-		// leads to TF_CONFIG being added multiples as an environment variable.
-		newPodSpecTemplate := *s.Spec.Template
+		// Make a copy of the template because we will modify it below. .
+		newPodSpecTemplate := &v1.PodTemplateSpec{}
+		if err := v1.DeepCopy_v1_PodTemplateSpec(s.Spec.Template, newPodSpecTemplate, cloner); err != nil {
+			log.Errorf("There was a problem copying the PodTemplateSpec error; %v", err)
+			return err
+		}
 		newJ := &batch.Job{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),
@@ -213,7 +217,7 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 			Spec: batch.JobSpec{
 				Completions: proto.Int32(1),
 				Parallelism: proto.Int32(1),
-				Template:    newPodSpecTemplate,
+				Template:    *newPodSpecTemplate,
 			},
 		}
 
