@@ -48,6 +48,10 @@ python ./test-infra/runner.py --project=${PROJECT} --zone=${ZONE}
 ```
 
 * Specify a project and zone where the GKE cluster will be created.
+* runner.py will perform all steps; e.g.
+   * Building Docker images
+   * Starting a cluster
+   * etc..
 
 If you don't want to use a GKE cluster
 
@@ -70,6 +74,18 @@ You can also run the tests inside the Docker image,
   gcloud auth application-default login
   python ${REPO_PATH}/test-infra/runner.py --no-gcb
   ```
+
+## Running the test for a specific image
+
+If want to debug a presubmit you may not want to rebuild the Docker
+images. In thise case you can rerun the test by doing
+
+```
+go install github.com/tensorflow/k8s/test-infra/helm-test
+${GOPATH}/bin/helm-test --image=${DOCKER_IMAGE} --output_dir=/tmp/testOutput
+```
+    * The docker image used by the presubmit should be availabe from
+      the presubmit logs.
 
 ## Testing Changes to the ProwJobs
 
