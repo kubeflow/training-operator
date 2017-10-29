@@ -113,6 +113,8 @@ var (
 	outputPath  = flag.String("output_dir", "", "The directory where test output should be written.")
 	helmPath    = flag.String("helm_path", "helm", "Path to thelm")
 	kubectlPath = flag.String("kubectl_path", "kubectl", "Path to kubectl")
+	purge       = flag.Bool("purge", true, "Whether to purge the helm package after running the test.")
+	cloud       = flag.String("cloud", "gke", "Which cloud to configure the package for")
 )
 
 func init() {
@@ -259,8 +261,8 @@ func doMain() int {
 		})
 
 		xmlWrap(fmt.Sprintf("Helm Install %s", path.Base(chartPath)), func() error {
-			// TODO(jlewi): Consider deploying the operator ina namespace and then verifying that works.
-			o, execErr := output(exec.Command(*helmPath, "install", "--set", "image="+*image, chartPath, "--namespace", ns, "--name", rel, "--wait"))
+			// TODO(jlewi): Consider deploying the operator in a namespace and then verifying that works.
+			o, execErr := output(exec.Command(*helmPath, "install", "--set", "image="+*image, chartPath, "--set", "cloud=" + *cloud, "--namespace", ns, "--name", rel, "--wait"))
 			if execErr != nil {
 				return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
 			}
@@ -275,14 +277,17 @@ func doMain() int {
 			return nil
 		})
 
-		xmlWrap(fmt.Sprintf("Delete & purge %s", path.Base(chartPath)), func() error {
-			o, execErr := output(exec.Command(*helmPath, "delete", rel, "--purge"))
-			if execErr != nil {
-				return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
-			}
-			return nil
-		})
-
+		if *purge {
+			xmlWrap(fmt.Sprintf("Delete & purge %s", path.Base(chartPath)), func() error {
+				o, execErr := output(exec.Command(*helmPath, "delete", rel, "--purge"))
+				if execErr != nil {
+					return fmt.Errorf("%s Command output: %s", execErr, string(o[:]))
+				}
+				return nil
+			})
+		} else {
+			log.Print("Not purging the operator")
+		}
 		// TODO(jlewi): We should delete the namespace when we start deploying the chart in its own namespace.
 		//xmlWrap(fmt.Sprintf("Deleting namespace for %s", path.Base(chartPath)), func() error {
 		//  o, execErr := output(exec.Command(*kubectlPath, "delete", "ns", ns))

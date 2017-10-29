@@ -20,7 +20,8 @@ def run(command, cwd=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
 
   try:
-    output = subprocess.check_output(command, cwd=cwd)
+    output = subprocess.check_output(command, cwd=cwd,
+                                     stderr=subprocess.STDOUT)
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
@@ -31,7 +32,8 @@ def run_and_output(command, cwd=None):
   # The output won't be available until the command completes.
   # So prefer using run if we don't need to return the output.
   try:
-    output = subprocess.check_output(command, cwd=cwd).decode("utf-8")
+    output = subprocess.check_output(command, cwd=cwd,
+                                     stderr=subprocess.STDOUT).decode("utf-8")
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
