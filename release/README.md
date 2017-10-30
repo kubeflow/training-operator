@@ -12,3 +12,4 @@
 
 * The releaser should be running continuously on a GKE cluster in project
   **tf-on-k8s-releasing**.
+    * Logs are available in [stackdriver](https://console.cloud.google.com/logs/viewer?project=tf-on-k8s-releasing&minLogLevel=0&expandAll=false&timestamp=2017-10-30T16:52:47.000000000Z&dateRangeStart=2017-10-30T15:54:39.682Z&interval=PT2H&resource=container%2Fcluster_name%2Freleasing%2Fnamespace_id%2Fdefault)

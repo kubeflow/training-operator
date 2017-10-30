@@ -162,7 +162,7 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
 
   targets = [
       os.path.join(release_path, os.path.basename(chart_archive)),
-        "latest/tf-job-operator-chart-latest.tgz",
+      "latest/tf-job-operator-chart-latest.tgz",
     ]
 
   for t in targets:
@@ -174,7 +174,7 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
     logging.info("Uploading %s to %s.", chart_archive, gcs_path)
     blob.upload_from_filename(chart_archive)
 
-  create_latest(bucket, sha, os.path.join(bucket_name, targets[0]))
+  create_latest(bucket, sha, util.to_gcs_uri(bucket_name, targets[0]))
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals

@@ -84,6 +84,9 @@ RUN wget -O /tmp/get_helm.sh \
     /tmp/get_helm.sh && \
     rm /tmp/get_helm.sh
 
+# Initialize helm
+RUN helm init --client-only
+
 ADD ["bootstrap.py", "/workspace/"]
 ADD ["version.json", "/workspace/"]
 
