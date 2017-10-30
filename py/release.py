@@ -10,17 +10,18 @@ import json
 import logging
 import os
 import tempfile
+import time
 
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
 from py import util
 
-REPO_ORG = "jlewi"
-REPO_NAME = "mlkube.io"
+REPO_ORG = "tensorflow"
+REPO_NAME = "k8s"
 
 RESULTS_BUCKET = "mlkube-testing-results"
-JOB_NAME = "mlkube-build-postsubmit"
+JOB_NAME = "tf-k8s-postsubmit"
 
 
 def get_latest_green_presubmit(gcs_client):
@@ -62,34 +63,77 @@ def update_chart(chart_file, version):
     yaml.dump(info, hf)
 
 
-def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
-  parser = argparse.ArgumentParser(
-      description="Release artifacts for TfJob.")
+def get_last_release(bucket):
+  """Return the sha of the last release.
 
-  parser.add_argument(
-      "--releases_bucket",
-      default="tf-on-k8s-dogfood-releases",
-      type=str,
-      help="The bucket to publish releases to.")
+  Args:
+    bucket: A google cloud storage bucket object
 
-  # TODO(jlewi): Should pass along unknown arguments to build and push.
-  args, _ = parser.parse_known_args()
+  Returns:
+    sha: The sha of the latest release.
+  """
 
+  path = "latest_release.json"
+
+  blob = bucket.blob(path)
+
+  if not blob.exists():
+    logging.info("File %s doesn't exist.", util.to_gcs_uri(bucket.name, path))
+    return ""
+
+
+  data = blob.download_to_string()
+
+  contents = blob.download_as_string()
+
+  data = json.dumps(contents)
+  return data.get("sha", "")
+
+def create_latest(bucket, sha, target):
+  """Create a file in GCS with information about the latest release.
+
+  Args:
+    bucket: A google cloud storage bucket object
+    sha: SHA of the release we just created
+    target: The GCS path of the release we just produced.
+  """
+  path = os.path.join("latest_release.json")
+
+  logging.info("Creating GCS output: %s", util.to_gcs_uri(bucket.name, path))
+
+  data = {
+      "sha": sha,
+      "target": target,
+  }
+  blob = bucket.blob(path)
+  blob.upload_from_string(json.dumps(data))
+
+def build_once(bucket_name):  # pylint: disable=too-many-locals
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
+
+  bucket = gcs_client.get_bucket(bucket_name)
+
+  logging.info("Latest passing postsubmit is %s", sha)
+
+  last_release_sha = get_last_release(bucket)
+  logging.info("Most recent release was for %s", last_release_sha)
+
+  if sha == last_release_sha:
+    logging.info("Already cut release for %s", sha)
+    return
 
   src_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
   logging.info("src_dir: %s", src_dir)
 
   sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
-                        sha)
+                          sha)
 
   # TODO(jlewi): We should check if we've already done a push. We could
   # check if the .tar.gz for the helm package exists.
   build_info_file = os.path.join(src_dir, "build_info.yaml")
   util.run([os.path.join(src_dir, "images", "tf_operator", "build_and_push.py"),
-            "--output=" + build_info_file], cwd=src_dir)
+              "--output=" + build_info_file], cwd=src_dir)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
@@ -113,21 +157,51 @@ def main():  # pylint: disable=too-many-locals
 
   release_path = version
 
-  bucket = gcs_client.get_bucket(args.releases_bucket)
-
   targets = [
       os.path.join(release_path, os.path.basename(chart_archive)),
-      "latest/tf-job-operator-chart-latest.tgz",
-  ]
+        "latest/tf-job-operator-chart-latest.tgz",
+    ]
 
   for t in targets:
     blob = bucket.blob(t)
-    gcs_path = util.to_gcs_uri(args.releases_bucket, t)
+    gcs_path = util.to_gcs_uri(bucket_name, t)
     if blob.exists() and not t.startswith("latest"):
       logging.warn("%s already exists", gcs_path)
       continue
     logging.info("Uploading %s to %s.", chart_archive, gcs_path)
     blob.upload_from_filename(chart_archive)
+
+  create_latest(bucket, sha, os.path.join(bucket_name, targets[0]))
+
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  parser = argparse.ArgumentParser(
+      description="Release artifacts for TfJob.")
+
+  parser.add_argument(
+      "--releases_bucket",
+      default="tf-on-k8s-dogfood-releases",
+      type=str,
+      help="The bucket to publish releases to.")
+
+  parser.add_argument(
+    "--check_interval_secs",
+      default=0,
+      type=int,
+      help=("How often to periodically check to see if there is a new passing "
+            "postsubmit. If set to 0 (default) script will run once and exit."))
+
+  # TODO(jlewi): Should pass along unknown arguments to build and push.
+  args, _ = parser.parse_known_args()
+
+  while True:
+    logging.info("Checking latest postsubmit results")
+    build_once(args.releases_bucket)
+
+    if args.check_interval_secs > 0:
+      logging.info("Sleep %s seconds before checking for a postsubmit.",
+                   args.check_interval_secs)
+      time.sleep(args.check_interval_secs)
 
 if __name__ == "__main__":
   main()
