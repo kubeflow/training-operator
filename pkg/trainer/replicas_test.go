@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
 	"github.com/tensorflow/k8s/pkg/spec"
 	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,9 +26,17 @@ func TestTFReplicaSet(t *testing.T) {
 			RuntimeId: "some-runtime",
 			ReplicaSpecs: []*spec.TfReplicaSpec{
 				{
-					Replicas:      proto.Int32(2),
-					TfPort:        proto.Int32(10),
-					Template:      &v1.PodTemplateSpec{},
+					Replicas: proto.Int32(2),
+					TfPort:   proto.Int32(10),
+					Template: &v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "tensorflow",
+								},
+							},
+						},
+					},
 					TfReplicaType: spec.PS,
 				},
 			},
@@ -101,6 +110,33 @@ func TestTFReplicaSet(t *testing.T) {
 
 		if j.ObjectMeta.Name != name {
 			t.Fatalf("Job.ObjectMeta.Name = %v; want %v", j.ObjectMeta.Name, name)
+		}
+
+		if len(j.Spec.Template.Spec.Containers) != 1 {
+			t.Fatalf("Expected 1 container got %v", len(j.Spec.Template.Spec.Containers))
+		}
+
+		c := j.Spec.Template.Spec.Containers[0]
+		if len(c.Env) != 1 {
+			t.Fatalf("Expected 1 environment variable got %v", len(c.Env))
+		}
+
+		actualTFConfig := &TfConfig{}
+		if err := json.Unmarshal([]byte(c.Env[0].Value), actualTFConfig); err != nil {
+			t.Fatalf("Could not unmarshal TfConfig %v", err)
+		}
+
+		expectedTfConfig := &TfConfig{
+			Cluster: ClusterSpec{},
+			Task: TaskSpec{
+				Type:  "ps",
+				Index: index,
+			},
+			Environment: "cloud",
+		}
+
+		if !reflect.DeepEqual(expectedTfConfig, actualTFConfig) {
+			t.Fatalf("Got %v, Want %v", actualTFConfig, expectedTfConfig)
 		}
 	}
 	// Delete the job.

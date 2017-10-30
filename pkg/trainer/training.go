@@ -75,6 +75,11 @@ type TrainingJob struct {
 // It is a map from job names to network addressess.
 type ClusterSpec map[string][]string
 
+type TaskSpec struct {
+	Type  string `json:"type"`
+	Index int    `json:"index"`
+}
+
 func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:     kubeCli,
