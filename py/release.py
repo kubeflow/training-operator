@@ -202,6 +202,8 @@ def main():  # pylint: disable=too-many-locals
       logging.info("Sleep %s seconds before checking for a postsubmit.",
                    args.check_interval_secs)
       time.sleep(args.check_interval_secs)
+    else:
+      break
 
 if __name__ == "__main__":
   main()
