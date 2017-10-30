@@ -36,7 +36,7 @@ def get_latest_green_presubmit(gcs_client):
   if results.get("status", "").lower() != "passing":
     raise ValueError("latest results aren't green.")
 
-  return results.get("sha", "")
+  return results.get("sha", "").strip()
 
 
 def update_values(values_file, image):
@@ -86,7 +86,7 @@ def get_last_release(bucket):
   contents = blob.download_as_string()
 
   data = json.loads(contents)
-  return data.get("sha", "")
+  return data.get("sha", "").strip()
 
 def create_latest(bucket, sha, target):
   """Create a file in GCS with information about the latest release.
@@ -101,7 +101,7 @@ def create_latest(bucket, sha, target):
   logging.info("Creating GCS output: %s", util.to_gcs_uri(bucket.name, path))
 
   data = {
-      "sha": sha,
+      "sha": sha.strip(),
       "target": target,
   }
   blob = bucket.blob(path)
@@ -178,6 +178,17 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  this_dir = os.path.dirname(__file__)
+  version_file = os.path.join(this_dir, "version.json")
+  if os.path.exists(version_file):
+    # Print out version information so we know what container we ran in.
+    with open(version_file) as hf:
+      version = json.load(hf)
+      logging.info("Image info:\n%s", json.dumps(version, indent=2,
+                                                 sort_keys=True))
+  else:
+    logging.warn("Could not find file: %s", version_file)
+
   parser = argparse.ArgumentParser(
       description="Release artifacts for TfJob.")
 

@@ -89,3 +89,5 @@ RUN helm init --client-only
 
 RUN mkdir -p /opt/tf_k8s_releaser/py
 COPY py /opt/tf_k8s_releaser/py
+
+ADD ["version.json", "/opt/tf_k8s_releaser/py"]
