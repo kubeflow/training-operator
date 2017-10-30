@@ -84,5 +84,8 @@ RUN wget -O /tmp/get_helm.sh \
     /tmp/get_helm.sh && \
     rm /tmp/get_helm.sh
 
+# Initialize helm
+RUN helm init --client-only
+
 RUN mkdir -p /opt/tf_k8s_releaser/py
 COPY py /opt/tf_k8s_releaser/py
