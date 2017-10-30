@@ -120,17 +120,20 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
     logging.info("Already cut release for %s", sha)
     return
 
-  src_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  logging.info("src_dir: %s", src_dir)
+  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  logging.info("Temporary go_dir: %s", go_dir)
 
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
-                           sha)
+  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  # TODO(jlewi): We should check if we've already done a push. We could
-  # check if the .tar.gz for the helm package exists.
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                           util.MASTER_REPO_NAME, sha)
+
+  # Update the GOPATH to the temporary directory.
+  env = os.environ.copy()
+  env["GOPATH"] = go_dir
   build_info_file = os.path.join(src_dir, "build_info.yaml")
   util.run([os.path.join(src_dir, "images", "tf_operator", "build_and_push.py"),
-              "--output=" + build_info_file], cwd=src_dir)
+              "--output=" + build_info_file], cwd=src_dir, env=env)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
