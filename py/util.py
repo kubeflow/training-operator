@@ -12,27 +12,33 @@ MASTER_REPO_OWNER = "tensorflow"
 MASTER_REPO_NAME = "k8s"
 
 
-def run(command, cwd=None):
+def run(command, cwd=None, env=None):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
   """
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
 
+  if not env:
+    env = os.environ
+
   try:
-    output = subprocess.check_output(command, cwd=cwd,
+    output = subprocess.check_output(command, cwd=cwd, env=env,
                                      stderr=subprocess.STDOUT)
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
     raise
 
-def run_and_output(command, cwd=None):
+def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
+
+  if not env:
+    env = os.environ
   # The output won't be available until the command completes.
   # So prefer using run if we don't need to return the output.
   try:
-    output = subprocess.check_output(command, cwd=cwd,
+    output = subprocess.check_output(command, cwd=cwd, env=env,
                                      stderr=subprocess.STDOUT).decode("utf-8")
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
