@@ -1,4 +1,4 @@
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: {{ .Release.Name }}
