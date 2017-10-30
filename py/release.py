@@ -23,6 +23,8 @@ REPO_NAME = "k8s"
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
 
+GCB_PROJECT = "tf-on-k8s-releasing"
+
 
 def get_latest_green_presubmit(gcs_client):
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
@@ -133,7 +135,8 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
   env["GOPATH"] = go_dir
   build_info_file = os.path.join(src_dir, "build_info.yaml")
   util.run([os.path.join(src_dir, "images", "tf_operator", "build_and_push.py"),
-              "--output=" + build_info_file], cwd=src_dir, env=env)
+            "--gcb", "--project=" + GCB_PROJECT,
+            "--output=" + build_info_file], cwd=src_dir, env=env)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
