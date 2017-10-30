@@ -1,3 +1,5 @@
+# Copyright 2017 The Kubernetes Authors.
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,18 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A setup.py file for the tf_sample package."""
-from setuptools import find_packages, setup
 
-REQUIRED_PACKAGES = []
+IMG = gcr.io/tf-on-k8s-releasing/releaser
+TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
 
-setup(
-    name='tf_sample',
-    version='0.1.1',
-    author='Jeremy Lewi',
-    author_email='jlewi@google.com',
-    install_requires=REQUIRED_PACKAGES,
-    packages=find_packages(),
-    description='Sample TF program',
-    requires=[],
-)
+all: build
+
+build:
+	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
+	docker build -t $(IMG):$(TAG) -f Dockerfile.release .
+	docker tag $(IMG):$(TAG) $(IMG):latest
+	@echo Built $(IMG):$(TAG) and tagged with latest
+	rm -f version.json
+
+push: build
+	gcloud docker -- push $(IMG):$(TAG)
+	gcloud docker -- push $(IMG):latest
+	@echo Pushed $(IMG) with :latest and :$(TAG) tags

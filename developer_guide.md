@@ -49,3 +49,20 @@ TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 ## Go version
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
+
+## Code Style
+
+### Python
+
+* Use two spaces for indents in keeping with Python style
+* To autoformat code
+
+  ```
+  autopep8 -i --indent-size=2 path/to/module.py
+  ```
+
+* To sort imports
+
+  ```
+  isort path/to/module.py
+  ```

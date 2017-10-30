@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This Dockerfile is used by ProwJobs that build docker images for the
-# TF CRD in (https://github.com/jlewi/mlkube.io)
-
+# This Dockerfile is used to create a docker image suitable for building
+# and releasing the TfJob operator.
 FROM golang:1.8.2
 LABEL authors="Jeremy Lewi <jlewi@google.com>"
 
@@ -77,14 +76,6 @@ RUN cd /tmp && \
 RUN curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" \
     | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
 
-# Install Helm
-RUN wget -O /tmp/get_helm.sh \
-    https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get && \
-    chmod 700 /tmp/get_helm.sh && \
-    /tmp/get_helm.sh && \
-    rm /tmp/get_helm.sh
-
-ADD ["bootstrap.py", "/workspace/"]
-ADD ["version.json", "/workspace/"]
-
-ENTRYPOINT ["python", "/workspace/bootstrap.py"]
+RUN mkdir -p /opt
+RUN git clone https://github.com/tensorflow/k8s.git \
+    /opt/git_tensorflow_k8s
