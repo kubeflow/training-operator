@@ -8,8 +8,8 @@ import subprocess
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
-MASTER_REPO_OWNER = "jlewi"
-MASTER_REPO_NAME = "mlkube.io"
+MASTER_REPO_OWNER = "tensorflow"
+MASTER_REPO_NAME = "k8s"
 
 
 def run(command, cwd=None):
