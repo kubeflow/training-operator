@@ -81,12 +81,9 @@ def get_last_release(bucket):
     logging.info("File %s doesn't exist.", util.to_gcs_uri(bucket.name, path))
     return ""
 
-
-  data = blob.download_to_string()
-
   contents = blob.download_as_string()
 
-  data = json.dumps(contents)
+  data = json.loads(contents)
   return data.get("sha", "")
 
 def create_latest(bucket, sha, target):
@@ -126,8 +123,8 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
   src_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
   logging.info("src_dir: %s", src_dir)
 
-  sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
-                          sha)
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
+                           sha)
 
   # TODO(jlewi): We should check if we've already done a push. We could
   # check if the .tar.gz for the helm package exists.

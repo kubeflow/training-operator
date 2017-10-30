@@ -45,11 +45,15 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
                sha=None):
   """Clone the repo,
 
-  Returns:
+  Args:
     dest: This is the root path for the training code.
     repo_owner: The owner for github organization.
     repo_name: The repo name.
     sha: The sha number of the repo.
+
+  Returns:
+    dest: Directory where it was checked out
+    sha: The sha of the code.
   """
   # Clone mlkube
   repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
