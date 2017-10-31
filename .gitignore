@@ -2,6 +2,7 @@
 # only so we exclude them.
 bin/
 vendor/
+node_modules/
 
 .vscode/
 
