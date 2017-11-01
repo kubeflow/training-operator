@@ -22,6 +22,9 @@ func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	jobSpec := &spec.TfJob{
+		Metadata: meta_v1.ObjectMeta {
+			Name: "some-job",
+		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
 			ReplicaSpecs: []*spec.TfReplicaSpec{
@@ -69,6 +72,7 @@ func TestTFReplicaSet(t *testing.T) {
 			"task_index": fmt.Sprintf("%v", index),
 			"job_type":   "PS",
 			"runtime_id": "some-runtime",
+			"tf_job_name": "some-job",
 		}
 
 		// Check that a service was created.
