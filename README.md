@@ -35,6 +35,10 @@ CRD please refer to
 
 Custom Resources require Kubernetes >= 1.7
 
+For GPUs we recommend using Kubernetes 1.8
+
+ * Kubernetes 1.7 had some support for GPUs
+
 
 ## Installing the TfJob CRD and operator on your k8s cluster
 
