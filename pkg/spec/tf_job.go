@@ -15,8 +15,8 @@ import (
 const (
 	CRDKind       = "TfJob"
 	CRDKindPlural = "tfjobs"
-	CRDGroup      = "mlkube.io"
-	CRDVersion    = "v1beta1"
+	CRDGroup      = "tensorflow.org"
+	CRDVersion    = "v1alpha1"
 
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
