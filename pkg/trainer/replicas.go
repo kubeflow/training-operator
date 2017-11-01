@@ -90,11 +90,12 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec spec.TfReplic
 // Labels returns the labels for this replica set.
 func (s *TFReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
-		"mlkube.io": "",
+		"tensorflow.org": "",
 		"job_type":  string(s.Spec.TfReplicaType),
 		// runtime_id is set by Job.setup, which is called after the TfReplicaSet is created.
 		// this is why labels aren't a member variable.
-		"runtime_id": s.Job.job.Spec.RuntimeId})
+		"runtime_id": s.Job.job.Spec.RuntimeId,
+		"tf_job_name": s.Job.job.Metadata.Name,})
 }
 
 // Transforms the tfconfig to work with grpc_tensorflow_server

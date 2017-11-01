@@ -23,6 +23,8 @@ REPO_NAME = "k8s"
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
 
+GCB_PROJECT = "tf-on-k8s-releasing"
+
 
 def get_latest_green_presubmit(gcs_client):
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
@@ -34,7 +36,7 @@ def get_latest_green_presubmit(gcs_client):
   if results.get("status", "").lower() != "passing":
     raise ValueError("latest results aren't green.")
 
-  return results.get("sha", "")
+  return results.get("sha", "").strip()
 
 
 def update_values(values_file, image):
@@ -84,7 +86,7 @@ def get_last_release(bucket):
   contents = blob.download_as_string()
 
   data = json.loads(contents)
-  return data.get("sha", "")
+  return data.get("sha", "").strip()
 
 def create_latest(bucket, sha, target):
   """Create a file in GCS with information about the latest release.
@@ -99,7 +101,7 @@ def create_latest(bucket, sha, target):
   logging.info("Creating GCS output: %s", util.to_gcs_uri(bucket.name, path))
 
   data = {
-      "sha": sha,
+      "sha": sha.strip(),
       "target": target,
   }
   blob = bucket.blob(path)
@@ -120,17 +122,21 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
     logging.info("Already cut release for %s", sha)
     return
 
-  src_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  logging.info("src_dir: %s", src_dir)
+  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  logging.info("Temporary go_dir: %s", go_dir)
 
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
-                           sha)
+  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  # TODO(jlewi): We should check if we've already done a push. We could
-  # check if the .tar.gz for the helm package exists.
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                           util.MASTER_REPO_NAME, sha)
+
+  # Update the GOPATH to the temporary directory.
+  env = os.environ.copy()
+  env["GOPATH"] = go_dir
   build_info_file = os.path.join(src_dir, "build_info.yaml")
   util.run([os.path.join(src_dir, "images", "tf_operator", "build_and_push.py"),
-              "--output=" + build_info_file], cwd=src_dir)
+            "--gcb", "--project=" + GCB_PROJECT,
+            "--output=" + build_info_file], cwd=src_dir, env=env)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
@@ -156,7 +162,7 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
 
   targets = [
       os.path.join(release_path, os.path.basename(chart_archive)),
-        "latest/tf-job-operator-chart-latest.tgz",
+      "latest/tf-job-operator-chart-latest.tgz",
     ]
 
   for t in targets:
@@ -168,10 +174,21 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
     logging.info("Uploading %s to %s.", chart_archive, gcs_path)
     blob.upload_from_filename(chart_archive)
 
-  create_latest(bucket, sha, os.path.join(bucket_name, targets[0]))
+  create_latest(bucket, sha, util.to_gcs_uri(bucket_name, targets[0]))
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  this_dir = os.path.dirname(__file__)
+  version_file = os.path.join(this_dir, "version.json")
+  if os.path.exists(version_file):
+    # Print out version information so we know what container we ran in.
+    with open(version_file) as hf:
+      version = json.load(hf)
+      logging.info("Image info:\n%s", json.dumps(version, indent=2,
+                                                 sort_keys=True))
+  else:
+    logging.warn("Could not find file: %s", version_file)
+
   parser = argparse.ArgumentParser(
       description="Release artifacts for TfJob.")
 
@@ -199,6 +216,8 @@ def main():  # pylint: disable=too-many-locals
       logging.info("Sleep %s seconds before checking for a postsubmit.",
                    args.check_interval_secs)
       time.sleep(args.check_interval_secs)
+    else:
+      break
 
 if __name__ == "__main__":
   main()

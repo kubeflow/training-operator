@@ -76,6 +76,18 @@ RUN cd /tmp && \
 RUN curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" \
     | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
 
-RUN mkdir -p /opt
-RUN git clone https://github.com/tensorflow/k8s.git \
-    /opt/git_tensorflow_k8s
+# Install Helm
+# Helm is used to build the helm packages.
+RUN wget -O /tmp/get_helm.sh \
+    https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get && \
+    chmod 700 /tmp/get_helm.sh && \
+    /tmp/get_helm.sh && \
+    rm /tmp/get_helm.sh
+
+# Initialize helm
+RUN helm init --client-only
+
+RUN mkdir -p /opt/tf_k8s_releaser/py
+COPY py /opt/tf_k8s_releaser/py
+
+ADD ["version.json", "/opt/tf_k8s_releaser/py"]

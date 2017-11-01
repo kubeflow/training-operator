@@ -17,7 +17,7 @@ spec:
       containers:
       - name: releaser
         image: gcr.io/tf-on-k8s-releasing/releaser:latest
-        workingDir: /opt/git_tensorflow_k8s
+        workingDir: /opt/tf_k8s_releaser
         command:
           - python
           - -m
