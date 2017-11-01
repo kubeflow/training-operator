@@ -56,7 +56,7 @@ func TestTBReplicaSet(t *testing.T) {
 
 	// Expected labels
 	expectedLabels := map[string]string{
-		"mlkube.io":  "",
+		"tensorflow.org":  "",
 		"app":        "tensorboard",
 		"runtime_id": "some-runtime",
 	}

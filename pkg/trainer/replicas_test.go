@@ -65,7 +65,7 @@ func TestTFReplicaSet(t *testing.T) {
 	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
-			"mlkube.io":  "",
+			"tensorflow.org":  "",
 			"task_index": fmt.Sprintf("%v", index),
 			"job_type":   "PS",
 			"runtime_id": "some-runtime",

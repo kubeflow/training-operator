@@ -170,7 +170,7 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 
 func (s *TBReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
-		"mlkube.io":  "",
+		"tensorflow.org":  "",
 		"runtime_id": s.Job.job.Spec.RuntimeId,
 		"app":        "tensorboard",
 	})
