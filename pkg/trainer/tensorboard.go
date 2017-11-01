@@ -173,6 +173,7 @@ func (s *TBReplicaSet) Labels() KubernetesLabels {
 		"tensorflow.org":  "",
 		"runtime_id": s.Job.job.Spec.RuntimeId,
 		"app":        "tensorboard",
+		"tf_job_name": s.Job.job.Metadata.Name,
 	})
 }
 
