@@ -42,6 +42,15 @@ For GPUs we recommend using Kubernetes 1.8
 
 ## Installing the TfJob CRD and operator on your k8s cluster
 
+1. Ensure helm is running on your cluster
+
+   * On GKE with K8s 1.8, follow these
+     [instructions](https://github.com/kubernetes/helm/blob/master/docs/service_accounts.md)
+     to setup appropriate service accounts for tiller.
+
+   * Azure K8s clusters should have service accounts configured by
+     default for tiller.
+
 1. Deploy the operator
 
    For non-RBAC enabled clusters:
