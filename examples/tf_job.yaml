@@ -1,7 +1,7 @@
 apiVersion: "mlkube.io/v1beta1"
 kind: "TfJob"
 metadata:
-  name: "example-job"
+  name: "example-job3"
 spec:
   replicaSpecs:
     - replicas: 1

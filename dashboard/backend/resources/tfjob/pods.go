@@ -1,5 +1,0 @@
-package tfjob
-
-func getTfJobPods() {
-	
-}

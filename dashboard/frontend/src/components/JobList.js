@@ -1,21 +1,22 @@
-import React, { Component } from 'react';
-import { Row, Col, Grid } from 'react-bootstrap';
+import React from 'react';
 import JobSummary from './JobSummary'
 
-class JobList extends Component {
+let jobsStyle = {
+  display: "flex",
+  flexDirection: "column"
+}
 
-  render() {
-    let jobsStyle = {
+const JobList = ({jobs}) => { 
+    let jobSummaries = []
+    for (let i = 0; i < jobs.length; i++) {
+      jobSummaries.push(<JobSummary key={i} job={jobs[i]} />)
     }
+    
     return (
-      <div className="JobList CardBox" style={jobsStyle}>
-        <JobSummary />
-        <JobSummary />
-        <JobSummary />
-        <JobSummary />
+      <div style={jobsStyle}>
+        {jobSummaries}
       </div>
     );
-  }
 }
 
 export default JobList;

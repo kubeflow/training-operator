@@ -1,7 +1,7 @@
 apiVersion: "mlkube.io/v1beta1"
 kind: "TfJob"
 metadata:
-  name: "example-job"
+  name: "example-job-tb-azure2"
 spec:
   tensorboard:
     logDir: /tmp/tensorflow

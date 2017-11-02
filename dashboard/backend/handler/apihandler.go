@@ -4,14 +4,28 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tensorflow/k8s/dashboard/backend/resources/tfjob"
-
 	restful "github.com/emicklei/go-restful"
 	"github.com/tensorflow/k8s/dashboard/backend/client"
+	"github.com/tensorflow/k8s/pkg/spec"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 type APIHandler struct {
 	cManager client.ClientManager
+}
+
+type StorageDetails struct{}
+
+//add tensorboard ips, add azure file / gs links
+type TfJobDetail struct {
+	TfJob          *spec.TfJob `json:"tfJob"`
+	TbService      *v1.Service `json:"tbService"`
+	StorageDetails StorageDetails
+}
+
+type TfJobList struct {
+	TfJobs []spec.TfJob `json:"tfjobs"`
 }
 
 func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
@@ -30,15 +44,20 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob").
-			To(apiHandler.handleGetTFJobs).
-			Writes(tfjob.TFJobList{}))
+			To(apiHandler.handleGetTfJobs).
+			Writes(TfJobList{}))
+
+	apiV1Ws.Route(
+		apiV1Ws.GET("/tfjob/{namespace}/{tfjob}").
+			To(apiHandler.handleGetTfJobDetail).
+			Writes(TfJobDetail{}))
 
 	return wsContainer, nil
 }
 
-func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
-	fmt.Println("listing tfjobs")
+func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response *restful.Response) {
 
+	//TODO: namespace handling
 	jobs, err := apiHandler.cManager.TfJobClient.List("default")
 
 	if err != nil {
@@ -46,4 +65,33 @@ func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response
 	}
 
 	response.WriteHeaderAndEntity(http.StatusOK, jobs)
+}
+
+func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	name := request.PathParameter("tfjob")
+
+	job, err := apiHandler.cManager.TfJobClient.Get(namespace, name)
+	if err != nil {
+		panic(err)
+	}
+
+	tfJobDetail := TfJobDetail{
+		TfJob: job,
+	}
+
+	if job.Spec.TensorBoard != nil {
+		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services("default").List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		// Should never be more than 1 service that matched, handle error
+		// Handle case where no tensorboard is found
+		tfJobDetail.TbService = &tbSpec.Items[0]
+	}
+
+	response.WriteHeaderAndEntity(http.StatusOK, tfJobDetail)
 }
