@@ -1,6 +1,7 @@
 """Utilities used by our python scripts for building and releasing."""
 from __future__ import print_function
 
+import datetime
 import logging
 import os
 import shutil
@@ -90,3 +91,71 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
   return "gs://" + os.path.join(bucket, path)
+
+
+def delete_cluster(gke, name, project, zone):
+  """Delete the cluster.
+
+  Args:
+    gke: Client for GKE.
+    name: Name of the cluster.
+    project: Project that owns the cluster.
+    zone: Zone where the cluster is running.
+  """
+
+  request = gke.projects().zones().clusters().delete(clusterId=name,
+                                                     projectId=project,
+                                                     zone=zone)
+
+  try:
+    response = request.execute()
+    logging.info("Response %s", response)
+    delete_op = wait_for_operation(gke, project, zone, response["name"])
+    logging.info("Cluster deletion done.\n %s", delete_op)
+
+  except errors.HttpError as e:
+    logging.error("Exception occured deleting cluster: %s, status: %s",
+                  e, e.resp["status"])
+
+def wait_for_operation(client,
+                       project,
+                       zone,
+                       op_id,
+                       timeout=datetime.timedelta(hours=1),
+                       polling_interval=datetime.timedelta(seconds=5)):
+  """Wait for the specified operation to complete.
+
+  Args:
+    client: Client for the API that owns the operation.
+    project: project
+    zone: Zone. Set to none if its a global operation
+    op_id: Operation id.
+    timeout: A datetime.timedelta expressing the amount of time to wait before
+      giving up.
+    polling_interval: A datetime.timedelta to represent the amount of time to
+      wait between requests polling for the operation status.
+
+  Returns:
+    op: The final operation.
+
+  Raises:
+    TimeoutError: if we timeout waiting for the operation to complete.
+  """
+  endtime = datetime.datetime.now() + timeout
+  while True:
+    if zone:
+      op = client.projects().zones().operations().get(
+        projectId=project, zone=zone,
+          operationId=op_id).execute()
+    else:
+      op = client.globalOperations().get(project=project,
+                                         operation=op_id).execute()
+
+    status = op.get("status", "")
+    # Need to handle other status's
+    if status == "DONE":
+      return op
+    if datetime.datetime.now() > endtime:
+      raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
+        op_id))
+    time.sleep(polling_interval.total_seconds())
