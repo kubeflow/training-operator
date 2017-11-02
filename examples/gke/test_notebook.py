@@ -15,6 +15,7 @@ import uuid
 
 from googleapiclient import discovery, errors
 from oauth2client.client import GoogleCredentials
+from googleapiclient import discovery, errors
 
 SubTuple = collections.namedtuple("SubTuple", ("name", "value", "pattern"))
 
@@ -102,6 +103,8 @@ def delete_cluster(gke, name, project, zone):
 class TestNotebook(unittest.TestCase):
   def testNotebook(self):
     """Test the GKE notebook."""
+    # TODO(jeremy@lewi.us): Need to configure the notebook and test to build
+    # using GCB.
     notebook_path = os.path.join(os.path.dirname(__file__), "TF on GKE.ipynb")
     with open(notebook_path) as hf:
       node = nbformat.read(hf, nbformat.NO_CONVERT)
@@ -143,8 +146,8 @@ class TestNotebook(unittest.TestCase):
       runpy.run_path(code_path)
     finally:
       logging.info("Deleting cluster; project=%s, zone=%s, name=%s", project,
-                  zone, name)
-      util.delete_cluster(gke, name, project, zone)
+                  zone, cluster)
+      util.delete_cluster(gke, cluster, project, zone)
       logging.info("Cluster deletion done.\n %s", create_op)
 
 if __name__ == "__main__":
