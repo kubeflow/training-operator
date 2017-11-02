@@ -45,7 +45,7 @@ For GPUs we recommend using Kubernetes 1.8
 1. Ensure helm is running on your cluster
 
    * On GKE with K8s 1.8, follow these
-     [instructions](https://github.com/kubernetes/helm/blob/master/docs/service_accounts.md)
+     [instructions](https://docs.helm.sh/using_helm/#tiller-namespaces-and-rbac)
      to setup appropriate service accounts for tiller.
 
    * Azure K8s clusters should have service accounts configured by
