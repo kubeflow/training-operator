@@ -128,7 +128,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Delete(ns, name string) error {
-	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).DoRaw()
+	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
 	return err
 }
 
