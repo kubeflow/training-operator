@@ -63,7 +63,7 @@ GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
 
-
+# TODO(jeremy@lewi.us): Use util.wait_for_operation
 def wait_for_operation(client,
                        project,
                        zone,
@@ -152,6 +152,7 @@ def create_cluster(gke, name, project, zone):
             "clusters", "--zone=" + zone, "get-credentials", name])
 
 
+# TODO(jeremy@lewi.us): Use util.delete_cluster
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
 
