@@ -61,8 +61,8 @@ class Job extends Component {
       let spec = job.spec.replicaSpecs[i];
       let status = job.status.replicaStatuses.filter(s => s.tf_replica_type == spec.tfReplicaType)[0];
       replicaSpecs.push(
-        <div style={this.divStyle}>
-          <ReplicaSpec key={i} spec={spec} status={status} />
+        <div style={this.divStyle} key={i}>
+          <ReplicaSpec spec={spec} status={status} />
         </div>
       );
     }

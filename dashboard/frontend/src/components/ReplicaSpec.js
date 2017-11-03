@@ -5,10 +5,9 @@ import { Card, CardText, CardHeader } from 'material-ui/Card';
 const ReplicaSpec = ({ spec, status }) => {
     return (
         <Card>
-            <CardHeader title={spec.tfReplicaType} />
+            <CardHeader title={spec.tfReplicaType} textStyle={{fontWeight: "bold"}}/>
             <CardText>
                 <div>
-                    <InfoEntry name="Replica Type" value={spec.tfReplicaType} />
                     <InfoEntry name="Replicas" value={spec.replicas} />
                     <InfoEntry name="Image" value={spec.template.spec.containers[0].image} />
                     <InfoEntry name="State" value={status.state} />

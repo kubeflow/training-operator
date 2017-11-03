@@ -6,10 +6,11 @@ import {
     BrowserRouter as Router,
     Route,
     Link,
-    Switch
+    Switch,
+    withRouter
 } from 'react-router-dom'
 import './App.css';
-
+import AppBar from 'material-ui/AppBar';
 class Home extends Component {
 
     constructor(props) {
@@ -20,23 +21,25 @@ class Home extends Component {
     }
 
     componentDidMount() {
+        setInterval(_ => this.fetchTfJobs(), 10000)
+    }
+
+    fetchTfJobs() {
         fetch("http://localhost:8080/api/tfjob")
             .then(r => r.json())
             .then(b => {
                 this.setState({ tfJobs: b.items })
             })
             .catch(console.log);
-
-
     }
 
     render() {
         return (
             <div>
-                <div style={this.styles.header}>
-                    TfJob Overview
-                </div>
-
+                <AppBar
+                    title={this.getTitle()}
+                    iconClassNameRight="muidocs-icon-navigation-expand-more"
+                />
                 <div id="main" style={this.styles.mainStyle} >
                     <div style={this.styles.list}>
                         <JobList jobs={this.state.tfJobs} />
@@ -44,8 +47,8 @@ class Home extends Component {
                     <div style={this.styles.content}>
                         <Switch>
                             <Route path="/new" component={CreateJob} />
-                            <Route path="/:uid" render={(props) => {
-                                let job = this.state.tfJobs.filter(j => j.metadata.uid == props.match.params.uid)
+                            <Route path="/:name" render={(props) => {
+                                let job = this.state.tfJobs.filter(j => j.metadata.name == props.match.params.name)
                                 return (<Job job={job[0]} />)
                             }
                             } />
@@ -57,6 +60,17 @@ class Home extends Component {
                 </div>
             </div>
         );
+    }
+
+    getTitle() {
+        const path = this.props.location.pathname;
+        switch (path) {
+            case "/new":
+                return "New Training";
+            default:
+                return path.replace('/', '')
+        }
+        return this.props.location.pathname
     }
 
     styles = {
@@ -78,16 +92,16 @@ class Home extends Component {
         content: {
             margin: "4px",
             padding: "5px",
-            flex: "3 1 85%",
+            flex: "3 1 80%",
             order: 2
         },
         list: {
             margin: "4px",
             padding: "5px",
-            flex: "1 6 15%",
+            flex: "1 6 20%",
             order: 1
         }
     }
 }
 
-export default Home;
+export default withRouter(Home);

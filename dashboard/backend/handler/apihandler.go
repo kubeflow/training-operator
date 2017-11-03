@@ -52,6 +52,12 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 			To(apiHandler.handleGetTfJobDetail).
 			Writes(TfJobDetail{}))
 
+	apiV1Ws.Route(
+		apiV1Ws.POST("/tfjob").
+			To(apiHandler.handleDeploy).
+			Reads(spec.TfJob{}).
+			Writes(spec.TfJob{}))
+
 	return wsContainer, nil
 }
 
@@ -94,4 +100,17 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 	}
 
 	response.WriteHeaderAndEntity(http.StatusOK, tfJobDetail)
+}
+
+func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *restful.Response) {
+	client := apiHandler.cManager.TfJobClient
+	spec := new(spec.TfJob)
+	if err := request.ReadEntity(spec); err != nil {
+		panic(err)
+	}
+	j, err := client.Create(spec.Metadata.Namespace, spec)
+	if err != nil {
+		panic(err)
+	}
+	response.WriteHeaderAndEntity(http.StatusCreated, j)
 }
