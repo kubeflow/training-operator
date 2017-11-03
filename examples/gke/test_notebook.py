@@ -19,7 +19,7 @@ from googleapiclient import discovery, errors
 
 SubTuple = collections.namedtuple("SubTuple", ("name", "value", "pattern"))
 
-def replace_vars_once(lines, new_values):
+def replace_vars(lines, new_values):
   """Substitutite in the values of the variables.
 
   This function assumes there is a single substitution for each variable.
@@ -30,32 +30,34 @@ def replace_vars_once(lines, new_values):
     new_values: Key value pairs containing values to set different variables to.
   """
 
-  # List of unmatched variables.
-  unmatched = []
+  # List of matches variables.
+  matches = []
+  matched = set()
   for k, v in new_values.iteritems():
     # Format the values appropriately
     new_value = v
     if isinstance(v, six.string_types):
       new_value="\"{0}\"".format(v)
-    unmatched.append(SubTuple(k, new_value, re.compile("\s*{0}\s*=*".format(k))))
+    matches.append(SubTuple(k, new_value, re.compile("\s*{0}\s*=.*".format(k))))
 
   for i, l in enumerate(lines):
-    for mindex, p in enumerate(unmatched):
+    for mindex, p in enumerate(matches):
       # Check if this line matches
       if p.pattern.match(l):
         # Replace this line with this text
-        lines[i] = "{0}={1}".format(p.name, p.value)
+        # We need to preserve leading white space for indentation
+        pieces = l.split("=", 1)
+        lines[i] = "{0}={1}".format(pieces[0], p.value)
+        matched.add(p.name)
 
-        # Delete this pattern from unmatched. This is safe because we abort
-        # the loop over unmatched since exactly one pattern can match
-        del unmatched[mindex]
+  unmatched = []
+  for k, _ in new_values.iteritems():
+    if not k in matched:
+      unmatched.append(k)
+  if unmatched:
+    raise ValueError("No matches for variables {0}".format(", ".join(unmatched)))
 
-    if not unmatched:
-      # All patterns matched.
-      return lines
-
-  names = [i.name for i in unmatched]
-  raise ValueError("No matches for variables {0}".format(",".join(names)))
+  return lines
 
 def strip_appendix(lines):
   """Remove all code in the appendix."""
@@ -76,36 +78,19 @@ def strip_unexecutable(lines):
     valid.append(l)
   return valid
 
-def delete_cluster(gke, name, project, zone):
-  """Delete the cluster.
-
-  Args:
-    gke: Client for GKE.
-    name: Name of the cluster.
-    project: Project that owns the cluster.
-    zone: Zone where the cluster is running.
-  """
-
-  request = gke.projects().zones().clusters().delete(clusterId=name,
-                                                     projectId=project,
-                                                     zone=zone)
-
-  try:
-    response = request.execute()
-    logging.info("Response %s", response)
-    delete_op = wait_for_operation(gke, project, zone, response["name"])
-    logging.info("Cluster deletion done.\n %s", delete_op)
-
-  except errors.HttpError as e:
-    logging.error("Exception occured deleting cluster: %s, status: %s",
-                  e, e.resp["status"])
-
 class TestNotebook(unittest.TestCase):
-  def testNotebook(self):
-    """Test the GKE notebook."""
+  def run_test(self, project, zone, cluster, new_values):
     # TODO(jeremy@lewi.us): Need to configure the notebook and test to build
     # using GCB.
-    notebook_path = os.path.join(os.path.dirname(__file__), "TF on GKE.ipynb")
+    dirname = os.path.dirname(__file__)
+    if not dirname:
+      logging.info("__file__ doesn't apper to be absolute path.")
+      dirname = os.getcwd()
+    notebook_path = os.path.join(dirname, "TF on GKE.ipynb")
+    logging.info("Reading notebook %s", notebook_path)
+    if not os.path.exists(notebook_path):
+      raise ValueError("%s does not exist" % notebook_path)
+
     with open(notebook_path) as hf:
       node = nbformat.read(hf, nbformat.NO_CONVERT)
     exporter = nbconvert.PythonExporter()
@@ -115,22 +100,8 @@ class TestNotebook(unittest.TestCase):
     gke = discovery.build("container", "v1", credentials=credentials)
 
     lines = raw.splitlines()
-    # Dictionary of variables to substitute into the notebook.
-    now = datetime.datetime.now()
-    project = "mlkube-testing"
-    cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
-                       + uuid.uuid4().hex[0:4])
-    zone = "us-east1-d"
-    new_values = {
-      "project": project,
-      "cluster_name": cluster,
-      "zone": zone,
-      "registry": "gcr.io/mlkube-testing",
-      "data_dir": "gs://mlkube-testing_temp/cifar10/data",
-      "job_dirs": "gs://mlkube-testing_temp/cifar10/jobs",
-      "num_steps": 10,
-    }
-    modified = replace_vars_once(lines, new_values)
+
+    modified = replace_vars(lines, new_values)
 
     modified = strip_appendix(modified)
 
@@ -142,14 +113,61 @@ class TestNotebook(unittest.TestCase):
       hf.write("\n".join(modified))
     logging.info("Wrote notebook to: %s", code_path)
 
+    with open(code_path) as hf:
+      contents = hf.read()
+      logging.info("Notebook contents:\n%s", contents)
+
     try:
       runpy.run_path(code_path)
     finally:
       logging.info("Deleting cluster; project=%s, zone=%s, name=%s", project,
                   zone, cluster)
       util.delete_cluster(gke, cluster, project, zone)
-      logging.info("Cluster deletion done.\n %s", create_op)
+
+  def testCpu(self):
+    """Test using CPU only."""
+    now = datetime.datetime.now()
+    project = "mlkube-testing"
+    cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
+                 + uuid.uuid4().hex[0:4])
+    zone = "us-east1-d"
+    new_values = {
+      "project": project,
+      "cluster_name": cluster,
+      "zone": zone,
+      "registry": "gcr.io/mlkube-testing",
+      "data_dir": "gs://mlkube-testing_temp/cifar10/data",
+      "job_dirs": "gs://mlkube-testing_temp/cifar10/jobs",
+      "num_steps": 10,
+      "use_gpu": False,
+    }
+    self.run_test(project, zone, cluster, new_values)
+
+  def testGpu(self):
+    """Test using CPU only."""
+    now = datetime.datetime.now()
+    project = "mlkube-testing"
+    cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
+                 + uuid.uuid4().hex[0:4])
+    zone = "us-east1-c"
+    new_values = {
+      "project": project,
+      "cluster_name": cluster,
+      "zone": zone,
+      "registry": "gcr.io/mlkube-testing",
+      "data_dir": "gs://mlkube-testing_temp/cifar10/data",
+      "job_dirs": "gs://mlkube-testing_temp/cifar10/jobs",
+      "num_steps": 10,
+      "use_gpu": True,
+      "accelerator": "nvidia-tesla-k80",
+      "accelerator_count": 1,
+    }
+    self.run_test(project, zone, cluster, new_values)
 
 if __name__ == "__main__":
-  logging.getLogger().setLevel(logging.INFO)
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
   unittest.main()
