@@ -1,21 +1,19 @@
 import collections
 import datetime
 import logging
-import json
-import nbconvert
-import nbformat
-from py import util
 import os
 import re
 import runpy
-import six
 import tempfile
 import unittest
 import uuid
 
-from googleapiclient import discovery, errors
+import nbconvert
+import nbformat
+from py import util
+from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
-from googleapiclient import discovery, errors
+import six
 
 SubTuple = collections.namedtuple("SubTuple", ("name", "value", "pattern"))
 
@@ -37,11 +35,12 @@ def replace_vars(lines, new_values):
     # Format the values appropriately
     new_value = v
     if isinstance(v, six.string_types):
-      new_value="\"{0}\"".format(v)
-    matches.append(SubTuple(k, new_value, re.compile("\s*{0}\s*=.*".format(k))))
+      new_value = "\"{0}\"".format(v)
+    matches.append(SubTuple(k, new_value,
+                            re.compile(r"\s*{0}\s*=.*".format(k))))
 
   for i, l in enumerate(lines):
-    for mindex, p in enumerate(matches):
+    for p in matches:
       # Check if this line matches
       if p.pattern.match(l):
         # Replace this line with this text
@@ -62,7 +61,7 @@ def replace_vars(lines, new_values):
 def strip_appendix(lines):
   """Remove all code in the appendix."""
 
-  p = re.compile("#\s*#*\s*Appendix")
+  p = re.compile(r"#\s*#*\s*Appendix")
   for i in range(len(lines) - 1, 0, -1):
     if p.match(lines[i], re.IGNORECASE):
       return lines[0:i]
@@ -79,7 +78,8 @@ def strip_unexecutable(lines):
   return valid
 
 class TestNotebook(unittest.TestCase):
-  def run_test(self, project, zone, cluster, new_values):
+  @staticmethod
+  def run_test(project, zone, cluster, new_values):  # pylint: disable=too-many-locals
     # TODO(jeremy@lewi.us): Need to configure the notebook and test to build
     # using GCB.
     dirname = os.path.dirname(__file__)

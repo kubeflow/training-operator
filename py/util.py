@@ -208,12 +208,10 @@ def wait_for_tiller_to_be_ready(api_client):
 
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
 
-  tiller_ready = False
   while datetime.datetime.now() < end_time:
     deploy = ext_client.read_namespaced_deployment("tiller-deploy", "kube-system")
     if deploy.status.ready_replicas >= 1:
       logging.info("tiller is ready")
-      tiller_ready = True
       return
     logging.info("Waiting for tiller")
     time.sleep(10)
@@ -236,7 +234,8 @@ def install_gpu_drivers(api_client):
   daemonset_spec = yaml.load(f)
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
   try:
-    ds = ext_client.create_namespaced_daemon_set(daemonset_spec["metadata"]["namespace"], daemonset_spec)
+    namespace = daemonset_spec["metadata"]["namespace"]
+    ext_client.create_namespaced_daemon_set(namespace, daemonset_spec)
   except rest.ApiException as e:
     # Status appears to be a string.
     if e.status == 409:
@@ -258,8 +257,8 @@ def wait_for_gpu_driver_install(api_client,
         return
     logging.info("Waiting for GPUs to be ready.")
     time.sleep(15)
-  logging.error("Timeout waiting for GPUs to be ready.")
-  raise TimeoutEr
+  logging.error("Timeout waiting for GPU nodes to be ready.")
+  raise TimeoutError("Timeout waiting for GPU nodes to be ready.")
 
 def cluster_has_gpu_nodes(api_client):
   """Return true if the cluster has nodes with GPUs."""
