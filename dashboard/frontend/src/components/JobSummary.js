@@ -31,7 +31,7 @@ const JobSummary = ({ job }) => {
             <p style={styles.indicator} >&#9673;</p>
           </div>
           <div style={styles.details}>
-            <Link to={`/${job.metadata.name}`}>{job.metadata.name}</Link>
+            <Link to={`/${job.metadata.namespace}/${job.metadata.name}`}>{job.metadata.name}</Link>
             <div style={styles.description}>
               {getReplicasSummary(job)}
             </div>

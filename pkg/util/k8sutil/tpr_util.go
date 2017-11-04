@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"net/http"
 
+	log "github.com/golang/glog"
 	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
-	"github.com/tensorflow/k8s/pkg/util"
-	log "github.com/golang/glog"
 )
 
 // TFJobClient defines an interface for working with TfJob CRDs.
@@ -128,7 +128,7 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 }
 
 func (c *TfJobRestClient) Delete(ns, name string) error {
-	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).DoRaw()
+	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
 	return err
 }
 

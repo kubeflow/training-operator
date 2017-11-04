@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/rs/cors"
 	"github.com/tensorflow/k8s/dashboard/backend/client"
 	"github.com/tensorflow/k8s/dashboard/backend/handler"
 )
@@ -21,14 +20,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error while creating the API Handler: %v", err)
 	}
-	fs := http.FileServer(http.Dir("./dashboard/public"))
+	// fs := http.FileServer(http.Dir("./dashboard/frontend/build"))
 
-	mux := http.NewServeMux()
-	mux.Handle("/", fs)
-	mux.Handle("/api/", apiHandler)
+	http.Handle("/api/", apiHandler)
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./dashboard/frontend/build/"))))
 	p := ":8080"
 	fmt.Println("Listening on", p)
-	corsHandler := cors.Default().Handler(mux)
 
-	http.ListenAndServe(p, corsHandler)
+	http.ListenAndServe(p, nil)
+
 }

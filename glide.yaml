@@ -14,5 +14,3 @@ import:
   version: v1.0
 - package: golang.org/x/net
 - package: golang.org/x/time
-- package: github.com/rs/cors
-  version: ^1.2.0

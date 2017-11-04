@@ -10,6 +10,8 @@ import {
   withRouter
 } from 'react-router-dom'
 
+import { createTfJobService } from '../services'
+
 class CreateJob extends Component {
 
   constructor(props) {
@@ -65,7 +67,6 @@ class CreateJob extends Component {
   render() {
     return (
       <Card>
-        <CardTitle title="Start a New Training" />
         <CardText style={this.styles.root}>
           <TextField floatingLabelText="Training name" name="name" onChange={this.handleInputChange} />
           <TextField floatingLabelText="Namespace" name="namespace" value={this.state.namespace} onChange={this.handleInputChange} />
@@ -133,19 +134,8 @@ class CreateJob extends Component {
       }
     }
 
-    let myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    const options = {
-      method: "POST",
-      headers: myHeaders,
-      body: JSON.stringify(spec)
-    };
-
-    console.log(spec)
-    fetch(`http://localhost:8080/api/tfjob`, options)
-      .then(r => r.json())
-      .then(console.log);
-
+    createTfJobService(spec)
+      .catch(console.log);
   }
 
   cancel() {

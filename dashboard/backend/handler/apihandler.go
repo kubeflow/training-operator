@@ -32,15 +32,25 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	apiHandler := APIHandler{
 		cManager: client,
 	}
+
 	wsContainer := restful.NewContainer()
 	wsContainer.EnableContentEncoding(true)
+
+	cors := restful.CrossOriginResourceSharing{
+		ExposeHeaders:  []string{"X-My-Header"},
+		AllowedHeaders: []string{"Content-Type", "Accept"},
+		AllowedMethods: []string{"GET", "POST", "DELETE"},
+		CookiesAllowed: false,
+		Container:      wsContainer,
+	}
+	wsContainer.Filter(cors.Filter)
+	wsContainer.Filter(wsContainer.OPTIONSFilter)
 
 	apiV1Ws := new(restful.WebService)
 
 	apiV1Ws.Path("/api").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
-	wsContainer.Add(apiV1Ws)
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob").
@@ -58,6 +68,11 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 			Reads(spec.TfJob{}).
 			Writes(spec.TfJob{}))
 
+	apiV1Ws.Route(
+		apiV1Ws.DELETE("/tfjob/{namespace}/{tfjob}").
+			To(apiHandler.handleDeleteTfJob))
+
+	wsContainer.Add(apiV1Ws)
 	return wsContainer, nil
 }
 
@@ -113,4 +128,15 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		panic(err)
 	}
 	response.WriteHeaderAndEntity(http.StatusCreated, j)
+}
+
+func (apiHandler *APIHandler) handleDeleteTfJob(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	name := request.PathParameter("tfjob")
+	client := apiHandler.cManager.TfJobClient
+	err := client.Delete(namespace, name)
+	if err != nil {
+		panic(err)
+	}
+	response.WriteHeader(http.StatusOK)
 }

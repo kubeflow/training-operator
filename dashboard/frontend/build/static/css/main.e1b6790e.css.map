@@ -1,0 +1,1 @@
+{"version":3,"sources":["components/App.css"],"names":[],"mappings":"AAAA,KACE,6BAAgC,CAGlC,KACE,8BACA,+BAAkC","file":"static/css/main.e1b6790e.css","sourcesContent":["html {\n  font-family: roboto, sans-serif;\n}\n\nbody {\n  font-family: 'Roboto', sans-serif;\n  background-color: #eee !important;\n}\n\n\n\n// WEBPACK FOOTER //\n// ./src/components/App.css"],"sourceRoot":""}

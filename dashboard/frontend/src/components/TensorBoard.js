@@ -10,7 +10,9 @@ const TensorBoard = ({ service }) => {
                 {service ?
                     <div>
                         <InfoEntry name="Cluster IP" value={service.spec.clusterIP} linkTo={"http://" + service.spec.clusterIP} />
+                        {service.status.loadBalancer.ingress &&
                         <InfoEntry name="External endpoints" value={service.status.loadBalancer.ingress[0].ip} linkTo={"http://" + service.status.loadBalancer.ingress[0].ip} />
+                        }
                     </div> :
                     "TensorBoard was not configured for this TfJob or the service was deleted."
                 }
