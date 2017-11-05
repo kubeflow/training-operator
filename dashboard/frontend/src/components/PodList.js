@@ -64,7 +64,7 @@ class PodList extends Component {
                     </TableBody>
                 </Table>
                 <Dialog
-                    title="Scrollable Dialog"
+                    title="Logs"
                     actions={this.actions}
                     modal={true}
                     open={this.state.isLogModalOpened}

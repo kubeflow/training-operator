@@ -53,7 +53,7 @@ class AppBar extends Component {
                     showMenuIconButton={false}
                 />
                 <Dialog
-                    title="Dialog With Actions"
+                    title="Delete a TfJob"
                     actions={actions}
                     modal={true}
                     open={this.state.isModalVisible}>

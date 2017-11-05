@@ -3,7 +3,7 @@
 bin/
 vendor/
 node_modules/
-
+build/
 .vscode/
 
 # Compiled python files.
