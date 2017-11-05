@@ -109,6 +109,7 @@ func (s *TBReplicaSet) Delete() error {
 	failures := false
 
 	delProp := meta_v1.DeletePropagationForeground
+	log.V(1).Infof("Deleting deployment %v:%v", s.Job.job.Metadata.Namespace, s.jobName())
 	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{
 		PropagationPolicy: &delProp,
 	})
@@ -117,6 +118,7 @@ func (s *TBReplicaSet) Delete() error {
 		failures = true
 	}
 
+	log.V(1).Infof("Deleting service %v:%v", s.Job.job.Metadata.Namespace, s.jobName())
 	err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Errorf("Error deleting service: %v; %v", s.jobName(), err)
