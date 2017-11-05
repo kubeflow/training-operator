@@ -352,6 +352,8 @@ type TfReplicaStatus struct {
 	ReplicasStates map[ReplicaState]int
 }
 
+// TODO(jlewi): K8s has utilities for auto-generating code to deep copy an object.
+// Perhaps we should use that rather than serializing and deserializing TfJobStatus.
 func (cs TfJobStatus) Copy() TfJobStatus {
 	newCS := TfJobStatus{}
 	b, err := json.Marshal(cs)

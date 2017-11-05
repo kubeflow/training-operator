@@ -173,6 +173,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 	log.Info("finding existing jobs...")
 	jobList, err := c.TfJobClient.List(c.Namespace)
 	if err != nil {
+		log.Errorf("There was a problem listing all jobs; error: %v. Please check that RBAC is properly configured.", err)
 		return "", err
 	}
 

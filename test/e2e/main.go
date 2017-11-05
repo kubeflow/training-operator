@@ -33,6 +33,7 @@ const (
 
 var (
 	image = flag.String("image", "", "The Docker image containing the TF program to run.")
+	numJobs = flag.Int("num_jobs", 1, "The number of jobs to run.")
 )
 
 func run() error {
@@ -228,14 +229,47 @@ func main() {
 	if *image == "" {
 		log.Fatalf("--image must be provided.")
 	}
-	err := run()
+
+	c := make(chan error)
+	for i := 0; i < *numJobs; i +=1 {
+		go func() {
+			err := run()
+			if err != nil {
+				log.Errorf("Job didn't run successfully; %v", err)
+			}
+			c <- err
+		}()
+	}
+
+	numFinished := 0
+
+	success := true
+	for endTime := time.Now().Add(5 * time.Minute); numFinished < *numJobs && time.Now().Before(endTime); {
+		select {
+		case res := <- c:
+			numFinished += 1
+			if res == nil {
+				log.Info("Job completed successfully.")
+			} else {
+				success = false
+				log.Info("Job did not run successfully.")
+			}
+		case <-time.After(endTime.Sub(time.Now())):
+			fmt.Println("timeout 2")
+		}
+	}
+
+	if numFinished <= *numJobs {
+		success = false
+		log.Errorf("Not all jobs completed or timed out waiting for jobs to finish.")
+	}
 
 	// Generate TAP (https://testanything.org/) output
 	fmt.Println("1..1")
-	if err == nil {
+	if success {
 		fmt.Println("ok 1 - Successfully ran TfJob")
 	} else {
-		fmt.Printf("not ok 1 - Running TfJob failed %v \n", err)
+		fmt.Printf("not ok 1 - Running TfJobs failed \n")
 		// Exit with non zero exit code for Helm tests.
 		os.Exit(1)
 	}
