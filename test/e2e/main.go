@@ -203,7 +203,7 @@ func run() error {
 			if k8s_errors.IsNotFound(err) {
 				isTBDeployDeleted = true
 			} else {
-				log.Infof("TensorBoard deployment still exists")
+				log.Infof("TensorBoard deployment %v still exists", tbDeployName)
 			}
 		}
 
@@ -213,11 +213,11 @@ func run() error {
 	}
 
 	if len(jobs) > 0 {
-		return fmt.Errorf("Not all Job controllers were successfully deleted.")
+		return fmt.Errorf("Not all Job controllers were successfully deleted for TfJob %v.", name)
 	}
 
 	if !isTBDeployDeleted {
-		return fmt.Errorf("TensorBoard deployment was not successfully deleted.")
+		return fmt.Errorf("TensorBoard deployment %v was not successfully deleted for TfJob %v.", tbDeployName, name)
 	}
 
 	return nil
