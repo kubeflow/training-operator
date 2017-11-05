@@ -302,6 +302,7 @@ func (s *TFReplicaSet) Delete() error {
 		LabelSelector: selector,
 	}
 
+	log.V(1).Infof("Deleting Jobs namespace=%v selector=%v", s.Job.job.Metadata.Namespace, selector)
 	err = s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
@@ -310,6 +311,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// We need to delete the completed pods.
+	log.V(1).Infof("Deleting Pods namespace=%v selector=%v", s.Job.job.Metadata.Namespace, selector)
 	err = s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
@@ -318,7 +320,9 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// Services doesn't support DeleteCollection so we delete them individually.
+	// TODO(jlewi): We should check if this has changed with K8s 1.8 or other releases.
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
+		log.V(1).Infof("Deleting Service %v:%v", s.Job.job.Metadata.Namespace, s.jobName((index)))
 		err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
@@ -328,12 +332,14 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// If the ConfigMap for the default parameter server exists, we delete it
+	log.V(1).Infof("Get ConfigMaps %v:%v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName())
 	_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
 	if err != nil {
 		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
 			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
 		}
 	} else {
+		log.V(1).Infof("Delete ConfigMaps %v:%v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName())
 		s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 	}
 

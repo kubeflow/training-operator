@@ -54,6 +54,8 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
       description="Build docker image for TfJob CRD.")
 
+  # TODO(jlewi) We should make registry required to avoid people accidentally
+  # pushing to tf-on-k8s-dogfood by default.
   parser.add_argument(
       "--registry",
       default="gcr.io/tf-on-k8s-dogfood",
