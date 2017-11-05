@@ -49,8 +49,8 @@ class AppBar extends Component {
             <div>
                 <BaseAppBar
                     title={this.getTitle()}
-                    iconClassNameRight="muidocs-icon-navigation-expand-more"
                     iconElementRight={rightMenu}
+                    showMenuIconButton={false}
                 />
                 <Dialog
                     title="Dialog With Actions"

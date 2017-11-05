@@ -35,3 +35,8 @@ export function deleteTfJob(namespace, name) {
     return fetch(`${host}/api/tfjob/${namespace}/${name}`, options)
         .then(r => r.json());
 }
+
+export function getPodLogs(namespace, name) {
+    return fetch(`${host}/api/logs/${namespace}/${name}`)
+        .then(r => r.json());
+}

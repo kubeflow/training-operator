@@ -8,9 +8,10 @@ import Toggle from 'material-ui/Toggle';
 import RaisedButton from 'material-ui/RaisedButton';
 import {
   withRouter
-} from 'react-router-dom'
+} from 'react-router-dom';
 
-import { createTfJobService } from '../services'
+import { createTfJobService } from '../services';
+import CreateTensorBoard from './CreateTensorBoard';
 
 class CreateJob extends Component {
 
@@ -28,12 +29,18 @@ class CreateJob extends Component {
       psReplicas: 0,
       psImage: "",
       tbIsPresent: true,
-      tbServiceType: 0
+      tbSpec: {}
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
+    this.setTensorboardSpec = this.setTensorboardSpec.bind(this);
     this.cancel = this.cancel.bind(this);
     this.deploy = this.deploy.bind(this);
+  }
+
+  setTensorboardSpec(tbSpec) {
+    console.log(tbSpec)
+    this.setState({tbSpec})
   }
 
   handleInputChange(event) {
@@ -98,10 +105,7 @@ class CreateJob extends Component {
           <Divider style={this.styles.divider} />
           <Toggle label="TensorBoard" defaultToggled={true} name="tbIsPresent" onToggle={this.handleInputChange} style={this.styles.toggle} />
           {this.state.tbIsPresent &&
-            <SelectField floatingLabelText="Service" value={this.state.tbServiceType} onChange={(o, v) => this.setState({ tbServiceType: v })}>
-              <MenuItem value={0} primaryText="Internal" />
-              <MenuItem value={1} primaryText="External" />
-            </SelectField>
+            <CreateTensorBoard setTensorBoardSpec={this.setTensorboardSpec} />
           }
         </CardText>
         <CardActions>
@@ -110,9 +114,13 @@ class CreateJob extends Component {
         </CardActions>
       </Card >
     );
-  }
+  } 
 
   deploy() {
+    console.log(this.state.tbSpec);
+  }
+
+  deploy2() {
 
     let rs = [
       this.newReplicaSpec("MASTER", 1, this.state.masterImage)
@@ -130,8 +138,13 @@ class CreateJob extends Component {
         namespace: this.state.namespace
       },
       spec: {
-        replicaSpecs: rs
+        replicaSpecs: rs,
+
       }
+    }
+
+    if (this.state.tbIsPresent) {
+      spec.spec.tensorboard = this.tensorBoard.getTensorBoardSpec();
     }
 
     createTfJobService(spec)
@@ -155,6 +168,31 @@ class CreateJob extends Component {
           restartPolicy: "OnFailure"
         }
       }
+
+    }
+  }
+
+  buildTensorBoardSpec() {
+    // "tensorboard": {
+    //   "logDir": "/tmp/tensorflow",
+    //   "volumes": [
+    //    {
+    //     "name": "azurefile",
+    //     "azureFile": {
+    //      "secretName": "azure-secret",
+    //      "shareName": "data"
+    //     }
+    //    }
+    //   ],
+    //   "volumeMounts": [
+    //    {
+    //     "name": "azurefile",
+    //     "mountPath": "/tmp/tensorflow"
+    //    }
+    //   ],
+    //   "serviceType": "LoadBalancer"
+    //  }
+    return {
 
     }
   }

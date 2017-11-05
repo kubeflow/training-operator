@@ -17,21 +17,17 @@ class Job extends Component {
     this.state = {
       tfJob: null,
       tbService: null,
-      storageDetail: null
+      pods: []
     }
   }
   divStyle = { marginBottom: "10px" }
 
-
   componentWillReceiveProps(nextProps) {
-    let job = this.getCurrentJob(nextProps);
-    if (job) {
-      getTfJobService(job.metadata.namespace, job.metadata.name)
-        .then(b => {
-          this.setState({ tfJob: b.tfJob, tbService: b.tbService });
-        })
-        .catch(console.log);
-    }
+    this.displayJob(nextProps);
+  }
+
+  componentDidMount() {
+    this.displayJob(this.props);
   }
 
   render() {
@@ -56,6 +52,17 @@ class Job extends Component {
         <CardText> There are no TfJobs to display </CardText>
       </Card>
     );
+  }
+
+  displayJob(props) {
+    let job = this.getCurrentJob(props);
+    if (job) {
+      getTfJobService(job.metadata.namespace, job.metadata.name)
+        .then(b => {
+          this.setState({ tfJob: b.tfJob, tbService: b.tbService, pods: b.pods });
+        })
+        .catch(console.log);
+    }
   }
 
   getCurrentJob(props) {
@@ -83,9 +90,11 @@ class Job extends Component {
           status = m[0];
         }
       }
+
+      let pods = this.state.pods.filter(p => p.metadata.labels.job_type && p.metadata.labels.job_type == spec.tfReplicaType);
       replicaSpecs.push(
         <div style={this.divStyle} key={i}>
-          <ReplicaSpec spec={spec} status={status} />
+          <ReplicaSpec spec={spec} status={status} pods={pods}/>
         </div>
       );
     }

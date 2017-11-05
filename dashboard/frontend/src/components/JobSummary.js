@@ -2,27 +2,29 @@ import React from 'react';
 import { Link } from 'react-router-dom'
 import { Card, CardActions, CardHeader, CardMedia, CardTitle, CardText } from 'material-ui/Card';
 
-const styles = {
-  jobSummary: {
-    textAlign: "left",
-    display: "flex"
-  },
-  indicator: {
-    color: "red",
-    marginBottom: 0,
-    marginLeft: 5
-  },
-  description: {
-    paddingRight: 0
-  },
-  details: {
-    display: "flex",
-    flexDirection: "column",
-    marginLeft: "4px"
-  }
-}
-
 const JobSummary = ({ job }) => {
+
+  let styles = {
+    jobSummary: {
+      textAlign: "left",
+      display: "flex"
+    },
+    indicator: {
+      color: getStatusColor(job),
+      marginBottom: 0,
+      marginLeft: 5
+    },
+    description: {
+      paddingRight: 0
+    },
+    details: {
+      display: "flex",
+      flexDirection: "column",
+      marginLeft: "4px"
+    }
+  }
+
+
   return (
     <Card>
       <CardText >
@@ -49,6 +51,16 @@ function getReplicasSummary(job) {
     return acc;
   }, []);
   return descs.join()
+}
+
+function getStatusColor(job) {
+  let status = job.status.state;
+  switch (status.toLowerCase()) {
+    case "succeeded":
+      return "green";
+    default:
+      return "orange";
+  }
 }
 
 export default JobSummary;

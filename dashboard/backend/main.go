@@ -20,7 +20,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error while creating the API Handler: %v", err)
 	}
-	// fs := http.FileServer(http.Dir("./dashboard/frontend/build"))
 
 	http.Handle("/api/", apiHandler)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./dashboard/frontend/build/"))))

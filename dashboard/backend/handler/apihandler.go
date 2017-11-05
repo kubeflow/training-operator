@@ -15,13 +15,11 @@ type APIHandler struct {
 	cManager client.ClientManager
 }
 
-type StorageDetails struct{}
-
 //add tensorboard ips, add azure file / gs links
 type TfJobDetail struct {
-	TfJob          *spec.TfJob `json:"tfJob"`
-	TbService      *v1.Service `json:"tbService"`
-	StorageDetails StorageDetails
+	TfJob     *spec.TfJob `json:"tfJob"`
+	TbService *v1.Service `json:"tbService"`
+	Pods      []v1.Pod    `json:"pods"`
 }
 
 type TfJobList struct {
@@ -72,6 +70,11 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 		apiV1Ws.DELETE("/tfjob/{namespace}/{tfjob}").
 			To(apiHandler.handleDeleteTfJob))
 
+	apiV1Ws.Route(
+		apiV1Ws.GET("/logs/{namespace}/{podname}").
+			To(apiHandler.handleGetPodLogs).
+			Writes([]byte{}))
+
 	wsContainer.Add(apiV1Ws)
 	return wsContainer, nil
 }
@@ -102,8 +105,8 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 	}
 
 	if job.Spec.TensorBoard != nil {
-		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services("default").List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
+		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services(namespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("mlkube.io=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
 		})
 		if err != nil {
 			panic(err)
@@ -113,6 +116,15 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 		// Handle case where no tensorboard is found
 		tfJobDetail.TbService = &tbSpec.Items[0]
 	}
+
+	// Get associated pods
+	pods, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("mlkube.io=,runtime_id=%s", job.Spec.RuntimeId),
+	})
+	if err != nil {
+		panic(err)
+	}
+	tfJobDetail.Pods = pods.Items
 
 	response.WriteHeaderAndEntity(http.StatusOK, tfJobDetail)
 }
@@ -139,4 +151,16 @@ func (apiHandler *APIHandler) handleDeleteTfJob(request *restful.Request, respon
 		panic(err)
 	}
 	response.WriteHeader(http.StatusOK)
+}
+
+func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, response *restful.Response) {
+	namespace := request.PathParameter("namespace")
+	name := request.PathParameter("podname")
+
+	logs, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Do().Raw()
+	if err != nil {
+		panic(err)
+	}
+
+	response.WriteHeaderAndEntity(http.StatusOK, string(logs))
 }

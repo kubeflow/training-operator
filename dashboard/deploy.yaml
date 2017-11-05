@@ -26,6 +26,6 @@ spec:
     spec:    
       containers:
       - name: dashboard
-        image: wbuchwalter/tf_operator_dashboard:v20171103-8d9b88e-dirty-b7a1cd4
+        image: wbuchwalter/tf_operator_dashboard:v20171104-8b2190d-dirty-16457ec
         ports:
         - containerPort: 8080 

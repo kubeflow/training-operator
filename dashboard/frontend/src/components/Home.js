@@ -25,7 +25,7 @@ class Home extends Component {
 
     componentDidMount() {
         this.fetch();
-        // setInterval(_ => this.fetch(), 10000);
+        setInterval(_ => this.fetch(), 10000);
     }
 
     fetch() {
