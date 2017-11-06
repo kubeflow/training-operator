@@ -10,6 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(jlewi): I think with K8s 1.8 we can rely on K8s Garbage collection for CRDs
+// and we should no longer need this.
 package garbagecollection
 
 import (
