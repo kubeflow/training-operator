@@ -17,8 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tensorflow/k8s/pkg/garbagecollection"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
@@ -66,8 +64,6 @@ type TrainingJob struct {
 
 	// stopCh is a channel used to communicate that the cluster needs to be stopped.
 	stopCh chan struct{}
-
-	gc *garbagecollection.GC
 }
 
 // ClusterSpec represents a cluster TensorFlow specification.
@@ -90,7 +86,6 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job 
 		eventCh:     make(chan *jobEvent, 100),
 		stopCh:      make(chan struct{}),
 		status:      job.Status.Copy(),
-		gc:          garbagecollection.New(kubeCli, tfJobClient, job.Metadata.Namespace),
 	}
 
 	return j, nil
@@ -350,10 +345,6 @@ func (j *TrainingJob) triggerCreatePhase() error {
 	}
 	log.Infof("Creating job: %v with Spec (%#v), Status (%#v)", j.job.Metadata.Name, j.job.Spec, j.job.Status)
 
-	// TODO(jlewi): I think this collects all the existing resources that have the labels indicating
-	// they should be owned by this job. Do they get deleted?
-	j.gc.CollectJob(j.job.Metadata.Name, j.job.Metadata.UID)
-
 	return nil
 }
 
@@ -361,12 +352,6 @@ func (j *TrainingJob) Delete() {
 	// Delete doesn't actually delete any resources. It just sends an event which will be processed by the run
 	// method.
 	j.send(&jobEvent{typ: eventDeleteJob})
-}
-
-// TODO(jlewi): This delete function was copied from the etcd-operator. Need to figure out what the right thing to
-// do is. Should we be calling deleteReplicas here?
-func (j *TrainingJob) delete() {
-	j.gc.CollectJob(j.job.Metadata.Name, garbagecollection.NullUID)
 }
 
 // TODO(jlewi): This is sending a clusterEvent to the channel. I think these are events
@@ -416,9 +401,6 @@ func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) 
 	defer func() {
 		if clusterFailed {
 			j.reportFailedStatus()
-
-			log.Infof("Deleting the failed TfJob")
-			j.delete()
 		}
 
 		close(j.stopCh)
@@ -449,16 +431,19 @@ func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) 
 				// we shouldn't delete the pods when the jobs finish because leaving the pods
 				// allows us to get the logs from the pods after the job finishes.
 				//
-				log.Infof("TfJob is deleted by the user")
+				log.Infof("TfJob %v deleted by the user", j.fullname())
 				// TODO(jlewi): This logic is probably insufficient.
 				if j.job.Status.Phase != spec.TfJobPhaseCleanUp {
 					j.status.SetPhase(spec.TfJobPhaseCleanUp)
 				}
 
+				// TODO(jlewi): Does it make sense to explicitly delete the resources? Should
+				// we just rely on K8s garbage collection to delete the resources before
+				// deleting TfJob?
 				if cErr := j.deleteResources(); cErr != nil {
 					log.Errorf("trainingJob.deleteResources() error; %v", cErr)
 				}
-				// j.status.SetPhase(spec.TfJobPhaseDone)
+
 				// Return from run because we want to stop reconciling the object.
 				return
 			}
@@ -513,7 +498,7 @@ func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) 
 			}
 
 			// updateTPRStatus will update the status of the TPR with c.Status if c.Status
-			// doesn't match c.Cluster.status. So you can chang c.Status in order to propogate
+			// doesn't match c.Cluster.status. So you can change c.Status in order to propogate
 			// changes to the TPR status.
 			if err := j.updateTPRStatus(); err != nil {
 				log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
@@ -576,4 +561,9 @@ func (j *TrainingJob) reportFailedStatus() {
 
 func (j *TrainingJob) name() string {
 	return j.job.Metadata.GetName()
+}
+
+// fullname returns the namespace and name for the job.
+func (j *TrainingJob) fullname() string {
+	return j.job.Metadata.GetNamespace() + ":" + j.job.Metadata.GetName()
 }
