@@ -54,6 +54,8 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
       description="Build docker image for TfJob CRD.")
 
+  # TODO(jlewi) We should make registry required to avoid people accidentally
+  # pushing to tf-on-k8s-dogfood by default.
   parser.add_argument(
       "--registry",
       default="gcr.io/tf-on-k8s-dogfood",
@@ -129,16 +131,28 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
 
   n = datetime.datetime.now()
   image = image_base + ":" + n.strftime("v%Y%m%d") + "-" + GetGitHash(root_dir)
+  latest_image = image_base + ":latest"
+
   if args.use_gcb:
     run(["gcloud", "container", "builds", "submit", context_dir,
          "--tag=" + image, "--project=" + args.project])
+
+    # Add the latest tag.
+    run(["gcloud", "container", "images", "add-tag", "--quiet", image,
+         latest_image])
+
   else:
     run(["docker", "build", "-t", image, context_dir])
     logging.info("Built image: %s", image)
 
+    run(["docker", "tag", image, latest_image])
+
     if args.should_push:
       run(["gcloud", "docker", "--", "push", image])
       logging.info("Pushed image: %s", image)
+
+      run(["gcloud", "docker", "--", "push", latest_image])
+      logging.info("Pushed image: %s", latest_image)
 
   if args.output:
     logging.info("Writing build information to %s", args.output)

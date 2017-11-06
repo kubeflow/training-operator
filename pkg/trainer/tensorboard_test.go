@@ -19,6 +19,9 @@ func TestTBReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	jobSpec := &spec.TfJob{
+		Metadata: meta_v1.ObjectMeta {
+			Name: "some-job",
+		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
 			ReplicaSpecs: []*spec.TfReplicaSpec{
@@ -56,9 +59,10 @@ func TestTBReplicaSet(t *testing.T) {
 
 	// Expected labels
 	expectedLabels := map[string]string{
-		"mlkube.io":  "",
+		"tensorflow.org":  "",
 		"app":        "tensorboard",
 		"runtime_id": "some-runtime",
+		"tf_job_name": "some-job",
 	}
 
 	// Check that a service was created.

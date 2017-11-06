@@ -7,7 +7,7 @@ metadata:
     app: tf-job-operator
 rules:
 - apiGroups:
-  - mlkube.io
+  - tensorflow.org
   resources:
   - tfjobs
   verbs:
@@ -33,6 +33,7 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - pods
   - services
   - endpoints

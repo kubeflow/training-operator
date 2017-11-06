@@ -24,7 +24,7 @@ To list jobs
 kubectl get tfjobs
 
 NAME          KINDS
-example-job   TfJob.v1beta1.mlkube.io
+example-job   TfJob.v1alpha.tensorflow.org
 ```
 
 For additional information about motivation and design for the
@@ -35,8 +35,21 @@ CRD please refer to
 
 Custom Resources require Kubernetes >= 1.7
 
+For GPUs we recommend using Kubernetes 1.8
+
+ * Kubernetes 1.7 had some support for GPUs
+
 
 ## Installing the TfJob CRD and operator on your k8s cluster
+
+1. Ensure helm is running on your cluster
+
+   * On GKE with K8s 1.8, follow these
+     [instructions](https://docs.helm.sh/using_helm/#tiller-namespaces-and-rbac)
+     to setup appropriate service accounts for tiller.
+
+   * Azure K8s clusters should have service accounts configured by
+     default for tiller.
 
 1. Deploy the operator
 
@@ -146,7 +159,7 @@ kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/exampl
 In this case the job spec looks like the following
 
 ```
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: "example-job"
@@ -220,7 +233,7 @@ Ensure your K8s cluster is properly configured to use GPUs
 To attach GPUs specify the GPU resource on the container e.g.
 
 ```
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: "tf-smoke-gpu"
@@ -263,7 +276,7 @@ On Azure you can store your event files on an Azure Files and use
 volumes to make them available to TensorBoard.
 
 ```
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: "tf-smoke-gpu"
@@ -300,7 +313,7 @@ On GKE you can store your event files on GCS and TensorBoard/TensorFlow
 can read/write directly to GCS.
 
 ```
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: "tf-smoke-gpu"
@@ -356,7 +369,7 @@ kubectl get -o yaml tfjobs $JOB
 Here is sample output for an example job
 
 ```
-apiVersion: mlkube.io/v1beta1
+apiVersion: tensorflow.org/v1alpha1
 kind: TfJob
 metadata:
   clusterName: ""
@@ -365,7 +378,7 @@ metadata:
   name: example-job
   namespace: default
   resourceVersion: "1881"
-  selfLink: /apis/mlkube.io/v1beta1/namespaces/default/tfjobs/example-job
+  selfLink: /apis/tensorflow.org/v1alpha1/namespaces/default/tfjobs/example-job
   uid: e11f9577-b5e5-11e7-8522-42010a8e01a4
 spec:
   RuntimeId: 76no

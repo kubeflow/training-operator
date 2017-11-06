@@ -33,13 +33,15 @@ const (
 
 var (
 	image = flag.String("image", "", "The Docker image containing the TF program to run.")
+	numJobs = flag.Int("num_jobs", 1, "The number of jobs to run.")
+	timeout = flag.Duration("timeout", 5 * time.Minute, "The timeout for the test")
 )
 
-func run() error {
+func run() (string, error) {
 	kubeCli := k8sutil.MustNewKubeClient()
 	tfJobClient, err := k8sutil.NewTfJobClient()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	name := "e2e-test-job-" + util.RandString(4)
@@ -101,12 +103,12 @@ func run() error {
 
 	if err != nil {
 		log.Errorf("Creating the job failed; %v", err)
-		return err
+		return name, err
 	}
 
-	// Wait for the job to complete for up to 2 minutes.
+	// Wait for the job to complete for up to timeout.
 	var tfJob *spec.TfJob
-	for endTime := time.Now().Add(2 * time.Minute); time.Now().Before(endTime); {
+	for endTime := time.Now().Add(*timeout); time.Now().Before(endTime); {
 		tfJob, err = tfJobClient.Get(Namespace, name)
 		if err != nil {
 			log.Warningf("There was a problem getting TfJob: %v; error %v", name, err)
@@ -120,16 +122,16 @@ func run() error {
 	}
 
 	if tfJob == nil {
-		return fmt.Errorf("Failed to get TfJob %v", name)
+		return name, fmt.Errorf("Failed to get TfJob %v", name)
 	}
 
 	if tfJob.Status.State != spec.StateSucceeded {
 		// TODO(jlewi): Should we clean up the job.
-		return fmt.Errorf("TfJob %v did not succeed;\n %v", name, util.Pformat(tfJob))
+		return name, fmt.Errorf("TfJob %v did not succeed;\n %v", name, util.Pformat(tfJob))
 	}
 
 	if tfJob.Spec.RuntimeId == "" {
-		return fmt.Errorf("TfJob %v doesn't have a RuntimeId", name)
+		return name, fmt.Errorf("TfJob %v doesn't have a RuntimeId", name)
 	}
 
 	// Loop over each replica and make sure the expected resources were created.
@@ -142,7 +144,7 @@ func run() error {
 			_, err := kubeCli.BatchV1().Jobs(Namespace).Get(jobName, metav1.GetOptions{})
 
 			if err != nil {
-				return fmt.Errorf("Tfob %v did not create Job %v for ReplicaType %v Index %v", name, jobName, r.TfReplicaType, i)
+				return name, fmt.Errorf("Tfob %v did not create Job %v for ReplicaType %v Index %v", name, jobName, r.TfReplicaType, i)
 			}
 		}
 	}
@@ -152,14 +154,14 @@ func run() error {
 	_, err = kubeCli.ExtensionsV1beta1().Deployments(Namespace).Get(tbDeployName, metav1.GetOptions{})
 
 	if err != nil {
-		return fmt.Errorf("TfJob %v did not create Deployment %v for TensorBoard", name, tbDeployName)
+		return name, fmt.Errorf("TfJob %v did not create Deployment %v for TensorBoard", name, tbDeployName)
 	}
 
 	// Check that the TensorBoard service is present
 	_, err = kubeCli.CoreV1().Services(Namespace).Get(tbDeployName, metav1.GetOptions{})
 
 	if err != nil {
-		return fmt.Errorf("TfJob %v did not create Service %v for TensorBoard", name, tbDeployName)
+		return name, fmt.Errorf("TfJob %v did not create Service %v for TensorBoard", name, tbDeployName)
 	}
 
 	// Delete the job and make sure all subresources are properly garbage collected.
@@ -184,7 +186,7 @@ func run() error {
 	}
 
 	// Wait for all jobs and deployment to be deleted.
-	for endTime := time.Now().Add(5 * time.Minute); time.Now().Before(endTime) && (len(jobs) > 0 || !isTBDeployDeleted); {
+	for endTime := time.Now().Add(*timeout); time.Now().Before(endTime) && (len(jobs) > 0 || !isTBDeployDeleted); {
 		for k := range jobs {
 			_, err := kubeCli.BatchV1().Jobs(Namespace).Get(k, metav1.GetOptions{})
 			if k8s_errors.IsNotFound(err) {
@@ -202,7 +204,7 @@ func run() error {
 			if k8s_errors.IsNotFound(err) {
 				isTBDeployDeleted = true
 			} else {
-				log.Infof("TensorBoard deployment still exists")
+				log.Infof("TensorBoard deployment %v still exists for TfJob %v", tbDeployName, name)
 			}
 		}
 
@@ -212,14 +214,14 @@ func run() error {
 	}
 
 	if len(jobs) > 0 {
-		return fmt.Errorf("Not all Job controllers were successfully deleted.")
+		return name, fmt.Errorf("Not all Job controllers were successfully deleted for TfJob %v.", name)
 	}
 
 	if !isTBDeployDeleted {
-		return fmt.Errorf("TensorBoard deployment was not successfully deleted.")
+		return name, fmt.Errorf("TensorBoard deployment %v was not successfully deleted for TfJob %v.", tbDeployName, name)
 	}
 
-	return nil
+	return name, nil
 }
 
 func main() {
@@ -228,14 +230,55 @@ func main() {
 	if *image == "" {
 		log.Fatalf("--image must be provided.")
 	}
-	err := run()
+
+	type Result struct {
+		Error error
+		Name string
+	}
+	c := make(chan Result)
+
+	for i := 0; i < *numJobs; i +=1 {
+		go func() {
+			name, err := run()
+			if err != nil {
+				log.Errorf("TfJob %v didn't run successfully; %v", name, err)
+			} else {
+				log.Infof("TfJob %v ran successfully", name)
+			}
+			c <- Result {
+				Name: name,
+				Error: err,
+			}
+		}()
+	}
+
+	numSucceded := 0
+	numFailed := 0
+
+	for endTime := time.Now().Add(*timeout); numSucceded + numFailed < *numJobs && time.Now().Before(endTime); {
+		select {
+		case res := <- c:
+			if res.Error == nil {
+				numSucceded += 1
+			} else {
+				numFailed += 1
+			}
+		case <-time.After(endTime.Sub(time.Now())):
+			log.Errorf("Timeout waiting for TfJob to finish.")
+			fmt.Println("timeout 2")
+		}
+	}
+
+	if numSucceded + numFailed < *numJobs {
+		log.Errorf("Timeout waiting for jobs to finish; only %v of %v TfJobs completed.", numSucceded + numFailed, *numJobs)
+	}
 
 	// Generate TAP (https://testanything.org/) output
 	fmt.Println("1..1")
-	if err == nil {
+	if numSucceded == *numJobs {
 		fmt.Println("ok 1 - Successfully ran TfJob")
 	} else {
-		fmt.Printf("not ok 1 - Running TfJob failed %v \n", err)
+		fmt.Printf("not ok 1 - Running TfJobs failed \n")
 		// Exit with non zero exit code for Helm tests.
 		os.Exit(1)
 	}
