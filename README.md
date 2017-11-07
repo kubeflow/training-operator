@@ -33,12 +33,12 @@ CRD please refer to
 
 ### Requirements
 
-Custom Resources require Kubernetes >= 1.7
-
-For GPUs we recommend using Kubernetes 1.8
-
- * Kubernetes 1.7 had some support for GPUs
-
+TfJob requires Kubernetes >= 1.8
+ * CRDs required Kubernetes >= 1.7
+ * TfJob depends on Garbage Collection for CRDs which is only supported
+   in >= 1.8
+ * GPU support is evolving quickly and its best to use Kubernetes 1.8
+   to get the latest features.
 
 ## Installing the TfJob CRD and operator on your k8s cluster
 
@@ -53,16 +53,16 @@ For GPUs we recommend using Kubernetes 1.8
 
 1. Deploy the operator
 
-   For non-RBAC enabled clusters:
-   ```
-   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
-   helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>
-   ```
-
    For RBAC-enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
    helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true,cloud=<gke or azure>
+   ```
+
+   For non-RBAC enabled clusters:
+   ```
+   CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+   helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>
    ```
 
     * The above instructions use the latest release.
