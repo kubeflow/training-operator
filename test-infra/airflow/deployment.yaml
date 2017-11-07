@@ -1,3 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: airflow
+spec:
+  selector:
+    name: airflow
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    
+---
+
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -11,20 +25,21 @@ spec:
     spec:
       containers:
       - name: airflow
-        # TODO(jlewi): We should probably change this to an image
-        # we build so we can build the DAGS into the image.
-        image: puckel/docker-airflow
+        image: puckel/docker-airflow              
         # What arguments do we need to set to use the LocalExecutor
-        #command:
         env:
         - name: EXECUTOR
           value: Local
         - name: LOAD_EX
-          value: n
+          value: "n"
+        - name: POSTGRES_HOST
+          value: localhost
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         # TODO(jlewi): Should we store the postgres data on a PD to make it
         # invariant to disruptions.
+        # TODO(jlewi): We should probably change this to an image
+        # we build so we can build the DAGS into the image.
       - name: postgres
         # TODO(jlewi): We should probably change this to an image
         # we build so we can build the DAGS into the image.
@@ -38,4 +53,3 @@ spec:
           value: airflow
         ports:
         - containerPort: 5432
-
