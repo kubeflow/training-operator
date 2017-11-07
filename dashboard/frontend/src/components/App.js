@@ -56,7 +56,7 @@ const App = props => {
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css" />
           <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
           <div style={headerStyle}>
-            <h1 style={brandingStyle}> KubeFlow</h1>
+            <h1 style={brandingStyle}>TensorFlow/k8s</h1>
             <FlatButton label="Create" primary={true} icon={<ContentAdd />} containerElement={<Link to="/new" />} />
           </div>
         </header>

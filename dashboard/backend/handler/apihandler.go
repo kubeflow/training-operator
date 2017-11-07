@@ -106,7 +106,7 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 
 	if job.Spec.TensorBoard != nil {
 		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services(namespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("mlkube.io=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
+			LabelSelector: fmt.Sprintf("tensorflow.org=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
 		})
 		if err != nil {
 			panic(err)
@@ -119,7 +119,7 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 
 	// Get associated pods
 	pods, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("mlkube.io=,runtime_id=%s", job.Spec.RuntimeId),
+		LabelSelector: fmt.Sprintf("tensorflow.org=,runtime_id=%s", job.Spec.RuntimeId),
 	})
 	if err != nil {
 		panic(err)
