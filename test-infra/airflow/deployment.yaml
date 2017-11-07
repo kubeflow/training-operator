@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: airflow
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: airflow
+    spec:
+      containers:
+      - name: airflow
+        # TODO(jlewi): We should probably change this to an image
+        # we build so we can build the DAGS into the image.
+        image: puckel/docker-airflow
+        # What arguments do we need to set to use the LocalExecutor
+        #command:
+        env:
+        - name: EXECUTOR
+          value: Local
+        - name: LOAD_EX
+          value: n
+        ports:
+        - containerPort: 80
+        # TODO(jlewi): Should we store the postgres data on a PD to make it
+        # invariant to disruptions.
+      - name: postgres
+        # TODO(jlewi): We should probably change this to an image
+        # we build so we can build the DAGS into the image.
+        image: postgres:9.6
+        env:
+        - name: POSTGRES_USER
+          value: airflow
+        - name: POSTGRES_PASSWORD
+          value: airflow
+        - name: POSTGRES_DB
+          value: airflow
+        ports:
+        - containerPort: 5432
+
