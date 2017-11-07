@@ -11,7 +11,6 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/tensorflow/k8s/pkg/controller"
-	"github.com/tensorflow/k8s/pkg/garbagecollection"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil/election"
@@ -23,7 +22,6 @@ import (
 	"io/ioutil"
 
 	"github.com/tensorflow/k8s/pkg/spec"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
 )
@@ -155,8 +153,6 @@ func main() {
 func run(stop <-chan struct{}) {
 	kubeCli := k8sutil.MustNewKubeClient()
 
-	go periodicFullGC(kubeCli, tfJobClient, namespace, gcInterval)
-
 	// TODO(jlewi): Should we start chaos?
 	// startChaos(context.Background(), cfg.KubeCli, cfg.Namespace, chaosLevel)
 	apiCli := k8sutil.MustNewApiExtensionsClient()
@@ -168,19 +164,6 @@ func run(stop <-chan struct{}) {
 		case controller.ErrVersionOutdated:
 		default:
 			log.Fatalf("controller Run() ended with failure: %v", err)
-		}
-	}
-}
-
-func periodicFullGC(kubecli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, ns string, d time.Duration) {
-	gc := garbagecollection.New(kubecli, tfJobClient, ns)
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	for {
-		<-timer.C
-		err := gc.FullyCollect()
-		if err != nil {
-			log.Warningf("failed to cleanup resources: %v", err)
 		}
 	}
 }

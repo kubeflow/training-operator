@@ -47,6 +47,7 @@ func (c *TfJob) AsOwner() metav1.OwnerReference {
 		Name:       c.Metadata.Name,
 		UID:        c.Metadata.UID,
 		Controller: &trueVar,
+    BlockOwnerDeletion: &trueVar,
 	}
 }
 

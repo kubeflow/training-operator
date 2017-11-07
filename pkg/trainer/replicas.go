@@ -158,6 +158,9 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),
 				Labels: taskLabels,
+				OwnerReferences: []meta_v1.OwnerReference{
+					s.Job.job.AsOwner(),
+				},
 			},
 			Spec: v1.ServiceSpec{
 				Selector: taskLabels,
@@ -214,6 +217,9 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),
 				Labels: taskLabels,
+				OwnerReferences: []meta_v1.OwnerReference{
+					s.Job.job.AsOwner(),
+				},
 			},
 			Spec: batch.JobSpec{
 				Completions: proto.Int32(1),
