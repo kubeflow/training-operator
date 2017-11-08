@@ -13,7 +13,8 @@
 # limitations under the License.
 
 IMG = gcr.io/mlkube-testing/airflow
-TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
+TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | sha256sum | cut -c -6)
+
 
 all: build
 
