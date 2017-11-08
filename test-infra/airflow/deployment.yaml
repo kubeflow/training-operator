@@ -25,13 +25,13 @@ spec:
     spec:
       containers:
       - name: airflow
-        image: puckel/docker-airflow              
+        image: gcr.io/mlkube-testing/airflow:v20171107-a5d7856-dirty
         # What arguments do we need to set to use the LocalExecutor
+        command:
+          # Tells entrypoint.sh to start the webserver
+          - /entrypoint.sh
+          - webserver
         env:
-        - name: EXECUTOR
-          value: Local
-        - name: LOAD_EX
-          value: "n"
         - name: POSTGRES_HOST
           value: localhost
         ports:
