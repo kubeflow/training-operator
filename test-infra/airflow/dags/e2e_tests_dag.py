@@ -26,8 +26,12 @@ dag = DAG(
     # Set schedule_interval to None
     'tf_k8s_tests', default_args=default_args, schedule_interval=None)
 
-def build_images():
+def build_images(**kwargs):
     print("Build the docker images")
+    #print("conf: {0}".format(conf))
+    print("Keyword args: {0}".format(kwargs))
+    dag_run = kwargs["dag_run"]
+    print("con args: {0}".format(dag_run.conf))
 
 def setup_cluster():
     print("setup cluster")
@@ -47,7 +51,7 @@ def delete_cluster():
 
 build_op = PythonOperator(
     task_id='build_images',
-    provide_context=False,
+    provide_context=True,
     python_callable=build_images,
     dag=dag)
 
