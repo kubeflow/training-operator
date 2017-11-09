@@ -11,9 +11,7 @@ import json
 import logging
 import os
 import shutil
-import sys
 import tempfile
-import time
 
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module
@@ -288,28 +286,28 @@ def build_local(args):
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
   go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  os.environ["GOPATH"]=go_dir
+  os.environ["GOPATH"] = go_dir
   logging.info("Temporary go_dir: %s", go_dir)
 
   src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                           util.MASTER_REPO_NAME, args.commit)
+  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit)
 
   build_and_push_artifacts(go_dir, src_dir, args.registry)
 
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
   go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  os.environ["GOPATH"]=go_dir
+  os.environ["GOPATH"] = go_dir
   logging.info("Temporary go_dir: %s", go_dir)
 
   src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
   branches = ["pull/{0}/head:pr".format(args.pr)]
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                           util.MASTER_REPO_NAME, args.commit,
-                           branches=branches)
+  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit,
+                  branches=branches)
 
   build_and_push_artifacts(go_dir, src_dir, args.registry)
 
@@ -319,7 +317,7 @@ def build_lastgreen(args):  # pylint: disable=too-many-locals
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
 
-  bucket_name, path = util.split_gcs_uri(args.releases_path)
+  bucket_name, _ = util.split_gcs_uri(args.releases_path)
   bucket = gcs_client.get_bucket(bucket_name)
 
   logging.info("Latest passing postsubmit is %s", sha)
