@@ -4,8 +4,8 @@
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
 ```sh
-mkdir -p ${GOPATH}/src/github.com/jlewi
-ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
+mkdir -p ${GOPATH}/src/github.com/tensorflow
+ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
 ```
 
   * GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
@@ -26,6 +26,22 @@ Build it
 ```sh
 go install github.com/tensorflow/k8s/cmd/tf_operator
 ```
+
+## Building all the artifacts.
+
+To build the following artifacts:
+
+  * Docker image for the operator
+  * Helm chart for deploying it
+
+You can run
+
+```sh
+python -m release.py --registry=${REGISTRY}
+```
+  * The docker image will be tagged into your registry
+  * The helm chart will be created in **./bin**
+
 
 ## Running the Operator Locally
 
