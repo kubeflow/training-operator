@@ -65,7 +65,11 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
     repo_owner: The owner for github organization.
     repo_name: The repo name.
     sha: The sha number of the repo.
-    branches: (Optional): One or more branches to fetch.
+    branches: (Optional): One or more branches to fetch. Each branch be specified
+      as "remote:local". If no sha is provided
+      we will checkout the last branch provided. If a sha is provided we
+      checkout the provided sha.
+
   Returns:
     dest: Directory where it was checked out
     sha: The sha of the code.
@@ -80,6 +84,10 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
   if branches:
     for b in branches:
       run(["git", "fetch", "origin", b,], cwd=dest)
+
+    if not sha:
+      b = branches[-1].split(":", 1)[-1]
+      run(["git", "checkout", b,], cwd=dest)
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)

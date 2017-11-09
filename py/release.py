@@ -120,6 +120,8 @@ def build_operator_image(root_dir, registry, output_path=None, project=None,
     registry: The registry to use.
     output_path: Path to write build information for.
     project: If set it will be built using GCB.
+  Returns:
+    build_info: Dictionary containing information about the build.
   """
   context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
   logging.info("context_dir: %s", context_dir)
@@ -157,8 +159,9 @@ def build_operator_image(root_dir, registry, output_path=None, project=None,
   image_base = registry + "/tf_operator"
 
   n = datetime.datetime.now()
+  commit = build_and_push_image.GetGitHash(root_dir)
   image = (image_base + ":" + n.strftime("v%Y%m%d") + "-" +
-           build_and_push_image.GetGitHash(root_dir))
+           commit)
   latest_image = image_base + ":latest"
 
   if project:
@@ -182,11 +185,15 @@ def build_operator_image(root_dir, registry, output_path=None, project=None,
       util.run(["gcloud", "docker", "--", "push", latest_image])
       logging.info("Pushed image: %s", latest_image)
 
+  output = {"image": image,
+            "commit": commit,
+            }
   if output_path:
     logging.info("Writing build information to %s", output_path)
-    output = {"image": image}
     with open(output_path, mode='w') as hf:
       yaml.dump(output, hf)
+
+  return output
 
 def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
                              gcb_project=None):
@@ -212,17 +219,24 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
 
   build_info_file = os.path.join(bin_dir, "build_info.yaml")
 
-  build_operator_image(src_dir, registry, project=gcb_project,
-                       output_path=build_info_file)
+  build_info = build_operator_image(src_dir, registry, project=gcb_project,
+                                    output_path=build_info_file)
 
   with open(build_info_file) as hf:
     build_info = yaml.load(hf)
 
+  # Copy the chart to a temporary directory because we will modify some
+  # of its YAML files.
+  chart_build_dir = tempfile.mkdtemp(prefix="tmpTfJobChartBuild")
+  shutil.copytree(os.path.join(src_dir, "tf-job-operator-chart"),
+                  os.path.join(chart_build_dir, "tf-job-operator-chart"))
   version = build_info["image"].split(":")[-1]
-  values_file = os.path.join(src_dir, "tf-job-operator-chart", "values.yaml")
+  values_file = os.path.join(chart_build_dir, "tf-job-operator-chart",
+                             "values.yaml")
   update_values(values_file, build_info["image"])
 
-  chart_file = os.path.join(src_dir, "tf-job-operator-chart", "Chart.yaml")
+  chart_file = os.path.join(chart_build_dir, "tf-job-operator-chart",
+                            "Chart.yaml")
   update_chart(chart_file, version)
 
   # Delete any existing matches because we assume there is only 1 below.
@@ -232,7 +246,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
     os.unlink(m)
 
   util.run(["helm", "package", "--destination=" + bin_dir,
-            "./tf-job-operator-chart"], cwd=src_dir)
+            "./tf-job-operator-chart"], cwd=chart_build_dir)
 
   matches = glob.glob(os.path.join(bin_dir, "tf-job-operator-chart*.tgz"))
 
@@ -250,7 +264,9 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   ]
 
   if publish_path:
+    gcs_client = storage.Client()
     bucket_name, base_path = util.split_gcs_uri(publish_path)
+    bucket = gcs_client.get_bucket(bucket_name)
     for t in targets:
       blob = bucket.blob(os.path.join(base_path, t))
       gcs_path = util.to_gcs_uri(bucket_name, t)
@@ -260,7 +276,8 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
       logging.info("Uploading %s to %s.", chart_archive, gcs_path)
       blob.upload_from_filename(chart_archive)
 
-    create_latest(bucket, sha, util.to_gcs_uri(bucket_name, targets[0]))
+    create_latest(bucket, build_info["commit"],
+                  util.to_gcs_uri(bucket_name, targets[0]))
 
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
@@ -268,21 +285,46 @@ def build_local(args):
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   build_and_push_artifacts(go_dir, src_dir, args.registry)
 
-def build_once(releases_path):  # pylint: disable=too-many-locals
-  """Build the artifacts once
+def build_postsubmit(args):
+  """Build the artifacts from a postsubmit."""
+  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  os.environ["GOPATH"]=go_dir
+  logging.info("Temporary go_dir: %s", go_dir)
 
-  Args:
-    releases_path: GCS prefix where releases should be published.
+  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                           util.MASTER_REPO_NAME, args.commit)
+
+  build_and_push_artifacts(go_dir, src_dir, args.registry)
+
+def build_pr(args):
+  """Build the artifacts from a postsubmit."""
+  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  os.environ["GOPATH"]=go_dir
+  logging.info("Temporary go_dir: %s", go_dir)
+
+  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+
+  branches = ["pull/{0}/head:pr".format(args.pr)]
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                           util.MASTER_REPO_NAME, args.commit,
+                           branches=branches)
+
+  build_and_push_artifacts(go_dir, src_dir, args.registry)
+
+def build_lastgreen(args):  # pylint: disable=too-many-locals
+  """Find the latest green postsubmit and build the artifacts.
   """
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
 
-  bucket_name, path = util.split_gcs_uri(releases_path)
+  bucket_name, path = util.split_gcs_uri(args.releases_path)
   bucket = gcs_client.get_bucket(bucket_name)
 
   logging.info("Latest passing postsubmit is %s", sha)
 
-  last_release_sha = get_last_release(bucket_name)
+  last_release_sha = get_last_release(bucket)
   logging.info("Most recent release was for %s", last_release_sha)
 
   if sha == last_release_sha:
@@ -297,7 +339,25 @@ def build_once(releases_path):  # pylint: disable=too-many-locals
   _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
                            util.MASTER_REPO_NAME, sha)
 
-  build_and_push_artifacts(go_dir, src_dir, bucket_name)
+  build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
+                           publish_path=args.releases_path,
+                           gcb_project=args.project)
+
+def add_common_args(parser):
+  """Add a set of common parser arguments."""
+
+  parser.add_argument(
+    "--registry",
+      default="gcr.io/mlkube-testing",
+      type=str,
+      help="The docker registry to use.")
+
+  parser.add_argument(
+    "--project",
+    default=None,
+    type=str,
+    help=("If specified use Google Container Builder and this project to "
+          "build artifacts."))
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
@@ -317,55 +377,83 @@ def main():  # pylint: disable=too-many-locals
       description="Build the release artifacts.")
   subparsers = parser.add_subparsers()
 
+  ############################################################################
+  # local
+  #
   # Create the parser for the "local" mode.
   # This mode builds the artifacts from the local copy of the code.
+
   parser_local = subparsers.add_parser(
     "local",
     help="Build the artifacts from the local copy of the code.")
-  parser.add_argument(
-    "--registry",
-      default="gcr.io/mlkube-testing",
-      type=str,
-      help="The docker registry to use.")
-  #parser_local.add_argument('y', type=float)
+
+  add_common_args(parser_local)
   parser_local.set_defaults(func=build_local)
 
-  #>>> # create the parser for the "bar" command
-  #>>> parser_bar = subparsers.add_parser('bar')
-  #>>> parser_bar.add_argument('z')
-  #>>> parser_bar.set_defaults(func=bar)
-  #>>>
+  # Build a particular postsubmit hash.
+  parser_postsubmit = subparsers.add_parser(
+    "postsubmit",
+    help="Build the artifacts from a postsbumit.")
+
+  add_common_args(parser_postsubmit)
+
+  parser_postsubmit.add_argument(
+    "--commit",
+      default=None,
+      type=str,
+      help="Optional a particular commit to checkout and build.")
+  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  ############################################################################
+  # Last Green
+  parser_lastgreen = subparsers.add_parser(
+    "lastgreen",
+    help=("Build the artifacts from the latst green postsubmit. "
+          "Will not rebuild the artifacts if they have already been built."))
+
+  add_common_args(parser_lastgreen)
+
+  parser_lastgreen.add_argument(
+    "--releases_path",
+    default=None,
+    required=True,
+    type=str,
+    help="The GCS location where artifacts should be pushed.")
+
+  ############################################################################
+  # Pull Request
+  parser_pr = subparsers.add_parser(
+    "pr",
+    help=("Build the artifacts from the specified pull request. "))
+
+  add_common_args(parser_pr)
+
+  parser_pr.add_argument(
+    "--pr",
+      required=True,
+      type=str,
+      help="The PR to build.")
+  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_pr.add_argument(
+    "--commit",
+      default=None,
+      type=str,
+      help="Optional a particular commit to checkout and build.")
+  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_pr.add_argument(
+    "--releases_path",
+    default=None,
+    required=False,
+    type=str,
+    help="The GCS location where artifacts should be pushed.")
+
+  parser_pr.set_defaults(func=build_pr)
+
   # parse the args and call whatever function was selected
   args = parser.parse_args()
   args.func(args)
-
-  #parser.add_argument(
-      #"--releases_path",
-      #default=None,
-      #required=True,
-      #type=str,
-      #help="The GCS location where artifacts should be pushed.")
-
-  #parser.add_argument(
-    #"--check_interval_secs",
-      #default=0,
-      #type=int,
-      #help=("How often to periodically check to see if there is a new passing "
-            #"postsubmit. If set to 0 (default) script will run once and exit."))
-
-  # TODO(jlewi): Should pass along unknown arguments to build and push.
-  #args, _ = parser.parse_known_args()
-
-  #while True:
-    #logging.info("Checking latest postsubmit results")
-    #build_once(args.releases_bucket)
-
-    #if args.check_interval_secs > 0:
-      #logging.info("Sleep %s seconds before checking for a postsubmit.",
-                   #args.check_interval_secs)
-      #time.sleep(args.check_interval_secs)
-    #else:
-      #break
 
 if __name__ == "__main__":
   main()
