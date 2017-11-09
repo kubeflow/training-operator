@@ -27,7 +27,7 @@ Build it
 go install github.com/tensorflow/k8s/cmd/tf_operator
 ```
 
-## Runing the Operator Locally
+## Running the Operator Locally
 
 Running the operator locally (as opposed to deploying it on a K8s cluster) is convenient for debugging/development.
 

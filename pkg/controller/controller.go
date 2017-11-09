@@ -177,9 +177,7 @@ func (c *Controller) findAllTfJobs() (string, error) {
 		return "", err
 	}
 
-	for i := range jobList.Items {
-		clus := jobList.Items[i]
-
+	for _, clus := range jobList.Items {
 		if clus.Status.IsFailed() {
 			log.Infof("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
 			continue
