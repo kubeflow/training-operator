@@ -110,13 +110,11 @@ def create_latest(bucket, sha, target):
   blob.upload_from_string(json.dumps(data))
 
 
-def build_operator_image(root_dir, registry, output_path=None, project=None,
-                         should_push=True):
+def build_operator_image(root_dir, registry, project=None, should_push=True):
   """Build the main docker image for the TfJob CRD.
   Args:
     root_dir: Root directory of the repository.
     registry: The registry to use.
-    output_path: Path to write build information for.
     project: If set it will be built using GCB.
   Returns:
     build_info: Dictionary containing information about the build.
@@ -183,18 +181,14 @@ def build_operator_image(root_dir, registry, output_path=None, project=None,
       util.run(["gcloud", "docker", "--", "push", latest_image])
       logging.info("Pushed image: %s", latest_image)
 
-  output = {"image": image,
-            "commit": commit,
-            }
-  if output_path:
-    logging.info("Writing build information to %s", output_path)
-    with open(output_path, mode='w') as hf:
-      yaml.dump(output, hf)
-
+  output = {
+    "image": image,
+    "commit": commit,
+  }
   return output
 
 def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
-                             gcb_project=None):
+                             gcb_project=None, build_info_path=None):
   """Build and push the artifacts.
 
   Args:
@@ -205,6 +199,8 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
        Set to none to only build locally.
     gcb_project: The project to use with GCB to build docker images.
       If set to none uses docker to build.
+    build_info_path: (Optional): GCS location to write YAML file containing
+      information about the build.
   """
   # Update the GOPATH to the temporary directory.
   env = os.environ.copy()
@@ -215,13 +211,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
 
-  build_info_file = os.path.join(bin_dir, "build_info.yaml")
-
-  build_info = build_operator_image(src_dir, registry, project=gcb_project,
-                                    output_path=build_info_file)
-
-  with open(build_info_file) as hf:
-    build_info = yaml.load(hf)
+  build_info = build_operator_image(src_dir, registry, project=gcb_project)
 
   # Copy the chart to a temporary directory because we will modify some
   # of its YAML files.
@@ -268,6 +258,8 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
     for t in targets:
       blob = bucket.blob(os.path.join(base_path, t))
       gcs_path = util.to_gcs_uri(bucket_name, t)
+      if not t.startswith("latest"):
+        build_info["gcs_package"] = gcs_path
       if blob.exists() and not t.startswith("latest"):
         logging.warn("%s already exists", gcs_path)
         continue
@@ -277,11 +269,33 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
     create_latest(bucket, build_info["commit"],
                   util.to_gcs_uri(bucket_name, targets[0]))
 
+  # Always write to the bin dir.
+  build_info_file = os.path.join(bin_dir, "build_info.yaml")
+
+  logging.info("Writing build information to %s", build_info_file)
+  with open(build_info_file, mode='w') as hf:
+    yaml.dump(build_info, hf)
+
+  if build_info_path:
+    logging.info("Writing build information to %s", build_info_path)
+    bucket_name, path = util.split_gcs_uri(build_info_path)
+    gcs_client = storage.Client()
+    bucket = gcs_client.get_bucket(bucket_name)
+    blob = bucket.blob(path)
+    blob.upload_from_filename(build_info_file)
+
+
+def build_and_push(go_dir, src_dir, args):
+  build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
+                           publish_path=args.releases_path,
+                           gcb_project=args.project,
+                           build_info_path=args.build_info_path)
+
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
   go_dir = None
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-  build_and_push_artifacts(go_dir, src_dir, args.registry)
+  build_and_push(go_dir, src_dir, args)
 
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
@@ -294,7 +308,7 @@ def build_postsubmit(args):
   util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
                   util.MASTER_REPO_NAME, args.commit)
 
-  build_and_push_artifacts(go_dir, src_dir, args.registry)
+  build_and_push(go_dir, src_dir, args)
 
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
@@ -309,7 +323,7 @@ def build_pr(args):
                   util.MASTER_REPO_NAME, args.commit,
                   branches=branches)
 
-  build_and_push_artifacts(go_dir, src_dir, args.registry)
+  build_and_push(go_dir, src_dir, args)
 
 def build_lastgreen(args):  # pylint: disable=too-many-locals
   """Find the latest green postsubmit and build the artifacts.
@@ -337,9 +351,7 @@ def build_lastgreen(args):  # pylint: disable=too-many-locals
   _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
                            util.MASTER_REPO_NAME, sha)
 
-  build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
-                           publish_path=args.releases_path,
-                           gcb_project=args.project)
+  build_and_push(go_dir, src_dir, args)
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
@@ -357,25 +369,27 @@ def add_common_args(parser):
     help=("If specified use Google Container Builder and this project to "
           "build artifacts."))
 
+  parser.add_argument(
+    "--releases_path",
+    default=None,
+    required=False,
+    type=str,
+    help="The GCS location where artifacts should be pushed.")
+
+  parser.add_argument(
+    "--build_info_path",
+    default="",
+    type=str,
+    help="(Optional). The GCS location to write build info to.")
+
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
-  this_dir = os.path.dirname(__file__)
-  version_file = os.path.join(this_dir, "version.json")
-  if os.path.exists(version_file):
-    # Print out version information so we know what container we ran in.
-    with open(version_file) as hf:
-      version = json.load(hf)
-      logging.info("Image info:\n%s", json.dumps(version, indent=2,
-                                                 sort_keys=True))
-  else:
-    logging.warn("Could not find file: %s", version_file)
-
   # create the top-level parser
   parser = argparse.ArgumentParser(
       description="Build the release artifacts.")
   subparsers = parser.add_subparsers()
 
-  ############################################################################
+  #############################################################################
   # local
   #
   # Create the parser for the "local" mode.
@@ -411,13 +425,6 @@ def main():  # pylint: disable=too-many-locals
 
   add_common_args(parser_lastgreen)
 
-  parser_lastgreen.add_argument(
-    "--releases_path",
-    default=None,
-    required=True,
-    type=str,
-    help="The GCS location where artifacts should be pushed.")
-
   ############################################################################
   # Pull Request
   parser_pr = subparsers.add_parser(
@@ -439,13 +446,6 @@ def main():  # pylint: disable=too-many-locals
       type=str,
       help="Optional a particular commit to checkout and build.")
   parser_postsubmit.set_defaults(func=build_postsubmit)
-
-  parser_pr.add_argument(
-    "--releases_path",
-    default=None,
-    required=False,
-    type=str,
-    help="The GCS location where artifacts should be pushed.")
 
   parser_pr.set_defaults(func=build_pr)
 

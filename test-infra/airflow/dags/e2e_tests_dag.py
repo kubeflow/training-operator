@@ -72,19 +72,6 @@ def clone_repo(work_dir, repo_owner, repo_name, pull_number="",
   # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
   sha = ""
 
-  if pull_number:
-    sha = pull_pull_sha
-    # Its a presubmit job sob since we are testing a Pull request.
-    run(["git", "fetch", "origin",
-         "pull/{0}/head:pr".format(pull_number)],
-         cwd=dest)
-  else:
-    # For postsubmits PULL_BASE_SHA will be set
-    sha = pull_base_sha
-
-  if sha:
-    util.run(["git", "checkout", sha], cwd=dest)
-
   # Get the actual git hash.
   # This ensures even for periodic jobs which don't set the sha we know
   # the version of the code tested.
@@ -128,17 +115,20 @@ def build_images(dag_run=None, **kwargs):
   repo_name = conf.get("REPO_NAME", DEFAULT_REPO_NAME)
 
   pull_number = conf.get("PULL_NUMBER", "")
-  pull_pull_sha = conf.get("PULL_PULL_SHA", "")
-  pull_base_sha = conf.get("PULL_BASE_SHA", "")
+  args = ["python", "-m", "py.release"]
+  if pull_number:
+    commit = conf.get("PULL_PULL_SHA", "")
+    args.append("pr")
+    args.append("--pr=" + pull_number)
+    if commit:
+      args.append("--commit=" + commit)
+  else:
+    commit = conf.get("PULL_BASE_SHA", "")
+    args.append("postsubmit")
+    if commit:
+      args.append("--commit=" + commit)
 
-  clone_repo(work_dir, repo_owner, repo_name, pull_number=pull_number,
-             pull_pull_sha=pull_pull_sha, pull_base_sha=pull_base_sha)
-
-  # Create a directory to use as the GOPATH
-  go_path = os.path.join(work_dir, "go")
-  go_src = os.path.join(go_path, "src")
-  if not os.path.exists(go_src):
-    os.makedirs(go_src)
+  util.run(args)
 
 def setup_cluster():
   print("setup cluster")
