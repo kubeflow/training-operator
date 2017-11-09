@@ -13,6 +13,8 @@ import tempfile
 
 import yaml
 
+# TODO(jlewi): build_and_push.py should be obsolete. We should be able to
+# use py/release.py
 
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
@@ -30,7 +32,7 @@ def GetGitHash(root_dir):
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
-    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
+    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)  # pylint: disable=redefined-variable-type
 
   return git_hash
 

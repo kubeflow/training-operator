@@ -11,19 +11,24 @@ import tempfile
 
 import jinja2
 
-def GetGitHash():
+def GetGitHash(root_dir=None):
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
+                                     cwd=root_dir).decode("utf-8")
   git_hash = git_hash.strip()
-  modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
-  untracked_files = subprocess.check_output(["git", "ls-files", "--others",
-                                             "--exclude-standard"])
+
+  modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
+                                           cwd=root_dir)
+  untracked_files = subprocess.check_output(
+      ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   if modified_files or untracked_files:
-    diff = subprocess.check_output(["git", "diff"])
+    diff = subprocess.check_output(["git", "diff"], cwd=root_dir)
+
     sha = hashlib.sha256()
     sha.update(diff)
     diffhash = sha.hexdigest()[0:7]
-    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
+    git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)  # pylint: disable=redefined-variable-type
+
   return git_hash
 
 def run_and_stream(cmd):

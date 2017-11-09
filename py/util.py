@@ -4,6 +4,7 @@ from __future__ import print_function
 import datetime
 import logging
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -32,7 +33,7 @@ def run(command, cwd=None, env=None):
 
   try:
     output = subprocess.check_output(command, cwd=cwd, env=env,
-                                     stderr=subprocess.STDOUT)
+                                     stderr=subprocess.STDOUT).decode("utf-8")
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
@@ -56,7 +57,7 @@ def run_and_output(command, cwd=None, env=None):
 
 
 def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
-               sha=None):
+               sha=None, branches=None):
   """Clone the repo,
 
   Args:
@@ -64,6 +65,10 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
     repo_owner: The owner for github organization.
     repo_name: The repo name.
     sha: The sha number of the repo.
+    branches: (Optional): One or more branches to fetch. Each branch be specified
+      as "remote:local". If no sha is provided
+      we will checkout the last branch provided. If a sha is provided we
+      checkout the provided sha.
 
   Returns:
     dest: Directory where it was checked out
@@ -75,6 +80,14 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 
   # TODO(jlewi): How can we figure out what branch
   run(["git", "clone", repo, dest])
+
+  if branches:
+    for b in branches:
+      run(["git", "fetch", "origin", b,], cwd=dest)
+
+    if not sha:
+      b = branches[-1].split(":", 1)[-1]
+      run(["git", "checkout", b,], cwd=dest)
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
@@ -332,3 +345,12 @@ def setup_cluster(api_client):
 
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
+
+GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+
+def split_gcs_uri(gcs_uri):
+  """Split a GCS URI into bucket and path."""
+  m = GCS_REGEX.match(gcs_uri)
+  bucket = m.group(1)
+  path = m.group(2)
+  return bucket, path
