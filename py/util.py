@@ -13,6 +13,7 @@ import yaml
 
 from googleapiclient import errors
 from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -21,7 +22,7 @@ MASTER_REPO_OWNER = "tensorflow"
 MASTER_REPO_NAME = "k8s"
 
 
-def run(command, cwd=None, env=None):
+def run(command, cwd=None, env=None, use_print=False):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
@@ -34,9 +35,20 @@ def run(command, cwd=None, env=None):
   try:
     output = subprocess.check_output(command, cwd=cwd, env=env,
                                      stderr=subprocess.STDOUT).decode("utf-8")
-    logging.info("Subprocess output:\n%s", output)
+
+    if use_print:
+      # With Airflow use print to bypass logging module.
+      print("Subprocess output:\n")
+      print(output)
+    else:
+      logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
-    logging.info("Subprocess output:\n%s", e.output)
+    if use_print:
+      # With Airflow use print to bypass logging module.
+      print("Subprocess output:\n")
+      print(output)
+    else:
+      logging.info("Subprocess output:\n%s", e.output)
     raise
 
 def run_and_output(command, cwd=None, env=None):

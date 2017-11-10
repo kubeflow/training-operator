@@ -233,7 +233,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
     logging.info("Delete previous build: %s", m)
     os.unlink(m)
 
-  util.run(["helm", "package", "--destination=" + bin_dir,
+  util.run(["helm", "package", "--save=false", "--destination=" + bin_dir,
             "./tf-job-operator-chart"], cwd=chart_build_dir)
 
   matches = glob.glob(os.path.join(bin_dir, "tf-job-operator-chart*.tgz"))
@@ -252,14 +252,14 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   ]
 
   if publish_path:
-    gcs_client = storage.Client()
+    gcs_client = storage.Client(project=gcb_project)
     bucket_name, base_path = util.split_gcs_uri(publish_path)
     bucket = gcs_client.get_bucket(bucket_name)
     for t in targets:
       blob = bucket.blob(os.path.join(base_path, t))
-      gcs_path = util.to_gcs_uri(bucket_name, t)
+      gcs_path = util.to_gcs_uri(bucket_name, blob.name)
       if not t.startswith("latest"):
-        build_info["gcs_package"] = gcs_path
+        build_info["helm_chart"] = gcs_path
       if blob.exists() and not t.startswith("latest"):
         logging.warn("%s already exists", gcs_path)
         continue
@@ -277,9 +277,9 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
     yaml.dump(build_info, hf)
 
   if build_info_path:
+    gcs_client = storage.Client(project=gcb_project)
     logging.info("Writing build information to %s", build_info_path)
     bucket_name, path = util.split_gcs_uri(build_info_path)
-    gcs_client = storage.Client()
     bucket = gcs_client.get_bucket(bucket_name)
     blob = bucket.blob(path)
     blob.upload_from_filename(build_info_file)

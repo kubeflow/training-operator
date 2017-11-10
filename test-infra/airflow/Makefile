@@ -37,11 +37,12 @@ push: build
 # This is a helper command to restart Airflow for local testing
 debug: build
 	docker rm -f airflow
+	# docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v /home/jlewi/git_training:/opt/tensorflow_k8s -v /home/jlewi/git_training/test-infra/airflow/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
 	docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v /home/jlewi/git_training/test-infra/airflow/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
 
 # Start the postgre container locally for debugging
 postgre:
-	docker rm -f postgre
+	# docker rm -f postgre
 	docker run -d --network=airflow --name=postgre -p 5432:5432 -e POSTGRES_USER=airflow -e POSTGRES_PASSWORD=airflow -e POSTGRES_DB=airflow postgres:9.6
 
 
