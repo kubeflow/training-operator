@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/tensorflow/k8s/pkg/spec"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -75,6 +76,7 @@ func (c *TfJobRestClient) Client() *http.Client {
 }
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
+	host = strings.TrimRight(host, "/")
 	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/%s?watch=true&resourceVersion=%s",
 		host, spec.CRDGroup, spec.CRDVersion, spec.CRDKindPlural, resourceVersion))
 }
