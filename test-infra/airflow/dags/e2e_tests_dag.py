@@ -35,62 +35,20 @@ dag = DAG(
 DEFAULT_REPO_OWNER = "tensorflow"
 DEFAULT_REPO_NAME = "k8s"
 
-# TODO(jlewi): Can we eliminate code duplication with bootstrap.py? Although
-# bootstrap.py should potentially not need to clone repo once we update it
-# to just trigger Airflow jobs.
-# TODO(jlewi): Can we merge with util.clone_repo?
-def clone_repo(work_dir, repo_owner, repo_name, pull_number="",
-               pull_pull_sha="", pull_base_sha=""):
-  """Clone the repo.
+# GCS path to use for each dag run
+GCS_RUNS_PATH = "gs://mlkube-testing-airflow/runs"
 
-  Args:
-    work_dir: The directory to use as the working directory.
+GCB_PROJECT = "mlkube-testing"
 
-  Returns:
-    src_path: This is the root path for the training code.
-    sha: The sha number of the repo.
-  """
-  # Need to import it here so it works when actually invoked by Airflow.
-  import shutil
-  go_path = os.path.join(work_dir, "go")
+def run_path(dag_id, run_id):
+  return os.path.join(GCS_RUNS_PATH, dag_id.replace(":", "_"),
+                      run_id.replace(":", "_"))
 
-  if bool(repo_owner) != bool(repo_name):
-    raise ValueError("Either set both environment variables "
-                         "REPO_OWNER and REPO_NAME or set neither.")
-
-  src_dir = os.path.join(go_path, "src/github.com", DEFAULT_REPO_OWNER)
-  dest = os.path.join(src_dir, DEFAULT_REPO_NAME)
-
-  # Clone the repo
-  repo = "https://github.com/{0}/{1}.git".format(repo_owner, repo_name)
-  os.makedirs(src_dir)
-
-  # TODO(jlewi): How can we figure out what branch
-  util.run(["git", "clone", repo, dest])
-
-  # If this is a presubmit PULL_PULL_SHA will be set see:
-  # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
-  sha = ""
-
-  # Get the actual git hash.
-  # This ensures even for periodic jobs which don't set the sha we know
-  # the version of the code tested.
-  sha = util.run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
-
-  # Install dependencies
-  # TODO(jlewi): We should probably move this into runner.py so that
-  # output is captured in build-log.txt
-  env = os.environ.copy()
-  env["GOPATH"] = go_path
-  util.run(["glide", "install"], cwd=dest, env=env)
-
-  # We need to remove the vendored dependencies of apiextensions otherwise we
-  # get type conflicts.
-  shutil.rmtree(os.path.join(dest,
-                             "vendor/k8s.io/apiextensions-apiserver/vendor"))
-
-  return dest, sha
-
+class FakeDagrun(object):
+  def __init__(self):
+    self.dag_id = "tf_k8s_tests"
+    self.run_id = "test_run"
+    self.conf = {}
 
 def build_images(dag_run=None, **kwargs):
   """
@@ -100,12 +58,18 @@ def build_images(dag_run=None, **kwargs):
   """
   # Create a temporary directory suitable for checking out and building the
   # code.
+  if not dag_run:
+    # When running via airflow test dag_run isn't set
+    logging.warn("Using fake dag_run")
+    dag_run = FakeDagrun()
+
   logging.info("dag_id: %s", dag_run.dag_id)
   logging.info("run_id: %s", dag_run.run_id)
+
+  gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
+  logging.info("gcs_path %s", gcs_path)
+
   work_dir = os.path.join(tempfile.gettempdir(), dag_run.dag_id, dag_run.run_id)
-  # : cause problems with go paths.
-  work_dir = work_dir.replace(":", "_")
-  logging.info("Using working directory: %s", work_dir)
 
   conf = dag_run.conf
   if not conf:
@@ -128,7 +92,12 @@ def build_images(dag_run=None, **kwargs):
     if commit:
       args.append("--commit=" + commit)
 
-  util.run(args)
+  args.append("--build_info_path=" + os.path.join(gcs_path, "build_info.yaml"))
+  args.append("--releases_path=" + os.path.join(gcs_path))
+  args.append("--project=" + GCB_PROJECT)
+  # We want subprocess output to bypass logging module otherwise multiline
+  # output is squashed together.
+  util.run(args, use_print=True)
 
 def setup_cluster():
   print("setup cluster")

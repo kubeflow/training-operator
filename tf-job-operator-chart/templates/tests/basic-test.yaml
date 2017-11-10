@@ -3,6 +3,10 @@ kind: Pod
 metadata:
   # We give the pod a random name so that we can run helm test multiple times and not
   # have issues because the pod already exists.
+  #
+  # TODO(jlewi): I think the randAlphaNum is evaluated when you do deploy.
+  # So running helm test tf-job multiple times causes problems because it will
+  # end up using the same pod.
   name: "{{.Release.Name}}-tfjob-test-{{randAlphaNum 6 | lower }}"
   annotations:
     # See https://github.com/kubernetes/helm/blob/master/docs/chart_tests.md
@@ -16,4 +20,8 @@ spec:
         - -alsologtostderr
         - --image={{ .Values.test_image }}
         - -v=1
+  {{ if .Values.rbac.install }}
+  serviceAccount: tf-job-operator
+  serviceAccountName: tf-job-operator
+  {{ end }}
   restartPolicy: Never
