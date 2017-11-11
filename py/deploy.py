@@ -12,7 +12,9 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import tempfile
+import time
 
 import kubernetes
 from kubernetes import client as k8s_client
@@ -21,6 +23,7 @@ from kubernetes import config as k8s_config
 from googleapiclient import discovery, errors
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
+from py import test_util
 from py import util
 
 def setup(args):
@@ -93,16 +96,39 @@ def setup(args):
     logging.info("Downloading %s to %", remote, chart)
     blob.download_to_filename(chart)
 
-  util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
-            "--set", "rbac.install=true,cloud=gke"])
+
+  t = test_util.TestCase()
+  try:
+    start = time.time()
+    util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
+              "--set", "rbac.install=true,cloud=gke"])
+  except subprocess.CalledProcessError as e:
+    t.failure = "helm install failed;\n" + e.output
+  finally:
+    t.time = time.time() - start
+    t.name = "helm-tfjob-install"
+    t.class_name = "GKE"
+    test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
 def test(args):
   """Run the tests."""
+  gcs_client = storage.Client(project=args.project)
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
   util.configure_kubectl(project, zone, cluster_name)
-  util.run(["helm", "test", "tf-job"])
+
+  t = test_util.TestCase()
+  try:
+    start = time.time()
+    util.run(["helm", "test", "tf-job"])
+  except subprocess.CalledProcessError as e:
+    t.failure = "helm test failed;\n" + e.output
+  finally:
+    t.time = time.time() - start
+    t.name = "e2e-test"
+    t.class_name = "GKE"
+    test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
 def teardown(args):
   """Teardown the resources."""
@@ -129,6 +155,12 @@ def add_common_args(parser):
     default="us-east1-d",
     type=str,
     help=("The zone for the cluster."))
+
+  parser.add_argument(
+    "--junit_path",
+    default="",
+    type=str,
+    help="Where to write the junit xml file with the results.")
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
@@ -169,7 +201,7 @@ def main():  # pylint: disable=too-many-locals
   parser_teardown = subparsers.add_parser(
     "teardown",
     help="Teardown the cluster.")
-  parser_teardown.set_defaults(func=setup)
+  parser_teardown.set_defaults(func=teardown)
   add_common_args(parser_teardown)
 
   # parse the args and call whatever function was selected
