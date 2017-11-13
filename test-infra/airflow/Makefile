@@ -14,7 +14,7 @@
 
 IMG = gcr.io/mlkube-testing/airflow
 TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | sha256sum | cut -c -6)
-
+DIR := ${CURDIR}
 
 all: build
 
@@ -33,16 +33,15 @@ push: build
 	gcloud docker -- push $(IMG):latest
 	@echo Pushed $(IMG) with :latest and :$(TAG) tags
 
-# TODO(jlewi): Don't commit this.
-# This is a helper command to restart Airflow for local testing
-debug: build
-	docker rm -f airflow
-	# docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v /home/jlewi/git_training:/opt/tensorflow_k8s -v /home/jlewi/git_training/test-infra/airflow/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
-	docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v /home/jlewi/git_training/test-infra/airflow/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
+# Start Airflow locally for debugging/development and mount the DAGs as a
+# volume mount so that we can pick up changes without restarting the container.
+run_airflow: build
+	-docker rm -f airflow
+	docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v ${DIR}/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
 
 # Start the postgre container locally for debugging
-postgre:
-	# docker rm -f postgre
+run_postgre:
+	-docker rm -f postgre
 	docker run -d --network=airflow --name=postgre -p 5432:5432 -e POSTGRES_USER=airflow -e POSTGRES_PASSWORD=airflow -e POSTGRES_DB=airflow postgres:9.6
 
 

@@ -1,5 +1,5 @@
 import logging
-import StringIO
+import six
 
 from py import util
 from xml.etree import ElementTree
@@ -49,7 +49,7 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
   t = ElementTree.ElementTree(root)
   logging.info("Creationg %s", output_path)
   if output_path.startswith("gs://"):
-    b = StringIO.StringIO()
+    b = six.StringIO()
     t.write(b)
 
     bucket_name, path = util.split_gcs_uri(output_path)

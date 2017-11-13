@@ -270,22 +270,48 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
                   util.to_gcs_uri(bucket_name, targets[0]))
 
   # Always write to the bin dir.
-  build_info_file = os.path.join(bin_dir, "build_info.yaml")
-
-  logging.info("Writing build information to %s", build_info_file)
-  with open(build_info_file, mode='w') as hf:
-    yaml.dump(build_info, hf)
+  paths = [os.path.join(bin_dir, "build_info.yaml")]
 
   if build_info_path:
-    gcs_client = storage.Client(project=gcb_project)
-    logging.info("Writing build information to %s", build_info_path)
-    bucket_name, path = util.split_gcs_uri(build_info_path)
-    bucket = gcs_client.get_bucket(bucket_name)
-    blob = bucket.blob(path)
-    blob.upload_from_filename(build_info_file)
+    paths.append(build_info_path)
 
+  write_build_info(build_info, paths, project=gcb_project)
+
+def write_build_info(build_info, paths, project=None):
+  """Write the build info files.
+  """
+  gcs_client = None
+
+  contents = yaml.dump(build_info)
+
+  for p in paths:
+    logging.info("Writing build information to %s", p)
+    if p.startswith("gs://"):
+      if not gcs_client:
+        gcs_client = storage.Client(project=project)
+      bucket_name, path = util.split_gcs_uri(p)
+      bucket = gcs_client.get_bucket(bucket_name)
+      blob = bucket.blob(path)
+      blob.upload_from_string(contents)
+
+    else:
+      with open(p, mode='w') as hf:
+        hf.write(contents)
 
 def build_and_push(go_dir, src_dir, args):
+  if args.dryrun:
+    logging.info("dryrun...")
+    # In dryrun mode we want to produce the build info file because this
+    # is needed to test xcoms with Airflow.
+    if args.build_info_path:
+      paths = [args.build_info_path]
+      build_info = {
+        "image": "gcr.io/dryrun/dryrun:latest",
+        "commit": "1234abcd",
+        "helm_package": "gs://dryrun/dryrun.latest.",
+      }
+      write_build_info(build_info, paths, project=args.project)
+    return
   build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
                            publish_path=args.releases_path,
                            gcb_project=args.project,
@@ -381,6 +407,12 @@ def add_common_args(parser):
     default="",
     type=str,
     help="(Optional). The GCS location to write build info to.")
+
+  parser.add_argument("--dryrun", dest="dryrun", action="store_true",
+                      help="Do a dry run.")
+  parser.add_argument("--no-dryrun", dest="dryrun", action="store_false",
+                      help="Don't do a dry run.")
+  parser.set_defaults(dryrun=False)
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals

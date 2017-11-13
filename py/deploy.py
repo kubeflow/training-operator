@@ -137,7 +137,7 @@ def teardown(args):
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
-  util.delete_cluster(gke, name, project, zone)
+  util.delete_cluster(gke, cluster_name, project, zone)
 
 def add_common_args(parser):
   parser.add_argument(

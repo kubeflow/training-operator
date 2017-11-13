@@ -22,7 +22,7 @@ MASTER_REPO_OWNER = "tensorflow"
 MASTER_REPO_NAME = "k8s"
 
 
-def run(command, cwd=None, env=None, use_print=False):
+def run(command, cwd=None, env=None, use_print=False, dryrun=False):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
@@ -33,6 +33,14 @@ def run(command, cwd=None, env=None, use_print=False):
     env = os.environ
 
   try:
+    if dryrun:
+      command_str = ("Dryrun: Command:\n{0}\nCWD:\n{1}\n"
+                     "Environment:\n{2}").format(" ".join(command), cwd, env)
+      if use_print:
+        print(command_str)
+      else:
+        logging.info(command_str)
+      return
     output = subprocess.check_output(command, cwd=cwd, env=env,
                                      stderr=subprocess.STDOUT).decode("utf-8")
 
@@ -46,7 +54,7 @@ def run(command, cwd=None, env=None, use_print=False):
     if use_print:
       # With Airflow use print to bypass logging module.
       print("Subprocess output:\n")
-      print(output)
+      print(e.output)
     else:
       logging.info("Subprocess output:\n%s", e.output)
     raise

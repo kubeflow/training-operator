@@ -10,6 +10,10 @@ import os
 import tempfile
 from py import release
 from py import util
+from google.cloud import storage  # pylint: disable=no-name-in-module
+import six
+import uuid
+import yaml
 
 default_args = {
   'owner': 'airflow',
@@ -19,16 +23,11 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-    # 'queue': 'bash_queue',
-    # 'pool': 'backfill',
-    # 'priority_weight': 10,
-    # 'end_date': datetime(2016, 1, 1),
 }
 
 dag = DAG(
   # Set schedule_interval to None
-    'tf_k8s_tests', default_args=default_args, schedule_interval=None)
+  'tf_k8s_tests', default_args=default_args, schedule_interval=None)
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
@@ -50,7 +49,7 @@ class FakeDagrun(object):
     self.run_id = "test_run"
     self.conf = {}
 
-def build_images(dag_run=None, **kwargs):
+def build_images(dag_run=None, ti=None, **kwargs):
   """
   Args:
     dag_run: A DagRun object. This is passed in as a result of setting
@@ -92,28 +91,113 @@ def build_images(dag_run=None, **kwargs):
     if commit:
       args.append("--commit=" + commit)
 
-  args.append("--build_info_path=" + os.path.join(gcs_path, "build_info.yaml"))
+  dryrun = bool(conf.get("dryrun", False))
+
+  build_info_file = os.path.join(gcs_path, "build_info.yaml")
+  args.append("--build_info_path=" + build_info_file)
   args.append("--releases_path=" + os.path.join(gcs_path))
   args.append("--project=" + GCB_PROJECT)
+
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True)
+  util.run(args, use_print=True, dryrun=dryrun)
 
-def setup_cluster():
-  print("setup cluster")
+  # Read the output yaml and publish relevant values to xcom.
+  if not dryrun:
+    gcs_client = storage.Client(project=GCB_PROJECT)
+    logging.info("Reading %s", build_info_file)
+    bucket_name, build_path = util.split_gcs_uri(build_info_file)
+    bucket = gcs_client.get_bucket(bucket_name)
+    blob = bucket.blob(build_path)
+    contents = blob.download_as_string()
+    build_info = yaml.load(contents)
+  else:
+    build_info = {
+      "image": "gcr.io/dryrun/dryrun:latest",
+      "commit": "1234abcd",
+      "helm_chart": "gs://dryrun/dryrun.latest.",
+    }
+  for k, v in six.iteritems(build_info):
+    logging.info("xcom push: %s=%s", k, v)
+    ti.xcom_push(key=k, value=v)
 
-def create_cluster():
-  print("Create cluster")
+def setup_cluster(dag_run=None, ti=None, **kwargs):
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
 
-def deploy_crd():
-  print("Deploy crd")
+  dryrun = bool(conf.get("dryrun", False))
 
-def run_tests():
-  print("Run tests")
+  chart = ti.xcom_pull("build_images", key="helm_chart")
 
-def delete_cluster():
-  print("Delete cluster")
+  now = datetime.now()
+  cluster = "e2e-" + now.strftime("%m%d-%H%M") + uuid.uuid4().hex[0:4]
+  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
+                            "junit_setup_cluster.xml")
+  logging.info("junit_path %s", junit_path)
 
+  args = ["python", "-m", "py.deploy", "setup"]
+  args.append("--cluster=" + cluster)
+  args.append("--junit_path=" + junit_path)
+  args.append("--project=" + GCB_PROJECT)
+  args.append("--chart=" + chart)
+
+  # We want subprocess output to bypass logging module otherwise multiline
+  # output is squashed together.
+  util.run(args, use_print=True, dryrun=dryrun)
+
+  values = {
+    "cluster": cluster,
+  }
+  for k, v in six.iteritems(values):
+    logging.info("xcom push: %s=%s", k, v)
+    ti.xcom_push(key=k, value=v)
+
+def run_tests(dag_run=None, ti=None, **kwargs):
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
+
+  dryrun = bool(conf.get("dryrun", False))
+
+  cluster = ti.xcom_pull("setup_cluster", key="cluster")
+
+  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
+                            "junit_e2e.xml")
+  logging.info("junit_path %s", junit_path)
+  ti.xcom_push(key="cluster", value=cluster)
+
+  args = ["python", "-m", "py.deploy", "test"]
+  args.append("--cluster=" + cluster)
+  args.append("--junit_path=" + junit_path)
+  args.append("--project=" + GCB_PROJECT)
+
+  # We want subprocess output to bypass logging module otherwise multiline
+  # output is squashed together.
+  util.run(args, use_print=True, dryrun=dryrun)
+
+def teardown_cluster(dag_run=None, ti=None, **kwargs):
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
+
+  dryrun = bool(conf.get("dryrun", False))
+
+  cluster = ti.xcom_pull("setup_cluster", key="cluster")
+
+  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
+                            "junit_teardown.xml")
+  logging.info("junit_path %s", junit_path)
+  ti.xcom_push(key="cluster", value=cluster)
+
+  args = ["python", "-m", "py.deploy", "teardown"]
+  args.append("--cluster=" + cluster)
+  args.append("--junit_path=" + junit_path)
+  args.append("--project=" + GCB_PROJECT)
+
+  # We want subprocess output to bypass logging module otherwise multiline
+  # output is squashed together.
+  util.run(args, use_print=True, dryrun=dryrun)
 
 build_op = PythonOperator(
   task_id='build_images',
@@ -121,42 +205,26 @@ build_op = PythonOperator(
     python_callable=build_images,
     dag=dag)
 
-#create_cluster_op = PythonOperator(
-  #task_id='create_cluster',
-    #provide_context=False,
-    #python_callable=create_cluster,
-    #dag=dag)
+setup_cluster_op = PythonOperator(
+  task_id='setup_cluster',
+    provide_context=True,
+    python_callable=setup_cluster,
+    dag=dag)
 
-#setup_cluster_op = PythonOperator(
-  #task_id='setup_cluster',
-    #provide_context=False,
-    #python_callable=setup_cluster,
-    #dag=dag)
+setup_cluster_op.set_upstream(build_op)
 
-#setup_cluster_op.set_upstream(create_cluster_op)
+run_tests_op = PythonOperator(
+  task_id='run_tests',
+    provide_context=True,
+    python_callable=run_tests,
+    dag=dag)
 
+run_tests_op.set_upstream(setup_cluster_op)
 
-#deploy_crd_op = PythonOperator(
-  #task_id='deploy_crd',
-    #provide_context=False,
-    #python_callable=deploy_crd,
-    #dag=dag)
+teardown_cluster_op = PythonOperator(
+  task_id='teardown_cluster',
+    provide_context=True,
+    python_callable=teardown_cluster,
+    dag=dag)
 
-#deploy_crd_op.set_upstream([setup_cluster_op, build_op])
-
-#run_tests_op = PythonOperator(
-  #task_id='run_tests',
-    #provide_context=False,
-    #python_callable=run_tests,
-    #dag=dag)
-
-#run_tests_op.set_upstream(deploy_crd_op)
-
-#delete_cluster_op = PythonOperator(
-  #task_id='delete_cluster',
-    #provide_context=False,
-    #python_callable=run_tests,
-    #dag=dag)
-
-
-#delete_cluster_op.set_upstream(run_tests_op)
+teardown_cluster_op.set_upstream(run_tests_op)

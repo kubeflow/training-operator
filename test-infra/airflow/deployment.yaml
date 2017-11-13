@@ -9,7 +9,7 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8080
-    
+
 ---
 
 apiVersion: extensions/v1beta1
@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: airflow
-        image: gcr.io/mlkube-testing/airflow:v20171107-41d1187-dirty-27589c
+        image: gcr.io/mlkube-testing/airflow:latest
         # What arguments do we need to set to use the LocalExecutor
         command:
           # Tells entrypoint.sh to start the webserver
@@ -38,11 +38,7 @@ spec:
         - containerPort: 8080
         # TODO(jlewi): Should we store the postgres data on a PD to make it
         # invariant to disruptions.
-        # TODO(jlewi): We should probably change this to an image
-        # we build so we can build the DAGS into the image.
       - name: postgres
-        # TODO(jlewi): We should probably change this to an image
-        # we build so we can build the DAGS into the image.
         image: postgres:9.6
         env:
         - name: POSTGRES_USER
