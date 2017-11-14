@@ -131,7 +131,7 @@ def setup_cluster(dag_run=None, ti=None, **kwargs):
   chart = ti.xcom_pull("build_images", key="helm_chart")
 
   now = datetime.now()
-  cluster = "e2e-" + now.strftime("%m%d-%H%M") + uuid.uuid4().hex[0:4]
+  cluster = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
   junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
                             "junit_setup_cluster.xml")
   logging.info("junit_path %s", junit_path)

@@ -11,9 +11,19 @@ import time
 import urllib
 import yaml
 
+import google.auth
+import google.auth.transport
+import google.auth.transport.requests
+
+import os
+import yaml
+
+import kubernetes
 from googleapiclient import errors
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes.config import kube_config
+from kubernetes.client import ApiClient, ConfigurationObject, configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -374,3 +384,46 @@ def split_gcs_uri(gcs_uri):
   bucket = m.group(1)
   path = m.group(2)
   return bucket, path
+
+def _refresh_credentials():
+  # I tried userinfo.email scope that was insufficient; got unauthorized errors.
+  credentials, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+  request = google.auth.transport.requests.Request()
+  credentials.refresh(request)
+  return credentials
+
+# TODO(jlewi): This is a work around for
+# https://github.com/kubernetes-incubator/client-python/issues/339.
+# Consider getting rid of this and adopting the solution to that issue.
+def load_kube_config(config_file=None, context=None,
+                     client_configuration=configuration,
+                     persist_config=True, get_google_credentials=_refresh_credentials,
+                     **kwargs):
+  """Loads authentication and cluster information from kube-config file
+  and stores them in kubernetes.client.configuration.
+
+  :param config_file: Name of the kube-config file.
+  :param context: set the active context. If is set to None, current_context
+      from config file will be used.
+  :param client_configuration: The kubernetes.client.ConfigurationObject to
+      set configs to.
+  :param persist_config: If True, config file will be updated when changed
+      (e.g GCP token refresh).
+  """
+
+  if config_file is None:
+    config_file = os.path.expanduser(kube_config.KUBE_CONFIG_DEFAULT_LOCATION)
+
+  config_persister = None
+  if persist_config:
+    def _save_kube_config(config_map):
+      with open(config_file, 'w') as f:
+        yaml.safe_dump(config_map, f, default_flow_style=False)
+    config_persister = _save_kube_config
+
+  kube_config._get_kube_config_loader_for_yaml_file(
+    config_file, active_context=context,
+      client_configuration=client_configuration,
+        config_persister=config_persister,
+        get_google_credentials=get_google_credentials,
+        **kwargs).load_and_set()

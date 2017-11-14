@@ -78,7 +78,7 @@ def setup(args):
 
   util.configure_kubectl(project, zone, cluster_name)
 
-  k8s_config.load_kube_config()
+  util.load_kube_config()
   # Create an API client object to talk to the K8s master.
   api_client = k8s_client.ApiClient()
 
