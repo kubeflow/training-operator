@@ -82,7 +82,7 @@ class PodList extends Component {
             .then(b => {
                 this.setState({logs: b, isLogModalOpened: true});
             })
-            .catch(b => console.log)
+            .catch(b => console.error)
 
     }
 }

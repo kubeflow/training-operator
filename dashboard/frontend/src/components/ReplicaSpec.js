@@ -12,12 +12,10 @@ const ReplicaSpec = ({ spec, status, pods }) => {
             <Card>
                 <CardHeader title={spec.tfReplicaType} textStyle={{ fontWeight: "bold" }} />
                 <CardText>
-                    <div>
-                        <InfoEntry name="Replicas" value={spec.replicas} />
-                        <InfoEntry name="Image" value={spec.template.spec.containers[0].image} />
-                        <InfoEntry name="State" value={status.state} />
-                        <PodList pods={pods}/>
-                    </div>
+                    <InfoEntry name="Replicas" value={spec.replicas} />
+                    <InfoEntry name="Image" value={spec.template.spec.containers[0].image} />
+                    <InfoEntry name="State" value={status.state} />
+                    <PodList pods={pods} />
                 </CardText>
             </Card>
         </div>

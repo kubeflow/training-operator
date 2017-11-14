@@ -34,20 +34,23 @@ class CreateTensorBoard extends Component {
         root: {
             display: "flex",
             flexDirection: "column"
+        },
+        field: {
+            width: "80%"
         }
     }
     render() {
         // this.bubbleSpec();
         return (
             <div style={this.styles.root}>
-                <SelectField floatingLabelText="Service" value={this.state.serviceType} onChange={(o, v) => {
+                <SelectField style={this.styles.field}  floatingLabelText="Service" value={this.state.serviceType} onChange={(o, v) => {
                     this.setState({ serviceType: v });
                     this.bubbleSpec({...this.state, serviceType: v});
                     }}>
                     <MenuItem value={0} primaryText="Internal" />
                     <MenuItem value={1} primaryText="External" />
                 </SelectField>
-                <TextField floatingLabelText="Log dir" name="logDir" value={this.state.logDir} onChange={this.handleInputChange} />
+                <TextField style={this.styles.field}  floatingLabelText="Log dir" name="logDir" value={this.state.logDir} onChange={this.handleInputChange} />
                 {/* <Volume /> */}
                 {/* <VolumeMount /> */}
             </div >

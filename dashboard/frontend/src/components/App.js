@@ -13,7 +13,7 @@ import ContentAdd from 'material-ui/svg-icons/content/add';
 import './App.css';
 import Home from './Home.js'
 
-let headerStyle = {
+const headerStyle = {
   display: "flex",
   backgroundColor: "white",
   height: "56px",
@@ -22,7 +22,7 @@ let headerStyle = {
   justifyContent: "space-between"
 };
 
-let brandingStyle = {
+const brandingStyle = {
   fontSize: "1.5em",
   marginTop: "3px",
   textAlign: "left"

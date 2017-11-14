@@ -12,6 +12,7 @@ import {
 
 import { createTfJobService } from '../services';
 import CreateTensorBoard from './CreateTensorBoard';
+import RequiredTextField from './RequiredTextField';
 
 class CreateJob extends Component {
 
@@ -69,26 +70,31 @@ class CreateJob extends Component {
     root: {
       display: "flex",
       flexDirection: "column"
+    },
+    field: {
+      width: "80%"
     }
+
   }
   render() {
     return (
       <Card>
         <CardText style={this.styles.root}>
-          <TextField floatingLabelText="Training name" name="name" onChange={this.handleInputChange} />
-          <TextField floatingLabelText="Namespace" name="namespace" value={this.state.namespace} onChange={this.handleInputChange} />
+          {/* <TextField style={this.styles.field} floatingLabelText="Training name" name="name" onChange={this.handleInputChange} /> */}
+          <RequiredTextField style={this.styles.field} floatingLabelText="Training name" name="name" onChange={this.handleInputChange} />
+          <TextField style={this.styles.field} floatingLabelText="Namespace" name="namespace" value={this.state.namespace} onChange={this.handleInputChange} />
 
 
           {/* MASTER */}
           <Divider style={this.styles.divider} />
           <p style={this.styles.header} >Master</p>
-          <TextField floatingLabelText="Container image" name="masterImage" value={this.state.masterImage} onChange={this.handleInputChange} />
+          <RequiredTextField style={this.styles.field} floatingLabelText="Container image" name="masterImage" value={this.state.masterImage} onChange={this.handleInputChange} />
           <TextField floatingLabelText="GPU(s) per replica" type="number" min="0" name="masterGpuCount" value={this.state.masterGpuCount} onChange={this.handleInputChange} />
 
           {/* WORKER */}
           <Divider style={this.styles.divider} />
           <p style={this.styles.header}>Worker(s)</p>
-          <TextField floatingLabelText="Container image" name="workerImage" value={this.state.workerImage} onChange={this.handleInputChange} />
+          <TextField style={this.styles.field} floatingLabelText="Container image" name="workerImage" value={this.state.workerImage} onChange={this.handleInputChange} />
           <TextField floatingLabelText="Replicas" type="number" min="0" name="workerReplicas" value={this.state.workerReplicas} onChange={this.handleInputChange} />
           <TextField floatingLabelText="GPU(s) per replica" type="number" min="0" name="workerGpuCount" value={this.state.workerGpuCount} onChange={this.handleInputChange} />
 
@@ -96,14 +102,14 @@ class CreateJob extends Component {
           <Divider style={this.styles.divider} />
           <p style={this.styles.header}>Parameter Server(s)</p>
           <TextField floatingLabelText="Replicas" name="psReplicas" type="number" min="0" value={this.state.psReplicas} onChange={this.handleInputChange} />
-          <Toggle label="Use default image" defaultToggled={true} name="psUseDefaultImage" onToggle={this.handleInputChange} style={this.styles.toggle} />
+          <Toggle style={this.styles.field} label="Use default image" defaultToggled={true} name="psUseDefaultImage" onToggle={this.handleInputChange} style={this.styles.toggle} />
           {!this.state.psUseDefaultImage &&
-            <TextField floatingLabelText="Container image" name="psImage" value={this.state.psImage} onChange={this.handleInputChange} />
+            <TextField style={this.styles.field} floatingLabelText="Container image" name="psImage" value={this.state.psImage} onChange={this.handleInputChange} />
           }
 
           {/* TENSORBOARD */}
           <Divider style={this.styles.divider} />
-          <Toggle label="TensorBoard" defaultToggled={true} name="tbIsPresent" onToggle={this.handleInputChange} style={this.styles.toggle} />
+          <Toggle style={this.styles.field} label="TensorBoard" defaultToggled={true} name="tbIsPresent" onToggle={this.handleInputChange} style={this.styles.toggle} />
           {this.state.tbIsPresent &&
             <CreateTensorBoard setTensorBoardSpec={this.setTensorboardSpec} />
           }
@@ -148,7 +154,7 @@ class CreateJob extends Component {
     }
 
     createTfJobService(spec)
-      .catch(console.log);
+      .catch(console.error);
   }
 
   cancel() {

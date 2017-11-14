@@ -85,11 +85,10 @@ class AppBar extends Component {
         const options = {
             method: "DELETE",
             headers: myHeaders
-            // body: JSON.stringify(spec)
         };
 
         deleteTfJob(ns, name)
-            .catch(console.log);
+            .catch(console.error);
     }
 
 

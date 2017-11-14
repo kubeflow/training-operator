@@ -23,7 +23,7 @@ type TfJobDetail struct {
 }
 
 type TfJobList struct {
-	TfJobs []spec.TfJob `json:"tfjobs"`
+	tfJobs []spec.TfJob `json:"tfjobs"`
 }
 
 func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {

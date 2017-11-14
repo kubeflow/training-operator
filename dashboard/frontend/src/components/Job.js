@@ -61,7 +61,7 @@ class Job extends Component {
         .then(b => {
           this.setState({ tfJob: b.tfJob, tbService: b.tbService, pods: b.pods });
         })
-        .catch(console.log);
+        .catch(console.error);
     }
   }
 

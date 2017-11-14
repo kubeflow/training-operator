@@ -33,7 +33,7 @@ class Home extends Component {
             .then(b => {
                 this.setState({ tfJobs: b.items });
             })
-            .catch(console.log);
+            .catch(console.error);
     }
 
     render() {

@@ -7,14 +7,9 @@ let jobsStyle = {
 }
 
 const JobList = ({jobs}) => { 
-    let jobSummaries = []
-    for (let i = 0; i < jobs.length; i++) {
-      jobSummaries.push(<JobSummary key={i} job={jobs[i]} />)
-    }
-    
     return (
       <div style={jobsStyle}>
-        {jobSummaries}
+        {jobs.map((v, k) => <JobSummary key={k} job={v} />)}
       </div>
     );
 }
