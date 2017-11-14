@@ -57,7 +57,7 @@ spec:
               args:
                 - --log_dir=gs://my-job/log-dir
           restartPolicy: OnFailure
-    - replicas: 1
+    - replicas: 2
       tfReplicaType: WORKER
       template:
         spec:
@@ -67,10 +67,10 @@ spec:
               args:
                 - --log_dir=gs://my-job/log-dir
           restartPolicy: OnFailure
-    - replicas: 2
+    - replicas: 1
       tfReplicaType: PS
 ```
-**Fig 1.** An example job spec for a distributed job Training job with 1 master, 2 workers and 1 PS. TensorBoard is configured by specifying the location of the event files.
+**Fig 1.** An example job spec for a distributed Training job with 1 master, 2 workers and 1 PS. TensorBoard is configured by specifying the location of the event files.
 
 As illustrated by Fig 1, I made an explicit decision not to try to hide or replace K8s abstractions. For example, each TfReplica contains a standard K8s [PodTemplate](https://kubernetes.io/docs/api-reference/v1.7/#podtemplate-v1-core) to specify the processes (including TF) to run in each replica. I did this because K8s already provides a widely adopted and understood API. So introducing new concepts in place of K8s concepts is just confusing. Furthermore, exposing the [PodTemplate](https://kubernetes.io/docs/api-reference/v1.7/#podtemplate-v1-core) makes it easy for TfJob users to leverage K8s features. For example, TfJob users can use K8s to attach volumes to their TF processes. This makes it easy to use TF in conjunction with any storage system supported by K8s (e.g. PDs, NFS, etc...)
 
