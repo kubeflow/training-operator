@@ -252,6 +252,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   ]
 
   if publish_path:
+    logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s", os.getenv("GOOGLE_APPLICATION_CREDENTIALS", ""))
     gcs_client = storage.Client(project=gcb_project)
     bucket_name, base_path = util.split_gcs_uri(publish_path)
     bucket = gcs_client.get_bucket(bucket_name)
