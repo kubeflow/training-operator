@@ -12,8 +12,6 @@
 
 package k8sutil
 
-// TODO(jlewi): We should rename this file to reflect the fact that we are using CRDs and not TPRs.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -33,6 +31,9 @@ import (
 type TfJobClient interface {
 	// Get returns a TfJob
 	Get(ns string, name string) (*spec.TfJob, error)
+
+	// Delete a TfJob
+	Delete(ns string, name string) (*spec.TfJob, error)
 
 	// List returns a list of TfJobs
 	List(ns string) (*spec.TfJobList, error)
@@ -129,9 +130,12 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 	return readOutTfJob(b)
 }
 
-func (c *TfJobRestClient) Delete(ns, name string) error {
-	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
-	return err
+func (c *TfJobRestClient) Delete(ns, name string) (*spec.TfJob, error) {
+	b, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
+	if err != nil {
+		return nil, err
+	}
+	return readOutTfJob(b)
 }
 
 func readOutTfJob(b []byte) (*spec.TfJob, error) {
