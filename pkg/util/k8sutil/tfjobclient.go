@@ -32,6 +32,9 @@ type TfJobClient interface {
 	// Get returns a TfJob
 	Get(ns string, name string) (*spec.TfJob, error)
 
+	// Create a TfJob
+	Create(ns string, j *spec.TfJob) (*spec.TfJob, error)
+
 	// Delete a TfJob
 	Delete(ns string, name string) (*spec.TfJob, error)
 

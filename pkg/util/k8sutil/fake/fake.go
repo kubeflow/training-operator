@@ -13,6 +13,10 @@ func (c *TfJobClientFake) Get(ns string, name string) (*spec.TfJob, error) {
 	return &spec.TfJob{}, nil
 }
 
+func (c *TfJobClientFake) Create(ns string, j *spec.TfJob) (*spec.TfJob, error) {
+	return &spec.TfJob{}, nil
+}
+
 func (c *TfJobClientFake) Delete(ns string, name string) (*spec.TfJob, error) {
 	return &spec.TfJob{}, nil
 }
