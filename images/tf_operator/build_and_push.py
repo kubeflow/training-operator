@@ -13,6 +13,8 @@ import tempfile
 
 import yaml
 
+# TODO(jlewi): build_and_push.py should be obsolete. We should be able to
+# use py/release.py
 
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
