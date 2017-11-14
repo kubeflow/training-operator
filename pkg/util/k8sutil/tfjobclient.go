@@ -36,7 +36,7 @@ type TfJobClient interface {
 	Create(ns string, j *spec.TfJob) (*spec.TfJob, error)
 
 	// Delete a TfJob
-	Delete(ns string, name string) (*spec.TfJob, error)
+	Delete(ns string, name string) error
 
 	// List returns a list of TfJobs
 	List(ns string) (*spec.TfJobList, error)
@@ -133,12 +133,10 @@ func (c *TfJobRestClient) Update(ns string, j *spec.TfJob) (*spec.TfJob, error) 
 	return readOutTfJob(b)
 }
 
-func (c *TfJobRestClient) Delete(ns, name string) (*spec.TfJob, error) {
-	b, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
-	if err != nil {
-		return nil, err
-	}
-	return readOutTfJob(b)
+func (c *TfJobRestClient) Delete(ns, name string) error {
+	_, err := c.restcli.Delete().Resource(spec.CRDKindPlural).Namespace(ns).Name(name).DoRaw()
+
+	return err
 }
 
 func readOutTfJob(b []byte) (*spec.TfJob, error) {
