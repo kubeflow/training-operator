@@ -94,7 +94,7 @@ func TestTBReplicaSet(t *testing.T) {
 		t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
 	}
 
-	name := "tensorboard-some-runtime"
+	name := "some-job-tensorboard-some-runtime"
 	if s.ObjectMeta.Name != name {
 		t.Fatalf("Job.ObjectMeta.Name = %v; want %v", s.ObjectMeta.Name, name)
 	}

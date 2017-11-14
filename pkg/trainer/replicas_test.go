@@ -103,7 +103,7 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
 		}
 
-		name := fmt.Sprintf("ps-some-runtime-%v", index)
+		name := fmt.Sprintf("some-job-ps-some-runtime-%v", index)
 		if s.ObjectMeta.Name != name {
 			t.Fatalf("Job.ObjectMeta.Name = %v; want %v", s.ObjectMeta.Name, name)
 		}
