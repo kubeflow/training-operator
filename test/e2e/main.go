@@ -166,7 +166,7 @@ func run() (string, error) {
 
 	// Delete the job and make sure all subresources are properly garbage collected.
 	if err := tfJobClient.Delete(Namespace, name); err != nil {
-		log.Fatal("Failed to delete TfJob %v; error %v", name, err)
+		log.Fatalf("Failed to delete TfJob %v; error %v", name, err)
 	}
 
 	// Define sets to keep track of Job controllers corresponding to Replicas
