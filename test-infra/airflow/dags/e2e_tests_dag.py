@@ -77,7 +77,8 @@ def build_images(dag_run=None, ti=None, **kwargs):
   repo_owner = conf.get("REPO_OWNER", DEFAULT_REPO_OWNER)
   repo_name = conf.get("REPO_NAME", DEFAULT_REPO_NAME)
 
-  pull_number = conf.get("PULL_NUMBER", "")
+  # Make sure pull_number is a string
+  pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
   args = ["python", "-m", "py.release"]
   if pull_number:
     commit = conf.get("PULL_PULL_SHA", "")
