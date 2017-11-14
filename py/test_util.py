@@ -1,10 +1,9 @@
 import logging
+from xml.etree import ElementTree
+
 import six
 
 from py import util
-from xml.etree import ElementTree
-
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
 class TestCase(object):
   def __init__(self):
@@ -30,8 +29,8 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
 
     if c.failure:
       failures += 1
-  attrib={"failures": "{0}".format(failures), "tests": "{0}".format(len(test_cases)),
-          "time": "{0}".format(total_time)}
+  attrib = {"failures": "{0}".format(failures), "tests": "{0}".format(len(test_cases)),
+            "time": "{0}".format(total_time)}
   root = ElementTree.Element("testsuite", attrib)
 
   for c in test_cases:

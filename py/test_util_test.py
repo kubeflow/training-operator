@@ -1,7 +1,7 @@
+from __future__ import print_function
+
 import tempfile
 import unittest
-
-import yaml
 
 from py import test_util
 
@@ -19,7 +19,7 @@ class XMLTest(unittest.TestCase):
     failure.class_name = "some_test"
     failure.name = "first"
     failure.time = 10
-    failure.failure ="failed for some reason."
+    failure.failure = "failed for some reason."
 
     test_util.create_junit_xml_file([success, failure], hf.name)
     with open(hf.name) as hf:

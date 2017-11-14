@@ -6,21 +6,15 @@ This binary is primarily intended for use in managing resources for our tests.
 
 
 import argparse
-import datetime
-import glob
-import json
 import logging
 import os
-import shutil
 import subprocess
 import tempfile
 import time
 
-import kubernetes
 from kubernetes import client as k8s_client
-from kubernetes import config as k8s_config
 
-from googleapiclient import discovery, errors
+from googleapiclient import discovery
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
 from py import test_util
@@ -45,33 +39,33 @@ def setup(args):
     accelerator_count = 0
 
   cluster_request = {
-      "cluster": {
-          "name": cluster_name,
+    "cluster": {
+        "name": cluster_name,
           "description": "A GKE cluster for TF.",
           "initialNodeCount": 1,
           "nodeConfig": {
-              "machineType": machine_type,
+            "machineType": machine_type,
               "oauthScopes": [
                 "https://www.googleapis.com/auth/cloud-platform",
-              ],
-          },
+                ],
+              },
           # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
           "initialClusterVersion": "1.8.1-gke.1",
       }
   }
 
   if bool(accelerator) != (accelerator_count > 0):
-      raise ValueError("If accelerator is set accelerator_count must be  > 0")
+    raise ValueError("If accelerator is set accelerator_count must be  > 0")
 
   if accelerator:
     # TODO(jlewi): Stop enabling Alpha once GPUs make it out of Alpha
     cluster_request["cluster"]["enableKubernetesAlpha"] = True
 
     cluster_request["cluster"]["nodeConfig"]["accelerators"] = [
-        {
+      {
           "acceleratorCount": accelerator_count,
           "acceleratorType": accelerator,
-        },
+          },
     ]
 
   util.create_cluster(gke, project, zone, cluster_request)
@@ -92,7 +86,7 @@ def setup(args):
 
     bucket = gcs_client.get_bucket(bucket_name)
     blob = bucket.blob(path)
-    logging.info("Downloading %s to %", remote, chart)
+    logging.info("Downloading %s to %s", remote, chart)
     blob.download_to_filename(chart)
 
 
@@ -165,14 +159,14 @@ def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
   # create the top-level parser
   parser = argparse.ArgumentParser(
-      description="Setup clusters for testing.")
+    description="Setup clusters for testing.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
   # setup
   #
   parser_setup = subparsers.add_parser(
-      "setup",
+    "setup",
       help="Setup a cluster for testing.")
 
   parser_setup.set_defaults(func=setup)
