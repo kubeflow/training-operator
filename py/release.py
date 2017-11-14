@@ -1,7 +1,7 @@
 #!/usr/bin/python
-"""Release a new Docker image and helm package.
+"""Build a new Docker image and helm package.
 
-This script should be run from the root directory of the repo.
+This module assumes py is a top level python package.
 """
 
 import argparse
@@ -29,6 +29,7 @@ GCB_PROJECT = "tf-on-k8s-releasing"
 
 
 def get_latest_green_presubmit(gcs_client):
+  """Find the commit corresponding to the latest passing postsubmit."""
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
   blob = bucket.blob(os.path.join(JOB_NAME, "latest_green.json"))
   contents = blob.download_as_string()
@@ -252,7 +253,6 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   ]
 
   if publish_path:
-    logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s", os.getenv("GOOGLE_APPLICATION_CREDENTIALS", ""))
     gcs_client = storage.Client(project=gcb_project)
     bucket_name, base_path = util.split_gcs_uri(publish_path)
     bucket = gcs_client.get_bucket(bucket_name)

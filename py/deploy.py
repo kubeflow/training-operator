@@ -4,7 +4,6 @@
 This binary is primarily intended for use in managing resources for our tests.
 """
 
-
 import argparse
 import logging
 import os
@@ -21,6 +20,11 @@ from py import test_util
 from py import util
 
 def setup(args):
+  """Setup a GKE cluster for TensorFlow jobs.
+
+  Args:
+    args: Command line arguments that control the setup process.
+  """
   gke = discovery.build("container", "v1")
 
   project = args.project
@@ -89,7 +93,6 @@ def setup(args):
     logging.info("Downloading %s to %s", remote, chart)
     blob.download_to_filename(chart)
 
-
   t = test_util.TestCase()
   try:
     start = time.time()
@@ -133,6 +136,11 @@ def teardown(args):
   util.delete_cluster(gke, cluster_name, project, zone)
 
 def add_common_args(parser):
+  """Add common command line arguments to a parser.
+
+  Args:
+    parser: The parser to add command line arguments to.
+  """
   parser.add_argument(
     "--project",
     default=None,
