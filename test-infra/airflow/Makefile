@@ -18,11 +18,13 @@ DIR := ${CURDIR}
 
 all: build
 
+# To build without the cache set the environment variable
+# export DOCKER_BUILD_OPTS=--no-cache
 build:
 	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
 	mkdir -p ./py
 	cp ../../py/*.py ./py/
-	docker build -t $(IMG):$(TAG) .
+	docker build ${DOCKER_BUILD_OPTS} -t $(IMG):$(TAG) .
 	docker tag $(IMG):$(TAG) $(IMG):latest
 	@echo Built $(IMG):$(TAG) and tagged with latest
 	rm -f version.json
@@ -35,9 +37,12 @@ push: build
 
 # Start Airflow locally for debugging/development and mount the DAGs as a
 # volume mount so that we can pick up changes without restarting the container.
+# TODO(jlewi): GOOGLE_APPLICATION_CREDENTIALS is hardcoded to a value that
+# only works for me. Need to fix that. Ideally we would just use the
+# value of GOOGLE_APPLICATION_CREDENTIALS. Maybe we should just make this
+# a script?
 run_airflow: build
-	-docker rm -f airflow
-	docker run -d -e POSTGRES_HOST=postgre -p 8080:8080 --name=airflow -v ${DIR}/dags:/usr/local/airflow/dags --network=airflow gcr.io/mlkube-testing/airflow:latest webserver
+	./start_airflow_local.py
 
 # Start the postgre container locally for debugging
 run_postgre:

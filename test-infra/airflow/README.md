@@ -28,9 +28,37 @@ Here are some instructions for running Airflow locally
 
 * The makefile contains commands to start Airflow and POSTGRE locally using docker
 
+### GCP Credentials
+
+Some of the steps in our Airflow pipeline require GCP credentials. The easiest way to handle credentials
+is to create a service account with an associated private key. You can then volume mount the credentials
+into the Docker container. 
+
+Here are some commands to create a service account
+
 ```
-make run_airflow
+gcloud iam service-accounts --project=${PROJECT} create ${SERVICE_ACCOUNT}
+gcloud iam service-accounts keys --project=${PROJECT} create ~/${KEYNAME}.json  --iam-account=${SERVICE-ACCOUNT}@${PROJECT}.iam.gserviceaccount.com
+# TODO(jlewi): Need to grant appropriate permissions to the service account.
+```
+
+Alternatively if don't want to use a service account you can run the following commands inside the container to use
+your credentials.
+
+
+Login 
+```
+gcloud auth login
+gcloud auth application-default login
+```
+  * The reason we need to issue two login commands is because some code uses the application default credentials but other code just shells out to gcloud so we need to set a default account.
+
+### Start the Airflow and POSTGRE containers
+
+```
 make run_postgre
+export GOOGLE_APPLICATION_CREDENTIALS=${path/to/your/key}
+make run_airflow
 ```
 	* The dags are volume mounted from the host machine so that you can pick up changes without restarting
 	  the airflow container.
@@ -41,17 +69,14 @@ make run_postgre
 	* **Only the dags** are mounted from the host; if you make changes to the code invoked by the dags you will need to restart the Airflow container
 		* TODO(jlewi): Can we mount code in **py/...** into the container as well? I think this is an issue with permissions. What if we configure Airflow to run as user root and Airflow inside the container?
 
+### Accessing Airflow
+
+You can access the Airflow UI at [localhost:8080](http://localhost:8080)
+
 Start a shell inside the Airflow container.
 ```
 docker exec -ti airflow /bin/bash
 ```
-
-Login 
-```
-gcloud auth login
-gcloud auth application-default login
-```
-	* The reason we need to issue two login commands is because some code uses the application default credentials but other code just shells out to gcloud so we need to set a default account.
 
 To trigger a DAG run you can do	
 
