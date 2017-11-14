@@ -101,7 +101,7 @@ def clone_repo():
   # Get the actual git hash.
   # This ensures even for periodic jobs which don't set the sha we know
   # the version of the code tested.
-  sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)  # pylint: disable=redefined-variable-type
+  sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
 
   # Install dependencies
   # TODO(jlewi): We should probably move this into runner.py so that
