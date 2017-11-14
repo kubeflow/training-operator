@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"github.com/tensorflow/k8s/pkg/spec"
@@ -80,6 +81,9 @@ func TestClusterSpec(t *testing.T) {
 	cases := []TestCase{
 		{
 			Spec: &spec.TfJob{
+				Metadata: metav1.ObjectMeta{
+					Name: "myjob",
+				},
 				Spec: spec.TfJobSpec{
 					RuntimeId: "runtime",
 					ReplicaSpecs: []*spec.TfReplicaSpec{
@@ -130,9 +134,9 @@ func TestClusterSpec(t *testing.T) {
 			},
 
 			Expected: map[string][]string{
-				"ps":     []string{"ps-runtime-0:22", "ps-runtime-1:22"},
-				"master": []string{"master-runtime-0:42"},
-				"worker": []string{"worker-runtime-0:40", "worker-runtime-1:40", "worker-runtime-2:40"},
+				"ps":     []string{"myjob-ps-runtime-0:22", "myjob-ps-runtime-1:22"},
+				"master": []string{"myjob-master-runtime-0:42"},
+				"worker": []string{"myjob-worker-runtime-0:40", "myjob-worker-runtime-1:40", "myjob-worker-runtime-2:40"},
 			},
 		},
 	}
