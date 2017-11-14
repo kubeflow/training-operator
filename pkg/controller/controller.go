@@ -121,50 +121,50 @@ func (c *Controller) Run() error {
 }
 
 func (c *Controller) handleTfJobEvent(event *Event) error {
-	clus := event.Object
+	tfjob := event.Object
 
-	if clus.Status.IsFailed() {
+	if tfjob.Status.IsFailed() {
 		if event.Type == kwatch.Deleted {
-			delete(c.jobs, clus.Metadata.Name)
-			delete(c.jobRVs, clus.Metadata.Name)
+			delete(c.jobs, tfjob.Metadata.Name)
+			delete(c.jobRVs, tfjob.Metadata.Name)
 			return nil
 		}
-		return fmt.Errorf("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
+		return fmt.Errorf("ignore failed TfJob (%s). Please delete its CRD", tfjob.Metadata.Name)
 	}
 
 	// TODO: add validation to spec update.
-	clus.Spec.Cleanup()
+	tfjob.Spec.Cleanup()
 	//
 	switch event.Type {
 	case kwatch.Added:
-		// Event indicates that a new instance of the Cluster CRD was created.
-		// So we create a Cluster object to control this resource.
+		// Event indicates that a new instance of the TfJob CRD was created.
+		// So we create a TfJob object to control this resource.
 		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, clus, stopC, &c.waitJobs, &c.config)
+		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, tfjob, stopC, &c.waitJobs, &c.config)
 
 		if err != nil {
 			return err
 		}
 		//NewJob(kubeCli kubernetes.Interface, job spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup)
 
-		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
-		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
+		c.stopChMap[tfjob.Metadata.Name] = stopC
+		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name] = nc
+		c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
 
 	//case kwatch.Modified:
-	//  if _, ok := c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name]; !ok {
+	//  if _, ok := c.jobs[tfjob.Metadata.Namespace + "-" + tfjob.Metadata.Name]; !ok {
 	//    return fmt.Errorf("unsafe state. cluster was never created but we received event (%s)", event.Type)
 	//  }
-	//  c.jobs[clus.Metadata.Namespace + "-" + clus.Metadata.Name].Update(clus)
-	//  c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
+	//  c.jobs[tfjob.Metadata.Namespace + "-" + tfjob.Metadata.Name].Update(tfjob)
+	//  c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
 	//
 	case kwatch.Deleted:
-		if _, ok := c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name]; !ok {
+		if _, ok := c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name]; !ok {
 			return fmt.Errorf("unsafe state. TfJob was never created but we received event (%s)", event.Type)
 		}
-		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name].Delete()
-		delete(c.jobs, clus.Metadata.Name)
-		delete(c.jobRVs, clus.Metadata.Name)
+		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name].Delete()
+		delete(c.jobs, tfjob.Metadata.Name)
+		delete(c.jobRVs, tfjob.Metadata.Name)
 	}
 	return nil
 }
@@ -177,24 +177,24 @@ func (c *Controller) findAllTfJobs() (string, error) {
 		return "", err
 	}
 
-	for _, clus := range jobList.Items {
-		if clus.Status.IsFailed() {
-			log.Infof("ignore failed TfJob (%s). Please delete its CRD", clus.Metadata.Name)
+	for _, tfjob := range jobList.Items {
+		if tfjob.Status.IsFailed() {
+			log.Infof("ignore failed TfJob (%s). Please delete its CRD", tfjob.Metadata.Name)
 			continue
 		}
 
-		clus.Spec.Cleanup()
+		tfjob.Spec.Cleanup()
 
 		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &clus, stopC, &c.waitJobs, &c.config)
+		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &tfjob, stopC, &c.waitJobs, &c.config)
 
 		if err != nil {
-			log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, clus.Metadata.Name)
+			log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, tfjob.Metadata.Name)
 			continue
 		}
-		c.stopChMap[clus.Metadata.Name] = stopC
-		c.jobs[clus.Metadata.Namespace+"-"+clus.Metadata.Name] = nc
-		c.jobRVs[clus.Metadata.Name] = clus.Metadata.ResourceVersion
+		c.stopChMap[tfjob.Metadata.Name] = stopC
+		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name] = nc
+		c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
 	}
 
 	return jobList.Metadata.ResourceVersion, nil
