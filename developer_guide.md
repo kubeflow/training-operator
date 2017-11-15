@@ -52,7 +52,7 @@ a K8s cluster.
 
 Set your environment
 ```sh
-export USE_KUBE_CONFIG=$(echo ~/.kube/config)
+export KUBECONFIG=$(echo ~/.kube/config)
 export MY_POD_NAMESPACE=default
 export MY_POD_NAME=my-pod
 ```

@@ -50,7 +50,7 @@ type TfJobRestClient struct {
 }
 
 func NewTfJobClient() (*TfJobRestClient, error) {
-	config, err := InClusterConfig()
+	config, err := GetClusterConfig()
 	if err != nil {
 		return nil, err
 	}
