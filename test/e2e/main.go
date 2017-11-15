@@ -140,7 +140,7 @@ func run() (string, error) {
 		baseName := strings.ToLower(string(r.TfReplicaType))
 
 		for i := 0; i < int(*r.Replicas); i += 1 {
-			jobName := fmt.Sprintf("%v-%v-%v-%v", original.Metadata.Name, baseName, tfJob.Spec.RuntimeId, i)
+			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.16s", original.Metadata.Name), baseName, tfJob.Spec.RuntimeId, i)
 
 			_, err := kubeCli.BatchV1().Jobs(Namespace).Get(jobName, metav1.GetOptions{})
 
@@ -151,7 +151,7 @@ func run() (string, error) {
 	}
 
 	// Check that the TensorBoard deployment is present
-	tbDeployName := fmt.Sprintf("%v-tensorboard-%v", original.Metadata.Name, tfJob.Spec.RuntimeId)
+	tbDeployName := fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.16s", original.Metadata.Name), tfJob.Spec.RuntimeId)
 	_, err = kubeCli.ExtensionsV1beta1().Deployments(Namespace).Get(tbDeployName, metav1.GetOptions{})
 
 	if err != nil {
@@ -180,7 +180,7 @@ func run() (string, error) {
 		baseName := strings.ToLower(string(r.TfReplicaType))
 
 		for i := 0; i < int(*r.Replicas); i += 1 {
-			jobName := fmt.Sprintf("%v-%v-%v-%v", original.Metadata.Name, baseName, tfJob.Spec.RuntimeId, i)
+			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.16s", original.Metadata.Name), baseName, tfJob.Spec.RuntimeId, i)
 
 			jobs[jobName] = true
 		}
