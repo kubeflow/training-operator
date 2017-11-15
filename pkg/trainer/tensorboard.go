@@ -186,5 +186,6 @@ func (s *TBReplicaSet) Labels() KubernetesLabels {
 }
 
 func (s *TBReplicaSet) jobName() string {
-	return fmt.Sprintf("tensorboard-%v", strings.ToLower(s.Job.job.Spec.RuntimeId))
+	// Truncate job name to 16 characters
+	return fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.16s", s.Job.job.Metadata.Name), strings.ToLower(s.Job.job.Spec.RuntimeId))
 }
