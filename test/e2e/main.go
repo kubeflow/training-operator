@@ -181,7 +181,6 @@ func run() (string, error) {
 
 		for i := 0; i < int(*r.Replicas); i += 1 {
 			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.16s", original.Metadata.Name), baseName, tfJob.Spec.RuntimeId, i)
-
 			jobs[jobName] = true
 		}
 	}
