@@ -46,7 +46,6 @@ const muiTheme = getMuiTheme({
 });
 
 const App = props => { 
-  // console.log(props.muiTheme)
   return(
   <Router>
     <MuiThemeProvider muiTheme={muiTheme}>

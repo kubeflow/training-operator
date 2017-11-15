@@ -9,28 +9,24 @@ class RequiredTextField extends Component {
     this.state = {
       errorText: this.props.value ? "" : errorMessage
     }
-
-
     this.handleChange = this.handleChange.bind(this);
   }
 
   render() {
     return (
       <div>
-        {/* <TextField floatingLabelText="Replicas" type="number" min="0" name="workerReplicas" value={this.state.workerReplicas} onChange={this.handleInputChange} /> */}
-        <TextField {...this.props} errorText={this.state.errorText} onChange={this.handleChange}/>
+        <TextField {...this.props} errorText={this.state.errorText} name={this.props.name} onChange={this.handleChange}/>
       </div>
     )
   }
 
   handleChange(event){
-    console.log(event.target.value)
     if(!event.target.value) {
-      this.setState({errorText: errorMessage})
+      this.setState({errorText: errorMessage});
     } else {
-      this.setState({errorText: ""})
-      
+      this.setState({errorText: ""});
     }
+    this.props.onChange(event);
   }
 }
 

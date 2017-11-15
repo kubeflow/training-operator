@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import TextField from 'material-ui/TextField';
 import SelectField from 'material-ui/SelectField';
 import MenuItem from 'material-ui/MenuItem';
-import Volume from './Volume'
+import Volume from './Volume';
+import VolumeCreator from './VolumeCreator';
 
 class CreateTensorBoard extends Component {
 
@@ -10,13 +11,15 @@ class CreateTensorBoard extends Component {
         super(props)
         this.state = {
             serviceType: 0,
-            logDir: "/tmp/tensorflow"
+            logDir: "/tmp/tensorflow",
+            volumes: [],
+            volumeMounts: []
         };
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.setVolumesSpec = this.setVolumesSpec.bind(this);
     }
 
     bubbleSpec(state) {
-        // Send data to parent component
         this.props.setTensorBoardSpec(this.buildTensorBoardSpec(state))
     }
 
@@ -40,7 +43,6 @@ class CreateTensorBoard extends Component {
         }
     }
     render() {
-        // this.bubbleSpec();
         return (
             <div style={this.styles.root}>
                 <SelectField style={this.styles.field}  floatingLabelText="Service" value={this.state.serviceType} onChange={(o, v) => {
@@ -51,34 +53,19 @@ class CreateTensorBoard extends Component {
                     <MenuItem value={1} primaryText="External" />
                 </SelectField>
                 <TextField style={this.styles.field}  floatingLabelText="Log dir" name="logDir" value={this.state.logDir} onChange={this.handleInputChange} />
-                {/* <Volume /> */}
-                {/* <VolumeMount /> */}
+                <VolumeCreator setVolumesSpec={this.setVolumesSpec} />
             </div >
         );
     }
 
+    setVolumesSpec(volumeSpecs) {
+        this.setState(Object.assign(this.state, volumeSpecs));
+        this.bubbleSpec(Object.assign(this.state, volumeSpecs))
+    }
+
     buildTensorBoardSpec(state) {
-        // "tensorboard": {
-        //   "logDir": "/tmp/tensorflow",
-        //   "volumes": [
-        //    {
-        //     "name": "azurefile",
-        //     "azureFile": {
-        //      "secretName": "azure-secret",
-        //      "shareName": "data"
-        //     }
-        //    }
-        //   ],
-        //   "volumeMounts": [
-        //    {
-        //     "name": "azurefile",
-        //     "mountPath": "/tmp/tensorflow"
-        //    }
-        //   ],
-        //   "serviceType": "LoadBalancer"
-        //  }
         let st = state.serviceType == 0 ? "ClusterIP" : "LoadBalancer";
-        return { "logDir": state.logDir, "serviceType": st };
+        return { ...state, "serviceType": st };
     }
 }
 

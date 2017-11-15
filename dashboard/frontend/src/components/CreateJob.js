@@ -24,7 +24,7 @@ class CreateJob extends Component {
       masterImage: "",
       masterGpuCount: 0,
       workerImage: "",
-      workerReplicas: 1,
+      workerReplicas: 0,
       workerGpuCount: 0,
       psUseDefaultImage: true,
       psReplicas: 0,
@@ -40,7 +40,6 @@ class CreateJob extends Component {
   }
 
   setTensorboardSpec(tbSpec) {
-    console.log(tbSpec)
     this.setState({tbSpec})
   }
 
@@ -123,11 +122,6 @@ class CreateJob extends Component {
   } 
 
   deploy() {
-    console.log(this.state.tbSpec);
-  }
-
-  deploy2() {
-
     let rs = [
       this.newReplicaSpec("MASTER", 1, this.state.masterImage)
     ]
@@ -144,16 +138,16 @@ class CreateJob extends Component {
         namespace: this.state.namespace
       },
       spec: {
-        replicaSpecs: rs,
-
+        replicaSpecs: rs
       }
     }
 
     if (this.state.tbIsPresent) {
-      spec.spec.tensorboard = this.tensorBoard.getTensorBoardSpec();
+      spec.spec.tensorboard = this.state.tbSpec;
     }
 
     createTfJobService(spec)
+      .then(_ => this.props.history.push('/'))
       .catch(console.error);
   }
 
@@ -174,31 +168,6 @@ class CreateJob extends Component {
           restartPolicy: "OnFailure"
         }
       }
-
-    }
-  }
-
-  buildTensorBoardSpec() {
-    // "tensorboard": {
-    //   "logDir": "/tmp/tensorflow",
-    //   "volumes": [
-    //    {
-    //     "name": "azurefile",
-    //     "azureFile": {
-    //      "secretName": "azure-secret",
-    //      "shareName": "data"
-    //     }
-    //    }
-    //   ],
-    //   "volumeMounts": [
-    //    {
-    //     "name": "azurefile",
-    //     "mountPath": "/tmp/tensorflow"
-    //    }
-    //   ],
-    //   "serviceType": "LoadBalancer"
-    //  }
-    return {
 
     }
   }
