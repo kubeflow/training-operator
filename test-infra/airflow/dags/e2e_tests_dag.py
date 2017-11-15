@@ -2,6 +2,10 @@
 An Airflow pipeline for running our E2E tests.
 """
 
+# TODO(jlewi): We should split setup into two steps; create cluster and setup
+# cluster. The cluster can be created in parallel with building the artifacts
+# which should speed things up.
+
 from airflow import DAG
 from airflow.operators import PythonOperator
 from datetime import datetime, timedelta

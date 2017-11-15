@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: airflow
-        image: gcr.io/mlkube-testing/airflow:v20171115-9fa7f30-dirty-fe36db
+        image: {{image}}
         # What arguments do we need to set to use the LocalExecutor
         command:
           # Tells entrypoint.sh to start the webserver

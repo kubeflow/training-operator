@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
+# Requirements:
+#   https://github.com/mattrobenolt/jinja2-cli
+#   pip install jinja2-clie
 IMG = gcr.io/mlkube-testing/airflow
 TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | sha256sum | cut -c -6)
 DIR := ${CURDIR}
@@ -29,6 +32,8 @@ build:
 	@echo Built $(IMG):$(TAG) and tagged with latest
 	rm -f version.json
 	rm -rf ./py
+	jinja2 deployment.yaml.template --format=yaml -D image=$(IMG):$(TAG) > deployment.yaml
+
 
 push: build
 	gcloud docker -- push $(IMG):$(TAG)

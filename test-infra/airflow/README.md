@@ -22,6 +22,45 @@ To facilitate developing and debugging our pipelines we use the following conven
    * [deployment.yaml](deployment.yaml)
    * Eventually we'll switch to the [Airflow K8s executor](https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=71013666)
 
+### One time setup
+
+Create a PD to store the POSTGRES data.
+
+```
+gcloud --project=${PROJECT} compute disks create --size=200GB --zone=${ZONE} airflow-data
+```
+
+Create a service account to be used by Airflow to access GCP services
+
+```
+NODE_SERVICE_ACCOUNT=${PROJECT_NUMBER}-compute@developer.gserviceaccount.com
+gcloud iam service-accounts --project=${PROJECT} create --display-name="Airflow" ${SERVICE_ACCOUNT}
+gcloud iam service-accounts keys --project=${PROJECT} create --iam-account=${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com ~/${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com.key.json
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/storage.admin
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/cloudbuild.builds.editor
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/logging.viewer
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/viewer
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/container.admin
+gcloud projects add-iam-policy-binding ${PROJECT} --member serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  --role roles/container.admin
+gcloud iam service-accounts --project=${PROJECT} add-iam-policy-binding --role=roles/iam.serviceAccountUser --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com  ${NODE_SERVICE_ACCOUNT}
+kubectl create secret generic airflow-key --from-file=key.json=~/${SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com.key.json
+```
+  * The service account used by our Airflow pipeline needs ServiceAccountActor permission on the service account used with nodes in the GKE cluster in order to 
+    create a GKE cluster.
+  * Due to https://github.com/GoogleCloudPlatform/cloud-builders/issues/120 service account needs to be a viewer in order for gcloud container builds
+    to work.
+
+### Accessing the UI
+
+You can access the UI over kubectl proxy
+
+```
+http://${PROXY}/api/v1/proxy/namespaces/default/services/airflow:80/admin/
+```
+  * TODO(jlewi): This doesn't work so well because Airflow redirects won't work as expected. Using NodePort and then creating an SSH
+    tunnel might work better.
+
+
 ## Running Airflow locally
 
 Here are some instructions for running Airflow locally
@@ -34,13 +73,7 @@ Some of the steps in our Airflow pipeline require GCP credentials. The easiest w
 is to create a service account with an associated private key. You can then volume mount the credentials
 into the Docker container. 
 
-Here are some commands to create a service account
-
-```
-gcloud iam service-accounts --project=${PROJECT} create ${SERVICE_ACCOUNT}
-gcloud iam service-accounts keys --project=${PROJECT} create ~/${KEYNAME}.json  --iam-account=${SERVICE-ACCOUNT}@${PROJECT}.iam.gserviceaccount.com
-# TODO(jlewi): Need to grant appropriate permissions to the service account.
-```
+Follow the commands above to create a service account.
 
 Alternatively if don't want to use a service account you can run the following commands inside the container to use
 your credentials.
@@ -68,6 +101,15 @@ make run_airflow
 	```
 	* **Only the dags** are mounted from the host; if you make changes to the code invoked by the dags you will need to restart the Airflow container
 		* TODO(jlewi): Can we mount code in **py/...** into the container as well? I think this is an issue with permissions. What if we configure Airflow to run as user root and Airflow inside the container?
+
+### Updating the DAGs
+
+The DAGs are currently baked into the Airflow Docker container. To update the DAGS
+
+```
+make push
+kubectl apply -f deployment.yaml
+```
 
 ### Accessing Airflow
 
