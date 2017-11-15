@@ -15,15 +15,10 @@ import google.auth
 import google.auth.transport
 import google.auth.transport.requests
 
-import os
-import yaml
-
-import kubernetes
 from googleapiclient import errors
 from kubernetes import client as k8s_client
-from kubernetes import config as k8s_config
 from kubernetes.config import kube_config
-from kubernetes.client import ApiClient, ConfigurationObject, configuration
+from kubernetes.client import configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -387,7 +382,8 @@ def split_gcs_uri(gcs_uri):
 
 def _refresh_credentials():
   # I tried userinfo.email scope that was insufficient; got unauthorized errors.
-  credentials, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+  credentials, _ = google.auth.default(
+    scopes=["https://www.googleapis.com/auth/cloud-platform"])
   request = google.auth.transport.requests.Request()
   credentials.refresh(request)
   return credentials
@@ -397,7 +393,8 @@ def _refresh_credentials():
 # Consider getting rid of this and adopting the solution to that issue.
 def load_kube_config(config_file=None, context=None,
                      client_configuration=configuration,
-                     persist_config=True, get_google_credentials=_refresh_credentials,
+                     persist_config=True,
+                     get_google_credentials=_refresh_credentials,
                      **kwargs):
   """Loads authentication and cluster information from kube-config file
   and stores them in kubernetes.client.configuration.
@@ -421,7 +418,7 @@ def load_kube_config(config_file=None, context=None,
         yaml.safe_dump(config_map, f, default_flow_style=False)
     config_persister = _save_kube_config
 
-  kube_config._get_kube_config_loader_for_yaml_file(
+  kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
     config_file, active_context=context,
       client_configuration=client_configuration,
         config_persister=config_persister,
