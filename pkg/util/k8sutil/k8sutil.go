@@ -17,6 +17,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const RecommendedConfigPathEnvVar = "KUBECONFIG"
+
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
 // method to ensure all resources created for the TfJob are owned by the TfJob.
 func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
@@ -24,7 +26,7 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 }
 
 func MustNewKubeClient() kubernetes.Interface {
-	cfg, err := InClusterConfig()
+	cfg, err := GetClusterConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,20 +34,19 @@ func MustNewKubeClient() kubernetes.Interface {
 }
 
 func MustNewApiExtensionsClient() apiextensionsclient.Interface {
-	cfg, err := InClusterConfig()
+	cfg, err := GetClusterConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 	return apiextensionsclient.NewForConfigOrDie(cfg)
 }
 
-// TODO(jlewi): We should rename InClusterConfig to reflect the fact that we can obtain the config from the Kube
-// configuration used by kubeconfig.
-func InClusterConfig() (*rest.Config, error) {
-	if len(os.Getenv("USE_KUBE_CONFIG")) > 0 {
+// Obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
+func GetClusterConfig() (*rest.Config, error) {
+	if len(os.Getenv(RecommendedConfigPathEnvVar)) > 0 {
 		// use the current context in kubeconfig
 		// This is very useful for running locally.
-		return clientcmd.BuildConfigFromFlags("", os.Getenv("USE_KUBE_CONFIG"))
+		return clientcmd.BuildConfigFromFlags("", os.Getenv(RecommendedConfigPathEnvVar))
 	}
 
 	// Work around https://github.com/kubernetes/kubernetes/issues/40973
