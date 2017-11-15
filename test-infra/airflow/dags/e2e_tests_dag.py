@@ -6,17 +6,16 @@ An Airflow pipeline for running our E2E tests.
 # cluster. The cluster can be created in parallel with building the artifacts
 # which should speed things up.
 
-from airflow import DAG
-from airflow.operators import PythonOperator
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import os
-import tempfile
-from py import release
+import uuid
+
+from airflow import DAG
+from airflow.operators import PythonOperator
 from py import util
 from google.cloud import storage  # pylint: disable=no-name-in-module
 import six
-import uuid
 import yaml
 
 default_args = {
@@ -53,7 +52,7 @@ class FakeDagrun(object):
     self.run_id = "test_run"
     self.conf = {}
 
-def build_images(dag_run=None, ti=None, **kwargs):
+def build_images(dag_run=None, ti=None, **_kwargs):
   """
   Args:
     dag_run: A DagRun object. This is passed in as a result of setting
@@ -72,14 +71,9 @@ def build_images(dag_run=None, ti=None, **kwargs):
   gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
   logging.info("gcs_path %s", gcs_path)
 
-  work_dir = os.path.join(tempfile.gettempdir(), dag_run.dag_id, dag_run.run_id)
-
   conf = dag_run.conf
   if not conf:
     conf = {}
-
-  repo_owner = conf.get("REPO_OWNER", DEFAULT_REPO_OWNER)
-  repo_name = conf.get("REPO_NAME", DEFAULT_REPO_NAME)
 
   # Make sure pull_number is a string
   pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
@@ -126,7 +120,7 @@ def build_images(dag_run=None, ti=None, **kwargs):
     logging.info("xcom push: %s=%s", k, v)
     ti.xcom_push(key=k, value=v)
 
-def setup_cluster(dag_run=None, ti=None, **kwargs):
+def setup_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
   if not conf:
     conf = {}
@@ -158,7 +152,7 @@ def setup_cluster(dag_run=None, ti=None, **kwargs):
     logging.info("xcom push: %s=%s", k, v)
     ti.xcom_push(key=k, value=v)
 
-def run_tests(dag_run=None, ti=None, **kwargs):
+def run_tests(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
   if not conf:
     conf = {}
@@ -181,7 +175,7 @@ def run_tests(dag_run=None, ti=None, **kwargs):
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
 
-def teardown_cluster(dag_run=None, ti=None, **kwargs):
+def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
   if not conf:
     conf = {}
