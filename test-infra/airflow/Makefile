@@ -41,11 +41,10 @@ push: build
 	@echo Pushed $(IMG) with :latest and :$(TAG) tags
 
 # Start Airflow locally for debugging/development and mount the DAGs as a
-# volume mount so that we can pick up changes without restarting the container.
-# TODO(jlewi): GOOGLE_APPLICATION_CREDENTIALS is hardcoded to a value that
-# only works for me. Need to fix that. Ideally we would just use the
-# value of GOOGLE_APPLICATION_CREDENTIALS. Maybe we should just make this
-# a script?
+# volume mount.
+# TODO(jlewi): Should we also mount the python code used by each step into the container?
+# That might work if we changed the user id of Airflow to match the userid of the personing
+# running the container.
 run_airflow: build
 	./start_airflow_local.py
 

@@ -21,6 +21,7 @@ To facilitate developing and debugging our pipelines we use the following conven
 * We deploy Airflow on K8s using the LocalExecutor and a postgre database
    * [deployment.yaml](deployment.yaml)
    * Eventually we'll switch to the [Airflow K8s executor](https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=71013666)
+* Its currently running on the GKE cluster **prow** in project **mlkube-testing**
 
 ### One time setup
 
@@ -50,6 +51,15 @@ kubectl create secret generic airflow-key --from-file=key.json=~/${SERVICE_ACCOU
   * Due to https://github.com/GoogleCloudPlatform/cloud-builders/issues/120 service account needs to be a viewer in order for gcloud container builds
     to work.
 
+### Updating the DAGs
+
+The DAGs are currently baked into the Airflow Docker container. To update the DAGS
+
+```
+make push
+kubectl apply -f deployment.yaml
+```
+
 ### Accessing the UI
 
 You can access the UI over kubectl proxy
@@ -73,7 +83,7 @@ Some of the steps in our Airflow pipeline require GCP credentials. The easiest w
 is to create a service account with an associated private key. You can then volume mount the credentials
 into the Docker container. 
 
-Follow the commands above to create a service account.
+Follow the commands [above](#one-time-setup) to create a service account.
 
 Alternatively if don't want to use a service account you can run the following commands inside the container to use
 your credentials.
@@ -93,23 +103,19 @@ make run_postgre
 export GOOGLE_APPLICATION_CREDENTIALS=${path/to/your/key}
 make run_airflow
 ```
-	* The dags are volume mounted from the host machine so that you can pick up changes without restarting
-	  the airflow container.
-	* You will probably need to make your DAGs world readable so they are accessible inside the container
-	```
-	chmod -R a+rwx ${GIT_TRAINING}/test-infra/airflow/dags
-	```
-	* **Only the dags** are mounted from the host; if you make changes to the code invoked by the dags you will need to restart the Airflow container
-		* TODO(jlewi): Can we mount code in **py/...** into the container as well? I think this is an issue with permissions. What if we configure Airflow to run as user root and Airflow inside the container?
 
-### Updating the DAGs
-
-The DAGs are currently baked into the Airflow Docker container. To update the DAGS
+* The dags are volume mounted from the host machine so that you can pick up changes without restarting
+	the airflow container.
+* You will probably need to make your DAGs world readable so they are accessible inside the container
+* The service account key will be volume mounted into the container.
 
 ```
-make push
-kubectl apply -f deployment.yaml
+  chmod -R a+rwx ${GIT_TRAINING}/test-infra/airflow/dags
 ```
+
+* **Only the dags** are mounted from the host; if you make changes to the code invoked by the dags you will need to restart the Airflow container
+  * TODO(jlewi): Can we mount code in **py/...** into the container as well? I think this is an issue with permissions. What if we configure Airflow
+  account inside the container to use the same userid as the user?
 
 ### Accessing Airflow
 

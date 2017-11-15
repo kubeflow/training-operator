@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #
+# A startup script for Airflow.
+#
 # Based on
 # https://raw.githubusercontent.com/puckel/docker-airflow/master/script/entrypoint.sh
 
