@@ -50,7 +50,7 @@ run_airflow: build
 
 # Start the postgre container locally for debugging
 run_postgre:
-	-docker rm -f postgre
-	docker run -d --network=airflow --name=postgre -p 5432:5432 -e POSTGRES_USER=airflow -e POSTGRES_PASSWORD=airflow -e POSTGRES_DB=airflow postgres:9.6
+	-docker rm -f postgres
+	docker run -d --network=airflow --name=postgres -p 5432:5432 -e POSTGRES_USER=airflow -e POSTGRES_PASSWORD=airflow -e POSTGRES_DB=airflow  postgres:10.1-alpine
 
 

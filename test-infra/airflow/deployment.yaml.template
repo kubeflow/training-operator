@@ -41,10 +41,8 @@ spec:
           mountPath: /var/secrets/google
         ports:
         - containerPort: 8080
-        # TODO(jlewi): Should we store the postgres data on a PD to make it
-        # invariant to disruptions.
       - name: postgres
-        image: postgres:9.6
+        image: postgres:10.1-alpine
         env:
         # For a list of POSTGRES environment variables see
         # https://hub.docker.com/_/postgres/

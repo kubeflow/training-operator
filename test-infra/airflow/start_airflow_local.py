@@ -11,7 +11,7 @@ if __name__ == "__main__":
   subprocess.call(["docker", "rm", "-f", "airflow"])
 
   # Start Airflow in a container.
-  command = ["docker", "run", "-d", "-e", "POSTGRES_HOST=postgre",
+  command = ["docker", "run", "-d", "-e", "POSTGRES_HOST=postgres",
              "-p", "8080:8080", "--name=airflow"]
 
   credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
