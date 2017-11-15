@@ -1,5 +1,15 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # This is a helper script for building Docker images.
 import argparse
 import hashlib
@@ -10,6 +20,7 @@ import subprocess
 import tempfile
 
 import jinja2
+
 
 def GetGitHash():
   # The image tag is based on the githash.
@@ -25,6 +36,7 @@ def GetGitHash():
     diffhash = sha.hexdigest()[0:7]
     git_hash = "{0}-dirty-{1}".format(git_hash, diffhash)
   return git_hash
+
 
 def run_and_stream(cmd):
   logging.info("Running %s", " ".join(cmd))
@@ -42,7 +54,8 @@ def run_and_stream(cmd):
 
   if process.returncode != 0:
     raise ValueError("cmd: {0} exited with code {1}".format(
-      " ".join(cmd), process.returncode))
+        " ".join(cmd), process.returncode))
+
 
 def build_and_push(dockerfile_template, image, modes=None,
                    skip_push=False, base_images=None):
@@ -77,7 +90,7 @@ def build_and_push(dockerfile_template, image, modes=None,
   images = {}
   for mode in modes:
     dockerfile_contents = jinja2.Environment(loader=loader).get_template(
-      os.path.basename(dockerfile_template)).render(base_image=base_images[mode])
+        os.path.basename(dockerfile_template)).render(base_image=base_images[mode])
     context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
     logging.info("context_dir: %s", context_dir)
     shutil.rmtree(context_dir)
@@ -101,31 +114,31 @@ def build_and_push(dockerfile_template, image, modes=None,
       logging.info("Pushed image: %s", full_image)
   return images
 
+
 def main():
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
-    description="Build Docker images based off of TensorFlow.")
+      description="Build Docker images based off of TensorFlow.")
 
   parser.add_argument(
-    "--image",
+      "--image",
       default="gcr.io/tf-on-k8s-dogfood",
       type=str,
       help="The image path to use; mode will be applied as a suffix.")
 
   parser.add_argument(
-    "--dockerfile",
+      "--dockerfile",
       required=True,
       type=str,
       help="The path to the Dockerfile")
 
   # TODO(jlewi): Should we make this a list so we can build both images with one command.
   parser.add_argument(
-    '--mode',
+      '--mode',
       default=["cpu", "gpu"],
-        dest="modes",
-        action="append",
-        help='Which image to build; options are cpu or gpu')
-
+      dest="modes",
+      action="append",
+      help='Which image to build; options are cpu or gpu')
 
   parser.add_argument("--no-push", dest="should_push", action="store_false",
                       help="Do not push the image once build is finished.")
@@ -133,11 +146,15 @@ def main():
   args = parser.parse_args()
 
   base_images = {
-    "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
-    "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
+      "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
+      "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
   }
 
-  build_and_push(args.dockerfile, args.modes, not args.should_push, base_images)
+  build_and_push(dockerfile_template=args.dockerfile, modes=args.modes,
+                 image=args.image,
+                 skip_push=(not args.should_push),
+                 base_images=base_images)
+
 
 if __name__ == "__main__":
   main()

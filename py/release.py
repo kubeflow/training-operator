@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """Release a new Docker image and helm package.
 
 This script should be run from the root directory of the repo.
@@ -88,6 +88,7 @@ def get_last_release(bucket):
   data = json.loads(contents)
   return data.get("sha", "").strip()
 
+
 def create_latest(bucket, sha, target):
   """Create a file in GCS with information about the latest release.
 
@@ -106,6 +107,7 @@ def create_latest(bucket, sha, target):
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
+
 
 def build_once(bucket_name):  # pylint: disable=too-many-locals
   gcs_client = storage.Client()
@@ -163,7 +165,7 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
   targets = [
       os.path.join(release_path, os.path.basename(chart_archive)),
       "latest/tf-job-operator-chart-latest.tgz",
-    ]
+  ]
 
   for t in targets:
     blob = bucket.blob(t)
@@ -176,8 +178,9 @@ def build_once(bucket_name):  # pylint: disable=too-many-locals
 
   create_latest(bucket, sha, util.to_gcs_uri(bucket_name, targets[0]))
 
+
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
   this_dir = os.path.dirname(__file__)
   version_file = os.path.join(this_dir, "version.json")
   if os.path.exists(version_file):
@@ -199,7 +202,7 @@ def main():  # pylint: disable=too-many-locals
       help="The bucket to publish releases to.")
 
   parser.add_argument(
-    "--check_interval_secs",
+      "--check_interval_secs",
       default=0,
       type=int,
       help=("How often to periodically check to see if there is a new passing "
@@ -218,6 +221,7 @@ def main():  # pylint: disable=too-many-locals
       time.sleep(args.check_interval_secs)
     else:
       break
+
 
 if __name__ == "__main__":
   main()

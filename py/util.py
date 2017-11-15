@@ -8,8 +8,8 @@ import shutil
 import subprocess
 import time
 import urllib
-import yaml
 
+import yaml
 from googleapiclient import errors
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
@@ -37,6 +37,7 @@ def run(command, cwd=None, env=None):
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
     raise
+
 
 def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
@@ -130,6 +131,7 @@ def create_cluster(gke, project, zone, cluster_request):
     else:
       raise
 
+
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
 
@@ -153,6 +155,7 @@ def delete_cluster(gke, name, project, zone):
   except errors.HttpError as e:
     logging.error("Exception occured deleting cluster: %s, status: %s",
                   e, e.resp["status"])
+
 
 def wait_for_operation(client,
                        project,
@@ -182,7 +185,7 @@ def wait_for_operation(client,
   while True:
     if zone:
       op = client.projects().zones().operations().get(
-        projectId=project, zone=zone,
+          projectId=project, zone=zone,
           operationId=op_id).execute()
     else:
       op = client.globalOperations().get(project=project,
@@ -194,13 +197,15 @@ def wait_for_operation(client,
       return op
     if datetime.datetime.now() > endtime:
       raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
-        op_id))
+          op_id))
     time.sleep(polling_interval.total_seconds())
+
 
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")
   run(["gcloud", "--project=" + project, "container",
        "clusters", "--zone=" + zone, "get-credentials", cluster_name])
+
 
 def wait_for_tiller_to_be_ready(api_client):
   # Wait for tiller to be ready
@@ -209,7 +214,8 @@ def wait_for_tiller_to_be_ready(api_client):
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
 
   while datetime.datetime.now() < end_time:
-    deploy = ext_client.read_namespaced_deployment("tiller-deploy", "kube-system")
+    deploy = ext_client.read_namespaced_deployment(
+        "tiller-deploy", "kube-system")
     if deploy.status.ready_replicas >= 1:
       logging.info("tiller is ready")
       return
@@ -217,6 +223,7 @@ def wait_for_tiller_to_be_ready(api_client):
     time.sleep(10)
 
   raise ValueError("Timeout waiting for tiller")
+
 
 def install_gpu_drivers(api_client):
   """Install GPU drivers on the cluster.
@@ -243,6 +250,7 @@ def install_gpu_drivers(api_client):
     else:
       raise
 
+
 def wait_for_gpu_driver_install(api_client,
                                 timeout=datetime.timedelta(minutes=10)):
   """Wait until some nodes are available with GPUs."""
@@ -260,6 +268,7 @@ def wait_for_gpu_driver_install(api_client,
   logging.error("Timeout waiting for GPU nodes to be ready.")
   raise TimeoutError("Timeout waiting for GPU nodes to be ready.")
 
+
 def cluster_has_gpu_nodes(api_client):
   """Return true if the cluster has nodes with GPUs."""
   api = k8s_client.CoreV1Api(api_client)
@@ -269,6 +278,7 @@ def cluster_has_gpu_nodes(api_client):
     if "cloud.google.com/gke-accelerator" in n.metadata.labels:
       return True
   return False
+
 
 def create_tiller_service_accounts(api_client):
   logging.info("Creating service account for tiller.")
@@ -307,6 +317,7 @@ subjects:
     else:
       raise
 
+
 def setup_cluster(api_client):
   """Setup a cluster.
 
@@ -329,6 +340,7 @@ def setup_cluster(api_client):
   wait_for_tiller_to_be_ready(api_client)
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
+
 
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
