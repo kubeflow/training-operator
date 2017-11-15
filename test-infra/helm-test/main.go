@@ -111,7 +111,7 @@ var (
 
 	image       = flag.String("image", "", "The Docker image for Tfjob to use.")
 	outputPath  = flag.String("output_dir", "", "The directory where test output should be written.")
-	helmPath    = flag.String("helm_path", "helm", "Path to thelm")
+	helmPath    = flag.String("helm_path", "helm", "Path to helm")
 	kubectlPath = flag.String("kubectl_path", "kubectl", "Path to kubectl")
 	purge       = flag.Bool("purge", true, "Whether to purge the helm package after running the test.")
 	cloud       = flag.String("cloud", "gke", "Which cloud to configure the package for")
