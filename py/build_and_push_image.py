@@ -58,7 +58,7 @@ def run_and_stream(cmd):
 
 
 def build_and_push(dockerfile_template, image, modes=None,
-                   skip_push=False, base_images=None, cache_dir=None):
+                   skip_push=False, base_images=None):
   """Build and push images based on a Dockerfile template.
 
   Args:
@@ -74,8 +74,6 @@ def build_and_push(dockerfile_template, image, modes=None,
        value in base_images as the base image for the Dockerfile.
      skip_push: Whether to skip the push.
      base_images: A dictionary that maps modes to base images.
-     cache_dir: The directory where to cache build artifacts between container
-      builds.
 
   Returns:
      images: A dictionary mapping modes to the corresponding docker
