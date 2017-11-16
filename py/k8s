@@ -57,6 +57,7 @@ spec:
           containers:
             - image: {{ image }}
               name: tensorflow
+              args: {{ extra_args }}
           restartPolicy: OnFailure
     - replicas: {{ num_workers }}
       tfReplicaType: WORKER
@@ -87,8 +88,10 @@ def _build_and_push_wrapper(model_build_path, skip_push=False):
   # Get the dockerfile path and verify it is present
   dockerfile_path = os.path.join(model_build_path, 'Dockerfile')
   if not os.path.exists(dockerfile_path):
-    raise ValueError('Could not find a Dockerfile at the specified '
-                     'docker build path.')
+    dockerfile_path = os.path.join(model_build_path, 'Dockerfile.template')
+    if not os.path.exists(dockerfile_path):
+      raise ValueError('Could not find a Dockerfile or Dockerfile.template at '
+                       'the specified docker build path.')
 
   image_label = os.path.split(model_build_path)[-1]
 
@@ -122,6 +125,11 @@ def _create_job(api_client, args, write_job_config=False):
 
   crd_api = k8s_client.CustomObjectsApi(api_client)
 
+  extra_args = ['--log_dir', args.job_dir]
+  if args.extra_args is not None:
+    # TODO: Probably want to do some checking
+    extra_args.extend(args.extra_args.split(' '))
+
   # Could probably just pass kwargs?
   config = Environment().from_string(TFJOB).render(
       job_name=args.job_name, tf_job_group=TF_JOB_GROUP,
@@ -129,7 +137,7 @@ def _create_job(api_client, args, write_job_config=False):
       job_kind=TF_JOB_KIND, namespace=args.namespace,
       image=args.image, num_workers=args.num_workers,
       num_ps=args.num_ps, deploy_tensorboard=args.deploy_tensorboard,
-      job_dir=args.job_dir)
+      job_dir=args.job_dir, extra_args=extra_args)
 
   logging.info('Creating job with config:\n%s' % config)
 
@@ -142,18 +150,25 @@ def _create_job(api_client, args, write_job_config=False):
         }
     }
 
+  if args.mock:
+    logging.info("Running in --mock mode, skipping job submission.")
+    return
+
   try:
     # Create a Resource
     api_response = crd_api.create_namespaced_custom_object(TF_JOB_GROUP,
                                                            TF_JOB_VERSION, args.namespace, TF_JOB_PLURAL, body)
     logging.info("Created job %s", api_response["metadata"]["name"])
   except ApiException as e:
-    print(
-        "Exception when calling DefaultApi->apis_fqdn_v1_namespaces_namespace_resource_post: %s\n" %
-        e)
+    print("Exception when calling DefaultApi->apis_fqdn_v1_namespaces_namespace_resource_post: %s\n" %
+          e)
 
 
 def _poll_job(api_client, args):
+
+  if args.mock:
+    logging.info("Running in --mock mode, skipping job polling.")
+    return
 
   crd_api = k8s_client.CustomObjectsApi(api_client)
 
@@ -239,7 +254,7 @@ def _run_deployment_mode(args):
 
   if args.use_gpu:  # TODO: Remove this, for development when NVIDIA_K80_GPUS==0
     if args.accelerator:
-        # TODO(jlewi): Stop enabling Alpha once GPUs make it out of Alpha
+      # TODO(jlewi): Stop enabling Alpha once GPUs make it out of Alpha
       cluster_request["cluster"]["enableKubernetesAlpha"] = True
 
       cluster_request["cluster"]["nodeConfig"]["accelerators"] = [
@@ -271,7 +286,7 @@ def _run_submit_mode(args):
       raise ValueError('The provided --build_path does not exist, '
                        'please provide a path to a directory containing '
                        'a Dockerfile.')
-    images = _build_and_push_wrapper(args.build_path)  # , skip_push=False)
+    images = _build_and_push_wrapper(args.build_path, skip_push=args.mock)
     if args.use_gpu:
       args.image = images['gpu']
     else:
@@ -295,8 +310,8 @@ def _run_submit_mode(args):
 
 
 def _run_monitor_mode(args):
-    # TODO: Ability to easily stream logs from a running job without going to
-    # stackdriver?
+  # TODO: Ability to easily stream logs from a running job without going to
+  # stackdriver?
   pass
 
 
@@ -418,9 +433,21 @@ if __name__ == "__main__":
 
   parser.add_argument(
       '--mode',
-      default='default',
+      default=None,
       type=str,
       help='Mode in which to run, one of ["deploy", "submit", "monitor"].')
+
+  parser.add_argument(
+      '--mock',
+      default=False,
+      action="store_true",
+      help='Whether to mock the run mode.')
+
+  parser.add_argument(
+      '--extra_args',
+      default=None,
+      type=str,
+      help='Extra arguments to add to the training task command.')
 
   parser.add_argument(
       '--deployment_mode',
@@ -449,9 +476,8 @@ if __name__ == "__main__":
     # args.job_dir = 'gs://%s-k8s/jobs' % args.project
     # _ensure_bucket(args.job_dir)
 
-  if not hasattr(args, 'mode') or args.mode not in ["deploy", "run", "monitor"]:
-    raise ValueError('--mode argument must be one of ["deploy", "submit", '
-                     '"monitor"], saw: %s' % args.mode)
+  if args.mode is None:
+    raise ValueError('Please specify a run mode with --mode.')
 
   if args.mode == "deploy":
     _run_deployment_mode(args)
@@ -459,3 +485,5 @@ if __name__ == "__main__":
     _run_submit_mode(args)
   elif args.mode == "monitor":
     _run_monitor_mode(args)
+  else:
+    raise ValueError('Unrecognized run --mode, saw: %s' % args.mode)
