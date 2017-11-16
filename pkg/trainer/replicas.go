@@ -492,7 +492,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 }
 
 func (s *TFReplicaSet) jobName(index int32) string {
-	return fmt.Sprintf("%v-%v-%v", strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
+	return fmt.Sprintf("%v-%v-%v-%v",fmt.Sprintf("%.16s", s.Job.job.Metadata.Name), strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
 }
 
 func (s *TFReplicaSet) defaultPSConfigMapName() string {
