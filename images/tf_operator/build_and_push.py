@@ -104,9 +104,13 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   targets = [
       "github.com/tensorflow/k8s/cmd/tf_operator",
       "github.com/tensorflow/k8s/test/e2e",
+      "github.com/tensorflow/k8s/dashboard/dashboard-backend",
   ]
   for t in targets:
     subprocess.check_call(["go", "install", t])
+  
+  #Building dashboard's front-end
+  subprocess.check_call(["yarn", "--cwd", "./dashboard/frontend", "build"])
 
   root_dir = os.path.abspath(os.path.join(images_dir, '..', '..'))
   # List of paths to copy relative to root.
@@ -114,6 +118,8 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
       "images/tf_operator/Dockerfile",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
+      os.path.join(go_path, "bin/dashboard-backend"),
+      "dashboard/frontend/build"
       "grpc_tensorflow_server/grpc_tensorflow_server.py"
   ]
 

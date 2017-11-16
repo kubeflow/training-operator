@@ -1,0 +1,32 @@
+{{- if .Values.dashboard.install }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: tf-job-dashboard
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    name: tf-job-dashboard
+  type: {{ .Values.dashboard.serviceType }}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tf-job-dashboard
+spec:
+  template:
+    metadata:
+      labels:
+        name: tf-job-dashboard
+    spec:    
+      containers:
+      - name: tf-job-dashboard
+        image: {{ .Values.image }}
+        command:
+          - /opt/mlkube/dashboard/dashboard-backend
+        ports:
+        - containerPort: 8080 
+{{- end }}
