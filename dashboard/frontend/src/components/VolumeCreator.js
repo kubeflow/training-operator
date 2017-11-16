@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardText } from 'material-ui/Card';
 import FlatButton from 'material-ui/FlatButton';
 import ContentAdd from 'material-ui/svg-icons/content/add';
+import omit from 'lodash/omit';
 
 import Volume from './Volume';
 
@@ -15,23 +16,18 @@ class VolumeCreator extends React.Component {
     };
 
     this.setVolumeSpec = this.setVolumeSpec.bind(this);
+    this.deleteVolume = this.deleteVolume.bind(this);
   }
 
   render() {
     return (
-      <Card style={this.styles.card} expanded={true}>
-        <CardHeader
-          title="Volumes"
-          actAsExpander={true}
-          showExpandableButton={true} >
-          <FlatButton>
-            <ContentAdd onClick={_ => this.addVolume()} />
-          </FlatButton>
-        </CardHeader>
-        <CardText expandable={true}>
-          {Object.keys(this.state.volumeSpecs).map(k => <Volume key={k} id={k} setVolumeSpec={this.setVolumeSpec} />)}
-        </CardText>
-      </Card>
+      <div style={this.styles.root}>
+        <h4>Volumes</h4>
+        <FlatButton label="Add a volume" primary={true} icon={<ContentAdd />} onClick={_ => this.addVolume()}  />
+        {Object.keys(this.state.volumeSpecs).map(k => <Volume key={k} id={k}
+          setVolumeSpec={this.setVolumeSpec}
+          deleteVolume={this.deleteVolume} />)}
+      </div>
     );
   }
 
@@ -45,10 +41,14 @@ class VolumeCreator extends React.Component {
     this.bubbleSpecs(volumeSpecs)
   }
 
+  deleteVolume(id) {
+    this.setState({ volumeSpecs: omit(this.state.volumeSpecs, [id]) })
+  }
+
   bubbleSpecs(volumeSpecs) {
     let specs = { volumes: [], volumeMounts: [] };
-    Object.keys(this.state.volumeSpecs).map( k => {
-      const v = this.state.volumeSpecs[k]
+    Object.keys(volumeSpecs).map(k => {
+      const v = volumeSpecs[k]
       specs.volumes.push(v.volume);
       specs.volumeMounts.push(v.volumeMount)
     });
@@ -63,6 +63,9 @@ class VolumeCreator extends React.Component {
   styles = {
     card: {
       boxShadow: ""
+    },
+    root: {
+      marginTop: "20px"
     }
   }
 }

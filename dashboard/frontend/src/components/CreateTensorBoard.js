@@ -19,10 +19,6 @@ class CreateTensorBoard extends Component {
         this.setVolumesSpec = this.setVolumesSpec.bind(this);
     }
 
-    bubbleSpec(state) {
-        this.props.setTensorBoardSpec(this.buildTensorBoardSpec(state))
-    }
-
     handleInputChange(event) {
         const target = event.target;
         const value = target.type === 'checkbox' ? target.checked : target.value;
@@ -61,6 +57,10 @@ class CreateTensorBoard extends Component {
     setVolumesSpec(volumeSpecs) {
         this.setState(Object.assign(this.state, volumeSpecs));
         this.bubbleSpec(Object.assign(this.state, volumeSpecs))
+    }
+
+    bubbleSpec(state) {
+        this.props.setTensorBoardSpec(this.buildTensorBoardSpec(state))
     }
 
     buildTensorBoardSpec(state) {

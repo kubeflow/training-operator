@@ -1,11 +1,12 @@
 import React from 'react';
-import InfoEntry from './InfoEntry'
 import TextField from 'material-ui/TextField';
 import SelectField from 'material-ui/SelectField';
 import MenuItem from 'material-ui/MenuItem';
-import { Card, CardText } from 'material-ui/Card';
+import { Card, CardText, CardActions } from 'material-ui/Card';
 import { Tabs, Tab } from 'material-ui/Tabs';
+import FlatButton from 'material-ui/FlatButton';
 
+import InfoEntry from './InfoEntry'
 
 const volumeKinds = {
     "Host Path": 0,
@@ -28,6 +29,7 @@ class Volume extends React.Component {
             subPath: ""
         };
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
     }
 
     handleInputChange(event) {
@@ -37,24 +39,31 @@ class Volume extends React.Component {
         this.setState({
             [name]: value
         });
-        this.bubbleSpec({...this.state, [name]: value});
+        this.bubbleSpec({ ...this.state, [name]: value });
     }
 
     render() {
         return (
             <Card>
                 <CardText style={this.styles.content}>
-                    <SelectField floatingLabelText="Kind" value={this.state.volumeKind} onChange={(o, v) => {
-                        this.setState({ volumeKind: v });
-                        this.bubbleSpec({ ...this.state, volumeKind: v });
-                    }}>
-                        {Object.keys(volumeKinds).map((i, k) => <MenuItem value={k} primaryText={i} key={i} />)}
-                    </SelectField>
-                    <TextField floatingLabelText="Name" name="name" value={this.state.name} onChange={this.handleInputChange} />
-                    <TextField floatingLabelText="Mount Path" name="mountPath" value={this.state.mountPath} onChange={this.handleInputChange} />
-                    <TextField floatingLabelText="Sub Path" name="subPath" value={this.state.subPath} onChange={this.handleInputChange} />
+                    <div style={this.styles.rowDirection}>
+                        <SelectField floatingLabelText="Kind" value={this.state.volumeKind} onChange={(o, v) => {
+                            this.setState({ volumeKind: v });
+                            this.bubbleSpec({ ...this.state, volumeKind: v });
+                        }} style={this.styles.element}>
+                            {Object.keys(volumeKinds).map((i, k) => <MenuItem value={k} primaryText={i} key={i} />)}
+                        </SelectField>
+                        <TextField floatingLabelText="Name" name="name" value={this.state.name} onChange={this.handleInputChange} style={this.styles.element} />
+                    </div>
+                    <div style={this.styles.rowDirection}>
+                        <TextField floatingLabelText="Mount Path" name="mountPath" value={this.state.mountPath} onChange={this.handleInputChange} style={this.styles.element} />
+                        <TextField floatingLabelText="Sub Path" name="subPath" value={this.state.subPath} onChange={this.handleInputChange} style={this.styles.element} />
+                    </div>
                     {this.getFields()}
                 </CardText>
+                <CardActions>
+                    <FlatButton label="Delete" secondary={true} onClick={this.handleDelete} />
+                </CardActions>
             </Card>
         );
     }
@@ -63,21 +72,31 @@ class Volume extends React.Component {
         content: {
             display: "flex",
             flexDirection: "column"
+        },
+        rowDirection: {
+            flexDirection: "row"
+        },
+        element: {
+            marginRight: "36px"
         }
     }
 
     getFields() {
-        let children = [];
+        let child = {};
         switch (this.state.volumeKind) {
             case 0:
-                children.push(<TextField floatingLabelText="Host Path" name="hostPath" key={0} value={this.state.hostPath} onChange={this.handleInputChange} />);
+                child = (<TextField floatingLabelText="Host Path" name="hostPath" value={this.state.hostPath} onChange={this.handleInputChange} style={this.styles.element} />);
                 break;
             case 1:
-                children.push(<TextField floatingLabelText="Secret Name" name="secretName" key={0} value={this.state.secretName} onChange={this.handleInputChange} />);
-                children.push(<TextField floatingLabelText="Share Name" name="shareName" key={1} value={this.state.shareName} onChange={this.handleInputChange} />);
+                child = ((
+                    <div style={this.styles.rowDirection}>
+                        <TextField floatingLabelText="Secret Name" name="secretName" value={this.state.secretName} onChange={this.handleInputChange} style={this.styles.element} />
+                        <TextField floatingLabelText="Share Name" name="shareName" value={this.state.shareName} onChange={this.handleInputChange} style={this.styles.element} />
+                    </div>
+                ));
                 break;
         }
-        return children;
+        return child;
     }
 
     bubbleSpec(state) {
@@ -109,9 +128,13 @@ class Volume extends React.Component {
                         shareName: state.shareName
                     }
                 };
-            default: 
-            return {};
+            default:
+                return {};
         }
+    }
+
+    handleDelete() {
+        this.props.deleteVolume(this.props.id);
     }
 }
 
