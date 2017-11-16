@@ -56,10 +56,10 @@ def parse_cluster_spec(cluster_spec, cluster, verbose=False):
     ValueError: if the cluster_spec string is invalid.
   """
 
-  job_strings = cluster_spec.split(",")
-
   if not cluster_spec:
     raise ValueError("Empty cluster_spec string")
+
+  job_strings = cluster_spec.split(",")
 
   for job_string in job_strings:
     job_def = cluster.job.add()
@@ -99,9 +99,16 @@ def main(_):
   if not FLAGS.job_name:
     raise ValueError("Empty job_name")
   server_def.job_name = FLAGS.job_name
-
+  job_def = None
+  for i in range(len(server_def.cluster.job)):
+    if server_def.cluster.job[i].name == FLAGS.job_name:
+      job_def = server_def.cluster.job[i]
+      break
+  if job_def is None:
+    raise ValueError("job \"%s\" does not exist in cluster_spec" % FLAGS.job_name)
+  
   # Task index
-  if FLAGS.task_id < 0:
+  if FLAGS.task_id < 0 or FLAGS.task_id >= len(job_def.tasks):
     raise ValueError("Invalid task_id: %d" % FLAGS.task_id)
   server_def.task_index = FLAGS.task_id
 
