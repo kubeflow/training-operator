@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tensorflow/k8s/dashboard/backend/client"
-	"github.com/tensorflow/k8s/dashboard/backend/handler"
+	"github.com/tensorflow/k8s/dashboard/dashboard-backend/client"
+	"github.com/tensorflow/k8s/dashboard/dashboard-backend/handler"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	}
 
 	http.Handle("/api/", apiHandler)
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./dashboard/frontend/build/"))))
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/mlkube/dashboard/frontend/build/"))))
 	p := ":8080"
 	fmt.Println("Listening on", p)
 

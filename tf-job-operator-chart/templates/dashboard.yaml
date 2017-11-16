@@ -2,8 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    name: tf-job-dashboard
+  name: tf-job-dashboard
 spec:
   ports:
   - port: 80
