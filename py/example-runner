@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utilities for submitting TfJob CRD jobs on k8s."""
+"""Top-level script for running examples."""
 
 from __future__ import print_function
 
@@ -58,7 +58,7 @@ spec:
             - image: {{ image }}
               name: tensorflow
               args: {{ extra_args }}
-          restartPolicy: OnFailure
+          restartPolicy: OnFailure{% if num_workers > 0 %}
     - replicas: {{ num_workers }}
       tfReplicaType: WORKER
       template:
@@ -66,7 +66,7 @@ spec:
           containers:
             - image: {{ image }}
               name: tensorflow
-          restartPolicy: OnFailure{% if num_ps > 0 %}
+          restartPolicy: OnFailure{% endif %}{% if num_ps > 0 %}
     - replicas: {{ num_ps }}
       tfReplicaType: PS{% endif %}{% if deploy_tensorboard %}
   tensorBoard:
@@ -300,7 +300,7 @@ def _run_submit_mode(args):
 
   logging.info('Initiating training job with parameters:')
   logging.info('job_name: %s' % args.job_name)
-  logging.info('model_image: %s' % args.model_image)
+  logging.info('image: %s' % args.image)
 
   # Create the training job
   _create_job(api_client, args, write_job_config=True)
@@ -340,14 +340,14 @@ if __name__ == "__main__":
       help="Path to a directory containing a model image to be built.")
 
   parser.add_argument(
-      "--model_image",
+      "--image",
       default=None,
       type=str,
       help="The docker image to use for model instances.")
 
   parser.add_argument(
       '--num_workers',
-      default="1",
+      default=None,
       type=str,
       help='Number of tensorflow workers.')
 

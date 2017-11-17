@@ -13,5 +13,5 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-k8s --mode submit --build_path ${SCRIPT_DIR} \
+example-runner --mode submit --build_path ${SCRIPT_DIR} \
     --extra_args '--config pybullet_ant'

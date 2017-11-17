@@ -4,14 +4,21 @@ from __future__ import print_function
 import datetime
 import logging
 import os
+import re
 import shutil
 import subprocess
 import time
 import urllib
-
 import yaml
+
+import google.auth
+import google.auth.transport
+import google.auth.transport.requests
+
 from googleapiclient import errors
 from kubernetes import client as k8s_client
+from kubernetes.config import kube_config
+from kubernetes.client import configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -20,7 +27,7 @@ MASTER_REPO_OWNER = "tensorflow"
 MASTER_REPO_NAME = "k8s"
 
 
-def run(command, cwd=None, env=None):
+def run(command, cwd=None, env=None, use_print=False, dryrun=False):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
@@ -31,13 +38,31 @@ def run(command, cwd=None, env=None):
     env = os.environ
 
   try:
+    if dryrun:
+      command_str = ("Dryrun: Command:\n{0}\nCWD:\n{1}\n"
+                     "Environment:\n{2}").format(" ".join(command), cwd, env)
+      if use_print:
+        print(command_str)
+      else:
+        logging.info(command_str)
+      return
     output = subprocess.check_output(command, cwd=cwd, env=env,
-                                     stderr=subprocess.STDOUT)
-    logging.info("Subprocess output:\n%s", output)
-  except subprocess.CalledProcessError as e:
-    logging.info("Subprocess output:\n%s", e.output)
-    raise
+                                     stderr=subprocess.STDOUT).decode("utf-8")
 
+    if use_print:
+      # With Airflow use print to bypass logging module.
+      print("Subprocess output:\n")
+      print(output)
+    else:
+      logging.info("Subprocess output:\n%s", output)
+  except subprocess.CalledProcessError as e:
+    if use_print:
+      # With Airflow use print to bypass logging module.
+      print("Subprocess output:\n")
+      print(e.output)
+    else:
+      logging.info("Subprocess output:\n%s", e.output)
+    raise
 
 def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
@@ -57,7 +82,7 @@ def run_and_output(command, cwd=None, env=None):
 
 
 def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
-               sha=None):
+               sha=None, branches=None):
   """Clone the repo,
 
   Args:
@@ -65,6 +90,10 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
     repo_owner: The owner for github organization.
     repo_name: The repo name.
     sha: The sha number of the repo.
+    branches: (Optional): One or more branches to fetch. Each branch be specified
+      as "remote:local". If no sha is provided
+      we will checkout the last branch provided. If a sha is provided we
+      checkout the provided sha.
 
   Returns:
     dest: Directory where it was checked out
@@ -76,6 +105,14 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 
   # TODO(jlewi): How can we figure out what branch
   run(["git", "clone", repo, dest])
+
+  if branches:
+    for b in branches:
+      run(["git", "fetch", "origin", b,], cwd=dest)
+
+    if not sha:
+      b = branches[-1].split(":", 1)[-1]
+      run(["git", "checkout", b,], cwd=dest)
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
@@ -131,7 +168,6 @@ def create_cluster(gke, project, zone, cluster_request):
     else:
       raise
 
-
 def delete_cluster(gke, name, project, zone):
   """Delete the cluster.
 
@@ -155,7 +191,6 @@ def delete_cluster(gke, name, project, zone):
   except errors.HttpError as e:
     logging.error("Exception occured deleting cluster: %s, status: %s",
                   e, e.resp["status"])
-
 
 def wait_for_operation(client,
                        project,
@@ -185,7 +220,7 @@ def wait_for_operation(client,
   while True:
     if zone:
       op = client.projects().zones().operations().get(
-          projectId=project, zone=zone,
+        projectId=project, zone=zone,
           operationId=op_id).execute()
     else:
       op = client.globalOperations().get(project=project,
@@ -197,15 +232,13 @@ def wait_for_operation(client,
       return op
     if datetime.datetime.now() > endtime:
       raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
-          op_id))
+        op_id))
     time.sleep(polling_interval.total_seconds())
-
 
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")
   run(["gcloud", "--project=" + project, "container",
        "clusters", "--zone=" + zone, "get-credentials", cluster_name])
-
 
 def wait_for_tiller_to_be_ready(api_client):
   # Wait for tiller to be ready
@@ -214,8 +247,7 @@ def wait_for_tiller_to_be_ready(api_client):
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
 
   while datetime.datetime.now() < end_time:
-    deploy = ext_client.read_namespaced_deployment(
-        "tiller-deploy", "kube-system")
+    deploy = ext_client.read_namespaced_deployment("tiller-deploy", "kube-system")
     if deploy.status.ready_replicas >= 1:
       logging.info("tiller is ready")
       return
@@ -223,7 +255,6 @@ def wait_for_tiller_to_be_ready(api_client):
     time.sleep(10)
 
   raise ValueError("Timeout waiting for tiller")
-
 
 def install_gpu_drivers(api_client):
   """Install GPU drivers on the cluster.
@@ -250,7 +281,6 @@ def install_gpu_drivers(api_client):
     else:
       raise
 
-
 def wait_for_gpu_driver_install(api_client,
                                 timeout=datetime.timedelta(minutes=10)):
   """Wait until some nodes are available with GPUs."""
@@ -268,7 +298,6 @@ def wait_for_gpu_driver_install(api_client,
   logging.error("Timeout waiting for GPU nodes to be ready.")
   raise TimeoutError("Timeout waiting for GPU nodes to be ready.")
 
-
 def cluster_has_gpu_nodes(api_client):
   """Return true if the cluster has nodes with GPUs."""
   api = k8s_client.CoreV1Api(api_client)
@@ -278,7 +307,6 @@ def cluster_has_gpu_nodes(api_client):
     if "cloud.google.com/gke-accelerator" in n.metadata.labels:
       return True
   return False
-
 
 def create_tiller_service_accounts(api_client):
   logging.info("Creating service account for tiller.")
@@ -317,7 +345,6 @@ subjects:
     else:
       raise
 
-
 def setup_cluster(api_client):
   """Setup a cluster.
 
@@ -341,6 +368,59 @@ def setup_cluster(api_client):
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
-
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
+
+GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+
+def split_gcs_uri(gcs_uri):
+  """Split a GCS URI into bucket and path."""
+  m = GCS_REGEX.match(gcs_uri)
+  bucket = m.group(1)
+  path = m.group(2)
+  return bucket, path
+
+def _refresh_credentials():
+  # I tried userinfo.email scope that was insufficient; got unauthorized errors.
+  credentials, _ = google.auth.default(
+    scopes=["https://www.googleapis.com/auth/cloud-platform"])
+  request = google.auth.transport.requests.Request()
+  credentials.refresh(request)
+  return credentials
+
+# TODO(jlewi): This is a work around for
+# https://github.com/kubernetes-incubator/client-python/issues/339.
+# Consider getting rid of this and adopting the solution to that issue.
+def load_kube_config(config_file=None, context=None,
+                     client_configuration=configuration,
+                     persist_config=True,
+                     get_google_credentials=_refresh_credentials,
+                     **kwargs):
+  """Loads authentication and cluster information from kube-config file
+  and stores them in kubernetes.client.configuration.
+
+  :param config_file: Name of the kube-config file.
+  :param context: set the active context. If is set to None, current_context
+      from config file will be used.
+  :param client_configuration: The kubernetes.client.ConfigurationObject to
+      set configs to.
+  :param persist_config: If True, config file will be updated when changed
+      (e.g GCP token refresh).
+  """
+
+  if config_file is None:
+    config_file = os.path.expanduser(kube_config.KUBE_CONFIG_DEFAULT_LOCATION)
+
+  config_persister = None
+  if persist_config:
+    def _save_kube_config(config_map):
+      with open(config_file, 'w') as f:
+        yaml.safe_dump(config_map, f, default_flow_style=False)
+    config_persister = _save_kube_config
+
+  kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
+    config_file, active_context=context,
+      client_configuration=client_configuration,
+        config_persister=config_persister,
+        get_google_credentials=get_google_credentials,
+        **kwargs).load_and_set()
