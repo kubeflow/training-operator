@@ -186,5 +186,9 @@ func (s *TBReplicaSet) Labels() KubernetesLabels {
 }
 
 func (s *TBReplicaSet) jobName() string {
-	return fmt.Sprintf("tensorboard-%v", strings.ToLower(s.Job.job.Spec.RuntimeId))
+	// Truncate tfjob name to 40 characters
+	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
+	// Thus jobname(40 chars)-tensorboard(11 chars)-runtimeId(4 chars), also leaving some spaces
+	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
+	return fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", s.Job.job.Metadata.Name), strings.ToLower(s.Job.job.Spec.RuntimeId))
 }
