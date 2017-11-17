@@ -492,7 +492,11 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 }
 
 func (s *TFReplicaSet) jobName(index int32) string {
-	return fmt.Sprintf("%v-%v-%v-%v",fmt.Sprintf("%.16s", s.Job.job.Metadata.Name), strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
+	// Truncate tfjob name to 40 characters
+	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
+	// Thus jobname(40 chars)-replicaType(6 chars)-runtimeId(4 chars)-index(4 chars), also leaving some spaces
+	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
+	return fmt.Sprintf("%v-%v-%v-%v",fmt.Sprintf("%.40s", s.Job.job.Metadata.Name), strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
 }
 
 func (s *TFReplicaSet) defaultPSConfigMapName() string {
