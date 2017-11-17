@@ -11,7 +11,6 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=1.8.2
 ARG AIRFLOW_HOME=/usr/local/airflow
 
 # Define en_US.
@@ -35,6 +34,8 @@ RUN set -ex \
         libblas-dev \
         liblapack-dev \
         libpq-dev \
+        libxml2 \
+        libxslt-dev libxml2-dev \
     ' \
     && apt-get update -yqq \
     && apt-get install -yqq --no-install-recommends \
@@ -69,12 +70,21 @@ RUN set -ex \
     && pip install pytz \
     && pip install pyOpenSSL \
     && pip install ndg-httpsclient \
-    && pip install pyasn1 \
-    && pip install apache-airflow[crypto,celery,postgres,hive,jdbc]==$AIRFLOW_VERSION \
-    && pip install celery[redis]==3.1.17 \
+    && pip install pyasn1 psycopg2 \
+    # Install airflow
+    # We need a new version of Airflow to pick up the latest changes supporting
+    # Airflow's experimental API.
+    && git clone https://github.com/apache/incubator-airflow.git /opt/airflow \
+    && cd /opt/airflow \
+    && git checkout f87d8aca93cf2c6df21bea7b13b6703d91f09865 \
+    && python setup.py install \
     && pip install --upgrade six pyyaml google-api-python-client \
        google-cloud-storage google-auth-httplib2 pylint kubernetes \
     && apt-get purge --auto-remove -yqq $buildDeps \
+    # Airflow depends on numpy which depends on blas and lapack.
+    # Above we installed the dev versions to compile things but then
+    # we removed them. So now we install non-dev versions to be used.
+    && apt-get install -yqq --no-install-recommends libblas3 liblapack3 \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \

@@ -90,4 +90,11 @@ RUN helm init --client-only
 ADD ["bootstrap.py", "/workspace/"]
 ADD ["version.json", "/workspace/"]
 
-ENTRYPOINT ["python", "/workspace/bootstrap.py"]
+RUN mkdir -p /opt/tensorflow_k8s
+
+COPY py /opt/tensorflow_k8s/py/
+ADD ["version.json", "/opt/tensorflow_k8s/py"]
+RUN chmod -R a+rw /opt/tensorflow_k8s
+ENV PYTHONPATH $PYTHONAPTH:/opt/tensorflow_k8s
+
+ENTRYPOINT ["python", "-m", "py.airflow"]

@@ -55,7 +55,7 @@ sed -i "s#sql_alchemy_conn = postgresql+psycopg2://airflow:airflow@postgres/airf
 sed -i "s#broker_url = redis://redis:6379/1#broker_url = redis://$REDIS_PREFIX$REDIS_HOST:$REDIS_PORT/1#" "$AIRFLOW_HOME"/airflow.cfg
 echo "Initialize database..."
 $CMD initdb
-echo start the webserver
+echo start the webserver --debug
 exec $CMD webserver &
 # TODO(jlewi): How do we capture logs from the scheduler? Maybe we should
 # move it into its own container?

@@ -30,7 +30,10 @@ default_args = {
 
 dag = DAG(
   # Set schedule_interval to None
-  'tf_k8s_tests', default_args=default_args, schedule_interval=None)
+  'tf_k8s_tests', default_args=default_args,
+  # TODO(jlewi): Should we schedule a regular run? Right now its
+  # manually triggered by PROW.
+  schedule_interval=None)
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.

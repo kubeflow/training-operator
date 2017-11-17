@@ -13,16 +13,19 @@
 # limitations under the License.
 
 IMG = gcr.io/mlkube-testing/builder
-TAG = $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
+TAG := $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
 
 all: build
 
 build:
+	mkdir -p ./py
+	cp ../../py/*.py ./py/
 	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
 	docker build -t $(IMG):$(TAG) .
 	docker tag $(IMG):$(TAG) $(IMG):latest
 	@echo Built $(IMG):$(TAG) and tagged with latest
 	rm -f version.json
+	rm -rf ./py
 
 push: build
 	gcloud docker -- push $(IMG):$(TAG)
