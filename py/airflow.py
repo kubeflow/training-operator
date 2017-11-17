@@ -166,45 +166,6 @@ def wait_for_tf_k8s_tests(client, run_id,
     logging.info("Waiting for DAG %s run %s to finish.", E2E_DAG, run_id)
     time.sleep(polling_interval.seconds)
 
-def clone_repo():
-  """Clone the repo.
-
-  Returns:
-    src_path: This is the root path for the training code.
-    sha: The sha number of the repo.
-  """
-  # If this is a presubmit PULL_PULL_SHA will be set see:
-  # https://github.com/kubernetes/test-infra/tree/master/prow#job-evironment-variables
-  sha = ""
-  pull_number = os.getenv("PULL_NUMBER", "")
-
-  if pull_number:
-    sha = os.getenv("PULL_PULL_SHA", "")
-  else:
-    # For postsubmits PULL_BASE_SHA will be set
-    sha = os.getenv("PULL_BASE_SHA", "")
-
-  if sha:
-    run(["git", "checkout", sha], cwd=dest)
-
-  # Get the actual git hash.
-  # This ensures even for periodic jobs which don't set the sha we know
-  # the version of the code tested.
-  sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
-
-  # Install dependencies
-  # TODO(jlewi): We should probably move this into runner.py so that
-  # output is captured in build-log.txt
-  run(["glide", "install"], cwd=dest)
-
-  # We need to remove the vendored dependencies of apiextensions otherwise we
-  # get type conflicts.
-  shutil.rmtree(os.path.join(dest,
-                             "vendor/k8s.io/apiextensions-apiserver/vendor"))
-
-  return dest, sha
-
-
 def main():
   """Trigger Airflow pipelines.
 
@@ -251,7 +212,7 @@ def main():
   logging.info("Triggered DAG %s run_id %s".format(E2E_DAG, run_id))
 
   state = wait_for_tf_k8s_tests(client, run_id)
-  logging.info("DAG %s run_id %s is in state %s".format(E2E_DAG, run_id, state))
+  logging.info("DAG %s run_id %s is in state %s", E2E_DAG, run_id, state)
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
