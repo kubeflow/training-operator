@@ -2,7 +2,7 @@ language: go
 
 go:
   - 1.8.x
-  
+
 addons:
   apt:
     sources:
@@ -11,6 +11,8 @@ addons:
       - glide
 
 install:
+  # get coveralls.io support
+  - go get github.com/mattn/goveralls
   # Install dependencies using glide
   - glide install
   # We need to remove the vendored dependencies of apiextensions otherwise we get type conflicts.
@@ -22,4 +24,4 @@ script:
   # directory.
   # With go 1.9 vendor will be automatically excluded.
   # For now though we just run all tests in pkg.
-  - go test -v ./pkg/...
+  - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
