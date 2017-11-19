@@ -29,10 +29,12 @@ gcloud container builds submit \
 Example tensorboard results can be accessed via the following
 
 ```bash
-tensorboard --logdir gs://dev01-181118-181500-k8s/jobs/tensorflow-20171117102413/20171117T182424-pybullet_ant
+tensorboard --logdir gs://agents-k8s-share/jobs/tensorflow-20171117102413/20171117T182424-pybullet_ant
 ```
 
-(TODO: Add screen grabs to readme?)
+for example showing the training and eval mean score vs. wall time
+
+![](mean_score.png)
 
 # Rendering
 
