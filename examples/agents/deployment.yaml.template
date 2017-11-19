@@ -17,6 +17,8 @@ spec:
               - {{log_dir}}
               - --config
               - {{environment}}
+              - --mode
+              - {{mode}}
           restartPolicy: OnFailure
   tensorBoard:
     logDir: {{log_dir}}
