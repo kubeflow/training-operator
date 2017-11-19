@@ -1,7 +1,7 @@
 apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
-  name: "example-job3"
+  name: "example-job"
 spec:
   replicaSpecs:
     - replicas: 1

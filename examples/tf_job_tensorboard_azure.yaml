@@ -1,7 +1,7 @@
 apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
-  name: "example-job-tb-azure2"
+  name: "example-job-tb-azure"
 spec:
   tensorboard:
     logDir: /tmp/tensorflow
