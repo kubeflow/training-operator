@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM {{ base_image }}
+FROM gcr.io/tensorflow/tensorflow:1.3.0
 
 RUN apt-get update && apt-get install -y git
+RUN pip install -e git://github.com/tensorflow/agents.git#egg=agents
+RUN pip install gym pybullet
 
 ADD . /opt/mlkube
 WORKDIR /opt/mlkube
-
-RUN pip install -r requirements.txt
 
 ENTRYPOINT ["python", "-m", "trainer.task"]

@@ -1,3 +1,0 @@
--e git://github.com/tensorflow/agents.git#egg=agents
-gym
-pybullet

@@ -1,71 +1,24 @@
-# Tensorflow/agents on k8s
+# Tensorflow/agents
 
-Demonstration of training reinforcement learning agents from [tensorflow/agents](https://github.com/tensorflow/agents) on kubernetes using the tf/k8s CRD.
+Running a [tensorflow/agents](https://github.com/tensorflow/agents) job on kubernetes using the tf/k8s CRD.
 
-One approach to run the example is to use the [example runner](https://github.com/tensorflow/k8s/tree/master/py/k8s) to (1) build and deploy the model container and (2) construct, submit, and monitor the job, for example as follows:
+A TfJob YAML can be configured and run using jinja2 and kubectl:
 
 ```bash
-k8s --mode submit --build_path ${SCRIPT_DIR} \
-    --extra_args '--config pybullet_ant'
+LOG_DIR=<gcs-bucket-path>
+# e.g. gs://${PROJECT_ID}-k8s/logs/tf-v2017111800001
+AGENTS_CPU=gcr.io/dev01-181118-181500/agents-example
+jinja2 deployment.yaml.template \
+   -D image=${AGENTS_CPU} \
+   -D job_name=tfagents \
+   -D log_dir=${LOG_DIR} \
+   -D environment=pybullet_ant \
+   | kubectl create -f -
 ```
 
-Alternatively you may wish to build and deploy images and submit TfJob operations some other way, perhaps building the CRD config manually, in which case the following job config example may be useful:
+This runs a job using the tensorflow/agents example container. To deploy and train custom models you'll need to build and deploy your own container such as via the following:
 
-```yaml
-apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
-metadata:
-  name: "<your job name>"
-  namespace: default
-spec:
-  replicaSpecs:
-    - replicas: 1
-      tfReplicaType: MASTER
-      template:
-        spec:
-          containers:
-            - image: <repository with worker image>
-              name: tensorflow
-              args: ['--log_dir', 'gs://<bucket path to log dir>', '--config', 'pybullet_ant']
-          restartPolicy: OnFailure
-  tensorBoard:
-    logDir: gs://<bucket path to log dir>
-```
-
-In this example hyperparameters are provided in [trainer/task.py](https://github.com/tensorflow/k8s/tree/master/examples/agents/trainer/task.py):
-
-```python
-def pybullet_ant():
-  # General
-  algorithm = agents.ppo.PPOAlgorithm
-  num_agents = 10
-  eval_episodes = 25
-  use_gpu = False
-  # Environment
-  env = 'AntBulletEnv-v0'
-  max_length = 1000
-  steps = 1e7  # 10M
-  # Network
-  network = agents.scripts.networks.feed_forward_gaussian
-  weight_summaries = dict(
-      all=r'.*',
-      policy=r'.*/policy/.*',
-      value=r'.*/value/.*')
-  policy_layers = 200, 100
-  value_layers = 200, 100
-  init_mean_factor = 0.1
-  init_logstd = -1
-  # Optimization
-  update_every = 30
-  update_epochs = 25
-  #optimizer = 'AdamOptimizer'
-  optimizer = tf.train.AdamOptimizer
-  learning_rate = 1e-4
-  # Losses
-  discount = 0.995
-  kl_target = 1e-2
-  kl_cutoff_factor = 2
-  kl_cutoff_coef = 1000
-  kl_init_penalty = 1
-  return locals()
+```bash
+gcloud container builds submit \
+  --tag gcr.io/<gcloud-project-id>/agents:cpu .
 ```

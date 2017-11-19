@@ -1,0 +1,22 @@
+apiVersion: "tensorflow.org/v1alpha1"
+kind: "TfJob"
+metadata:
+  name: "{{job_name}}"
+  namespace: default
+spec:
+  replicaSpecs:
+    - replicas: 1
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: {{image}}
+              name: tensorflow
+              args:
+              - --log_dir
+              - {{log_dir}}
+              - --config
+              - {{environment}}
+          restartPolicy: OnFailure
+  tensorBoard:
+    logDir: {{log_dir}}
