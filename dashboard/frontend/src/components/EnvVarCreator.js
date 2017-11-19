@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardHeader, CardText } from 'material-ui/Card';
 import FlatButton from 'material-ui/FlatButton';
 import ContentAdd from 'material-ui/svg-icons/content/add';
 import omit from 'lodash/omit';
@@ -23,7 +22,7 @@ class EnvVarCreator extends React.Component {
     return (
       <div style={this.styles.root}>
         <h4>Environment variables</h4>
-        <FlatButton label="Add an environment variable" primary={true} icon={<ContentAdd />} onClick={_ => this.addEnvVar()}  />
+        <FlatButton label="Add an environment variable" primary={true} icon={<ContentAdd />} onClick={_ => this.addEnvVar()} />
         {Object.keys(this.state.envVars).map(k => <EnvVar key={k} id={k}
           setEnvVar={this.setEnvVar}
           deleteEnvVar={this.deleteEnvVar} />)}
@@ -38,21 +37,21 @@ class EnvVarCreator extends React.Component {
   }
 
   deleteEnvVar(id) {
-    this.setState({ envVars: omit(this.state.envVars, [id]) })
+    this.setState({ envVars: omit(this.state.envVars, [id]) });
   }
 
   bubbleSpecs(envVars) {
     let evs = [];
-    Object.keys(envVars).map(k => {
+    Object.keys(envVars).forEach(k => {
       const ev = envVars[k]
-      evs.push({name: ev.name, value: ev.value});
+      evs.push({ name: ev.name, value: ev.value });
     });
-    this.props.setEnvVars(evs)
+    this.props.setEnvVars(evs);
   }
 
   addEnvVar() {
     const id = this.state.envVarCount;
-    this.setState({ envVarCount: id + 1, envVars: { ...this.state.envVars, [id]: {} } })
+    this.setState({ envVarCount: id + 1, envVars: { ...this.state.envVars, [id]: {} } });
   }
 
   styles = {

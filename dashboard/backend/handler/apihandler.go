@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	restful "github.com/emicklei/go-restful"
-	"github.com/tensorflow/k8s/dashboard/dashboard-backend/client"
+	"github.com/tensorflow/k8s/dashboard/backend/client"
 	"github.com/tensorflow/k8s/pkg/spec"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"

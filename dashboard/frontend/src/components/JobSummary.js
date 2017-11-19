@@ -1,10 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom'
-import { Card, CardActions, CardHeader, CardMedia, CardTitle, CardText } from 'material-ui/Card';
+import { Link } from 'react-router-dom';
+import { Card, CardText } from 'material-ui/Card';
 
 const JobSummary = ({ job }) => {
 
-  let styles = {
+  const styles = {
     jobSummary: {
       textAlign: "left",
       display: "flex"
@@ -22,8 +22,7 @@ const JobSummary = ({ job }) => {
       flexDirection: "column",
       marginLeft: "4px"
     }
-  }
-
+  };
 
   return (
     <Card>
@@ -41,16 +40,15 @@ const JobSummary = ({ job }) => {
         </div>
       </CardText>
     </Card>
-  )
+  );
 }
 
 function getReplicasSummary(job) {
-
   const descs = job.spec.replicaSpecs.reduce((acc, r) => {
     acc.push(`${r.tfReplicaType.toLowerCase()}: ${r.replicas}`);
     return acc;
   }, []);
-  return descs.join()
+  return descs.join();
 }
 
 function getStatusColor(job) {

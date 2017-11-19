@@ -1,9 +1,7 @@
 import React, { Component } from 'react';
-import { Card, CardTitle, CardText, CardActions } from 'material-ui/Card';
+import { Card, CardText, CardActions } from 'material-ui/Card';
 import TextField from 'material-ui/TextField';
 import Divider from 'material-ui/Divider';
-import SelectField from 'material-ui/SelectField';
-import MenuItem from 'material-ui/MenuItem';
 import Toggle from 'material-ui/Toggle';
 import RaisedButton from 'material-ui/RaisedButton';
 import {
@@ -60,7 +58,7 @@ class CreateJob extends Component {
   }
 
   setTensorboardSpec(tbSpec) {
-    this.setState({ tbSpec })
+    this.setState({ tbSpec });
   }
 
   handleInputChange(event) {
@@ -99,7 +97,6 @@ class CreateJob extends Component {
     return (
       <Card>
         <CardText style={this.styles.root}>
-          {/* <TextField style={this.styles.field} floatingLabelText="Training name" name="name" onChange={this.handleInputChange} /> */}
           <RequiredTextField style={this.styles.field} floatingLabelText="Training name" name="name" onChange={this.handleInputChange} />
           <TextField style={this.styles.field} floatingLabelText="Namespace" name="namespace" value={this.state.namespace} onChange={this.handleInputChange} />
 
@@ -131,7 +128,7 @@ class CreateJob extends Component {
           <Divider style={this.styles.divider} />
           <h3 style={this.styles.header}>Parameter Server(s)</h3>
           <TextField floatingLabelText="Replicas" name="psReplicas" type="number" min="0" value={this.state.psReplicas} onChange={this.handleInputChange} />
-          <Toggle style={this.styles.field} label="Use default image" defaultToggled={true} name="psUseDefaultImage" onToggle={this.handleInputChange} style={this.styles.toggle} />
+          <Toggle label="Use default image" defaultToggled={true} name="psUseDefaultImage" onToggle={this.handleInputChange} style={this.styles.toggle} />
           {!this.state.psUseDefaultImage &&
             <div style={{ display: "flex", flexDirection: "column" }}>
               <TextField style={this.styles.field} floatingLabelText="Container image" name="psImage" value={this.state.psImage} onChange={this.handleInputChange} />
@@ -145,7 +142,7 @@ class CreateJob extends Component {
           {/* TENSORBOARD */}
           <Divider style={this.styles.divider} />
           <h3 style={this.styles.header}>TensorBoard</h3>
-          <Toggle style={this.styles.field} label="Enabled" defaultToggled={false} name="tbIsPresent" onToggle={this.handleInputChange} style={this.styles.toggle} />
+          <Toggle label="Enabled" defaultToggled={false} name="tbIsPresent" onToggle={this.handleInputChange} style={this.styles.toggle} />
           {this.state.tbIsPresent &&
             <CreateTensorBoard setTensorBoardSpec={this.setTensorboardSpec} />
           }
@@ -166,12 +163,12 @@ class CreateJob extends Component {
     ]
     if (this.state.workerReplicas > 0) {
       rs.push(this.newReplicaSpec("WORKER", this.state.workerReplicas, this.state.workerImage,
-        this.state.workerCommand, this.state.workerArgs, 
+        this.state.workerCommand, this.state.workerArgs,
         this.state.workerEnvVars, this.state.workerVolumeSpec));
     }
     if (this.state.psReplicas > 0) {
       rs.push(this.newReplicaSpec("PS", this.state.psReplicas, this.state.psImage,
-        this.state.psCommand, this.state.psArgs, 
+        this.state.psCommand, this.state.psArgs,
         this.state.psEnvVars, this.state.psVolumeSpec));
     }
 
@@ -183,7 +180,7 @@ class CreateJob extends Component {
       spec: {
         replicaSpecs: rs
       }
-    }
+    };
 
     if (this.state.tbIsPresent) {
       spec.spec.tensorboard = this.state.tbSpec;
@@ -199,11 +196,10 @@ class CreateJob extends Component {
   }
 
   newReplicaSpec(tfReplicaType, replicas, image, commandArr, argsArr, envVars, volumeSpec) {
-    console.log(argsArr)
     const args = argsArr ? argsArr.split(',').map(s => s.trim()) : [];
     const command = commandArr ? commandArr.split(',').map(s => s.trim()) : [];
     return {
-      replicas: parseInt(replicas),
+      replicas: parseInt(replicas, 10),
       tfReplicaType,
       template: {
         spec: {
@@ -219,32 +215,31 @@ class CreateJob extends Component {
           restartPolicy: "OnFailure"
         }
       }
-
-    }
+    };
   }
 
   setMasterEnvVars(envVars) {
-    this.setState({ masterEnvVars: envVars })
+    this.setState({ masterEnvVars: envVars });
   }
 
   setWorkerEnvVars(envVars) {
-    this.setState({ workerEnvVars: envVars })
+    this.setState({ workerEnvVars: envVars });
   }
 
   setPSEnvVars(envVars) {
-    this.setState({ psEnvVars: envVars })
+    this.setState({ psEnvVars: envVars });
   }
 
   setMasterVolumesSpec(spec) {
-    this.setState({ masterVolumeSpec: spec })
+    this.setState({ masterVolumeSpec: spec });
   }
 
   setWorkerVolumesSpec(spec) {
-    this.setState({ workerVolumeSpec: spec })
+    this.setState({ workerVolumeSpec: spec });
   }
 
   setPSVolumesSpec(spec) {
-    this.setState({ psVolumeSpec: spec })
+    this.setState({ psVolumeSpec: spec });
   }
 }
 

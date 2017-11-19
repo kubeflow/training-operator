@@ -1,18 +1,15 @@
 import React, { Component } from 'react';
 import {
-    BrowserRouter as Router,
     Route,
-    Link,
-    Switch,
-    withRouter
-} from 'react-router-dom'
+    Switch
+} from 'react-router-dom';
 import './App.css';
 
-import JobList from './JobList'
-import Job from './Job'
-import CreateJob from './CreateJob'
-import AppBar from './AppBar'
-import { getTfJobListService } from '../services'
+import JobList from './JobList';
+import Job from './Job';
+import CreateJob from './CreateJob';
+import AppBar from './AppBar';
+import { getTfJobListService } from '../services';
 
 class Home extends Component {
 
@@ -20,7 +17,7 @@ class Home extends Component {
         super(props);
         this.state = {
             tfJobs: []
-        }
+        };
     }
 
     componentDidMount() {
@@ -37,7 +34,6 @@ class Home extends Component {
     }
 
     render() {
-        let job = withRouter(<Job jobs={this.state.tfJobs} />);
         return (
             <div>
                 <AppBar />

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {
     withRouter
-} from 'react-router-dom'
+} from 'react-router-dom';
 
 import { default as BaseAppBar } from 'material-ui/AppBar';
 import FlatButton from 'material-ui/FlatButton';
@@ -16,7 +16,7 @@ class AppBar extends Component {
         super(props);
         this.state = {
             isModalVisible: false
-        }
+        };
     }
 
 
@@ -38,7 +38,7 @@ class AppBar extends Component {
         ];
 
         let rightMenu = null;
-        if (this.props.location.pathname != "/new") {
+        if (this.props.location.pathname !== "/new") {
             rightMenu = (
                 <div style={this.styles.rightMenu}>
                     <FlatButton default={true} label="DELETE" icon={<ActionDelete />} style={this.styles.rightMenuButton} onClick={_ => this.setState({ isModalVisible: true })} />
@@ -69,9 +69,8 @@ class AppBar extends Component {
             case "/new":
                 return "New Training";
             default:
-                return path.replace('/', '')
+                return path.replace('/', '');
         }
-        return this.props.location.pathname
     }
 
     deleteJob() {
@@ -79,13 +78,6 @@ class AppBar extends Component {
         path = path.split('/');
         const ns = path[0];
         const name = path[1];
-
-        let myHeaders = new Headers();
-        myHeaders.append("Content-Type", "application/json");
-        const options = {
-            method: "DELETE",
-            headers: myHeaders
-        };
 
         deleteTfJob(ns, name)
             .catch(console.error);

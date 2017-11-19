@@ -3,18 +3,19 @@ import React, { Component } from 'react';
 class InfoEntry extends Component {
 
   render() {
-    let styles = {
+    const styles = {
       root: {
         display: "flex",
         paddingBottom: "8px"
       },
       label: {
-        fontWeight: "bold"        
+        fontWeight: "bold"
       },
       value: {
         marginLeft: "4px"
       }
-    }
+    };
+
     return (
       <div style={styles.root} >
         <div style={styles.label}>

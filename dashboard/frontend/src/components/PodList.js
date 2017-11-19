@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import {
     Table,
     TableBody,
-    TableFooter,
     TableHeader,
     TableHeaderColumn,
     TableRow,
@@ -11,11 +10,9 @@ import {
 import ActionSubject from 'material-ui/svg-icons/action/subject';
 import IconButton from 'material-ui/IconButton';
 import FlatButton from 'material-ui/FlatButton';
-
 import Dialog from 'material-ui/Dialog';
 
-import { getPodLogs } from '../services'
-let text = "";
+import { getPodLogs } from '../services';
 
 class PodList extends Component {
 
@@ -24,7 +21,7 @@ class PodList extends Component {
         this.state = {
             isLogModalOpened: false,
             logs: "hola"
-        }
+        };
     }
 
     actions = [
@@ -32,7 +29,7 @@ class PodList extends Component {
             label="Close"
             primary={true}
             keyboardFocused={true}
-            onClick= {_ =>  this.setState({isLogModalOpened: false})} />,
+            onClick={_ => this.setState({ isLogModalOpened: false })} />,
     ];
 
     render() {
@@ -69,21 +66,20 @@ class PodList extends Component {
                     modal={true}
                     open={this.state.isLogModalOpened}
                     autoScrollBodyContent={true}>
-                    <p style={{whiteSpace: "pre-wrap", backgroundColor: "black", color: "white"}}>
+                    <p style={{ whiteSpace: "pre-wrap", backgroundColor: "black", color: "white" }}>
                         {this.state.logs}
                     </p>
                 </Dialog>
             </div>
-        )
+        );
     }
 
     getLogsForPod(pod) {
         getPodLogs(pod.metadata.namespace, pod.metadata.name)
             .then(b => {
-                this.setState({logs: b, isLogModalOpened: true});
+                this.setState({ logs: b, isLogModalOpened: true });
             })
-            .catch(b => console.error)
-
+            .catch(b => console.error);
     }
 }
 

@@ -1,13 +1,7 @@
 import React from 'react';
 import TextField from 'material-ui/TextField';
-import SelectField from 'material-ui/SelectField';
-import MenuItem from 'material-ui/MenuItem';
-import { Card, CardText, CardActions } from 'material-ui/Card';
-import { Tabs, Tab } from 'material-ui/Tabs';
 import FlatButton from 'material-ui/FlatButton';
 import ActionDelete from 'material-ui/svg-icons/action/delete';
-
-import InfoEntry from './InfoEntry'
 
 class EnvVar extends React.Component {
 
@@ -27,10 +21,10 @@ class EnvVar extends React.Component {
     const value = target.value;
     const name = target.name;
     this.setState({
-        [name]: value
+      [name]: value
     });
     this.bubbleSpec({ ...this.state, [name]: value });
-}
+  }
 
   render() {
     return (

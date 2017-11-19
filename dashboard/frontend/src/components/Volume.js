@@ -3,17 +3,14 @@ import TextField from 'material-ui/TextField';
 import SelectField from 'material-ui/SelectField';
 import MenuItem from 'material-ui/MenuItem';
 import { Card, CardText, CardActions } from 'material-ui/Card';
-import { Tabs, Tab } from 'material-ui/Tabs';
 import FlatButton from 'material-ui/FlatButton';
-
-import InfoEntry from './InfoEntry'
 
 const volumeKinds = {
     "Host Path": 0,
     "Azure File": 1,
     // "NFS": 2,
     // "GlusterFS": 3
-}
+};
 
 class Volume extends React.Component {
 
@@ -79,7 +76,7 @@ class Volume extends React.Component {
         element: {
             marginRight: "36px"
         }
-    }
+    };
 
     getFields() {
         let child = {};
@@ -95,12 +92,14 @@ class Volume extends React.Component {
                     </div>
                 ));
                 break;
+            default:
+                console.error("error determining volume kind");
         }
         return child;
     }
 
     bubbleSpec(state) {
-        let specificConfig = this.getSpecificVolumeSpec(state)
+        let specificConfig = this.getSpecificVolumeSpec(state);
         const volumeSpec = Object.assign({
             name: state.name,
             subPath: state.subPath
@@ -109,7 +108,7 @@ class Volume extends React.Component {
         const volumeMountSpec = {
             name: state.name,
             mountPath: state.mountPath
-        }
+        };
         this.props.setVolumeSpec(this.props.id, volumeSpec, volumeMountSpec);
     }
 
