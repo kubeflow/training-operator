@@ -12,22 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMG = gcr.io/mlkube-testing/builder
-TAG := $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)
-
-all: build
-
-build:
-	mkdir -p ./py
-	cp ../../py/*.py ./py/
-	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
-	docker build -t $(IMG):$(TAG) .
-	docker tag $(IMG):$(TAG) $(IMG):latest
-	@echo Built $(IMG):$(TAG) and tagged with latest
-	rm -f version.json
-	rm -rf ./py
-
-push: build
-	gcloud docker -- push $(IMG):$(TAG)
-	gcloud docker -- push $(IMG):latest
-	@echo Pushed $(IMG) with :latest and :$(TAG) tags
+# This Dockerfile is used by ProwJobs to launch our Airflow jobs.
+#
+# TODO(jlewi) With Docker v17.0 we should just be able to use Docker
+# build args to specify the base image.
+FROM {{base_image}}
+ENTRYPOINT ["python", "-m", "py.airflow"]
