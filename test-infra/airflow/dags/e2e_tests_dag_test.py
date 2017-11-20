@@ -1,9 +1,7 @@
 """Unittest for airflow."""
-import tempfile
 import unittest
 
 import mock
-import yaml
 
 import e2e_tests_dag
 
@@ -25,7 +23,7 @@ class FakeTi(object):
 
 class E22DagTest(unittest.TestCase):
   @mock.patch("e2e_tests_dag.util.run")
-  def test_setup_cluster(self, mock_run):
+  def test_setup_cluster(self, _mock_run):  # pylint: disable=no-self-use
     """Test setup cluster."""
     dag_run = e2e_tests_dag.FakeDagrun()
     dag_run.conf["ARTIFACTS_PATH"] = "gs://some/path"
