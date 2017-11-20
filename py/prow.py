@@ -14,23 +14,13 @@
 # limitations under the License.
 """Helper functions for working with prow.
 """
-import argparse
-import datetime
 import json
 import logging
 import os
 import re
 import subprocess
-import sys
-import tempfile
 import time
-import uuid
 from py import util  # pylint: disable=no-name-in-module
-
-import yaml
-from google.cloud import storage  # pylint: disable=no-name-in-module
-from googleapiclient import discovery, errors
-from oauth2client.client import GoogleCredentials
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
@@ -172,7 +162,7 @@ def create_symlink(gcs_client, symlink, output):
   return blob
 
 
-def upload_outputs(gcs_client, output_dir, test_dir, build_log):
+def upload_outputs(gcs_client, output_dir, build_log):
   m = GCS_REGEX.match(output_dir)
   bucket = m.group(1)
   path = m.group(2)

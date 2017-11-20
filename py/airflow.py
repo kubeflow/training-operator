@@ -3,7 +3,6 @@ import datetime
 import json
 import logging
 import os
-import requests
 import sys
 import tempfile
 import time
@@ -11,8 +10,9 @@ import time
 import google.auth
 import google.auth.transport.requests
 from google.cloud import storage  # pylint: disable=no-name-in-module
-from py import prow
-from py import util
+from py import prow  # pylint: disable=ungrouped-imports
+from py import util  # pylint: disable=ungrouped-imports
+import requests
 
 E2E_DAG = "tf_k8s_tests"
 
@@ -41,24 +41,26 @@ class AirflowClient(object):
     self._credentials = credentials
     self._verify = verify
 
-  def _request(self, url, method='GET', json=None):
+  def _request(self, url, method='GET', json_body=None):
     params = {
           'url': url,
           "headers": {},
         }
     if json is not None:
-      params['json'] = json
+      params['json'] = json_body
     params["verify"] = self._verify
     if self._credentials:
       if not self._credentials.valid:
         request = google.auth.transport.requests.Request()
         self._credentials.refresh(request)
       self._credentials.apply(params["headers"])
-    resp = getattr(requests, method.lower())(**params)
+    resp = getattr(requests, method.lower())(**params)  # pylint: disable=not-callable
     if not resp.ok:
       try:
         data = resp.json()
-      except Exception:
+      # TODO(jlewi): This code was copied from Airflow client.
+      # We should see if we can catch a more specific exception.
+      except Exception:  # pylint: disable=broad-except
         data = {}
       raise IOError(data.get('error', 'Server error'))
 
@@ -68,7 +70,7 @@ class AirflowClient(object):
     endpoint = '/api/experimental/dags/{}/dag_runs'.format(dag_id)
     url = self._api_base_url + endpoint
     data = self._request(url, method='POST',
-                             json={
+                             json_body={
                                "run_id": run_id,
                                "conf": conf,
                                "execution_date": execution_date,
@@ -101,10 +103,10 @@ class AirflowClient(object):
     Returns:
       task_info
     """
-    endpoint = "/api/experimental/dags/{0}/dag_runs/{1}/tasks/{2}".format(dag_id, execution_date, task_id)
+    endpoint = "/api/experimental/dags/{0}/dag_runs/{1}/tasks/{2}".format(
+        dag_id, execution_date, task_id)
     #'/dags/<string:dag_id>/dag_runs/<string:execution_date>/tasks/<string:task_id>
     url = self._api_base_url + endpoint
-    print(url)
     data = self._request(url, method="GET")
     return data
 
@@ -193,14 +195,15 @@ def _run_dag_and_wait():
   # TODO(jlewi): We should probably configure Ingress and IAP for Airflow sever
   # and use a static IP.
   PROW_K8S_MASTER = "35.202.163.166"
-  base_url = "https://{0}/api/v1/proxy/namespaces/default/services/airflow:80".format(PROW_K8S_MASTER)
+  base_url = ("https://{0}/api/v1/proxy/namespaces/default/services"
+              "/airflow:80").format(PROW_K8S_MASTER)
 
   credentials, _ = google.auth.default(
     scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
   client = AirflowClient(base_url, credentials, verify=False)
 
-  run_id, message = trigger_tf_k8s_tests_dag(client, conf)
+  run_id, _ = trigger_tf_k8s_tests_dag(client, conf)
 
   state = wait_for_tf_k8s_tests(client, run_id)
   return state
@@ -273,10 +276,7 @@ def main():
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
 
-  if state == "success":
-    success = True
-  else:
-    success = False
+  success = bool(state == "success")
 
   if success:
     job_name = os.getenv("JOB_NAME", "unknown")
@@ -285,7 +285,7 @@ def main():
   prow.create_finished(gcs_client, output_dir, success)
 
   fileHandler.flush()
-  prow.upload_outputs(gcs_client, output_dir, test_dir, build_log)
+  prow.upload_outputs(gcs_client, output_dir, build_log)
 
   if not success:
     # Exit with a non-zero exit code by raising an exception.
