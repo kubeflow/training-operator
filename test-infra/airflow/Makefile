@@ -40,6 +40,10 @@ push: build
 	gcloud docker -- push $(IMG):latest
 	@echo Pushed $(IMG) with :latest and :$(TAG) tags
 
+# Update the Airflow deployment
+update: push
+	kubectl apply -f deployment.yaml
+
 # Start Airflow locally for debugging/development and mount the DAGs as a
 # volume mount.
 # TODO(jlewi): Should we also mount the python code used by each step into the container?

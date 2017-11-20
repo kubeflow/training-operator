@@ -77,6 +77,9 @@ def build_images(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
   if not conf:
     conf = {}
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+  logging.info("artifacts_path %s", artifacts_path)
 
   # Make sure pull_number is a string
   pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
@@ -97,7 +100,7 @@ def build_images(dag_run=None, ti=None, **_kwargs):
 
   build_info_file = os.path.join(gcs_path, "build_info.yaml")
   args.append("--build_info_path=" + build_info_file)
-  args.append("--releases_path=" + os.path.join(gcs_path))
+  args.append("--releases_path=" + gcs_path)
   args.append("--project=" + GCB_PROJECT)
 
   # We want subprocess output to bypass logging module otherwise multiline
@@ -134,8 +137,13 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
 
   now = datetime.now()
   cluster = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_setup_cluster.xml")
+
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH",
+                            run_path(dag_run.dag_id, dag_run.run_id))
+  logging.info("artifacts_path %s", artifacts_path)
+
+  junit_path = os.path.join(artifacts_path, "junit_setup_cluster.xml")
   logging.info("junit_path %s", junit_path)
 
   args = ["python", "-m", "py.deploy", "setup"]
@@ -164,8 +172,11 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
 
   cluster = ti.xcom_pull("setup_cluster", key="cluster")
 
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_e2e.xml")
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH",
+                            run_path(dag_run.dag_id, dag_run.run_id))
+  logging.info("artifacts_path %s", artifacts_path)
+  junit_path = os.path.join(artifacts_path, "junit_e2e.xml")
   logging.info("junit_path %s", junit_path)
   ti.xcom_push(key="cluster", value=cluster)
 
@@ -187,8 +198,10 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   cluster = ti.xcom_pull("setup_cluster", key="cluster")
 
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_teardown.xml")
+  gcs_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
+                          "junit_teardown.xml")
+
+  junit_path = conf.get("ARTIFACTS_PATH", gcs_path)
   logging.info("junit_path %s", junit_path)
   ti.xcom_push(key="cluster", value=cluster)
 

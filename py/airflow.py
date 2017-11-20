@@ -4,9 +4,14 @@ import json
 import logging
 import os
 import requests
+import sys
+import tempfile
+import time
 
 import google.auth
 import google.auth.transport.requests
+from google.cloud import storage  # pylint: disable=no-name-in-module
+from py import prow
 from py import util
 
 E2E_DAG = "tf_k8s_tests"
@@ -124,16 +129,13 @@ def trigger_tf_k8s_tests_dag(client, conf):
   # execution_date the server will end up assigning one. To work around this
   # we set execution date to the run id.
   execution_date = run_id
-  conf = {
-    "PULL_NUMBER": 144,
-    "PULL_PULL_SHA": "12e6f092555562628f0c5116ff181a4fbbe1ac35",
-  }
   resp = client.trigger_dag(E2E_DAG, run_id, json.dumps(conf), execution_date)
+  logging.info("Triggered DAG %s run_id %s with conf %s", E2E_DAG, run_id, conf)
 
   return run_id, resp
 
 def wait_for_tf_k8s_tests(client, run_id,
-                          timeout=datetime.timedelta(minutes=20),
+                          timeout=datetime.timedelta(minutes=30),
                           polling_interval=datetime.timedelta(seconds=15)):
   """Wait for the E2E pipeline to finish.
 
@@ -151,13 +153,18 @@ def wait_for_tf_k8s_tests(client, run_id,
     # TODO(jlewi): Airflow only allows us to get the stats of individual tasks
     # not the overall DAG. So we just get the status of the final teardown step.
     # This should be sufficient for our purposes.
+    #
+    # In the ui it looks like every DAG has a task "undefined" that indicates
+    # overall status of the DAG; but we get an error if we try to get this
+    # task using the API.
     resp = client.get_task_status(E2E_DAG, run_id, "teardown_cluster")
 
     state = resp.get("state", "")
-
-    # TODO(jlewi): What if earlier stages fail and teardown_cluster never
-    # runs? Perhaps we should look at every task in the DAG.
-    if state and not state == "running":
+    logging.info("State of DAG %s run %s step teardown_cluster: %s",
+                 E2E_DAG, run_id, state)
+    # If earlier stages fail and teardown_cluster never than the state of
+    # of the step will be "upstream_failed"
+    if state and not state in ["running", "None"]:
       return state
     if datetime.datetime.now() + polling_interval > endtime:
       raise util.TimeoutError(
@@ -172,6 +179,9 @@ def main():
   This main program is intended to be triggered by PROW and used to launch
   The Airflow pipelines comprising our test and release pipelines.
   """
+  # TODO(jlewi): Need to upload various artifacts for gubernator
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator.
+  # e.g. started.json.
   this_dir = os.path.dirname(__file__)
   version_file = os.path.join(this_dir, "version.json")
   if os.path.exists(version_file):
@@ -192,11 +202,44 @@ def main():
     logging.info("%s=%s", n, os.environ[n])
   logging.info("End Environment Variables")
 
+  test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+  # Setup a logging file handler. This file will be the build log.
+  rootLogger = logging.getLogger()
+
+  build_log = os.path.join(test_dir, "build-log.txt")
+  fileHandler = logging.FileHandler(build_log)
+  # TODO(jlewi): Should we set the formatter?
+  rootLogger.addHandler(fileHandler)
+
+  logging.info("test_dir: %s", test_dir)
+
+  # Activate the service account for gcloud
+  # If you don't activate it then you should already be logged in.
+  if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    logging.info("GOOGLE_APPLICATION_CREDENTIALS=%s",
+               os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+    util.run(["gcloud", "auth", "activate-service-account",
+            "--key-file={0}".format(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))])
+  job_name = os.getenv("JOB_NAME", "")
+  build_number = os.getenv("BUILD_NUMBER")
+  pull_number = os.getenv("PULL_NUMBER")
+  output_dir = prow.get_gcs_output()
+  artifacts_path = os.path.join(prow.get_gcs_output(), "artifacts")
+  logging.info("Artifacts will be saved to: %s", artifacts_path)
+  sha = prow.get_commit_from_env()
+  gcs_client = storage.Client()
+  prow.create_started(gcs_client, output_dir, sha)
+
   conf = {
     "PULL_NUMBER": os.getenv("PULL_NUMBER", ""),
     "PULL_PULL_SHA": os.getenv("PULL_PULL_SHA", ""),
     "PULL_BASE_SHA": os.getenv("PULL_BASE_SHA", ""),
+    "ARTIFACTS_PATH": artifacts_path,
   }
+
+  symlink = prow.get_symlink_output(pull_number, job_name, build_number)
+  if symlink:
+    prow.create_symlink(gcs_client, symlink, output_dir)
 
   # TODO(jlewi): We should probably configure Ingress and IAP for Airflow sever
   # and use a static IP.
@@ -209,10 +252,31 @@ def main():
   client = AirflowClient(base_url, credentials, verify=False)
 
   run_id, message = trigger_tf_k8s_tests_dag(client, conf)
-  logging.info("Triggered DAG %s run_id %s".format(E2E_DAG, run_id))
 
   state = wait_for_tf_k8s_tests(client, run_id)
   logging.info("DAG %s run_id %s is in state %s", E2E_DAG, run_id, state)
+
+  test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+
+  if state == "success":
+    success = True
+  else:
+    success = False
+
+  if success:
+    job_name = os.getenv("JOB_NAME", "unknown")
+    prow.create_latest(gcs_client, job_name, sha)
+
+  prow.create_finished(gcs_client, output_dir, success)
+
+  fileHandler.flush()
+  prow.upload_outputs(gcs_client, output_dir, test_dir, build_log)
+
+  if not success:
+    # Exit with a non-zero exit code by raising an exception.
+    logging.error("One or more test steps failed exiting with non-zero exit "
+                  "code.")
+    sys.exit(1)
 
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
