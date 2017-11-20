@@ -143,7 +143,7 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
                             run_path(dag_run.dag_id, dag_run.run_id))
   logging.info("artifacts_path %s", artifacts_path)
 
-  junit_path = os.path.join(artifacts_path, "junit_setup_cluster.xml")
+  junit_path = os.path.join(artifacts_path, "junit_setupcluster.xml")
   logging.info("junit_path %s", junit_path)
 
   args = ["python", "-m", "py.deploy", "setup"]
@@ -198,10 +198,12 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   cluster = ti.xcom_pull("setup_cluster", key="cluster")
 
-  gcs_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                          "junit_teardown.xml")
+  gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
 
-  junit_path = conf.get("ARTIFACTS_PATH", gcs_path)
+  artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+  logging.info("artifacts_path %s", artifacts_path)
+
+  junit_path = os.path.join(artifacts_path, "junit_teardown.xml")
   logging.info("junit_path %s", junit_path)
   ti.xcom_push(key="cluster", value=cluster)
 
