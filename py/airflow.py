@@ -173,15 +173,40 @@ def wait_for_tf_k8s_tests(client, run_id,
     logging.info("Waiting for DAG %s run %s to finish.", E2E_DAG, run_id)
     time.sleep(polling_interval.seconds)
 
-def main():
-  """Trigger Airflow pipelines.
 
-  This main program is intended to be triggered by PROW and used to launch
-  The Airflow pipelines comprising our test and release pipelines.
+def _run_dag_and_wait():
+  """Run and wait for the DAG to finish.
+
+  Returns:
+    state: The end state of the DAG.
   """
-  # TODO(jlewi): Need to upload various artifacts for gubernator
-  # https://github.com/kubernetes/test-infra/tree/master/gubernator.
-  # e.g. started.json.
+  artifacts_path = os.path.join(prow.get_gcs_output(), "artifacts")
+  logging.info("Artifacts will be saved to: %s", artifacts_path)
+
+  conf = {
+    "PULL_NUMBER": os.getenv("PULL_NUMBER", ""),
+    "PULL_PULL_SHA": os.getenv("PULL_PULL_SHA", ""),
+    "PULL_BASE_SHA": os.getenv("PULL_BASE_SHA", ""),
+    "ARTIFACTS_PATH": artifacts_path,
+  }
+
+  # TODO(jlewi): We should probably configure Ingress and IAP for Airflow sever
+  # and use a static IP.
+  PROW_K8S_MASTER = "35.202.163.166"
+  base_url = "https://{0}/api/v1/proxy/namespaces/default/services/airflow:80".format(PROW_K8S_MASTER)
+
+  credentials, _ = google.auth.default(
+    scopes=["https://www.googleapis.com/auth/cloud-platform"])
+
+  client = AirflowClient(base_url, credentials, verify=False)
+
+  run_id, message = trigger_tf_k8s_tests_dag(client, conf)
+
+  state = wait_for_tf_k8s_tests(client, run_id)
+  return state
+
+def _print_debug_info():
+  """Print out various information to facilitate debugging."""
   this_dir = os.path.dirname(__file__)
   version_file = os.path.join(this_dir, "version.json")
   if os.path.exists(version_file):
@@ -202,7 +227,18 @@ def main():
     logging.info("%s=%s", n, os.environ[n])
   logging.info("End Environment Variables")
 
+def main():
+  """Trigger Airflow pipelines.
+
+  This main program is intended to be triggered by PROW and used to launch
+  The Airflow pipelines comprising our test and release pipelines.
+  """
+  _print_debug_info()
+  # TODO(jlewi): Need to upload various artifacts for gubernator
+  # https://github.com/kubernetes/test-infra/tree/master/gubernator.
+  # e.g. started.json.
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
+
   # Setup a logging file handler. This file will be the build log.
   rootLogger = logging.getLogger()
 
@@ -224,37 +260,16 @@ def main():
   build_number = os.getenv("BUILD_NUMBER")
   pull_number = os.getenv("PULL_NUMBER")
   output_dir = prow.get_gcs_output()
-  artifacts_path = os.path.join(prow.get_gcs_output(), "artifacts")
-  logging.info("Artifacts will be saved to: %s", artifacts_path)
+
   sha = prow.get_commit_from_env()
   gcs_client = storage.Client()
   prow.create_started(gcs_client, output_dir, sha)
-
-  conf = {
-    "PULL_NUMBER": os.getenv("PULL_NUMBER", ""),
-    "PULL_PULL_SHA": os.getenv("PULL_PULL_SHA", ""),
-    "PULL_BASE_SHA": os.getenv("PULL_BASE_SHA", ""),
-    "ARTIFACTS_PATH": artifacts_path,
-  }
 
   symlink = prow.get_symlink_output(pull_number, job_name, build_number)
   if symlink:
     prow.create_symlink(gcs_client, symlink, output_dir)
 
-  # TODO(jlewi): We should probably configure Ingress and IAP for Airflow sever
-  # and use a static IP.
-  PROW_K8S_MASTER = "35.202.163.166"
-  base_url = "https://{0}/api/v1/proxy/namespaces/default/services/airflow:80".format(PROW_K8S_MASTER)
-
-  credentials, _ = google.auth.default(
-    scopes=["https://www.googleapis.com/auth/cloud-platform"])
-
-  client = AirflowClient(base_url, credentials, verify=False)
-
-  run_id, message = trigger_tf_k8s_tests_dag(client, conf)
-
-  state = wait_for_tf_k8s_tests(client, run_id)
-  logging.info("DAG %s run_id %s is in state %s", E2E_DAG, run_id, state)
+  state = _run_dag_and_wait()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
 

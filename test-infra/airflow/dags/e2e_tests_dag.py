@@ -143,6 +143,8 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
                             run_path(dag_run.dag_id, dag_run.run_id))
   logging.info("artifacts_path %s", artifacts_path)
 
+  # Gubernator only recognizes XML files whos name matches
+  # junit_[^_]*.xml which is why its "setupcluster" and not "setup_cluster"
   junit_path = os.path.join(artifacts_path, "junit_setupcluster.xml")
   logging.info("junit_path %s", junit_path)
 
