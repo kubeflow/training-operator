@@ -9,7 +9,7 @@ A TfJob YAML can be configured and run using jinja2 and kubectl:
 ```bash
 LOG_DIR=<gcs-bucket-path>
 # e.g. gs://${PROJECT_ID}-k8s/logs/tf-v2017111800001
-AGENTS_CPU=gcr.io/dev01-181118-181500/agents-example
+AGENTS_CPU=gcr.io/dev01-181118-181500/agents:cpu
 jinja2 deployment.yaml.template \
    -D image=${AGENTS_CPU} \
    -D job_name=tfagents \
@@ -29,16 +29,17 @@ gcloud container builds submit \
 Example tensorboard results can be accessed via the following
 
 ```bash
-tensorboard --logdir gs://agents-k8s-share/jobs/tensorflow-20171117102413/20171117T182424-pybullet_ant
+gsutil -u <your-project-to-bill-for-xfer> gs://agents-k8s-share/jobs/tensorflow-20171117102413/20171117T182424-pybullet_ant <your-target-dir-or-bucket>
+tensorboard --logdir <your-target-dir-or-bucket>
 ```
 
 for example showing the training and eval mean score vs. wall time
 
-![](mean_score.png)
+<img src="mean_score.png" height="250px">
 
 # Rendering
 
-A render job can be initiated as follows, templating the '--mode render' into
+A render job can be initiated as follows, templating the '--mode render' argument into the job YAML with the following
 
 ```bash
 jinja2 deployment.yaml.template \

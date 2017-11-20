@@ -6,11 +6,14 @@ import logging
 import os
 
 import agents
-import pybullet_envs  # To make AntBulletEnv-v0 available.
 import tensorflow as tf
+
+import pybullet_envs  # To make AntBulletEnv-v0 available.
 
 
 def pybullet_ant():
+  '''Hyperparameter configuration written by save_config and loaded by train.'''
+
   # General
   algorithm = agents.ppo.PPOAlgorithm
   num_agents = 10
@@ -46,22 +49,35 @@ def pybullet_ant():
 
 
 def main(args):
+  '''Main entrypoint to model training and rendering.'''
+
   agents.scripts.utility.set_up_logging()
   log_dir = args.log_dir and os.path.expanduser(args.log_dir)
   if log_dir:
     log_dir = os.path.join(
         log_dir, '{}-{}'.format(args.timestamp, args.config))
+
+  # Run in training mode
   if args.mode == 'train':
     try:
       # Try to resume training.
       config = agents.scripts.utility.load_config(args.log_dir)
     except IOError:
-      # Start new training run.
+      # Load hparams from object in globals() by name.
       config = agents.tools.AttrDict(globals()[args.config]())
+      # Write the hyperparameters for this run to a config YAML for posteriority
       config = agents.scripts.utility.save_config(config, log_dir)
+
+    # Start a training run with parameters provided in config
     for score in agents.scripts.train.train(config, env_processes=True):
       logging.info('Score {}.'.format(score))
+
+  # Run in render mode, i.e. generate a short video of the model performing the
+  # task.
   if args.mode == 'render':
+
+    # Read model checkpoint from args.log_dir and render num_agents for
+    # num_episodes.
     agents.scripts.visualize.visualize(
         logdir=args.log_dir, outdir=args.log_dir, num_agents=1, num_episodes=5,
         checkpoint=None, env_processes=True)

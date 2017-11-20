@@ -12,11 +12,19 @@
 
 FROM gcr.io/tensorflow/tensorflow:1.3.0
 
+# For pulling agents via github
 RUN apt-get update && apt-get install -y git
+
+# For renders
+RUN apt-get install -y libav-tools
+
+# Agents and environment interaction
 RUN pip install -e git://github.com/tensorflow/agents.git#egg=agents
+
+# For environments
 RUN pip install gym pybullet
 
-ADD . /opt/mlkube
-WORKDIR /opt/mlkube
+ADD task.py /app/
+WORKDIR /app/
 
-ENTRYPOINT ["python", "-m", "trainer.task"]
+ENTRYPOINT ["python", "task.py"]
