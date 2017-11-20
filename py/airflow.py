@@ -164,7 +164,7 @@ def wait_for_tf_k8s_tests(client, run_id,
                  E2E_DAG, run_id, state)
     # If earlier stages fail and teardown_cluster never than the state of
     # of the step will be "upstream_failed"
-    if state and not state in ["running", "None"]:
+    if state and not state in ["queued", "running", "None"]:
       return state
     if datetime.datetime.now() + polling_interval > endtime:
       raise util.TimeoutError(
