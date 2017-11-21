@@ -20,5 +20,22 @@ spec:
               - --mode
               - {{mode}}
           restartPolicy: OnFailure
+    - replicas: 2
+      tfReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: {{image}}
+              name: tensorflow
+              args:
+              - --log_dir
+              - {{log_dir}}
+              - --config
+              - {{environment}}
+              - --mode
+              - {{mode}}
+          restartPolicy: OnFailure
+    - replicas: 2
+      tfReplicaType: PS
   tensorBoard:
     logDir: {{log_dir}}

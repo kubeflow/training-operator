@@ -15,7 +15,7 @@ jinja2 deployment.yaml.template \
    -D job_name=tfagents \
    -D log_dir=${LOG_DIR} \
    -D environment=pybullet_ant \
-   -D mode=train
+   -D mode=train \
    | kubectl create -f -
 ```
 
