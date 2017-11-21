@@ -69,6 +69,8 @@ http://${PROXY}/api/v1/proxy/namespaces/default/services/airflow:80/admin/
 ```
   * TODO(jlewi): This doesn't work so well because Airflow redirects won't work as expected. Using NodePort and then creating an SSH
     tunnel might work better.
+      * Oftentimes you can make a given URL work (e.g. the URL for logs) by copying the link and appending it to the URL given
+        above.
 
 
 ## Running Airflow locally
