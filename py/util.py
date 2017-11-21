@@ -381,7 +381,7 @@ def split_gcs_uri(gcs_uri):
   return bucket, path
 
 def _refresh_credentials():
-  # I tried userinfo.email scope that was insufficient; got unauthorized errors.
+  # userinfo.email scope was insufficient for authorizing requests to K8s.
   credentials, _ = google.auth.default(
     scopes=["https://www.googleapis.com/auth/cloud-platform"])
   request = google.auth.transport.requests.Request()

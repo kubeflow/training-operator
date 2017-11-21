@@ -19,73 +19,49 @@ defines the ProwJobs.
  * [tf-k8s Test Results Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
  * [tf-k8s Prow Jobs dashboard](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
-## Anatomy of our Prow Jobs
+## Anatomy of our Tests
 
+![Test Infrastructure](test_infrastructure.png)
 * Our prow jobs are defined in [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
-* Each prow job defines a K8s PodSpec indicating
-* Our prow jobs use [bootstrap.py](image/bootstrap.py) to checkout at
-  the repository at the commit being tested.
-*  [bootstrap.py](image/bootstrap.py) will then invoke
-   [runner.py](runner.py)
-* [runner.py](runner.py) runs the test
-    * Builds and pushes a Docker image for the CRD
-    * Creates a GKE cluster
-    * Invokes [helm-test/main.go](helm-test/main.go) to deploy the
-      helm package and run the helm tests
-    * Delete the GKE cluster
+* Each prow job defines a K8s PodSpec indicating a command to run
+* Our prow jobs use [airflow.py](../py/airflow.py) to trigger an Airflow pipeline that checks out our code
+  and runs our Tests.
+* Our tests are structured as Airflow pipelines so that we can easily perform steps in parallel.
+* The Airflow pipeline is defined in [e2e_tests_dag.py](airflow/dags/e2e_tests_dag.py)
+    * Builds and pushes a Docker image and helm package for the CRD (see [release.py](../py/release.py))
+    * Creates a GKE cluster (see [deploy.py](../py/deploy.py))
+    * Deploys the CRD (see [deploy.py](../py/deploy.py))
+    * Runs the tests (see [deploy.py](../py/deploy.py))
+    * Delete the GKE cluster (see [deploy.py](../py/deploy.py))
     * Copy test results/artifacts to GCS for gubernator
-    * TODO(jlewi): runner.py and main.go should be merged into a single
-      go program.
 
-## Running the E2E tests manually.
+## Running the E2E tests locally
 
-[runner.py](runner.py) can be invoked directly without using Prow
-to easily test your local changes.
+Each step in our Airflow pipeline just invokes a binary. So any of the steps can be performed locally just
+by running the appropriate binary.
 
-```
-python ./test-infra/runner.py --project=${PROJECT} --zone=${ZONE}
-  --src_dir=${REPO_PATH}
-```
+For example to manually debug a presubmit you can do something like the following
 
-* Specify a project and zone where the GKE cluster will be created.
-* runner.py will perform all steps; e.g.
-   * Building Docker images
-   * Starting a cluster
-   * etc..
-
-If you don't want to use a GKE cluster
+Build the artifacts for a presubmit
 
 ```
-python ./test-infra/runner.py --no-gke--src_dir=${SRC_PATH}
-```
-
-* In this case the test will use whatever cluster kubectl is configured
-   to use.
-
-You can also run the tests inside the Docker image,
-  gcr.io/mlkube-testing/builder:latest, used by prow
-    * This can be useful for debugging or testing changes
-
-  ```
-  docker run -ti -v ${REPO_PATH}:/go/src/github.com/tensorflow/k8s \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --entrypoint=/bin/bash gcr.io/mlkube-testing/builder:latest
-  gcloud auth login
-  gcloud auth application-default login
-  python ${REPO_PATH}/test-infra/runner.py --no-gcb
-  ```
-
-## Running the test for a specific image
-
-If want to debug a presubmit you may not want to rebuild the Docker
-images. In thise case you can rerun the test by doing
+python -m py.release pr --registry ${REGISTRY} --project=${PROJECT} --releases_path=${RELEASES_PATH} --pr=${PR} --commit=${COMMIT}
 
 ```
-go install github.com/tensorflow/k8s/test-infra/helm-test
-${GOPATH}/bin/helm-test --image=${DOCKER_IMAGE} --output_dir=/tmp/testOutput
+
+Create a GKE cluster and deploy the artifacts
+
 ```
-    * The docker image used by the presubmit should be availabe from
-      the presubmit logs.
+python -m py.deploy setup --project=${PROJECT} --zone=${ZONE} --cluster=${CLUSTER} --chart=${CHART}
+
+```  
+
+Run the tests
+
+```
+python -m py.deploy test --project=${PROJECT} --zone=${ZONE} --cluster=${CLUSTER}
+```  
+  * TODO(jlewi): We should probably add an option to run on whatever cluster kubectl is configured to use.
 
 ## Testing Changes to the ProwJobs
 
