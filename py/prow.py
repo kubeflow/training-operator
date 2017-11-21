@@ -163,11 +163,9 @@ def create_symlink(gcs_client, symlink, output):
 
 
 def upload_outputs(gcs_client, output_dir, build_log):
-  m = GCS_REGEX.match(output_dir)
-  bucket = m.group(1)
-  path = m.group(2)
+  bucket_name, path = util.split_gcs_uri(output_dir)
 
-  bucket = gcs_client.get_bucket(bucket)
+  bucket = gcs_client.get_bucket(bucket_name)
 
   if not os.path.exists(build_log):
     logging.error("File %s doesn't exist.", build_log)

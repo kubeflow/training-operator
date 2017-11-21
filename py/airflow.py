@@ -40,10 +40,19 @@ class AirflowClient(object):
     self._credentials = credentials
     self._verify = verify
 
-  def _request(self, url, method="GET", json_body=None):
+  def _request(self, url, method="GET", json_body=None, timeout=10):
+    """Request a given URL.
+
+    Args:
+      url: The url to request.
+      method: The method to use.
+      json_body: (Optional) json body to include in posts.
+      timeout: Timeout for the request in seconds.
+    """
     params = {
           "url": url,
           "headers": {},
+          "timeout": timeout,
         }
     if json is not None:
       params["json"] = json_body
