@@ -9,6 +9,7 @@ class TestCase(object):
   def __init__(self):
     self.class_name = None
     self.name = None
+    # Time in seconds of the test.
     self.time = None
     # String describing the failure.
     self.failure = None
