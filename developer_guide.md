@@ -37,7 +37,7 @@ To build the following artifacts:
 You can run
 
 ```sh
-python -m release.py --registry=${REGISTRY}
+python -m py.release local --registry=${REGISTRY}
 ```
   * The docker image will be tagged into your registry
   * The helm chart will be created in **./bin**
