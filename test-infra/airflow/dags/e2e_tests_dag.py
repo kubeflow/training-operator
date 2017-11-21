@@ -9,6 +9,7 @@ An Airflow pipeline for running our E2E tests.
 from datetime import datetime
 import logging
 import os
+import tempfile
 import uuid
 
 from airflow import DAG
@@ -55,7 +56,7 @@ class FakeDagrun(object):
     self.run_id = "test_run"
     self.conf = {}
 
-def build_images(dag_run=None, ti=None, **_kwargs):
+def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
   Args:
     dag_run: A DagRun object. This is passed in as a result of setting
@@ -98,11 +99,22 @@ def build_images(dag_run=None, ti=None, **_kwargs):
 
   dryrun = bool(conf.get("dryrun", False))
 
+  # Pick the directory where the source will be checked out.
+  # This should be a persistent location that is accessible from subsequent
+  # tasks; e.g. an NFS share or PD.
+  src_dir = os.path.join(os.getenv("SRC_DIR", tempfile.gettempdir()),
+                         dag_run.dag_id.replace(":", "_"),
+                         dag_run.run_id.replace(":", "_"))
+  logging.info("Using src_dir %s", src_dir)
+  os.makedirs(src_dir)
+  logging.info("xcom push: src_dir=%s", src_dir)
+  ti.xcom_push(key="src_dir", value=src_dir)
+
   build_info_file = os.path.join(gcs_path, "build_info.yaml")
   args.append("--build_info_path=" + build_info_file)
   args.append("--releases_path=" + gcs_path)
   args.append("--project=" + GCB_PROJECT)
-
+  args.append("--src_dir=" + src_dir)
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
@@ -218,11 +230,61 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
 
+def py_checks_gen(command):
+  """Create a callable to run the specified py_check command."""
+  def run_py_checks(dag_run=None, ti=None, **_kwargs):
+    """Run some of the python checks."""
+
+    conf = dag_run.conf
+    if not conf:
+      conf = {}
+
+    dryrun = bool(conf.get("dryrun", False))
+
+    src_dir = ti.xcom_pull(None, key="src_dir")
+    logging.info("src_dir %s", src_dir)
+
+    gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
+
+    artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+    logging.info("artifacts_path %s", artifacts_path)
+
+    junit_path = os.path.join(artifacts_path, "junit_pychecks{0}.xml".format(command))
+    logging.info("junit_path %s", junit_path)
+
+    args = ["python", "-m", "py.py_checks", command]
+    args.append("--src_dir=" + src_dir)
+    args.append("--junit_path=" + junit_path)
+    args.append("--project=" + GCB_PROJECT)
+
+    # We want subprocess output to bypass logging module otherwise multiline
+    # output is squashed together.
+    util.run(args, use_print=True, dryrun=dryrun)
+
+  return run_py_checks
+
+def done(**_kwargs):
+  logging.info("Executing done step.")
+
 build_op = PythonOperator(
   task_id='build_images',
     provide_context=True,
     python_callable=build_images,
     dag=dag)
+
+py_lint_op = PythonOperator(
+  task_id='pylint',
+    provide_context=True,
+    python_callable=py_checks_gen("lint"),
+    dag=dag)
+py_lint_op.set_upstream(build_op)
+
+py_test_op = PythonOperator(
+  task_id='pytest',
+    provide_context=True,
+    python_callable=py_checks_gen("test"),
+    dag=dag)
+py_test_op.set_upstream(build_op)
 
 setup_cluster_op = PythonOperator(
   task_id='setup_cluster',
@@ -247,3 +309,12 @@ teardown_cluster_op = PythonOperator(
     dag=dag)
 
 teardown_cluster_op.set_upstream(run_tests_op)
+
+# Create an op that can be used to determine when all other tasks are done.
+done_op = PythonOperator(
+  task_id='done',
+    provide_context=True,
+    python_callable=done,
+    dag=dag)
+
+done_op.set_upstream([teardown_cluster_op, py_lint_op, py_test_op])

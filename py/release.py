@@ -27,6 +27,8 @@ JOB_NAME = "tf-k8s-postsubmit"
 
 GCB_PROJECT = "tf-on-k8s-releasing"
 
+# Directory to checkout the source.
+REPO_DIR = "git_tensorflow_k8s"
 
 def get_latest_green_presubmit(gcs_client):
   """Find the commit corresponding to the latest passing postsubmit."""
@@ -324,33 +326,35 @@ def build_local(args):
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   build_and_push(go_dir, src_dir, args)
 
-def build_postsubmit(args):
-  """Build the artifacts from a postsubmit."""
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+def build_commit(args, branches):
+  top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  logging.info("Top level directory for source: %s", top_dir)
+
+  go_dir = os.path.join(top_dir, "go")
   os.environ["GOPATH"] = go_dir
   logging.info("Temporary go_dir: %s", go_dir)
 
+  clone_dir = os.path.join(top_dir, REPO_DIR)
   src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit)
+  util.clone_repo(clone_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit, branches)
 
+  # Create a symbolic link in the go path.
+  os.makedirs(os.path.dirname(src_dir))
+  logging.info("Creating symbolic link %s pointing to %s", src_dir, clone_dir)
+  os.symlink(clone_dir, src_dir)
+  util.install_go_deps(clone_dir)
   build_and_push(go_dir, src_dir, args)
+
+def build_postsubmit(args):
+  """Build the artifacts from a postsubmit."""
+  build_commit(args, None)
 
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  os.environ["GOPATH"] = go_dir
-  logging.info("Temporary go_dir: %s", go_dir)
-
-  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
-
   branches = ["pull/{0}/head:pr".format(args.pr)]
-  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit,
-                  branches=branches)
-
-  build_and_push(go_dir, src_dir, args)
+  build_commit(args, branches)
 
 def build_lastgreen(args):  # pylint: disable=too-many-locals
   """Find the latest green postsubmit and build the artifacts.
@@ -415,11 +419,10 @@ def add_common_args(parser):
                       help="Don't do a dry run.")
   parser.set_defaults(dryrun=False)
 
-def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+def build_parser():
   # create the top-level parser
   parser = argparse.ArgumentParser(
-      description="Build the release artifacts.")
+    description="Build the release artifacts.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
@@ -439,15 +442,21 @@ def main():  # pylint: disable=too-many-locals
   parser_postsubmit = subparsers.add_parser(
     "postsubmit",
     help="Build the artifacts from a postsbumit.")
+  parser_postsubmit.set_defaults(func=build_postsubmit)
 
   add_common_args(parser_postsubmit)
 
   parser_postsubmit.add_argument(
     "--commit",
-      default=None,
+    default=None,
       type=str,
       help="Optional a particular commit to checkout and build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_postsubmit.add_argument(
+    "--src_dir",
+    default=None,
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   ############################################################################
   # Last Green
@@ -468,19 +477,29 @@ def main():  # pylint: disable=too-many-locals
 
   parser_pr.add_argument(
     "--pr",
-      required=True,
+    required=True,
       type=str,
       help="The PR to build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
 
   parser_pr.add_argument(
     "--commit",
-      default=None,
+    default=None,
       type=str,
       help="Optional a particular commit to checkout and build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_pr.add_argument(
+    "--src_dir",
+    default=None,
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   parser_pr.set_defaults(func=build_pr)
+  return parser
+
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+
+  parser = build_parser()
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()

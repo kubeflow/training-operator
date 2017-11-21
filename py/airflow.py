@@ -160,16 +160,16 @@ def wait_for_tf_k8s_tests(client, run_id,
   endtime = datetime.datetime.now() + timeout
   while True:
     # TODO(jlewi): Airflow only allows us to get the stats of individual tasks
-    # not the overall DAG. So we just get the status of the final teardown step.
+    # not the overall DAG. So we just get the status of the final step.
     # This should be sufficient for our purposes.
     #
     # In the ui it looks like every DAG has a task "undefined" that indicates
     # overall status of the DAG; but we get an error if we try to get this
     # task using the API.
-    resp = client.get_task_status(E2E_DAG, run_id, "teardown_cluster")
+    resp = client.get_task_status(E2E_DAG, run_id, "done")
 
     state = resp.get("state", "")
-    logging.info("State of DAG %s run %s step teardown_cluster: %s",
+    logging.info("State of DAG %s run %s step done: %s",
                  E2E_DAG, run_id, state)
     # If earlier stages fail and teardown_cluster never than the state of
     # of the step will be "upstream_failed"
