@@ -60,6 +60,10 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
       # With Airflow use print to bypass logging module.
       print("Subprocess output:\n")
       print(e.output)
+      # TODO(jlewi): If we don't use logging output ends up not being
+      # captured by logs in Airflow. This is totally messed up. In the meantime
+      # this hack of using logging and print ensures we see errors.
+      logging.info("Subprocess output:\n%s", e.output)
     else:
       logging.info("Subprocess output:\n%s", e.output)
     raise
@@ -122,16 +126,17 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
   # the version of the code tested.
   sha = run_and_output(["git", "rev-parse", "HEAD"], cwd=dest)
 
+  return dest, sha
+
+def install_go_deps(src_dir):
+  """Run glide to install dependencies."""
   # Install dependencies
-  run(["glide", "install"], cwd=dest)
+  run(["glide", "install"], cwd=src_dir)
 
   # We need to remove the vendored dependencies of apiextensions otherwise we
   # get type conflicts.
-  shutil.rmtree(os.path.join(dest,
+  shutil.rmtree(os.path.join(src_dir,
                              "vendor/k8s.io/apiextensions-apiserver/vendor"))
-
-  return dest, sha
-
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
