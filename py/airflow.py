@@ -36,18 +36,17 @@ class AirflowClient(object):
       verify: Whether or not to verify TLS certs
     """
     self._api_base_url = base_url
-    if self._api_base_url[-1] == "/":
-      self._api_base_url = self._api_base_url[:-1]
+    self._api_base_url = self._api_base_url.rstrip("/")
     self._credentials = credentials
     self._verify = verify
 
-  def _request(self, url, method='GET', json_body=None):
+  def _request(self, url, method="GET", json_body=None):
     params = {
-          'url': url,
+          "url": url,
           "headers": {},
         }
     if json is not None:
-      params['json'] = json_body
+      params["json"] = json_body
     params["verify"] = self._verify
     if self._credentials:
       if not self._credentials.valid:
@@ -58,24 +57,23 @@ class AirflowClient(object):
     if not resp.ok:
       try:
         data = resp.json()
-      # TODO(jlewi): This code was copied from Airflow client.
-      # We should see if we can catch a more specific exception.
-      except Exception:  # pylint: disable=broad-except
+      except requests.exceptions.RequestException as e:
+        logging.error("Failed to request url: %s; error; %s", url, e)
         data = {}
-      raise IOError(data.get('error', 'Server error'))
+      raise IOError(data.get("error", "Server error"))
 
     return resp.json()
 
   def trigger_dag(self, dag_id, run_id=None, conf=None, execution_date=None):
-    endpoint = '/api/experimental/dags/{}/dag_runs'.format(dag_id)
+    endpoint = "/api/experimental/dags/{}/dag_runs".format(dag_id)
     url = self._api_base_url + endpoint
-    data = self._request(url, method='POST',
+    data = self._request(url, method="POST",
                              json_body={
                                "run_id": run_id,
                                "conf": conf,
                                "execution_date": execution_date,
                              })
-    return data['message']
+    return data["message"]
 
   def get_task_info(self, dag_id, task_id):
     """Return information about the specified task.
