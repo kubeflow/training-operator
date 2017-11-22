@@ -9,7 +9,7 @@ cloud:
 
 ## Wether the dashboard should be installed and the kind of service to use
 dashboard: 
-  install: true
+  install: false
   serviceType: ClusterIP
 
 ## Install Default RBAC roles and bindings
