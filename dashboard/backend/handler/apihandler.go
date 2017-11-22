@@ -112,9 +112,13 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 			panic(err)
 		}
 
-		// Should never be more than 1 service that matched, handle error
-		// Handle case where no tensorboard is found
-		tfJobDetail.TbService = &tbSpec.Items[0]
+		if len(tbSpec.Items) > 0 {
+			// Should never be more than 1 service that matched, handle error
+			// Handle case where no tensorboard is found
+			tfJobDetail.TbService = &tbSpec.Items[0]
+		} else {
+			fmt.Println(fmt.Sprintf("Couldn't find a TensorBoard service for TfJob %s", job.Metadata.Name))
+		}
 	}
 
 	// Get associated pods

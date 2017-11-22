@@ -25,7 +25,7 @@ spec:
       - name: tf-job-dashboard
         image: {{ .Values.image }}
         command:
-          - /opt/mlkube/dashboard/dashboard-backend
+          - /opt/mlkube/dashboard/backend
         ports:
         - containerPort: 8080 
 {{- end }}

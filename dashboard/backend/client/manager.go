@@ -18,7 +18,7 @@ type ClientManager struct {
 }
 
 func (c *ClientManager) init() {
-	restCfg, err := k8sutil.InClusterConfig()
+	restCfg, err := k8sutil.GetClusterConfig()
 	if err != nil {
 		panic(err)
 	}

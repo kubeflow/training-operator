@@ -23,7 +23,8 @@ func main() {
 
 	http.Handle("/api/", apiHandler)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/mlkube/dashboard/frontend/build/"))))
-	p := ":8081"
+
+	p := ":8080"
 	fmt.Println("Listening on", p)
 
 	http.ListenAndServe(p, nil)

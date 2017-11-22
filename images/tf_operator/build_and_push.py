@@ -111,7 +111,9 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   for t in targets:
     subprocess.check_call(["go", "install", t])
   
-  #Building dashboard's front-end
+  # Resolving dashboard's front-end dependencies
+  subprocess.check_call(["yarn", "--cwd", "./dashboard/frontend", "install"])
+  # Building dashboard's front-end
   subprocess.check_call(["yarn", "--cwd", "./dashboard/frontend", "build"])
 
   root_dir = os.path.abspath(os.path.join(images_dir, '..', '..'))

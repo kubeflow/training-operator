@@ -5,7 +5,7 @@ test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
 # Which cloud provider is kubernetes hosted on.
 # Supported values are gke or azure.
 # If no value is provided, you will have to supply your own configuration, see README.
-cloud: azure
+cloud: 
 
 ## Wether the dashboard should be installed and the kind of service to use
 dashboard: 

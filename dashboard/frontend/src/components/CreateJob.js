@@ -40,9 +40,9 @@ class CreateJob extends Component {
       masterVolumeSpec: {},
       workerVolumeSpec: {},
       psVolumeSpec: {},
-      masterEnvVars: {},
-      workerEnvVars: {},
-      psEnvVars: {}
+      masterEnvVars: [],
+      workerEnvVars: [],
+      psEnvVars: []
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
