@@ -12,12 +12,11 @@
 
 package k8sutil
 
-// TODO(jlewi): We should rename this file to reflect the fact that we are using CRDs and not TPRs.
-
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	log "github.com/golang/glog"
 	"github.com/tensorflow/k8s/pkg/spec"
@@ -32,6 +31,12 @@ import (
 type TfJobClient interface {
 	// Get returns a TfJob
 	Get(ns string, name string) (*spec.TfJob, error)
+
+	// Create a TfJob
+	Create(ns string, j *spec.TfJob) (*spec.TfJob, error)
+
+	// Delete a TfJob
+	Delete(ns string, name string) error
 
 	// List returns a list of TfJobs
 	List(ns string) (*spec.TfJobList, error)
@@ -49,7 +54,7 @@ type TfJobRestClient struct {
 }
 
 func NewTfJobClient() (*TfJobRestClient, error) {
-	config, err := InClusterConfig()
+	config, err := GetClusterConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +80,7 @@ func (c *TfJobRestClient) Client() *http.Client {
 }
 
 func (c *TfJobRestClient) Watch(host, ns string, httpClient *http.Client, resourceVersion string) (*http.Response, error) {
+	host = strings.TrimRight(host, "/")
 	return c.restcli.Client.Get(fmt.Sprintf("%s/apis/%s/%s/%s?watch=true&resourceVersion=%s",
 		host, spec.CRDGroup, spec.CRDVersion, spec.CRDKindPlural, resourceVersion))
 }

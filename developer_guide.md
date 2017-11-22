@@ -3,16 +3,16 @@
 
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
-    ```
-    mkdir -p ${GOPATH}/src/github.com/jlewi
-    ln -sf ${GIT_TRAINING} ${GOPATH}/src/mlkube.io
-    ```
+```sh
+mkdir -p ${GOPATH}/src/github.com/tensorflow
+ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
+```
 
   * GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
-```
+```sh
 glide install
 rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
 ```
@@ -23,11 +23,27 @@ rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
 
 Build it
 
-```
+```sh
 go install github.com/tensorflow/k8s/cmd/tf_operator
 ```
 
-## Runing the Operator Locally
+## Building all the artifacts.
+
+To build the following artifacts:
+
+  * Docker image for the operator
+  * Helm chart for deploying it
+
+You can run
+
+```sh
+python -m py.release local --registry=${REGISTRY}
+```
+  * The docker image will be tagged into your registry
+  * The helm chart will be created in **./bin**
+
+
+## Running the Operator Locally
 
 Running the operator locally (as opposed to deploying it on a K8s cluster) is convenient for debugging/development.
 
@@ -35,8 +51,8 @@ We can configure the operator to run locally using the configuration available i
 a K8s cluster.
 
 Set your environment
-```
-export USE_KUBE_CONFIG=$(echo ~/.kube/config)
+```sh
+export KUBECONFIG=$(echo ~/.kube/config)
 export MY_POD_NAMESPACE=default
 export MY_POD_NAME=my-pod
 ```
@@ -57,12 +73,12 @@ On ubuntu the default go package appears to be gccgo-go which has problems see [
 * Use two spaces for indents in keeping with Python style
 * To autoformat code
 
-  ```
+  ```sh
   autopep8 -i --indent-size=2 path/to/module.py
   ```
 
 * To sort imports
 
-  ```
+  ```sh
   isort path/to/module.py
   ```

@@ -13,6 +13,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
+	"github.com/tensorflow/k8s/pkg/util"
 )
 
 func TestTBReplicaSet(t *testing.T) {
@@ -21,6 +22,7 @@ func TestTBReplicaSet(t *testing.T) {
 	jobSpec := &spec.TfJob{
 		Metadata: meta_v1.ObjectMeta {
 			Name: "some-job",
+			UID: "some-uid",
 		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
@@ -65,6 +67,16 @@ func TestTBReplicaSet(t *testing.T) {
 		"tf_job_name": "some-job",
 	}
 
+	trueVal := true
+	expectedOwnerReference := meta_v1.OwnerReference{
+		APIVersion: "",
+		Kind: "",
+		Name: "some-job",
+		UID: "some-uid",
+		Controller: &trueVal,
+		BlockOwnerDeletion: &trueVal,
+	}
+
 	// Check that a service was created.
 	// TODO: Change this List for a Get for clarity
 	sList, err := clientSet.CoreV1().Services(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
@@ -82,9 +94,17 @@ func TestTBReplicaSet(t *testing.T) {
 		t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
 	}
 
-	name := "tensorboard-some-runtime"
+	name := "some-job-tensorboard-some-runtime"
 	if s.ObjectMeta.Name != name {
 		t.Fatalf("Job.ObjectMeta.Name = %v; want %v", s.ObjectMeta.Name, name)
+	}
+
+	if len(s.ObjectMeta.OwnerReferences) != 1 {
+		t.Fatalf("Expected 1 owner reference got %v", len(s.ObjectMeta.OwnerReferences))
+	}
+
+	if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+		t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 	}
 
 	// Check that a deployment was created.
@@ -105,6 +125,14 @@ func TestTBReplicaSet(t *testing.T) {
 
 	if d.ObjectMeta.Name != name {
 		t.Fatalf("Deployment.ObjectMeta.Name = %v; want %v", d.ObjectMeta.Name, name)
+	}
+
+	if len(d.ObjectMeta.OwnerReferences) != 1 {
+		t.Fatalf("Expected 1 owner reference got %v", len(d.ObjectMeta.OwnerReferences))
+	}
+
+	if !reflect.DeepEqual(d.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+		t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 	}
 
 	// Delete the job.

@@ -1,0 +1,71 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: airflow
+spec:
+  selector:
+    name: airflow
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: airflow
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: airflow
+    spec:
+      containers:
+      - name: airflow
+        image: gcr.io/mlkube-testing/airflow:v20171120-a69fe67-dirty-0e4af7
+        # What arguments do we need to set to use the LocalExecutor
+        command:
+          # Tells entrypoint.sh to start the webserver
+          - /entrypoint.sh
+          - webserver
+        env:
+        - name: POSTGRES_HOST
+          value: localhost
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+        ports:
+        - containerPort: 8080
+      - name: postgres
+        image: postgres:10.1-alpine
+        env:
+        # For a list of POSTGRES environment variables see
+        # https://hub.docker.com/_/postgres/
+        - name: POSTGRES_USER
+          value: airflow
+        - name: POSTGRES_PASSWORD
+          value: airflow
+        - name: POSTGRES_DB
+          value: airflow
+        # PGDATA controls where the data for the DB is stored. We want to
+        # store it on our PD.
+        - name: PGDATA
+          value: /var/lib/postgresql/data/airflow-postgre
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: airflow-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: airflow-data
+          gcePersistentDisk:
+            pdName: airflow-data
+            fsType: ext4
+        - name: google-cloud-key
+          secret:
+            secretName: airflow-key

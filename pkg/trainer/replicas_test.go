@@ -16,6 +16,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
+	"github.com/tensorflow/k8s/pkg/util"
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -24,6 +25,7 @@ func TestTFReplicaSet(t *testing.T) {
 	jobSpec := &spec.TfJob{
 		Metadata: meta_v1.ObjectMeta {
 			Name: "some-job",
+			UID: "some-uid",
 		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
@@ -65,6 +67,16 @@ func TestTFReplicaSet(t *testing.T) {
 		t.Fatalf("replica.Create() error; %v", err)
 	}
 
+	trueVal := true
+	expectedOwnerReference := meta_v1.OwnerReference{
+		APIVersion: "",
+		Kind: "",
+		Name: "some-job",
+		UID: "some-uid",
+		Controller: &trueVal,
+		BlockOwnerDeletion: &trueVal,
+	}
+
 	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
@@ -82,7 +94,7 @@ func TestTFReplicaSet(t *testing.T) {
 		}
 
 		if len(sList.Items) != 2 {
-			t.Fatalf("Expected 1 service got %v", len(sList.Items))
+			t.Fatalf("Expected 2 services got %v", len(sList.Items))
 		}
 
 		s := sList.Items[index]
@@ -91,9 +103,17 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
 		}
 
-		name := fmt.Sprintf("ps-some-runtime-%v", index)
+		name := fmt.Sprintf("some-job-ps-some-runtime-%v", index)
 		if s.ObjectMeta.Name != name {
 			t.Fatalf("Job.ObjectMeta.Name = %v; want %v", s.ObjectMeta.Name, name)
+		}
+
+		if len(s.ObjectMeta.OwnerReferences) != 1 {
+			t.Fatalf("Expected 1 owner reference got %v", len(s.ObjectMeta.OwnerReferences))
+		}
+
+		if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+			t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 
 		// Check that a job was created.
@@ -118,6 +138,14 @@ func TestTFReplicaSet(t *testing.T) {
 
 		if len(j.Spec.Template.Spec.Containers) != 1 {
 			t.Fatalf("Expected 1 container got %v", len(j.Spec.Template.Spec.Containers))
+		}
+
+		if len(j.ObjectMeta.OwnerReferences) != 1 {
+			t.Fatalf("Expected 1 owner reference got %v", len(j.ObjectMeta.OwnerReferences))
+		}
+
+		if !reflect.DeepEqual(j.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+			t.Fatalf("Job.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(j.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 
 		c := j.Spec.Template.Spec.Containers[0]
