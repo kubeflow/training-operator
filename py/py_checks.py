@@ -12,6 +12,8 @@ import time
 from py import util
 from py import test_util
 
+from google.cloud import storage  # pylint: disable=no-name-in-module
+
 def run_lint(args):
   start_time = time.time()
   # Print out the pylint version because different versions can produce
@@ -21,6 +23,7 @@ def run_lint(args):
   dir_excludes = ["vendor"]
   includes = ["*.py"]
   failed_files = []
+  rc_file = os.path.join(args.src_dir, ".pylintrc")
   for root, dirs, files in os.walk(args.src_dir, topdown=True):
     # excludes can be done with fnmatch.filter and complementary set,
     # but it's more annoying to read.
@@ -29,7 +32,7 @@ def run_lint(args):
       for f in fnmatch.filter(files, pat):
         full_path = os.path.join(root, f)
         try:
-          util.run(["pylint", full_path], cwd=args.src_dir)
+          util.run(["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
         except subprocess.CalledProcessError:
           failed_files.append(full_path.strip(args.src_dir))
 
