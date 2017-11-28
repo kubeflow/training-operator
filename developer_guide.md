@@ -37,6 +37,7 @@ To build the following artifacts:
 First install the dependency:
 ```sh
 pip install --upgrade google-cloud
+pip install --upgrade kubernetes
 ```
 Then you can run
 
