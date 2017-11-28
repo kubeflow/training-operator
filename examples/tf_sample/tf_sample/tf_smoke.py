@@ -59,7 +59,7 @@ def run(server, cluster_spec):  # pylint: disable=too-many-statements, too-many-
           c = tf.multiply(a, b)
           results.append(c)
 
-    init_op = tf.initialize_all_variables()
+    init_op = tf.global_variables_initializer()
 
     if server:
       target = server.target
