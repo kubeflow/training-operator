@@ -131,15 +131,24 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   targets = [
       "github.com/tensorflow/k8s/cmd/tf_operator",
       "github.com/tensorflow/k8s/test/e2e",
+      "github.com/tensorflow/k8s/dashboard/backend",
   ]
   for t in targets:
     util.run(["go", "install", t])
+
+  # Dashboard's frontend:
+  # Resolving dashboard's front-end dependencies
+  util.run(["yarn", "--cwd", "./dashboard/frontend", "install"])
+  # Building dashboard's front-end
+  util.run(["yarn", "--cwd", "./dashboard/frontend", "build"])
 
   # List of paths to copy relative to root.
   sources = [
       "images/tf_operator/Dockerfile",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
+      os.path.join(go_path, "bin/backend"),
+      "dashboard/frontend/build",
       "grpc_tensorflow_server/grpc_tensorflow_server.py"
   ]
 
