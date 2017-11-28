@@ -32,9 +32,13 @@ go install github.com/tensorflow/k8s/cmd/tf_operator
 To build the following artifacts:
 
   * Docker image for the operator
-  * Helm chart for deploying it
-
-You can run
+  * Helm chart for deploying it  
+  
+First install the dependency:
+```sh
+pip install --upgrade google-cloud
+```
+Then you can run
 
 ```sh
 python -m py.release local --registry=${REGISTRY}
