@@ -1,3 +1,4 @@
+// handler is a package handling API requests
 package handler
 
 import (
@@ -11,21 +12,25 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
+// APIHandler handles the API calls
 type APIHandler struct {
 	cManager client.ClientManager
 }
 
-//add tensorboard ips, add azure file / gs links
+// TfJobDetail describe the specification of a TfJob
+// as weel as related TensorBoard service if any and related pods
 type TfJobDetail struct {
 	TfJob     *spec.TfJob `json:"tfJob"`
 	TbService *v1.Service `json:"tbService"`
 	Pods      []v1.Pod    `json:"pods"`
 }
 
+// TfJobList is a list of TfJobs
 type TfJobList struct {
 	tfJobs []spec.TfJob `json:"TfJobs"`
 }
 
+// CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
 func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	apiHandler := APIHandler{
 		cManager: client,

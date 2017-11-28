@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,7 +24,7 @@ func main() {
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/mlkube/dashboard/frontend/build/"))))
 
 	p := ":8080"
-	fmt.Println("Listening on", p)
+	log.Println("Listening on", p)
 
 	http.ListenAndServe(p, nil)
 

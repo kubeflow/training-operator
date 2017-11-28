@@ -1,3 +1,4 @@
+// Client is a package handling authentication/communication with kubernetes API
 package client
 
 import (
@@ -6,11 +7,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const (
-	CRDGroup   = "mlkube.io"
-	CRDVersion = "v1beta1"
-)
-
+// ClientManager is responsible for initializing and creating clients to communicate with
+// kubernetes apiserver on demand
 type ClientManager struct {
 	restCfg     *rest.Config
 	ClientSet   *kubernetes.Clientset
@@ -37,6 +35,7 @@ func (c *ClientManager) init() {
 	c.TfJobClient = tfJobClient
 }
 
+// NewClientManager creates and init a new instance of ClientManager
 func NewClientManager() (ClientManager, error) {
 	cm := ClientManager{}
 	cm.init()
