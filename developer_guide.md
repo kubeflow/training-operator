@@ -37,6 +37,7 @@ To build the following artifacts:
 You can run
 
 ```sh
+pip install -r py/requirements.txt
 python -m py.release local --registry=${REGISTRY}
 ```
   * The docker image will be tagged into your registry
