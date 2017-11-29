@@ -21,7 +21,7 @@ func main() {
 	}
 
 	http.Handle("/api/", apiHandler)
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/mlkube/dashboard/frontend/build/"))))
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/tensorflow_k8s/dashboard/frontend/build/"))))
 
 	p := ":8080"
 	log.Println("Listening on", p)
