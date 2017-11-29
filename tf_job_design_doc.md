@@ -39,7 +39,7 @@ e.g. master, parameter server or worker. The set of replica types can be expande
 
 
 ```
-apiVersion: "mlkube.io/v1beta1"
+apiVersion: "tensorflow.org/v1alpha1"
 kind: "TfJob"
 metadata:
   name: "example-job"
