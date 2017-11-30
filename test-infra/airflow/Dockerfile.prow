@@ -16,5 +16,5 @@
 #
 # TODO(jlewi) With Docker v17.0 we should just be able to use Docker
 # build args to specify the base image.
-FROM gcr.io/mlkube-testing/airflow:v20171130-18aee39-dirty-783e19
+FROM gcr.io/mlkube-testing/airflow:v20171130-5fd7d9a-dirty-d64362
 ENTRYPOINT ["python", "-m", "py.airflow"]
