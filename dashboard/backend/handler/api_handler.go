@@ -1,4 +1,5 @@
-// handler is a package handling API requests
+// handler is a package handling API requests for managing TfJobs.
+// The primary purpose of handler is implementing the functionality needed by the TfJobs dashboard.
 package handler
 
 import (
@@ -18,7 +19,7 @@ type APIHandler struct {
 }
 
 // TfJobDetail describe the specification of a TfJob
-// as weel as related TensorBoard service if any and related pods
+// as well as related TensorBoard service if any and related pods
 type TfJobDetail struct {
 	TfJob     *spec.TfJob `json:"tfJob"`
 	TbService *v1.Service `json:"tbService"`
