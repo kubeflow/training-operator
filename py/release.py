@@ -138,9 +138,9 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
 
   # Dashboard's frontend:
   # Resolving dashboard's front-end dependencies
-  util.run(["yarn", "--cwd", "./dashboard/frontend", "install"])
+  util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "install"])
   # Building dashboard's front-end
-  util.run(["yarn", "--cwd", "./dashboard/frontend", "build"])
+  util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "build"])
 
   # List of paths to copy relative to root.
   sources = [

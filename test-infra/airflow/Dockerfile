@@ -101,8 +101,11 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
+# Install  Node.js
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && apt-get install -y nodejs
+
 # Install yarn
-# Add Yarn repository
 RUN curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
     && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update -yqq \
