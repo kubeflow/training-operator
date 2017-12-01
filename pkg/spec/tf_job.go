@@ -107,6 +107,7 @@ type TensorBoardSpec struct {
 	Volumes      []v1.Volume      `json:"volumes"`
 	VolumeMounts []v1.VolumeMount `json:"volumeMounts"`
 	ServiceType  v1.ServiceType   `json:"serviceType"`
+	IngressHost  string           `json:"ingressHost"`
 }
 
 // Validate checks that the TfJobSpec is valid.
