@@ -115,6 +115,9 @@ func (s *TBReplicaSet) Create() error {
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(),
 				Labels: s.Labels(),
+				OwnerReferences: []meta_v1.OwnerReference{
+					s.Job.job.AsOwner(),
+				},
 			},
 			Spec: v1beta1.IngressSpec{
 				Rules: []v1beta1.IngressRule{
