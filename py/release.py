@@ -318,10 +318,12 @@ def build(args):
     logging.info("%s does not exist.", go_src_dir)
 
     # Create a symbolic link in the go path.
-    os.makedirs(os.path.dirname(go_src_dir))
+    parent_dir = os.path.dirname(go_src_dir)
+    if not os.path.exists(parent_dir):
+      os.makedirs(parent_dir)
     logging.info("Creating symbolic link %s pointing to %s", go_src_dir,
                  args.src_dir)
-    os.symlink(ars.src_dir, go_src_dir)
+    os.symlink(args.src_dir, go_src_dir)
 
   # Check that the directory in the go src path correctly points to
   # the same directory as args.src_dir
@@ -341,7 +343,7 @@ def build(args):
   vendor_dir = os.path.join(args.src_dir, "vendor")
   if not os.path.exists(vendor_dir):
     logging.info("Installing go dependencies")
-    util.install_go_deps(clone_dir)
+    util.install_go_deps(args.src_dir)
   else:
     logging.info("vendor directory exists; not installing go dependencies.")
 
@@ -630,6 +632,11 @@ def build_parser():
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
 
   parser = build_parser()
 
