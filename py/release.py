@@ -301,6 +301,54 @@ def write_build_info(build_info, paths, project=None):
       with open(p, mode='w') as hf:
         hf.write(contents)
 
+def build(args):
+  """Build the code."""
+  if not args.src_dir:
+    logging.info("--src_dir not set")
+    args.src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+  logging.info("Use --src_dir=%s", args.src_dir)
+
+  go_dir = os.getenv("GOPATH")
+  if not go_dir:
+    raise ValueError("Environment variable GOPATH must be set.")
+
+  go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+
+  if not os.path.exists(go_src_dir):
+    logging.info("%s does not exist.", go_src_dir)
+
+    # Create a symbolic link in the go path.
+    os.makedirs(os.path.dirname(go_src_dir))
+    logging.info("Creating symbolic link %s pointing to %s", go_src_dir,
+                 args.src_dir)
+    os.symlink(ars.src_dir, go_src_dir)
+
+  # Check that the directory in the go src path correctly points to
+  # the same directory as args.src_dir
+  if os.path.islink(go_src_dir):
+    target = os.path.realpath(go_src_dir)
+
+    if target != args.src_dir:
+      message = "{0} is a symbolic link to {1}; but --src_dir={2}".format(
+                 go_src_dir,  target, args.src_dir)
+      logging.error(message)
+      raise ValueError(message)
+  elif go_src_dir != args.src_dir:
+    message = "{0} doesn't equal --src_dir={1}".format(go_src_dir, args.src_dir)
+    logging.error(message)
+    raise ValueError(message)
+
+  vendor_dir = os.path.join(args.src_dir, "vendor")
+  if not os.path.exists(vendor_dir):
+    logging.info("Installing go dependencies")
+    util.install_go_deps(clone_dir)
+  else:
+    logging.info("vendor directory exists; not installing go dependencies.")
+
+  # TODO(jlewi): We can stop passing go_dir because we not rely on go_dir
+  # being set in the environment.
+  build_and_push(go_dir, args.src_dir, args)
+
 def build_and_push(go_dir, src_dir, args):
   if args.dryrun:
     logging.info("dryrun...")
@@ -494,6 +542,20 @@ def build_parser():
   postsubmit.set_defaults(clone_func=clone_postsubmit)
 
   parser_clone.set_defaults(func=clone_repo)
+
+  ############################################################################
+  # Build command
+  build_parser = subparsers.add_parser("build", help="Build the artifacts.")
+
+  build_parser.add_argument(
+    "--src_dir",
+    default=None,
+    type=str,
+    help=("Directory containing the source. If not set determined "
+          "automatically."))
+
+  add_common_args(build_parser)
+  build_parser.set_defaults(func=build)
 
   #############################################################################
   # local
