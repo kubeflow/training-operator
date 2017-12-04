@@ -26,7 +26,8 @@ from kubernetes.client import rest
 MASTER_REPO_OWNER = "tensorflow"
 MASTER_REPO_NAME = "k8s"
 
-
+# TODO(jlewi): Should we stream the output by polling the subprocess?
+# look at run_and_stream in build_and_push.
 def run(command, cwd=None, env=None, use_print=False, dryrun=False):
   """Run a subprocess.
 
