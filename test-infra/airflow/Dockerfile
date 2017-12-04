@@ -21,6 +21,7 @@ ENV LANGUAGE=en_US.UTF-8 \
     LC_MESSAGES=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8
 
+
 # buildDeps should be packages needed only to build some other packages as
 # these packages are purged in a later step.
 RUN set -ex \
@@ -60,6 +61,8 @@ RUN set -ex \
         python-setuptools \
         python-openssl \
         python2.7 \
+
+
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
@@ -98,6 +101,16 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
+# Install  Node.js
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && apt-get install -y nodejs
+
+# Install yarn
+RUN curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && apt-get update -yqq \
+    && apt-get install -yqq --no-install-recommends yarn
+
 # Install go
 RUN cd /tmp && \
     wget -O /tmp/go.tar.gz https://redirector.gvt1.com/edgedl/go/go1.9.2.linux-amd64.tar.gz && \
@@ -111,7 +124,6 @@ RUN cd /tmp && \
     mv ./linux-amd64/glide /usr/local/bin/
 
 # Install gcloud
-
 ENV PATH=/google-cloud-sdk/bin:/workspace:${PATH} \
     CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
