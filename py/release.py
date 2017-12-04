@@ -326,6 +326,20 @@ def build_local(args):
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   build_and_push(go_dir, src_dir, args)
 
+def clone_repo(args):
+  args.clone_func(args)
+
+def clone_pr(args):
+  branches = ["pull/{0}/head:pr".format(args.pr)]
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit, branches)
+
+def clone_postsubmit(args):
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit)
+
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
 def build_commit(args, branches):
   top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTfJobSrc")
   logging.info("Top level directory for source: %s", top_dir)
@@ -347,41 +361,35 @@ def build_commit(args, branches):
   util.install_go_deps(clone_dir)
   build_and_push(go_dir, src_dir, args)
 
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
   build_commit(args, None)
 
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
   branches = ["pull/{0}/head:pr".format(args.pr)]
   build_commit(args, branches)
 
-def build_lastgreen(args):  # pylint: disable=too-many-locals
-  """Find the latest green postsubmit and build the artifacts.
-  """
+def clone_lastgreen(args):
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
 
-  bucket_name, _ = util.split_gcs_uri(args.releases_path)
-  bucket = gcs_client.get_bucket(bucket_name)
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
+                  sha)
 
-  logging.info("Latest passing postsubmit is %s", sha)
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
+def build_lastgreen(args):  # pylint: disable=too-many-locals
+  """Find the latest green postsubmit and build the artifacts.
+  """
+  go_dir, src_dir = clone_lastgreen(args)
 
-  last_release_sha = get_last_release(bucket)
-  logging.info("Most recent release was for %s", last_release_sha)
-
-  if sha == last_release_sha:
-    logging.info("Already cut release for %s", sha)
+  if go_dir is None:
     return
-
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  logging.info("Temporary go_dir: %s", go_dir)
-
-  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
-
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                           util.MASTER_REPO_NAME, sha)
-
   build_and_push(go_dir, src_dir, args)
 
 def add_common_args(parser):
@@ -426,6 +434,68 @@ def build_parser():
   subparsers = parser.add_subparsers()
 
   #############################################################################
+  # clone
+  #
+  # Create the parser for the "local" mode.
+  # This mode builds the artifacts from the local copy of the code.
+
+  parser_clone = subparsers.add_parser(
+    "clone",
+    help="Clone and checkout the repository.")
+
+  parser_clone.add_argument(
+    "--src_dir",
+    required=True,
+    type=str,
+    help="Directory to checkout the source to.")
+
+  clone_subparsers = parser_clone.add_subparsers()
+
+  last_green = clone_subparsers.add_parser(
+    "lastgreen",
+    help="Clone the last green postsubmit.")
+
+  last_green.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  last_green.set_defaults(clone_func=clone_lastgreen)
+
+  pr = clone_subparsers.add_parser(
+    "pr",
+    help="Clone the pull request.")
+
+  pr.add_argument(
+    "--pr",
+    default=None,
+    required=True,
+    help="The pull request to check out..")
+
+  pr.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  pr.set_defaults(clone_func=clone_pr)
+
+  postsubmit = clone_subparsers.add_parser(
+    "postsubmit",
+    help="Clone a postsubmit.")
+
+  postsubmit.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  postsubmit.set_defaults(clone_func=clone_postsubmit)
+
+  parser_clone.set_defaults(func=clone_repo)
+
+  #############################################################################
   # local
   #
   # Create the parser for the "local" mode.
@@ -441,7 +511,7 @@ def build_parser():
   # Build a particular postsubmit hash.
   parser_postsubmit = subparsers.add_parser(
     "postsubmit",
-    help="Build the artifacts from a postsbumit.")
+    help="Build the artifacts from a postsubmit.")
   parser_postsubmit.set_defaults(func=build_postsubmit)
 
   add_common_args(parser_postsubmit)
