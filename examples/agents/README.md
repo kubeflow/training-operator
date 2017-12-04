@@ -1,6 +1,6 @@
 # Tensorflow/agents
 
-Running a [tensorflow/agents](https://github.com/tensorflow/agents) job on kubernetes using the tf/k8s CRD.
+Running a [tensorflow/agents](https://github.com/tensorflow/agents) job on kubernetes using the tf/k8s CRD. This example illustrates between-graph [synchronous](https://www.tensorflow.org/api_docs/python/tf/train/SyncReplicasOptimizer) [replicated](https://www.tensorflow.org/deploy/distributed#replicated_training) training.
 
 # Training a model
 

@@ -51,6 +51,7 @@ def setup(args):
             "machineType": machine_type,
               "oauthScopes": [
                 "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/devstorage.read_write"
                 ],
               },
           # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.

@@ -1,22 +1,76 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Example illustrating training of PPO agent using tensorflow/k8s CRD."""
+
 from __future__ import absolute_import, division, print_function
 
 import argparse
 import datetime
+import json
 import logging
 import os
 
+import agents
 import tensorflow as tf
 
-import agents
-import algorithm
 import pybullet_envs  # To make AntBulletEnv-v0 available.
+from trainer.algorithm import PPOAlgorithm
+
+from . import train
+from .networks import feed_forward_gaussian
+
+
+def smoke():
+  """Hyperparameter configuration written by save_config and loaded by train."""
+
+  # General
+  algorithm = PPOAlgorithm
+  num_agents = 1
+  eval_episodes = 2
+  use_gpu = False
+  # Environment
+  env = 'AntBulletEnv-v0'
+  max_length = 1000
+  steps = 10  # 10M
+  # Network
+  network = feed_forward_gaussian
+  weight_summaries = dict(
+      all=r'.*',
+      policy=r'.*/policy/.*',
+      value=r'.*/value/.*')
+  policy_layers = 2, 1
+  value_layers = 2, 1
+  init_mean_factor = 0.1
+  init_logstd = -1
+  # Optimization
+  update_every = 1
+  update_epochs = 1
+  optimizer = tf.train.AdamOptimizer
+  learning_rate = 1e-4
+  # Losses
+  discount = 0.995
+  kl_target = 1e-2
+  kl_cutoff_factor = 2
+  kl_cutoff_coef = 1000
+  kl_init_penalty = 1
+  return locals()
 
 
 def pybullet_ant():
   """Hyperparameter configuration written by save_config and loaded by train."""
 
   # General
-  algorithm = algorithm.PPOAlgorithm
+  algorithm = PPOAlgorithm
   num_agents = 10
   eval_episodes = 25
   use_gpu = False
@@ -25,7 +79,7 @@ def pybullet_ant():
   max_length = 1000
   steps = 1e7  # 10M
   # Network
-  network = agents.scripts.networks.feed_forward_gaussian
+  network = feed_forward_gaussian
   weight_summaries = dict(
       all=r'.*',
       policy=r'.*/policy/.*',
@@ -49,7 +103,7 @@ def pybullet_ant():
   return locals()
 
 
-def _get_training_configuration(config_var_name, log_dir):
+def _get_agents_configuration(config_var_name, log_dir):
   """Load hyperparameter config."""
   try:
     # Try to resume training.
@@ -63,82 +117,7 @@ def _get_training_configuration(config_var_name, log_dir):
   return config
 
 
-def _get_distributed_configuration():
-  """Get a tensorflow cluster spec and task objects based on TF_CONFIG var."""
-  tf_config_json = os.environ.get("TF_CONFIG", "{}")
-  tf_config = json.loads(tf_config_json)
-  logging.info("tf_config: %s", tf_config)
-
-  task = tf_config.get("task", {})
-  logging.info("task: %s", task)
-
-  cluster_spec = tf_config.get("cluster", {})
-  logging.info("cluster_spec: %s", cluster_spec)
-
-  server = None
-  device_func = None
-  if cluster_spec:
-    cluster_spec_object = tf.train.ClusterSpec(cluster_spec)
-    server_def = tf.train.ServerDef(
-    cluster=cluster_spec_object.as_cluster_def(),
-    protocol="grpc",
-    job_name=task["type"],
-    task_index=task["index"])
-
-    logging.info("server_def: %s", server_def)
-
-    logging.info("Building server.")
-    # Create and start a server for the local task.
-    server = tf.train.Server(server_def)
-    logging.info("Finished building server.")
-
-    # Assigns ops to the local worker by default.
-    device_func = tf.train.replica_device_setter(
-    worker_device="/job:worker/task:%d" % server_def.task_index,
-    cluster=server_def.cluster)
-  else:
-    # This should return a null op device setter since we are using
-    # all the defaults.
-    logging.error("Using default device function.")
-    device_func = tf.train.replica_device_setter()
-
-  return server, device_func, task
-
-
-def _train(args):
-  """Run in training mode."""
-  config = _get_training_configuration(args.config, args.log_dir)
-  server, worker_device_func, task = _get_distributed_configuration()
-  job_type = task.get("type", "").lower()
-
-  if job_type == "ps":
-    logging.info("Running PS.")
-    server.join()
-  else:
-    logging.info("Running worker.")
-    # Runs agents.scripts.train.train on each of the workers. Within those,
-    # trainer.algorithm.PPOAlgorithm is called, each running a replica of the
-    # training graph on the local node and (TODO) sharing policy parameters
-    # by placing these on parameter servers. The shared policy parameters are
-    # then asynchronously updated by each worker with the gradients they
-    # compute based on the rollouts performed in the environments local to that
-    # worker.
-    with tf.device(device_func):
-      for score in agents.scripts.train.train(config, env_processes=True):
-        logging.info('Score {}.'.format(score))
-
-
-def _render(args):
-  """Run in render mode"""
-  raise NotImplementedError()
-  # # Read model checkpoint from args.log_dir and render num_agents for
-  # # num_episodes.
-  # agents.scripts.visualize.visualize(
-  #     logdir=args.log_dir, outdir=args.log_dir, num_agents=1, num_episodes=5,
-  #     checkpoint=None, env_processes=True)
-
-
-def main():
+def main(args):
   """Run training.
 
   Raises:
@@ -148,22 +127,30 @@ def main():
   logging.info("Tensorflow git version: %s", tf.__git_version__)
 
   agents.scripts.utility.set_up_logging()
+  agents_config = _get_agents_configuration(args.config, args.log_dir)
+  run_config = tf.contrib.learn.RunConfig()
   log_dir = args.log_dir and os.path.expanduser(args.log_dir)
+
   if log_dir:
+    # HACK: This is really not what we want to do. Definitely want to only be
+    # having master write logs.
     args.log_dir = os.path.join(
-      log_dir, '{}-{}'.format(args.timestamp, args.config))
+        log_dir, '{}-{}-tid{}-{}'.format(args.timestamp, run_config.task_type,
+                                         run_config.task_id, args.config))
+    ###
 
-  if args.mode == 'render':
-    _render(args)
-
-  if args.mode == 'train':
-    _train(args)
+  if args.mode == 'train' or args.mode == 'smoke':
+    # train.train_bk(agents_config, env_processes=True)
+    for score in train.train(agents_config, run_config, args.log_dir, env_processes=True):
+      tf.logging.info('Score {}.'.format(score))
 
 
 if __name__ == '__main__':
+  logging.getLogger().setLevel(logging.INFO)
   timestamp = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
   parser = argparse.ArgumentParser()
-  parser.add_argument('--mode', choices=['train', 'render'], default='train')
+  parser.add_argument(
+      '--mode', choices=['train', 'render'], default='train')
   parser.add_argument('--log_dir', default=None, required=True)
   parser.add_argument('--config', default=None, required=True)
   parser.add_argument('--timestamp', default=timestamp)

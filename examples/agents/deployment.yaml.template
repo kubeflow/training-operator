@@ -20,7 +20,7 @@ spec:
               - --mode
               - {{mode}}
           restartPolicy: OnFailure
-    - replicas: 2
+    - replicas: 3
       tfReplicaType: WORKER
       template:
         spec:

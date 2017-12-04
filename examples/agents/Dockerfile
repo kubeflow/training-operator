@@ -10,18 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/tensorflow/tensorflow:1.3.0
-
-# For pulling agents via github
-RUN apt-get update && apt-get install -y git
-
-# Agents and environment interaction
-RUN pip install -e git://github.com/tensorflow/agents.git#egg=agents
-
-# For environments
-RUN pip install gym pybullet
+FROM gcr.io/dev01-181118-181500/agents-base:cpu
 
 ADD trainer/* /app/trainer/
 WORKDIR /app/
+
+# TODO: Need better smoke testing of container
+RUN python -m trainer.task --help
 
 ENTRYPOINT ["python", "-m", "trainer.task"]
