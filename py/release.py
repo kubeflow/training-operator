@@ -332,7 +332,7 @@ def build(args):
 
     if target != args.src_dir:
       message = "{0} is a symbolic link to {1}; but --src_dir={2}".format(
-                 go_src_dir,  target, args.src_dir)
+                 go_src_dir, target, args.src_dir)
       logging.error(message)
       raise ValueError(message)
   elif go_src_dir != args.src_dir:
@@ -436,10 +436,28 @@ def clone_lastgreen(args):
 def build_lastgreen(args):  # pylint: disable=too-many-locals
   """Find the latest green postsubmit and build the artifacts.
   """
-  go_dir, src_dir = clone_lastgreen(args)
+  gcs_client = storage.Client()
+  sha = get_latest_green_presubmit(gcs_client)
 
-  if go_dir is None:
+  bucket_name, _ = util.split_gcs_uri(args.releases_path)
+  bucket = gcs_client.get_bucket(bucket_name)
+
+  logging.info("Latest passing postsubmit is %s", sha)
+
+  last_release_sha = get_last_release(bucket)
+  logging.info("Most recent release was for %s", last_release_sha)
+
+  if sha == last_release_sha:
+    logging.info("Already cut release for %s", sha)
     return
+
+  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  logging.info("Temporary go_dir: %s", go_dir)
+
+  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+
+  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+                           util.MASTER_REPO_NAME, sha)
   build_and_push(go_dir, src_dir, args)
 
 def add_common_args(parser):
@@ -547,17 +565,17 @@ def build_parser():
 
   ############################################################################
   # Build command
-  build_parser = subparsers.add_parser("build", help="Build the artifacts.")
+  build_subparser = subparsers.add_parser("build", help="Build the artifacts.")
 
-  build_parser.add_argument(
+  build_subparser.add_argument(
     "--src_dir",
     default=None,
     type=str,
     help=("Directory containing the source. If not set determined "
           "automatically."))
 
-  add_common_args(build_parser)
-  build_parser.set_defaults(func=build)
+  add_common_args(build_subparser)
+  build_subparser.set_defaults(func=build)
 
   #############################################################################
   # local
