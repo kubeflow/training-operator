@@ -50,7 +50,7 @@ def run_and_stream(cmd):
       " ".join(cmd), process.returncode))
 
 def build_and_push(dockerfile_template, image, modes=None,
-                   skip_push=False, base_images=None):
+                   skip_push=False, base_images=None, project=None):
   """Build and push images based on a Dockerfile template.
 
   Args:
@@ -66,7 +66,8 @@ def build_and_push(dockerfile_template, image, modes=None,
        value in base_images as the base image for the Dockerfile.
      skip_push: Whether to skip the push.
      base_images: A dictionary that maps modes to base images.
-
+     project: (Optional) if specified use Google Container Builder and this
+       project to build the images.
   Returns:
      images: A dictionary mapping modes to the corresponding docker
        image that was built.
@@ -94,16 +95,21 @@ def build_and_push(dockerfile_template, image, modes=None,
     full_image = image + "-" + mode
 
     full_image += ":" + GetGitHash()
-    run_and_stream(["docker", "build", "-t", full_image, context_dir])
-    logging.info("Built image: %s", full_image)
 
     images[mode] = full_image
-    if not skip_push:
-      if "gcr.io" in full_image:
-        run_and_stream(["gcloud", "docker", "--", "push", full_image])
-      else:
-        run_and_stream(["docker", "--", "push", full_image])
-      logging.info("Pushed image: %s", full_image)
+    if not project:
+      run_and_stream(["docker", "build", "-t", full_image, context_dir])
+      logging.info("Built image: %s", full_image)
+
+      if not skip_push:
+        if "gcr.io" in full_image:
+          run_and_stream(["gcloud", "docker", "--", "push", full_image])
+        else:
+          run_and_stream(["docker", "--", "push", full_image])
+          logging.info("Pushed image: %s", full_image)
+    else:
+      run_and_stream(["gcloud", "container", "builds", "submit", context_dir,
+                      "--tag=" + full_image, "--project=" + project])
   return images
 
 def main():
@@ -131,6 +137,11 @@ def main():
         action="append",
         help='Which image to build; options are cpu or gpu')
 
+  parser.add_argument(
+    '--gcb_project',
+      default=None,
+      help=("(Optional) if specified build the images using GCB and this "
+            "project."))
 
   parser.add_argument("--no-push", dest="should_push", action="store_false",
                       help="Do not push the image once build is finished.")
@@ -142,7 +153,8 @@ def main():
     "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
   }
 
-  build_and_push(args.dockerfile, args.modes, not args.should_push, base_images)
+  build_and_push(args.dockerfile, args.modes, not args.should_push, base_images,
+                 project=args.gcb_project)
 
 if __name__ == "__main__":
   main()
