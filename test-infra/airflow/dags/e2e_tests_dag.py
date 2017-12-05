@@ -148,30 +148,8 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   # Make sure pull_number is a string
   pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
   args = ["python", "-m", "py.release", "build", "--src_dir=" + src_dir]
-  if pull_number:
-    commit = conf.get("PULL_PULL_SHA", "")
-    args.append("pr")
-    args.append("--pr=" + pull_number)
-    if commit:
-      args.append("--commit=" + commit)
-  else:
-    commit = conf.get("PULL_BASE_SHA", "")
-    args.append("postsubmit")
-    if commit:
-      args.append("--commit=" + commit)
 
   dryrun = bool(conf.get("dryrun", False))
-
-  # Pick the directory where the source will be checked out.
-  # This should be a persistent location that is accessible from subsequent
-  # tasks; e.g. an NFS share or PD.
-  src_dir = os.path.join(os.getenv("SRC_DIR", tempfile.gettempdir()),
-                         dag_run.dag_id.replace(":", "_"),
-                         dag_run.run_id.replace(":", "_"))
-  logging.info("Using src_dir %s", src_dir)
-  os.makedirs(src_dir)
-  logging.info("xcom push: src_dir=%s", src_dir)
-  ti.xcom_push(key="src_dir", value=src_dir)
 
   build_info_file = os.path.join(gcs_path, "build_info.yaml")
   args.append("--build_info_path=" + build_info_file)
