@@ -106,8 +106,7 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     if commit:
       args.append("--commit=" + commit)
 
-  dryrun = bool(conf.get("dryrun", False))
-
+  util.run(args, use_print=True)
 
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
