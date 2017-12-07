@@ -56,6 +56,58 @@ class FakeDagrun(object):
     self.run_id = "test_run"
     self.conf = {}
 
+def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
+  # Create a temporary directory suitable for checking out and building the
+  # code.
+  if not dag_run:
+    # When running via airflow test dag_run isn't set
+    logging.warn("Using fake dag_run")
+    dag_run = FakeDagrun()
+
+  logging.info("dag_id: %s", dag_run.dag_id)
+  logging.info("run_id: %s", dag_run.run_id)
+
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
+  logging.info("conf=%s", conf)
+
+
+  # Pick the directory the top level directory to use for this run of the
+  # pipeline.
+  # This should be a persistent location that is accessible from subsequent
+  # tasks; e.g. an NFS share or PD. The environment variable SRC_DIR is used
+  # to allow the directory to be specified as part of the deployment
+  run_dir = os.path.join(os.getenv("SRC_DIR", tempfile.gettempdir()),
+                         dag_run.dag_id.replace(":", "_"),
+                         dag_run.run_id.replace(":", "_"))
+  logging.info("Using run_dir %s", run_dir)
+  os.makedirs(run_dir)
+  logging.info("xcom push: run_dir=%s", run_dir)
+  ti.xcom_push(key="run_dir", value=run_dir)
+
+  # Directory where we will clone the src
+  src_dir = os.path.join(run_dir, "tensorflow_k8s")
+  logging.info("xcom push: src_dir=%s", src_dir)
+  ti.xcom_push(key="src_dir", value=src_dir)
+
+  # Make sure pull_number is a string
+  pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
+  args = ["python", "-m", "py.release", "clone", "--src_dir=" + src_dir]
+  if pull_number:
+    commit = conf.get("PULL_PULL_SHA", "")
+    args.append("pr")
+    args.append("--pr=" + pull_number)
+    if commit:
+      args.append("--commit=" + commit)
+  else:
+    commit = conf.get("PULL_BASE_SHA", "")
+    args.append("postsubmit")
+    if commit:
+      args.append("--commit=" + commit)
+
+  util.run(args, use_print=True)
+
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
   Args:
@@ -72,6 +124,12 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   logging.info("dag_id: %s", dag_run.dag_id)
   logging.info("run_id: %s", dag_run.run_id)
 
+  run_dir = ti.xcom_pull(None, key="run_dir")
+  logging.info("Using run_dir=%s", run_dir)
+
+  src_dir = ti.xcom_pull(None, key="src_dir")
+  logging.info("Using src_dir=%s", src_dir)
+
   gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
   logging.info("gcs_path %s", gcs_path)
 
@@ -82,42 +140,24 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
   logging.info("artifacts_path %s", artifacts_path)
 
+  # We use a GOPATH that is specific to this run because we don't want
+  # interference from different runs.
+  newenv = os.environ.copy()
+  newenv["GOPATH"] = os.path.join(run_dir, "go")
+
   # Make sure pull_number is a string
   pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
-  args = ["python", "-m", "py.release"]
-  if pull_number:
-    commit = conf.get("PULL_PULL_SHA", "")
-    args.append("pr")
-    args.append("--pr=" + pull_number)
-    if commit:
-      args.append("--commit=" + commit)
-  else:
-    commit = conf.get("PULL_BASE_SHA", "")
-    args.append("postsubmit")
-    if commit:
-      args.append("--commit=" + commit)
+  args = ["python", "-m", "py.release", "build", "--src_dir=" + src_dir]
 
   dryrun = bool(conf.get("dryrun", False))
-
-  # Pick the directory where the source will be checked out.
-  # This should be a persistent location that is accessible from subsequent
-  # tasks; e.g. an NFS share or PD.
-  src_dir = os.path.join(os.getenv("SRC_DIR", tempfile.gettempdir()),
-                         dag_run.dag_id.replace(":", "_"),
-                         dag_run.run_id.replace(":", "_"))
-  logging.info("Using src_dir %s", src_dir)
-  os.makedirs(src_dir)
-  logging.info("xcom push: src_dir=%s", src_dir)
-  ti.xcom_push(key="src_dir", value=src_dir)
 
   build_info_file = os.path.join(gcs_path, "build_info.yaml")
   args.append("--build_info_path=" + build_info_file)
   args.append("--releases_path=" + gcs_path)
   args.append("--project=" + GCB_PROJECT)
-  args.append("--src_dir=" + src_dir)
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun)
+  util.run(args, use_print=True, dryrun=dryrun, env=newenv)
 
   # Read the output yaml and publish relevant values to xcom.
   if not dryrun:
@@ -266,25 +306,32 @@ def py_checks_gen(command):
 def done(**_kwargs):
   logging.info("Executing done step.")
 
+clone_op = PythonOperator(
+  task_id='clone_repo',
+    provide_context=True,
+    python_callable=clone_repo,
+    dag=dag)
+
 build_op = PythonOperator(
   task_id='build_images',
     provide_context=True,
     python_callable=build_images,
     dag=dag)
+build_op.set_upstream(clone_op)
 
 py_lint_op = PythonOperator(
   task_id='pylint',
     provide_context=True,
     python_callable=py_checks_gen("lint"),
     dag=dag)
-py_lint_op.set_upstream(build_op)
+py_lint_op.set_upstream(clone_op)
 
 py_test_op = PythonOperator(
   task_id='pytest',
     provide_context=True,
     python_callable=py_checks_gen("test"),
     dag=dag)
-py_test_op.set_upstream(build_op)
+py_test_op.set_upstream(clone_op)
 
 setup_cluster_op = PythonOperator(
   task_id='setup_cluster',
