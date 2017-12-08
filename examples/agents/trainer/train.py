@@ -30,6 +30,8 @@ import tensorflow as tf
 from agents import tools
 from agents.scripts import configs, utility
 
+from . import loop as lp
+
 
 def define_simulation_graph(batch_env, algo_cls, config):
   """Define the algortihm and environment interaction.
@@ -45,25 +47,16 @@ def define_simulation_graph(batch_env, algo_cls, config):
   # pylint: disable=unused-variable
   run_config = tf.contrib.learn.RunConfig()
 
-  # Obtain the worker device function
-  # device_func = tf.train.replica_device_setter(
-  #     worker_device="/job:worker/task:%d" % run_config.task_id,
-  #     ps_device="/job:ps/cpu:0",
-  #     cluster=run_config.cluster_spec)
-
-  device_func = tf.train.replica_device_setter(
-      worker_device="/job:%s/task:%d" % (run_config.task_type,
-                                         run_config.task_id),
-      ps_device="/job:ps/cpu:0",
-      cluster=run_config.cluster_spec)
-
-  with tf.device(device_func):
-    # step = tf.get_variable('global_step', [],
-    #                        initializer=tf.constant_initializer(0),
-    #                        trainable=False)
-    step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
-
-  # step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
+  # param_device = '/job:ps/replica:0/task:0'
+  # param_device = '/job:ps'
+  # if run_config.num_ps_replicas == 0:
+  #   param_device = "/job:%s/task:%d" % (run_config.task_type,
+  #                                       run_config.task_id)
+  #   # param_device = "/job:%s/replica:0/task:%d" % (run_config.task_type,
+  #   #                                               run_config.task_id)
+  #
+  # with tf.device(param_device):
+  step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
 
   is_training = tf.placeholder(tf.bool, name='is_training')
   should_log = tf.placeholder(tf.bool, name='should_log')
@@ -143,7 +136,7 @@ def _define_loop(graph, logdir, train_steps, eval_steps):
   Returns:
     Loop object.
   """
-  loop = tools.Loop(
+  loop = lp.Loop(
       logdir, graph.step, graph.should_log, graph.do_report,
       graph.force_reset)
   loop.add_phase(
@@ -161,54 +154,7 @@ def _define_loop(graph, logdir, train_steps, eval_steps):
   return loop
 
 
-def _run_loop(loop, sess, saver, max_step=None):
-  """Run the loop schedule for a specified number of steps.
-
-  Call the operation of the current phase until the global step reaches the
-  specified maximum step. Phases are repeated over and over in the order they
-  were added.
-
-  Args:
-    sess: Session to use to run the phase operation.
-    saver: Saver used for checkpointing.
-    max_step: Run the operations until the step reaches this limit.
-
-  Yields:
-    Reported mean scores.
-  """
-  global_step = sess.run(loop._step)
-  steps_made = 1
-  while True:
-    if max_step and global_step >= max_step:
-      break
-    phase, epoch, steps_in = loop._find_current_phase(global_step)
-    phase_step = epoch * phase.steps + steps_in
-    if steps_in % phase.steps < steps_made:
-      message = '\n' + ('-' * 50) + '\n'
-      message += 'Phase {} (phase step {}, global step {}).'
-      tf.logging.info(message.format(phase.name, phase_step, global_step))
-    # Populate book keeping tensors.
-    phase.feed[loop._reset] = (steps_in < steps_made)
-    phase.feed[loop._log] = (
-        phase.writer and
-        loop._is_every_steps(phase_step, phase.batch, phase.log_every))
-    phase.feed[loop._report] = (
-        loop._is_every_steps(phase_step, phase.batch, phase.report_every))
-    summary, mean_score, global_step, steps_made = sess.run(
-        phase.op, phase.feed)
-    if loop._is_every_steps(phase_step, phase.batch, phase.checkpoint_every):
-      loop._store_checkpoint(sess, saver, global_step)
-    if loop._is_every_steps(phase_step, phase.batch, phase.report_every):
-      yield mean_score
-    if summary and phase.writer:
-      # We want smaller phases to catch up at the beginnig of each epoch so
-      # that their graphs are aligned.
-      longest_phase = max(phase.steps for phase in loop._phases)
-      summary_step = epoch * longest_phase + steps_in
-      phase.writer.add_summary(summary, summary_step)
-
-
-def train(agents_config, run_config, log_dir, env_processes):
+def train(agents_config, env_processes, log_dir=None):
   """Training and evaluation entry point yielding scores.
 
   Resolves some configuration attributes, creates environments, graph, and
@@ -222,6 +168,13 @@ def train(agents_config, run_config, log_dir, env_processes):
     Evaluation scores.
   """
 
+  FLAGS = tf.app.flags.FLAGS
+
+  if log_dir is None and hasattr(FLAGS, 'log_dir'):
+    log_dir = FLAGS.log_dir
+
+  run_config = tf.contrib.learn.RunConfig()
+
   server_def = tf.train.ServerDef(
       cluster=run_config.cluster_spec.as_cluster_def(),
       protocol="grpc",
@@ -230,20 +183,20 @@ def train(agents_config, run_config, log_dir, env_processes):
 
   server = tf.train.Server(server_def)
 
-  device_func = tf.train.replica_device_setter(
-      worker_device="/job:worker/task:%d" % run_config.task_id,
-      cluster=run_config.cluster_spec)
-
   tf.reset_default_graph()
+
   if agents_config.update_every % agents_config.num_agents:
     tf.logging.warn('Number of agents should divide episodes per update.')
 
-  # with tf.device('/cpu:0'):
-  with tf.device("/job:%s/task:%d/cpu:0" % (run_config.task_type,
-                                            run_config.task_id)):
-    # with tf.device(device_func):
-    # Don't want to share all tf.Variable's since rollouts are run to obtain
-    # experience independently?
+  worker_device = "/job:%s/task:%d" % (run_config.task_type,
+                                       run_config.task_id)
+
+  # By default, all parameters are shared.
+  with tf.device(
+      tf.train.replica_device_setter(
+          worker_device=worker_device,
+          ps_device="/job:ps",
+          cluster=run_config.cluster_spec)):
 
     batch_env = utility.define_batch_env(
         lambda: _create_environment(agents_config),
@@ -264,206 +217,142 @@ def train(agents_config, run_config, log_dir, env_processes):
     # Exclude episode related variables since the Python state of environments is
     # not checkpointed and thus new episodes start after resuming.
     saver = utility.define_saver(exclude=(r'.*_temporary/.*',))
-    # saver = None
-    # device_filters = ["/job:ps",
-    #                   "/job:worker/task:%d" % run_config.task_id]
+    device_filters = ["/job:ps",
+                      "/job:worker/task:%d" % run_config.task_id]
     sess_config = tf.ConfigProto(allow_soft_placement=True,
-                                 # device_filters=device_filters,
-                                 log_device_placement=True
+                                 device_filters=device_filters
                                  )
+    if FLAGS.log_device_placement:
+      sess_config.log_device_placement = True
+
     sess_config.gpu_options.allow_growth = True
 
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Get ops and variables needed for use of SyncReplicasOptimizer
-
-    init_op = tf.global_variables_initializer()
-
-    # Get a reference to the optimizer from the graph
     opt = graph.algo._optimizer
-    global_step = graph.step
 
-    # Get a reference to the propper local_init_op
-    local_init_op = opt.local_step_init_op
-    if run_config.is_chief:
-      local_init_op = opt.chief_init_op
+    init_op = tf.group(
+        tf.local_variables_initializer(),
+        tf.global_variables_initializer())
 
-    # Get init ops to be run on chief queue runner
-    chief_queue_runner = opt.get_chief_queue_runner()
-    sync_init_op = opt.get_init_tokens_op()
+    # local_init_op = tf.local_variables_initializer()
+    # if FLAGS.sync_replicas:
+    #     # Get a reference to the propper local_init_op
+    #     local_init_op = opt.local_step_init_op
+    #     if run_config.is_chief:
+    #       local_init_op = opt.chief_init_op
 
-    ready_for_local_init_op = opt.ready_for_local_init_op
+    # ready_for_local_init_op = opt.ready_for_local_init_op
 
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # def init_fn(scaff, session):
+    #   session.run(tf.local_variables_initializer())
 
-    # Initialize the training supervisor with necessary params for run and init
-    # and sync of replicas.
-    # Handles checkpointing and resuming from previous checkpoint.
-    # sv = tf.train.Supervisor(
-    #     is_chief=run_config.is_chief,
-    #     logdir=log_dir,
-    #     init_op=init_op,
-    #     local_init_op=local_init_op,
-    #     ready_for_local_init_op=ready_for_local_init_op,
-    #     recovery_wait_secs=1,
-    #     global_step=global_step)
+    scaffold = tf.train.Scaffold(
+        saver=saver,
+        init_op=init_op,
+        # init_fn=init_fn,
+        # local_init_op=tf.local_variables_initializer(),
+        # local_init_op=local_init_op,
+        # ready_for_local_init_op=ready_for_local_init_op
+    )
+
+    # if not FLAGS.sync_replicas:
+    #   scaffold.local_init_op = tf.local_variables_initializer()
+
+    hooks = [tf.train.StopAtStepHook(last_step=total_steps)]
+
+    if FLAGS.sync_replicas:
+      sync_replicas_hook = opt.make_session_run_hook(run_config.is_chief)
+      hooks.append(sync_replicas_hook)
+
+    # class RandomDeubggingHook(tf.train.SessionRunHook):
+    #   def begin(self):
+    #     # You can add ops to the graph here.
+    #     print('=== RDH: Begin called.')
+    #     self._global_step_tensor = tf.train.get_global_step()
+    #     if self._global_step_tensor is None:
+    #       raise RuntimeError(
+    #           "Global step should be created to use FeatureImportanceSummarySaver.")
     #
-    # # If master, create session, otherwise wait for session to be created.
-    # sess = sv.prepare_or_wait_for_session(server.target, config=sess_config)
+    #   def after_create_session(self, session, coord):
+    #     # When this is called, the graph is finalized and
+    #     # ops can no longer be added to the graph.
+    #     print('=== RDH: Session created.')
     #
-    # if run_config.is_chief:
-    #   # Chief worker will start the chief queue runner and call the init op.
-    #   sess.run(sync_init_op)
-    #   sv.start_queue_runners(sess, [chief_queue_runner])
-
-    # Traceback (most recent call last):
-    #   File "/usr/lib/python2.7/runpy.py", line 174, in _run_module_as_main
-    #     "__main__", fname, loader, pkg_name)
-    #   File "/usr/lib/python2.7/runpy.py", line 72, in _run_code
-    #     exec code in run_globals
-    #   File "/app/trainer/task.py", line 158, in <module>
-    #     main(args)
-    #   File "/app/trainer/task.py", line 144, in main
-    #     for score in train.train(agents_config, run_config, args.log_dir, env_processes=True):
-    #   File "trainer/train.py", line 305, in train
-    #     sess = sv.prepare_or_wait_for_session(server.target, config=sess_config)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/supervisor.py", line 716, in prepare_or_wait_for_session
-    #     max_wait_secs=max_wait_secs)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 400, in wait_for_session
-    #     sess)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 481, in _try_run_local_init_op
-    #     is_ready_for_local_init, msg = self._model_ready_for_local_init(sess)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 466, in _model_ready_for_local_init
-    #     "Model not ready for local init")
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 508, in _ready
-    #     ready_value = sess.run(op)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 895, in run
-    #     run_metadata_ptr)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1109, in _run
-    #     self._graph, fetches, feed_dict_tensor, feed_handles=feed_handles)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 426, in __init__
-    #     self._assert_fetchable(graph, fetch.op)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 439, in _assert_fetchable
-    #     'Operation %r has been marked as not fetchable.' % op.name)
-    # ValueError: Operation u'end_episode/cond/cond/training/scan_1/while/report_uninitialized_variables/boolean_mask/Gather' has been marked as not fetchable.
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    # scaffold = tf.train.Scaffold(
-    #     saver=saver,
-    #     init_op=init_op,
-    #     ready_op=sync_init_op,  # ??
-    #     ready_for_local_init_op=ready_for_local_init_op,
-    #     local_init_op=local_init_op,
-    #     summary_op=None,
-    #     init_feed_dict=None,
-    #     init_fn=None
-    # )
+    #   def before_run(self, run_context):
+    #     print('=== RDH: Before calling session.run().')
+    #     del run_context  # Unused by feature importance summary saver hook.
+    #     requests = {
+    #         "global_step": self._global_step_tensor,
+    #     }
+    #     return tf.train.SessionRunArgs(requests)
     #
-    # # TODO: User MonitoredTrainingSession since Supervisor is headed for depr.
-    # hooks = [tf.train.StopAtStepHook(last_step=total_steps)]
-    # sess = tf.train.MonitoredTrainingSession(
-    #     master=server.target,
-    #     is_chief=run_config.is_chief,
-    #     checkpoint_dir=log_dir,
-    #     scaffold=scaffold,
-    #     hooks=hooks,
-    #     chief_only_hooks=None,
-    #     save_checkpoint_secs=600,
-    #     # save_summaries_steps=USE_DEFAULT,
-    #     # save_summaries_secs=USE_DEFAULT,
-    #     config=sess_config,
-    #     stop_grace_period_secs=120,
-    #     log_step_count_steps=100
-    # )
+    #   def after_run(self, run_context, run_values):
+    #     print('=== RDH: Done running one step.')
+    #     global_step = run_values.results["global_step"]
+    #     tf.logging.info('global step: %s' % global_step)
+    #
+    #   def end(self, session):
+    #     print('=== RDH: Done with the session.')
+    #
+    # hooks.append(RandomDeubggingHook())
 
-    #     Traceback (most recent call last):
-    #   File "/usr/lib/python2.7/runpy.py", line 174, in _run_module_as_main
-    #     "__main__", fname, loader, pkg_name)
-    #   File "/usr/lib/python2.7/runpy.py", line 72, in _run_code
-    #     exec code in run_globals
-    #   File "/app/trainer/task.py", line 158, in <module>
-    #     main(args)
-    #   File "/app/trainer/task.py", line 144, in main
-    #     for score in train.train(agents_config, run_config, args.log_dir, env_processes=True):
-    #   File "trainer/train.py", line 376, in train
-    #     log_step_count_steps=100
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 336, in MonitoredTrainingSession
-    #     stop_grace_period_secs=stop_grace_period_secs)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 668, in __init__
-    #     stop_grace_period_secs=stop_grace_period_secs)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 490, in __init__
-    #     self._sess = _RecoverableSession(self._coordinated_creator)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 842, in __init__
-    #     _WrappedSession.__init__(self, self._create_session())
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 847, in _create_session
-    #     return self._sess_creator.create_session()
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 551, in create_session
-    #     self.tf_sess = self._session_creator.create_session()
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/monitored_session.py", line 460, in create_session
-    #     max_wait_secs=30 * 60  # Wait up to 30 mins for the session to be ready.
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 400, in wait_for_session
-    #     sess)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 481, in _try_run_local_init_op
-    #     is_ready_for_local_init, msg = self._model_ready_for_local_init(sess)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 466, in _model_ready_for_local_init
-    #     "Model not ready for local init")
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/training/session_manager.py", line 508, in _ready
-    #     ready_value = sess.run(op)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 895, in run
-    #     run_metadata_ptr)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1109, in _run
-    #     self._graph, fetches, feed_dict_tensor, feed_handles=feed_handles)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 426, in __init__
-    #     self._assert_fetchable(graph, fetch.op)
-    #   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 439, in _assert_fetchable
-    #     'Operation %r has been marked as not fetchable.' % op.name)
-    # ValueError: Operation u'end_episode/cond/cond/training/scan_1/while/report_uninitialized_variables/boolean_mask/Gather' has been marked as not fetchable.
+    with tf.train.MonitoredTrainingSession(
+        master=server.target,
+        is_chief=run_config.is_chief,
+        checkpoint_dir=log_dir,
+        scaffold=scaffold,
+        hooks=hooks,
+        save_checkpoint_secs=600,
+        save_summaries_steps=None,
+        save_summaries_secs=None,
+        config=sess_config,
+        stop_grace_period_secs=120,
+        log_step_count_steps=300
+    ) as mon_sess:
 
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      global_step = mon_sess.run(loop._step)
+      steps_made = 1
 
-    # initialize_variables(sess, saver, log_dir)
-    # for score in loop.run(sess, saver, total_steps):
-    #   yield score
+      # TODO: How can the chief session at this point query for uninitialized
+      # variables that are private to the worker nodes? If it can't do this,
+      # how can it send a signal to these nodes to initialize their own vars.?
+      # Currently non-chief nodes hang, repeating:
+      #   INFO:tensorflow:Waiting for model to be ready.  Ready_for_local_init_op:
+      #   Variables not initialized: ppo_temporary/episodes/Variable,
+      #   ppo_temporary/episodes/Variable_1, ppo_temporary/episodes/Variable_2,
+      #   ppo_temporary/episodes/Variable_3, ppo_temporary/episodes/Variable_4,
+      #   ppo_temporary/episodes/Variable_5, ppo_temporary/last_action,
+      #   ppo_temporary/last_mean, ppo_temporary/last_logstd, ready: None
+      # Presumably because these variables which are private to an individual
+      # worker are not initialized by the chief. It seems we should be initializing
+      # these variables in the local_init_op in response to the,
+      # ready_for_local_init_op, not blocking the local_init_op until these
+      # local variables are initialized.
 
-    # When running with SyncReplicasOptimizer without using opt.* ops via
-    # Supervisor, hangs, presumably because it's stuck waiting for a sync
-    # operation?
-    with tf.Session(server.target, config=sess_config) as sess:
-      utility.initialize_variables(sess, saver, log_dir)
-      for score in loop.run(sess, saver, total_steps):
-        yield score
+      while not mon_sess.should_stop():
+
+        phase, epoch, steps_in = loop._find_current_phase(global_step)
+        phase_step = epoch * phase.steps + steps_in
+        phase.feed[loop._reset] = (steps_in < steps_made)
+
+        phase.feed[loop._log] = False
+        phase.feed[loop._report] = False
+
+        # phase.feed[loop._log] = (
+        #     phase.writer and
+        #     loop._is_every_steps(phase_step, phase.batch, phase.log_every))
+        # phase.feed[loop._report] = (
+        #     loop._is_every_steps(phase_step, phase.batch, phase.report_every))
+
+        summary, mean_score, global_step, steps_made = mon_sess.run(
+            phase.op, phase.feed)
+
+        # if loop._is_every_steps(phase_step, phase.batch, phase.report_every):
+        #   yield mean_score
+        # if summary and phase.writer:
+        #   # We want smaller phases to catch up at the beginnig of each epoch so
+        #   # that their graphs are aligned.
+        #   longest_phase = max(phase.steps for phase in loop._phases)
+        #   summary_step = epoch * longest_phase + steps_in
+        #   phase.writer.add_summary(summary, summary_step)
 
     batch_env.close()
-
-
-def main(_):
-  """Create or load configuration and launch the trainer."""
-  utility.set_up_logging()
-  if not FLAGS.config:
-    raise KeyError('You must specify a configuration.')
-  logdir = FLAGS.logdir and os.path.expanduser(os.path.join(
-      FLAGS.logdir, '{}-{}'.format(FLAGS.timestamp, FLAGS.config)))
-  try:
-    config = utility.load_config(logdir)
-  except IOError:
-    config = tools.AttrDict(getattr(configs, FLAGS.config)())
-    config = utility.save_config(config, logdir)
-  for score in train_runner(config, FLAGS.env_processes):
-    tf.logging.info('Score {}.'.format(score))
-
-
-if __name__ == '__main__':
-  FLAGS = tf.app.flags.FLAGS
-  tf.app.flags.DEFINE_string(
-      'logdir', None,
-      'Base directory to store logs.')
-  tf.app.flags.DEFINE_string(
-      'timestamp', datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
-      'Sub directory to store logs.')
-  tf.app.flags.DEFINE_string(
-      'config', None,
-      'Configuration to execute.')
-  tf.app.flags.DEFINE_boolean(
-      'env_processes', True,
-      'Step environments in separate processes to circumvent the GIL.')
-  tf.app.run()

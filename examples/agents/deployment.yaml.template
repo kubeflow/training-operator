@@ -39,3 +39,4 @@ spec:
       tfReplicaType: PS
   tensorBoard:
     logDir: {{log_dir}}
+  tfImage: tensorflow/tensorflow:1.4.0

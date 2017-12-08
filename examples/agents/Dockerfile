@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/dev01-181118-181500/agents-base:cpu
+#FROM gcr.io/dev01-181118-181500/agents-base:cpu
+FROM gcr.io/dev01-181118-181500/agents-base:cpu-tf1.4.0
 
 ADD trainer/* /app/trainer/
 WORKDIR /app/

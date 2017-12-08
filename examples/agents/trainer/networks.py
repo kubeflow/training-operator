@@ -43,16 +43,19 @@ def feed_forward_gaussian(
   Returns:
     NetworkOutput tuple.
   """
-
   run_config = tf.contrib.learn.RunConfig()
-  cpu_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
-                                          run_config.task_id)
-  device_func = tf.train.replica_device_setter(
-      worker_device=cpu_device,
-      ps_device="/job:ps/cpu:0",
-      cluster=run_config.cluster_spec)
 
-  with tf.device(device_func):
+  worker_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
+                                             run_config.task_id)
+  # The device setter will automatically place Variables ops on separate
+  # parameter servers (ps). The non-Variable ops will be placed on the workers.
+  # The ps use CPU and workers use corresponding GPU
+  with tf.device(
+      tf.train.replica_device_setter(
+          worker_device=worker_device,
+          ps_device="/job:ps/cpu:0",
+          cluster=run_config.cluster_spec)):
+
     mean_weights_initializer = tf.contrib.layers.variance_scaling_initializer(
         factor=config.init_mean_factor)
     logstd_initializer = tf.random_normal_initializer(

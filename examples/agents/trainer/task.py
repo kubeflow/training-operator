@@ -19,15 +19,49 @@ import datetime
 import json
 import logging
 import os
+import sys
 
 import agents
 import tensorflow as tf
+#from . import networks
+from agents.scripts import networks
 
-import pybullet_envs  # To make AntBulletEnv-v0 available.
+import pybullet_envs
 from trainer.algorithm import PPOAlgorithm
 
 from . import train
-from .networks import feed_forward_gaussian
+
+flags = tf.app.flags
+
+flags.DEFINE_string("mode", "train",
+                    "Run mode, one of [train, visualize].")
+flags.DEFINE_string("log_dir", None,
+                    "The base directory in which to write logs and "
+                    "checkpoints.")
+flags.DEFINE_string("config", None,
+                    "The name of the config object to be used to parameterize "
+                    "the run.")
+flags.DEFINE_string("run_base_tag",
+                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
+                    "Base tag to prepend to logs dir folder name. Defaults "
+                    "to timestamp.")
+flags.DEFINE_boolean("env_processes", True,
+                     "Step environments in separate processes to circumvent "
+                     "the GIL.")
+flags.DEFINE_boolean("sync_replicas", False,
+                     "Use the sync_replicas (synchronized replicas) mode, "
+                     "wherein the parameter updates from workers are "
+                     "aggregated before applied to avoid stale gradients.")
+flags.DEFINE_integer("num_gpus", 0,
+                     "Total number of gpus for each machine."
+                     "If you don't use GPU, please set it to '0'")
+flags.DEFINE_boolean("debug", False,
+                     "Use debugger to track down bad values during training")
+flags.DEFINE_string("ui_type", "curses",
+                    "Command-line user interface type (curses | readline)")
+flags.DEFINE_boolean("log_device_placement", False,
+                     "Whether to log device placement.")
+FLAGS = flags.FLAGS
 
 
 def smoke():
@@ -41,9 +75,9 @@ def smoke():
   # Environment
   env = 'AntBulletEnv-v0'
   max_length = 1000
-  steps = 10  # 10M
+  steps = 1000  # 10M
   # Network
-  network = feed_forward_gaussian
+  network = networks.feed_forward_gaussian
   weight_summaries = dict(
       all=r'.*',
       policy=r'.*/policy/.*',
@@ -71,7 +105,7 @@ def pybullet_ant():
 
   # General
   algorithm = PPOAlgorithm
-  num_agents = 10
+  num_agents = 1
   eval_episodes = 25
   use_gpu = False
   # Environment
@@ -79,19 +113,20 @@ def pybullet_ant():
   max_length = 1000
   steps = 1e7  # 10M
   # Network
-  network = feed_forward_gaussian
+  network = networks.feed_forward_gaussian
   weight_summaries = dict(
       all=r'.*',
       policy=r'.*/policy/.*',
       value=r'.*/value/.*')
-  policy_layers = 200, 100
-  value_layers = 200, 100
+  policy_layers = 20, 10
+  # policy_layers = 200, 100
+  value_layers = 20, 10
+  # value_layers = 200, 100
   init_mean_factor = 0.1
   init_logstd = -1
   # Optimization
   update_every = 30
   update_epochs = 25
-  # optimizer = 'AdamOptimizer'
   optimizer = tf.train.AdamOptimizer
   learning_rate = 1e-4
   # Losses
@@ -117,42 +152,30 @@ def _get_agents_configuration(config_var_name, log_dir):
   return config
 
 
-def main(args):
+def main(unused_argv):
   """Run training.
 
   Raises:
     ValueError: If the arguments are invalid.
   """
-  logging.info("Tensorflow version: %s", tf.__version__)
-  logging.info("Tensorflow git version: %s", tf.__git_version__)
+  tf.logging.info("Tensorflow version: %s", tf.__version__)
+  tf.logging.info("Tensorflow git version: %s", tf.__git_version__)
+
+  tf.logging.info(FLAGS.log_dir)
 
   agents.scripts.utility.set_up_logging()
-  agents_config = _get_agents_configuration(args.config, args.log_dir)
+  agents_config = _get_agents_configuration(FLAGS.config, FLAGS.log_dir)
   run_config = tf.contrib.learn.RunConfig()
-  log_dir = args.log_dir and os.path.expanduser(args.log_dir)
+  log_dir = FLAGS.log_dir and os.path.expanduser(FLAGS.log_dir)
 
   if log_dir:
-    # HACK: This is really not what we want to do. Definitely want to only be
-    # having master write logs.
-    args.log_dir = os.path.join(
-        log_dir, '{}-{}-tid{}-{}'.format(args.timestamp, run_config.task_type,
-                                         run_config.task_id, args.config))
-    ###
+    FLAGS.log_dir = os.path.join(
+        log_dir, '{}-{}'.format(FLAGS.run_base_tag, FLAGS.config))
 
-  if args.mode == 'train' or args.mode == 'smoke':
-    # train.train_bk(agents_config, env_processes=True)
-    for score in train.train(agents_config, run_config, args.log_dir, env_processes=True):
-      tf.logging.info('Score {}.'.format(score))
+  if FLAGS.mode == 'train' or FLAGS.mode == 'smoke':
+    train.train(agents_config, env_processes=True)
 
 
 if __name__ == '__main__':
-  logging.getLogger().setLevel(logging.INFO)
-  timestamp = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
-  parser = argparse.ArgumentParser()
-  parser.add_argument(
-      '--mode', choices=['train', 'render'], default='train')
-  parser.add_argument('--log_dir', default=None, required=True)
-  parser.add_argument('--config', default=None, required=True)
-  parser.add_argument('--timestamp', default=timestamp)
-  args = parser.parse_args()
-  main(args)
+  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.app.run()

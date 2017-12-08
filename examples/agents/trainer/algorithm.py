@@ -62,51 +62,26 @@ class PPOAlgorithm(object):
 
     run_config = tf.contrib.learn.RunConfig()
 
-    # Obtain the worker device function
-    # device_func = tf.train.replica_device_setter(
-    #     worker_device="/job:%s/task:%d" % (
-    #         run_config.task_type, run_config.task_id),
-    #     ps_device="/job:ps/cpu:0",
-    #     cluster=run_config.cluster_spec)
-
-    # with tf.device(device_func):
-    # HACK: Not sure whether we should be running ops on the master, guessing
-    # not. This assumes workers only. But with this config the master will try
-    # to run ops on the chief worker.
-    # ty = run_config.task_type
-    # hack_type = ('master' if ty == 'chief' else 'worker')
     cpu_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
                                             run_config.task_id)
     gpu_device = "/job:%s/task:%d/gpu:0" % (run_config.task_type,
                                             run_config.task_id)
-    # device_func = tf.train.replica_device_setter(
-    #     worker_device=(gpu_device if use_gpu else cpu_device),
-    #     ps_device="/job:ps/cpu:0",
-    #     cluster=run_config.cluster_spec)
 
-    # By default, put all ops and varibles internal to PPOAlgorithm on either
-    # local gpu or cpu device. Don't use replica_device_setter at this level
-    # because we don't want to share all variables within here?
-    # with tf.device(device_func):
+    # HACK: To address a condition (?) where only /job:*/replica:*/task...
+    # devices were available when usually we have /job:*/task:*/...?
+    # cpu_device = "/job:%s/replica:0/task:%d/cpu:0" % (run_config.task_type,
+    #                                                   run_config.task_id)
+    # gpu_device = "/job:%s/replica:0/task:%d/gpu:0" % (run_config.task_type,
+    #                                                   run_config.task_id)
+
+    action_size = self._batch_env.action.shape[1].value
+    self._network = tf.make_template(
+        'network', functools.partial(config.network, config, action_size))
+    output = self._network(
+        tf.zeros_like(self._batch_env.observ)[:, None],
+        tf.ones(len(self._batch_env)))
+
     with tf.device(gpu_device if use_gpu else cpu_device):
-      # Create network variables for later calls to reuse.
-      action_size = self._batch_env.action.shape[1].value
-
-      # Wrap instantiation of config.network with device_fn context, putting all
-      # tf.Variable's on parameter servers.
-
-      # with tf.device(device_func):
-      # Put only the network Variable's on the shared parameters servers
-      # Wrapping at this level, instead of within feed_forward_gaussian(),
-      # did not work to put variables on parameter servers.
-      # Would be nice not to have to put device/distribution-related code inside
-      # the network functions/objects.
-      self._network = tf.make_template(
-          'network', functools.partial(config.network, config, action_size))
-
-      output = self._network(
-          tf.zeros_like(self._batch_env.observ)[:, None],
-          tf.ones(len(self._batch_env)))
       with tf.variable_scope('ppo_temporary'):
         self._episodes = memory.EpisodeMemory(
             template, len(batch_env), config.max_length, 'episodes')
@@ -130,16 +105,16 @@ class PPOAlgorithm(object):
     self._penalty = tf.Variable(
         self._config.kl_init_penalty, False, dtype=tf.float32)
 
-    # self._optimizer = self._config.optimizer(self._config.learning_rate)
+    self._optimizer = self._config.optimizer(self._config.learning_rate)
 
-    # Instantiate the optimizer provided in the hyperparameter config and
-    # wrap it with tf.SyncReplicasOptimizer to coordinate syncing of gradients
-    # among workers.
-    nwr = run_config.num_worker_replicas
-    opt = self._config.optimizer(self._config.learning_rate)
-    self._optimizer = tf.train.SyncReplicasOptimizer(opt,
-                                                     replicas_to_aggregate=nwr,
-                                                     total_num_replicas=nwr)
+    FLAGS = tf.app.flags.FLAGS
+    if FLAGS.sync_replicas:
+      self._optimizer = tf.train.SyncReplicasOptimizer(
+          self._optimizer,
+          replicas_to_aggregate=(
+              run_config.num_worker_replicas),
+          total_num_replicas=(run_config.num_worker_replicas)
+      )
 
   def begin_episode(self, agent_indices):
     """Reset the recurrent states and stored episode.
@@ -290,6 +265,7 @@ class PPOAlgorithm(object):
     with tf.control_dependencies([inc_index]):
       memory_full = self._memory_index >= self._config.update_every
       return tf.cond(memory_full, self._training, str)
+      # return self._training()
 
   def _training(self):
     """Perform multiple training iterations of both policy and value baseline.
@@ -361,6 +337,7 @@ class PPOAlgorithm(object):
         advantage, [tf.reduce_mean(advantage)],
         'normalized advantage: ')
     # pylint: disable=g-long-lambda
+
     value_loss, policy_loss, summary = tf.scan(
         lambda _1, _2: self._update_step(
             observ, action, old_mean, old_logstd, reward, advantage, length),
@@ -399,8 +376,11 @@ class PPOAlgorithm(object):
         zip(*self._optimizer.compute_gradients(policy_loss)))
     all_gradients = value_gradients + policy_gradients
     all_variables = value_variables + policy_variables
+
     optimize = self._optimizer.apply_gradients(
-        zip(all_gradients, all_variables), global_step=self._step)
+        zip(all_gradients, all_variables),
+        global_step=self._step
+    )
     summary = tf.summary.merge([
         value_summary, policy_summary,
         tf.summary.scalar(
@@ -410,7 +390,8 @@ class PPOAlgorithm(object):
         utility.gradient_summaries(
             zip(value_gradients, value_variables), dict(value=r'.*')),
         utility.gradient_summaries(
-            zip(policy_gradients, policy_variables), dict(policy=r'.*'))])
+            zip(policy_gradients, policy_variables), dict(policy=r'.*'))
+    ])
     with tf.control_dependencies([optimize]):
       return [tf.identity(x) for x in (value_loss, policy_loss, summary)]
 
