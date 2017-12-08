@@ -58,7 +58,9 @@ TfJob requires Kubernetes >= 1.8
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
    helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true,cloud=<gke or azure>
    ```
-
+   
+   * If you aren't running on GKE or Azure don't set cloud.
+   
    For non-RBAC enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
@@ -126,6 +128,7 @@ metadata:
 data:
   controller_config_file.yaml: |
     accelerators:
+      grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
       alpha.kubernetes.io/nvidia-gpu:
         volumes:
           - name: <volume-name> # Desired name of the volume, ex: nvidia-libs

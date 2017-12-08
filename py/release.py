@@ -27,6 +27,8 @@ JOB_NAME = "tf-k8s-postsubmit"
 
 GCB_PROJECT = "tf-on-k8s-releasing"
 
+# Directory to checkout the source.
+REPO_DIR = "git_tensorflow_k8s"
 
 def get_latest_green_presubmit(gcs_client):
   """Find the commit corresponding to the latest passing postsubmit."""
@@ -299,6 +301,56 @@ def write_build_info(build_info, paths, project=None):
       with open(p, mode='w') as hf:
         hf.write(contents)
 
+def build(args):
+  """Build the code."""
+  if not args.src_dir:
+    logging.info("--src_dir not set")
+    args.src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+  logging.info("Use --src_dir=%s", args.src_dir)
+
+  go_dir = os.getenv("GOPATH")
+  if not go_dir:
+    raise ValueError("Environment variable GOPATH must be set.")
+
+  go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+
+  if not os.path.exists(go_src_dir):
+    logging.info("%s does not exist.", go_src_dir)
+
+    # Create a symbolic link in the go path.
+    parent_dir = os.path.dirname(go_src_dir)
+    if not os.path.exists(parent_dir):
+      os.makedirs(parent_dir)
+    logging.info("Creating symbolic link %s pointing to %s", go_src_dir,
+                 args.src_dir)
+    os.symlink(args.src_dir, go_src_dir)
+
+  # Check that the directory in the go src path correctly points to
+  # the same directory as args.src_dir
+  if os.path.islink(go_src_dir):
+    target = os.path.realpath(go_src_dir)
+
+    if target != args.src_dir:
+      message = "{0} is a symbolic link to {1}; but --src_dir={2}".format(
+                 go_src_dir, target, args.src_dir)
+      logging.error(message)
+      raise ValueError(message)
+  elif go_src_dir != args.src_dir:
+    message = "{0} doesn't equal --src_dir={1}".format(go_src_dir, args.src_dir)
+    logging.error(message)
+    raise ValueError(message)
+
+  vendor_dir = os.path.join(args.src_dir, "vendor")
+  if not os.path.exists(vendor_dir):
+    logging.info("Installing go dependencies")
+    util.install_go_deps(args.src_dir)
+  else:
+    logging.info("vendor directory exists; not installing go dependencies.")
+
+  # TODO(jlewi): We can stop passing go_dir because we not rely on go_dir
+  # being set in the environment.
+  build_and_push(go_dir, args.src_dir, args)
+
 def build_and_push(go_dir, src_dir, args):
   if args.dryrun:
     logging.info("dryrun...")
@@ -324,34 +376,63 @@ def build_local(args):
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   build_and_push(go_dir, src_dir, args)
 
-def build_postsubmit(args):
-  """Build the artifacts from a postsubmit."""
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  os.environ["GOPATH"] = go_dir
-  logging.info("Temporary go_dir: %s", go_dir)
+def clone_repo(args):
+  args.clone_func(args)
 
-  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+def clone_pr(args):
+  branches = ["pull/{0}/head:pr".format(args.pr)]
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit, branches)
 
-  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
+def clone_postsubmit(args):
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
                   util.MASTER_REPO_NAME, args.commit)
 
-  build_and_push(go_dir, src_dir, args)
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
+def build_commit(args, branches):
+  top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  logging.info("Top level directory for source: %s", top_dir)
 
-def build_pr(args):
-  """Build the artifacts from a postsubmit."""
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  go_dir = os.path.join(top_dir, "go")
   os.environ["GOPATH"] = go_dir
   logging.info("Temporary go_dir: %s", go_dir)
 
+  clone_dir = os.path.join(top_dir, REPO_DIR)
   src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  branches = ["pull/{0}/head:pr".format(args.pr)]
-  util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit,
-                  branches=branches)
+  util.clone_repo(clone_dir, util.MASTER_REPO_OWNER,
+                  util.MASTER_REPO_NAME, args.commit, branches)
 
+  # Create a symbolic link in the go path.
+  os.makedirs(os.path.dirname(src_dir))
+  logging.info("Creating symbolic link %s pointing to %s", src_dir, clone_dir)
+  os.symlink(clone_dir, src_dir)
+  util.install_go_deps(clone_dir)
   build_and_push(go_dir, src_dir, args)
 
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
+def build_postsubmit(args):
+  """Build the artifacts from a postsubmit."""
+  build_commit(args, None)
+
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
+def build_pr(args):
+  """Build the artifacts from a postsubmit."""
+  branches = ["pull/{0}/head:pr".format(args.pr)]
+  build_commit(args, branches)
+
+def clone_lastgreen(args):
+  gcs_client = storage.Client()
+  sha = get_latest_green_presubmit(gcs_client)
+
+  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
+                  sha)
+
+# TODO(jlewi): Delete this function once
+# https://github.com/tensorflow/k8s/issues/189 is fixed.
 def build_lastgreen(args):  # pylint: disable=too-many-locals
   """Find the latest green postsubmit and build the artifacts.
   """
@@ -377,7 +458,6 @@ def build_lastgreen(args):  # pylint: disable=too-many-locals
 
   _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
                            util.MASTER_REPO_NAME, sha)
-
   build_and_push(go_dir, src_dir, args)
 
 def add_common_args(parser):
@@ -415,12 +495,87 @@ def add_common_args(parser):
                       help="Don't do a dry run.")
   parser.set_defaults(dryrun=False)
 
-def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+def build_parser():
   # create the top-level parser
   parser = argparse.ArgumentParser(
-      description="Build the release artifacts.")
+    description="Build the release artifacts.")
   subparsers = parser.add_subparsers()
+
+  #############################################################################
+  # clone
+  #
+  # Create the parser for the "local" mode.
+  # This mode builds the artifacts from the local copy of the code.
+
+  parser_clone = subparsers.add_parser(
+    "clone",
+    help="Clone and checkout the repository.")
+
+  parser_clone.add_argument(
+    "--src_dir",
+    required=True,
+    type=str,
+    help="Directory to checkout the source to.")
+
+  clone_subparsers = parser_clone.add_subparsers()
+
+  last_green = clone_subparsers.add_parser(
+    "lastgreen",
+    help="Clone the last green postsubmit.")
+
+  last_green.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  last_green.set_defaults(clone_func=clone_lastgreen)
+
+  pr = clone_subparsers.add_parser(
+    "pr",
+    help="Clone the pull request.")
+
+  pr.add_argument(
+    "--pr",
+    default=None,
+    required=True,
+    help="The pull request to check out..")
+
+  pr.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  pr.set_defaults(clone_func=clone_pr)
+
+  postsubmit = clone_subparsers.add_parser(
+    "postsubmit",
+    help="Clone a postsubmit.")
+
+  postsubmit.add_argument(
+    "--commit",
+    default=None,
+    type=str,
+    help="Optional a particular commit to checkout.")
+
+  postsubmit.set_defaults(clone_func=clone_postsubmit)
+
+  parser_clone.set_defaults(func=clone_repo)
+
+  ############################################################################
+  # Build command
+  build_subparser = subparsers.add_parser("build", help="Build the artifacts.")
+
+  build_subparser.add_argument(
+    "--src_dir",
+    default=None,
+    type=str,
+    help=("Directory containing the source. If not set determined "
+          "automatically."))
+
+  add_common_args(build_subparser)
+  build_subparser.set_defaults(func=build)
 
   #############################################################################
   # local
@@ -438,16 +593,22 @@ def main():  # pylint: disable=too-many-locals
   # Build a particular postsubmit hash.
   parser_postsubmit = subparsers.add_parser(
     "postsubmit",
-    help="Build the artifacts from a postsbumit.")
+    help="Build the artifacts from a postsubmit.")
+  parser_postsubmit.set_defaults(func=build_postsubmit)
 
   add_common_args(parser_postsubmit)
 
   parser_postsubmit.add_argument(
     "--commit",
-      default=None,
+    default=None,
       type=str,
       help="Optional a particular commit to checkout and build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_postsubmit.add_argument(
+    "--src_dir",
+    default=None,
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   ############################################################################
   # Last Green
@@ -468,19 +629,34 @@ def main():  # pylint: disable=too-many-locals
 
   parser_pr.add_argument(
     "--pr",
-      required=True,
+    required=True,
       type=str,
       help="The PR to build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
 
   parser_pr.add_argument(
     "--commit",
-      default=None,
+    default=None,
       type=str,
       help="Optional a particular commit to checkout and build.")
-  parser_postsubmit.set_defaults(func=build_postsubmit)
+
+  parser_pr.add_argument(
+    "--src_dir",
+    default=None,
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   parser_pr.set_defaults(func=build_pr)
+  return parser
+
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
+
+  parser = build_parser()
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()

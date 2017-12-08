@@ -1,5 +1,4 @@
-#!/bin/bash
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,20 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit -o pipefail -o nounset
-
-shopt -s extglob
-status=0
-
-echo pylint --version
-pylint --version
-
-for file in $(find . -name "*.py" ! -path "./vendor/*")
-do
-    echo pylint $file
-    if ! pylint $file; then
-      status=1
-    fi
-done
-
-exit $status
+# This Dockerfile is used by ProwJobs to launch our Airflow jobs.
+#
+# TODO(jlewi) With Docker v17.0 we should just be able to use Docker
+# build args to specify the base image.
+FROM gcr.io/mlkube-testing/airflow:v20171204-e586904-dirty-88ff8b
+ENTRYPOINT ["python", "-m", "py.airflow"]
