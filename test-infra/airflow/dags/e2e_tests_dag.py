@@ -9,6 +9,7 @@ An Airflow pipeline for running our E2E tests.
 from datetime import datetime
 import logging
 import os
+import tempfile
 import uuid
 
 from airflow import DAG
@@ -30,7 +31,10 @@ default_args = {
 
 dag = DAG(
   # Set schedule_interval to None
-  'tf_k8s_tests', default_args=default_args, schedule_interval=None)
+  'tf_k8s_tests', default_args=default_args,
+  # TODO(jlewi): Should we schedule a regular run? Right now its
+  # manually triggered by PROW.
+  schedule_interval=None)
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
@@ -52,7 +56,59 @@ class FakeDagrun(object):
     self.run_id = "test_run"
     self.conf = {}
 
-def build_images(dag_run=None, ti=None, **_kwargs):
+def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
+  # Create a temporary directory suitable for checking out and building the
+  # code.
+  if not dag_run:
+    # When running via airflow test dag_run isn't set
+    logging.warn("Using fake dag_run")
+    dag_run = FakeDagrun()
+
+  logging.info("dag_id: %s", dag_run.dag_id)
+  logging.info("run_id: %s", dag_run.run_id)
+
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
+  logging.info("conf=%s", conf)
+
+
+  # Pick the directory the top level directory to use for this run of the
+  # pipeline.
+  # This should be a persistent location that is accessible from subsequent
+  # tasks; e.g. an NFS share or PD. The environment variable SRC_DIR is used
+  # to allow the directory to be specified as part of the deployment
+  run_dir = os.path.join(os.getenv("SRC_DIR", tempfile.gettempdir()),
+                         dag_run.dag_id.replace(":", "_"),
+                         dag_run.run_id.replace(":", "_"))
+  logging.info("Using run_dir %s", run_dir)
+  os.makedirs(run_dir)
+  logging.info("xcom push: run_dir=%s", run_dir)
+  ti.xcom_push(key="run_dir", value=run_dir)
+
+  # Directory where we will clone the src
+  src_dir = os.path.join(run_dir, "tensorflow_k8s")
+  logging.info("xcom push: src_dir=%s", src_dir)
+  ti.xcom_push(key="src_dir", value=src_dir)
+
+  # Make sure pull_number is a string
+  pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
+  args = ["python", "-m", "py.release", "clone", "--src_dir=" + src_dir]
+  if pull_number:
+    commit = conf.get("PULL_PULL_SHA", "")
+    args.append("pr")
+    args.append("--pr=" + pull_number)
+    if commit:
+      args.append("--commit=" + commit)
+  else:
+    commit = conf.get("PULL_BASE_SHA", "")
+    args.append("postsubmit")
+    if commit:
+      args.append("--commit=" + commit)
+
+  util.run(args, use_print=True)
+
+def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
   Args:
     dag_run: A DagRun object. This is passed in as a result of setting
@@ -68,38 +124,40 @@ def build_images(dag_run=None, ti=None, **_kwargs):
   logging.info("dag_id: %s", dag_run.dag_id)
   logging.info("run_id: %s", dag_run.run_id)
 
+  run_dir = ti.xcom_pull(None, key="run_dir")
+  logging.info("Using run_dir=%s", run_dir)
+
+  src_dir = ti.xcom_pull(None, key="src_dir")
+  logging.info("Using src_dir=%s", src_dir)
+
   gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
   logging.info("gcs_path %s", gcs_path)
 
   conf = dag_run.conf
   if not conf:
     conf = {}
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+  logging.info("artifacts_path %s", artifacts_path)
+
+  # We use a GOPATH that is specific to this run because we don't want
+  # interference from different runs.
+  newenv = os.environ.copy()
+  newenv["GOPATH"] = os.path.join(run_dir, "go")
 
   # Make sure pull_number is a string
   pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
-  args = ["python", "-m", "py.release"]
-  if pull_number:
-    commit = conf.get("PULL_PULL_SHA", "")
-    args.append("pr")
-    args.append("--pr=" + pull_number)
-    if commit:
-      args.append("--commit=" + commit)
-  else:
-    commit = conf.get("PULL_BASE_SHA", "")
-    args.append("postsubmit")
-    if commit:
-      args.append("--commit=" + commit)
+  args = ["python", "-m", "py.release", "build", "--src_dir=" + src_dir]
 
   dryrun = bool(conf.get("dryrun", False))
 
   build_info_file = os.path.join(gcs_path, "build_info.yaml")
   args.append("--build_info_path=" + build_info_file)
-  args.append("--releases_path=" + os.path.join(gcs_path))
+  args.append("--releases_path=" + gcs_path)
   args.append("--project=" + GCB_PROJECT)
-
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun)
+  util.run(args, use_print=True, dryrun=dryrun, env=newenv)
 
   # Read the output yaml and publish relevant values to xcom.
   if not dryrun:
@@ -131,8 +189,15 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
 
   now = datetime.now()
   cluster = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_setup_cluster.xml")
+
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH",
+                            run_path(dag_run.dag_id, dag_run.run_id))
+  logging.info("artifacts_path %s", artifacts_path)
+
+  # Gubernator only recognizes XML files whos name matches
+  # junit_[^_]*.xml which is why its "setupcluster" and not "setup_cluster"
+  junit_path = os.path.join(artifacts_path, "junit_setupcluster.xml")
   logging.info("junit_path %s", junit_path)
 
   args = ["python", "-m", "py.deploy", "setup"]
@@ -161,8 +226,11 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
 
   cluster = ti.xcom_pull("setup_cluster", key="cluster")
 
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_e2e.xml")
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH",
+                            run_path(dag_run.dag_id, dag_run.run_id))
+  logging.info("artifacts_path %s", artifacts_path)
+  junit_path = os.path.join(artifacts_path, "junit_e2e.xml")
   logging.info("junit_path %s", junit_path)
   ti.xcom_push(key="cluster", value=cluster)
 
@@ -184,8 +252,12 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   cluster = ti.xcom_pull("setup_cluster", key="cluster")
 
-  junit_path = os.path.join(run_path(dag_run.dag_id, dag_run.run_id),
-                            "junit_teardown.xml")
+  gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
+
+  artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+  logging.info("artifacts_path %s", artifacts_path)
+
+  junit_path = os.path.join(artifacts_path, "junit_teardown.xml")
   logging.info("junit_path %s", junit_path)
   ti.xcom_push(key="cluster", value=cluster)
 
@@ -198,11 +270,68 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
 
+def py_checks_gen(command):
+  """Create a callable to run the specified py_check command."""
+  def run_py_checks(dag_run=None, ti=None, **_kwargs):
+    """Run some of the python checks."""
+
+    conf = dag_run.conf
+    if not conf:
+      conf = {}
+
+    dryrun = bool(conf.get("dryrun", False))
+
+    src_dir = ti.xcom_pull(None, key="src_dir")
+    logging.info("src_dir %s", src_dir)
+
+    gcs_path = run_path(dag_run.dag_id, dag_run.run_id)
+
+    artifacts_path = conf.get("ARTIFACTS_PATH", gcs_path)
+    logging.info("artifacts_path %s", artifacts_path)
+
+    junit_path = os.path.join(artifacts_path, "junit_pychecks{0}.xml".format(command))
+    logging.info("junit_path %s", junit_path)
+
+    args = ["python", "-m", "py.py_checks", command]
+    args.append("--src_dir=" + src_dir)
+    args.append("--junit_path=" + junit_path)
+    args.append("--project=" + GCB_PROJECT)
+
+    # We want subprocess output to bypass logging module otherwise multiline
+    # output is squashed together.
+    util.run(args, use_print=True, dryrun=dryrun)
+
+  return run_py_checks
+
+def done(**_kwargs):
+  logging.info("Executing done step.")
+
+clone_op = PythonOperator(
+  task_id='clone_repo',
+    provide_context=True,
+    python_callable=clone_repo,
+    dag=dag)
+
 build_op = PythonOperator(
   task_id='build_images',
     provide_context=True,
     python_callable=build_images,
     dag=dag)
+build_op.set_upstream(clone_op)
+
+py_lint_op = PythonOperator(
+  task_id='pylint',
+    provide_context=True,
+    python_callable=py_checks_gen("lint"),
+    dag=dag)
+py_lint_op.set_upstream(clone_op)
+
+py_test_op = PythonOperator(
+  task_id='pytest',
+    provide_context=True,
+    python_callable=py_checks_gen("test"),
+    dag=dag)
+py_test_op.set_upstream(clone_op)
 
 setup_cluster_op = PythonOperator(
   task_id='setup_cluster',
@@ -227,3 +356,12 @@ teardown_cluster_op = PythonOperator(
     dag=dag)
 
 teardown_cluster_op.set_upstream(run_tests_op)
+
+# Create an op that can be used to determine when all other tasks are done.
+done_op = PythonOperator(
+  task_id='done',
+    provide_context=True,
+    python_callable=done,
+    dag=dag)
+
+done_op.set_upstream([teardown_cluster_op, py_lint_op, py_test_op])

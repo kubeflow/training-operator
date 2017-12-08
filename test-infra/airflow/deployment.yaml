@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: airflow
-        image: gcr.io/mlkube-testing/airflow:v20171115-01a4b76-dirty-192ea4
+        image: gcr.io/mlkube-testing/airflow:v20171204-e586904-dirty-88ff8b
         # What arguments do we need to set to use the LocalExecutor
         command:
           # Tells entrypoint.sh to start the webserver
@@ -36,9 +36,16 @@ spec:
           value: localhost
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json
+        # SRC_DIR is the location where we create a directory for each
+        # pipeline run. This directory is used to communicate data between
+        # steps in the pipeline.
+        - name: SRC_DIR
+          value: /var/lib/data/runs
         volumeMounts:
         - name: google-cloud-key
           mountPath: /var/secrets/google
+        - name: airflow-data
+          mountPath: /var/lib/data
         ports:
         - containerPort: 8080
       - name: postgres

@@ -36,9 +36,16 @@ spec:
           value: localhost
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json
+        # SRC_DIR is the location where we create a directory for each
+        # pipeline run. This directory is used to communicate data between
+        # steps in the pipeline.
+        - name: SRC_DIR
+          value: /var/lib/data/runs
         volumeMounts:
         - name: google-cloud-key
           mountPath: /var/secrets/google
+        - name: airflow-data
+          mountPath: /var/lib/data
         ports:
         - containerPort: 8080
       - name: postgres

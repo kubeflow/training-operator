@@ -11,7 +11,6 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=1.8.2
 ARG AIRFLOW_HOME=/usr/local/airflow
 
 # Define en_US.
@@ -21,6 +20,7 @@ ENV LANGUAGE=en_US.UTF-8 \
     LC_CTYPE=en_US.UTF-8 \
     LC_MESSAGES=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8
+
 
 # buildDeps should be packages needed only to build some other packages as
 # these packages are purged in a later step.
@@ -35,6 +35,8 @@ RUN set -ex \
         libblas-dev \
         liblapack-dev \
         libpq-dev \
+        libxml2 \
+        libxslt-dev libxml2-dev \
     ' \
     && apt-get update -yqq \
     && apt-get install -yqq --no-install-recommends \
@@ -59,6 +61,8 @@ RUN set -ex \
         python-setuptools \
         python-openssl \
         python2.7 \
+
+
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
@@ -69,12 +73,25 @@ RUN set -ex \
     && pip install pytz \
     && pip install pyOpenSSL \
     && pip install ndg-httpsclient \
-    && pip install pyasn1 \
-    && pip install apache-airflow[crypto,celery,postgres,hive,jdbc]==$AIRFLOW_VERSION \
-    && pip install celery[redis]==3.1.17 \
+    && pip install pyasn1 psycopg2 \
+    # Install airflow
+    # We need a new version of Airflow to pick up the latest changes supporting
+    # Airflow's experimental API.
+    && git clone https://github.com/apache/incubator-airflow.git /opt/airflow \
+    && cd /opt/airflow \
+    && git checkout f87d8aca93cf2c6df21bea7b13b6703d91f09865 \
+    && python setup.py install \
     && pip install --upgrade six pyyaml google-api-python-client \
-       google-cloud-storage google-auth-httplib2 pylint kubernetes \
+       google-cloud-storage google-auth-httplib2 pylint kubernetes mock \
+    # Airflow 1.9.0rc02 requires funcsigs 1.0.0; newer versions cause airflow
+    # scheduler to complain; it looks like mock might pull in a newer version.
+    # so we force a particular version.
+    && pip install funcsigs==1.0.0 \
     && apt-get purge --auto-remove -yqq $buildDeps \
+    # Airflow depends on numpy which depends on blas and lapack.
+    # Above we installed the dev versions to compile things but then
+    # we removed them. So now we install non-dev versions to be used.
+    && apt-get install -yqq --no-install-recommends libblas3 liblapack3 \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -83,6 +100,16 @@ RUN set -ex \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
+
+# Install  Node.js
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && apt-get install -y nodejs
+
+# Install yarn
+RUN curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && apt-get update -yqq \
+    && apt-get install -yqq --no-install-recommends yarn
 
 # Install go
 RUN cd /tmp && \
@@ -97,7 +124,6 @@ RUN cd /tmp && \
     mv ./linux-amd64/glide /usr/local/bin/
 
 # Install gcloud
-
 ENV PATH=/google-cloud-sdk/bin:/workspace:${PATH} \
     CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
