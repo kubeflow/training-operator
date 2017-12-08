@@ -42,12 +42,12 @@ func (c *TfJob) AsOwner() metav1.OwnerReference {
 	// TODO: In 1.6 this is gonna be "k8s.io/kubernetes/pkg/apis/meta/v1"
 	// Both api.OwnerReference and metatypes.OwnerReference are combined into that.
 	return metav1.OwnerReference{
-		APIVersion: c.APIVersion,
-		Kind:       c.Kind,
-		Name:       c.Metadata.Name,
-		UID:        c.Metadata.UID,
-		Controller: &trueVar,
-    BlockOwnerDeletion: &trueVar,
+		APIVersion:         c.APIVersion,
+		Kind:               c.Kind,
+		Name:               c.Metadata.Name,
+		UID:                c.Metadata.UID,
+		Controller:         &trueVar,
+		BlockOwnerDeletion: &trueVar,
 	}
 }
 
@@ -65,6 +65,9 @@ type TfJobSpec struct {
 	// TfImage defines the tensorflow docker image that should be used for Tensorboard
 	// and the default parameter server
 	TfImage string `json:"tfImage,omitempty"`
+
+	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
+	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -107,6 +110,16 @@ type TensorBoardSpec struct {
 	Volumes      []v1.Volume      `json:"volumes"`
 	VolumeMounts []v1.VolumeMount `json:"volumeMounts"`
 	ServiceType  v1.ServiceType   `json:"serviceType"`
+}
+
+type TerminationPolicySpec struct {
+	// Chief policy waits for a particular process (which is the chief) to exit.
+	Chief *ChiefSpec `json:"chief,omitempty"`
+}
+
+type ChiefSpec struct {
+	ReplicaName  string `json:"replicaName"`
+	ReplicaIndex int    `json:"replicaIndex"`
 }
 
 // Validate checks that the TfJobSpec is valid.
@@ -238,6 +251,14 @@ func (c *TfJobSpec) SetDefaults() error {
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
 		if r.Template == nil && r.TfReplicaType == PS {
 			r.setDefaultPSPodTemplateSpec(c.TfImage)
+		}
+	}
+	if c.TerminationPolicy == nil {
+		c.TerminationPolicy = &TerminationPolicySpec{
+			Chief: &ChiefSpec{
+				ReplicaName: "MASTER",
+				ReplicaIndex: 0,
+			},
 		}
 	}
 	return nil
