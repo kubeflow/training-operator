@@ -218,7 +218,7 @@ def train(agents_config, env_processes, log_dir=None):
     # not checkpointed and thus new episodes start after resuming.
     saver = utility.define_saver(exclude=(r'.*_temporary/.*',))
     device_filters = ["/job:ps",
-                      "/job:worker/task:%d" % run_config.task_id]
+                      "/job:%s/task:%d" % (run_config.task_type, run_config.task_id)]
     sess_config = tf.ConfigProto(allow_soft_placement=True,
                                  device_filters=device_filters
                                  )

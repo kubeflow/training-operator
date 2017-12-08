@@ -19,6 +19,8 @@ spec:
               - {{environment}}
               - --mode
               - {{mode}}
+              - --run_base_tag
+              - {{job_name}}
           restartPolicy: OnFailure
     - replicas: 3
       tfReplicaType: WORKER
@@ -34,6 +36,8 @@ spec:
               - {{environment}}
               - --mode
               - {{mode}}
+              - --run_base_tag
+              - {{job_name}}
           restartPolicy: OnFailure
     - replicas: 2
       tfReplicaType: PS
