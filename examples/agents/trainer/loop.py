@@ -52,8 +52,11 @@ class Loop(object):
       reset: Tensor indicating to the model to start a new computation.
     """
     self._logdir = logdir
-    self._step = (
-        tf.Variable(0, False, name='global_step') if step is None else step)
+    self._step = step
+    # TODO: Does the global_step variable get re-initialized here even if step
+    # is not None? That could be causing the problems.
+    # self._step = (
+    #     tf.Variable(0, False, name='global_step') if step is None else step)
     self._log = tf.placeholder(tf.bool) if log is None else log
     self._report = tf.placeholder(tf.bool) if report is None else report
     self._reset = tf.placeholder(tf.bool) if reset is None else reset
@@ -100,52 +103,6 @@ class Loop(object):
     self._phases.append(_Phase(
         name, writer, op, batch, int(steps), feed, report_every,
         log_every, checkpoint_every))
-
-  def run(self, sess, saver, max_step=None):
-    """Run the loop schedule for a specified number of steps.
-
-    Call the operation of the current phase until the global step reaches the
-    specified maximum step. Phases are repeated over and over in the order they
-    were added.
-
-    Args:
-      sess: Session to use to run the phase operation.
-      saver: Saver used for checkpointing.
-      max_step: Run the operations until the step reaches this limit.
-
-    Yields:
-      Reported mean scores.
-    """
-    global_step = sess.run(self._step)
-    steps_made = 1
-    while True:
-      if max_step and global_step >= max_step:
-        break
-      phase, epoch, steps_in = self._find_current_phase(global_step)
-      phase_step = epoch * phase.steps + steps_in
-      if steps_in % phase.steps < steps_made:
-        message = '\n' + ('-' * 50) + '\n'
-        message += 'Phase {} (phase step {}, global step {}).'
-        tf.logging.info(message.format(phase.name, phase_step, global_step))
-      # Populate book keeping tensors.
-      phase.feed[self._reset] = (steps_in < steps_made)
-      phase.feed[self._log] = (
-          phase.writer and
-          self._is_every_steps(phase_step, phase.batch, phase.log_every))
-      phase.feed[self._report] = (
-          self._is_every_steps(phase_step, phase.batch, phase.report_every))
-      summary, mean_score, global_step, steps_made = sess.run(
-          phase.op, phase.feed)
-      if self._is_every_steps(phase_step, phase.batch, phase.checkpoint_every):
-        self._store_checkpoint(sess, saver, global_step)
-      if self._is_every_steps(phase_step, phase.batch, phase.report_every):
-        yield mean_score
-      if summary and phase.writer:
-        # We want smaller phases to catch up at the beginnig of each epoch so
-        # that their graphs are aligned.
-        longest_phase = max(phase.steps for phase in self._phases)
-        summary_step = epoch * longest_phase + steps_in
-        phase.writer.add_summary(summary, summary_step)
 
   def _is_every_steps(self, phase_step, batch, every):
     """Determine whether a periodic event should happen at this step.

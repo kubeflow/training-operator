@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import functools
 import os
+import pprint
 
 import gym
 import tensorflow as tf
@@ -46,61 +47,60 @@ def define_simulation_graph(batch_env, algo_cls, config):
   """
   # pylint: disable=unused-variable
   run_config = tf.contrib.learn.RunConfig()
+  cpu_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
+                                          run_config.task_id)
+  # gpu_device = "/job:%s/task:%d/gpu:0" % (run_config.task_type,
+  #                                         run_config.task_id)
 
-  # param_device = '/job:ps/replica:0/task:0'
-  # param_device = '/job:ps'
-  # if run_config.num_ps_replicas == 0:
-  #   param_device = "/job:%s/task:%d" % (run_config.task_type,
-  #                                       run_config.task_id)
-  #   # param_device = "/job:%s/replica:0/task:%d" % (run_config.task_type,
-  #   #                                               run_config.task_id)
-  #
-  # with tf.device(param_device):
   step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
 
   is_training = tf.placeholder(tf.bool, name='is_training')
   should_log = tf.placeholder(tf.bool, name='should_log')
   do_report = tf.placeholder(tf.bool, name='do_report')
   force_reset = tf.placeholder(tf.bool, name='force_reset')
+
   algo = algo_cls(batch_env, step, is_training, should_log, config)
-  done, score, summary = tools.simulate(
-      batch_env, algo, should_log, force_reset)
+
+  with tf.device(cpu_device):
+    done, score, summary = tools.simulate(
+        batch_env, algo, should_log, force_reset)
+
   message = 'Graph contains {} trainable variables.'
   tf.logging.info(message.format(tools.count_weights()))
   # pylint: enable=unused-variable
   return tools.AttrDict(locals())
 
 
-def initialize_variables(sess, saver, logdir, checkpoint=None, resume=None):
-  """Initialize or restore variables from a checkpoint if available.
-
-  Args:
-    sess: Session to initialize variables in.
-    saver: Saver to restore variables.
-    logdir: Directory to search for checkpoints.
-    checkpoint: Specify what checkpoint name to use; defaults to most recent.
-    resume: Whether to expect recovering a checkpoint or starting a new run.
-
-  Raises:
-    ValueError: If resume expected but no log directory specified.
-    RuntimeError: If no resume expected but a checkpoint was found.
-  """
-  sess.run(tf.group(
-      tf.local_variables_initializer(),
-      tf.global_variables_initializer()))
-  if resume and not (logdir or checkpoint):
-    raise ValueError('Need to specify logdir to resume a checkpoint.')
-  if logdir:
-    state = tf.train.get_checkpoint_state(logdir)
-    if checkpoint:
-      checkpoint = os.path.join(logdir, checkpoint)
-    if not checkpoint and state and state.model_checkpoint_path:
-      checkpoint = state.model_checkpoint_path
-    if checkpoint and resume is False:
-      message = 'Found unexpected checkpoint when starting a new run.'
-      raise RuntimeError(message)
-    if checkpoint:
-      saver.restore(sess, checkpoint)
+# def initialize_variables(sess, saver, logdir, checkpoint=None, resume=None):
+#   """Initialize or restore variables from a checkpoint if available.
+#
+#   Args:
+#     sess: Session to initialize variables in.
+#     saver: Saver to restore variables.
+#     logdir: Directory to search for checkpoints.
+#     checkpoint: Specify what checkpoint name to use; defaults to most recent.
+#     resume: Whether to expect recovering a checkpoint or starting a new run.
+#
+#   Raises:
+#     ValueError: If resume expected but no log directory specified.
+#     RuntimeError: If no resume expected but a checkpoint was found.
+#   """
+#   sess.run(tf.group(
+#       tf.local_variables_initializer(),
+#       tf.global_variables_initializer()))
+#   if resume and not (logdir or checkpoint):
+#     raise ValueError('Need to specify logdir to resume a checkpoint.')
+#   if logdir:
+#     state = tf.train.get_checkpoint_state(logdir)
+#     if checkpoint:
+#       checkpoint = os.path.join(logdir, checkpoint)
+#     if not checkpoint and state and state.model_checkpoint_path:
+#       checkpoint = state.model_checkpoint_path
+#     if checkpoint and resume is False:
+#       message = 'Found unexpected checkpoint when starting a new run.'
+#       raise RuntimeError(message)
+#     if checkpoint:
+#       saver.restore(sess, checkpoint)
 
 
 def _create_environment(config):
@@ -191,6 +191,11 @@ def train(agents_config, env_processes, log_dir=None):
   worker_device = "/job:%s/task:%d" % (run_config.task_type,
                                        run_config.task_id)
 
+  tf.logging.debug('is_chief: %s' % run_config.is_chief)
+  tf.logging.debug(pprint.pprint(run_config.cluster_spec.as_dict()))
+  tf.logging.debug('server.target: %s' % server.target)
+  tf.logging.debug('worker_device: %s' % worker_device)
+
   # By default, all parameters are shared.
   with tf.device(
       tf.train.replica_device_setter(
@@ -216,9 +221,15 @@ def train(agents_config, env_processes, log_dir=None):
 
     # Exclude episode related variables since the Python state of environments is
     # not checkpointed and thus new episodes start after resuming.
+    # TODO: Is this preventing these variables from being initialized on the
+    # workers?
+    # saver = utility.define_saver()
     saver = utility.define_saver(exclude=(r'.*_temporary/.*',))
+
     device_filters = ["/job:ps",
                       "/job:%s/task:%d" % (run_config.task_type, run_config.task_id)]
+    # tf.logging.debug('device_filters: %s' % device_filters)
+
     sess_config = tf.ConfigProto(allow_soft_placement=True,
                                  device_filters=device_filters
                                  )
@@ -229,33 +240,23 @@ def train(agents_config, env_processes, log_dir=None):
 
     opt = graph.algo._optimizer
 
-    init_op = tf.group(
-        tf.local_variables_initializer(),
-        tf.global_variables_initializer())
+    # init_op = tf.group(
+    #     tf.local_variables_initializer(),
+    #     tf.global_variables_initializer())
+    init_op = tf.global_variables_initializer()
 
-    # local_init_op = tf.local_variables_initializer()
-    # if FLAGS.sync_replicas:
-    #     # Get a reference to the propper local_init_op
-    #     local_init_op = opt.local_step_init_op
-    #     if run_config.is_chief:
-    #       local_init_op = opt.chief_init_op
+    local_init_op = tf.local_variables_initializer()
 
-    # ready_for_local_init_op = opt.ready_for_local_init_op
+    if FLAGS.sync_replicas:
+      # Get a reference to the propper local_init_op
+      ready_for_local_init_op = opt.ready_for_local_init_op
+      local_init_op = opt.local_step_init_op
+      if run_config.is_chief:
+        local_init_op = opt.chief_init_op
 
-    # def init_fn(scaff, session):
-    #   session.run(tf.local_variables_initializer())
-
-    scaffold = tf.train.Scaffold(
-        saver=saver,
-        init_op=init_op,
-        # init_fn=init_fn,
-        # local_init_op=tf.local_variables_initializer(),
-        # local_init_op=local_init_op,
-        # ready_for_local_init_op=ready_for_local_init_op
-    )
-
-    # if not FLAGS.sync_replicas:
-    #   scaffold.local_init_op = tf.local_variables_initializer()
+      # Initial token and chief queue runners required by the sync_replicas mode
+      chief_queue_runner = opt.get_chief_queue_runner()
+      sync_init_op = opt.get_init_tokens_op()
 
     hooks = [tf.train.StopAtStepHook(last_step=total_steps)]
 
@@ -263,91 +264,79 @@ def train(agents_config, env_processes, log_dir=None):
       sync_replicas_hook = opt.make_session_run_hook(run_config.is_chief)
       hooks.append(sync_replicas_hook)
 
-    # class RandomDeubggingHook(tf.train.SessionRunHook):
-    #   def begin(self):
-    #     # You can add ops to the graph here.
-    #     print('=== RDH: Begin called.')
-    #     self._global_step_tensor = tf.train.get_global_step()
-    #     if self._global_step_tensor is None:
-    #       raise RuntimeError(
-    #           "Global step should be created to use FeatureImportanceSummarySaver.")
-    #
-    #   def after_create_session(self, session, coord):
-    #     # When this is called, the graph is finalized and
-    #     # ops can no longer be added to the graph.
-    #     print('=== RDH: Session created.')
-    #
-    #   def before_run(self, run_context):
-    #     print('=== RDH: Before calling session.run().')
-    #     del run_context  # Unused by feature importance summary saver hook.
-    #     requests = {
-    #         "global_step": self._global_step_tensor,
-    #     }
-    #     return tf.train.SessionRunArgs(requests)
-    #
-    #   def after_run(self, run_context, run_values):
-    #     print('=== RDH: Done running one step.')
-    #     global_step = run_values.results["global_step"]
-    #     tf.logging.info('global step: %s' % global_step)
-    #
-    #   def end(self, session):
-    #     print('=== RDH: Done with the session.')
-    #
-    # hooks.append(RandomDeubggingHook())
+    if not FLAGS.use_monitored_training_session:
+      sv = tf.train.Supervisor(
+          is_chief=run_config.is_chief,
+          logdir=log_dir,
+          init_op=init_op,
+          local_init_op=local_init_op,
+          recovery_wait_secs=1,
+          global_step=graph.step,
+          save_summaries_secs=None,
+          saver=saver
+      )
 
-    with tf.train.MonitoredTrainingSession(
-        master=server.target,
-        is_chief=run_config.is_chief,
-        checkpoint_dir=log_dir,
-        scaffold=scaffold,
-        hooks=hooks,
-        save_checkpoint_secs=600,
-        save_summaries_steps=None,
-        save_summaries_secs=None,
-        config=sess_config,
-        stop_grace_period_secs=120,
-        log_step_count_steps=300
-    ) as mon_sess:
+    def _get_session():
+      # HACK: Debugging, not meant to be a feature to be able to switch
+      # between session monitors.
+      if FLAGS.use_monitored_training_session:
+        return tf.train.MonitoredTrainingSession(
+            master=server.target,
+            is_chief=run_config.is_chief,
+            checkpoint_dir=log_dir,
+            scaffold=tf.train.Scaffold(
+                saver=saver,
+                init_op=init_op,
+                local_init_op=local_init_op,
+                # ready_for_local_init_op=ready_for_local_init_op
+            ),
+            hooks=hooks,
+            save_checkpoint_secs=FLAGS.save_checkpoint_secs,
+            save_summaries_steps=None,
+            save_summaries_secs=None,
+            config=sess_config,
+            stop_grace_period_secs=120,
+            log_step_count_steps=300
+        )
 
-      global_step = mon_sess.run(loop._step)
+      return sv.prepare_or_wait_for_session(server.target, config=sess_config)
+
+    with _get_session() as sess:
+
+      global_step = sess.run(loop._step)
       steps_made = 1
 
-      # TODO: How can the chief session at this point query for uninitialized
-      # variables that are private to the worker nodes? If it can't do this,
-      # how can it send a signal to these nodes to initialize their own vars.?
-      # Currently non-chief nodes hang, repeating:
-      #   INFO:tensorflow:Waiting for model to be ready.  Ready_for_local_init_op:
-      #   Variables not initialized: ppo_temporary/episodes/Variable,
-      #   ppo_temporary/episodes/Variable_1, ppo_temporary/episodes/Variable_2,
-      #   ppo_temporary/episodes/Variable_3, ppo_temporary/episodes/Variable_4,
-      #   ppo_temporary/episodes/Variable_5, ppo_temporary/last_action,
-      #   ppo_temporary/last_mean, ppo_temporary/last_logstd, ready: None
-      # Presumably because these variables which are private to an individual
-      # worker are not initialized by the chief. It seems we should be initializing
-      # these variables in the local_init_op in response to the,
-      # ready_for_local_init_op, not blocking the local_init_op until these
-      # local variables are initialized.
+      # if FLAGS.sync_replicas and run_config.is_chief:
+      #   # Chief worker will start the chief queue runner and call the init op.
+      #   sess.run(sync_init_op)
+      #   if not FLAGS.use_monitored_training_session:
+      #     sv.start_queue_runners(sess, [chief_queue_runner])
 
-      while not mon_sess.should_stop():
+      while not (sess.should_stop() if FLAGS.use_monitored_training_session
+                 else sv.should_stop()):
 
         phase, epoch, steps_in = loop._find_current_phase(global_step)
         phase_step = epoch * phase.steps + steps_in
+
+        if steps_in % phase.steps < steps_made:
+          message = '\n' + ('-' * 50) + '\n'
+          message += 'Phase {} (phase step {}, global step {}).'
+          tf.logging.info(message.format(phase.name, phase_step, global_step))
+
         phase.feed[loop._reset] = (steps_in < steps_made)
 
-        phase.feed[loop._log] = False
-        phase.feed[loop._report] = False
+        phase.feed[loop._log] = (
+            phase.writer and
+            loop._is_every_steps(phase_step, phase.batch, phase.log_every))
+        phase.feed[loop._report] = (
+            loop._is_every_steps(phase_step, phase.batch, phase.report_every))
 
-        # phase.feed[loop._log] = (
-        #     phase.writer and
-        #     loop._is_every_steps(phase_step, phase.batch, phase.log_every))
-        # phase.feed[loop._report] = (
-        #     loop._is_every_steps(phase_step, phase.batch, phase.report_every))
-
-        summary, mean_score, global_step, steps_made = mon_sess.run(
+        summary, mean_score, global_step, steps_made = sess.run(
             phase.op, phase.feed)
 
-        # if loop._is_every_steps(phase_step, phase.batch, phase.report_every):
-        #   yield mean_score
+        if loop._is_every_steps(phase_step, phase.batch, phase.report_every):
+          yield mean_score
+
         # if summary and phase.writer:
         #   # We want smaller phases to catch up at the beginnig of each epoch so
         #   # that their graphs are aligned.

@@ -102,8 +102,8 @@ class PPOAlgorithm(object):
             tf.zeros_like(self._batch_env.action), False, name='last_mean')
         self._last_logstd = tf.Variable(
             tf.zeros_like(self._batch_env.action), False, name='last_logstd')
-    self._penalty = tf.Variable(
-        self._config.kl_init_penalty, False, dtype=tf.float32)
+      self._penalty = tf.Variable(
+          self._config.kl_init_penalty, False, dtype=tf.float32)
 
     self._optimizer = self._config.optimizer(self._config.learning_rate)
 

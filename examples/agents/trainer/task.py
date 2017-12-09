@@ -19,6 +19,7 @@ import datetime
 import json
 import logging
 import os
+import pprint
 import sys
 
 import agents
@@ -55,12 +56,19 @@ flags.DEFINE_boolean("sync_replicas", False,
 flags.DEFINE_integer("num_gpus", 0,
                      "Total number of gpus for each machine."
                      "If you don't use GPU, please set it to '0'")
-flags.DEFINE_boolean("debug", False,
-                     "Use debugger to track down bad values during training")
-flags.DEFINE_string("ui_type", "curses",
-                    "Command-line user interface type (curses | readline)")
+flags.DEFINE_integer("save_checkpoint_secs", 600,
+                     "Number of seconds between checkpoint save.")
+flags.DEFINE_boolean("use_monitored_training_session", False,
+                     "Whether to use tf.train.MonitoredTrainingSession to "
+                     "manage the training session. If not, use "
+                     "tf.train.Supervisor.")
 flags.DEFINE_boolean("log_device_placement", False,
-                     "Whether to log device placement.")
+                     "Whether to output logs listing the devices on which "
+                     "variables are placed.")
+flags.DEFINE_boolean("debug", True,
+                     "Use debugger to track down bad values during training")
+flags.DEFINE_string("debug_ui_type", "curses",
+                    "Command-line user interface type (curses | readline)")
 FLAGS = flags.FLAGS
 
 
@@ -118,10 +126,10 @@ def pybullet_ant():
       all=r'.*',
       policy=r'.*/policy/.*',
       value=r'.*/value/.*')
-  policy_layers = 20, 10
-  # policy_layers = 200, 100
-  value_layers = 20, 10
-  # value_layers = 200, 100
+  # policy_layers = 20, 10
+  policy_layers = 200, 100
+  # value_layers = 20, 10
+  value_layers = 200, 100
   init_mean_factor = 0.1
   init_logstd = -1
   # Optimization
@@ -158,14 +166,20 @@ def main(unused_argv):
   Raises:
     ValueError: If the arguments are invalid.
   """
+  tf.logging.set_verbosity(tf.logging.INFO)
   tf.logging.info("Tensorflow version: %s", tf.__version__)
   tf.logging.info("Tensorflow git version: %s", tf.__git_version__)
 
-  tf.logging.info(FLAGS.log_dir)
+  if FLAGS.debug:
+    tf.logging.set_verbosity(tf.logging.DEBUG)
 
-  agents.scripts.utility.set_up_logging()
+  tf.logging.debug('FLAGS: \n %s' % pprint.pprint(FLAGS.__dict__))
+
   agents_config = _get_agents_configuration(FLAGS.config, FLAGS.log_dir)
+  tf.logging.debug(pprint.pprint(agents_config))
+
   run_config = tf.contrib.learn.RunConfig()
+
   log_dir = FLAGS.log_dir and os.path.expanduser(FLAGS.log_dir)
 
   if log_dir:
@@ -173,9 +187,9 @@ def main(unused_argv):
         log_dir, '{}-{}'.format(FLAGS.run_base_tag, FLAGS.config))
 
   if FLAGS.mode == 'train' or FLAGS.mode == 'smoke':
-    train.train(agents_config, env_processes=True)
+    for score in train.train(agents_config, env_processes=True):
+      tf.logging.info('Mean score: %s' % score)
 
 
 if __name__ == '__main__':
-  tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run()
