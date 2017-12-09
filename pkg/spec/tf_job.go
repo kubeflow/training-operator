@@ -164,6 +164,14 @@ func (c *TfJobSpec) Validate() error {
 			return fmt.Errorf("Replica type %v is missing a container named %v", r.TfReplicaType, TENSORFLOW)
 		}
 	}
+	if c.TerminationPolicy != nil {
+		if c.TerminationPolicy.Chief == nil {
+			return errors.New("invalid termination policy, Chief cannot be nil")
+		}
+		if c.TerminationPolicy.Chief.ReplicaName != "MASTER" || c.TerminationPolicy.Chief.ReplicaIndex != 0 {
+			return errors.New("invaliad termination policy, Chief should be MASTER:0")
+		}
+	}
 	return nil
 }
 
