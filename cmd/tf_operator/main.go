@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -33,6 +34,7 @@ var (
 
 	chaosLevel           int
 	controllerConfigFile string
+	gRPCServerFilePath   string
 	printVersion         bool
 	grpcServerFile       string
 )
@@ -51,6 +53,7 @@ func init() {
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
 	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
+	flag.StringVar(&gRPCServerFilePath, "grpc_server_file_path", "", "Path to grpc_tensorflow_server.py.")
 	flag.Parse()
 
 	// Workaround for watching TPR resource.
@@ -83,6 +86,23 @@ func init() {
 		log.Info("No controller_config_file provided; using empty config.")
 	}
 
+	if err := checkGRPCServerPath(); err != nil {
+		log.Errorf("Errored when checkGRPCServerPath: %v", err)
+		os.Exit(1)
+	}
+}
+
+// checkGRPCServerPath checks if GrpcServerFilePath is defined in controller_config_file or CLI argument, if not return an error
+func checkGRPCServerPath() error {
+	if gRPCServerFilePath != "" {
+		if controllerConfig.GrpcServerFilePath != "" {
+			log.Warningf("The GrpcServerFilePath is configured in controller_config_file and redefined via grpc_server_file_path, using %s to overide the config in controller_config_file", gRPCServerFilePath)
+		}
+		controllerConfig.GrpcServerFilePath = gRPCServerFilePath
+	} else if controllerConfig.GrpcServerFilePath == "" {
+		return errors.New("No GRPC Server File Path defined, please configure GrpcServerFilePath in controller_config_file or define grpc_server_file_path by CLI argument")
+	}
+	return nil
 }
 
 func main() {
