@@ -345,7 +345,7 @@ spec:
 
 The TfJob operator will create a service named
 **tensorboard-$RUNTIME_ID** for your job. You can connect to it
-using the Kubernetes API Server porxy as follows
+using the Kubernetes API Server proxy as follows
 
 Start the K8s proxy
 ```
