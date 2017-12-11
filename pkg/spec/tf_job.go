@@ -169,7 +169,7 @@ func (c *TfJobSpec) Validate() error {
 			return errors.New("invalid termination policy, Chief cannot be nil")
 		}
 		if c.TerminationPolicy.Chief.ReplicaName != "MASTER" || c.TerminationPolicy.Chief.ReplicaIndex != 0 {
-			return errors.New("invaliad termination policy, Chief should be MASTER:0")
+			return errors.New("invalid termination policy, Chief should have replicaName=MASTER and index=0")
 		}
 	}
 	return nil
