@@ -274,6 +274,12 @@ func TestSetDefaults(t *testing.T) {
 					},
 				},
 				TfImage: "tensorflow/tensorflow:1.3.0",
+				TerminationPolicy: &TerminationPolicySpec{
+					Chief: &ChiefSpec{
+						ReplicaName: "MASTER",
+						ReplicaIndex: 0,
+					},
+				},
 			},
 		},
 		{
@@ -312,6 +318,12 @@ func TestSetDefaults(t *testing.T) {
 					},
 				},
 				TfImage: "tensorflow/tensorflow:1.3.0",
+				TerminationPolicy: &TerminationPolicySpec{
+					Chief: &ChiefSpec{
+						ReplicaName: "MASTER",
+						ReplicaIndex: 0,
+					},
+				},
 			},
 		},
 	}
