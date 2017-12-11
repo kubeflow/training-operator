@@ -42,12 +42,12 @@ func (c *TfJob) AsOwner() metav1.OwnerReference {
 	// TODO: In 1.6 this is gonna be "k8s.io/kubernetes/pkg/apis/meta/v1"
 	// Both api.OwnerReference and metatypes.OwnerReference are combined into that.
 	return metav1.OwnerReference{
-		APIVersion: c.APIVersion,
-		Kind:       c.Kind,
-		Name:       c.Metadata.Name,
-		UID:        c.Metadata.UID,
-		Controller: &trueVar,
-    BlockOwnerDeletion: &trueVar,
+		APIVersion:         c.APIVersion,
+		Kind:               c.Kind,
+		Name:               c.Metadata.Name,
+		UID:                c.Metadata.UID,
+		Controller:         &trueVar,
+		BlockOwnerDeletion: &trueVar,
 	}
 }
 
@@ -65,6 +65,9 @@ type TfJobSpec struct {
 	// TfImage defines the tensorflow docker image that should be used for Tensorboard
 	// and the default parameter server
 	TfImage string `json:"tfImage,omitempty"`
+
+	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
+	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -109,6 +112,16 @@ type TensorBoardSpec struct {
 	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
+type TerminationPolicySpec struct {
+	// Chief policy waits for a particular process (which is the chief) to exit.
+	Chief *ChiefSpec `json:"chief,omitempty"`
+}
+
+type ChiefSpec struct {
+	ReplicaName  string `json:"replicaName"`
+	ReplicaIndex int    `json:"replicaIndex"`
+}
+
 // Validate checks that the TfJobSpec is valid.
 func (c *TfJobSpec) Validate() error {
 	// Check that each replica has a TensorFlow container.
@@ -149,6 +162,14 @@ func (c *TfJobSpec) Validate() error {
 		}
 		if !found {
 			return fmt.Errorf("Replica type %v is missing a container named %v", r.TfReplicaType, TENSORFLOW)
+		}
+	}
+	if c.TerminationPolicy != nil {
+		if c.TerminationPolicy.Chief == nil {
+			return errors.New("invalid termination policy, Chief cannot be nil")
+		}
+		if c.TerminationPolicy.Chief.ReplicaName != "MASTER" || c.TerminationPolicy.Chief.ReplicaIndex != 0 {
+			return errors.New("invalid termination policy, Chief should have replicaName=MASTER and index=0")
 		}
 	}
 	return nil
@@ -238,6 +259,14 @@ func (c *TfJobSpec) SetDefaults() error {
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
 		if r.Template == nil && r.TfReplicaType == PS {
 			r.setDefaultPSPodTemplateSpec(c.TfImage)
+		}
+	}
+	if c.TerminationPolicy == nil {
+		c.TerminationPolicy = &TerminationPolicySpec{
+			Chief: &ChiefSpec{
+				ReplicaName: "MASTER",
+				ReplicaIndex: 0,
+			},
 		}
 	}
 	return nil
