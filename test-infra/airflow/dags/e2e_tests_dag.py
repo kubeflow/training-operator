@@ -272,6 +272,10 @@ def run_gpu_test(dag_run=None, ti=None, **_kwargs):
   args.append("--cluster=" + cluster)
   args.append("--junit_path=" + junit_path)
   args.append("--project=" + GCB_PROJECT)
+  # tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
+  # TODO(jlewi): The example should be a template and we should rebuild and
+  # and use the newly built sample container.
+  args.append("--image_tag=notag")
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
