@@ -294,4 +294,6 @@ imports:
   - util/homedir
   - util/integer
   - util/jsonpath
+- name: k8s.io/code-generator
++ version: 25fd8c8ddbf75b223882df4479f8b8e615da05ae
 testImports: []
