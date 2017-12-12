@@ -108,17 +108,16 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *
 	go func() {
 		defer wg.Done()
 
-		if err := j.setup(config); err != nil {
-			log.Errorf("TfJob failed to setup: %v", err)
-			if j.status.Phase != spec.TfJobPhaseFailed {
-				j.status.SetReason(err.Error())
-				j.status.SetPhase(spec.TfJobPhaseFailed)
-				if err := j.updateTPRStatus(); err != nil {
-					log.Errorf("failed to update cluster phase (%v): %v", spec.TfJobPhaseFailed, err)
-				}
-			}
+		j.setup(config)
+		if err := j.updateTPRStatus(); err != nil {
+			log.Errorf("failed to update job status for job %v: %v", j.name(), err)
+			// TODO(jlewi): Is returning the proper way to handle a failure to updateTPRStatus? I don't think calling run
+			// is the right thing to do since we didn't persist information about the job. Ideally, we'd like to retry.
+			// If we return 
 			return
 		}
+		//	return
+		//}
 		j.run(config, stopC)
 	}()
 
@@ -275,77 +274,62 @@ func (j *TrainingJob) masterName() string {
 }
 
 // setup the training job.
-func (j *TrainingJob) setup(config *spec.ControllerConfig) error {
+func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 	if j.job == nil {
-		return fmt.Errorf("job.Spec can't be nil")
+		j.status.SetReason("Internal error; tried to setup a job with no spec.")
+		j.status.SetPhase(spec.TfJobPhaseFailed)
+		j.status.SetState(spec.StateFailed)
 	}
 
-	err := j.job.Spec.SetDefaults()
-	if err != nil {
-		return fmt.Errorf("there was a problem setting defaults for job spec: %v", err)
-	}
+	err := func() error {
+		// If the job has already started we shouldn't set it up again.
+		if j.status.Phase != spec.TfJobPhaseNone {
+			log.Warningf("Job %v has already been setup.", j.name())
+			return nil
+		}
 
-	err = j.job.Spec.Validate()
-	if err != nil {
-		return fmt.Errorf("invalid job spec: %v", err)
-	}
+		err := j.job.Spec.SetDefaults()
+		if err != nil {
+			return fmt.Errorf("there was a problem setting defaults for job spec: %v", err)
+		}
 
-	for _, t := range j.job.Spec.ReplicaSpecs {
-		r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+		err = j.job.Spec.Validate()
+		if err != nil {
+			return fmt.Errorf("invalid job spec: %v", err)
+		}
+
+		for _, t := range j.job.Spec.ReplicaSpecs {
+			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+			if err != nil {
+				return err
+			}
+			j.Replicas = append(j.Replicas, r)
+		}
+
+		tb, err := initTensorBoard(j.KubeCli, j)
 		if err != nil {
 			return err
 		}
-		j.Replicas = append(j.Replicas, r)
-	}
+		j.TensorBoard = tb
 
-	tb, err := initTensorBoard(j.KubeCli, j)
+		if err := j.job.Spec.ConfigureAccelerators(config.Accelerators); err != nil {
+			return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)
+		}
+
+		if j.job.Spec.RuntimeId == "" {
+			j.job.Spec.RuntimeId = util.RandString(4)
+		}
+		 return nil
+	}()
+
 	if err != nil {
-		return err
+		j.status.SetReason(err.Error())
+		j.status.SetPhase(spec.TfJobPhaseFailed)
+		j.status.SetState(spec.StateFailed)
+	} else {
+		j.status.SetPhase(spec.TfJobPhaseCreating)
+		j.status.SetState(spec.StateRunning)
 	}
-	j.TensorBoard = tb
-
-	if err := j.job.Spec.ConfigureAccelerators(config.Accelerators); err != nil {
-		return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)
-	}
-
-	if j.job.Spec.RuntimeId == "" {
-		j.job.Spec.RuntimeId = util.RandString(4)
-	}
-
-	var shouldCreateCluster bool
-	switch j.status.Phase {
-	case spec.TfJobPhaseNone:
-		shouldCreateCluster = true
-		//case spec.TfJobPhaseCreating:
-		//	return errCreatedCluster
-	case spec.TfJobPhaseRunning:
-		shouldCreateCluster = false
-	case spec.TfJobPhaseFailed:
-		shouldCreateCluster = false
-	default:
-		return fmt.Errorf("unexpected TfJob phase: %s", j.status.Phase)
-	}
-
-	if shouldCreateCluster {
-		return j.triggerCreatePhase()
-	}
-	return nil
-}
-
-// triggerCreatePhase sets the phase to TfJobPhaseCreating additional resource creation happens in TrainingJob.run
-// TODO(jlewi): Need to reconcile this function copied from the etcd core operator OS code with the pattern
-// for the TF job. What exactly do we want to do during the Create job phase? Right now the create method
-// is called on each invocation of reconcile in run to ensure all the required resources exist. Maybe there's
-// a better way?
-func (j *TrainingJob) triggerCreatePhase() error {
-	j.status.SetPhase(spec.TfJobPhaseCreating)
-
-	if err := j.updateTPRStatus(); err != nil {
-		return fmt.Errorf("cluster create: failed to update TfJob phase (%v): %v", spec.TfJobPhaseCreating, err)
-	}
-	log.Infof("Creating job: %v with Spec (%#v), Status (%#v)", j.job.Metadata.Name, j.job.Spec, j.job.Status)
-
-	return nil
 }
 
 func (j *TrainingJob) Delete() {
