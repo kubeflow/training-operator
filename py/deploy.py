@@ -166,19 +166,13 @@ def main():  # pylint: disable=too-many-locals
       help="Setup a cluster for testing.")
 
   parser_setup.add_argument(
-    "accelerator",
+    "--accelerator",
     dest="accelerators",
     action="append",
     help="Accelerator to add to the cluster. Should be of the form type=count.")
 
   parser_setup.set_defaults(func=setup)
   add_common_args(parser_setup)
-
-  parser_setup.add_argument(
-    "--chart",
-    type=str,
-    required=True,
-    help="The path for the helm chart.")
 
   parser_setup.add_argument(
     "--chart",
