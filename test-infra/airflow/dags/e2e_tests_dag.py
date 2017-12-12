@@ -397,7 +397,7 @@ teardown_cluster_op = PythonOperator(
     python_callable=teardown_cluster,
     dag=dag)
 
-teardown_cluster_op.set_upstream(run_tests_op)
+teardown_cluster_op.set_upstream([run_tests_op, run_gpu_test_op])
 
 # Create an op that can be used to determine when all other tasks are done.
 done_op = PythonOperator(
