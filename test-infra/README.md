@@ -35,6 +35,18 @@ defines the ProwJobs.
     * Delete the GKE cluster (see [deploy.py](../py/deploy.py))
     * Copy test results/artifacts to GCS for gubernator
 
+
+## Accessing the Airflow UI
+
+The best way to connect to the Airflow UI is using kubectl to forwrad a porward
+
+```
+kubectl port-forward `kubectl get pods --selector=name=airflow -o jsonpath='{.items[*].metadata.name}'` 8180:8080
+```
+
+  * Using the ApiServer proxy doesn't work so well because redirects won't work.
+  * You will need to have access to the K8s cluster where we run Airflow.
+
 ## Running the E2E tests locally
 
 Each step in our Airflow pipeline just invokes a binary. So any of the steps can be performed locally just

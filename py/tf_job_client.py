@@ -35,7 +35,15 @@ def create_tf_job(client, spec):
     if e.message:
       message = e.message
     if e.body:
-      body = json.loads(e.body)
+      try:
+        body = json.loads(e.body)
+      except ValueError as e:
+        # There was a problem parsing the body of the response as json.
+        logging.error(
+            ("Exception when calling DefaultApi->"
+              "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"),
+              e.body)
+        raise
       message = body.get("message")
 
     logging.error(
