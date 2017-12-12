@@ -10,14 +10,11 @@ import (
 	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"github.com/tensorflow/k8s/pkg/util/retryutil"
 
-	"math"
 	"strings"
 	"sync"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
@@ -108,16 +105,6 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *
 	go func() {
 		defer wg.Done()
 
-		j.setup(config)
-		if err := j.updateTPRStatus(); err != nil {
-			log.Errorf("failed to update job status for job %v: %v", j.name(), err)
-			// TODO(jlewi): Is returning the proper way to handle a failure to updateTPRStatus? I don't think calling run
-			// is the right thing to do since we didn't persist information about the job. Ideally, we'd like to retry.
-			// If we return 
-			return
-		}
-		//	return
-		//}
 		j.run(config, stopC)
 	}()
 
@@ -172,25 +159,6 @@ func (j *TrainingJob) deleteResources() error {
 	}
 	return nil
 }
-
-// TODO(jlewi): We can probably delete this.
-
-//func replicaSetStatusToProto(r *TFReplicaSet, status *TFReplicaSetStatus) *tpb.TFReplicaSetStatus {
-//
-//	p := &tpb.TFReplicaSetStatus{
-//		State: status.State.Enum(),
-//		// Type: r.Spec.TfReplicaTypeProcess.Type,
-//		ReplicaStates: make([]*tpb.TFReplicaSetStatus_ReplicaStates, 0),
-//	}
-//
-//	for state, count := range status.ReplicasStates {
-//		p.ReplicaStates = append(p.ReplicaStates, &tpb.TFReplicaSetStatus_ReplicaStates{
-//			State: state.Enum(),
-//			NumReplicas: proto.Int(count),
-//		})
-//	}
-//	return p
-//}
 
 func (j *TrainingJob) GetStatus() (spec.State, []*spec.TfReplicaStatus, error) {
 	state := spec.StateUnknown
@@ -378,26 +346,76 @@ func (j *TrainingJob) updateTPRStatus() error {
 	return nil
 }
 
-func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) {
-	// TODO(jlewi): What does the run function do?
-	clusterFailed := false
+// reconcile tries to get the job into the desired state.
+func (j* TrainingJob) reconcile(config *spec.ControllerConfig) {
+	if j.status.Phase ==  spec.TfJobPhaseNone {
+		// The job hasn't been setup.
+		j.setup(config)
 
-	defer func() {
-		if clusterFailed {
-			j.reportFailedStatus()
+		if err := j.updateTPRStatus(); err != nil {
+			log.Warningf("failed to update TPR status: %v", err)
+		}
+	}
+
+	// TODO(jlewi): Can we determine from the CRD status whether we should
+	// Create the resources or not? We need to ensure the resources exist so for
+	// now we always call Create.
+	if j.job.Status.Phase == spec.TfJobPhaseCreating || j.job.Status.Phase == spec.TfJobPhaseRunning {
+		// We call Create to make sure all the resources exist and are running.
+		if cErr := j.createResources(config); cErr != nil {
+			log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
 		}
 
+		state, replicaStatuses, err := j.GetStatus()
+
+		j.status.ReplicaStatuses = replicaStatuses
+		if err != nil {
+			log.Errorf("GetStatus() for job %v returned error: %v", j.job.Metadata.Name, err)
+		}
+		// TODO(jlewi): We should update the Phase if we detect the job is done.
+		if state == spec.StateFailed {
+			log.Errorf("Master failed Job: %v.", j.job.Metadata.Name)
+			j.status.SetPhase(spec.TfJobPhaseDone)
+			j.status.SetState(spec.StateFailed)
+		} else if state == spec.StateSucceeded {
+			log.Infof("Master succeeded Job: %v.", j.job.Metadata.Name)
+			j.status.SetPhase(spec.TfJobPhaseDone)
+			j.status.SetState(spec.StateSucceeded)
+		} else {
+			log.V(1).Infof("Job %v status=%v", j.job.Metadata.Name, util.Pformat(j.status))
+		}
+	}
+
+	// If the phase changed we should update the TPR.
+	if err := j.updateTPRStatus(); err != nil {
+		log.Warningf("Job %v, failed to update TPR status error: %v", j.job.Metadata.Name, err)
+	}
+
+	if j.job.Status.Phase == spec.TfJobPhaseCleanUp {
+		if cErr := j.deleteResources(); cErr != nil {
+			log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.Metadata.Name, cErr)
+		}
+		// j.status.SetPhase(spec.TfJobPhaseDone)
+		// Return from run because we want to stop reconciling the object.
+		return
+	}
+
+	// updateTPRStatus will update the status of the TPR with c.Status if c.Status
+	// doesn't match c.Cluster.status. So you can change c.Status in order to propogate
+	// changes to the TPR status.
+	if err := j.updateTPRStatus(); err != nil {
+		log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
+	}
+}
+
+// run is the main processing loop for TfJob resources.
+func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) {
+	defer func() {
 		close(j.stopCh)
 	}()
 
-	// Update the phase to running.
-	j.status.SetPhase(spec.TfJobPhaseRunning)
-	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("failed to update TPR status: %v", err)
-	}
-	log.Infof("start running...")
+	j.reconcile(config)
 
-	var rerr error
 	for {
 		select {
 		case <-stopC:
@@ -431,116 +449,10 @@ func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) 
 				// Return from run because we want to stop reconciling the object.
 				return
 			}
-
 		case <-time.After(reconcileInterval):
-			// TODO(jlewi): Can we determine from the TPR status whether we should
-			// Create the resources or not? We need to ensure the resources exist so for
-			// now we always call Create.
-			if j.job.Status.Phase == spec.TfJobPhaseRunning {
-				// We call Create to make sure all the resources exist and are running.
-				if cErr := j.createResources(config); cErr != nil {
-					log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
-				}
-
-				state, replicaStatuses, err := j.GetStatus()
-
-				j.status.ReplicaStatuses = replicaStatuses
-				if err != nil {
-					log.Errorf("GetStatus() for job %v returned error: %v", j.job.Metadata.Name, err)
-				}
-				// TODO(jlewi): We should update the Phase if we detect the job is done.
-				if state == spec.StateFailed {
-					log.Errorf("Master failed Job: %v.", j.job.Metadata.Name)
-					j.status.SetPhase(spec.TfJobPhaseDone)
-					j.status.SetState(spec.StateFailed)
-				} else if state == spec.StateSucceeded {
-					log.Infof("Master succeeded Job: %v.", j.job.Metadata.Name)
-					j.status.SetPhase(spec.TfJobPhaseDone)
-					j.status.SetState(spec.StateSucceeded)
-				} else {
-					log.V(1).Infof("Job %v status=%v", j.job.Metadata.Name, util.Pformat(j.status))
-				}
-			}
-
-			// If the phase changed we should update the TPR.
-			if err := j.updateTPRStatus(); err != nil {
-				log.Warningf("Job %v, failed to update TPR status error: %v", j.job.Metadata.Name, err)
-			}
-
-			if j.job.Status.Phase == spec.TfJobPhaseCleanUp {
-				if cErr := j.deleteResources(); cErr != nil {
-					log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.Metadata.Name, cErr)
-				}
-				// j.status.SetPhase(spec.TfJobPhaseDone)
-				// Return from run because we want to stop reconciling the object.
-				return
-			}
-
-			if rerr != nil {
-				log.Errorf("failed to reconcile job %v, error: %v", j.job.Metadata.Name, rerr)
-				break
-			}
-
-			// updateTPRStatus will update the status of the TPR with c.Status if c.Status
-			// doesn't match c.Cluster.status. So you can change c.Status in order to propogate
-			// changes to the TPR status.
-			if err := j.updateTPRStatus(); err != nil {
-				log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
-			}
+			j.reconcile(config)
 		}
-
-		//if isFatalError(rerr) {
-		//	clusterFailed = true
-		//	j.status.SetReason(rerr.Error())
-		//
-		//	log.Errorf("cluster failed: %v", rerr)
-		//	return
-		//}
 	}
-}
-
-//func isSpecEqual(s1, s2 spec.TfJobSpec) bool {
-//	// TODO(jlewi): Need to implement this function.
-//	return false
-//	//if s1.Size != s2.Size || s1.Paused != s2.Paused || s1.Version != s2.Version {
-//	//	return false
-//	//}
-//	//return isBackupPolicyEqual(s1.Backup, s2.Backup)
-//}
-
-// TODO(jlewi): We probably need to update this function.
-func (j *TrainingJob) reportFailedStatus() {
-	retryInterval := 5 * time.Second
-
-	f := func() (bool, error) {
-		j.status.SetPhase(spec.TfJobPhaseFailed)
-		err := j.updateTPRStatus()
-		if err == nil || k8sutil.IsKubernetesResourceNotFoundError(err) {
-			return true, nil
-		}
-
-		if !apierrors.IsConflict(err) {
-			log.Warningf("retry report status in %v: fail to update: %v", retryInterval, err)
-			return false, nil
-		}
-
-		cl, err := j.tfJobClient.Get(j.job.Metadata.Namespace, j.job.Metadata.Name)
-		if err != nil {
-			// Update (PUT) will return conflict even if object is deleted since we have UID set in object.
-			// Because it will check UID first and return something like:
-			// "Precondition failed: UID in precondition: 0xc42712c0f0, UID in object meta: ".
-			if k8sutil.IsKubernetesResourceNotFoundError(err) {
-				return true, nil
-			}
-			log.Warningf("retry report status in %v: fail to get latest version: %v", retryInterval, err)
-			return false, nil
-		}
-		j.job = cl
-		return false, nil
-
-	}
-
-	retryutil.Retry(retryInterval, math.MaxInt64, f)
 }
 
 func (j *TrainingJob) name() string {
