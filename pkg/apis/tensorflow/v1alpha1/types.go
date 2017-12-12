@@ -21,6 +21,8 @@ const (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjob
+
+// TFJob describes tfjob info
 type TfJob struct {
 	metav1.TypeMeta    `json:",inline"`
 	metav1.ObjectMeta  `json:"metadata,omitempty"`
