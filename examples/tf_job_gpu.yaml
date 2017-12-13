@@ -12,5 +12,5 @@ spec:
               name: tensorflow
               resources:
                 limits:
-                  alpha.kubernetes.io/nvidia-gpu: 1
+                  nvidia.com/gpu: 1
           restartPolicy: OnFailure

@@ -45,6 +45,7 @@ DEFAULT_REPO_NAME = "k8s"
 GCS_RUNS_PATH = "gs://mlkube-testing-airflow/runs"
 
 GCB_PROJECT = "mlkube-testing"
+ZONE = "us-east1-d"
 
 def run_path(dag_id, run_id):
   return os.path.join(GCS_RUNS_PATH, dag_id.replace(":", "_"),
@@ -146,7 +147,6 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   newenv["GOPATH"] = os.path.join(run_dir, "go")
 
   # Make sure pull_number is a string
-  pull_number = "{0}".format(conf.get("PULL_NUMBER", ""))
   args = ["python", "-m", "py.release", "build", "--src_dir=" + src_dir]
 
   dryrun = bool(conf.get("dryrun", False))
@@ -205,7 +205,8 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   args.append("--junit_path=" + junit_path)
   args.append("--project=" + GCB_PROJECT)
   args.append("--chart=" + chart)
-
+  args.append("--zone=" + ZONE)
+  args.append("--accelerator=nvidia-tesla-k80=1")
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
@@ -242,6 +243,43 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
   util.run(args, use_print=True, dryrun=dryrun)
+
+# TODO(jlewi): We should make this a function that will generate a callable
+# for different configs like we do for py_checks.
+def run_gpu_test(dag_run=None, ti=None, **_kwargs):
+  conf = dag_run.conf
+  if not conf:
+    conf = {}
+
+  cluster = ti.xcom_pull(None, key="cluster")
+
+  src_dir = ti.xcom_pull(None, key="src_dir")
+
+  logging.info("conf=%s", conf)
+  artifacts_path = conf.get("ARTIFACTS_PATH",
+                            run_path(dag_run.dag_id, dag_run.run_id))
+  logging.info("artifacts_path %s", artifacts_path)
+  # I think we can only have one underscore in the name for gubernator to
+  # work.
+  junit_path = os.path.join(artifacts_path, "junit_gpu-tests.xml")
+  logging.info("junit_path %s", junit_path)
+  ti.xcom_push(key="cluster", value=cluster)
+
+  spec = os.path.join(src_dir, "examples/tf_job_gpu.yaml")
+  args = ["python", "-m", "py.test_runner", "test"]
+  args.append("--spec=" + spec)
+  args.append("--zone=" + ZONE)
+  args.append("--cluster=" + cluster)
+  args.append("--junit_path=" + junit_path)
+  args.append("--project=" + GCB_PROJECT)
+  # tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
+  # TODO(jlewi): The example should be a template and we should rebuild and
+  # and use the newly built sample container.
+  args.append("--image_tag=notag")
+
+  # We want subprocess output to bypass logging module otherwise multiline
+  # output is squashed together.
+  util.run(args, use_print=True)
 
 def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
@@ -349,13 +387,24 @@ run_tests_op = PythonOperator(
 
 run_tests_op.set_upstream(setup_cluster_op)
 
+run_gpu_test_op = PythonOperator(
+  task_id='run_gpu_test',
+    provide_context=True,
+    python_callable=run_gpu_test,
+    dag=dag)
+
+run_gpu_test_op.set_upstream(setup_cluster_op)
+
 teardown_cluster_op = PythonOperator(
   task_id='teardown_cluster',
     provide_context=True,
     python_callable=teardown_cluster,
+    # We want to trigger the teardown step even if the previous steps failed
+    # because we don't want to leave clusters up.
+    trigger_rule="all_done",
     dag=dag)
 
-teardown_cluster_op.set_upstream(run_tests_op)
+teardown_cluster_op.set_upstream([run_tests_op, run_gpu_test_op])
 
 # Create an op that can be used to determine when all other tasks are done.
 done_op = PythonOperator(
