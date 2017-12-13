@@ -399,6 +399,9 @@ teardown_cluster_op = PythonOperator(
   task_id='teardown_cluster',
     provide_context=True,
     python_callable=teardown_cluster,
+    # We want to trigger the teardown step even if the previous steps failed
+    # because we don't want to leave clusters up.
+    trigger_rule="all_done",
     dag=dag)
 
 teardown_cluster_op.set_upstream([run_tests_op, run_gpu_test_op])

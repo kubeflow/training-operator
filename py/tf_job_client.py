@@ -37,7 +37,7 @@ def create_tf_job(client, spec):
     if e.body:
       try:
         body = json.loads(e.body)
-      except ValueError as e:
+      except ValueError:
         # There was a problem parsing the body of the response as json.
         logging.error(
             ("Exception when calling DefaultApi->"
