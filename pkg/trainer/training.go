@@ -244,7 +244,7 @@ func (j *TrainingJob) masterName() string {
 // setup the training job.
 func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 	if j.job == nil {
-		j.status.SetReason("Internal error; tried to setup a job with no spec.")
+		j.status.SetReason("Internal error; setup failed; job is missing spec.")
 		j.status.SetPhase(spec.TfJobPhaseFailed)
 		j.status.SetState(spec.StateFailed)
 	}
