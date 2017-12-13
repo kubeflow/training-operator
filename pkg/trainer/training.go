@@ -210,19 +210,15 @@ func (j *TrainingJob) GetStatus() (spec.State, []*spec.TfReplicaStatus, error) {
 		replicaSetStates[r.Spec.TfReplicaType] = rStatus.State
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
-
-		// If any replicas are failed mark job as failed.
-		if rStatus.State == spec.ReplicaStateFailed {
-			state = spec.StateFailed
-		}
 	}
 
-	if v, ok := replicaSetStates[spec.MASTER]; ok && v == spec.ReplicaStateSucceeded {
+	chief := j.job.Spec.TerminationPolicy.Chief
+	if v, ok := replicaSetStates[spec.TfReplicaType(chief.ReplicaName)]; ok && v == spec.ReplicaStateSucceeded {
 		state = spec.StateSucceeded
 		return state, replicaStatuses, nil
 	}
 
-	if v, ok := replicaSetStates[spec.MASTER]; ok && v == spec.ReplicaStateFailed {
+	if v, ok := replicaSetStates[spec.TfReplicaType(chief.ReplicaName)]; ok && v == spec.ReplicaStateFailed {
 		state = spec.StateFailed
 		return state, replicaStatuses, nil
 	}

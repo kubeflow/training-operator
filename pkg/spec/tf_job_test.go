@@ -337,3 +337,89 @@ func TestSetDefaults(t *testing.T) {
 		}
 	}
 }
+
+func TestValidate(t *testing.T) {
+	type testCase struct {
+		in       *TfJobSpec
+		expectingError bool
+	}
+
+	testCases := []testCase{
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TfReplicaType: MASTER,
+						Replicas: proto.Int32(1),
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
+			},
+			expectingError: false,
+		},
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TfReplicaType: WORKER,
+						Replicas: proto.Int32(1),
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
+			},
+			expectingError: true,
+		},
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TfReplicaType: WORKER,
+						Replicas: proto.Int32(1),
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.3.0",
+				TerminationPolicy: &TerminationPolicySpec{
+					Chief: &ChiefSpec{
+						ReplicaName: "WORKER",
+						ReplicaIndex: 0,
+					},
+				},
+			},
+			expectingError: false,
+		},
+	}
+
+	for _, c := range testCases {
+		c.in.SetDefaults()
+		if err := c.in.Validate(); (err != nil) != c.expectingError {
+			t.Errorf("unexpected validation result: %v", err)
+		}
+	}
+}
