@@ -201,6 +201,20 @@ func TestJobSetup(t *testing.T) {
 							},
 							TfReplicaType: spec.PS,
 						},
+						{
+							Replicas: proto.Int32(1),
+							TfPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
+							TfReplicaType: spec.MASTER,
+						},
 					},
 				},
 			},
@@ -228,6 +242,25 @@ func TestJobSetup(t *testing.T) {
 								},
 							},
 							TfReplicaType: spec.PS,
+						},
+						{
+							Replicas: proto.Int32(1),
+							TfPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+											Resources: v1.ResourceRequirements{
+												Requests: map[v1.ResourceName]resource.Quantity{
+													"nvidia-gpu": resource.MustParse("1"),
+												},
+											},
+										},
+									},
+								},
+							},
+							TfReplicaType: spec.MASTER,
 						},
 					},
 				},
