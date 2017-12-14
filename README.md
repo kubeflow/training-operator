@@ -145,7 +145,7 @@ data:
 Then simply create the `ConfigMap` and install the Helm chart (**the order matters**) without specifying any cloud provider:
 
 ```
-kubectl create configmap tf-job-operator-config --from-file <your-configmap-path>
+kubectl create configmap tf-job-operator-config --from-file <your-configmap-path> --dry-run -o yaml | kubectl replace configmap tf-job-operator-config -f -
 helm install ${CHART} -n tf-job --wait --replace
 ```
 
