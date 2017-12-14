@@ -329,7 +329,7 @@ func TestSetDefaults(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		if err := c.in.SetDefaults(); err != nil {
+		if err := c.in.SetDefaults(c.in.TfImage); err != nil {
 			t.Errorf("SetDefaults error; %v", err)
 		}
 		if !reflect.DeepEqual(c.in, c.expected) {

@@ -8,6 +8,9 @@ type ControllerConfig struct {
 
 	// Path to the file containing the grpc server source
 	GrpcServerFilePath string
+	// TfImage defines the tensorflow docker image that should be used for Tensorboard
+	// and the default parameter server
+	TfImage string `json:"tfImage,omitempty"`
 }
 
 // AcceleratorVolume represents a host path that must be mounted into
