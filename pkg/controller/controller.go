@@ -86,7 +86,7 @@ func (c *Controller) Run() error {
 	for {
 		watchVersion, err = c.initResource()
 		if err == nil {
-			log.Info("Starting watch at version %v", watchVersion)
+			log.Infof("Starting watch at version %v", watchVersion)
 			break
 		}
 		log.Errorf("initialization failed: %v", err)
