@@ -276,7 +276,7 @@ func TestSetDefaults(t *testing.T) {
 				TfImage: "tensorflow/tensorflow:1.3.0",
 				TerminationPolicy: &TerminationPolicySpec{
 					Chief: &ChiefSpec{
-						ReplicaName: "MASTER",
+						ReplicaName:  "MASTER",
 						ReplicaIndex: 0,
 					},
 				},
@@ -320,7 +320,7 @@ func TestSetDefaults(t *testing.T) {
 				TfImage: "tensorflow/tensorflow:1.3.0",
 				TerminationPolicy: &TerminationPolicySpec{
 					Chief: &ChiefSpec{
-						ReplicaName: "MASTER",
+						ReplicaName:  "MASTER",
 						ReplicaIndex: 0,
 					},
 				},
@@ -329,7 +329,7 @@ func TestSetDefaults(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		if err := c.in.SetDefaults(); err != nil {
+		if err := c.in.SetDefaults(c.in.TfImage); err != nil {
 			t.Errorf("SetDefaults error; %v", err)
 		}
 		if !reflect.DeepEqual(c.in, c.expected) {
