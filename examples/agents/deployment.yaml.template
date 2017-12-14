@@ -1,0 +1,46 @@
+apiVersion: "tensorflow.org/v1alpha1"
+kind: "TfJob"
+metadata:
+  name: "{{job_name}}"
+  namespace: default
+spec:
+  replicaSpecs:
+    - replicas: 1
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: {{image}}
+              name: tensorflow
+              args:
+              - --log_dir
+              - {{log_dir}}
+              - --config
+              - {{environment}}
+              - --mode
+              - {{mode}}
+              - --run_base_tag
+              - {{job_name}}
+          restartPolicy: OnFailure
+    - replicas: 3
+      tfReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: {{image}}
+              name: tensorflow
+              args:
+              - --log_dir
+              - {{log_dir}}
+              - --config
+              - {{environment}}
+              - --mode
+              - {{mode}}
+              - --run_base_tag
+              - {{job_name}}
+          restartPolicy: OnFailure
+    - replicas: 2
+      tfReplicaType: PS
+  tensorBoard:
+    logDir: {{log_dir}}
+  tfImage: tensorflow/tensorflow:1.4.0
