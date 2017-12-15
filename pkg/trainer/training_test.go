@@ -154,9 +154,7 @@ func TestClusterSpec(t *testing.T) {
 			t.Fatalf("initJob failed: %v", err)
 		}
 
-		if err := job.setup(&spec.ControllerConfig{}); err != nil {
-			t.Fatalf("job.setup() failed: %v", err)
-		}
+		job.setup(&spec.ControllerConfig{})
 
 		actual := job.ClusterSpec()
 
@@ -180,6 +178,9 @@ func TestJobSetup(t *testing.T) {
 	type testCase struct {
 		jobSpec      *spec.TfJob
 		expectMounts int
+		expectPhase spec.TfJobPhase
+		expectReason string
+		expectState spec.State
 	}
 
 	testCases := []testCase{
@@ -205,6 +206,8 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 0,
+			expectPhase: spec.TfJobPhaseCreating,
+			expectState: spec.StateRunning,
 		},
 		{
 			jobSpec: &spec.TfJob{
@@ -233,6 +236,41 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 1,
+			expectPhase: spec.TfJobPhaseCreating,
+			expectState: spec.StateRunning,
+		},
+		{
+			// The job should fail setup because the spec is invalid.
+			jobSpec: &spec.TfJob{
+				Spec: spec.TfJobSpec{
+					ReplicaSpecs: []*spec.TfReplicaSpec{
+						{
+							Replicas: proto.Int32(2),
+							TfPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+											Resources: v1.ResourceRequirements{
+												Requests: map[v1.ResourceName]resource.Quantity{
+													"nvidia-gpu": resource.MustParse("1"),
+												},
+											},
+										},
+									},
+								},
+							},
+							TfReplicaType: spec.PS,
+						},
+					},
+					TensorBoard: &spec.TensorBoardSpec{},
+				},
+			},
+			expectMounts: 0,
+			expectPhase: spec.TfJobPhaseFailed,
+			expectState: spec.StateFailed,
+			expectReason: "tbReplicaSpec.LogDir must be specified",
 		},
 	}
 
@@ -255,14 +293,26 @@ func TestJobSetup(t *testing.T) {
 		wg := &sync.WaitGroup{}
 		job, err := initJob(clientSet, &tfJobFake.TfJobClientFake{}, c.jobSpec, stopC, wg)
 
-		err = job.setup(config)
+		job.setup(config)
 
 		if err != nil {
 			t.Errorf("j.setup error: %v", err)
 		}
 
-		// Make sure the runtime id is set.
-		if job.job.Spec.RuntimeId == "" {
+		if job.status.Phase != c.expectPhase {
+			t.Errorf("job.job.Status.Phase Want: %v Got:%v ", c.expectPhase, job.status.Phase)
+		}
+
+		if job.status.Reason != c.expectReason {
+			t.Errorf("job.job.Status.Reason Want: %v Got:%v ", c.expectReason, job.status.Reason)
+		}
+
+		if (job.status.State != c.expectState) {
+			t.Errorf("job.job.Status.State Want: %v Got:%v ", c.expectState, job.status.State)
+		}
+
+		// Make sure the runtime id is set if the job didn't fail.
+		if c.expectState!= spec.StateFailed && job.job.Spec.RuntimeId == "" {
 			t.Errorf("RuntimeId should not be empty after calling setup.")
 		}
 
