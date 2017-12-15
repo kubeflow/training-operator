@@ -43,4 +43,4 @@ spec:
       tfReplicaType: PS
   tensorBoard:
     logDir: {{log_dir}}
-  tfImage: tensorflow/tensorflow:1.4.0
+  tfImage: gcr.io/dev01-181118-181500/agents-base:cpu-tf-latest

@@ -45,15 +45,11 @@ def feed_forward_gaussian(
   """
   run_config = tf.contrib.learn.RunConfig()
 
-  worker_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
-                                             run_config.task_id)
-  # The device setter will automatically place Variables ops on separate
-  # parameter servers (ps). The non-Variable ops will be placed on the workers.
-  # The ps use CPU and workers use corresponding GPU
+  worker_device = "/job:%s/replica:0/task:%d/cpu:0" % (run_config.task_type,
+                                                       run_config.task_id)
   with tf.device(
       tf.train.replica_device_setter(
           worker_device=worker_device,
-          ps_device="/job:ps/cpu:0",
           cluster=run_config.cluster_spec)):
 
     mean_weights_initializer = tf.contrib.layers.variance_scaling_initializer(

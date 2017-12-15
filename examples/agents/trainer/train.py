@@ -23,18 +23,66 @@ from __future__ import absolute_import, division, print_function
 
 import datetime
 import functools
+import json
 import os
 import pprint
+import re
+import time
 
 import gym
 import tensorflow as tf
 from agents import tools
 from agents.scripts import configs, utility
+from tensorflow.python.ops import variables
 
 from . import loop as lp
+from . import in_graph_batch_env, simulate
 
 
-def define_simulation_graph(batch_env, algo_cls, config):
+def define_batch_env(constructor, num_agents, env_processes):
+  """Create environments and apply all desired wrappers.
+
+  Args:
+    constructor: Constructor of an OpenAI gym environment.
+    num_agents: Number of environments to combine in the batch.
+    env_processes: Whether to step environment in external processes.
+
+  Returns:
+    In-graph environments object.
+  """
+  with tf.variable_scope('environments'):
+    if env_processes:
+      envs = [
+          tools.wrappers.ExternalProcess(constructor)
+          for _ in range(num_agents)]
+    else:
+      envs = [constructor() for _ in range(num_agents)]
+    batch_env = tools.BatchEnv(envs, blocking=not env_processes)
+    batch_env = in_graph_batch_env.InGraphBatchEnv(batch_env)
+  return batch_env
+
+
+def define_saver(exclude=None):
+  """Create a saver for the variables we want to checkpoint.
+
+  Args:
+    exclude: List of regexes to match variable names to exclude.
+
+  Returns:
+    Saver object.
+  """
+  variables = []
+  exclude = exclude or []
+  exclude = [re.compile(regex) for regex in exclude]
+  for variable in tf.global_variables():
+    if any(regex.match(variable.name) for regex in exclude):
+      continue
+    variables.append(variable)
+  saver = tf.train.Saver(variables, keep_checkpoint_every_n_hours=5)
+  return saver
+
+
+def define_simulation_graph(batch_env, algo_cls, config, step):
   """Define the algortihm and environment interaction.
 
   Args:
@@ -46,14 +94,6 @@ def define_simulation_graph(batch_env, algo_cls, config):
     Object providing graph elements via attributes.
   """
   # pylint: disable=unused-variable
-  run_config = tf.contrib.learn.RunConfig()
-  cpu_device = "/job:%s/task:%d/cpu:0" % (run_config.task_type,
-                                          run_config.task_id)
-  # gpu_device = "/job:%s/task:%d/gpu:0" % (run_config.task_type,
-  #                                         run_config.task_id)
-
-  step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
-
   is_training = tf.placeholder(tf.bool, name='is_training')
   should_log = tf.placeholder(tf.bool, name='should_log')
   do_report = tf.placeholder(tf.bool, name='do_report')
@@ -61,46 +101,13 @@ def define_simulation_graph(batch_env, algo_cls, config):
 
   algo = algo_cls(batch_env, step, is_training, should_log, config)
 
-  with tf.device(cpu_device):
-    done, score, summary = tools.simulate(
-        batch_env, algo, should_log, force_reset)
+  done, score, summary = simulate.simulate(
+      batch_env, algo, should_log, force_reset)
 
   message = 'Graph contains {} trainable variables.'
   tf.logging.info(message.format(tools.count_weights()))
   # pylint: enable=unused-variable
   return tools.AttrDict(locals())
-
-
-# def initialize_variables(sess, saver, logdir, checkpoint=None, resume=None):
-#   """Initialize or restore variables from a checkpoint if available.
-#
-#   Args:
-#     sess: Session to initialize variables in.
-#     saver: Saver to restore variables.
-#     logdir: Directory to search for checkpoints.
-#     checkpoint: Specify what checkpoint name to use; defaults to most recent.
-#     resume: Whether to expect recovering a checkpoint or starting a new run.
-#
-#   Raises:
-#     ValueError: If resume expected but no log directory specified.
-#     RuntimeError: If no resume expected but a checkpoint was found.
-#   """
-#   sess.run(tf.group(
-#       tf.local_variables_initializer(),
-#       tf.global_variables_initializer()))
-#   if resume and not (logdir or checkpoint):
-#     raise ValueError('Need to specify logdir to resume a checkpoint.')
-#   if logdir:
-#     state = tf.train.get_checkpoint_state(logdir)
-#     if checkpoint:
-#       checkpoint = os.path.join(logdir, checkpoint)
-#     if not checkpoint and state and state.model_checkpoint_path:
-#       checkpoint = state.model_checkpoint_path
-#     if checkpoint and resume is False:
-#       message = 'Found unexpected checkpoint when starting a new run.'
-#       raise RuntimeError(message)
-#     if checkpoint:
-#       saver.restore(sess, checkpoint)
 
 
 def _create_environment(config):
@@ -154,6 +161,79 @@ def _define_loop(graph, logdir, train_steps, eval_steps):
   return loop
 
 
+class RunConfig(object):
+  def __init__(self):
+    log_base = '== RunConfig.'
+    self.cluster = json.loads(os.environ.get(
+        "TF_CONFIG", "{}")).get("cluster", {})
+    self.cluster = self._convert_keys_to_string(self.cluster)
+    tf.logging.debug(log_base + 'cluster: %s' % self.cluster)
+    self.task = json.loads(os.environ.get("TF_CONFIG", "{}")).get("task", {})
+    tf.logging.debug(log_base + 'task: %s' % self.task)
+    self.is_chief = (self.task['type'] == 'master')
+    tf.logging.debug(log_base + 'is_chief: %s' % self.is_chief)
+    self.job_name = str(self.task['type'])
+    tf.logging.debug(log_base + 'job_name: %s' % self.job_name)
+    self.task_index = (0 if 'index' not in self.task
+                       else self.task['index'])
+    tf.logging.debug(log_base + 'task_index: %s' % self.task_index)
+    self.master = 'grpc://localhost:2222'
+    if not (self.task['type'] is 'master'):
+      self.master = 'grpc://%s' % self.cluster['master'][0]
+    tf.logging.debug(log_base + 'master: %s' % self.master)
+    self.cluster_spec = tf.train.ClusterSpec(self.cluster)
+    self.cluster_def = self.cluster_spec.as_custer_def()
+    self.server_def = tensorflow_server_pb2.ServerDef(
+        cluster=self.cluster_def, job_name=self.job_name,
+        task_index=self.task_index, protocol="grpc")
+    tf.logging.info('server def: %s' % self.server_def)
+
+  def _convert_keys_to_string(self, dictionary):
+    """Recursively converts dictionary keys to strings."""
+    if not isinstance(dictionary, dict):
+      return dictionary
+    return dict((str(k), self._convert_keys_to_string(v))
+                for k, v in dictionary.items())
+
+
+def _log_run_config(run_config):
+  stem = '== RunConfig: '
+  attrs = ['task_type', 'task_id', 'cluster_spec', 'master', 'num_ps_replicas',
+           'num_worker_replicas', 'is_chief']
+
+  for attr in attrs:
+    if hasattr(run_config, attr):
+      tf.logging.info(stem + '%s, %s' % (attr, getattr(run_config, attr)))
+
+
+def _hack_default_to_local():
+  def _collection_move_matching(pattern, source, target):
+    source_collection_actual = tf.get_collection_ref(source)
+    target_collection_actual = tf.get_collection_ref(target)
+    for var in tf.get_collection(source):
+      if re.match(pattern, var.name):
+        target_collection_actual.append(var)
+        source_collection_actual.remove(var)
+
+  def _dump_collection(collection):
+    tf.logging.debug('Dumping variables in collection %s' % collection)
+    for var in tf.get_collection_ref(collection):
+      tf.logging.debug('%s, %s' % (collection, str(var)))
+
+  _dump_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+  _collection_move_matching(r'.', tf.GraphKeys.GLOBAL_VARIABLES,
+                            tf.GraphKeys.LOCAL_VARIABLES)
+  _collection_move_matching(r'network/policy', tf.GraphKeys.LOCAL_VARIABLES,
+                            tf.GraphKeys.GLOBAL_VARIABLES)
+  _collection_move_matching(r'network/value', tf.GraphKeys.LOCAL_VARIABLES,
+                            tf.GraphKeys.GLOBAL_VARIABLES)
+  _collection_move_matching(r'global_step', tf.GraphKeys.LOCAL_VARIABLES,
+                            tf.GraphKeys.GLOBAL_VARIABLES)
+  _dump_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+  tf.logging.debug('===')
+  _dump_collection(tf.GraphKeys.LOCAL_VARIABLES)
+
+
 def train(agents_config, env_processes, log_dir=None):
   """Training and evaluation entry point yielding scores.
 
@@ -175,40 +255,30 @@ def train(agents_config, env_processes, log_dir=None):
 
   run_config = tf.contrib.learn.RunConfig()
 
-  server_def = tf.train.ServerDef(
-      cluster=run_config.cluster_spec.as_cluster_def(),
-      protocol="grpc",
-      job_name=run_config.task_type,
-      task_index=run_config.task_id)
+  _log_run_config(run_config)
 
-  server = tf.train.Server(server_def)
+  server = tf.train.Server(
+      run_config.cluster_spec, job_name=run_config.task_type, task_index=run_config.task_id)
 
   tf.reset_default_graph()
 
   if agents_config.update_every % agents_config.num_agents:
     tf.logging.warn('Number of agents should divide episodes per update.')
 
-  worker_device = "/job:%s/task:%d" % (run_config.task_type,
-                                       run_config.task_id)
+  worker_device = "/job:%s/replica:0/task:%d" % (run_config.task_type,
+                                                 run_config.task_id)
 
-  tf.logging.debug('is_chief: %s' % run_config.is_chief)
-  tf.logging.debug(pprint.pprint(run_config.cluster_spec.as_dict()))
-  tf.logging.debug('server.target: %s' % server.target)
-  tf.logging.debug('worker_device: %s' % worker_device)
+  with tf.device(worker_device):
 
-  # By default, all parameters are shared.
-  with tf.device(
-      tf.train.replica_device_setter(
-          worker_device=worker_device,
-          ps_device="/job:ps",
-          cluster=run_config.cluster_spec)):
+    with tf.device('/job:ps/replica:0/task:0/device:CPU:0'):
+      global_step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
 
-    batch_env = utility.define_batch_env(
+    batch_env = define_batch_env(
         lambda: _create_environment(agents_config),
         agents_config.num_agents, env_processes)
 
     graph = define_simulation_graph(
-        batch_env, agents_config.algorithm, agents_config)
+        batch_env, agents_config.algorithm, agents_config, global_step)
 
     loop = _define_loop(
         graph, log_dir,
@@ -221,34 +291,23 @@ def train(agents_config, env_processes, log_dir=None):
 
     # Exclude episode related variables since the Python state of environments is
     # not checkpointed and thus new episodes start after resuming.
-    # TODO: Is this preventing these variables from being initialized on the
-    # workers?
-    # saver = utility.define_saver()
     saver = utility.define_saver(exclude=(r'.*_temporary/.*',))
 
-    device_filters = ["/job:ps",
-                      "/job:%s/task:%d" % (run_config.task_type, run_config.task_id)]
-    # tf.logging.debug('device_filters: %s' % device_filters)
-
-    sess_config = tf.ConfigProto(allow_soft_placement=True,
-                                 device_filters=device_filters
-                                 )
+    sess_config = tf.ConfigProto(allow_soft_placement=True)
     if FLAGS.log_device_placement:
       sess_config.log_device_placement = True
 
     sess_config.gpu_options.allow_growth = True
 
-    opt = graph.algo._optimizer
-
-    # init_op = tf.group(
-    #     tf.local_variables_initializer(),
-    #     tf.global_variables_initializer())
     init_op = tf.global_variables_initializer()
-
     local_init_op = tf.local_variables_initializer()
 
+    _hack_default_to_local()
+
+    hooks = [tf.train.StopAtStepHook(last_step=total_steps)]
+
     if FLAGS.sync_replicas:
-      # Get a reference to the propper local_init_op
+      opt = graph.algo._optimizer
       ready_for_local_init_op = opt.ready_for_local_init_op
       local_init_op = opt.local_step_init_op
       if run_config.is_chief:
@@ -258,62 +317,33 @@ def train(agents_config, env_processes, log_dir=None):
       chief_queue_runner = opt.get_chief_queue_runner()
       sync_init_op = opt.get_init_tokens_op()
 
-    hooks = [tf.train.StopAtStepHook(last_step=total_steps)]
-
-    if FLAGS.sync_replicas:
       sync_replicas_hook = opt.make_session_run_hook(run_config.is_chief)
       hooks.append(sync_replicas_hook)
 
-    if not FLAGS.use_monitored_training_session:
-      sv = tf.train.Supervisor(
-          is_chief=run_config.is_chief,
-          logdir=log_dir,
-          init_op=init_op,
-          local_init_op=local_init_op,
-          recovery_wait_secs=1,
-          global_step=graph.step,
-          save_summaries_secs=None,
-          saver=saver
-      )
+    scaffold = tf.train.Scaffold(
+        saver=saver,
+        init_op=init_op,
+        local_init_op=local_init_op,
+        # ready_for_local_init_op=ready_for_local_init_op
+    )
 
-    def _get_session():
-      # HACK: Debugging, not meant to be a feature to be able to switch
-      # between session monitors.
-      if FLAGS.use_monitored_training_session:
-        return tf.train.MonitoredTrainingSession(
+    with tf.train.MonitoredTrainingSession(
             master=server.target,
             is_chief=run_config.is_chief,
             checkpoint_dir=log_dir,
-            scaffold=tf.train.Scaffold(
-                saver=saver,
-                init_op=init_op,
-                local_init_op=local_init_op,
-                # ready_for_local_init_op=ready_for_local_init_op
-            ),
+            scaffold=scaffold,
             hooks=hooks,
             save_checkpoint_secs=FLAGS.save_checkpoint_secs,
             save_summaries_steps=None,
             save_summaries_secs=None,
             config=sess_config,
             stop_grace_period_secs=120,
-            log_step_count_steps=300
-        )
-
-      return sv.prepare_or_wait_for_session(server.target, config=sess_config)
-
-    with _get_session() as sess:
+            log_step_count_steps=3000) as sess:
 
       global_step = sess.run(loop._step)
       steps_made = 1
 
-      # if FLAGS.sync_replicas and run_config.is_chief:
-      #   # Chief worker will start the chief queue runner and call the init op.
-      #   sess.run(sync_init_op)
-      #   if not FLAGS.use_monitored_training_session:
-      #     sv.start_queue_runners(sess, [chief_queue_runner])
-
-      while not (sess.should_stop() if FLAGS.use_monitored_training_session
-                 else sv.should_stop()):
+      while not sess.should_stop():
 
         phase, epoch, steps_in = loop._find_current_phase(global_step)
         phase_step = epoch * phase.steps + steps_in
@@ -337,11 +367,13 @@ def train(agents_config, env_processes, log_dir=None):
         if loop._is_every_steps(phase_step, phase.batch, phase.report_every):
           yield mean_score
 
-        # if summary and phase.writer:
-        #   # We want smaller phases to catch up at the beginnig of each epoch so
-        #   # that their graphs are aligned.
-        #   longest_phase = max(phase.steps for phase in loop._phases)
-        #   summary_step = epoch * longest_phase + steps_in
-        #   phase.writer.add_summary(summary, summary_step)
+        # TODO: Potentially integrate summary writing with
+        # MonitoredTrainingSession.
+        if summary and phase.writer and run_config.is_chief:
+          # We want smaller phases to catch up at the beginnig of each epoch so
+          # that their graphs are aligned.
+          longest_phase = max(phase.steps for phase in loop._phases)
+          summary_step = epoch * longest_phase + steps_in
+          phase.writer.add_summary(summary, summary_step)
 
     batch_env.close()

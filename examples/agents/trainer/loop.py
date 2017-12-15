@@ -28,6 +28,54 @@ _Phase = collections.namedtuple(
     'checkpoint_every')
 
 
+class StreamingMean(object):
+  """Compute a streaming estimation of the mean of submitted tensors."""
+
+  def __init__(self, shape, dtype):
+    """Specify the shape and dtype of the mean to be estimated.
+
+    Note that a float mean to zero submitted elements is NaN, while computing
+    the integer mean of zero elements raises a division by zero error.
+
+    Args:
+      shape: Shape of the mean to compute.
+      dtype: Data type of the mean to compute.
+    """
+    self._dtype = dtype
+    self._sum = tf.Variable(lambda: tf.zeros(shape, dtype), False, collections=[
+        tf.GraphKeys.LOCAL_VARIABLES])
+    self._count = tf.Variable(lambda: 0, trainable=False, collections=[
+        tf.GraphKeys.LOCAL_VARIABLES])
+
+  @property
+  def value(self):
+    """The current value of the mean."""
+    return self._sum / tf.cast(self._count, self._dtype)
+
+  @property
+  def count(self):
+    """The number of submitted samples."""
+    return self._count
+
+  def submit(self, value):
+    """Submit a single or batch tensor to refine the streaming mean."""
+    # Add a batch dimension if necessary.
+    if value.shape.ndims == self._sum.shape.ndims:
+      value = value[None, ...]
+    return tf.group(
+        self._sum.assign_add(tf.reduce_sum(value, 0)),
+        self._count.assign_add(tf.shape(value)[0]))
+
+  def clear(self):
+    """Return the mean estimate and reset the streaming statistics."""
+    value = self._sum / tf.cast(self._count, self._dtype)
+    with tf.control_dependencies([value]):
+      reset_value = self._sum.assign(tf.zeros_like(self._sum))
+      reset_count = self._count.assign(0)
+    with tf.control_dependencies([reset_value, reset_count]):
+      return tf.identity(value)
+
+
 class Loop(object):
   """Execute operations in a loop and coordinate logging and checkpoints.
 
@@ -53,10 +101,6 @@ class Loop(object):
     """
     self._logdir = logdir
     self._step = step
-    # TODO: Does the global_step variable get re-initialized here even if step
-    # is not None? That could be causing the problems.
-    # self._step = (
-    #     tf.Variable(0, False, name='global_step') if step is None else step)
     self._log = tf.placeholder(tf.bool) if log is None else log
     self._report = tf.placeholder(tf.bool) if report is None else report
     self._reset = tf.placeholder(tf.bool) if reset is None else reset
@@ -89,20 +133,21 @@ class Loop(object):
     Raises:
       ValueError: Unknown rank for done or score tensors.
     """
-    done = tf.convert_to_tensor(done, tf.bool)
-    score = tf.convert_to_tensor(score, tf.float32)
-    summary = tf.convert_to_tensor(summary, tf.string)
-    feed = feed or {}
-    if done.shape.ndims is None or score.shape.ndims is None:
-      raise ValueError("Rank of 'done' and 'score' tensors must be known.")
-    writer = self._logdir and tf.summary.FileWriter(
-        os.path.join(self._logdir, name), tf.get_default_graph(),
-        flush_secs=60)
-    op = self._define_step(done, score, summary)
-    batch = 1 if score.shape.ndims == 0 else score.shape[0].value
-    self._phases.append(_Phase(
-        name, writer, op, batch, int(steps), feed, report_every,
-        log_every, checkpoint_every))
+    with tf.name_scope(name):
+      done = tf.convert_to_tensor(done, tf.bool)
+      score = tf.convert_to_tensor(score, tf.float32)
+      summary = tf.convert_to_tensor(summary, tf.string)
+      feed = feed or {}
+      if done.shape.ndims is None or score.shape.ndims is None:
+        raise ValueError("Rank of 'done' and 'score' tensors must be known.")
+      writer = self._logdir and tf.summary.FileWriter(
+          os.path.join(self._logdir, name), tf.get_default_graph(),
+          flush_secs=60)
+      op = self._define_step(done, score, summary)
+      batch = 1 if score.shape.ndims == 0 else score.shape[0].value
+      self._phases.append(_Phase(
+          name, writer, op, batch, int(steps), feed, report_every,
+          log_every, checkpoint_every))
 
   def _is_every_steps(self, phase_step, batch, every):
     """Determine whether a periodic event should happen at this step.
@@ -157,7 +202,7 @@ class Loop(object):
       done = done[None]
     if score.shape.ndims == 0:
       score = score[None]
-    score_mean = streaming_mean.StreamingMean((), tf.float32)
+    score_mean = StreamingMean((), tf.float32)
     with tf.control_dependencies([done, score, summary]):
       done_score = tf.gather(score, tf.where(done)[:, 0])
       submit_score = tf.cond(

@@ -24,13 +24,11 @@ import sys
 
 import agents
 import tensorflow as tf
-#from . import networks
-from agents.scripts import networks
 
 import pybullet_envs
 from trainer.algorithm import PPOAlgorithm
 
-from . import train
+from . import networks, train
 
 flags = tf.app.flags
 
@@ -58,7 +56,7 @@ flags.DEFINE_integer("num_gpus", 0,
                      "If you don't use GPU, please set it to '0'")
 flags.DEFINE_integer("save_checkpoint_secs", 600,
                      "Number of seconds between checkpoint save.")
-flags.DEFINE_boolean("use_monitored_training_session", False,
+flags.DEFINE_boolean("use_monitored_training_session", True,
                      "Whether to use tf.train.MonitoredTrainingSession to "
                      "manage the training session. If not, use "
                      "tf.train.Supervisor.")
@@ -66,7 +64,7 @@ flags.DEFINE_boolean("log_device_placement", False,
                      "Whether to output logs listing the devices on which "
                      "variables are placed.")
 flags.DEFINE_boolean("debug", True,
-                     "Use debugger to track down bad values during training")
+                     "Run in debug mode.")
 flags.DEFINE_string("debug_ui_type", "curses",
                     "Command-line user interface type (curses | readline)")
 FLAGS = flags.FLAGS
@@ -113,13 +111,13 @@ def pybullet_ant():
 
   # General
   algorithm = PPOAlgorithm
-  num_agents = 1
+  num_agents = 10
   eval_episodes = 25
   use_gpu = False
   # Environment
   env = 'AntBulletEnv-v0'
   max_length = 1000
-  steps = 1e7  # 10M
+  steps = 1e8  # 10M
   # Network
   network = networks.feed_forward_gaussian
   weight_summaries = dict(
@@ -156,7 +154,6 @@ def _get_agents_configuration(config_var_name, log_dir):
     config = agents.tools.AttrDict(globals()[config_var_name]())
     # Write the hyperparameters for this run to a config YAML for posteriority
     config = agents.scripts.utility.save_config(config, log_dir)
-
   return config
 
 
