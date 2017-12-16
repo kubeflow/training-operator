@@ -14,15 +14,14 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
-	"k8s.io/apimachinery/pkg/conversion"
 	// TOOO(jlewi): Rename to apiErrors
 	"github.com/tensorflow/k8s/pkg/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-	batch "k8s.io/client-go/pkg/apis/batch/v1"
+	"k8s.io/api/core/v1"
+	batch "k8s.io/api/batch/v1"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -122,7 +121,6 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 }
 
 func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
-	cloner := conversion.NewCloner()
 	if s.Spec.IsDefaultPS {
 		// Create the ConfigMap containing the sources for the default Parameter Server
 		err, cm := s.getDefaultPSConfigMap(config)
@@ -208,11 +206,8 @@ func (s *TFReplicaSet) Create(config *spec.ControllerConfig) error {
 		}
 
 		// Make a copy of the template because we will modify it below. .
-		newPodSpecTemplate := &v1.PodTemplateSpec{}
-		if err := v1.DeepCopy_v1_PodTemplateSpec(s.Spec.Template, newPodSpecTemplate, cloner); err != nil {
-			log.Errorf("There was a problem copying the PodTemplateSpec error; %v", err)
-			return err
-		}
+		newPodSpecTemplate := s.Spec.Template.DeepCopy()
+
 		newJ := &batch.Job{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),
@@ -364,7 +359,7 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 			latest = &i
 			continue
 		}
-		if latest.Status.StartTime.Before(*i.Status.StartTime) {
+		if latest.Status.StartTime.Before(i.Status.StartTime) {
 			latest = &i
 		}
 	}

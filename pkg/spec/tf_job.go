@@ -9,7 +9,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -36,6 +37,8 @@ type TfJob struct {
 	Spec            TfJobSpec         `json:"spec"`
 	Status          TfJobStatus       `json:"status"`
 }
+
+func (c *TfJob) DeepCopyObject() runtime.Object { return nil }
 
 func (c *TfJob) AsOwner() metav1.OwnerReference {
 	trueVar := true
