@@ -7,7 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 )
 
 func TestAddAccelertor(t *testing.T) {
