@@ -10,9 +10,3 @@ import:
   version: 019ae5ada31de202164b118aee88ee2d14075c31
 - package: k8s.io/apiextensions-apiserver
   version: kubernetes-1.8.4
-- package: github.com/pkg/errors
-  version: v0.8.0
-- package: github.com/pborman/uuid
-  version: v1.0
-- package: golang.org/x/net
-- package: golang.org/x/time
