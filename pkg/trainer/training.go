@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 var (
@@ -287,7 +287,7 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 		if j.job.Spec.RuntimeId == "" {
 			j.job.Spec.RuntimeId = util.RandString(4)
 		}
-		 return nil
+		return nil
 	}()
 
 	if err != nil {
@@ -347,8 +347,8 @@ func (j *TrainingJob) updateTPRStatus() error {
 }
 
 // reconcile tries to get the job into the desired state.
-func (j* TrainingJob) reconcile(config *spec.ControllerConfig) {
-	if j.status.Phase ==  spec.TfJobPhaseNone {
+func (j *TrainingJob) reconcile(config *spec.ControllerConfig) {
+	if j.status.Phase == spec.TfJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
 

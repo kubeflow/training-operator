@@ -3,14 +3,10 @@ ignore:
 - github.com/tensorflow/k8s
 import:
 - package: k8s.io/client-go
-  version: v4.0.0-beta.0
+  version: v5.0.0
+- package: k8s.io/api
+  version: fe29995db37613b9c5b2a647544cf627bfa8d299
 - package: k8s.io/apimachinery
-  version: abe34e4f5b4413c282a83011892cbeea5b32223b
+  version: 019ae5ada31de202164b118aee88ee2d14075c31
 - package: k8s.io/apiextensions-apiserver
-  version: 6d8c23d2e66ce61e2a7e34f92e8eb3eec13279fa
-- package: github.com/pkg/errors
-  version: v0.8.0
-- package: github.com/pborman/uuid
-  version: v1.0
-- package: golang.org/x/net
-- package: golang.org/x/time
+  version: kubernetes-1.8.4
