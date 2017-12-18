@@ -1,7 +1,7 @@
-hash: b9c34817e80d7914b889e41fb456c8b0595f707cf3d2923da3f7b2ac6a6de44a
-updated: 2017-09-29T11:30:21.243398665-04:00
+hash: 6c3e73ca1c759c2047fd54f17fb6fbadac69893d570e4b336186f9103e4bc762
+updated: 2017-12-17T23:50:25.271125705+08:00
 imports:
-- name: github.com/GoogleCloudPlatform/google-cloud-go
+- name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
@@ -78,11 +78,11 @@ imports:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
-- name: github.com/golang/crypto
+- name: golang.org/x/crypto
   version: d172538b2cfce0c13cee31e647d0367aa8cd2486
   subpackages:
   - ssh/terminal
-- name: github.com/golang/net
+- name: golang.org/x/net
   version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
   - context
@@ -91,18 +91,18 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
-- name: github.com/golang/oauth2
+- name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
   - google
   - internal
   - jws
   - jwt
-- name: github.com/golang/sys
+- name: golang.org/x/sys
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
-- name: github.com/golang/text
+- name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
   - cases
@@ -115,9 +115,9 @@ imports:
   - unicode/bidi
   - unicode/norm
   - width
-- name: github.com/golang/time
+- name: golang.org/x/time
   version: 8be79e1e0910c292df4e79c241bb7e8f7e725959
-- name: github.com/golang/appengine
+- name: google.golang.org/appengine
   version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
   - internal
