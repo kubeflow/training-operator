@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# -----
+# Set project ID
+PROJECT_ID=dev01-181118-181500
+# -----
+
+SALT=`date | shasum -a 256 | cut -c1-8`
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+
+cd ${SCRIPT_DIR}/../../../
+
+python -m py.deploy setup --project ${PROJECT_ID} --cluster dev-${SALT} \
+ --zone us-central1-f --chart $CHART --junit_path /tmp/junit-info --initial_node_count 1

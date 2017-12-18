@@ -71,16 +71,16 @@ class PPOAlgorithm(object):
     gpu_device = "/job:%s/replica:0/task:%d/gpu:0" % (run_config.task_type,
                                                       run_config.task_id)
 
-    action_size = self._batch_env.action.shape[1].value
-    self._network = tf.make_template(
-        'network', functools.partial(config.network, config, action_size))
-
-    with tf.name_scope('algo-network'):
-      output = self._network(
-          tf.zeros_like(self._batch_env.observ)[:, None],
-          tf.ones(len(self._batch_env)))
-
     with tf.device(gpu_device if use_gpu else cpu_device):
+      action_size = self._batch_env.action.shape[1].value
+      self._network = tf.make_template(
+          'network', functools.partial(config.network, config, action_size))
+
+      with tf.name_scope('algo-network'):
+        output = self._network(
+            tf.zeros_like(self._batch_env.observ)[:, None],
+            tf.ones(len(self._batch_env)))
+
       with tf.variable_scope('ppo_temporary', default_name='ppo_temporary'):
         self._episodes = memory.EpisodeMemory(
             template, len(batch_env), config.max_length, 'episodes')
@@ -105,16 +105,17 @@ class PPOAlgorithm(object):
       self._penalty = tf.Variable(
           self._config.kl_init_penalty, False, dtype=tf.float32, name='kl_penalty', collections=[tf.GraphKeys.LOCAL_VARIABLES])
 
-    self._optimizer = self._config.optimizer(self._config.learning_rate)
+    self._optimizer = self._config.optimizer
+    # self._optimizer = self._config.optimizer(self._config.learning_rate)
 
-    FLAGS = tf.app.flags.FLAGS
-    if FLAGS.sync_replicas:
-      self._optimizer = tf.train.SyncReplicasOptimizer(
-          self._optimizer,
-          replicas_to_aggregate=(
-              run_config.num_worker_replicas),
-          total_num_replicas=(run_config.num_worker_replicas)
-      )
+    # FLAGS = tf.app.flags.FLAGS
+    # if FLAGS.sync_replicas:
+    #   self._optimizer = tf.train.SyncReplicasOptimizer(
+    #       self._optimizer,
+    #       replicas_to_aggregate=(
+    #           run_config.num_worker_replicas),
+    #       total_num_replicas=(run_config.num_worker_replicas)
+    #   )
 
   def begin_episode(self, agent_indices):
     """Reset the recurrent states and stored episode.

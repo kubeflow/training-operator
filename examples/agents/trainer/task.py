@@ -47,7 +47,7 @@ flags.DEFINE_string("run_base_tag",
 flags.DEFINE_boolean("env_processes", True,
                      "Step environments in separate processes to circumvent "
                      "the GIL.")
-flags.DEFINE_boolean("sync_replicas", False,
+flags.DEFINE_boolean("sync_replicas", True,
                      "Use the sync_replicas (synchronized replicas) mode, "
                      "wherein the parameter updates from workers are "
                      "aggregated before applied to avoid stale gradients.")
@@ -144,7 +144,7 @@ def pybullet_ant():
   return locals()
 
 
-def _get_agents_configuration(config_var_name, log_dir):
+def _get_agents_configuration(config_var_name, log_dir, is_chief=False):
   """Load hyperparameter config."""
   try:
     # Try to resume training.
@@ -152,8 +152,9 @@ def _get_agents_configuration(config_var_name, log_dir):
   except IOError:
     # Load hparams from object in globals() by name.
     config = agents.tools.AttrDict(globals()[config_var_name]())
-    # Write the hyperparameters for this run to a config YAML for posteriority
-    config = agents.scripts.utility.save_config(config, log_dir)
+    if is_chief:
+      # Write the hyperparameters for this run to a config YAML for posteriority
+      config = agents.scripts.utility.save_config(config, log_dir)
   return config
 
 
@@ -172,10 +173,10 @@ def main(unused_argv):
 
   tf.logging.debug('FLAGS: \n %s' % pprint.pprint(FLAGS.__dict__))
 
-  agents_config = _get_agents_configuration(FLAGS.config, FLAGS.log_dir)
-  tf.logging.debug(pprint.pprint(agents_config))
-
   run_config = tf.contrib.learn.RunConfig()
+
+  agents_config = _get_agents_configuration(
+      FLAGS.config, FLAGS.log_dir, run_config.is_chief)
 
   log_dir = FLAGS.log_dir and os.path.expanduser(FLAGS.log_dir)
 
@@ -183,8 +184,8 @@ def main(unused_argv):
     FLAGS.log_dir = os.path.join(
         log_dir, '{}-{}'.format(FLAGS.run_base_tag, FLAGS.config))
 
-  if FLAGS.mode == 'train' or FLAGS.mode == 'smoke':
-    for score in train.train(agents_config, env_processes=True):
+  if FLAGS.mode == 'train':
+    for score in train.train(agents_config):
       tf.logging.info('Mean score: %s' % score)
 
 

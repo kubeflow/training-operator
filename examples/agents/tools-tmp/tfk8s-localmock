@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Note: Requires py/requirements.txt
+
+# -----
+# Set project ID
+PROJECT_ID=dev01-181118-181500
+# -----
+
+SALT=`date | shasum -a 256 | cut -c1-8`
+VERSION_TAG=cpu-${SALT}
+AGENTS_CPU=gcr.io/${PROJECT_ID}/agents:${VERSION_TAG}
+JOB_NAME=tfagents-${SALT}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MOUNT_LOCAL=${SCRIPT_DIR}/../trainer
+LOG_DIR=/tmp/${SALT}
+
+cd ${SCRIPT_DIR}/../
+
+docker build -t ${AGENTS_CPU} .
+
+COMMAND="python -m trainer.task --log_dir ${LOG_DIR} --config pybullet_ant --mode train --run_base_tag ${JOB_NAME}"
+echo $COMMAND
+
+# TF_CONFIG's
+# '{"cluster":{"master":["tfagents-2aa096f5-master-9iy7-0:2222"],"ps":["tfagents-2aa096f5-ps-9iy7-0:2222","tfagents-2aa096f5-ps-9iy7-1:2222"],"worker":["tfagents-2aa096f5-worker-9iy7-0:2222","tfagents-2aa096f5-worker-9iy7-1:2222","tfagents-2aa096f5-worker-9iy7-2:2222"]},"task":{"type":"worker","index":1},"environment":"cloud"}'
+# '{"cluster":{"master":["tfagents-2aa096f5-master-9iy7-0:2222"],"task":{"type":"master","index":0},"environment":"cloud"}'
+
+docker run --workdir /app \
+-e TF_CONFIG='{"cluster":{"master":["tfagents-2aa096f5-master-9iy7-0:2222"]},"task":{"type":"master","index":0},"environment":"cloud"}' \
+-v ${MOUNT_LOCAL}:/app/trainer \
+-it ${AGENTS_CPU} $COMMAND

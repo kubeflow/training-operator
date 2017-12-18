@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Note: Requires py/requirements.txt
+
+# -----
+# Set project ID
+PROJECT_ID=dev01-181118-181500
+# -----
+
+SALT=`date | shasum -a 256 | cut -c1-8`
+VERSION_TAG=cpu-${SALT}
+AGENTS_CPU=gcr.io/${PROJECT_ID}/agents:${VERSION_TAG}
+LOG_DIR=gs://${PROJECT_ID}-k8s/jobs/run-${SALT}
+JOB_NAME=tfagents-${SALT}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+kubectl delete tfjobs --all && \
+  sh /Users/cb/code/k8s-prs/k8s-agents/scripts/cleanup_clusters.sh && \
+  kubectl delete deployments --selector='tensorflow.org='
+
+cd ${SCRIPT_DIR}/../
+docker build -t ${AGENTS_CPU} .
+gcloud docker -- push ${AGENTS_CPU}
+
+source activate particles
+jinja2 deployment.yaml.template \
+   -D image=${AGENTS_CPU} \
+   -D job_name=${JOB_NAME} \
+   -D log_dir=${LOG_DIR} \
+   -D environment=pybullet_ant \
+   -D mode=train \
+   | kubectl create -f -
+
+echo "== container: ${AGENTS_CPU}"
+echo "== log dir: ${LOG_DIR}"
+
+WORKER_POD=''
+while [[ -z ${WORKER_POD} ]]; do
+  kubectl get pods
+  WORKER_POD=$(kubectl get pods -l tensorflow.org=,job_type=MASTER,tf_job_name=${JOB_NAME} -o template --template '{{range .items}}{{.metadata.name}} {{.status.phase}}{{"\n"}}{{end}}' | grep Running | head -n1 | cut -f1 -d' ')
+done
+
+kubectl logs ${WORKER_POD} --follow
