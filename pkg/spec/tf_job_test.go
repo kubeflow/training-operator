@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -289,7 +290,50 @@ func TestSetDefaults(t *testing.T) {
 						TfReplicaType: PS,
 					},
 				},
-				TfImage: "tensorflow/tensorflow:1.3.0",
+				TfImage: "tensorflow/tensorflow:1.4.0",
+			},
+			expected: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						Replicas: proto.Int32(1),
+						TfPort:   proto.Int32(2222),
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									v1.Container{
+										Image: "tensorflow/tensorflow:1.4.0",
+										Name:  "tensorflow",
+										VolumeMounts: []v1.VolumeMount{
+											v1.VolumeMount{
+												Name:      "ps-config-volume",
+												MountPath: "/ps-server",
+											},
+										},
+									},
+								},
+								RestartPolicy: v1.RestartPolicyOnFailure,
+							},
+						},
+						TfReplicaType: PS,
+						IsDefaultPS:   true,
+					},
+				},
+				TfImage: "tensorflow/tensorflow:1.4.0",
+				TerminationPolicy: &TerminationPolicySpec{
+					Chief: &ChiefSpec{
+						ReplicaName:  "MASTER",
+						ReplicaIndex: 0,
+					},
+				},
+			},
+		},
+		{
+			in: &TfJobSpec{
+				ReplicaSpecs: []*TfReplicaSpec{
+					{
+						TfReplicaType: PS,
+					},
+				},
 			},
 			expected: &TfJobSpec{
 				ReplicaSpecs: []*TfReplicaSpec{
@@ -328,12 +372,14 @@ func TestSetDefaults(t *testing.T) {
 		},
 	}
 
-	for _, c := range testCases {
-		if err := c.in.SetDefaults(c.in.TfImage); err != nil {
-			t.Errorf("SetDefaults error; %v", err)
-		}
-		if !reflect.DeepEqual(c.in, c.expected) {
-			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
-		}
+	for i, c := range testCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			if err := c.in.SetDefaults(c.in.TfImage); err != nil {
+				t.Errorf("SetDefaults error; %v", err)
+			}
+			if !reflect.DeepEqual(c.in, c.expected) {
+				t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
+			}
+		})
 	}
 }
