@@ -2,6 +2,7 @@ language: go
 
 go:
   - 1.8.x
+  - 1.9.x
 
 addons:
   apt:
@@ -25,3 +26,4 @@ script:
   # With go 1.9 vendor will be automatically excluded.
   # For now though we just run all tests in pkg.
   - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
+
