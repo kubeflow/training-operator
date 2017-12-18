@@ -6,8 +6,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestAddAccelertor(t *testing.T) {
@@ -276,7 +276,7 @@ func TestSetDefaults(t *testing.T) {
 				TfImage: "tensorflow/tensorflow:1.3.0",
 				TerminationPolicy: &TerminationPolicySpec{
 					Chief: &ChiefSpec{
-						ReplicaName: "MASTER",
+						ReplicaName:  "MASTER",
 						ReplicaIndex: 0,
 					},
 				},
@@ -320,7 +320,7 @@ func TestSetDefaults(t *testing.T) {
 				TfImage: "tensorflow/tensorflow:1.3.0",
 				TerminationPolicy: &TerminationPolicySpec{
 					Chief: &ChiefSpec{
-						ReplicaName: "MASTER",
+						ReplicaName:  "MASTER",
 						ReplicaIndex: 0,
 					},
 				},

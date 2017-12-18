@@ -9,20 +9,20 @@ import (
 	"sync"
 
 	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/util"
 	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/api/core/v1"
-	"github.com/tensorflow/k8s/pkg/util"
 )
 
 func TestTBReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	jobSpec := &spec.TfJob{
-		Metadata: meta_v1.ObjectMeta {
+		Metadata: meta_v1.ObjectMeta{
 			Name: "some-job",
-			UID: "some-uid",
+			UID:  "some-uid",
 		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
@@ -61,19 +61,19 @@ func TestTBReplicaSet(t *testing.T) {
 
 	// Expected labels
 	expectedLabels := map[string]string{
-		"tensorflow.org":  "",
-		"app":        "tensorboard",
-		"runtime_id": "some-runtime",
-		"tf_job_name": "some-job",
+		"tensorflow.org": "",
+		"app":            "tensorboard",
+		"runtime_id":     "some-runtime",
+		"tf_job_name":    "some-job",
 	}
 
 	trueVal := true
 	expectedOwnerReference := meta_v1.OwnerReference{
-		APIVersion: "",
-		Kind: "",
-		Name: "some-job",
-		UID: "some-uid",
-		Controller: &trueVal,
+		APIVersion:         "",
+		Kind:               "",
+		Name:               "some-job",
+		UID:                "some-uid",
+		Controller:         &trueVal,
 		BlockOwnerDeletion: &trueVal,
 	}
 
@@ -103,7 +103,7 @@ func TestTBReplicaSet(t *testing.T) {
 		t.Fatalf("Expected 1 owner reference got %v", len(s.ObjectMeta.OwnerReferences))
 	}
 
-	if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+	if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
 		t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 	}
 
@@ -131,7 +131,7 @@ func TestTBReplicaSet(t *testing.T) {
 		t.Fatalf("Expected 1 owner reference got %v", len(d.ObjectMeta.OwnerReferences))
 	}
 
-	if !reflect.DeepEqual(d.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+	if !reflect.DeepEqual(d.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
 		t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 	}
 

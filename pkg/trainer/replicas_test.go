@@ -12,20 +12,20 @@ import (
 
 	"encoding/json"
 	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/util"
 	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/api/core/v1"
-	"github.com/tensorflow/k8s/pkg/util"
 )
 
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	jobSpec := &spec.TfJob{
-		Metadata: meta_v1.ObjectMeta {
+		Metadata: meta_v1.ObjectMeta{
 			Name: "some-job",
-			UID: "some-uid",
+			UID:  "some-uid",
 		},
 		Spec: spec.TfJobSpec{
 			RuntimeId: "some-runtime",
@@ -69,22 +69,22 @@ func TestTFReplicaSet(t *testing.T) {
 
 	trueVal := true
 	expectedOwnerReference := meta_v1.OwnerReference{
-		APIVersion: "",
-		Kind: "",
-		Name: "some-job",
-		UID: "some-uid",
-		Controller: &trueVal,
+		APIVersion:         "",
+		Kind:               "",
+		Name:               "some-job",
+		UID:                "some-uid",
+		Controller:         &trueVal,
 		BlockOwnerDeletion: &trueVal,
 	}
 
 	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
-			"tensorflow.org":  "",
-			"task_index": fmt.Sprintf("%v", index),
-			"job_type":   "PS",
-			"runtime_id": "some-runtime",
-			"tf_job_name": "some-job",
+			"tensorflow.org": "",
+			"task_index":     fmt.Sprintf("%v", index),
+			"job_type":       "PS",
+			"runtime_id":     "some-runtime",
+			"tf_job_name":    "some-job",
 		}
 
 		// Check that a service was created.
@@ -112,7 +112,7 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Expected 1 owner reference got %v", len(s.ObjectMeta.OwnerReferences))
 		}
 
-		if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+		if !reflect.DeepEqual(s.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
 			t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 
@@ -144,7 +144,7 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Expected 1 owner reference got %v", len(j.ObjectMeta.OwnerReferences))
 		}
 
-		if !reflect.DeepEqual(j.ObjectMeta.OwnerReferences[0], expectedOwnerReference)  {
+		if !reflect.DeepEqual(j.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
 			t.Fatalf("Job.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(j.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 

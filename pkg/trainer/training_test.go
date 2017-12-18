@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/tensorflow/k8s/pkg/spec"
+	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/api/core/v1"
-	"github.com/tensorflow/k8s/pkg/spec"
-	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
 	"sync"
 )
 
@@ -88,9 +88,9 @@ func TestClusterSpec(t *testing.T) {
 					RuntimeId: "runtime",
 					ReplicaSpecs: []*spec.TfReplicaSpec{
 						{
-							Replicas:      proto.Int32(2),
-							TfPort:        proto.Int32(22),
-							Template:      &v1.PodTemplateSpec{
+							Replicas: proto.Int32(2),
+							TfPort:   proto.Int32(22),
+							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										{
@@ -102,9 +102,9 @@ func TestClusterSpec(t *testing.T) {
 							TfReplicaType: spec.PS,
 						},
 						{
-							Replicas:      proto.Int32(1),
-							TfPort:        proto.Int32(42),
-							Template:      &v1.PodTemplateSpec{
+							Replicas: proto.Int32(1),
+							TfPort:   proto.Int32(42),
+							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										{
@@ -116,9 +116,9 @@ func TestClusterSpec(t *testing.T) {
 							TfReplicaType: spec.MASTER,
 						},
 						{
-							Replicas:      proto.Int32(3),
-							TfPort:        proto.Int32(40),
-							Template:      &v1.PodTemplateSpec{
+							Replicas: proto.Int32(3),
+							TfPort:   proto.Int32(40),
+							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										{
@@ -178,9 +178,9 @@ func TestJobSetup(t *testing.T) {
 	type testCase struct {
 		jobSpec      *spec.TfJob
 		expectMounts int
-		expectPhase spec.TfJobPhase
+		expectPhase  spec.TfJobPhase
 		expectReason string
-		expectState spec.State
+		expectState  spec.State
 	}
 
 	testCases := []testCase{
@@ -206,8 +206,8 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 0,
-			expectPhase: spec.TfJobPhaseCreating,
-			expectState: spec.StateRunning,
+			expectPhase:  spec.TfJobPhaseCreating,
+			expectState:  spec.StateRunning,
 		},
 		{
 			jobSpec: &spec.TfJob{
@@ -236,8 +236,8 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 1,
-			expectPhase: spec.TfJobPhaseCreating,
-			expectState: spec.StateRunning,
+			expectPhase:  spec.TfJobPhaseCreating,
+			expectState:  spec.StateRunning,
 		},
 		{
 			// The job should fail setup because the spec is invalid.
@@ -268,8 +268,8 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 0,
-			expectPhase: spec.TfJobPhaseFailed,
-			expectState: spec.StateFailed,
+			expectPhase:  spec.TfJobPhaseFailed,
+			expectState:  spec.StateFailed,
 			expectReason: "tbReplicaSpec.LogDir must be specified",
 		},
 	}
@@ -307,12 +307,12 @@ func TestJobSetup(t *testing.T) {
 			t.Errorf("job.job.Status.Reason Want: %v Got:%v ", c.expectReason, job.status.Reason)
 		}
 
-		if (job.status.State != c.expectState) {
+		if job.status.State != c.expectState {
 			t.Errorf("job.job.Status.State Want: %v Got:%v ", c.expectState, job.status.State)
 		}
 
 		// Make sure the runtime id is set if the job didn't fail.
-		if c.expectState!= spec.StateFailed && job.job.Spec.RuntimeId == "" {
+		if c.expectState != spec.StateFailed && job.job.Spec.RuntimeId == "" {
 			t.Errorf("RuntimeId should not be empty after calling setup.")
 		}
 

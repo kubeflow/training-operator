@@ -8,8 +8,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -267,7 +267,7 @@ func (c *TfJobSpec) SetDefaults() error {
 	if c.TerminationPolicy == nil {
 		c.TerminationPolicy = &TerminationPolicySpec{
 			Chief: &ChiefSpec{
-				ReplicaName: "MASTER",
+				ReplicaName:  "MASTER",
 				ReplicaIndex: 0,
 			},
 		}

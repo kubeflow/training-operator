@@ -13,17 +13,17 @@ import (
 	"github.com/tensorflow/k8s/pkg/controller"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	election "k8s.io/client-go/tools/leaderelection"
 	"github.com/tensorflow/k8s/version"
+	election "k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	log "github.com/golang/glog"
 
 	"io/ioutil"
 
 	"github.com/tensorflow/k8s/pkg/spec"
-	"k8s.io/client-go/tools/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 )
 
 var (
