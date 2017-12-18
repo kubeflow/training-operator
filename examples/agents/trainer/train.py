@@ -209,7 +209,10 @@ def train(agents_config, env_processes=True, log_dir=None):
 
   with tf.device(worker_device):
 
-    with tf.device('/job:ps/replica:0/task:0/device:CPU:0'):
+    with tf.device(
+        tf.train.replica_device_setter(
+            worker_device=worker_device,
+            cluster=run_config.cluster_spec)):
       global_step = tf.Variable(0, False, dtype=tf.int32, name='global_step')
 
     batch_env = define_batch_env(
