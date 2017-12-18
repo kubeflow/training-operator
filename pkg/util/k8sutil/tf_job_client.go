@@ -21,7 +21,7 @@ import (
 	"github.com/tensorflow/k8s/pkg/spec"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"github.com/tensorflow/k8s/pkg/util"
 	log "github.com/golang/glog"
@@ -61,7 +61,7 @@ func NewTfJobClient() (*TfJobRestClient, error) {
 	config.GroupVersion = &spec.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
 
 	restcli, err := rest.RESTClientFor(config)
 	if err != nil {
