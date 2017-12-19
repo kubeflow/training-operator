@@ -6,44 +6,41 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"reflect"
-	"sync"
 
-	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
-	tfJobFake "github.com/tensorflow/k8s/pkg/util/k8sutil/fake"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+
 )
 
 func TestTBReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
-	jobSpec := &spec.TfJob{
-		Metadata: meta_v1.ObjectMeta{
+	jobSpec := &tfv1alpha1.TfJob{
+		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
 			UID:  "some-uid",
 		},
-		Spec: spec.TfJobSpec{
+		Spec: tfv1alpha1.TfJobSpec{
 			RuntimeId: "some-runtime",
-			ReplicaSpecs: []*spec.TfReplicaSpec{
+			ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
 				{
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(10),
 					Template:      &v1.PodTemplateSpec{},
-					TfReplicaType: spec.MASTER,
+					TfReplicaType: tfv1alpha1.MASTER,
 				},
 			},
-			TensorBoard: &spec.TensorBoardSpec{
+			TensorBoard: &tfv1alpha1.TensorBoardSpec{
 				LogDir: "/tmp/tensorflow",
 			},
 		},
 	}
 
-	stopC := make(chan struct{})
-
-	wg := &sync.WaitGroup{}
-	job, err := initJob(clientSet, &tfJobFake.TfJobClientFake{}, jobSpec, stopC, wg)
+	job, err := initJob(clientSet, &tfJobFake.Clientset{}, jobSpec)
 
 	if err != nil {
 		t.Fatalf("initJob failed: %v", err)
@@ -79,7 +76,7 @@ func TestTBReplicaSet(t *testing.T) {
 
 	// Check that a service was created.
 	// TODO: Change this List for a Get for clarity
-	sList, err := clientSet.CoreV1().Services(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
+	sList, err := clientSet.CoreV1().Services(replica.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Fatalf("List services error; %v", err)
 	}
@@ -108,7 +105,7 @@ func TestTBReplicaSet(t *testing.T) {
 	}
 
 	// Check that a deployment was created.
-	l, err := clientSet.ExtensionsV1beta1().Deployments(replica.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{})
+	l, err := clientSet.ExtensionsV1beta1().Deployments(replica.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Fatalf("List deployments error; %v", err)
 	}
