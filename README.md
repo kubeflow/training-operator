@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
 
+[![Coverage Status](https://coveralls.io/repos/github/tensorflow/k8s/badge.svg?branch=master)](https://coveralls.io/github/tensorflow/k8s?branch=master)
+
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 
 [Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
