@@ -236,8 +236,8 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 }
 
 // SetDefaults sets any unspecified values to defaults
-func (c *TfJobSpec) SetDefaults() error {
-	if c.TfImage == "" {
+func (c *TfJobSpec) SetDefaults(tfImage string) error {
+	if tfImage == "" {
 		c.TfImage = DefaultTFImage
 	}
 

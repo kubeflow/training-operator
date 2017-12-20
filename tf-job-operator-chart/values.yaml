@@ -1,6 +1,7 @@
 # Docker image to use.
 image: gcr.io/tf-on-k8s-dogfood/tf_operator:latest
 test_image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+tfImage: tensorflow/tensorflow:1.3.0
 
 # Which cloud provider is kubernetes hosted on.
 # Supported values are gke or azure.
