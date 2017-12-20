@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // TfJobList is a list of etcd clusters.
@@ -15,6 +16,8 @@ type TfJobList struct {
 	// Items is a list of third party objects
 	Items []TfJob `json:"items"`
 }
+
+func (c *TfJobList) DeepCopyObject() runtime.Object { return nil }
 
 // There is known issue with TPR in client-go:
 //   https://github.com/kubernetes/client-go/issues/8

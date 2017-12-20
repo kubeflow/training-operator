@@ -8,8 +8,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -37,17 +38,19 @@ type TfJob struct {
 	Status          TfJobStatus       `json:"status"`
 }
 
+func (c *TfJob) DeepCopyObject() runtime.Object { return nil }
+
 func (c *TfJob) AsOwner() metav1.OwnerReference {
 	trueVar := true
 	// TODO: In 1.6 this is gonna be "k8s.io/kubernetes/pkg/apis/meta/v1"
 	// Both api.OwnerReference and metatypes.OwnerReference are combined into that.
 	return metav1.OwnerReference{
-		APIVersion: c.APIVersion,
-		Kind:       c.Kind,
-		Name:       c.Metadata.Name,
-		UID:        c.Metadata.UID,
-		Controller: &trueVar,
-    BlockOwnerDeletion: &trueVar,
+		APIVersion:         c.APIVersion,
+		Kind:               c.Kind,
+		Name:               c.Metadata.Name,
+		UID:                c.Metadata.UID,
+		Controller:         &trueVar,
+		BlockOwnerDeletion: &trueVar,
 	}
 }
 
@@ -65,6 +68,9 @@ type TfJobSpec struct {
 	// TfImage defines the tensorflow docker image that should be used for Tensorboard
 	// and the default parameter server
 	TfImage string `json:"tfImage,omitempty"`
+
+	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
+	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
 }
 
 // TfReplicaType determines how a set of TF processes are handled.
@@ -109,9 +115,23 @@ type TensorBoardSpec struct {
 	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
+type TerminationPolicySpec struct {
+	// Chief policy waits for a particular process (which is the chief) to exit.
+	Chief *ChiefSpec `json:"chief,omitempty"`
+}
+
+type ChiefSpec struct {
+	ReplicaName  string `json:"replicaName"`
+	ReplicaIndex int    `json:"replicaIndex"`
+}
+
 // Validate checks that the TfJobSpec is valid.
 func (c *TfJobSpec) Validate() error {
+	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil  {
+		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
+	}
 	// Check that each replica has a TensorFlow container.
+	chiefExists := false
 	for _, r := range c.ReplicaSpecs {
 		found := false
 		if r.Template == nil && r.TfReplicaType != PS {
@@ -120,6 +140,10 @@ func (c *TfJobSpec) Validate() error {
 
 		if r.TfReplicaType == MASTER && *r.Replicas != 1 {
 			return errors.New("The MASTER must have Replicas = 1")
+		}
+
+		if r.TfReplicaType == TfReplicaType(c.TerminationPolicy.Chief.ReplicaName) {
+			chiefExists = true
 		}
 
 		if r.TfPort == nil {
@@ -151,6 +175,11 @@ func (c *TfJobSpec) Validate() error {
 			return fmt.Errorf("Replica type %v is missing a container named %v", r.TfReplicaType, TENSORFLOW)
 		}
 	}
+
+	if !chiefExists {
+		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
+	}
+
 	return nil
 }
 
@@ -212,8 +241,8 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 }
 
 // SetDefaults sets any unspecified values to defaults
-func (c *TfJobSpec) SetDefaults() error {
-	if c.TfImage == "" {
+func (c *TfJobSpec) SetDefaults(tfImage string) error {
+	if tfImage == "" {
 		c.TfImage = DefaultTFImage
 	}
 
@@ -238,6 +267,14 @@ func (c *TfJobSpec) SetDefaults() error {
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
 		if r.Template == nil && r.TfReplicaType == PS {
 			r.setDefaultPSPodTemplateSpec(c.TfImage)
+		}
+	}
+	if c.TerminationPolicy == nil {
+		c.TerminationPolicy = &TerminationPolicySpec{
+			Chief: &ChiefSpec{
+				ReplicaName:  "MASTER",
+				ReplicaIndex: 0,
+			},
 		}
 	}
 	return nil

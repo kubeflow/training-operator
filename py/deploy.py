@@ -33,15 +33,6 @@ def setup(args):
   chart = args.chart
   machine_type = "n1-standard-8"
 
-  # TODO(jlewi): Should make these command line arguments.
-  use_gpu = False
-  if use_gpu:
-    accelerator = "nvidia-tesla-k80"
-    accelerator_count = 1
-  else:
-    accelerator = None
-    accelerator_count = 0
-
   cluster_request = {
     "cluster": {
         "name": cluster_name,
@@ -58,19 +49,16 @@ def setup(args):
       }
   }
 
-  if bool(accelerator) != (accelerator_count > 0):
-    raise ValueError("If accelerator is set accelerator_count must be  > 0")
-
-  if accelerator:
+  if args.accelerators:
     # TODO(jlewi): Stop enabling Alpha once GPUs make it out of Alpha
     cluster_request["cluster"]["enableKubernetesAlpha"] = True
 
-    cluster_request["cluster"]["nodeConfig"]["accelerators"] = [
-      {
-          "acceleratorCount": accelerator_count,
-          "acceleratorType": accelerator,
-          },
-    ]
+    cluster_request["cluster"]["nodeConfig"]["accelerators"] = []
+    for accelerator_spec in args.accelerators:
+      accelerator_type, accelerator_count = accelerator_spec.split("=", 1)
+      cluster_request["cluster"]["nodeConfig"]["accelerators"].append(
+        {"acceleratorCount": accelerator_count,
+         "acceleratorType": accelerator_type, })
 
   util.create_cluster(gke, project, zone, cluster_request)
 
@@ -176,6 +164,12 @@ def main():  # pylint: disable=too-many-locals
   parser_setup = subparsers.add_parser(
     "setup",
       help="Setup a cluster for testing.")
+
+  parser_setup.add_argument(
+    "--accelerator",
+    dest="accelerators",
+    action="append",
+    help="Accelerator to add to the cluster. Should be of the form type=count.")
 
   parser_setup.set_defaults(func=setup)
   add_common_args(parser_setup)

@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
 
+[![Coverage Status](https://coveralls.io/repos/github/tensorflow/k8s/badge.svg?branch=master)](https://coveralls.io/github/tensorflow/k8s?branch=master)
+
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 
 [Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
@@ -58,7 +60,9 @@ TfJob requires Kubernetes >= 1.8
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
    helm install ${CHART} -n tf-job --wait --replace --set rbac.install=true,cloud=<gke or azure>
    ```
-
+   
+   * If you aren't running on GKE or Azure don't set cloud.
+   
    For non-RBAC enabled clusters:
    ```
    CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
@@ -145,6 +149,7 @@ metadata:
 data:
   controller_config_file.yaml: |
     accelerators:
+      grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
       alpha.kubernetes.io/nvidia-gpu:
         volumes:
           - name: <volume-name> # Desired name of the volume, ex: nvidia-libs
@@ -161,7 +166,7 @@ data:
 Then simply create the `ConfigMap` and install the Helm chart (**the order matters**) without specifying any cloud provider:
 
 ```
-kubectl create configmap tf-job-operator-config --from-file <your-configmap-path>
+kubectl create configmap tf-job-operator-config --from-file <your-configmap-path> --dry-run -o yaml | kubectl replace configmap tf-job-operator-config -f -
 helm install ${CHART} -n tf-job --wait --replace
 ```
 
@@ -361,7 +366,7 @@ spec:
 
 The TfJob operator will create a service named
 **tensorboard-$RUNTIME_ID** for your job. You can connect to it
-using the Kubernetes API Server porxy as follows
+using the Kubernetes API Server proxy as follows
 
 Start the K8s proxy
 ```

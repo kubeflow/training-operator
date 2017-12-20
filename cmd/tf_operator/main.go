@@ -13,16 +13,16 @@ import (
 	"github.com/tensorflow/k8s/pkg/controller"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil/election"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil/election/resourcelock"
 	"github.com/tensorflow/k8s/version"
+	election "k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	log "github.com/golang/glog"
 
 	"io/ioutil"
 
 	"github.com/tensorflow/k8s/pkg/spec"
-	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 )
 
@@ -123,11 +123,11 @@ func main() {
 	// TODO: replace with to client-go once leader election pacakge is imported
 	// see https://github.com/kubernetes/client-go/issues/28
 	rl := &resourcelock.EndpointsLock{
-		EndpointsMeta: v1.ObjectMeta{
+		EndpointsMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "tf-operator",
 		},
-		Client: k8sutil.MustNewKubeClient(),
+		Client: k8sutil.MustNewKubeClient().CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: &record.FakeRecorder{},

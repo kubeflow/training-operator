@@ -8,12 +8,12 @@ import (
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/spec"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 const TbPort = 6006
@@ -50,9 +50,9 @@ func (s *TBReplicaSet) Create() error {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   s.jobName(),
 			Labels: s.Labels(),
-      OwnerReferences: []meta_v1.OwnerReference{
-        s.Job.job.AsOwner(),
-      },
+			OwnerReferences: []meta_v1.OwnerReference{
+				s.Job.job.AsOwner(),
+			},
 		},
 		Spec: v1.ServiceSpec{
 			Type:     st,
@@ -85,9 +85,9 @@ func (s *TBReplicaSet) Create() error {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   s.jobName(),
 			Labels: s.Labels(),
-      OwnerReferences: []meta_v1.OwnerReference{
-        s.Job.job.AsOwner(),
-      },
+			OwnerReferences: []meta_v1.OwnerReference{
+				s.Job.job.AsOwner(),
+			},
 		},
 		Spec: v1beta1.DeploymentSpec{
 			Selector: &meta_v1.LabelSelector{
@@ -178,10 +178,10 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 
 func (s *TBReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
-		"tensorflow.org":  "",
-		"runtime_id": s.Job.job.Spec.RuntimeId,
-		"app":        "tensorboard",
-		"tf_job_name": s.Job.job.Metadata.Name,
+		"tensorflow.org": "",
+		"runtime_id":     s.Job.job.Spec.RuntimeId,
+		"app":            "tensorboard",
+		"tf_job_name":    s.Job.job.Metadata.Name,
 	})
 }
 

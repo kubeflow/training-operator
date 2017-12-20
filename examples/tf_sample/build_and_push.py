@@ -13,7 +13,7 @@ import jinja2
 def GetGitHash():
   # The image tag is based on the githash.
   git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-  git_hash = git_hash.strip()
+  git_hash = git_hash.strip().decode("utf-8")
   modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
   untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"])
