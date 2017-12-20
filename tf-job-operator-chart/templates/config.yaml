@@ -7,6 +7,7 @@ metadata:
   name: tf-job-operator-config
 data:
   controller_config_file.yaml: |
+    tfImage: {{ .Values.tfImage }}
     grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
     accelerators:
       alpha.kubernetes.io/nvidia-gpu:
@@ -27,14 +28,6 @@ metadata:
   name: tf-job-operator-config
 data:
   controller_config_file.yaml: |
+    tfImage: {{ .Values.tfImage }}
     grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
-    accelerators:
-      alpha.kubernetes.io/nvidia-gpu:
-        volumes:
-          - name: nvidia-libraries
-            mountPath: /usr/local/nvidia/lib64 # This path is special; it is expected to be present in `/etc/ld.so.conf` inside the container image.
-            hostPath: /home/kubernetes/bin/nvidia/lib
-          - name: nvidia-debug-tools # optional
-            mountPath: /usr/local/bin/nvidia
-            hostPath: /home/kubernetes/bin/nvidia/bin
 {{ end }}

@@ -11,14 +11,10 @@ ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
+install dependencies, `-v` will ignore subpackage vendor
 ```sh
-glide install
-rm -rf  vendor/k8s.io/apiextensions-apiserver/vendor
+glide install -v
 ```
-
-  * The **rm** is needed to remove the vendor directory of dependencies
-    that also vendor dependencies as these produce conflicts
-    with the versions vendored by mlkube
 
 Build it
 

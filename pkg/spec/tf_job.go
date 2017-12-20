@@ -8,8 +8,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/tensorflow/k8s/pkg/util"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -36,6 +37,8 @@ type TfJob struct {
 	Spec            TfJobSpec         `json:"spec"`
 	Status          TfJobStatus       `json:"status"`
 }
+
+func (c *TfJob) DeepCopyObject() runtime.Object { return nil }
 
 func (c *TfJob) AsOwner() metav1.OwnerReference {
 	trueVar := true
@@ -238,8 +241,8 @@ func (c *TfJobSpec) ConfigureAccelerators(accelerators map[string]AcceleratorCon
 }
 
 // SetDefaults sets any unspecified values to defaults
-func (c *TfJobSpec) SetDefaults() error {
-	if c.TfImage == "" {
+func (c *TfJobSpec) SetDefaults(tfImage string) error {
+	if tfImage == "" {
 		c.TfImage = DefaultTFImage
 	}
 
@@ -269,7 +272,7 @@ func (c *TfJobSpec) SetDefaults() error {
 	if c.TerminationPolicy == nil {
 		c.TerminationPolicy = &TerminationPolicySpec{
 			Chief: &ChiefSpec{
-				ReplicaName: "MASTER",
+				ReplicaName:  "MASTER",
 				ReplicaIndex: 0,
 			},
 		}
