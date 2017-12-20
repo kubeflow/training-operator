@@ -132,12 +132,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 def install_go_deps(src_dir):
   """Run glide to install dependencies."""
   # Install dependencies
-  run(["glide", "install"], cwd=src_dir)
-
-  # We need to remove the vendored dependencies of apiextensions otherwise we
-  # get type conflicts.
-  shutil.rmtree(os.path.join(src_dir,
-                             "vendor/k8s.io/apiextensions-apiserver/vendor"))
+  run(["glide", "install","--strip-vendor"], cwd=src_dir)
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
