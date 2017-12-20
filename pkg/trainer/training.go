@@ -160,8 +160,9 @@ func (j *TrainingJob) deleteResources() error {
 	return nil
 }
 
-func (j *TrainingJob) GetStatus() (spec.State, []*spec.TfReplicaStatus, error) {
-	state := spec.StateUnknown
+func (j *TrainingJob) GetStatus() (spec.ReplicaState, []*spec.TfReplicaStatus, error) {
+	chief := j.job.Spec.TerminationPolicy.Chief
+	chiefState := spec.ReplicaStateUnknown
 	replicaStatuses := make([]*spec.TfReplicaStatus, 0)
 
 	// The state for each replica.
@@ -178,24 +179,12 @@ func (j *TrainingJob) GetStatus() (spec.State, []*spec.TfReplicaStatus, error) {
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		// If any replicas are failed mark job as failed.
-		if rStatus.State == spec.ReplicaStateFailed {
-			state = spec.StateFailed
+		if string(r.Spec.TfReplicaType) == string(chief.ReplicaName) {
+			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
 		}
 	}
 
-	if v, ok := replicaSetStates[spec.MASTER]; ok && v == spec.ReplicaStateSucceeded {
-		state = spec.StateSucceeded
-		return state, replicaStatuses, nil
-	}
-
-	if v, ok := replicaSetStates[spec.MASTER]; ok && v == spec.ReplicaStateFailed {
-		state = spec.StateFailed
-		return state, replicaStatuses, nil
-	}
-
-	state = spec.StateRunning
-	return state, replicaStatuses, nil
+	return chiefState, replicaStatuses, nil
 }
 
 // isRetryableTerminationState returns true if a container terminated in a state
@@ -373,11 +362,11 @@ func (j *TrainingJob) reconcile(config *spec.ControllerConfig) {
 			log.Errorf("GetStatus() for job %v returned error: %v", j.job.Metadata.Name, err)
 		}
 		// TODO(jlewi): We should update the Phase if we detect the job is done.
-		if state == spec.StateFailed {
+		if state == spec.ReplicaStateFailed {
 			log.Errorf("Master failed Job: %v.", j.job.Metadata.Name)
 			j.status.SetPhase(spec.TfJobPhaseDone)
 			j.status.SetState(spec.StateFailed)
-		} else if state == spec.StateSucceeded {
+		} else if state == spec.ReplicaStateSucceeded {
 			log.Infof("Master succeeded Job: %v.", j.job.Metadata.Name)
 			j.status.SetPhase(spec.TfJobPhaseDone)
 			j.status.SetState(spec.StateSucceeded)
