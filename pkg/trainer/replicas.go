@@ -406,6 +406,40 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 	return spec.ReplicaStateUnknown
 }
 
+func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) (spec.ReplicaState) {
+	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
+
+	if err != nil {
+		return spec.ReplicaStateUnknown
+	}
+
+	if j.Status.Succeeded >= 1 {
+		return spec.ReplicaStateSucceeded
+	}
+
+	labels := s.Labels()
+	labels["task_index"] = fmt.Sprintf("%v", index)
+	selector, err := labels.ToSelector()
+	if err != nil {
+		log.Errorf("labels.ToSelector() error; %v", err)
+		return spec.ReplicaStateFailed
+	}
+
+	// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
+	l, err := s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{
+		// TODO(jlewi): Why isn't the label selector working?
+		LabelSelector: selector,
+	})
+
+	if err != nil {
+		// TODO(jlewi): Are there errors that should be treated as retryable errors?
+		return spec.ReplicaStateFailed
+	}
+
+	status := replicaStatusFromPodList(*l, spec.TENSORFLOW)
+	return status
+}
+
 // Status returns the status of the replica set.
 func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 
@@ -425,42 +459,7 @@ func (s *TFReplicaSet) GetStatus() (spec.TfReplicaStatus, error) {
 	}
 
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-
-		j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
-
-		if err != nil {
-			increment(spec.ReplicaStateUnknown)
-			continue
-		}
-
-		if j.Status.Succeeded >= 1 {
-			increment(spec.ReplicaStateSucceeded)
-			continue
-		}
-
-		labels := s.Labels()
-		labels["task_index"] = fmt.Sprintf("%v", index)
-		selector, err := labels.ToSelector()
-		if err != nil {
-			log.Errorf("labels.ToSelector() error; %v", err)
-			increment(spec.ReplicaStateFailed)
-			continue
-		}
-
-		// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
-		l, err := s.ClientSet.CoreV1().Pods(s.Job.job.Metadata.Namespace).List(meta_v1.ListOptions{
-			// TODO(jlewi): Why isn't the label selector working?
-			LabelSelector: selector,
-		})
-
-		if err != nil {
-			// TODO(jlewi): Are there errors that should be treated as retryable errors?
-			increment(spec.ReplicaStateFailed)
-			continue
-		}
-
-		status := replicaStatusFromPodList(*l, spec.TENSORFLOW)
-		increment(status)
+		increment(s.GetSingleReplicaStatus(index))
 	}
 
 	// Determine the overall status for the replica set based on the status of the individual
