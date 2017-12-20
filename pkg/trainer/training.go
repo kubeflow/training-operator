@@ -256,7 +256,7 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 			return nil
 		}
 
-		err := j.job.Spec.SetDefaults()
+		err := j.job.Spec.SetDefaults(config.TfImage)
 		if err != nil {
 			return fmt.Errorf("there was a problem setting defaults for job spec: %v", err)
 		}
