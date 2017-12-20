@@ -362,11 +362,11 @@ func (j *TrainingJob) reconcile(config *spec.ControllerConfig) {
 			log.Errorf("GetStatus() for job %v returned error: %v", j.job.Metadata.Name, err)
 		}
 		// TODO(jlewi): We should update the Phase if we detect the job is done.
-		if state == spec.StateFailed {
+		if state == spec.ReplicaStateFailed {
 			log.Errorf("Master failed Job: %v.", j.job.Metadata.Name)
 			j.status.SetPhase(spec.TfJobPhaseDone)
 			j.status.SetState(spec.StateFailed)
-		} else if state == spec.StateSucceeded {
+		} else if state == spec.ReplicaStateSucceeded {
 			log.Infof("Master succeeded Job: %v.", j.job.Metadata.Name)
 			j.status.SetPhase(spec.TfJobPhaseDone)
 			j.status.SetState(spec.StateSucceeded)

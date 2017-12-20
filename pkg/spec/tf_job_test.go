@@ -463,7 +463,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		c.in.SetDefaults()
+		c.in.SetDefaults("")
 		if err := c.in.Validate(); (err != nil) != c.expectingError {
 			t.Errorf("unexpected validation result: %v", err)
 		}
