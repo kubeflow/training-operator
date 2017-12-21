@@ -48,6 +48,11 @@ GCS_RUNS_PATH = "gs://mlkube-testing-airflow/runs"
 GCB_PROJECT = "mlkube-testing"
 ZONE = "us-east1-d"
 
+
+# The directory baked into the container that contains a copy of py.release
+# that can be used to clone the repo.
+BOOTSTRAP_DIR = "/opt/tensorflow_k8s"
+
 def run_path(dag_id, run_id):
   return os.path.join(GCS_RUNS_PATH, dag_id.replace(":", "_"),
                       run_id.replace(":", "_"))
@@ -69,23 +74,19 @@ def run(ti, *extra_args, **kwargs):
   env = kwargs.get("env", os.environ)
   env = env.copy()
 
-  # The directory baked into the container that contains a copy of py.release
-  # that can be used to clone the repo.
-  bootstrap_dir = "/opt/tensorflow_k8s"
+  python_path = set(env.get("PYTHONPATH", "").split(":"))
 
-  python_path = set(env.get("PYTHONPATH", bootstrap_dir).split(":"))
-
-  # Ensure the bootstrap_dir isn't in the PYTHONPATH as this could cause
+  # Ensure the BOOTSTRAP_DIR isn't in the PYTHONPATH as this could cause
   # unexpected issues by unexpectedly pulling the version baked into the
   # container.
-  if bootstrap_dir in python_path:
-    logging.info("Removing %s from PYTHONPATH", bootstrap_dir)
-    python_path.remove(bootstrap_dir)
+  if BOOTSTRAP_DIR in python_path:
+    logging.info("Removing %s from PYTHONPATH", BOOTSTRAP_DIR)
+    python_path.remove(BOOTSTRAP_DIR)
 
   src_dir = ti.xcom_pull(None, key="src_dir")
 
   if not src_dir:
-    src_dir = bootstrap_dir
+    src_dir = BOOTSTRAP_DIR
 
   python_path.add(src_dir)
 
