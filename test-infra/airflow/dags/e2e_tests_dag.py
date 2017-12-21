@@ -79,6 +79,7 @@ def run(ti, *extra_args, **kwargs):
   # unexpected issues by unexpectedly pulling the version baked into the
   # container.
   if bootstrap_dir in python_path:
+    logging.info("Removing %s from PYTHONPATH", bootstrap_dir)
     python_path.remove(bootstrap_dir)
 
   src_dir = ti.xcom_pull(None, key="src_dir")
@@ -118,7 +119,6 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     conf = {}
   logging.info("conf=%s", conf)
 
-
   # Pick the directory the top level directory to use for this run of the
   # pipeline.
   # This should be a persistent location that is accessible from subsequent
@@ -152,7 +152,7 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     if commit:
       args.append("--commit=" + commit)
 
-  run(ti, args, use_print=True)
+  run(ti, args, cwd=BOOTSTRAP_DIR, use_print=True)
 
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
