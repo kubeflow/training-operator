@@ -152,7 +152,6 @@ RUN mkdir -p /opt/tensorflow_k8s
 COPY py /opt/tensorflow_k8s/py/
 RUN chmod -R a+rw /opt/tensorflow_k8s
 
-ENV PYTHONPATH $PYTHONAPTH:/opt/tensorflow_k8s
 ENV PATH $PATH:/usr/local/go/bin
 
 COPY dags/ /usr/local/airflow/dags

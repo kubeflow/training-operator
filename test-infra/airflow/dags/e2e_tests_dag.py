@@ -107,7 +107,10 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     if commit:
       args.append("--commit=" + commit)
 
-  util.run(args, use_print=True)
+  # The directory baked into the container that contains a copy of py.release
+  # that can be used to clone the repo.
+  bootstrap_dir = "/opt/tensorflow_k8s"
+  util.run(args, cwd=bootstrap_dir, use_print=True)
 
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
@@ -157,7 +160,7 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   args.append("--project=" + GCB_PROJECT)
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun, env=newenv)
+  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun, env=newenv)
 
   # Read the output yaml and publish relevant values to xcom.
   if not dryrun:
@@ -209,7 +212,8 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   args.append("--accelerator=nvidia-tesla-k80=1")
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun)
+  src_dir = ti.xcom_pull(None, key="src_dir")
+  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
 
   values = {
     "cluster": cluster,
@@ -242,7 +246,8 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun)
+  src_dir = ti.xcom_pull(None, key="src_dir")
+  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
 
 # TODO(jlewi): We should make this a function that will generate a callable
 # for different configs like we do for py_checks.
@@ -279,7 +284,7 @@ def run_gpu_test(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True)
+  util.run(args, use_print=True, cwd=src_dir)
 
 def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
@@ -306,7 +311,8 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, dryrun=dryrun)
+  src_dir = ti.xcom_pull(None, key="src_dir")
+  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
 
 def py_checks_gen(command):
   """Create a callable to run the specified py_check command."""
@@ -337,7 +343,7 @@ def py_checks_gen(command):
 
     # We want subprocess output to bypass logging module otherwise multiline
     # output is squashed together.
-    util.run(args, use_print=True, dryrun=dryrun)
+    util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
 
   return run_py_checks
 
