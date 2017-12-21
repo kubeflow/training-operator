@@ -37,6 +37,13 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
 
   if not env:
     env = os.environ
+  else:
+    keys = sorted(env.keys())
+
+    lines = []
+    for k in keys:
+      lines.append("{0}={1}".format(k, env[k]))
+    logging.info("Running: Environment:\n%s", "\n".join(lines))
 
   try:
     if dryrun:
