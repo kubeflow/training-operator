@@ -11,11 +11,12 @@ import logging
 import os
 import tempfile
 import uuid
+import sys
 
 from airflow import DAG
 from airflow.operators import PythonOperator
-from py import util
 from google.cloud import storage  # pylint: disable=no-name-in-module
+
 import six
 import yaml
 
@@ -56,6 +57,50 @@ class FakeDagrun(object):
     self.dag_id = "tf_k8s_tests"
     self.run_id = "test_run"
     self.conf = {}
+
+def add_repo_to_path(ti):
+  """Helper function for adding the cloned repo to the python path."""
+  src_dir = ti.xcom_pull(None, key="src_dir")
+
+  sys.path.append(src_dir)
+
+def run(ti, *extra_args, **kwargs):
+  # Set the PYTHONPATH
+  env = kwargs.get("env", os.environ)
+  env = env.copy()
+
+  # The directory baked into the container that contains a copy of py.release
+  # that can be used to clone the repo.
+  bootstrap_dir = "/opt/tensorflow_k8s"
+
+  python_path = set(env.get("PYTHONPATH", bootstrap_dir).split(":"))
+
+  # Ensure the bootstrap_dir isn't in the PYTHONPATH as this could cause
+  # unexpected issues by unexpectedly pulling the version baked into the
+  # container.
+  if bootstrap_dir in python_path:
+    python_path.remove(bootstrap_dir)
+
+  src_dir = ti.xcom_pull(None, key="src_dir")
+
+  if not src_dir:
+    src_dir = bootstrap_dir
+
+  python_path.add(src_dir)
+
+  env["PYTHONPATH"] = ":".join(python_path)
+
+  # We need to delay the import of util because for all steps (except the
+  # clone step) we want to use the version checked out from the github.
+  # But airflow needs be able to import the module e2e_tests_daga.py
+  from py import util
+
+  kwargs["env"] = env
+
+  # Printing out the file location of util should help us debug issues
+  # with the path.
+  logging.info("Using util located at %s", util.__file__)
+  util.run(*extra_args, **kwargs)
 
 def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   # Create a temporary directory suitable for checking out and building the
@@ -107,10 +152,7 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     if commit:
       args.append("--commit=" + commit)
 
-  # The directory baked into the container that contains a copy of py.release
-  # that can be used to clone the repo.
-  bootstrap_dir = "/opt/tensorflow_k8s"
-  util.run(args, cwd=bootstrap_dir, use_print=True)
+  run(ti, args, use_print=True)
 
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
@@ -124,6 +166,11 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
     # When running via airflow test dag_run isn't set
     logging.warn("Using fake dag_run")
     dag_run = FakeDagrun()
+
+  # We need to delay importing util because we want to use the checked out
+  # code.
+  add_repo_to_path(ti)
+  from py import util
 
   logging.info("dag_id: %s", dag_run.dag_id)
   logging.info("run_id: %s", dag_run.run_id)
@@ -160,7 +207,7 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   args.append("--project=" + GCB_PROJECT)
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun, env=newenv)
+  run(ti, args, use_print=True, dryrun=dryrun, env=newenv)
 
   # Read the output yaml and publish relevant values to xcom.
   if not dryrun:
@@ -212,8 +259,7 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   args.append("--accelerator=nvidia-tesla-k80=1")
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  src_dir = ti.xcom_pull(None, key="src_dir")
-  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
+  run(ti, args, use_print=True, dryrun=dryrun)
 
   values = {
     "cluster": cluster,
@@ -246,8 +292,7 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  src_dir = ti.xcom_pull(None, key="src_dir")
-  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
+  run(ti, args, use_print=True, dryrun=dryrun)
 
 # TODO(jlewi): We should make this a function that will generate a callable
 # for different configs like we do for py_checks.
@@ -284,7 +329,7 @@ def run_gpu_test(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  util.run(args, use_print=True, cwd=src_dir)
+  run(ti, args, use_print=True)
 
 def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
@@ -311,8 +356,7 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  src_dir = ti.xcom_pull(None, key="src_dir")
-  util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
+  run(ti, args, use_print=True, dryrun=dryrun)
 
 def py_checks_gen(command):
   """Create a callable to run the specified py_check command."""
@@ -343,7 +387,7 @@ def py_checks_gen(command):
 
     # We want subprocess output to bypass logging module otherwise multiline
     # output is squashed together.
-    util.run(args, cwd=src_dir, use_print=True, dryrun=dryrun)
+    run(ti, args, use_print=True, dryrun=dryrun)
 
   return run_py_checks
 
