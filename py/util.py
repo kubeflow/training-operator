@@ -37,6 +37,13 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
 
   if not env:
     env = os.environ
+  else:
+    keys = sorted(env.keys())
+
+    lines = []
+    for k in keys:
+      lines.append("{0}={1}".format(k, env[k]))
+    logging.info("Running: Environment:\n%s", "\n".join(lines))
 
   try:
     if dryrun:
@@ -132,7 +139,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 def install_go_deps(src_dir):
   """Run glide to install dependencies."""
   # Install dependencies
-  run(["glide", "install","--strip-vendor"], cwd=src_dir)
+  run(["glide", "install", "--strip-vendor"], cwd=src_dir)
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
