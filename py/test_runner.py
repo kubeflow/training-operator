@@ -67,6 +67,9 @@ def run_test(args):
   except util.TimeoutError:
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
         name, namespace)
+  except Exception as e: # pylint: disable-msg=broad-except
+    # We want to catch all exceptions because we warm the test as failed.
+    t.failure = e.message
   finally:
     t.time = time.time() - start
     if args.junit_path:
