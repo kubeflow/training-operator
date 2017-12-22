@@ -82,7 +82,7 @@ RUN set -ex \
     && git checkout f87d8aca93cf2c6df21bea7b13b6703d91f09865 \
     && python setup.py install \
     && pip install --upgrade six pyyaml google-api-python-client \
-       google-cloud-storage google-auth-httplib2 pylint kubernetes mock retrying \
+       google-cloud-storage google-auth-httplib2 pylint kubernetes==4.0.0 mock retrying \
     # Airflow 1.9.0rc02 requires funcsigs 1.0.0; newer versions cause airflow
     # scheduler to complain; it looks like mock might pull in a newer version.
     # so we force a particular version.
