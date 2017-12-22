@@ -13,8 +13,13 @@ from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import prow  # pylint: disable=ungrouped-imports
 from py import util  # pylint: disable=ungrouped-imports
 import requests
+from retrying import retry
 
 E2E_DAG = "tf_k8s_tests"
+
+def is_retryable_error(exception):
+  """Return True if we should retry; False otherwise"""
+  return isinstance(exception, requests.exceptions.ReadTimeout)
 
 # Currently we don't use airflow/api/client because there's not actually much
 # functionality in the client. So rather than take a dependency on airflow
@@ -40,6 +45,12 @@ class AirflowClient(object):
     self._credentials = credentials
     self._verify = verify
 
+
+  # Use exponential backoff with a max of 10 seconds between retries.
+  # Give up a after a minute.
+  @retry(retry_on_exception=is_retryable_error,
+         wait_exponential_multiplier=1000, wait_exponential_max=10000,
+         stop_max_delay=60*1000)
   def _request(self, url, method="GET", json_body=None, timeout=10):
     """Request a given URL.
 
