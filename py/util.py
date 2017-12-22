@@ -18,7 +18,7 @@ import google.auth.transport.requests
 from googleapiclient import errors
 from kubernetes import client as k8s_client
 from kubernetes.config import kube_config
-from kubernetes.client import configuration
+from kubernetes.client import configuration as kubernetes_configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -413,8 +413,12 @@ def _refresh_credentials():
 # TODO(jlewi): This is a work around for
 # https://github.com/kubernetes-incubator/client-python/issues/339.
 # Consider getting rid of this and adopting the solution to that issue.
+#
+# This function is based on
+# https://github.com/kubernetes-client/python-base/blob/master/config/kube_config.py#L331
+# we modify it though so that we can pass through the function to get credentials.
 def load_kube_config(config_file=None, context=None,
-                     client_configuration=configuration,
+                     client_configuration=None,
                      persist_config=True,
                      get_google_credentials=_refresh_credentials,
                      **kwargs):
@@ -440,9 +444,15 @@ def load_kube_config(config_file=None, context=None,
         yaml.safe_dump(config_map, f, default_flow_style=False)
     config_persister = _save_kube_config
 
-  kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
+  loader = kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
     config_file, active_context=context,
-      client_configuration=client_configuration,
-        config_persister=config_persister,
-        get_google_credentials=get_google_credentials,
-        **kwargs).load_and_set()
+    config_persister=config_persister,
+    get_google_credentials=get_google_credentials,
+    **kwargs)
+
+  if client_configuration is None:
+    config = type.__call__(kubernetes_configuration.Configuration)
+    loader.load_and_set(config)
+    kubernetes_configuration.Configuration.set_default(config)
+  else:
+    loader.load_and_set(client_configuration)
