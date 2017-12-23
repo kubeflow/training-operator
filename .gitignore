@@ -2,6 +2,9 @@
 # only so we exclude them.
 bin/
 
+node_modules/
+build/
+
 .vscode/
 
 # Compiled python files.

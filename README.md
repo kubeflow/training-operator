@@ -99,6 +99,25 @@ TfJob requires Kubernetes >= 1.8
     PASSED: tf-job-tfjob-test-pqxkwk
     ```
 
+### Installing `tensorflow/k8s`'s Dashboard
+
+> **Caution: the dashboard is in very early development stage!**
+
+`tensorflow/k8s` also includes a dashboard allowing you to monitor and create `TfJobs` through a web UI.  
+To deploy the dashboard, set `dashboard.install` to `true`.  
+Note that by default the dashboard will only be accessible from within the cluster or by proxying, as the default `ServiceType` is `ClusterIP`. 
+If you wish to expose the dashboard through an external IP, set `dashboard.serviceType` to `LoadBalancer`.
+
+So, for example, if you want to enable the dashboard, and also want to expose it externally, you would do:
+
+```
+CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-operator-chart-latest.tgz
+helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>,dashboard.install=true,dashboard.serviceType=LoadBalancer
+```
+
+This sould create a service named `tf-job-dashboard` as well as an additional deployment named `tf-job-dashboard`.
+
+
 ### Configuring the CRD
 
 The CRD must be configured properly to work with your specific Kubernetes cluster.
