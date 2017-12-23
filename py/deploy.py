@@ -86,8 +86,11 @@ def setup(args):
     start = time.time()
     util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
               "--set", "rbac.install=true,cloud=gke"])
+    util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
     t.failure = "helm install failed;\n" + e.output
+  except util.TimeoutError as e:
+    t.failure = e.message
   finally:
     t.time = time.time() - start
     t.name = "helm-tfjob-install"

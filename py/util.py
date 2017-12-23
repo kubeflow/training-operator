@@ -18,7 +18,7 @@ import google.auth.transport.requests
 from googleapiclient import errors
 from kubernetes import client as k8s_client
 from kubernetes.config import kube_config
-from kubernetes.client import configuration
+from kubernetes.client import configuration as kubernetes_configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
@@ -248,21 +248,35 @@ def configure_kubectl(project, zone, cluster_name):
   run(["gcloud", "--project=" + project, "container",
        "clusters", "--zone=" + zone, "get-credentials", cluster_name])
 
-def wait_for_tiller_to_be_ready(api_client):
+def wait_for_deployment(api_client, namespace, name):
+  """Wait for deployment to be ready.
+
+  Args:
+    api_client: K8s api client to use.
+    namespace: The name space for the deployment.
+    name: The name of the deployment):
+
+  Raises:
+    TimeoutError: If timeout waiting for deployment to be ready.
+  """
   # Wait for tiller to be ready
   end_time = datetime.datetime.now() + datetime.timedelta(minutes=2)
 
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
 
   while datetime.datetime.now() < end_time:
-    deploy = ext_client.read_namespaced_deployment("tiller-deploy", "kube-system")
+    deploy = ext_client.read_namespaced_deployment(name, namespace)
     if deploy.status.ready_replicas >= 1:
-      logging.info("tiller is ready")
+      logging.info("Deployment %s in namespace %s is ready", name, namespace)
       return
-    logging.info("Waiting for tiller")
+    logging.info("Waiting for deployment %s in namespace %s",  name, namespace)
     time.sleep(10)
 
-  raise ValueError("Timeout waiting for tiller")
+  logging.error("Timeout waiting for deployment %s in namespace %s to be "
+                "ready", name, namespace)
+  raise TimeoutError(
+      "Timeout waiting for deployment {0} in namespace {1}".format(
+      name, namespace))
 
 def install_gpu_drivers(api_client):
   """Install GPU drivers on the cluster.
@@ -372,7 +386,7 @@ def setup_cluster(api_client):
 
   if use_gpus:
     install_gpu_drivers(api_client)
-  wait_for_tiller_to_be_ready(api_client)
+  wait_for_deployment(api_client, "kube-system", "tiller-deploy")
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
@@ -399,8 +413,12 @@ def _refresh_credentials():
 # TODO(jlewi): This is a work around for
 # https://github.com/kubernetes-incubator/client-python/issues/339.
 # Consider getting rid of this and adopting the solution to that issue.
+#
+# This function is based on
+# https://github.com/kubernetes-client/python-base/blob/master/config/kube_config.py#L331
+# we modify it though so that we can pass through the function to get credentials.
 def load_kube_config(config_file=None, context=None,
-                     client_configuration=configuration,
+                     client_configuration=None,
                      persist_config=True,
                      get_google_credentials=_refresh_credentials,
                      **kwargs):
@@ -426,9 +444,15 @@ def load_kube_config(config_file=None, context=None,
         yaml.safe_dump(config_map, f, default_flow_style=False)
     config_persister = _save_kube_config
 
-  kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
+  loader = kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
     config_file, active_context=context,
-      client_configuration=client_configuration,
-        config_persister=config_persister,
-        get_google_credentials=get_google_credentials,
-        **kwargs).load_and_set()
+    config_persister=config_persister,
+    get_google_credentials=get_google_credentials,
+    **kwargs)
+
+  if client_configuration is None:
+    config = type.__call__(kubernetes_configuration.Configuration)
+    loader.load_and_set(config)
+    kubernetes_configuration.Configuration.set_default(config)
+  else:
+    loader.load_and_set(client_configuration)
