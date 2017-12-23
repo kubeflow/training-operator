@@ -6,7 +6,12 @@ tfImage: tensorflow/tensorflow:1.3.0
 # Which cloud provider is kubernetes hosted on.
 # Supported values are gke or azure.
 # Leave blank to use a default, non-cloud specific config.
-cloud:
+cloud: 
+
+## Wether the dashboard should be installed and the kind of service to use
+dashboard: 
+  install: false
+  serviceType: ClusterIP
 
 config:
   configmap:

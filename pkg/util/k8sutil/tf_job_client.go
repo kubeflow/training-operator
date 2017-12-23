@@ -18,13 +18,13 @@ import (
 	"net/http"
 	"strings"
 
+	log "github.com/golang/glog"
 	"github.com/tensorflow/k8s/pkg/spec"
+	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"github.com/tensorflow/k8s/pkg/util"
-	log "github.com/golang/glog"
 )
 
 // TFJobClient defines an interface for working with TfJob CRDs.
