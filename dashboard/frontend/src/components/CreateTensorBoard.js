@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField";
 import SelectField from "material-ui/SelectField";
 import MenuItem from "material-ui/MenuItem";
@@ -77,5 +78,9 @@ class CreateTensorBoard extends Component {
     return { ...state, serviceType: st };
   }
 }
+
+CreateTensorBoard.propTypes = {
+  setTensorBoardSpec: PropTypes.func.isRequired
+};
 
 export default CreateTensorBoard;
