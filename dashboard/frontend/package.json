@@ -21,6 +21,7 @@
   },
   "license": "Apache-2.0",
   "lint-staged": {
+<<<<<<< HEAD
     "*.{js,jsx,json,css}": ["prettier --write", "git add"],
     "*.js": ["eslint"]
   },
@@ -30,6 +31,14 @@
     "eslint-config-prettier": "^2.9.0",
     "eslint-plugin-prettier": "^2.4.0",
     "eslint-plugin-react": "^7.5.1",
+=======
+    "*.{js,jsx,json,css,md}": ["prettier --write", "git add"],
+    "*.js": ["eslint"]
+  },
+  "devDependencies": {
+    "eslint": "^4.14.0",
+    "eslint-plugin-prettier": "^2.4.0",
+>>>>>>> 0b6a046... feat(lint): use prettier and husky/lint-staged to enforce code style
     "husky": "^0.14.3",
     "lint-staged": "^6.0.0",
     "prettier": "^1.9.2"
