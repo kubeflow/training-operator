@@ -1,5 +1,5 @@
-import React from 'react';
-import JobSummary from './JobSummary';
+import React from "react";
+import JobSummary from "./JobSummary";
 
 const jobsStyle = {
   display: "flex",
@@ -12,6 +12,6 @@ const JobList = ({ jobs }) => {
       {jobs.map((v, k) => <JobSummary key={k} job={v} />)}
     </div>
   );
-}
+};
 
 export default JobList;

@@ -25,6 +25,7 @@
     "*.js": ["eslint"]
   },
   "devDependencies": {
+    "babel-eslint": "^8.1.0",
     "eslint": "^4.14.0",
     "eslint-config-prettier": "^2.9.0",
     "eslint-plugin-prettier": "^2.4.0",
