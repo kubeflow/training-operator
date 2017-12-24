@@ -21,7 +21,7 @@
   },
   "license": "Apache-2.0",
   "lint-staged": {
-    "*.{js,jsx,json,css,md}": ["prettier --write", "git add"],
+    "*.{js,jsx,json,css}": ["prettier --write", "git add"],
     "*.js": ["eslint"]
   },
   "devDependencies": {
