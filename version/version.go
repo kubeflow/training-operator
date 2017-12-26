@@ -14,6 +14,5 @@ package version
 
 var (
 	Version = "0.3.0+git"
-	// TODO(jlewi): Need to figure out how to bake in the git version.
-	GitSHA = "Not provided."
+	GitSHA  = "Not provided."
 )
