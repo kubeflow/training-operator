@@ -129,6 +129,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
 
   # Build the go binaries
   go_path = os.environ["GOPATH"]
+  commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
       "github.com/tensorflow/k8s/cmd/tf_operator",
@@ -136,6 +137,8 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
       "github.com/tensorflow/k8s/dashboard/backend",
   ]
   for t in targets:
+    if t == "github.com/tensorflow/k8s/cmd/tf_operator":
+      util.run(["go", "install", "-ldflags", "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit), t])
     util.run(["go", "install", t])
 
   # Dashboard's frontend:
@@ -167,7 +170,6 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   image_base = registry + "/tf_operator"
 
   n = datetime.datetime.now()
-  commit = build_and_push_image.GetGitHash(root_dir)
   image = (image_base + ":" + n.strftime("v%Y%m%d") + "-" +
            commit)
   latest_image = image_base + ":latest"
