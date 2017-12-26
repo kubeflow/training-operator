@@ -17,7 +17,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/qiniu/log"
+	log "github.com/golang/glog"
 )
 
 var (
