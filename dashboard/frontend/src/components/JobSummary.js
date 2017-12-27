@@ -1,9 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardText } from 'material-ui/Card';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Card, CardText } from "material-ui/Card";
 
 const JobSummary = ({ job }) => {
-
   const styles = {
     jobSummary: {
       textAlign: "left",
@@ -26,22 +25,22 @@ const JobSummary = ({ job }) => {
 
   return (
     <Card>
-      <CardText >
+      <CardText>
         <div style={styles.jobSummary} className="JobSummary Card">
           <div>
-            <p style={styles.indicator} >&#9673;</p>
+            <p style={styles.indicator}>&#9673;</p>
           </div>
           <div style={styles.details}>
-            <Link to={`/${job.metadata.namespace}/${job.metadata.name}`}>{job.metadata.name}</Link>
-            <div style={styles.description}>
-              {getReplicasSummary(job)}
-            </div>
+            <Link to={`/${job.metadata.namespace}/${job.metadata.name}`}>
+              {job.metadata.name}
+            </Link>
+            <div style={styles.description}>{getReplicasSummary(job)}</div>
           </div>
         </div>
       </CardText>
     </Card>
   );
-}
+};
 
 function getReplicasSummary(job) {
   const descs = job.spec.replicaSpecs.reduce((acc, r) => {

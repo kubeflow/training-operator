@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import TextField from 'material-ui/TextField';
+import React, { Component } from "react";
+import TextField from "material-ui/TextField";
 
 const errorMessage = "This field is required";
 
@@ -15,7 +15,12 @@ class RequiredTextField extends Component {
   render() {
     return (
       <div>
-        <TextField {...this.props} errorText={this.state.errorText} name={this.props.name} onChange={this.handleChange} />
+        <TextField
+          {...this.props}
+          errorText={this.state.errorText}
+          name={this.props.name}
+          onChange={this.handleChange}
+        />
       </div>
     );
   }

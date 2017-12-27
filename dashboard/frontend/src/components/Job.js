@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
-import JobDetail from './JobDetail.js';
-import ReplicaSpec from './ReplicaSpec.js';
-import TensorBoard from './TensorBoard.js';
-import { Card, CardText } from 'material-ui/Card';
-import { getTfJobService } from '../services';
+import React, { Component } from "react";
+import JobDetail from "./JobDetail.js";
+import ReplicaSpec from "./ReplicaSpec.js";
+import TensorBoard from "./TensorBoard.js";
+import { Card, CardText } from "material-ui/Card";
+import { getTfJobService } from "../services";
 
 class Job extends Component {
   constructor(props) {
@@ -54,7 +54,11 @@ class Job extends Component {
     if (job) {
       getTfJobService(job.metadata.namespace, job.metadata.name)
         .then(b => {
-          this.setState({ tfJob: b.tfJob, tbService: b.tbService, pods: b.pods });
+          this.setState({
+            tfJob: b.tfJob,
+            tbService: b.tbService,
+            pods: b.pods
+          });
         })
         .catch(console.error);
     }
@@ -68,25 +72,35 @@ class Job extends Component {
     if (!props.match.params.name || !props.match.params.namespace) {
       return props.jobs[0];
     }
-    const matches = props.jobs.filter(j => j.metadata.name === props.match.params.name && j.metadata.namespace === props.match.params.namespace);
+    const matches = props.jobs.filter(
+      j =>
+        j.metadata.name === props.match.params.name &&
+        j.metadata.namespace === props.match.params.namespace
+    );
     return matches[0];
   }
 
   renderReplicaSpecs(job) {
-    let replicaSpecs = []
+    let replicaSpecs = [];
     for (let i = 0; i < job.spec.replicaSpecs.length; i++) {
       let spec = job.spec.replicaSpecs[i];
       let status = {
         state: "Unknown"
       };
       if (job.status.replicaStatuses) {
-        const m = job.status.replicaStatuses.filter(s => s.tf_replica_type === spec.tfReplicaType);
+        const m = job.status.replicaStatuses.filter(
+          s => s.tf_replica_type === spec.tfReplicaType
+        );
         if (m.length > 0) {
           status = m[0];
         }
       }
 
-      let pods = this.state.pods.filter(p => p.metadata.labels.job_type && p.metadata.labels.job_type === spec.tfReplicaType);
+      let pods = this.state.pods.filter(
+        p =>
+          p.metadata.labels.job_type &&
+          p.metadata.labels.job_type === spec.tfReplicaType
+      );
       replicaSpecs.push(
         <div style={this.divStyle} key={i}>
           <ReplicaSpec spec={spec} status={status} pods={pods} />
@@ -95,7 +109,6 @@ class Job extends Component {
     }
     return replicaSpecs;
   }
-
 }
 
 export default Job;
