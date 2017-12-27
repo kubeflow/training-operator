@@ -2,27 +2,23 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
-	"runtime"
+	"syscall"
 	"time"
 
-	"github.com/ghodss/yaml"
-
 	"github.com/tensorflow/k8s/pkg/controller"
+	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	"github.com/tensorflow/k8s/version"
+
+	"github.com/ghodss/yaml"
+	log "github.com/golang/glog"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-
-	log "github.com/golang/glog"
-
-	"io/ioutil"
-
-	"github.com/tensorflow/k8s/pkg/spec"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 )
 
@@ -95,33 +91,14 @@ func main() {
 		log.Fatalf("must set env MY_POD_NAME")
 	}
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c)
-	go func() {
-		log.Infof("received signal: %v", <-c)
-		os.Exit(1)
-	}()
-
-	if printVersion {
-		fmt.Println("tf_operator Version:", version.Version)
-		fmt.Println("Git SHA:", version.GitSHA)
-		fmt.Println("Go Version:", runtime.Version())
-		fmt.Printf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		os.Exit(0)
-	}
-
-	log.Infof("tf_operator Version: %v", version.Version)
-	log.Infof("Git SHA: %s", version.GitSHA)
-	log.Infof("Go Version: %s", runtime.Version())
-	log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	setupSignalHandler()
+	version.PrintVersion(printVersion)
 
 	id, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("failed to get hostname: %v", err)
 	}
 
-	// TODO: replace with to client-go once leader election pacakge is imported
-	// see https://github.com/kubernetes/client-go/issues/28
 	rl := &resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -148,6 +125,16 @@ func main() {
 	})
 
 	panic("unreachable")
+}
+
+func setupSignalHandler() {
+	shutdownSignals := []os.Signal{os.Interrupt, syscall.SIGTERM}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, shutdownSignals...)
+	go func() {
+		log.Infof("received signal: %v", <-c)
+		os.Exit(1)
+	}()
 }
 
 func run(stop <-chan struct{}) {
