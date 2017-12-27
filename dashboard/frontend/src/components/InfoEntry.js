@@ -1,7 +1,6 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 class InfoEntry extends Component {
-
   render() {
     const styles = {
       root: {
@@ -17,15 +16,16 @@ class InfoEntry extends Component {
     };
 
     return (
-      <div style={styles.root} >
-        <div style={styles.label}>
-          {this.props.name + ":"}
-        </div>
+      <div style={styles.root}>
+        <div style={styles.label}>{this.props.name + ":"}</div>
         <div style={styles.value}>
-          {this.props.linkTo ?
-            <a href={this.props.linkTo} target="_blank">{this.props.value}</a> :
+          {this.props.linkTo ? (
+            <a href={this.props.linkTo} target="_blank">
+              {this.props.value}
+            </a>
+          ) : (
             this.props.value
-          }
+          )}
         </div>
       </div>
     );
