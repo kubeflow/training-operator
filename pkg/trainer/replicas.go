@@ -406,7 +406,7 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 	return spec.ReplicaStateUnknown
 }
 
-func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) (spec.ReplicaState) {
+func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) spec.ReplicaState {
 	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
 	if err != nil {

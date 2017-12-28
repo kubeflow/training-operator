@@ -1,0 +1,26 @@
+{
+  "Vendor": true,
+  "DisableAll": true,
+  "Enable": [
+    "vet",
+    "gotype",
+    "safesql",
+    "errcheck",
+    "goconst",
+    "goimports",
+    "varcheck",
+    "gas",
+    "megacheck",
+    "lll",
+    "unconvert",
+    "misspell",
+    "deadcode",
+    "unconvert"
+  ],
+  "Aggregate": true,
+  "WarnUnmatchedNolint": true,
+  "LineLength": 240,
+  "Exclude": ["comment or be unexported", "comment on exported"],
+  "Deadline": "300s",
+  "Skip": ["bin", "py"]
+}

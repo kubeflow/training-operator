@@ -386,7 +386,7 @@ func TestSetDefaults(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	type testCase struct {
-		in       *TfJobSpec
+		in             *TfJobSpec
 		expectingError bool
 	}
 
@@ -405,7 +405,7 @@ func TestValidate(t *testing.T) {
 							},
 						},
 						TfReplicaType: MASTER,
-						Replicas: proto.Int32(1),
+						Replicas:      proto.Int32(1),
 					},
 				},
 				TfImage: "tensorflow/tensorflow:1.3.0",
@@ -426,7 +426,7 @@ func TestValidate(t *testing.T) {
 							},
 						},
 						TfReplicaType: WORKER,
-						Replicas: proto.Int32(1),
+						Replicas:      proto.Int32(1),
 					},
 				},
 				TfImage: "tensorflow/tensorflow:1.3.0",
@@ -447,13 +447,13 @@ func TestValidate(t *testing.T) {
 							},
 						},
 						TfReplicaType: WORKER,
-						Replicas: proto.Int32(1),
+						Replicas:      proto.Int32(1),
 					},
 				},
 				TfImage: "tensorflow/tensorflow:1.3.0",
 				TerminationPolicy: &TerminationPolicySpec{
 					Chief: &ChiefSpec{
-						ReplicaName: "WORKER",
+						ReplicaName:  "WORKER",
 						ReplicaIndex: 0,
 					},
 				},

@@ -7,8 +7,11 @@ go:
 install:
   # get coveralls.io support
   - go get github.com/mattn/goveralls
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
 
 script:
+  - gometalinter --config=linter_config.json ./pkg/... ./cmd/...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor
   # directory.
