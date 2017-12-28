@@ -7,7 +7,6 @@ import six
 
 from py import util
 
-# TODO(jlewi): How can we indicate that a test wasn't run?
 class TestCase(object):
   def __init__(self, class_name="", name=""):
     self.class_name = class_name
@@ -92,6 +91,9 @@ def wrap_test(test_func, test_case):
 def create_junit_xml_file(test_cases, output_path, gcs_client=None):
   """Create a JUnit XML file.
 
+  The junit schema is specified here:
+  https://www.ibm.com/support/knowledgecenter/en/SSQ2R2_9.5.0/com.ibm.rsar.analysis.codereview.cobol.doc/topics/cac_useresults_junit.html
+
   Args:
     test_cases: TestSuite or List of test case objects.
     output_path: Path to write the XML
@@ -113,8 +115,15 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     attrib = {
       "classname": c.class_name,
       "name": c.name,
-      "time": "{0}".format(c.time),
     }
+    if c.time:
+      attrib["time"] = "{0}".format(c.time)
+
+    # If the time isn't set and no message is set we interpret that as
+    # the test not being run.
+    if not c.time and not c.failure:
+      attrib["failure"] = "Test was not run."
+
     if c.failure:
       attrib["failure"] = c.failure
     e = ElementTree.Element("testcase", attrib)
