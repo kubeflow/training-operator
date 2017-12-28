@@ -65,7 +65,7 @@ type TrainingJob struct {
 
 // ClusterSpec represents a cluster TensorFlow specification.
 // https://www.tensorflow.org/deploy/distributed#create_a_tftrainclusterspec_to_describe_the_cluster
-// It is a map from job names to network addressess.
+// It is a map from job names to network addresses.
 type ClusterSpec map[string][]string
 
 type TaskSpec struct {

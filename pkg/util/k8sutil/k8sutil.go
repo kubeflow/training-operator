@@ -56,7 +56,9 @@ func GetClusterConfig() (*rest.Config, error) {
 		if err != nil {
 			panic(err)
 		}
-		os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0])
+		if err := os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0]); err != nil {
+			return nil, err
+		}
 	}
 	if len(os.Getenv("KUBERNETES_SERVICE_PORT")) == 0 {
 		os.Setenv("KUBERNETES_SERVICE_PORT", "443")
