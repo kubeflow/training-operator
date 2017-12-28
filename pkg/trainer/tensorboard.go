@@ -153,18 +153,14 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 		VolumeMounts: make([]v1.VolumeMount, 0),
 	}
 
-	for _, v := range s.Spec.VolumeMounts {
-		c.VolumeMounts = append(c.VolumeMounts, v)
-	}
+	c.VolumeMounts = append(c.VolumeMounts, s.Spec.VolumeMounts...)
 
 	ps := &v1.PodSpec{
 		Containers: []v1.Container{*c},
 		Volumes:    make([]v1.Volume, 0),
 	}
 
-	for _, v := range s.Spec.Volumes {
-		ps.Volumes = append(ps.Volumes, v)
-	}
+	ps.Volumes = append(ps.Volumes, s.Spec.Volumes...)
 
 	return v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{

@@ -61,7 +61,9 @@ func GetClusterConfig() (*rest.Config, error) {
 		}
 	}
 	if len(os.Getenv("KUBERNETES_SERVICE_PORT")) == 0 {
-		os.Setenv("KUBERNETES_SERVICE_PORT", "443")
+		if err := os.Setenv("KUBERNETES_SERVICE_PORT", "443"); err != nil {
+			panic(err)
+		}
 	}
 	return rest.InClusterConfig()
 }

@@ -11,7 +11,7 @@ install:
   - gometalinter --install
 
 script:
-  - gometalinter --config=linter_config.json ./pkg/... ./cmd/...
+  - gometalinter --config=linter_config.json ./pkg/...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor
   # directory.

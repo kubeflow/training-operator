@@ -328,7 +328,9 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 				}
 
 				if st != nil {
-					resp.Body.Close()
+					if err := resp.Body.Close(); err != nil {
+						log.Errorf("error closing response body: %v", err)
+					}
 
 					if st.Code == http.StatusGone {
 						// event history is outdated.

@@ -179,7 +179,7 @@ func (j *TrainingJob) GetStatus() (spec.ReplicaState, []*spec.TfReplicaStatus, e
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		if string(r.Spec.TfReplicaType) == string(chief.ReplicaName) {
+		if string(r.Spec.TfReplicaType) == chief.ReplicaName {
 			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
 		}
 	}
@@ -390,7 +390,7 @@ func (j *TrainingJob) reconcile(config *spec.ControllerConfig) {
 	}
 
 	// updateTPRStatus will update the status of the TPR with c.Status if c.Status
-	// doesn't match c.Cluster.status. So you can change c.Status in order to propogate
+	// doesn't match c.Cluster.status. So you can change c.Status in order to propagate
 	// changes to the TPR status.
 	if err := j.updateTPRStatus(); err != nil {
 		log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
