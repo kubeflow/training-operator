@@ -4,9 +4,10 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/golang/glog"
 	"math/rand"
 	"time"
+
+	log "github.com/golang/glog"
 )
 
 // Pformat returns a pretty format output of any value that can be marshalled to JSON.
