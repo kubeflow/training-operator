@@ -12,3 +12,6 @@ import:
   version: kubernetes-1.8.4
 - package: k8s.io/code-generator
   version: kubernetes-1.8.5
+- package: github.com/hashicorp/golang-lru
+  version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
+
