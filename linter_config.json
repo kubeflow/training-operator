@@ -3,7 +3,6 @@
   "DisableAll": true,
   "Enable": [
     "vet",
-    "gotype",
     "safesql",
     "errcheck",
     "goconst",
