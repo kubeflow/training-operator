@@ -304,7 +304,9 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 			}
 			if resp.StatusCode != http.StatusOK {
 				log.Infof("WatchClusters response: %+v", resp)
-				resp.Body.Close()
+				if err := resp.Body.Close(); err != nil {
+					log.Errorf("error closing response body: %v", err)
+				}
 				errCh <- errors.New("invalid status code: " + resp.Status)
 				return
 			}
@@ -326,7 +328,9 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 				}
 
 				if st != nil {
-					resp.Body.Close()
+					if err := resp.Body.Close(); err != nil {
+						log.Errorf("error closing response body: %v", err)
+					}
 
 					if st.Code == http.StatusGone {
 						// event history is outdated.
@@ -353,7 +357,9 @@ func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
 				eventCh <- ev
 			}
 
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				log.Errorf("error closing response body: %v", err)
+			}
 		}
 	}()
 

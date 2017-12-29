@@ -127,7 +127,7 @@ type ChiefSpec struct {
 
 // Validate checks that the TfJobSpec is valid.
 func (c *TfJobSpec) Validate() error {
-	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil  {
+	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
 		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
 	}
 	// Check that each replica has a TensorFlow container.

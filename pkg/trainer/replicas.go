@@ -110,9 +110,7 @@ func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
 	jobs := []string{}
 	for _, jobType := range keys {
 		hosts := []string{}
-		for _, h := range clusterSpec[jobType] {
-			hosts = append(hosts, h)
-		}
+		hosts = append(hosts, clusterSpec[jobType]...)
 		s := jobType + "|" + strings.Join(hosts, ";")
 		jobs = append(jobs, s)
 	}
@@ -341,7 +339,9 @@ func (s *TFReplicaSet) Delete() error {
 		}
 	} else {
 		log.V(1).Infof("Delete ConfigMaps %v:%v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName())
-		s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
+		if err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{}); err != nil {
+			log.Errorf("error deleting config maps %v:%v: %v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName(), err)
+		}
 	}
 
 	if failures {
@@ -406,7 +406,7 @@ func replicaStatusFromPodList(l v1.PodList, name spec.ContainerName) spec.Replic
 	return spec.ReplicaStateUnknown
 }
 
-func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) (spec.ReplicaState) {
+func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) spec.ReplicaState {
 	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.Metadata.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
 	if err != nil {
