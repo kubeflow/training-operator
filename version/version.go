@@ -13,7 +13,6 @@
 package version
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 
