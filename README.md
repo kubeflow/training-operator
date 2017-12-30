@@ -145,7 +145,7 @@ metadata:
   name: tf-job-operator-config
   namespace: default
 data:
-  controller_config_file.yaml: |
+  controller-config-file.yaml: |
     accelerators:
       grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
       alpha.kubernetes.io/nvidia-gpu:
