@@ -6,9 +6,9 @@ import (
 
 	"github.com/tensorflow/k8s/pkg/spec"
 
+	log "github.com/golang/glog"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -56,10 +56,14 @@ func GetClusterConfig() (*rest.Config, error) {
 		if err != nil {
 			panic(err)
 		}
-		os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0])
+		if err := os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0]); err != nil {
+			return nil, err
+		}
 	}
 	if len(os.Getenv("KUBERNETES_SERVICE_PORT")) == 0 {
-		os.Setenv("KUBERNETES_SERVICE_PORT", "443")
+		if err := os.Setenv("KUBERNETES_SERVICE_PORT", "443"); err != nil {
+			panic(err)
+		}
 	}
 	return rest.InClusterConfig()
 }

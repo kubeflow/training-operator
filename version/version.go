@@ -12,7 +12,25 @@
 
 package version
 
+import (
+	"os"
+	"runtime"
+
+	log "github.com/golang/glog"
+)
+
 var (
 	Version = "0.3.0+git"
 	GitSHA  = "Not provided."
 )
+
+// PrintVersion print version info
+func PrintVersion(shouldExit bool) {
+	log.Infof("tf_operator Version: %v", Version)
+	log.Infof("Git SHA: %s", GitSHA)
+	log.Infof("Go Version: %s", runtime.Version())
+	log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	if shouldExit {
+		os.Exit(0)
+	}
+}

@@ -239,7 +239,21 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   chart = ti.xcom_pull("build_images", key="helm_chart")
 
   now = datetime.now()
-  cluster = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
+
+  # Check if we already set the cluster. This can happen if there was a
+  # previous failed attempt to setup the cluster. We want to reuse the same
+  # cluster across attempts because this way we only have 1 cluster to teardown
+  # which minimizes the likelihood of leaking clusters.
+  cluster = ti.xcom_pull(None, key="cluster")
+  if not cluster:
+    cluster = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
+    logging.info("Set cluster=%s", cluster)
+    # Push the value for cluster so that it is saved even if setup_cluster
+    # fails.
+    logging.info("xcom push: cluster=%s", cluster)
+    ti.xcom_push(key="cluster", value=cluster)
+  else:
+    logging.info("Cluster was set to %s", cluster)
 
   logging.info("conf=%s", conf)
   artifacts_path = conf.get("ARTIFACTS_PATH",
@@ -262,12 +276,6 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   # output is squashed together.
   run(ti, args, use_print=True, dryrun=dryrun)
 
-  values = {
-    "cluster": cluster,
-  }
-  for k, v in six.iteritems(values):
-    logging.info("xcom push: %s=%s", k, v)
-    ti.xcom_push(key=k, value=v)
 
 def run_tests(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf

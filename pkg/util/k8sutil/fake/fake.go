@@ -2,9 +2,10 @@
 package fake
 
 import (
-	"github.com/tensorflow/k8s/pkg/spec"
 	"net/http"
 	"time"
+
+	"github.com/tensorflow/k8s/pkg/spec"
 )
 
 type TfJobClientFake struct{}

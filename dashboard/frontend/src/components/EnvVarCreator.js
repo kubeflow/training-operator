@@ -1,12 +1,11 @@
-import React from 'react';
-import FlatButton from 'material-ui/FlatButton';
-import ContentAdd from 'material-ui/svg-icons/content/add';
-import omit from 'lodash/omit';
+import React from "react";
+import FlatButton from "material-ui/FlatButton";
+import ContentAdd from "material-ui/svg-icons/content/add";
+import omit from "lodash/omit";
 
-import EnvVar from './EnvVar';
+import EnvVar from "./EnvVar";
 
 class EnvVarCreator extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -22,10 +21,20 @@ class EnvVarCreator extends React.Component {
     return (
       <div style={this.styles.root}>
         <h4>Environment variables</h4>
-        <FlatButton label="Add an environment variable" primary={true} icon={<ContentAdd />} onClick={_ => this.addEnvVar()} />
-        {Object.keys(this.state.envVars).map(k => <EnvVar key={k} id={k}
-          setEnvVar={this.setEnvVar}
-          deleteEnvVar={this.deleteEnvVar} />)}
+        <FlatButton
+          label="Add an environment variable"
+          primary={true}
+          icon={<ContentAdd />}
+          onClick={_ => this.addEnvVar()}
+        />
+        {Object.keys(this.state.envVars).map(k => (
+          <EnvVar
+            key={k}
+            id={k}
+            setEnvVar={this.setEnvVar}
+            deleteEnvVar={this.deleteEnvVar}
+          />
+        ))}
       </div>
     );
   }
@@ -33,7 +42,7 @@ class EnvVarCreator extends React.Component {
   setEnvVar(id, envVar) {
     let envVars = { ...this.state.envVars, [id]: envVar };
     this.setState({ envVars });
-    this.bubbleSpecs(envVars)
+    this.bubbleSpecs(envVars);
   }
 
   deleteEnvVar(id) {
@@ -43,7 +52,7 @@ class EnvVarCreator extends React.Component {
   bubbleSpecs(envVars) {
     let evs = [];
     Object.keys(envVars).forEach(k => {
-      const ev = envVars[k]
+      const ev = envVars[k];
       evs.push({ name: ev.name, value: ev.value });
     });
     this.props.setEnvVars(evs);
@@ -51,7 +60,10 @@ class EnvVarCreator extends React.Component {
 
   addEnvVar() {
     const id = this.state.envVarCount;
-    this.setState({ envVarCount: id + 1, envVars: { ...this.state.envVars, [id]: {} } });
+    this.setState({
+      envVarCount: id + 1,
+      envVars: { ...this.state.envVars, [id]: {} }
+    });
   }
 
   styles = {
@@ -61,7 +73,7 @@ class EnvVarCreator extends React.Component {
     root: {
       marginTop: "20px"
     }
-  }
+  };
 }
 
 export default EnvVarCreator;
