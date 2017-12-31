@@ -308,7 +308,8 @@
                 "sha256:1a8c3588eb2c554209c74417cce2ed57fc347492c64c5711df27df59821b632b",
                 "sha256:69056464f37ce9ead215d432b867f649967ea74722450757a00b4d004c85393e",
                 "sha256:6bd15a7fdcbe27e70411d9a9c3edc4dcfbec95e74a4b52e418fcae132ac53936",
-                "sha256:04a69ecc3a8ecdc8579f28bf6c1d0c400a3c9a4aa1e2ecfef540eeb07ecea566"
+                "sha256:04a69ecc3a8ecdc8579f28bf6c1d0c400a3c9a4aa1e2ecfef540eeb07ecea566",
+                "sha256:1ea1336f0d1158c4e00e96a94df84b75f6bbff9816abb6cc68cbdc9442a9ac55"
             ],
             "version": "==1.8.2"
         },
