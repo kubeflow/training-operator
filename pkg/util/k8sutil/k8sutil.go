@@ -4,8 +4,6 @@ import (
 	"net"
 	"os"
 
-	"github.com/tensorflow/k8s/pkg/spec"
-
 	log "github.com/golang/glog"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,6 +13,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // for gcp auth
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 )
 
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
@@ -87,7 +86,7 @@ func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
 		"tf_job": jobName,
-		"app":    spec.AppLabel,
+		"app":    tfv1alpha1.AppLabel,
 	}
 }
 

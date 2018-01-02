@@ -7,13 +7,15 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
-	"github.com/tensorflow/k8s/pkg/spec"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+
 )
 
 const TbPort = 6006
@@ -22,10 +24,10 @@ const TbPort = 6006
 type TBReplicaSet struct {
 	ClientSet kubernetes.Interface
 	Job       *TrainingJob
-	Spec      spec.TensorBoardSpec
+	Spec      tfv1alpha1.TensorBoardSpec
 }
 
-func NewTBReplicaSet(clientSet kubernetes.Interface, s spec.TensorBoardSpec, job *TrainingJob) (*TBReplicaSet, error) {
+func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpec, job *TrainingJob) (*TBReplicaSet, error) {
 	if s.LogDir == "" {
 		return nil, errors.New("tbReplicaSpec.LogDir must be specified")
 	}
@@ -51,7 +53,7 @@ func (s *TBReplicaSet) Create() error {
 			Name:   s.jobName(),
 			Labels: s.Labels(),
 			OwnerReferences: []meta_v1.OwnerReference{
-				s.Job.job.AsOwner(),
+				 helper.AsOwner(s.Job.job),
 			},
 		},
 		Spec: v1.ServiceSpec{
@@ -70,7 +72,7 @@ func (s *TBReplicaSet) Create() error {
 	}
 
 	log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-	_, err := s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Create(service)
+	_, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
 
 	// If the job already exists do nothing.
 	if err != nil {
@@ -86,7 +88,7 @@ func (s *TBReplicaSet) Create() error {
 			Name:   s.jobName(),
 			Labels: s.Labels(),
 			OwnerReferences: []meta_v1.OwnerReference{
-				s.Job.job.AsOwner(),
+				helper.AsOwner(s.Job.job),
 			},
 		},
 		Spec: v1beta1.DeploymentSpec{
@@ -99,7 +101,7 @@ func (s *TBReplicaSet) Create() error {
 	}
 
 	log.Infof("Creating Deployment: %v", newD.ObjectMeta.Name)
-	_, err = s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.Metadata.Namespace).Create(newD)
+	_, err = s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.ObjectMeta.Namespace).Create(newD)
 
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
@@ -115,8 +117,8 @@ func (s *TBReplicaSet) Delete() error {
 	failures := false
 
 	delProp := meta_v1.DeletePropagationForeground
-	log.V(1).Infof("Deleting deployment %v:%v", s.Job.job.Metadata.Namespace, s.jobName())
-	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{
+	log.V(1).Infof("Deleting deployment %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName())
+	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{
 		PropagationPolicy: &delProp,
 	})
 	if err != nil {
@@ -124,8 +126,8 @@ func (s *TBReplicaSet) Delete() error {
 		failures = true
 	}
 
-	log.V(1).Infof("Deleting service %v:%v", s.Job.job.Metadata.Namespace, s.jobName())
-	err = s.ClientSet.CoreV1().Services(s.Job.job.Metadata.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{})
+	log.V(1).Infof("Deleting service %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName())
+	err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Errorf("Error deleting service: %v; %v", s.jobName(), err)
 		failures = true
@@ -153,14 +155,18 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 		VolumeMounts: make([]v1.VolumeMount, 0),
 	}
 
-	c.VolumeMounts = append(c.VolumeMounts, s.Spec.VolumeMounts...)
+	for _, v := range s.Spec.VolumeMounts {
+		c.VolumeMounts = append(c.VolumeMounts, v)
+	}
 
 	ps := &v1.PodSpec{
 		Containers: []v1.Container{*c},
 		Volumes:    make([]v1.Volume, 0),
 	}
 
-	ps.Volumes = append(ps.Volumes, s.Spec.Volumes...)
+	for _, v := range s.Spec.Volumes {
+		ps.Volumes = append(ps.Volumes, v)
+	}
 
 	return v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -177,7 +183,7 @@ func (s *TBReplicaSet) Labels() KubernetesLabels {
 		"tensorflow.org": "",
 		"runtime_id":     s.Job.job.Spec.RuntimeId,
 		"app":            "tensorboard",
-		"tf_job_name":    s.Job.job.Metadata.Name,
+		"tf_job_name":    s.Job.job.ObjectMeta.Name,
 	})
 }
 
@@ -186,5 +192,5 @@ func (s *TBReplicaSet) jobName() string {
 	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
 	// Thus jobname(40 chars)-tensorboard(11 chars)-runtimeId(4 chars), also leaving some spaces
 	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
-	return fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", s.Job.job.Metadata.Name), strings.ToLower(s.Job.job.Spec.RuntimeId))
+	return fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(s.Job.job.Spec.RuntimeId))
 }

@@ -8,9 +8,10 @@ import (
 
 	restful "github.com/emicklei/go-restful"
 	"github.com/tensorflow/k8s/dashboard/backend/client"
-	"github.com/tensorflow/k8s/pkg/spec"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+
 )
 
 // APIHandler handles the API calls
@@ -21,14 +22,14 @@ type APIHandler struct {
 // TfJobDetail describe the specification of a TfJob
 // as well as related TensorBoard service if any and related pods
 type TfJobDetail struct {
-	TfJob     *spec.TfJob `json:"tfJob"`
+	TfJob     *tfv1alpha1.TfJob `json:"tfJob"`
 	TbService *v1.Service `json:"tbService"`
 	Pods      []v1.Pod    `json:"pods"`
 }
 
 // TfJobList is a list of TfJobs
 type TfJobList struct {
-	tfJobs []spec.TfJob `json:"TfJobs"`
+	tfJobs []tfv1alpha1.TfJob `json:"TfJobs"`
 }
 
 // CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
@@ -69,8 +70,8 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	apiV1Ws.Route(
 		apiV1Ws.POST("/tfjob").
 			To(apiHandler.handleDeploy).
-			Reads(spec.TfJob{}).
-			Writes(spec.TfJob{}))
+			Reads(tfv1alpha1.TfJob{}).
+			Writes(tfv1alpha1.TfJob{}))
 
 	apiV1Ws.Route(
 		apiV1Ws.DELETE("/tfjob/{namespace}/{tfjob}").
@@ -88,7 +89,7 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response *restful.Response) {
 
 	//TODO: namespace handling
-	jobs, err := apiHandler.cManager.TfJobClient.List("default")
+	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs("default").List(metav1.ListOptions{})
 
 	if err != nil {
 		panic(err)
@@ -101,7 +102,7 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
 
-	job, err := apiHandler.cManager.TfJobClient.Get(namespace, name)
+	job, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +124,7 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 			// Handle case where no tensorboard is found
 			tfJobDetail.TbService = &tbSpec.Items[0]
 		} else {
-			fmt.Println(fmt.Sprintf("Couldn't find a TensorBoard service for TfJob %s", job.Metadata.Name))
+			fmt.Println(fmt.Sprintf("Couldn't find a TensorBoard service for TfJob %s", job.ObjectMeta.Name))
 		}
 	}
 
@@ -141,11 +142,11 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 
 func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *restful.Response) {
 	client := apiHandler.cManager.TfJobClient
-	spec := new(spec.TfJob)
+	spec := new(tfv1alpha1.TfJob)
 	if err := request.ReadEntity(spec); err != nil {
 		panic(err)
 	}
-	j, err := client.Create(spec.Metadata.Namespace, spec)
+	j, err := client.TensorflowV1alpha1().TfJobs(spec.ObjectMeta.Namespace).Create(spec)
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +157,7 @@ func (apiHandler *APIHandler) handleDeleteTfJob(request *restful.Request, respon
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
 	client := apiHandler.cManager.TfJobClient
-	err := client.Delete(namespace, name)
+	err := client.TensorflowV1alpha1().TfJobs(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		panic(err)
 	}
