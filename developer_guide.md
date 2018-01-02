@@ -1,3 +1,60 @@
+
+## Directories Layout
+
+```sh
+$ tree -d -I 'vendor|bin|.git'
+├── build
+│   ├── images
+│   │   └── tf_operator
+│   └── release
+├── cmd
+│   └── tf_operator
+│       └── app
+│           └── options
+├── dashboard
+│   ├── backend
+│   │   ├── client
+│   │   └── handler
+│   └── frontend
+│       ├── public
+│       └── src
+│           └── components
+├── docs
+│   └── diagrams
+├── examples
+│   ├── charts
+│   │   ├── tensorboard
+│   │   └── tf-job-operator-chart
+│   ├── gke
+│   │   └── notebook_image
+│   ├── tensorflow-models
+│   ├── tf_job
+│   │   └── templates
+│   └── tf_sample
+│       └── tf_sample
+├── hack
+│   └── py
+├── pkg
+│   ├── apis
+│   │   └── tensorflow
+│   │       ├── helper
+│   │       ├── v1alpha1
+│   │       └── validation
+│   ├── client
+│   ├── controller
+│       └── trainer
+│   └── util
+│       ├── k8sutil
+│       └── retryutil
+├── test
+│   ├── e2e
+│   └── test-infra
+│       └── airflow
+└── version
+
+
+```
+
 ## Building the Operator
 
 Create a symbolic link inside your GOPATH to the location you checked out the code
