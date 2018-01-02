@@ -4,9 +4,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/tensorflow/k8s/pkg/spec"
-
 	log "github.com/golang/glog"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,7 +86,7 @@ func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
 		"tf_job": jobName,
-		"app":    spec.AppLabel,
+		"app":    tfv1alpha1.AppLabel,
 	}
 }
 
