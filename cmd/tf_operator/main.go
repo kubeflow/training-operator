@@ -8,14 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ghodss/yaml"
+	log "github.com/golang/glog"
+	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"github.com/tensorflow/k8s/pkg/controller"
 	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	"github.com/tensorflow/k8s/version"
-
-	"github.com/ghodss/yaml"
-	log "github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -94,6 +95,10 @@ func main() {
 	setupSignalHandler()
 	version.PrintVersion(printVersion)
 
+	// Prepare event clients.
+	eventBroadcaster := record.NewBroadcaster()
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tf-operator"})
+
 	id, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("failed to get hostname: %v", err)
@@ -107,7 +112,7 @@ func main() {
 		Client: k8sutil.MustNewKubeClient().CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity:      id,
-			EventRecorder: &record.FakeRecorder{},
+			EventRecorder: recorder,
 		},
 	}
 
