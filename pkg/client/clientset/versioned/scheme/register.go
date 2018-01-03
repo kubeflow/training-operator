@@ -48,6 +48,7 @@ func init() {
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
-	tensorflowv1alpha1.AddToScheme(scheme)
-
+	if err := tensorflowv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
 }
