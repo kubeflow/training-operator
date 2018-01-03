@@ -64,12 +64,12 @@ export MY_POD_NAME=my-pod
   set the corresponding namespace for the resource.
 * TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 
-Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller_config_file.yaml`:
+Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller-config-file.yaml`:
 
 ```sh
 cp grpc_tensorflow_server/grpc_tensorflow_server.py /tmp/grpc_tensorflow_server.py
 
-cat > /tmp/controller_config_file.yaml << EOL
+cat > /tmp/controller-config-file.yaml << EOL
 grpcServerFilePath: /tmp/grpc_tensorflow_server.py
 EOL
 ```

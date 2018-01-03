@@ -1,10 +1,11 @@
 package validation
 
 import (
+	"errors"
+	"fmt"
+
 	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/util"
-	"fmt"
-	"errors"
 )
 
 // ValidateTfJobSpec checks that the TfJobSpec is valid.

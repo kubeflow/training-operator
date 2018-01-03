@@ -20,6 +20,7 @@ package externalversions
 
 import (
 	"fmt"
+
 	v1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"

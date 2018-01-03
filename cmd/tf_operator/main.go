@@ -46,7 +46,7 @@ func init() {
 	flag.IntVar(&chaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the TfJob created by the operator.")
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
-	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
+	flag.StringVar(&controllerConfigFile, "controller-config-file", "", "Path to file containing the controller config.")
 	flag.Parse()
 
 	// Workaround for watching TPR resource.
@@ -76,7 +76,7 @@ func init() {
 
 		log.Infof("ControllerConfig: %v", util.Pformat(controllerConfig))
 	} else {
-		log.Info("No controller_config_file provided; using empty config.")
+		log.Info("No controller-config-file provided; using empty config.")
 	}
 
 }

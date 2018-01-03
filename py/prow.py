@@ -149,7 +149,7 @@ def create_symlink(gcs_client, symlink, output):
 
   Args:
     gcs_client: GCS client
-    symling: GCS path of the object to server as the link
+    symlink: GCS path of the object to server as the link
     output: The location to point to.
   """
   m = GCS_REGEX.match(symlink)
@@ -205,21 +205,3 @@ def create_latest(gcs_client, job_name, sha):
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
-
-
-# TODO(jlewi): This function should probably be moved.
-def run_lint(src_dir):
-  """Run lint.
-
-  Args:
-    src_dir: the directory containing the source.
-
-  Returns:
-    success: Boolean indicating success or failure
-  """
-  try:
-    util.run(["./lint.sh"], cwd=src_dir)
-  except subprocess.CalledProcessError as e:
-    logging.error("Lint checks failed; %s", e)
-    return False
-  return True
