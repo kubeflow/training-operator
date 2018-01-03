@@ -19,7 +19,11 @@
   "Aggregate": true,
   "WarnUnmatchedNolint": true,
   "LineLength": 240,
-  "Exclude": ["comment or be unexported", "comment on exported"],
+  "Exclude": [
+    "redundant return statement",
+    "comment or be unexported",
+    "comment on exported"
+  ],
   "Deadline": "300s",
   "Skip": ["bin", "py"]
 }

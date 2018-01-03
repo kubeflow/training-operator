@@ -1,8 +1,8 @@
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -24,10 +24,10 @@ const (
 
 // TFJob describes tfjob info
 type TfJob struct {
-	metav1.TypeMeta    `json:",inline"`
-	metav1.ObjectMeta  `json:"metadata,omitempty"`
-	Spec   TfJobSpec   `json:"spec"`
-	Status TfJobStatus `json:"status"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              TfJobSpec   `json:"spec"`
+	Status            TfJobStatus `json:"status"`
 }
 
 type TfJobSpec struct {
@@ -58,7 +58,6 @@ type ChiefSpec struct {
 	ReplicaIndex int    `json:"replicaIndex"`
 }
 
-
 // TfReplicaType determines how a set of TF processes are handled.
 type TfReplicaType string
 
@@ -87,7 +86,7 @@ type TfReplicaSpec struct {
 	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 	// TfPort is the port to use for TF services.
-	TfPort *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
+	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TfReplicaType `json:"tfReplicaType"`
 	// IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
 	IsDefaultPS bool
