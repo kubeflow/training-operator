@@ -6,7 +6,7 @@ kind: ConfigMap
 metadata:
   name: tf-job-operator-config
 data:
-  controller_config_file.yaml: |
+  controller-config-file.yaml: |
     tfImage: {{ .Values.tfImage }}
     grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
     accelerators:
@@ -27,7 +27,7 @@ kind: ConfigMap
 metadata:
   name: tf-job-operator-config
 data:
-  controller_config_file.yaml: |
+  controller-config-file.yaml: |
     tfImage: {{ .Values.tfImage }}
     grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
 {{ end }}
