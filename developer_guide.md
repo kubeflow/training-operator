@@ -56,12 +56,12 @@ export MY_POD_NAME=my-pod
     set the corresponding namespace for the resource.
   * TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 
-Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller_config_file.yaml`:
+Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller-config-file.yaml`:
 
 ```
 cp grpc_tensorflow_server/grpc_tensorflow_server.py /tmp/grpc_tensorflow_server.py
 
-cat > /tmp/controller_config_file.yaml << EOL
+cat > /tmp/controller-config-file.yaml << EOL
 grpcServerFilePath: /tmp/grpc_tensorflow_server.py
 EOL
 ```
@@ -69,7 +69,7 @@ EOL
 Now we are ready to run operator locally:
 
 ```
-tf_operator -controller_config_file=/tmp/controller_config_file.yaml
+tf_operator -controller-config-file=/tmp/controller-config-file.yaml
 ```
 
 The command creates a CRD `tfjobs` and block watching for creation of the resource kind. To verify local
