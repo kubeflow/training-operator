@@ -29,6 +29,7 @@ var (
 
 	chaosLevel           int
 	controllerConfigFile string
+	gRPCServerFilePath   string
 	printVersion         bool
 	grpcServerFile       string
 )
@@ -47,6 +48,7 @@ func init() {
 	flag.BoolVar(&printVersion, "version", false, "Show version and quit")
 	flag.DurationVar(&gcInterval, "gc-interval", 10*time.Minute, "GC interval")
 	flag.StringVar(&controllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
+	flag.StringVar(&gRPCServerFilePath, "grpc_server_file_path", "", "(MUST Option) Path to grpc_tensorflow_server.py.")
 	flag.Parse()
 
 	// Workaround for watching TPR resource.
@@ -79,6 +81,20 @@ func init() {
 		log.Info("No controller_config_file provided; using empty config.")
 	}
 
+	if err := checkGRPCServerPath(); err != nil {
+		log.Errorf("%v", err)
+		os.Exit(1)
+	}
+}
+
+// checkGRPCServerPath checks if GrpcServerFilePath is defined in controller_config_file or CLI argument, if not return an error
+func checkGRPCServerPath() error {
+	if gRPCServerFilePath == "" {
+		return fmt.Errorf("Could not get grpc_server_file_path")
+	}
+
+	controllerConfig.GrpcServerFilePath = gRPCServerFilePath
+	return nil
 }
 
 func main() {
