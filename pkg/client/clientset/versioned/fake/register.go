@@ -26,7 +26,9 @@ import (
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
-var parameterCodec = runtime.NewParameterCodec(scheme)
+
+// TODO: unused
+// var parameterCodec = runtime.NewParameterCodec(scheme)
 
 func init() {
 	v1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
@@ -48,6 +50,7 @@ func init() {
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
-	tensorflowv1alpha1.AddToScheme(scheme)
-
+	if err := tensorflowv1alpha1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
 }

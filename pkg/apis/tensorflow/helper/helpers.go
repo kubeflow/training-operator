@@ -1,11 +1,12 @@
 package helper
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"fmt"
-	"k8s.io/api/core/v1"
+
+	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/util"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // AsOwner make OwnerReference according to the parameter
