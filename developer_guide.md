@@ -64,11 +64,12 @@ mkdir -p ${GOPATH}/src/github.com/tensorflow
 ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
 ```
 
-  * GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
+* GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
 install dependencies, `-v` will ignore subpackage vendor
+
 ```sh
 glide install -v
 ```
@@ -81,20 +82,27 @@ go install github.com/tensorflow/k8s/cmd/tf_operator
 
 ## Building all the artifacts.
 
+[pipenv](https://docs.pipenv.org/) is recommended to manage local Python environment.
+You can find setup information on their website.
+
 To build the following artifacts:
 
-  * Docker image for the operator
-  * Helm chart for deploying it
+* Docker image for the operator
+* Helm chart for deploying it
 
 You can run
 
 ```sh
-pip install -r py/requirements.txt
+# to setup pipenv you have to step into the directory where Pipfile is located
+cd py
+pipenv install
+pipenv shell
+cd ..
 python -m py.release local --registry=${REGISTRY}
 ```
 
-  * The docker image will be tagged into your registry
-  * The helm chart will be created in **./bin**
+* The docker image will be tagged into your registry
+* The helm chart will be created in **./bin**
 
 ## Running the Operator Locally
 
@@ -109,13 +117,13 @@ export MY_POD_NAMESPACE=default
 export MY_POD_NAME=my-pod
 ```
 
-  * MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
-    set the corresponding namespace for the resource.
-  * TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
+* MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
+  set the corresponding namespace for the resource.
+* TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 
 Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller-config-file.yaml`:
 
-```
+```sh
 cp grpc_tensorflow_server/grpc_tensorflow_server.py /tmp/grpc_tensorflow_server.py
 
 cat > /tmp/controller-config-file.yaml << EOL
@@ -125,14 +133,14 @@ EOL
 
 Now we are ready to run operator locally:
 
-```
-tf_operator -controller-config-file=/tmp/controller-config-file.yaml
+```sh
+tf_operator -controller_config_file=/tmp/controller_config_file.yaml
 ```
 
 The command creates a CRD `tfjobs` and block watching for creation of the resource kind. To verify local
 operator is working, create an example job and you should see jobs created by it.
 
-```
+```sh
 kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
 ```
 
