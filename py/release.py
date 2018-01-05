@@ -671,6 +671,7 @@ def main():  # pylint: disable=too-many-locals
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()
+  # TODO: this line fails in Python 3 because library API change.
   args.func(args)
 
 if __name__ == "__main__":

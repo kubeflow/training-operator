@@ -1,0 +1,22 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+"Jinja2" = ">=2.9.5"
+requests = ">=2.14.2"
+protobuf = ">=3.5.0.post1"
+google-api-python-client = ">=1.6.4"
+google-cloud = ">=0.30.0"
+kubernetes = ">=4.0.0"
+mock = ">=2.0.0"
+pyyaml = ">=3.12"
+"pyasn1" = ">=0.4.2"
+
+
+[dev-packages]
+
