@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(jlewi): We should consider reusing the same DockerFiles as used to create
+# the containers used by our test infrastructure. We should probably wait though
+# until we get rid of Airflow in our tests.
+# However, we don't actually want to use the same Docker images because there
+# are broader permissions on our images used in testing and we want to have much
+# tighter controls on the code used to build our releases.
+
 # This Dockerfile is used to create a docker image suitable for building
 # and releasing the TfJob operator.
 FROM golang:1.8.2
@@ -86,6 +93,16 @@ RUN wget -O /tmp/get_helm.sh \
 
 # Initialize helm
 RUN helm init --client-only
+
+# Install  Node.js
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+    && apt-get install -y nodejs
+
+# Install yarn
+RUN curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && apt-get update -yqq \
+    && apt-get install -yqq --no-install-recommends yarn
 
 RUN mkdir -p /opt/tf_k8s_releaser/py
 COPY py /opt/tf_k8s_releaser/py
