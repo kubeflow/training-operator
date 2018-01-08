@@ -19,7 +19,4 @@ spec:
         image: gcr.io/tf-on-k8s-releasing/releaser:latest
         workingDir: /opt/tf_k8s_releaser
         command:
-          - python
-          - -m
-          - py.release
-          - --check_interval_secs=3600
+          - /opt/tf_k8s_releaser/launch_build.sh

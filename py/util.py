@@ -428,13 +428,15 @@ def setup_cluster(api_client):
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
 
-GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")
 
 def split_gcs_uri(gcs_uri):
   """Split a GCS URI into bucket and path."""
   m = GCS_REGEX.match(gcs_uri)
   bucket = m.group(1)
-  path = m.group(2)
+  path = ""
+  if m.group(2):
+    path = m.group(2).lstrip("/")
   return bucket, path
 
 def _refresh_credentials():
