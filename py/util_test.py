@@ -27,5 +27,14 @@ class UtilTest(unittest.TestCase):
     result = util.wait_for_statefulset(api_client, "some-namespace", "some-set")
     self.assertIsNotNone(result)
 
+  def testSplitGcsUri(self):
+    bucket, path = util.split_gcs_uri("gs://some-bucket/some/path")
+    self.assertEquals("some-bucket", bucket)
+    self.assertEquals("some/path", path)
+
+    bucket, path = util.split_gcs_uri("gs://some-bucket")
+    self.assertEquals("some-bucket", bucket)
+    self.assertEquals("", path)
+
 if __name__ == "__main__":
   unittest.main()
