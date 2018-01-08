@@ -51,7 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 RUN easy_install pip
-# TODO(jlewi): Use pipfile to pull in requirements as specified in the build.
+# TODO(jlewi): Use pipfile to pull in requirements as specified in the build. See the developer guide
+# for instructions on using pipenv. When I tried adding the instructions I got errors trying to
+# activate the virtual env by running pipenv shell.
 RUN pip install --upgrade six pyyaml google-api-python-client \
     google-cloud-storage pylint jinja2 \
     google-auth-httplib2 kubernetes==4.0.0 mock retrying 
@@ -108,6 +110,7 @@ RUN curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
 
 RUN mkdir -p /opt/tf_k8s_releaser/py
 COPY py /opt/tf_k8s_releaser/py
+
 COPY launch_build.sh /opt/tf_k8s_releaser/
 RUN chmod a+x /opt/tf_k8s_releaser/launch_build.sh
 
