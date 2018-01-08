@@ -45,7 +45,7 @@ def setup(args):
                 ],
               },
           # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-          "initialClusterVersion": "1.7.11-gke.1",
+          "initialClusterVersion": "1.8.5-gke.0",
       }
   }
 
