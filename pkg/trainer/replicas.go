@@ -336,11 +336,13 @@ func (s *TFReplicaSet) Delete() error {
 	if err != nil {
 		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
 			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
+			failures = true
 		}
 	} else {
 		log.V(1).Infof("Delete ConfigMaps %v:%v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName())
 		if err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.Metadata.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{}); err != nil {
 			log.Errorf("error deleting config maps %v:%v: %v", s.Job.job.Metadata.Namespace, s.defaultPSConfigMapName(), err)
+			failures = true
 		}
 	}
 
