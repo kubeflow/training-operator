@@ -51,6 +51,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 RUN easy_install pip
+# TODO(jlewi): Use pipfile to pull in requirements as specified in the build.
 RUN pip install --upgrade six pyyaml google-api-python-client \
     google-cloud-storage pylint jinja2 \
     google-auth-httplib2 kubernetes==4.0.0 mock retrying 

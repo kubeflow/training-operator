@@ -16,7 +16,7 @@ mkdir -p ${GOPATH}
 # Change to the directory we just cloned so that we pull the code from
 # the code we just checkout.
 # TODO(jlewi): Uncomment before submitting
-# cd ${SRC_DIR}
+cd ${SRC_DIR}
 python -m py.release build_new_release \
   --src_dir=${SRC_DIR} \
   --registry=gcr.io/tf-on-k8s-dogfood \
