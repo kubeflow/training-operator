@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	CRDKind       = "TfJob"
+	CRDKind       = "tfjob"
 	CRDKindPlural = "tfjobs"
 	CRDGroup      = "tensorflow.org"
 	CRDVersion    = "v1alpha1"
