@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/spf13/pflag"
+	"flag"
 	"fmt"
 	"os"
 
-	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
 	"github.com/tensorflow/k8s/cmd/tf_operator/app"
+	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
 )
 
 func main() {
 	s := options.NewServerOption()
-	s.AddFlags(pflag.CommandLine)
+	s.AddFlags(flag.CommandLine)
 
-	pflag.Parse()
+	flag.Parse()
 
 	if err := app.Run(s); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
