@@ -15,7 +15,7 @@ dashboard:
 
 config:
   configmap:
-  file: /etc/config/controller_config_file.yaml
+  file: /etc/config/controller-config-file.yaml
 
 ## Install Default RBAC roles and bindings
 rbac:

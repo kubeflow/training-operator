@@ -2,6 +2,7 @@
 package client
 
 import (
+	"github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -12,7 +13,7 @@ import (
 type ClientManager struct {
 	restCfg     *rest.Config
 	ClientSet   *kubernetes.Clientset
-	TfJobClient *k8sutil.TfJobRestClient
+	TfJobClient *versioned.Clientset
 }
 
 func (c *ClientManager) init() {
@@ -28,10 +29,8 @@ func (c *ClientManager) init() {
 	}
 	c.ClientSet = clientset
 
-	tfJobClient, err := k8sutil.NewTfJobClient()
-	if err != nil {
-		panic(err)
-	}
+	tfJobClient := versioned.NewForConfigOrDie(c.restCfg)
+
 	c.TfJobClient = tfJobClient
 }
 

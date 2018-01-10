@@ -45,7 +45,7 @@ def setup(args):
                 ],
               },
           # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-          "initialClusterVersion": "1.8.1-gke.1",
+          "initialClusterVersion": "1.8.5-gke.0",
       }
   }
 
@@ -69,6 +69,10 @@ def setup(args):
   api_client = k8s_client.ApiClient()
 
   util.setup_cluster(api_client)
+
+  # A None gcs_client should be passed to test_util.create_junit_xml_file
+  # unless chart.startswith("gs://"), e.g. https://storage.googleapis.com/...
+  gcs_client = None
 
   if chart.startswith("gs://"):
     remote = chart

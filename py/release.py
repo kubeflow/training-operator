@@ -442,11 +442,13 @@ def clone_lastgreen(args):
   util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
                   sha)
 
-# TODO(jlewi): Delete this function once
-# https://github.com/tensorflow/k8s/issues/189 is fixed.
-def build_lastgreen(args):  # pylint: disable=too-many-locals
-  """Find the latest green postsubmit and build the artifacts.
+def build_new_release(args):  # pylint: disable=too-many-locals
+  """Find the latest release and build the artifacts if they are newer then
+  the current release.
   """
+  if not args.src_dir:
+    raise ValueError("src_dir must be provided when building last green.")
+
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
 
@@ -458,18 +460,13 @@ def build_lastgreen(args):  # pylint: disable=too-many-locals
   last_release_sha = get_last_release(bucket)
   logging.info("Most recent release was for %s", last_release_sha)
 
+  sha = build_and_push_image.GetGitHash(args.src_dir)
+
   if sha == last_release_sha:
     logging.info("Already cut release for %s", sha)
     return
 
-  go_dir = tempfile.mkdtemp(prefix="tmpTfJobSrc")
-  logging.info("Temporary go_dir: %s", go_dir)
-
-  src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
-
-  _, sha = util.clone_repo(src_dir, util.MASTER_REPO_OWNER,
-                           util.MASTER_REPO_NAME, sha)
-  build_and_push(go_dir, src_dir, args)
+  build(args)
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
@@ -622,13 +619,20 @@ def build_parser():
       help="(Optional) Directory to checkout the source to.")
 
   ############################################################################
-  # Last Green
-  parser_lastgreen = subparsers.add_parser(
-    "lastgreen",
-    help=("Build the artifacts from the latst green postsubmit. "
-          "Will not rebuild the artifacts if they have already been built."))
+  # Build new release
+  build_new = subparsers.add_parser(
+    "build_new_release",
+    help=("Build a new release. Only builds it if its newer than current "
+          "release."))
 
-  add_common_args(parser_lastgreen)
+  build_new.add_argument(
+    "--src_dir",
+    default=None,
+    type=str,
+    help=("Directory containing the source. "))
+
+  add_common_args(build_new)
+  build_new.set_defaults(func=build_new_release)
 
   ############################################################################
   # Pull Request
@@ -671,6 +675,7 @@ def main():  # pylint: disable=too-many-locals
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()
+  # TODO: this line fails in Python 3 because library API change.
   args.func(args)
 
 if __name__ == "__main__":

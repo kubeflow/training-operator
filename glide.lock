@@ -1,5 +1,5 @@
-hash: cba472766524525db1c58d8093d8af735767e074f0b9beeb2c06c35302585c9f
-updated: 2017-12-18T09:57:55.472935328+08:00
+hash: db991ad2b10f156326ad7f4db14962f14f173bde26506dd97012e2d2b3223b9c
+updated: 2017-12-29T09:38:25.794405174+08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -59,6 +59,10 @@ imports:
   version: 787624de3eb7bd915c329cba748687a3b22666a6
   subpackages:
   - diskcache
+- name: github.com/hashicorp/golang-lru
+  version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
+  subpackages:
+  - simplelru
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
@@ -183,6 +187,7 @@ imports:
   - pkg/api/errors
   - pkg/api/meta
   - pkg/api/resource
+  - pkg/apis/meta/internalversion
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
   - pkg/apis/meta/v1alpha1
@@ -201,6 +206,7 @@ imports:
   - pkg/runtime/serializer/versioning
   - pkg/selection
   - pkg/types
+  - pkg/util/cache
   - pkg/util/clock
   - pkg/util/diff
   - pkg/util/errors
@@ -283,6 +289,7 @@ imports:
   - testing
   - third_party/forked/golang/template
   - tools/auth
+  - tools/cache
   - tools/clientcmd
   - tools/clientcmd/api
   - tools/clientcmd/api/latest
@@ -290,6 +297,7 @@ imports:
   - tools/leaderelection
   - tools/leaderelection/resourcelock
   - tools/metrics
+  - tools/pager
   - tools/record
   - tools/reference
   - transport
@@ -298,6 +306,8 @@ imports:
   - util/homedir
   - util/integer
   - util/jsonpath
+- name: k8s.io/code-generator
+  version: 25fd8c8ddbf75b223882df4479f8b8e615da05ae
 - name: k8s.io/kube-openapi
   version: 868f2f29720b192240e18284659231b440f9cda5
   subpackages:
