@@ -17,9 +17,8 @@ limitations under the License.
 package options
 
 import (
+	"flag"
 	"time"
-
-	"github.com/spf13/pflag"
 )
 
 // ServerOption is the main context object for the controller manager.
@@ -37,7 +36,7 @@ func NewServerOption() *ServerOption {
 }
 
 // AddFlags adds flags for a specific CMServer to the specified FlagSet
-func (s *ServerOption) AddFlags(fs *pflag.FlagSet) {
+func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	// chaos level will be removed once we have a formal tool to inject failures.
 	fs.IntVar(&s.ChaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the TfJob created by the operator.")
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
