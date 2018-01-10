@@ -115,7 +115,7 @@ func getJobNames(original, created *tfv1alpha1.TfJob) (jobs map[string]bool) {
 	for _, r := range original.Spec.ReplicaSpecs {
 		baseName := strings.ToLower(string(r.TfReplicaType))
 
-		for i := 0; i < int(*r.Replicas); i += 1 {
+		for i := 0; i < int(*r.Replicas); ++i {
 			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", original.ObjectMeta.Name), baseName, created.Spec.RuntimeId, i)
 			jobs[jobName] = true
 		}
@@ -170,7 +170,6 @@ func waitForDeletion(kubeCli kubernetes.Interface, name, tbDeployName string, or
 		err = fmt.Errorf("TensorBoard deployment %v was not successfully deleted for TfJob %v.", tbDeployName, name)
 		return
 	}
-	return
 }
 
 func run() (string, error) {
