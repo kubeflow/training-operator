@@ -17,35 +17,32 @@ limitations under the License.
 package app
 
 import (
-	"github.com/tensorflow/k8s/pkg/controller"
-
-	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
 	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
+	"time"
 
+	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/util"
-	"github.com/tensorflow/k8s/version"
+	"k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"time"
-
-	"github.com/ghodss/yaml"
+	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
-	"k8s.io/api/core/v1"
-	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
+	"github.com/tensorflow/k8s/pkg/controller"
+	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
+	"github.com/tensorflow/k8s/version"
 )
 
 var (
