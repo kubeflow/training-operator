@@ -26,24 +26,26 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"fmt"
+	"io/ioutil"
+	"os"
+	"runtime"
+
 	"github.com/golang/glog"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/util"
 	"github.com/tensorflow/k8s/version"
-	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"os"
-	"runtime"
+
+	"time"
 
 	"github.com/ghodss/yaml"
 	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 var (
@@ -58,18 +60,13 @@ func Run(opt *options.ServerOption) error {
 		glog.Fatalf("must set env MY_POD_NAMESPACE")
 	}
 
-	if opt.PrintVersion {
-		fmt.Println("tf_operator Version:", version.Version)
-		fmt.Println("Git SHA:", version.GitSHA)
-		fmt.Println("Go Version:", runtime.Version())
-		fmt.Printf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		os.Exit(0)
-	}
-
 	glog.Infof("tf_operator Version: %v", version.Version)
 	glog.Infof("Git SHA: %s", version.GitSHA)
 	glog.Infof("Go Version: %s", runtime.Version())
 	glog.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	if opt.PrintVersion {
+		os.Exit(0)
+	}
 
 	config, err := k8sutil.GetClusterConfig()
 	if err != nil {
