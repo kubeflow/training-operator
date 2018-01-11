@@ -19,12 +19,15 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/api/core/v1"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"k8s.io/client-go/rest"
+	clientset "k8s.io/client-go/kubernetes"
+	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
+
 )
 
 const (
@@ -38,27 +41,37 @@ var (
 )
 
 func run() (string, error) {
-	kubeCli := k8sutil.MustNewKubeClient()
-	tfJobClient, err := k8sutil.NewTfJobClient()
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	kubeCli, err := clientset.NewForConfig(config)
+	if err != nil {
+		return "", err
+	}
+
+	tfJobClient, err := tfjobclient.NewForConfig(config)
 	if err != nil {
 		return "", err
 	}
 
 	name := "e2e-test-job-" + util.RandString(4)
 
-	original := &spec.TfJob{
-		Metadata: metav1.ObjectMeta{
+	original := &tfv1alpha1.TfJob{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
 				"test.mlkube.io": "",
 			},
 		},
-		Spec: spec.TfJobSpec{
-			ReplicaSpecs: []*spec.TfReplicaSpec{
+		Spec: tfv1alpha1.TfJobSpec{
+			ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
 				{
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(2222),
-					TfReplicaType: spec.MASTER,
+					TfReplicaType: tfv1alpha1.MASTER,
 					Template: &v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -74,12 +87,12 @@ func run() (string, error) {
 				{
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(2222),
-					TfReplicaType: spec.PS,
+					TfReplicaType: tfv1alpha1.PS,
 				},
 				{
 					Replicas:      proto.Int32(1),
 					TfPort:        proto.Int32(2222),
-					TfReplicaType: spec.WORKER,
+					TfReplicaType: tfv1alpha1.WORKER,
 					Template: &v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -93,13 +106,13 @@ func run() (string, error) {
 					},
 				},
 			},
-			TensorBoard: &spec.TensorBoardSpec{
+			TensorBoard: &tfv1alpha1.TensorBoardSpec{
 				LogDir: "/tmp/tensorflow",
 			},
 		},
 	}
 
-	_, err = tfJobClient.Create(Namespace, original)
+	_, err = tfJobClient.TensorflowV1alpha1().TfJobs(Namespace).Create(original)
 
 	if err != nil {
 		log.Errorf("Creating the job failed; %v", err)
@@ -107,14 +120,14 @@ func run() (string, error) {
 	}
 
 	// Wait for the job to complete for up to timeout.
-	var tfJob *spec.TfJob
+	var tfJob *tfv1alpha1.TfJob
 	for endTime := time.Now().Add(*timeout); time.Now().Before(endTime); {
-		tfJob, err = tfJobClient.Get(Namespace, name)
+		tfJob, err = tfJobClient.TensorflowV1alpha1().TfJobs(Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warningf("There was a problem getting TfJob: %v; error %v", name, err)
 		}
 
-		if tfJob.Status.State == spec.StateSucceeded || tfJob.Status.State == spec.StateFailed {
+		if tfJob.Status.State == tfv1alpha1.StateSucceeded || tfJob.Status.State == tfv1alpha1.StateFailed {
 			log.Infof("job %v finished:\n%v", name, util.Pformat(tfJob))
 			break
 		}
@@ -126,7 +139,7 @@ func run() (string, error) {
 		return name, fmt.Errorf("Failed to get TfJob %v", name)
 	}
 
-	if tfJob.Status.State != spec.StateSucceeded {
+	if tfJob.Status.State != tfv1alpha1.StateSucceeded {
 		// TODO(jlewi): Should we clean up the job.
 		return name, fmt.Errorf("TfJob %v did not succeed;\n %v", name, util.Pformat(tfJob))
 	}
@@ -140,7 +153,7 @@ func run() (string, error) {
 		baseName := strings.ToLower(string(r.TfReplicaType))
 
 		for i := 0; i < int(*r.Replicas); i += 1 {
-			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", original.Metadata.Name), baseName, tfJob.Spec.RuntimeId, i)
+			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", original.ObjectMeta.Name), baseName, tfJob.Spec.RuntimeId, i)
 
 			_, err := kubeCli.BatchV1().Jobs(Namespace).Get(jobName, metav1.GetOptions{})
 
@@ -151,7 +164,7 @@ func run() (string, error) {
 	}
 
 	// Check that the TensorBoard deployment is present
-	tbDeployName := fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", original.Metadata.Name), tfJob.Spec.RuntimeId)
+	tbDeployName := fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", original.ObjectMeta.Name), tfJob.Spec.RuntimeId)
 	_, err = kubeCli.ExtensionsV1beta1().Deployments(Namespace).Get(tbDeployName, metav1.GetOptions{})
 
 	if err != nil {
@@ -166,7 +179,7 @@ func run() (string, error) {
 	}
 
 	// Delete the job and make sure all subresources are properly garbage collected.
-	if err := tfJobClient.Delete(Namespace, name); err != nil {
+	if err := tfJobClient.TensorflowV1alpha1().TfJobs(Namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
 		log.Fatalf("Failed to delete TfJob %v; error %v", name, err)
 	}
 
@@ -180,7 +193,7 @@ func run() (string, error) {
 		baseName := strings.ToLower(string(r.TfReplicaType))
 
 		for i := 0; i < int(*r.Replicas); i += 1 {
-			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", original.Metadata.Name), baseName, tfJob.Spec.RuntimeId, i)
+			jobName := fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", original.ObjectMeta.Name), baseName, tfJob.Spec.RuntimeId, i)
 
 			jobs[jobName] = true
 		}

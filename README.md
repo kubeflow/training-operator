@@ -1,11 +1,9 @@
 # K8s Custom Resource and Operator For TensorFlow jobs
 
 [![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
-
 [![Coverage Status](https://coveralls.io/repos/github/tensorflow/k8s/badge.svg?branch=master)](https://coveralls.io/github/tensorflow/k8s?branch=master)
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/tensorflow/k8s)](https://goreportcard.com/report/github.com/tensorflow/k8s)
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
-
 [Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
 
 ## Overview
@@ -147,7 +145,7 @@ metadata:
   name: tf-job-operator-config
   namespace: default
 data:
-  controller_config_file.yaml: |
+  controller-config-file.yaml: |
     accelerators:
       grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
       alpha.kubernetes.io/nvidia-gpu:

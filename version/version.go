@@ -13,7 +13,6 @@
 package version
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 
@@ -26,17 +25,12 @@ var (
 )
 
 // PrintVersion print version info
-func PrintVersion(printVersion bool) {
-	if printVersion {
-		fmt.Println("tf_operator Version:", Version)
-		fmt.Println("Git SHA:", GitSHA)
-		fmt.Println("Go Version:", runtime.Version())
-		fmt.Printf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-		os.Exit(0)
-	}
-
+func PrintVersion(shouldExit bool) {
 	log.Infof("tf_operator Version: %v", Version)
 	log.Infof("Git SHA: %s", GitSHA)
 	log.Infof("Go Version: %s", runtime.Version())
 	log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	if shouldExit {
+		os.Exit(0)
+	}
 }

@@ -7,39 +7,23 @@ import (
 	"reflect"
 
 	log "github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/spec"
 	"github.com/tensorflow/k8s/pkg/util"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
 
 	"strings"
-	"sync"
-	"time"
 
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
+	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 )
-
-var (
-	reconcileInterval = 8 * time.Second
-)
-
-type jobEventType string
-
-const (
-	eventDeleteJob jobEventType = "Delete"
-	eventModifyJob jobEventType = "Modify"
-)
-
-type jobEvent struct {
-	typ jobEventType
-	// TODO(jlewi): Rename cluster to job.
-	cluster *spec.TfJob
-}
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
 // ensure correctness on creation.
 type TrainingJob struct {
-	job *spec.TfJob
+	job *tfv1alpha1.TfJob
 
 	KubeCli kubernetes.Interface
 
@@ -47,25 +31,19 @@ type TrainingJob struct {
 
 	TensorBoard *TBReplicaSet
 
-	tfJobClient k8sutil.TfJobClient
+	tfJobClient tfjobclient.Interface
 
 	// in memory state of the job.
 	// status is the source of truth after job struct is materialized. Changes to the status to be persisted
 	// should be made here.
-	status spec.TfJobStatus
+	status tfv1alpha1.TfJobStatus
 
 	memberCounter int
-
-	// eventCh is used to provide Kubernetes events for a particular cluster that need to be handled.
-	eventCh chan *jobEvent
-
-	// stopCh is a channel used to communicate that the cluster needs to be stopped.
-	stopCh chan struct{}
 }
 
 // ClusterSpec represents a cluster TensorFlow specification.
 // https://www.tensorflow.org/deploy/distributed#create_a_tftrainclusterspec_to_describe_the_cluster
-// It is a map from job names to network addressess.
+// It is a map from job names to network addresses.
 type ClusterSpec map[string][]string
 
 type TaskSpec struct {
@@ -73,16 +51,14 @@ type TaskSpec struct {
 	Index int    `json:"index"`
 }
 
-func initJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup) (*TrainingJob, error) {
+func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job *tfv1alpha1.TfJob) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:     kubeCli,
 		tfJobClient: tfJobClient,
 		Replicas:    make([]*TFReplicaSet, 0),
 		TensorBoard: nil,
 		job:         job,
-		eventCh:     make(chan *jobEvent, 100),
-		stopCh:      make(chan struct{}),
-		status:      job.Status.Copy(),
+		status:      *job.Status.DeepCopy(),
 	}
 
 	return j, nil
@@ -95,18 +71,11 @@ func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplic
 	return nil, nil
 }
 
-func NewJob(kubeCli kubernetes.Interface, tfJobClient k8sutil.TfJobClient, job *spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup, config *spec.ControllerConfig) (*TrainingJob, error) {
-	j, err := initJob(kubeCli, tfJobClient, job, stopC, wg)
+func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job *tfv1alpha1.TfJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
+	j, err := initJob(kubeCli, tfJobClient, job)
 	if err != nil {
 		return nil, err
 	}
-	// Increment the wait group which the controller uses to monitor the job processing.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		j.run(config, stopC)
-	}()
 
 	return j, nil
 }
@@ -128,7 +97,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 }
 
 // createResources creates all the replicas and TensorBoard if requested
-func (j *TrainingJob) createResources(config *spec.ControllerConfig) error {
+func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error {
 	for _, r := range j.Replicas {
 		if err := r.Create(config); err != nil {
 			return err
@@ -160,14 +129,13 @@ func (j *TrainingJob) deleteResources() error {
 	return nil
 }
 
-func (j *TrainingJob) GetStatus() (spec.ReplicaState, []*spec.TfReplicaStatus, error) {
-	chief := j.job.Spec.TerminationPolicy.Chief
-	chiefState := spec.ReplicaStateUnknown
-	replicaStatuses := make([]*spec.TfReplicaStatus, 0)
+func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStatus, error) {
+	state := tfv1alpha1.StateUnknown
+	replicaStatuses := make([]*tfv1alpha1.TfReplicaStatus, 0)
 
 	// The state for each replica.
 	// TODO(jlewi): We will need to modify this code if we want to allow multiples of a given type of replica.
-	replicaSetStates := make(map[spec.TfReplicaType]spec.ReplicaState)
+	replicaSetStates := make(map[tfv1alpha1.TfReplicaType]tfv1alpha1.ReplicaState)
 
 	for _, r := range j.Replicas {
 		rStatus, err := r.GetStatus()
@@ -179,12 +147,24 @@ func (j *TrainingJob) GetStatus() (spec.ReplicaState, []*spec.TfReplicaStatus, e
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		if string(r.Spec.TfReplicaType) == string(chief.ReplicaName) {
-			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
+		// If any replicas are failed mark job as failed.
+		if rStatus.State == tfv1alpha1.ReplicaStateFailed {
+			state = tfv1alpha1.StateFailed
 		}
 	}
 
-	return chiefState, replicaStatuses, nil
+	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateSucceeded {
+		state = tfv1alpha1.StateSucceeded
+		return state, replicaStatuses, nil
+	}
+
+	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateFailed {
+		state = tfv1alpha1.StateFailed
+		return state, replicaStatuses, nil
+	}
+
+	state = tfv1alpha1.StateRunning
+	return state, replicaStatuses, nil
 }
 
 // isRetryableTerminationState returns true if a container terminated in a state
@@ -231,26 +211,21 @@ func (j *TrainingJob) masterName() string {
 }
 
 // setup the training job.
-func (j *TrainingJob) setup(config *spec.ControllerConfig) {
+func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 	if j.job == nil {
-		j.status.SetReason("Internal error; setup failed; job is missing spec.")
-		j.status.SetPhase(spec.TfJobPhaseFailed)
-		j.status.SetState(spec.StateFailed)
+		j.status.Reason = "Internal error; setup failed; job is missing spec."
+		j.status.Phase = tfv1alpha1.TfJobPhaseFailed
+		j.status.State = tfv1alpha1.StateFailed
 	}
 
 	err := func() error {
 		// If the job has already started we shouldn't set it up again.
-		if j.status.Phase != spec.TfJobPhaseNone {
+		if j.status.Phase != tfv1alpha1.TfJobPhaseNone {
 			log.Warningf("Job %v has already been setup.", j.name())
 			return nil
 		}
 
-		err := j.job.Spec.SetDefaults(config.TfImage)
-		if err != nil {
-			return fmt.Errorf("there was a problem setting defaults for job spec: %v", err)
-		}
-
-		err = j.job.Spec.Validate()
+		err := validation.ValidateTfJobSpec(&j.job.Spec)
 		if err != nil {
 			return fmt.Errorf("invalid job spec: %v", err)
 		}
@@ -269,7 +244,7 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 		}
 		j.TensorBoard = tb
 
-		if err := j.job.Spec.ConfigureAccelerators(config.Accelerators); err != nil {
+		if err := helper.ConfigureAcceleratorsForTfJobSpec(&j.job.Spec, config.Accelerators); err != nil {
 			return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)
 		}
 
@@ -280,40 +255,32 @@ func (j *TrainingJob) setup(config *spec.ControllerConfig) {
 	}()
 
 	if err != nil {
-		j.status.SetReason(err.Error())
-		j.status.SetPhase(spec.TfJobPhaseFailed)
-		j.status.SetState(spec.StateFailed)
+		j.status.Reason = err.Error()
+		j.status.Phase = tfv1alpha1.TfJobPhaseFailed
+		j.status.State = tfv1alpha1.StateFailed
 	} else {
-		j.status.SetPhase(spec.TfJobPhaseCreating)
-		j.status.SetState(spec.StateRunning)
+		j.status.Phase = tfv1alpha1.TfJobPhaseCreating
+		j.status.State = tfv1alpha1.StateRunning
 	}
 }
 
 func (j *TrainingJob) Delete() {
-	// Delete doesn't actually delete any resources. It just sends an event which will be processed by the run
-	// method.
-	j.send(&jobEvent{typ: eventDeleteJob})
-}
-
-// TODO(jlewi): This is sending a clusterEvent to the channel. I think these are events
-// coming from the cluster code and not k8s events.
-func (j *TrainingJob) send(ev *jobEvent) {
-	select {
-	case j.eventCh <- ev:
-		l, ecap := len(j.eventCh), cap(j.eventCh)
-		if l > int(float64(ecap)*0.8) {
-			log.Warningf("eventCh buffer is almost full [%d/%d]", l, ecap)
-		}
-	case <-j.stopCh:
+	// TODO(jlewi): Delete is what should cause us to delete the Pods.
+	// we shouldn't delete the pods when the jobs finish because leaving the pods
+	// allows us to get the logs from the pods after the job finishes.
+	//
+	log.Infof("TfJob %v deleted by the user", j.fullname())
+	// TODO(jlewi): This logic is probably insufficient.
+	if j.job.Status.Phase != tfv1alpha1.TfJobPhaseCleanUp {
+		j.status.Phase = tfv1alpha1.TfJobPhaseCleanUp
 	}
-}
 
-// Update sends an update event for the job.
-func (j *TrainingJob) Update(newJob *spec.TfJob) {
-	j.send(&jobEvent{
-		typ:     eventModifyJob,
-		cluster: newJob,
-	})
+	// TODO(jlewi): Does it make sense to explicitly delete the resources? Should
+	// we just rely on K8s garbage collection to delete the resources before
+	// deleting TfJob?
+	if cErr := j.deleteResources(); cErr != nil {
+		log.Errorf("trainingJob.deleteResources() error; %v", cErr)
+	}
 }
 
 // updateTPRStatus updates the job status based on TraingingJob.status.
@@ -325,7 +292,7 @@ func (j *TrainingJob) updateTPRStatus() error {
 
 	newJob := j.job
 	newJob.Status = j.status
-	newJob, err := j.tfJobClient.Update(j.job.Metadata.Namespace, newJob)
+	newJob, err := j.tfJobClient.TensorflowV1alpha1().TfJobs(j.job.ObjectMeta.Namespace).Update(newJob)
 	if err != nil {
 		return err
 	}
@@ -336,119 +303,79 @@ func (j *TrainingJob) updateTPRStatus() error {
 }
 
 // reconcile tries to get the job into the desired state.
-func (j *TrainingJob) reconcile(config *spec.ControllerConfig) {
-	if j.status.Phase == spec.TfJobPhaseNone {
+func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
+	if j.status.Phase == tfv1alpha1.TfJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
 
 		if err := j.updateTPRStatus(); err != nil {
 			log.Warningf("failed to update TPR status: %v", err)
+			return err
 		}
 	}
 
 	// TODO(jlewi): Can we determine from the CRD status whether we should
 	// Create the resources or not? We need to ensure the resources exist so for
 	// now we always call Create.
-	if j.job.Status.Phase == spec.TfJobPhaseCreating || j.job.Status.Phase == spec.TfJobPhaseRunning {
+	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseCreating || j.job.Status.Phase == tfv1alpha1.TfJobPhaseRunning {
 		// We call Create to make sure all the resources exist and are running.
 		if cErr := j.createResources(config); cErr != nil {
 			log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
+			return cErr
 		}
 
 		state, replicaStatuses, err := j.GetStatus()
 
 		j.status.ReplicaStatuses = replicaStatuses
 		if err != nil {
-			log.Errorf("GetStatus() for job %v returned error: %v", j.job.Metadata.Name, err)
+			log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
+			return err
 		}
 		// TODO(jlewi): We should update the Phase if we detect the job is done.
-		if state == spec.ReplicaStateFailed {
-			log.Errorf("Master failed Job: %v.", j.job.Metadata.Name)
-			j.status.SetPhase(spec.TfJobPhaseDone)
-			j.status.SetState(spec.StateFailed)
-		} else if state == spec.ReplicaStateSucceeded {
-			log.Infof("Master succeeded Job: %v.", j.job.Metadata.Name)
-			j.status.SetPhase(spec.TfJobPhaseDone)
-			j.status.SetState(spec.StateSucceeded)
+		if state == tfv1alpha1.StateFailed {
+			log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
+			j.status.Phase = tfv1alpha1.TfJobPhaseDone
+			j.status.State = tfv1alpha1.StateFailed
+		} else if state == tfv1alpha1.StateSucceeded {
+			log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
+			j.status.Phase = tfv1alpha1.TfJobPhaseDone
+			j.status.State = tfv1alpha1.StateSucceeded
 		} else {
-			log.V(1).Infof("Job %v status=%v", j.job.Metadata.Name, util.Pformat(j.status))
+			log.V(1).Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 		}
 	}
 
 	// If the phase changed we should update the TPR.
 	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v, failed to update TPR status error: %v", j.job.Metadata.Name, err)
+		log.Warningf("Job %v, failed to update TPR status error: %v", j.job.ObjectMeta.Name, err)
+		return err
 	}
 
-	if j.job.Status.Phase == spec.TfJobPhaseCleanUp {
+	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseCleanUp {
 		if cErr := j.deleteResources(); cErr != nil {
-			log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.Metadata.Name, cErr)
+			log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.ObjectMeta.Name, cErr)
 		}
 		// j.status.SetPhase(spec.TfJobPhaseDone)
 		// Return from run because we want to stop reconciling the object.
-		return
+		return nil
 	}
 
 	// updateTPRStatus will update the status of the TPR with c.Status if c.Status
-	// doesn't match c.Cluster.status. So you can change c.Status in order to propogate
+	// doesn't match c.Cluster.status. So you can change c.Status in order to propagate
 	// changes to the TPR status.
 	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v; failed to update TPR status error: %v", j.job.Metadata.Name, err)
+		log.Warningf("Job %v; failed to update TPR status error: %v", j.job.ObjectMeta.Name, err)
+		return err
 	}
-}
 
-// run is the main processing loop for TfJob resources.
-func (j *TrainingJob) run(config *spec.ControllerConfig, stopC <-chan struct{}) {
-	defer func() {
-		close(j.stopCh)
-	}()
-
-	j.reconcile(config)
-
-	for {
-		select {
-		case <-stopC:
-			return
-		case event := <-j.eventCh:
-			switch event.typ {
-
-			// TODO(jlewi): We need handle a modify event.
-			//case eventModifyCluster:
-			//	if isSpecEqual(event.cluster.Spec, j.job.Spec) {
-			//		break
-			//	}
-			case eventDeleteJob:
-				// TODO(jlewi): Delete is what should cause us to delete the Pods.
-				// we shouldn't delete the pods when the jobs finish because leaving the pods
-				// allows us to get the logs from the pods after the job finishes.
-				//
-				log.Infof("TfJob %v deleted by the user", j.fullname())
-				// TODO(jlewi): This logic is probably insufficient.
-				if j.job.Status.Phase != spec.TfJobPhaseCleanUp {
-					j.status.SetPhase(spec.TfJobPhaseCleanUp)
-				}
-
-				// TODO(jlewi): Does it make sense to explicitly delete the resources? Should
-				// we just rely on K8s garbage collection to delete the resources before
-				// deleting TfJob?
-				if cErr := j.deleteResources(); cErr != nil {
-					log.Errorf("trainingJob.deleteResources() error; %v", cErr)
-				}
-
-				// Return from run because we want to stop reconciling the object.
-				return
-			}
-		case <-time.After(reconcileInterval):
-			j.reconcile(config)
-		}
-	}
+	return nil
 }
 
 func (j *TrainingJob) name() string {
-	return j.job.Metadata.GetName()
+	return j.job.ObjectMeta.GetName()
 }
 
 // fullname returns the namespace and name for the job.
 func (j *TrainingJob) fullname() string {
-	return j.job.Metadata.GetNamespace() + ":" + j.job.Metadata.GetName()
+	return j.job.ObjectMeta.GetNamespace() + ":" + j.job.ObjectMeta.GetName()
 }

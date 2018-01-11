@@ -1,4 +1,6 @@
 import logging
+import subprocess
+import time
 from xml.etree import ElementTree
 
 import six
@@ -6,27 +8,102 @@ import six
 from py import util
 
 class TestCase(object):
-  def __init__(self):
-    self.class_name = None
-    self.name = None
+  def __init__(self, class_name="", name=""):
+    self.class_name = class_name
+    self.name = name
     # Time in seconds of the test.
     self.time = None
     # String describing the failure.
     self.failure = None
 
+class TestSuite(object):
+  """A suite of test cases."""
+
+  def __init__(self, class_name):
+    self._cases = {}
+    self._class_name = class_name
+
+  def create(self, name):
+    """Create a new TestCase with the specified name.
+
+    Args:
+      name: Name for the newly created TestCase.
+
+    Returns:
+      TestCase: The newly created test case.
+
+    Raises:
+      ValueError: If a test case with the specified name already exists.
+    """
+    if name in self._cases:
+      raise ValueError("TestSuite already has a test named %s" % name)
+    self._cases[name] = TestCase()
+    self._cases[name].class_name = self._class_name
+    self._cases[name].name = name
+    return self._cases[name]
+
+  def get(self, name):
+    """Get the specified test case.
+
+    Args:
+      name: Name of the test case to return.
+
+    Returns:
+      TestCase: The requested test case.
+
+    Raises:
+      KeyError: If no test with that name exists.
+    """
+    if not name in self._cases:
+      raise KeyError("No TestCase named %s" % name)
+    return self._cases[name]
+
+  def __iter__(self):
+    """Return an iterator of TestCases."""
+    return six.itervalues(self._cases)
+
+def wrap_test(test_func, test_case):
+  """Wrap a test func.
+
+  Test_func is a callable that contains the commands to perform a particular
+  test.
+
+  Args:
+    test_func: The callable to invoke.
+    test_case: A TestCase to be populated.
+
+  Raises:
+    Exceptions are reraised to indicate test failure.
+  """
+  start = time.time()
+  try:
+    test_func()
+  except subprocess.CalledProcessError as e:
+    test_case.failure = (
+       "Subprocess failed;\n{0}".format(e.output))
+    raise
+  except Exception as e:
+    test_case.failure = "Test failed; " + e.message
+    raise
+  finally:
+    test_case.time = time.time() - start
 
 def create_junit_xml_file(test_cases, output_path, gcs_client=None):
   """Create a JUnit XML file.
 
+  The junit schema is specified here:
+  https://www.ibm.com/support/knowledgecenter/en/SSQ2R2_9.5.0/com.ibm.rsar.analysis.codereview.cobol.doc/topics/cac_useresults_junit.html
+
   Args:
-    test_cases: List of test case objects.
+    test_cases: TestSuite or List of test case objects.
     output_path: Path to write the XML
     gcs_client: GCS client to use if output is GCS.
   """
   total_time = 0
   failures = 0
   for c in test_cases:
-    total_time += c.time
+    if c.time:
+      total_time += c.time
 
     if c.failure:
       failures += 1
@@ -38,8 +115,15 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     attrib = {
       "classname": c.class_name,
       "name": c.name,
-      "time": "{0}".format(c.time),
     }
+    if c.time:
+      attrib["time"] = "{0}".format(c.time)
+
+    # If the time isn't set and no message is set we interpret that as
+    # the test not being run.
+    if not c.time and not c.failure:
+      attrib["failure"] = "Test was not run."
+
     if c.failure:
       attrib["failure"] = c.failure
     e = ElementTree.Element("testcase", attrib)
@@ -47,7 +131,7 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     root.append(e)
 
   t = ElementTree.ElementTree(root)
-  logging.info("Creationg %s", output_path)
+  logging.info("Creating %s", output_path)
   if output_path.startswith("gs://"):
     b = six.StringIO()
     t.write(b)

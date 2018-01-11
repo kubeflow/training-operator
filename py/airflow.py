@@ -261,12 +261,17 @@ def main():
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
 
   # Setup a logging file handler. This file will be the build log.
-  rootLogger = logging.getLogger()
+  root_logger = logging.getLogger()
 
   build_log = os.path.join(test_dir, "build-log.txt")
-  fileHandler = logging.FileHandler(build_log)
-  # TODO(jlewi): Should we set the formatter?
-  rootLogger.addHandler(fileHandler)
+  file_handler = logging.FileHandler(build_log)
+  # We need to explicitly set the formatter because it will not pick up
+  # the BasicConfig.
+  formatter = logging.Formatter(fmt=("%(levelname)s|%(asctime)s"
+                                     "|%(pathname)s|%(lineno)d| %(message)s"),
+                                datefmt="%Y-%m-%dT%H:%M:%S")
+  file_handler.setFormatter(formatter)
+  root_logger.addHandler(file_handler)
 
   logging.info("test_dir: %s", test_dir)
 
@@ -302,7 +307,7 @@ def main():
 
   prow.create_finished(gcs_client, output_dir, success)
 
-  fileHandler.flush()
+  file_handler.flush()
   prow.upload_outputs(gcs_client, output_dir, build_log)
 
   if not success:

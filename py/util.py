@@ -5,7 +5,6 @@ import datetime
 import logging
 import os
 import re
-import shutil
 import subprocess
 import time
 import urllib
@@ -254,7 +253,10 @@ def wait_for_deployment(api_client, namespace, name):
   Args:
     api_client: K8s api client to use.
     namespace: The name space for the deployment.
-    name: The name of the deployment):
+    name: The name of the deployment.
+
+  Returns:
+    deploy: The deploy object describing the deployment.
 
   Raises:
     TimeoutError: If timeout waiting for deployment to be ready.
@@ -268,14 +270,47 @@ def wait_for_deployment(api_client, namespace, name):
     deploy = ext_client.read_namespaced_deployment(name, namespace)
     if deploy.status.ready_replicas >= 1:
       logging.info("Deployment %s in namespace %s is ready", name, namespace)
-      return
-    logging.info("Waiting for deployment %s in namespace %s",  name, namespace)
+      return deploy
+    logging.info("Waiting for deployment %s in namespace %s", name, namespace)
     time.sleep(10)
 
   logging.error("Timeout waiting for deployment %s in namespace %s to be "
                 "ready", name, namespace)
   raise TimeoutError(
       "Timeout waiting for deployment {0} in namespace {1}".format(
+      name, namespace))
+
+def wait_for_statefulset(api_client, namespace, name):
+  """Wait for deployment to be ready.
+
+  Args:
+    api_client: K8s api client to use.
+    namespace: The name space for the deployment.
+    name: The name of the stateful set.
+
+  Returns:
+    deploy: The deploy object describing the deployment.
+
+  Raises:
+    TimeoutError: If timeout waiting for deployment to be ready.
+  """
+  # Wait for tiller to be ready
+  end_time = datetime.datetime.now() + datetime.timedelta(minutes=2)
+
+  apps_client = k8s_client.AppsV1beta1Api(api_client)
+
+  while datetime.datetime.now() < end_time:
+    stateful = apps_client.read_namespaced_stateful_set(name, namespace)
+    if stateful.status.ready_replicas >= 1:
+      logging.info("Statefulset %s in namespace %s is ready", name, namespace)
+      return stateful
+    logging.info("Waiting for Statefulset %s in namespace %s", name, namespace)
+    time.sleep(10)
+
+  logging.error("Timeout waiting for statefulset %s in namespace %s to be "
+                "ready", name, namespace)
+  raise TimeoutError(
+      "Timeout waiting for statefulset {0} in namespace {1}".format(
       name, namespace))
 
 def install_gpu_drivers(api_client):
@@ -393,13 +428,15 @@ def setup_cluster(api_client):
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
 
-GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")
 
 def split_gcs_uri(gcs_uri):
   """Split a GCS URI into bucket and path."""
   m = GCS_REGEX.match(gcs_uri)
   bucket = m.group(1)
-  path = m.group(2)
+  path = ""
+  if m.group(2):
+    path = m.group(2).lstrip("/")
   return bucket, path
 
 def _refresh_credentials():
