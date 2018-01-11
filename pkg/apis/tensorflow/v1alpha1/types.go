@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	CRDKind       = "TfJob"
+	CRDKind       = "tfjob"
 	CRDKindPlural = "tfjobs"
 	CRDGroup      = "tensorflow.org"
 	CRDVersion    = "v1alpha1"
@@ -160,7 +160,7 @@ type TfJobList struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard list metadata
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
-	Metadata metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	// Items is a list of TfJobs
 	Items []TfJob `json:"items"`
 }
