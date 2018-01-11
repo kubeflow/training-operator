@@ -18,7 +18,7 @@ spec:
         command:
           - /opt/mlkube/tf_operator
           {{- if .Values.config.configmap }}
-          - --controller-config-file={{ .Values.config.file }}
+          - --controller_config_file={{ .Values.config.file }}
           {{- else if .Values.cloud }}
           - --controller-config-file=/etc/config/controller-config-file.yaml
           {{- end }}
