@@ -115,6 +115,12 @@ def test(args):
     util.run(["helm", "test", "tf-job"])
   except subprocess.CalledProcessError as e:
     t.failure = "helm test failed;\n" + e.output
+    # Reraise the exception so that the prow job will fail and the test
+    # is marked as a failure.
+    # TODO(jlewi): It would be better to this wholistically; e.g. by
+    # processing all the junit xml files and checking for any failures. This
+    # should be more tractable when we migrate off Airflow to Argo.
+    raise
   finally:
     t.time = time.time() - start
     t.name = "e2e-test"
