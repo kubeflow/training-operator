@@ -6,6 +6,7 @@ spec:
   replicaSpecs:
     - replicas: 1
       tfReplicaType: MASTER
+      TfPort: 2222
       template:
         spec:
           containers:
@@ -14,6 +15,7 @@ spec:
           restartPolicy: OnFailure
     - replicas: 1
       tfReplicaType: WORKER
+      TfPort: 2222
       template:
         spec:
           containers:
@@ -22,3 +24,4 @@ spec:
           restartPolicy: OnFailure
     - replicas: 2
       tfReplicaType: PS
+      TfPort: 2222
