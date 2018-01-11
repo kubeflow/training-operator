@@ -8,6 +8,7 @@ import argparse
 import logging
 import os
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -136,6 +137,13 @@ def teardown(args):
   zone = args.zone
   util.delete_cluster(gke, cluster_name, project, zone)
 
+def check_junit_xml_files(args):
+  """Check all the junit xml files and return a non zero exit code if there
+     are failures.
+  """
+  gcs_client = storage.Client(project=args.project)
+
+
 def add_common_args(parser):
   """Add common command line arguments to a parser.
 
@@ -212,9 +220,24 @@ def main():  # pylint: disable=too-many-locals
   parser_teardown.set_defaults(func=teardown)
   add_common_args(parser_teardown)
 
+
+  #############################################################################
+  # Check the junit files.
+  #
+  parser_check = subparsers.add_parser(
+    "check_junit",
+    help="Check junit files and return non-zero exit code if any had failures.")
+  parser_check.set_defaults(func=check_junit_xml_files)
+  add_common_args(parser_check)
+
   # parse the args and call whatever function was selected
   args = parser.parse_args()
-  args.func(args)
+
+  result = args.func(args)
+
+  if result:
+    logging.error("Exiting with code: %s", result)
+    sys.exit(result)
 
 if __name__ == "__main__":
   main()
