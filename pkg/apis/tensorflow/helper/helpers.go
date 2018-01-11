@@ -7,6 +7,15 @@ import (
 	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+var (
+	groupVersionKind = schema.GroupVersionKind{
+		Group:   tfv1.GroupName,
+		Version: tfv1.GroupVersion,
+		Kind:    tfv1.TFJobResourceKind,
+	}
 )
 
 // AsOwner make OwnerReference according to the parameter
@@ -14,8 +23,8 @@ func AsOwner(tfJob *tfv1.TfJob) metav1.OwnerReference {
 	trueVar := true
 	// Both api.OwnerReference and metatypes.OwnerReference are combined into that.
 	return metav1.OwnerReference{
-		APIVersion:         tfJob.APIVersion,
-		Kind:               tfJob.Kind,
+		APIVersion:         groupVersionKind.GroupVersion().String(),
+		Kind:               groupVersionKind.Kind,
 		Name:               tfJob.ObjectMeta.Name,
 		UID:                tfJob.ObjectMeta.UID,
 		Controller:         &trueVar,
