@@ -28,9 +28,9 @@ class XMLTest(unittest.TestCase):
       print(output)
     expected = ("""<testsuite failures="1" tests="2" time="20">"""
                 """<testcase classname="some_test" name="first" time="10" />"""
-                """<testcase classname="some_test" """
-                """failure="failed for some reason." name="first" """
-                """time="10" /></testsuite>""")
+                """<testcase classname="some_test" name="first" """
+                """time="10"><failure>failed for some reason.</failure>"""
+                """</testcase></testsuite>""")
 
     self.assertEquals(expected, output)
 
