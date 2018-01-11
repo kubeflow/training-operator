@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,9 +26,7 @@ import (
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
-
-// TODO: unused
-// var parameterCodec = runtime.NewParameterCodec(scheme)
+var parameterCodec = runtime.NewParameterCodec(scheme)
 
 func init() {
 	v1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
@@ -50,7 +48,6 @@ func init() {
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
-	if err := tensorflowv1alpha1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
+	tensorflowv1alpha1.AddToScheme(scheme)
+
 }
