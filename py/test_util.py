@@ -122,13 +122,16 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     # If the time isn't set and no message is set we interpret that as
     # the test not being run.
     if not c.time and not c.failure:
-      attrib["failure"] = "Test was not run."
+      c.failure = "Test was not run."
 
-    if c.failure:
-      attrib["failure"] = c.failure
     e = ElementTree.Element("testcase", attrib)
 
     root.append(e)
+
+    if c.failure:
+      f = ElementTree.Element("failure")
+      f.text = c.failure
+      e.append(f)
 
   t = ElementTree.ElementTree(root)
   logging.info("Creating %s", output_path)
