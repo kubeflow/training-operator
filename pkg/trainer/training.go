@@ -13,8 +13,8 @@ import (
 
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
+	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
