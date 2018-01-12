@@ -11,8 +11,14 @@ var (
 	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
-// GroupName is the group name use in this package
-const GroupName = "tensorflow.org"
+const (
+	// GroupName is the group name use in this package.
+	GroupName = "tensorflow.org"
+	// TFJobResourceKind is the kind name.
+	TFJobResourceKind = "TfJob"
+	// GroupVersion is the version.
+	GroupVersion = "v1alpha1"
+)
 
 // SchemeGroupVersion is the group version used to register these objects.
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: CRDVersion}
