@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import subprocess
 import tempfile
+import time
 import unittest
 
 from py import test_util
@@ -61,6 +62,7 @@ class TestSuiteTest(unittest.TestCase):
 class TestWrapTest(unittest.TestCase):
   def testOk(self):
     def ok():
+      time.sleep(1)
       pass
 
     t = test_util.TestCase()
@@ -79,6 +81,7 @@ class TestWrapTest(unittest.TestCase):
 
   def testGeneralError(self):
     def run():
+      time.sleep(1)
       raise ValueError("some error")
 
     t = test_util.TestCase()
