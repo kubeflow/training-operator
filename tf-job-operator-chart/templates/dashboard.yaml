@@ -21,6 +21,9 @@ spec:
       labels:
         name: tf-job-dashboard
     spec:    
+{{- if .Values.rbac.install }}
+      serviceAccountName: tf-job-operator
+{{- end }}
       containers:
       - name: tf-job-dashboard
         image: {{ .Values.image }}
