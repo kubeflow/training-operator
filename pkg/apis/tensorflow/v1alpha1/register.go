@@ -29,6 +29,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&TfJobList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
-
+	addDefaultingFuncs(scheme)
 	return nil
 }

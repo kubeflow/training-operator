@@ -13,6 +13,7 @@ import (
 
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
+	scheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -224,6 +225,9 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 			log.Warningf("Job %v has already been setup.", j.name())
 			return nil
 		}
+
+		// Set defaults.
+		scheme.Scheme.Default(j.job)
 
 		err := validation.ValidateTfJobSpec(&j.job.Spec)
 		if err != nil {
