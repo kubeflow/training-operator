@@ -17,6 +17,13 @@ const GroupName = "tensorflow.org"
 // SchemeGroupVersion is the group version used to register these objects.
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: CRDVersion}
 
+func init() {
+	// We only register manually written functions here. The registration of the
+	// generated functions takes place in the generated files. The separation
+	// makes the code compile even when the generated files are missing.
+	SchemeBuilder.Register(addDefaultingFuncs)
+}
+
 // Resource takes an unqualified resource and returns a Group-qualified GroupResource.
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
@@ -29,6 +36,5 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&TfJobList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
-
 	return nil
 }
