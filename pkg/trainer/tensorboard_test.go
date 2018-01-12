@@ -65,8 +65,8 @@ func TestTBReplicaSet(t *testing.T) {
 
 	trueVal := true
 	expectedOwnerReference := meta_v1.OwnerReference{
-		APIVersion:         "",
-		Kind:               "",
+		APIVersion:         groupVersionKind.GroupVersion().String(),
+		Kind:               groupVersionKind.Kind,
 		Name:               "some-job",
 		UID:                "some-uid",
 		Controller:         &trueVal,
