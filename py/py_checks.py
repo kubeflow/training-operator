@@ -20,19 +20,31 @@ def run_lint(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["vendor"]
+  dir_excludes = ["dashboard/frontend/node_modules", "vendor",]
+  full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
+                       dir_excludes]
   includes = ["*.py"]
   failed_files = []
   rc_file = os.path.join(args.src_dir, ".pylintrc")
-  for root, dirs, files in os.walk(args.src_dir, topdown=True):
+  for root, dirs, files in os.walk(os.path.abspath(args.src_dir),
+                                   topdown=True):
     # excludes can be done with fnmatch.filter and complementary set,
     # but it's more annoying to read.
-    dirs[:] = [d for d in dirs if d not in dir_excludes]
+    exclude = False
+    for e in full_dir_excludes:
+      if root.startswith(e):
+        exclude = True
+        break
+    if exclude:
+      continue
+
+    dirs[:] = [d for d in dirs]
     for pat in includes:
       for f in fnmatch.filter(files, pat):
         full_path = os.path.join(root, f)
         try:
-          util.run(["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
+          util.run(["pylint", "--rcfile=" + rc_file, full_path],
+                    cwd=args.src_dir)
         except subprocess.CalledProcessError:
           failed_files.append(full_path.strip(args.src_dir))
 
