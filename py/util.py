@@ -242,6 +242,9 @@ def wait_for_operation(client,
         op_id))
     time.sleep(polling_interval.total_seconds())
 
+  # Linter complains if we don't have a return here even though its unreachable.
+  return None
+
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")
   run(["gcloud", "--project=" + project, "container",

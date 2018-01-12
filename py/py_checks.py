@@ -9,10 +9,11 @@ import os
 import subprocess
 import time
 
+from google.cloud import storage  # pylint: disable=no-name-in-module
+
 from py import util
 from py import test_util
 
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
 def run_lint(args):
   start_time = time.time()

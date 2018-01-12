@@ -13,12 +13,13 @@ import tempfile
 import uuid
 import sys
 
-from airflow import DAG
-from airflow.operators import PythonOperator
-from google.cloud import storage  # pylint: disable=no-name-in-module
-
 import six
 import yaml
+
+from google.cloud import storage  # pylint: disable=no-name-in-module
+
+from airflow import DAG
+from airflow.operators import PythonOperator
 
 default_args = {
   'owner': 'airflow',
