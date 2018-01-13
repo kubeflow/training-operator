@@ -50,7 +50,9 @@ def run_lint(args):
           failed_files.append(full_path.strip(args.src_dir))
 
   if failed_files:
-    logging.error("%s files had lint errors.", len(failed_files))
+    failed_files.sort()
+    logging.error("%s files had lint errors:\n%s", len(failed_files),
+                  "\n".join(failed_files))
   else:
     logging.info("No lint issues.")
 

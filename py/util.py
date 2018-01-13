@@ -60,7 +60,7 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
     log_file = None
     with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False, mode="w") as hf:
       logging.info("Writing logs to %s", hf.name)
-      print("Writing logs %s", hf.name)
+      print("Writing logs %s" % hf.name)
       log_file = hf.name
       #output = subprocess.check_output(command, cwd=cwd, env=env,
                                        #stdout=hf,
