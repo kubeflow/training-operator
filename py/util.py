@@ -54,14 +54,15 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
         logging.info(command_str)
       return
 
-    # TODO(jlewi): Pipe output to a file.
+    # TODO(jlewi): Do not submit. this is a hack to try to get the output
+    # in airflow for debugging.
     import tempfile
     with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False) as hf:
       logging.info("Writing logs to %s", hf.name)
       print("Writing logs %s", hf.name)
       output = subprocess.check_output(command, cwd=cwd, env=env,
                                        stdout=hf,
-                                       stderr=subprocess.STDOUT).decode("utf-8")
+                                       stderr=hf).decode("utf-8")
 
     if use_print:
       # With Airflow use print to bypass logging module.
