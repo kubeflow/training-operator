@@ -63,7 +63,6 @@ class TestWrapTest(unittest.TestCase):
   def testOk(self):
     def ok():
       time.sleep(1)
-      pass
 
     t = test_util.TestCase()
     test_util.wrap_test(ok, t)
