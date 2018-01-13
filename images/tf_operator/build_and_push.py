@@ -110,7 +110,7 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   ]
   for t in targets:
     subprocess.check_call(["go", "install", t])
-  
+
   # Resolving dashboard's front-end dependencies
   subprocess.check_call(["yarn", "--cwd", "./dashboard/frontend", "install"])
   # Building dashboard's front-end

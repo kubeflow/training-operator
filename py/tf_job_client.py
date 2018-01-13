@@ -94,3 +94,7 @@ def wait_for_job(client, namespace, name,
           name, namespace))
 
     time.sleep(polling_interval.seconds)
+
+  # Linter complains if we don't have a return statement even though
+  # this code is unreachable.
+  return None

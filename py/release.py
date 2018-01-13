@@ -138,7 +138,9 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   ]
   for t in targets:
     if t == "github.com/tensorflow/k8s/cmd/tf_operator":
-      util.run(["go", "install", "-ldflags", "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit), t])
+      util.run(["go", "install", "-ldflags",
+                "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit),
+                t])
     util.run(["go", "install", t])
 
   # Dashboard's frontend:
