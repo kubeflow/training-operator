@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import subprocess
+import tempfile
 import time
 import urllib
 import yaml
@@ -27,7 +28,11 @@ MASTER_REPO_NAME = "k8s"
 
 # TODO(jlewi): Should we stream the output by polling the subprocess?
 # look at run_and_stream in build_and_push.
-def run(command, cwd=None, env=None, use_print=False, dryrun=False):
+#
+# TODO(jlewi): I think we can delete use_print after updating callers. that
+# was a hack to make output show up in Airflow; I think writing subprocess
+# to a file and then logging it works better.
+def run(command, cwd=None, env=None, dryrun=False):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
@@ -44,36 +49,27 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
       lines.append("{0}={1}".format(k, env[k]))
     logging.info("Running: Environment:\n%s", "\n".join(lines))
 
+  log_file = None
   try:
     if dryrun:
       command_str = ("Dryrun: Command:\n{0}\nCWD:\n{1}\n"
                      "Environment:\n{2}").format(" ".join(command), cwd, env)
-      if use_print:
-        print(command_str)
-      else:
-        logging.info(command_str)
-      return
-    output = subprocess.check_output(command, cwd=cwd, env=env,
-                                     stderr=subprocess.STDOUT).decode("utf-8")
+      logging.info(command_str)
 
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(output)
-    else:
-      logging.info("Subprocess output:\n%s", output)
-  except subprocess.CalledProcessError as e:
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(e.output)
-      # TODO(jlewi): If we don't use logging output ends up not being
-      # captured by logs in Airflow. This is totally messed up. In the meantime
-      # this hack of using logging and print ensures we see errors.
-      logging.info("Subprocess output:\n%s", e.output)
-    else:
-      logging.info("Subprocess output:\n%s", e.output)
-    raise
+    # We write stderr/stdout to a file and then read it and process it.
+    # We do this because if just inherit the handles from the parent the
+    # subprocess output doesn't show up in Airflow. This might be because
+    # we had multiple levels of processes invoking python processes.
+    with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False,
+                                     mode="w") as hf:
+      log_file = hf.name
+      subprocess.check_call(command, cwd=cwd, env=env,
+                            stdout=hf,
+                            stderr=hf)
+  finally:
+    with open(log_file, "r") as hf:
+      output = hf.read()
+    logging.info("Subprocess output:\n%s", output)
 
 def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
@@ -241,6 +237,9 @@ def wait_for_operation(client,
       raise TimeoutError("Timed out waiting for op: {0} to complete.".format(
         op_id))
     time.sleep(polling_interval.total_seconds())
+
+  # Linter complains if we don't have a return here even though its unreachable.
+  return None
 
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")

@@ -7,13 +7,14 @@ import time
 import uuid
 
 import jinja2
+import yaml
+
 from kubernetes import client as k8s_client
+from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
 from py import util
 from py import tf_job_client
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
-import yaml
 
 def run_test(args):
   """Run a test."""
