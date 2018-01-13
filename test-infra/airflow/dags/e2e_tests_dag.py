@@ -154,7 +154,7 @@ def clone_repo(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-sta
     if commit:
       args.append("--commit=" + commit)
 
-  run(ti, args, cwd=BOOTSTRAP_DIR, use_print=True)
+  run(ti, args, cwd=BOOTSTRAP_DIR)
 
 def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-statements
   """
@@ -209,7 +209,7 @@ def build_images(dag_run=None, ti=None, **_kwargs): # pylint: disable=too-many-s
   args.append("--project=" + GCB_PROJECT)
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  run(ti, args, use_print=True, dryrun=dryrun, env=newenv)
+  run(ti, args, dryrun=dryrun, env=newenv)
 
   # Read the output yaml and publish relevant values to xcom.
   if not dryrun:
@@ -275,7 +275,7 @@ def setup_cluster(dag_run=None, ti=None, **_kwargs):
   args.append("--accelerator=nvidia-tesla-k80=1")
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  run(ti, args, use_print=True, dryrun=dryrun)
+  run(ti, args, dryrun=dryrun)
 
 
 def run_tests(dag_run=None, ti=None, **_kwargs):
@@ -302,7 +302,7 @@ def run_tests(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  run(ti, args, use_print=True, dryrun=dryrun)
+  run(ti, args, dryrun=dryrun)
 
 # TODO(jlewi): We should make this a function that will generate a callable
 # for different configs like we do for py_checks.
@@ -339,7 +339,7 @@ def run_gpu_test(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  run(ti, args, use_print=True)
+  run(ti, args)
 
 def teardown_cluster(dag_run=None, ti=None, **_kwargs):
   conf = dag_run.conf
@@ -366,7 +366,7 @@ def teardown_cluster(dag_run=None, ti=None, **_kwargs):
 
   # We want subprocess output to bypass logging module otherwise multiline
   # output is squashed together.
-  run(ti, args, use_print=True, dryrun=dryrun)
+  run(ti, args, dryrun=dryrun)
 
 def py_checks_gen(command):
   """Create a callable to run the specified py_check command."""
@@ -397,7 +397,7 @@ def py_checks_gen(command):
 
     # We want subprocess output to bypass logging module otherwise multiline
     # output is squashed together.
-    run(ti, args, use_print=True, dryrun=dryrun)
+    run(ti, args, dryrun=dryrun)
 
   return run_py_checks
 
