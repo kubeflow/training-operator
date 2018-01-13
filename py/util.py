@@ -60,8 +60,20 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
       # With Airflow use print to bypass logging module.
       print("Subprocess output:\n")
       print(output)
+
+      # TODO(jlewi): This was a hack. In Airflow logs we are missing the
+      # subprocess logs and I don't know why. So we add a logging statement
+      # in addition to the print above.
+      logging.info("Subprocess output via log:\n%s", output)
     else:
       logging.info("Subprocess output:\n%s", output)
+
+
+      # TODO(jlewi): This was a hack. In Airflow logs we are missing the
+      # subprocess logs and I don't know why. So we add a logging statement
+      # in addition to the print above.
+      print("Subprocess output via print:\n")
+      print(output)
   except subprocess.CalledProcessError as e:
     if use_print:
       # With Airflow use print to bypass logging module.
