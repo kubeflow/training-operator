@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { Card, CardText } from "material-ui/Card";
 
@@ -59,5 +60,13 @@ function getStatusColor(job) {
       return "orange";
   }
 }
+
+JobSummary.propTypes = {
+  job: PropTypes.shape({
+    spec: PropTypes.object.isRequired,
+    metadata: PropTypes.object.isRequired,
+    status: PropTypes.object.isRequired
+  }).isRequired
+};
 
 export default JobSummary;

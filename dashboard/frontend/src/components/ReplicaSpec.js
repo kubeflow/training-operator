@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import InfoEntry from "./InfoEntry";
 import { Card, CardText, CardHeader } from "material-ui/Card";
 import PodList from "./PodList";
@@ -21,6 +22,12 @@ const ReplicaSpec = ({ spec, status, pods }) => {
       </CardText>
     </Card>
   );
+};
+
+ReplicaSpec.propTypes = {
+  spec: PropTypes.object.isRequired,
+  status: PropTypes.object.isRequired,
+  pods: PropTypes.arrayOf(PropTypes.object).isRequired
 };
 
 export default ReplicaSpec;
