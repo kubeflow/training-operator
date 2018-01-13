@@ -44,6 +44,7 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
       lines.append("{0}={1}".format(k, env[k]))
     logging.info("Running: Environment:\n%s", "\n".join(lines))
 
+  log_file = None
   try:
     if dryrun:
       command_str = ("Dryrun: Command:\n{0}\nCWD:\n{1}\n"
@@ -57,7 +58,6 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
     # TODO(jlewi): Do not submit. this is a hack to try to get the output
     # in airflow for debugging.
     import tempfile
-    log_file = None
     with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False, mode="w") as hf:
       logging.info("Writing logs to %s", hf.name)
       print("Writing logs %s" % hf.name)
