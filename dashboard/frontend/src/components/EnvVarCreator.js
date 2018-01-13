@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import FlatButton from "material-ui/FlatButton";
 import ContentAdd from "material-ui/svg-icons/content/add";
 import omit from "lodash/omit";
@@ -25,7 +26,7 @@ class EnvVarCreator extends React.Component {
           label="Add an environment variable"
           primary={true}
           icon={<ContentAdd />}
-          onClick={_ => this.addEnvVar()}
+          onClick={() => this.addEnvVar()}
         />
         {Object.keys(this.state.envVars).map(k => (
           <EnvVar
@@ -75,5 +76,9 @@ class EnvVarCreator extends React.Component {
     }
   };
 }
+
+EnvVarCreator.propTypes = {
+  setEnvVars: PropTypes.func.isRequired
+};
 
 export default EnvVarCreator;

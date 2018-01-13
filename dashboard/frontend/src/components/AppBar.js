@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import { withRouter } from "react-router-dom";
 
 import { default as BaseAppBar } from "material-ui/AppBar";
@@ -19,14 +20,16 @@ class AppBar extends Component {
   render() {
     const actions = [
       <FlatButton
+        key={"cancel"}
         label="CANCEL"
         primary={true}
-        onClick={_ => this.setState({ isModalVisible: false })}
+        onClick={() => this.setState({ isModalVisible: false })}
       />,
       <FlatButton
+        key={"delete"}
         label="DELETE"
         primary={true}
-        onClick={_ => {
+        onClick={() => {
           this.setState({ isModalVisible: false });
           this.deleteJob();
         }}
@@ -42,7 +45,7 @@ class AppBar extends Component {
             label="DELETE"
             icon={<ActionDelete />}
             style={this.styles.rightMenuButton}
-            onClick={_ => this.setState({ isModalVisible: true })}
+            onClick={() => this.setState({ isModalVisible: true })}
           />
         </div>
       );
@@ -60,7 +63,7 @@ class AppBar extends Component {
           modal={true}
           open={this.state.isModalVisible}
         >
-          Are you sure you want to delete TfJob "test" in namespace "test"?
+          {'Are you sure you want to delete TfJob "test" in namespace "test"?'}
         </Dialog>
       </div>
     );
@@ -95,5 +98,11 @@ class AppBar extends Component {
     }
   };
 }
+
+AppBar.propTypes = {
+  location: PropTypes.shape({
+    pathname: PropTypes.string.isRequired
+  }).isRequired
+};
 
 export default withRouter(AppBar);

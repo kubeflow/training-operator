@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField";
 import FlatButton from "material-ui/FlatButton";
 import ActionDelete from "material-ui/svg-icons/action/delete";
@@ -71,5 +72,11 @@ class EnvVar extends React.Component {
     this.props.deleteEnvVar(this.props.id);
   }
 }
+
+EnvVar.propTypes = {
+  id: PropTypes.string.isRequired,
+  setEnvVar: PropTypes.func.isRequired,
+  deleteEnvVar: PropTypes.func.isRequired
+};
 
 export default EnvVar;
