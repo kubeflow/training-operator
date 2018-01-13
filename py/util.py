@@ -69,39 +69,44 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
                             stdout=hf,
                             stderr=hf)
 
+    #with open(log_file, "r") as hf:
+      #output = hf.read()
+
+    #if use_print:
+      ## With Airflow use print to bypass logging module.
+      #print("Subprocess output:\n")
+      #print(output)
+
+      ## TODO(jlewi): This was a hack. In Airflow logs we are missing the
+      ## subprocess logs and I don't know why. So we add a logging statement
+      ## in addition to the print above.
+      #logging.info("Subprocess output via log:\n%s", output)
+    #else:
+      #logging.info("Subprocess output:\n%s", output)
+
+
+      ## TODO(jlewi): This was a hack. In Airflow logs we are missing the
+      ## subprocess logs and I don't know why. So we add a logging statement
+      ## in addition to the print above.
+      #print("Subprocess output via print:\n")
+      #print(output)
+  #except subprocess.CalledProcessError as e:
+    #if use_print:
+      ## With Airflow use print to bypass logging module.
+      #print("Subprocess output:\n")
+      #print(e.output)
+      ## TODO(jlewi): If we don't use logging output ends up not being
+      ## captured by logs in Airflow. This is totally messed up. In the meantime
+      ## this hack of using logging and print ensures we see errors.
+      #logging.info("Subprocess output:\n%s", e.output)
+    #else:
+      #logging.info("Subprocess output:\n%s", e.output)
+    #raise
+
+  finally:
     with open(log_file, "r") as hf:
       output = hf.read()
-
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(output)
-
-      # TODO(jlewi): This was a hack. In Airflow logs we are missing the
-      # subprocess logs and I don't know why. So we add a logging statement
-      # in addition to the print above.
-      logging.info("Subprocess output via log:\n%s", output)
-    else:
-      logging.info("Subprocess output:\n%s", output)
-
-
-      # TODO(jlewi): This was a hack. In Airflow logs we are missing the
-      # subprocess logs and I don't know why. So we add a logging statement
-      # in addition to the print above.
-      print("Subprocess output via print:\n")
-      print(output)
-  except subprocess.CalledProcessError as e:
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(e.output)
-      # TODO(jlewi): If we don't use logging output ends up not being
-      # captured by logs in Airflow. This is totally messed up. In the meantime
-      # this hack of using logging and print ensures we see errors.
-      logging.info("Subprocess output:\n%s", e.output)
-    else:
-      logging.info("Subprocess output:\n%s", e.output)
-    raise
+    logging.info("Subprocess output:\n%s", output)
 
 def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
