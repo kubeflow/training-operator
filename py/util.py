@@ -67,7 +67,7 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
                                        #stderr=hf).decode("utf-8")
       subprocess.check_call(command, cwd=cwd, env=env,
                             stdout=hf,
-                            stderr=hf).decode("utf-8")
+                            stderr=hf)
 
     with open(log_file, "r") as hf:
       output = hf.read()
