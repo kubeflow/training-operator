@@ -182,6 +182,7 @@ def main():  # pylint: disable=too-many-locals
   # parse the args and call whatever function was selected
   args = parser.parse_args()
   args.func(args)
+  logging.info("Finished")
 
 if __name__ == "__main__":
   main()
