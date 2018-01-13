@@ -53,8 +53,15 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
       else:
         logging.info(command_str)
       return
-    output = subprocess.check_output(command, cwd=cwd, env=env,
-                                     stderr=subprocess.STDOUT).decode("utf-8")
+
+    # TODO(jlewi): Pipe output to a file.
+    import tempfile
+    with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False) as hf:
+      logging.info("Writing logs to %s", hf.name)
+      print("Writing logs %s", hf.name)
+      output = subprocess.check_output(command, cwd=cwd, env=env,
+                                       stdout=hf,
+                                       stderr=subprocess.STDOUT).decode("utf-8")
 
     if use_print:
       # With Airflow use print to bypass logging module.
