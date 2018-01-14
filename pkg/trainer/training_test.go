@@ -185,7 +185,7 @@ func TestJobSetup(t *testing.T) {
 				Spec: tfv1alpha1.TfJobSpec{
 					ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
 						{
-							Replicas: proto.Int32(2),
+							Replicas: proto.Int32(1),
 							TfPort:   proto.Int32(10),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
@@ -196,7 +196,7 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.PS,
+							TfReplicaType: tfv1alpha1.MASTER,
 						},
 					},
 				},
@@ -226,7 +226,13 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.PS,
+							TfReplicaType: tfv1alpha1.WORKER,
+						},
+					},
+					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
+						Chief: &tfv1alpha1.ChiefSpec{
+							ReplicaName: string(tfv1alpha1.WORKER),
+							ReplicaIndex: 0,
 						},
 					},
 				},
@@ -257,10 +263,16 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.PS,
+							TfReplicaType: tfv1alpha1.WORKER,
 						},
 					},
 					TensorBoard: &tfv1alpha1.TensorBoardSpec{},
+					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
+						Chief: &tfv1alpha1.ChiefSpec{
+							ReplicaName: string(tfv1alpha1.WORKER),
+							ReplicaIndex: 0,
+						},
+					},
 				},
 			},
 			expectMounts: 0,

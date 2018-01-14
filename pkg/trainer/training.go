@@ -131,6 +131,9 @@ func (j *TrainingJob) deleteResources() error {
 }
 
 func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStatus, error) {
+	chief := j.job.Spec.TerminationPolicy.Chief
+	chiefState := tfv1alpha1.ReplicaStateUnknown
+
 	state := tfv1alpha1.StateUnknown
 	replicaStatuses := make([]*tfv1alpha1.TfReplicaStatus, 0)
 
@@ -148,23 +151,19 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStat
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		// If any replicas are failed mark job as failed.
-		if rStatus.State == tfv1alpha1.ReplicaStateFailed {
-			state = tfv1alpha1.StateFailed
+		if string(r.Spec.TfReplicaType) == string(chief.ReplicaName) {
+			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
 		}
 	}
 
-	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateSucceeded {
-		state = tfv1alpha1.StateSucceeded
-		return state, replicaStatuses, nil
-	}
-
-	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateFailed {
+	if chiefState == tfv1alpha1.ReplicaStateRunning {
+		state = tfv1alpha1.StateRunning
+	} else if chiefState == tfv1alpha1.ReplicaStateFailed{
 		state = tfv1alpha1.StateFailed
-		return state, replicaStatuses, nil
+	} else if chiefState == tfv1alpha1.ReplicaStateSucceeded {
+		state = tfv1alpha1.StateSucceeded
 	}
 
-	state = tfv1alpha1.StateRunning
 	return state, replicaStatuses, nil
 }
 
