@@ -3,7 +3,7 @@
 bin/
 
 node_modules/
-build/
+dashboard/frontend/build
 
 .vscode/
 
