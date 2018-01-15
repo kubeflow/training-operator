@@ -11,7 +11,6 @@ import (
 
 	"strings"
 
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
@@ -19,6 +18,9 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
+
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -27,6 +29,8 @@ type TrainingJob struct {
 	job *tfv1alpha1.TfJob
 
 	KubeCli kubernetes.Interface
+
+	recorder record.EventRecorder
 
 	Replicas []*TFReplicaSet
 
@@ -52,10 +56,11 @@ type TaskSpec struct {
 	Index int    `json:"index"`
 }
 
-func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job *tfv1alpha1.TfJob) (*TrainingJob, error) {
+func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TfJob) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:     kubeCli,
 		tfJobClient: tfJobClient,
+		recorder:    recorder,
 		Replicas:    make([]*TFReplicaSet, 0),
 		TensorBoard: nil,
 		job:         job,
@@ -72,8 +77,8 @@ func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplic
 	return nil, nil
 }
 
-func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job *tfv1alpha1.TfJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
-	j, err := initJob(kubeCli, tfJobClient, job)
+func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TfJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
+	j, err := initJob(kubeCli, tfJobClient, recorder, job)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +268,7 @@ func (j *TrainingJob) setupReplicas() error {
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
 		for _, t := range j.job.Spec.ReplicaSpecs {
-			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+			r, err := NewTFReplicaSet(j.KubeCli, j.recorder, *t, j)
 			if err != nil {
 				return err
 			}
