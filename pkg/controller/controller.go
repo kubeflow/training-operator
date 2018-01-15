@@ -198,7 +198,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	if _, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok {
+	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
+	// The UID's won't match in the event we deleted the job and then recreated the job with the samee name.
+	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
 		nc, err := trainer.NewJob(c.KubeClient, c.TfJobClient, tfJob, &c.config)
 
 		if err != nil {

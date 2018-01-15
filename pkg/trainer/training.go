@@ -17,7 +17,7 @@ import (
 	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-
+	"k8s.io/apimachinery/pkg/types"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 )
 
@@ -79,6 +79,10 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job
 	}
 
 	return j, nil
+}
+
+func (j *TrainingJob) UID() types.UID {
+	return j.job.ObjectMeta.UID
 }
 
 func (j *TrainingJob) ClusterSpec() ClusterSpec {
@@ -319,7 +323,7 @@ func (j *TrainingJob) updateTPRStatus() error {
 // reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 	log.Infof("DO NOT SUBMIT reconcile called.")
-	if j.status.Phase == tfv1alpha1.TfJobPhaseNone {
+	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
 
