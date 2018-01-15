@@ -13,6 +13,7 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/record"
 )
 
 func TestTBReplicaSet(t *testing.T) {
@@ -39,7 +40,8 @@ func TestTBReplicaSet(t *testing.T) {
 		},
 	}
 
-	job, err := initJob(clientSet, &tfJobFake.Clientset{}, jobSpec)
+	recorder := record.NewFakeRecorder(100)
+	job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, jobSpec)
 
 	if err != nil {
 		t.Fatalf("initJob failed: %v", err)
