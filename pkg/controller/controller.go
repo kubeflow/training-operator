@@ -122,8 +122,8 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	glog.Info("Starting workers")
-	// Launch two workers to process Foo resources
+	glog.Info("Starting %v workers", threadiness)
+	// Launch workers to process TfJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
@@ -156,6 +156,9 @@ func (c *Controller) processNextWorkItem() bool {
 	if err == nil {
 		if forget {
 			c.WorkQueue.Forget(key)
+		} else {
+			// Requeue the key so that we will reconcile it again even if no events occur.
+			c.WorkQueue.AddAfter(key.(string), time.Second * 10)
 		}
 		return true
 	}
@@ -166,9 +169,11 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
-// syncJob will sync the job with the given key if it has had its expectations fulfilled, meaning
-// it did not expect to see any more of its pods created or deleted. This function is not meant to be invoked
+// syncJob will sync the job with the given. This function is not meant to be invoked
 // concurrently with the same key.
+//
+// When a job is completely processed it will return true indicating that its ok to forget about this job since
+// no more processing will occur for it.
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
@@ -214,7 +219,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	if tfJob.Status.State == tfv1alpha1.StateSucceeded {
+	// TODO(jlewi): This logic will need to change when/if we get rid of phases and move to conditions. At that
+	// case we should forget about a job when the appropriate condition is reached.
+	if tfJob.Status.Phase == tfv1alpha1.TfJobPhaseCleanUp {
 		return true, nil
 	} else {
 		return false, nil

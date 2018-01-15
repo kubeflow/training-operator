@@ -129,21 +129,35 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
 		if err != nil {
-			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
-			return err
+			if k8s_errors.IsAlreadyExists(err) {
+				log.Infof("%v already exists.", cm.Name)
+			} else {
+				log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating PS ConfigMap %v returned error.", cm.Name), err})
+			}
 		}
 
 		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
-		s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
-			Name: "ps-config-volume",
-			VolumeSource: v1.VolumeSource{
-				ConfigMap: &v1.ConfigMapVolumeSource{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: s.defaultPSConfigMapName(),
+		name := "ps-config-volume"
+		hasVolume := false
+		for _, v := range s.Spec.Template.Spec.Volumes {
+			if v.Name == name {
+				hasVolume = true
+				break
+			}
+		}
+		if !hasVolume {
+			s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: "ps-config-volume",
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: s.defaultPSConfigMapName(),
+						},
 					},
 				},
-			},
-		})
+			})
+		}
 	}
 
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
