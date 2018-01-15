@@ -13,10 +13,10 @@ func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
 	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil  {
 		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
 	}
-	// Check that each replica has a TensorFlow container.
+
 	chiefExists := false
 
-	// Check that each replica has a TensorFlow container.
+	// Check that each replica has a TensorFlow container and a chief.
 	for _, r := range c.ReplicaSpecs {
 		found := false
 		if r.Template == nil && r.TfReplicaType != tfv1.PS {

@@ -169,7 +169,7 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
-// syncJob will sync the job with the given. This function is not meant to be invoked
+// syncTFJob will sync the job with the given. This function is not meant to be invoked
 // concurrently with the same key.
 //
 // When a job is completely processed it will return true indicating that its ok to forget about this job since
