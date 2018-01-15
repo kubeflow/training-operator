@@ -54,7 +54,7 @@ def run_test(args):
     results = tf_job_client.wait_for_job(api_client, namespace, name,
                                          status_callback=tf_job_client.log_status)
 
-    if results["status"]["state"] != "succeeded":
+    if results["status"]["state"].lower() != "succeeded":
       t.failure = "Job {0} in namespace {1} in state {2}".format(
         name, namespace, results["status"]["state"])
 

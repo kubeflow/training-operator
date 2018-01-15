@@ -322,7 +322,6 @@ func (j *TrainingJob) updateTPRStatus() error {
 
 // reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
-	log.Infof("DO NOT SUBMIT reconcile called.")
 	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
