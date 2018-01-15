@@ -23,11 +23,18 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
+)
+
+const (
+	SuccessfulCreateReason = "SuccessfulCreate"
+	FailedCreateReason     = "FailedCreate"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
 type TFReplicaSet struct {
 	ClientSet kubernetes.Interface
+	recorder  record.EventRecorder
 	// Job is a pointer to the TrainingJob to which this replica belongs.
 	Job  *TrainingJob
 	Spec tfv1alpha1.TfReplicaSpec
@@ -52,7 +59,7 @@ type TfConfig struct {
 	Environment string `json:"environment"`
 }
 
-func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec tfv1alpha1.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
+func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecorder, tfReplicaSpec tfv1alpha1.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
 	if tfReplicaSpec.TfReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
@@ -82,6 +89,7 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec tfv1alpha1.Tf
 
 	return &TFReplicaSet{
 		ClientSet: clientSet,
+		recorder:  recorder,
 		Job:       job,
 		Spec:      tfReplicaSpec,
 	}, nil
@@ -127,10 +135,13 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 			log.Errorf("Error building PS ConfigMap: %v", err)
 			return err
 		}
-		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
+		createdCM, err := s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
 		if err != nil {
-			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+			log.Errorf("Error creating PS ConfigMap: %v, %v", createdCM.ObjectMeta.Name, err)
+			s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
 			return err
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created configmap: %v", createdCM.Name)
 		}
 
 		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
@@ -171,15 +182,18 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 
 		log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-		_, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
+		createdService, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
 
 		// If the job already exists do nothing.
 		if err != nil {
 			if k8s_errors.IsAlreadyExists(err) {
 				log.Infof("Service %v already exists.", s.jobName(index))
 			} else {
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", service.ObjectMeta.Name), err})
+				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", createdService.ObjectMeta.Name), err})
 			}
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created service: %v", createdService.Name)
 		}
 
 		// Configure the TFCONFIG environment variable.
@@ -249,7 +263,7 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 
 		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		_, err = s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Create(newJ)
+		createdJob, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Create(newJ)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -257,8 +271,11 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 				log.Infof("%v already exists.", s.jobName(index))
 
 			} else {
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", newJ.ObjectMeta.Name), err})
+				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", createdJob.ObjectMeta.Name), err})
 			}
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created job: %v", createdJob.Name)
 		}
 	}
 	return nil
