@@ -11,14 +11,14 @@ import (
 
 	"strings"
 
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/apimachinery/pkg/types"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	"k8s.io/client-go/kubernetes"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -155,14 +155,14 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStat
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		if string(r.Spec.TfReplicaType) == string(chief.ReplicaName) {
+		if string(r.Spec.TfReplicaType) == chief.ReplicaName {
 			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
 		}
 	}
 
 	if chiefState == tfv1alpha1.ReplicaStateRunning {
 		state = tfv1alpha1.StateRunning
-	} else if chiefState == tfv1alpha1.ReplicaStateFailed{
+	} else if chiefState == tfv1alpha1.ReplicaStateFailed {
 		state = tfv1alpha1.StateFailed
 	} else if chiefState == tfv1alpha1.ReplicaStateSucceeded {
 		state = tfv1alpha1.StateSucceeded

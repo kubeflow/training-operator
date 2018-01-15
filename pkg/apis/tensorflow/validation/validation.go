@@ -10,7 +10,7 @@ import (
 
 // ValidateTfJobSpec checks that the TfJobSpec is valid.
 func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
-	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil  {
+	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
 		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
 	}
 
@@ -62,7 +62,7 @@ func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
 	}
 
 	if c.TensorBoard != nil && c.TensorBoard.LogDir == "" {
-			return fmt.Errorf("tbReplicaSpec.LogDir must be specified")
+		return fmt.Errorf("tbReplicaSpec.LogDir must be specified")
 	}
 	return nil
 }
