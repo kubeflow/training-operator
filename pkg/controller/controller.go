@@ -90,6 +90,9 @@ func New(kubeClient kubernetes.Interface, apiExtclient apiextensionsclient.Inter
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc:    controller.enqueueController,
+				UpdateFunc: func(oldObj, newObj interface{}) {
+					controller.enqueueController(newObj)
+				},
 				DeleteFunc: controller.handleDelete,
 			},
 		})
