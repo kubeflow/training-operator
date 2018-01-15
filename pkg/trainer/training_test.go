@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/record"
 )
 
 func TestIsRetryableTerminationState(t *testing.T) {
@@ -144,7 +145,8 @@ func TestClusterSpec(t *testing.T) {
 
 		clientSet := fake.NewSimpleClientset()
 
-		job, err := initJob(clientSet, &tfJobFake.Clientset{}, c.Spec)
+		recorder := record.NewFakeRecorder(100)
+		job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, c.Spec)
 
 		if err != nil {
 			t.Fatalf("initJob failed: %v", err)
@@ -298,7 +300,8 @@ func TestJobSetup(t *testing.T) {
 
 	for _, c := range testCases {
 
-		job, err := initJob(clientSet, &tfJobFake.Clientset{}, c.jobSpec)
+		recorder := record.NewFakeRecorder(100)
+		job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, c.jobSpec)
 
 		job.setup(config)
 
