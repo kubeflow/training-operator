@@ -151,7 +151,7 @@ func TestClusterSpec(t *testing.T) {
 		}
 
 		job.setup(&tfv1alpha1.ControllerConfig{})
-
+		job.setupReplicas()
 		actual := job.ClusterSpec()
 
 		for k, v := range c.Expected {
@@ -278,7 +278,7 @@ func TestJobSetup(t *testing.T) {
 			expectMounts: 0,
 			expectPhase:  tfv1alpha1.TfJobPhaseFailed,
 			expectState:  tfv1alpha1.StateFailed,
-			expectReason: "tbReplicaSpec.LogDir must be specified",
+			expectReason: "invalid job spec: tbReplicaSpec.LogDir must be specified",
 		},
 	}
 
