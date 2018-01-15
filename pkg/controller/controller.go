@@ -159,9 +159,6 @@ func (c *Controller) processNextWorkItem() bool {
 	if err == nil {
 		if forget {
 			c.WorkQueue.Forget(key)
-		} else {
-			// Requeue the key so that we will reconcile it again even if no events occur.
-			c.WorkQueue.AddAfter(key.(string), time.Second * 10)
 		}
 		return true
 	}
