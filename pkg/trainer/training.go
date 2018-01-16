@@ -11,14 +11,14 @@ import (
 
 	"strings"
 
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -81,6 +81,10 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, job
 	return j, nil
 }
 
+func (j *TrainingJob) UID() types.UID {
+	return j.job.ObjectMeta.UID
+}
+
 func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	clusterSpec := make(ClusterSpec)
 
@@ -131,6 +135,9 @@ func (j *TrainingJob) deleteResources() error {
 }
 
 func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStatus, error) {
+	chief := j.job.Spec.TerminationPolicy.Chief
+	chiefState := tfv1alpha1.ReplicaStateUnknown
+
 	state := tfv1alpha1.StateUnknown
 	replicaStatuses := make([]*tfv1alpha1.TfReplicaStatus, 0)
 
@@ -148,23 +155,19 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TfReplicaStat
 
 		replicaStatuses = append(replicaStatuses, &rStatus)
 
-		// If any replicas are failed mark job as failed.
-		if rStatus.State == tfv1alpha1.ReplicaStateFailed {
-			state = tfv1alpha1.StateFailed
+		if string(r.Spec.TfReplicaType) == chief.ReplicaName {
+			chiefState = r.GetSingleReplicaStatus(int32(chief.ReplicaIndex))
 		}
 	}
 
-	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateSucceeded {
-		state = tfv1alpha1.StateSucceeded
-		return state, replicaStatuses, nil
-	}
-
-	if v, ok := replicaSetStates[tfv1alpha1.MASTER]; ok && v == tfv1alpha1.ReplicaStateFailed {
+	if chiefState == tfv1alpha1.ReplicaStateRunning {
+		state = tfv1alpha1.StateRunning
+	} else if chiefState == tfv1alpha1.ReplicaStateFailed {
 		state = tfv1alpha1.StateFailed
-		return state, replicaStatuses, nil
+	} else if chiefState == tfv1alpha1.ReplicaStateSucceeded {
+		state = tfv1alpha1.StateSucceeded
 	}
 
-	state = tfv1alpha1.StateRunning
 	return state, replicaStatuses, nil
 }
 
@@ -234,20 +237,6 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 			return fmt.Errorf("invalid job spec: %v", err)
 		}
 
-		for _, t := range j.job.Spec.ReplicaSpecs {
-			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
-			if err != nil {
-				return err
-			}
-			j.Replicas = append(j.Replicas, r)
-		}
-
-		tb, err := initTensorBoard(j.KubeCli, j)
-		if err != nil {
-			return err
-		}
-		j.TensorBoard = tb
-
 		if err := helper.ConfigureAcceleratorsForTfJobSpec(&j.job.Spec, config.Accelerators); err != nil {
 			return fmt.Errorf("ConfigureAccelerators(...) error; %v", err)
 		}
@@ -266,6 +255,31 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 		j.status.Phase = tfv1alpha1.TfJobPhaseCreating
 		j.status.State = tfv1alpha1.StateRunning
 	}
+}
+
+// setup Replicas. This creates in memory data structures corresponding to the replicas.
+func (j *TrainingJob) setupReplicas() error {
+
+	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
+		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
+		for _, t := range j.job.Spec.ReplicaSpecs {
+			r, err := NewTFReplicaSet(j.KubeCli, *t, j)
+			if err != nil {
+				return err
+			}
+			j.Replicas = append(j.Replicas, r)
+		}
+	}
+
+	if j.TensorBoard == nil {
+		tb, err := initTensorBoard(j.KubeCli, j)
+		if err != nil {
+			return err
+		}
+		j.TensorBoard = tb
+	}
+
+	return nil
 }
 
 func (j *TrainingJob) Delete() {
@@ -308,7 +322,7 @@ func (j *TrainingJob) updateTPRStatus() error {
 
 // reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
-	if j.status.Phase == tfv1alpha1.TfJobPhaseNone {
+	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
 
@@ -318,12 +332,30 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		}
 	}
 
+	// setupreplicas initializes data structures inside TrainingJob representing the replicas.
+	// These are go-lang structures which aren't preserved in the APIServer. So we always need to call setupReplicas
+	// unlike setup which only needs to be called once during the lifecycle of the job.
+	if err := j.setupReplicas(); err != nil {
+		log.Errorf("failed to create replicas: %v", err)
+		j.status.Reason = fmt.Sprintf("Could not create in memory datastructures; %v", err)
+		if uErr := j.updateTPRStatus(); err != nil {
+			log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
+		}
+		return err
+	}
+
 	// TODO(jlewi): Can we determine from the CRD status whether we should
 	// Create the resources or not? We need to ensure the resources exist so for
 	// now we always call Create.
 	if j.job.Status.Phase == tfv1alpha1.TfJobPhaseCreating || j.job.Status.Phase == tfv1alpha1.TfJobPhaseRunning {
 		// We call Create to make sure all the resources exist and are running.
 		if cErr := j.createResources(config); cErr != nil {
+			// TODO(jlewi): Should we eventually give up and mark the job as failed if we can't create the resources?
+			j.status.Reason = fmt.Sprintf("Could not create job resources; %v", cErr)
+			if err := j.updateTPRStatus(); err != nil {
+				log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
+				return err
+			}
 			log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
 			return cErr
 		}
@@ -351,7 +383,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 
 	// If the phase changed we should update the TPR.
 	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v, failed to update TPR status error: %v", j.job.ObjectMeta.Name, err)
+		log.Warningf("Job %v, failed to update status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
@@ -368,7 +400,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 	// doesn't match c.Cluster.status. So you can change c.Status in order to propagate
 	// changes to the TPR status.
 	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v; failed to update TPR status error: %v", j.job.ObjectMeta.Name, err)
+		log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
