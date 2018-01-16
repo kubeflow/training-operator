@@ -136,7 +136,6 @@ type ReplicaState string
 
 const (
 	ReplicaStateUnknown   ReplicaState = "Unknown"
-	ReplicaStateStarting  ReplicaState = "Starting"
 	ReplicaStateRunning   ReplicaState = "Running"
 	ReplicaStateFailed    ReplicaState = "Failed"
 	ReplicaStateSucceeded ReplicaState = "Succeeded"
