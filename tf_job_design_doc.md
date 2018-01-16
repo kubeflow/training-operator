@@ -87,7 +87,7 @@ The controller manages a distributed TFJob by creating a series of Job controlle
 
 When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/tensorflow/k8s/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TfJob is deleted. This allows the logs to be fetched via kubectl logs.
 
-![Resources for TfJob](diagrams/tfjob_k8s_resources.svg)
+![Resources for TfJob](docs/diagrams/tfjob_k8s_resources.svg)
 
 
 ## TensorBoard

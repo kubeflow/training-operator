@@ -124,7 +124,7 @@ export MY_POD_NAME=my-pod
 Make a copy of `grpc_tensorflow_server.py` and create a config file named `controller-config-file.yaml`:
 
 ```sh
-cp grpc_tensorflow_server/grpc_tensorflow_server.py /tmp/grpc_tensorflow_server.py
+cp hack/grpc_tensorflow_server/grpc_tensorflow_server.py /tmp/grpc_tensorflow_server.py
 
 cat > /tmp/controller-config-file.yaml << EOL
 grpcServerFilePath: /tmp/grpc_tensorflow_server.py
