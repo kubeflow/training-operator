@@ -51,6 +51,42 @@ class TestProw(unittest.TestCase):
 
     blob.upload_from_string.assert_called_once_with("gs://bucket/output")
 
+  @mock.patch("py.prow.test_util.get_num_failures")
+  @mock.patch("py.prow._get_actual_junit_files")
+  def testCheckNoErrorsSuccess(self, mock_get_junit, mock_get_failures):
+    # Verify that check no errors returns true when there are no errors
+    gcs_client = mock.MagicMock(spec=storage.Client)
+    artifacts_dir = "gs://some_dir"
+    mock_get_junit.return_value = set(["junit_1.xml"])
+    mock_get_failures.return_value = 0
+    junit_files = ["junit_1.xml"]
+    self.assertTrue(prow.check_no_errors(gcs_client, artifacts_dir,
+                                         junit_files))
 
+  @mock.patch("py.prow.test_util.get_num_failures")
+  @mock.patch("py.prow._get_actual_junit_files")
+  def testCheckNoErrorsFailure(self, mock_get_junit, mock_get_failures):
+    # Verify that check no errors returns false when a junit
+    # file reports an error.
+    gcs_client = mock.MagicMock(spec=storage.Client)
+    artifacts_dir = "gs://some_dir"
+    mock_get_junit.return_value = set(["junit_1.xml"])
+    mock_get_failures.return_value = 1
+    junit_files = ["junit_1.xml"]
+    self.assertFalse(prow.check_no_errors(gcs_client, artifacts_dir,
+                                          junit_files))
+
+  @mock.patch("py.prow.test_util.get_num_failures")
+  @mock.patch("py.prow._get_actual_junit_files")
+  def testCheckNoErrorsFailureExtraJunit(self, mock_get_junit, mock_get_failures):
+    # Verify that check no errors returns false when there are extra
+    # junit files
+    gcs_client = mock.MagicMock(spec=storage.Client)
+    artifacts_dir = "gs://some_dir"
+    mock_get_junit.return_value = set(["junit_0.xml", "junit_1.xml"])
+    mock_get_failures.return_value = 0
+    junit_files = ["junit_1.xml"]
+    self.assertFalse(prow.check_no_errors(gcs_client, artifacts_dir,
+                                          junit_files))
 if __name__ == "__main__":
   unittest.main()
