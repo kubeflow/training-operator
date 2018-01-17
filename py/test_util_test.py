@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import subprocess
+import StringIO
 import tempfile
 import time
 import unittest
@@ -35,6 +36,30 @@ class XMLTest(unittest.TestCase):
 
     self.assertEquals(expected, output)
 
+  def test_get_num_failures(self):
+    failure = test_util.TestCase()
+    failure.class_name = "some_test"
+    failure.name = "first"
+    failure.time = 10
+    failure.failure = "failed for some reason."
+
+    e = test_util.create_xml([failure])
+    s = StringIO.StringIO()
+    e.write(s)
+    xml_value = s.getvalue()
+    self.assertEquals(1, test_util.get_num_failures(xml_value))
+
+  def test_get_num_failures_success(self):
+    success = test_util.TestCase()
+    success.class_name = "some_test"
+    success.name = "first"
+    success.time = 10
+
+    e = test_util.create_xml([success])
+    s = StringIO.StringIO()
+    e.write(s)
+    xml_value = s.getvalue()
+    self.assertEquals(0, test_util.get_num_failures(xml_value))
 
 class TestSuiteTest(unittest.TestCase):
   def testSuite(self):
