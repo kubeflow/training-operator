@@ -301,11 +301,19 @@ def main():
   if symlink:
     prow.create_symlink(gcs_client, symlink, output_dir)
 
-  state = _run_dag_and_wait()
+  dag_state = _run_dag_and_wait()
 
   test_dir = tempfile.mkdtemp(prefix="tmpTfCrdTest")
 
-  success = bool(state == "success")
+  dag_success = bool(dag_state == "success")
+
+  artifacts_dir = os.path.join(output_dir, "artifacts")
+  junit_files = ["junit_e2e.xml", "junit_gpu-tests.xml",
+                 "junit_pycheckslint.xml", "junit_pycheckstest.xml",
+                 "junit_setupcluster.xml"]
+  test_success = prow.check_no_errors(gcs_client, artifacts_dir, junit_files)
+
+  success = test_success and dag_success
 
   if success:
     job_name = os.getenv("JOB_NAME", "unknown")
