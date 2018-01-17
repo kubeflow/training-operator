@@ -246,6 +246,7 @@ def check_no_errors(gcs_client, artifacts_dir, junit_files):
     xml_contents = b.download_as_string()
 
     if test_util.get_num_failures(xml_contents) > 0:
+      logging.info("Test failures in %s", full_path)
       no_errors = False
 
   # Check if there were any extra tests that ran and treat
