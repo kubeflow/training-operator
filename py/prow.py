@@ -269,6 +269,8 @@ def finalize_prow_job(args):
   artifacts_dir = os.path.join(output_dir, "artifacts")
   no_errors = check_no_errors(gcs_client, artifacts_dir, junit_files)
 
+  create_finished(gcs_client, output_dir, no_errors)
+
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
   logging.basicConfig(level=logging.INFO,
