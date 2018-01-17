@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import { Card, CardText, CardActions } from "material-ui/Card";
 import TextField from "material-ui/TextField";
 import Divider from "material-ui/Divider";
@@ -306,7 +307,7 @@ class CreateJob extends Component {
     }
 
     createTfJobService(spec)
-      .then(_ => this.props.history.push("/"))
+      .then(() => this.props.history.push("/"))
       .catch(console.error);
   }
 
@@ -371,5 +372,9 @@ class CreateJob extends Component {
     this.setState({ psVolumeSpec: spec });
   }
 }
+
+CreateJob.propTypes = {
+  history: PropTypes.object.isRequired
+};
 
 export default withRouter(CreateJob);

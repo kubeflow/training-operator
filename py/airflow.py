@@ -7,13 +7,16 @@ import sys
 import tempfile
 import time
 
+import requests
+
 import google.auth
 import google.auth.transport.requests
 from google.cloud import storage  # pylint: disable=no-name-in-module
+
+from retrying import retry
+
 from py import prow  # pylint: disable=ungrouped-imports
 from py import util  # pylint: disable=ungrouped-imports
-import requests
-from retrying import retry
 
 E2E_DAG = "tf_k8s_tests"
 
@@ -193,6 +196,9 @@ def wait_for_tf_k8s_tests(client, run_id,
     logging.info("Waiting for DAG %s run %s to finish.", E2E_DAG, run_id)
     time.sleep(polling_interval.seconds)
 
+  # Linter complains if we don't have a return statement even though
+  # this code is unreachable.
+  return None
 
 def _run_dag_and_wait():
   """Run and wait for the DAG to finish.

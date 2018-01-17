@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 
 class InfoEntry extends Component {
   render() {
@@ -31,5 +32,11 @@ class InfoEntry extends Component {
     );
   }
 }
+
+InfoEntry.propTypes = {
+  linkTo: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired
+};
 
 export default InfoEntry;

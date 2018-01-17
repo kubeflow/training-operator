@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import InfoEntry from "./InfoEntry";
 import { Card, CardHeader, CardText } from "material-ui/Card";
 
@@ -28,6 +29,13 @@ const TensorBoard = ({ service }) => {
       </CardText>
     </Card>
   );
+};
+
+TensorBoard.propTypes = {
+  service: PropTypes.shape({
+    spec: PropTypes.object.isRequired,
+    status: PropTypes.object.isRequired
+  }).isRequired
 };
 
 export default TensorBoard;

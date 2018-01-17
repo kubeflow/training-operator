@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import InfoEntry from "./InfoEntry";
 import { Card, CardText } from "material-ui/Card";
 
@@ -19,5 +20,12 @@ const JobDetail = ({ tfjob }) => (
     </Card>
   </div>
 );
+
+JobDetail.propTypes = {
+  tfjob: PropTypes.shape({
+    metadata: PropTypes.object.isRequired,
+    spec: PropTypes.object.isRequired
+  }).isRequired
+};
 
 export default JobDetail;

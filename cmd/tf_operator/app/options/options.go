@@ -41,5 +41,5 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.IntVar(&s.ChaosLevel, "chaos-level", -1, "DO NOT USE IN PRODUCTION - level of chaos injected into the TfJob created by the operator.")
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
 	fs.DurationVar(&s.GCInterval, "gc-interval", 10*time.Minute, "GC interval")
-	fs.StringVar(&s.ControllerConfigFile, "controller_config_file", "", "Path to file containing the controller config.")
+	fs.StringVar(&s.ControllerConfigFile, "controller-config-file", "", "Path to file containing the controller config.")
 }

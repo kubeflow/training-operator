@@ -129,21 +129,35 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
 		if err != nil {
-			log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
-			return err
+			if k8s_errors.IsAlreadyExists(err) {
+				log.Infof("%v already exists.", cm.Name)
+			} else {
+				log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating PS ConfigMap %v returned error.", cm.Name), err})
+			}
 		}
 
 		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
-		s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
-			Name: "ps-config-volume",
-			VolumeSource: v1.VolumeSource{
-				ConfigMap: &v1.ConfigMapVolumeSource{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: s.defaultPSConfigMapName(),
+		name := "ps-config-volume"
+		hasVolume := false
+		for _, v := range s.Spec.Template.Spec.Volumes {
+			if v.Name == name {
+				hasVolume = true
+				break
+			}
+		}
+		if !hasVolume {
+			s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: "ps-config-volume",
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: s.defaultPSConfigMapName(),
+						},
 					},
 				},
-			},
-		})
+			})
+		}
 	}
 
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
@@ -410,9 +424,42 @@ func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1a
 	return tfv1alpha1.ReplicaStateUnknown
 }
 
+func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
+	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
+
+	if err != nil {
+		return tfv1alpha1.ReplicaStateUnknown
+	}
+
+	if j.Status.Succeeded >= 1 {
+		return tfv1alpha1.ReplicaStateSucceeded
+	}
+
+	labels := s.Labels()
+	labels["task_index"] = fmt.Sprintf("%v", index)
+	selector, err := labels.ToSelector()
+	if err != nil {
+		log.Errorf("labels.ToSelector() error; %v", err)
+		return tfv1alpha1.ReplicaStateFailed
+	}
+
+	// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
+	l, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{
+		// TODO(jlewi): Why isn't the label selector working?
+		LabelSelector: selector,
+	})
+
+	if err != nil {
+		// TODO(jlewi): Are there errors that should be treated as retryable errors?
+		return tfv1alpha1.ReplicaStateFailed
+	}
+
+	status := replicaStatusFromPodList(*l, tfv1alpha1.TENSORFLOW)
+	return status
+}
+
 // Status returns the status of the replica set.
 func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TfReplicaStatus, error) {
-
 	status := tfv1alpha1.TfReplicaStatus{
 		TfReplicaType:  s.Spec.TfReplicaType,
 		State:          tfv1alpha1.ReplicaStateUnknown,
@@ -429,42 +476,7 @@ func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TfReplicaStatus, error) {
 	}
 
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-
-		j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
-
-		if err != nil {
-			increment(tfv1alpha1.ReplicaStateUnknown)
-			continue
-		}
-
-		if j.Status.Succeeded >= 1 {
-			increment(tfv1alpha1.ReplicaStateSucceeded)
-			continue
-		}
-
-		labels := s.Labels()
-		labels["task_index"] = fmt.Sprintf("%v", index)
-		selector, err := labels.ToSelector()
-		if err != nil {
-			log.Errorf("labels.ToSelector() error; %v", err)
-			increment(tfv1alpha1.ReplicaStateFailed)
-			continue
-		}
-
-		// TODO(jlewi): Handle errors. We need to get the pod and looking at recent container exits.
-		l, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{
-			// TODO(jlewi): Why isn't the label selector working?
-			LabelSelector: selector,
-		})
-
-		if err != nil {
-			// TODO(jlewi): Are there errors that should be treated as retryable errors?
-			increment(tfv1alpha1.ReplicaStateFailed)
-			continue
-		}
-
-		status := replicaStatusFromPodList(*l, tfv1alpha1.TENSORFLOW)
-		increment(status)
+		increment(s.GetSingleReplicaStatus(index))
 	}
 
 	// Determine the overall status for the replica set based on the status of the individual

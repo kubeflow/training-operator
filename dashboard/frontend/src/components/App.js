@@ -41,7 +41,7 @@ const muiTheme = getMuiTheme({
   }
 });
 
-const App = props => {
+const App = () => {
   return (
     <Router>
       <MuiThemeProvider muiTheme={muiTheme}>

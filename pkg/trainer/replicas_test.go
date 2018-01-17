@@ -16,7 +16,16 @@ import (
 	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
+)
+
+var (
+	groupVersionKind = schema.GroupVersionKind{
+		Group:   tfv1alpha1.GroupName,
+		Version: tfv1alpha1.GroupVersion,
+		Kind:    tfv1alpha1.TFJobResourceKind,
+	}
 )
 
 func TestTFReplicaSet(t *testing.T) {
@@ -66,8 +75,8 @@ func TestTFReplicaSet(t *testing.T) {
 
 	trueVal := true
 	expectedOwnerReference := meta_v1.OwnerReference{
-		APIVersion:         "",
-		Kind:               "",
+		APIVersion:         groupVersionKind.GroupVersion().String(),
+		Kind:               groupVersionKind.Kind,
 		Name:               "some-job",
 		UID:                "some-uid",
 		Controller:         &trueVal,

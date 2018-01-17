@@ -1,0 +1,38 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  ports:
+    # Accept traffic sent to port 80
+    - name: http
+      port: 80
+      targetPort: 80
+  selector:
+    # Loadbalance traffic across Pods matching
+    # this label selector
+    app: {{ .Release.Name }}
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: {{ .Release.Name }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: tensorboard
+        image: gcr.io/tensorflow/tensorflow:latest
+        command:
+          - /usr/local/bin/tensorboard
+          - --logdir={{ .Values.logDir }}
+          - --port=80
+        ports:
+        - containerPort: 80
