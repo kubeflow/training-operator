@@ -21,11 +21,14 @@ spec:
       labels:
         name: tf-job-dashboard
     spec:    
+{{- if .Values.rbac.install }}
+      serviceAccountName: tf-job-dashboard
+{{- end }}
       containers:
       - name: tf-job-dashboard
         image: {{ .Values.image }}
         command:
           - /opt/tensorflow_k8s/dashboard/backend
         ports:
-        - containerPort: 8080 
+        - containerPort: 8080
 {{- end }}
