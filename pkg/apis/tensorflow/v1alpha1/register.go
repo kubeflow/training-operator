@@ -15,7 +15,7 @@ const (
 	// GroupName is the group name use in this package.
 	GroupName = "tensorflow.org"
 	// TFJobResourceKind is the kind name.
-	TFJobResourceKind = "TfJob"
+	TFJobResourceKind = "TFJob"
 	// GroupVersion is the version.
 	GroupVersion = "v1alpha1"
 )
@@ -38,8 +38,8 @@ func Resource(resource string) schema.GroupResource {
 // addKnownTypes adds the set of types defined in this package to the supplied scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&TfJob{},
-		&TfJobList{},
+		&TFJob{},
+		&TFJobList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
