@@ -30,44 +30,44 @@ import (
 	time "time"
 )
 
-// TfJobInformer provides access to a shared informer and lister for
-// TfJobs.
-type TfJobInformer interface {
+// TFJobInformer provides access to a shared informer and lister for
+// TFJobs.
+type TFJobInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.TfJobLister
+	Lister() v1alpha1.TFJobLister
 }
 
 type tfJobInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-// NewTfJobInformer constructs a new informer for TfJob type.
+// NewTFJobInformer constructs a new informer for TFJob type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewTfJobInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewTFJobInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-				return client.TensorflowV1alpha1().TfJobs(namespace).List(options)
+				return client.TensorflowV1alpha1().TFJobs(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-				return client.TensorflowV1alpha1().TfJobs(namespace).Watch(options)
+				return client.TensorflowV1alpha1().TFJobs(namespace).Watch(options)
 			},
 		},
-		&tensorflow_v1alpha1.TfJob{},
+		&tensorflow_v1alpha1.TFJob{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func defaultTfJobInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewTfJobInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+func defaultTFJobInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewTFJobInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
 func (f *tfJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&tensorflow_v1alpha1.TfJob{}, defaultTfJobInformer)
+	return f.factory.InformerFor(&tensorflow_v1alpha1.TFJob{}, defaultTFJobInformer)
 }
 
-func (f *tfJobInformer) Lister() v1alpha1.TfJobLister {
-	return v1alpha1.NewTfJobLister(f.Informer().GetIndexer())
+func (f *tfJobInformer) Lister() v1alpha1.TFJobLister {
+	return v1alpha1.NewTFJobLister(f.Informer().GetIndexer())
 }

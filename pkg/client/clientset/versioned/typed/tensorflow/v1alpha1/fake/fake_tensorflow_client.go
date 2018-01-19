@@ -26,8 +26,8 @@ type FakeTensorflowV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeTensorflowV1alpha1) TfJobs(namespace string) v1alpha1.TfJobInterface {
-	return &FakeTfJobs{c, namespace}
+func (c *FakeTensorflowV1alpha1) TFJobs(namespace string) v1alpha1.TFJobInterface {
+	return &FakeTFJobs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -19,7 +19,7 @@ var (
 )
 
 // AsOwner make OwnerReference according to the parameter
-func AsOwner(tfJob *tfv1.TfJob) metav1.OwnerReference {
+func AsOwner(tfJob *tfv1.TFJob) metav1.OwnerReference {
 	trueVar := true
 	// Both api.OwnerReference and metatypes.OwnerReference are combined into that.
 	return metav1.OwnerReference{
@@ -32,8 +32,8 @@ func AsOwner(tfJob *tfv1.TfJob) metav1.OwnerReference {
 	}
 }
 
-// ConfigureAcceleratorsForTfJobSpec adds any accelerator specific configuration to the pods.
-func ConfigureAcceleratorsForTfJobSpec(c *tfv1.TfJobSpec, accelerators map[string]tfv1.AcceleratorConfig) error {
+// ConfigureAcceleratorsForTFJobSpec adds any accelerator specific configuration to the pods.
+func ConfigureAcceleratorsForTFJobSpec(c *tfv1.TFJobSpec, accelerators map[string]tfv1.AcceleratorConfig) error {
 	for _, r := range c.ReplicaSpecs {
 		if r.Template == nil {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
@@ -91,7 +91,7 @@ func ConfigureAcceleratorsForTfJobSpec(c *tfv1.TfJobSpec, accelerators map[strin
 
 // Cleanup cleans up user passed spec, e.g. defaulting, transforming fields.
 // TODO: move this to admission controller
-func Cleanup(c *tfv1.TfJobSpec) {
+func Cleanup(c *tfv1.TFJobSpec) {
 	// TODO(jlewi): Add logic to cleanup user provided spec; e.g. by filling in defaults.
 	// We should have default container images so user doesn't have to provide these.
 }

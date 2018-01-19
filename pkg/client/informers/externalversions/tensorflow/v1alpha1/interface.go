@@ -24,8 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// TfJobs returns a TfJobInformer.
-	TfJobs() TfJobInformer
+	// TFJobs returns a TFJobInformer.
+	TFJobs() TFJobInformer
 }
 
 type version struct {
@@ -37,7 +37,7 @@ func New(f internalinterfaces.SharedInformerFactory) Interface {
 	return &version{f}
 }
 
-// TfJobs returns a TfJobInformer.
-func (v *version) TfJobs() TfJobInformer {
+// TFJobs returns a TFJobInformer.
+func (v *version) TFJobs() TFJobInformer {
 	return &tfJobInformer{factory: v.SharedInformerFactory}
 }

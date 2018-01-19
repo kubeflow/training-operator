@@ -25,64 +25,64 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// TfJobLister helps list TfJobs.
-type TfJobLister interface {
-	// List lists all TfJobs in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.TfJob, err error)
-	// TfJobs returns an object that can list and get TfJobs.
-	TfJobs(namespace string) TfJobNamespaceLister
-	TfJobListerExpansion
+// TFJobLister helps list TFJobs.
+type TFJobLister interface {
+	// List lists all TFJobs in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error)
+	// TFJobs returns an object that can list and get TFJobs.
+	TFJobs(namespace string) TFJobNamespaceLister
+	TFJobListerExpansion
 }
 
-// tfJobLister implements the TfJobLister interface.
+// tfJobLister implements the TFJobLister interface.
 type tfJobLister struct {
 	indexer cache.Indexer
 }
 
-// NewTfJobLister returns a new TfJobLister.
-func NewTfJobLister(indexer cache.Indexer) TfJobLister {
+// NewTFJobLister returns a new TFJobLister.
+func NewTFJobLister(indexer cache.Indexer) TFJobLister {
 	return &tfJobLister{indexer: indexer}
 }
 
-// List lists all TfJobs in the indexer.
-func (s *tfJobLister) List(selector labels.Selector) (ret []*v1alpha1.TfJob, err error) {
+// List lists all TFJobs in the indexer.
+func (s *tfJobLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.TfJob))
+		ret = append(ret, m.(*v1alpha1.TFJob))
 	})
 	return ret, err
 }
 
-// TfJobs returns an object that can list and get TfJobs.
-func (s *tfJobLister) TfJobs(namespace string) TfJobNamespaceLister {
+// TFJobs returns an object that can list and get TFJobs.
+func (s *tfJobLister) TFJobs(namespace string) TFJobNamespaceLister {
 	return tfJobNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// TfJobNamespaceLister helps list and get TfJobs.
-type TfJobNamespaceLister interface {
-	// List lists all TfJobs in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.TfJob, err error)
-	// Get retrieves the TfJob from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.TfJob, error)
-	TfJobNamespaceListerExpansion
+// TFJobNamespaceLister helps list and get TFJobs.
+type TFJobNamespaceLister interface {
+	// List lists all TFJobs in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error)
+	// Get retrieves the TFJob from the indexer for a given namespace and name.
+	Get(name string) (*v1alpha1.TFJob, error)
+	TFJobNamespaceListerExpansion
 }
 
-// tfJobNamespaceLister implements the TfJobNamespaceLister
+// tfJobNamespaceLister implements the TFJobNamespaceLister
 // interface.
 type tfJobNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
-// List lists all TfJobs in the indexer for a given namespace.
-func (s tfJobNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.TfJob, err error) {
+// List lists all TFJobs in the indexer for a given namespace.
+func (s tfJobNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.TfJob))
+		ret = append(ret, m.(*v1alpha1.TFJob))
 	})
 	return ret, err
 }
 
-// Get retrieves the TfJob from the indexer for a given namespace and name.
-func (s tfJobNamespaceLister) Get(name string) (*v1alpha1.TfJob, error) {
+// Get retrieves the TFJob from the indexer for a given namespace and name.
+func (s tfJobNamespaceLister) Get(name string) (*v1alpha1.TFJob, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -90,5 +90,5 @@ func (s tfJobNamespaceLister) Get(name string) (*v1alpha1.TfJob, error) {
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("tfjob"), name)
 	}
-	return obj.(*v1alpha1.TfJob), nil
+	return obj.(*v1alpha1.TFJob), nil
 }
