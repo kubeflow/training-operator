@@ -1,5 +1,5 @@
-let host = "http://localhost:8080";
-//let host = "";
+//let host = "http://localhost:8080";
+let host = "";
 
 export function getTfJobListService(namespace) {
   return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());

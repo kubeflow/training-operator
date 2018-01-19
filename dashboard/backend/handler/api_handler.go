@@ -109,11 +109,15 @@ func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response
 	namespace := request.PathParameter("namespace")
 	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).List(metav1.ListOptions{})
 
+	ns := "all"
+	if namespace != "" {
+		ns = namespace
+	}
 	if err != nil {
-		log.Warningf("failed to list TfJobs under namespace %v: %v", namespace, err)
+		log.Warningf("failed to list TfJobs under %v namespace(s): %v", ns, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully listed TfJobs under namespace %v", namespace)
+		log.Infof("successfully listed TfJobs under %v namespace(s)", ns)
 		response.WriteHeaderAndEntity(http.StatusOK, jobs)
 	}
 }
@@ -177,6 +181,21 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		response.WriteError(http.StatusBadRequest, err)
 		return
 	}
+
+	_, err := apiHandler.cManager.ClientSet.CoreV1().Namespaces().Get(tfJob.Namespace, metav1.GetOptions{})
+
+	if errors.IsNotFound(err) {
+		// If namespace doesn't exist we create it
+		_, nsErr := apiHandler.cManager.ClientSet.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tfJob.Namespace}})
+		if nsErr != nil {
+			log.Warningf("failed to create namespace %v for TFJob %v: %v", tfJob.Namespace, tfJob.Name, nsErr)
+			response.WriteError(http.StatusInternalServerError, nsErr)
+		}
+	} else if err != nil {
+			log.Warningf("failed to deploy TfJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+			response.WriteError(http.StatusInternalServerError, err)
+	}
+
 	j, err := clt.TensorflowV1alpha1().TfJobs(tfJob.Namespace).Create(tfJob)
 	if err != nil {
 		log.Warningf("failed to deploy TfJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
