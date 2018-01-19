@@ -24,7 +24,7 @@ const TensorBoard = ({ service }) => {
             )}
           </div>
         ) : (
-          "TensorBoard was not configured for this TfJob or the service was deleted."
+          "TensorBoard was not configured for this TFJob or the service was deleted."
         )}
       </CardText>
     </Card>

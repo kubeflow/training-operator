@@ -7,7 +7,7 @@ import Toggle from "material-ui/Toggle";
 import RaisedButton from "material-ui/RaisedButton";
 import { withRouter } from "react-router-dom";
 
-import { createTfJobService } from "../services";
+import { createTFJobService } from "../services";
 import CreateTensorBoard from "./CreateTensorBoard";
 import RequiredTextField from "./RequiredTextField";
 import VolumeCreator from "./VolumeCreator";
@@ -306,7 +306,7 @@ class CreateJob extends Component {
       spec.spec.tensorboard = this.state.tbSpec;
     }
 
-    createTfJobService(spec)
+    createTFJobService(spec)
       .then(() => this.props.history.push("/"))
       .catch(console.error);
   }
