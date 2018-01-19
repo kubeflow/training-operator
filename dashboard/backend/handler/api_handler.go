@@ -33,6 +33,11 @@ type TfJobList struct {
 	tfJobs []v1alpha1.TfJob `json:"TfJobs"`
 }
 
+// NamepsaceList is a list of namespaces
+type NamespaceList struct {
+	namespaces []v1.Namespace `json:"namespaces"`
+}
+
 // CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
 func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	apiHandler := APIHandler{
@@ -62,6 +67,11 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 		apiV1Ws.GET("/tfjob").
 			To(apiHandler.handleGetTfJobs).
 			Writes(TfJobList{}))
+	
+	apiV1Ws.Route(
+		apiV1Ws.GET("/tfjob/{namespace}").
+			To(apiHandler.handleGetTfJobs).
+			Writes(TfJobList{}))
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob/{namespace}/{tfjob}").
@@ -83,14 +93,18 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 			To(apiHandler.handleGetPodLogs).
 			Writes([]byte{}))
 
+	apiV1Ws.Route(
+		apiV1Ws.GET("/namespace").
+		To(apiHandler.handleGetNamespaces).
+		Writes(NamespaceList{}))
+
 	wsContainer.Add(apiV1Ws)
 	return wsContainer, nil
 }
 
 func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response *restful.Response) {
-
-	//TODO: namespace handling
-	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs("default").List(metav1.ListOptions{})
+	namespace := request.PathParameter("namespace")
+	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).List(metav1.ListOptions{})
 
 	if err != nil {
 		panic(err)
@@ -175,4 +189,13 @@ func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, respons
 	}
 
 	response.WriteHeaderAndEntity(http.StatusOK, string(logs))
+}
+
+func (apiHandler *APIHandler) handleGetNamespaces(request *restful.Request, response *restful.Response) {
+	l, err := apiHandler.cManager.ClientSet.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	response.WriteHeaderAndEntity(http.StatusOK, l)
 }

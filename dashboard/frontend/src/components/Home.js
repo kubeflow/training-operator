@@ -1,40 +1,89 @@
 import React, { Component } from "react";
 import { Route, Switch } from "react-router-dom";
-import "./App.css";
+import SelectField from "material-ui/SelectField";
+import MenuItem from "material-ui/MenuItem";
 
+import "./App.css";
 import JobList from "./JobList";
 import Job from "./Job";
 import CreateJob from "./CreateJob";
 import AppBar from "./AppBar";
-import { getTfJobListService } from "../services";
+import { getTfJobListService, getNamespaces } from "../services";
+
+const all_namespaces_key = "All namespaces";
 
 class Home extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      tfJobs: []
+      tfJobs: [],
+      selectedNamespace: all_namespaces_key,
+      namespaces: []
     };
+
+    this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
+    this.lastNamespaceQueried = all_namespaces_key;
   }
 
   componentDidMount() {
-    this.fetch();
-    setInterval(() => this.fetch(), 10000);
+    this.fetchJobs();
+    this.fetchNamespaces();
+    setInterval(() => this.fetchJobs(), 10000);
   }
 
-  fetch() {
-    getTfJobListService()
+  fetchJobs() {
+    let ns =
+      this.state.selectedNamespace == all_namespaces_key
+        ? ""
+        : this.state.selectedNamespace;
+    getTfJobListService(ns)
       .then(b => {
+        this.lastNamespaceQueried = this.state.selectedNamespace;
         this.setState({ tfJobs: b.items });
       })
       .catch(console.error);
   }
 
+  fetchNamespaces() {
+    getNamespaces()
+      .then(b =>
+        this.setState({
+          namespaces: b.items
+            .map(ns => ns.metadata.name)
+            .concat(all_namespaces_key)
+        })
+      )
+      .catch(console.error);
+  }
+
+  handleNamespaceChange(event, index, value) {
+    this.setState({ selectedNamespace: value });
+  }
+
   render() {
+    if (this.lastNamespaceQueried != this.state.selectedNamespace) {
+      // if the user changed the selected namespace we want to refresh immediatly, not once the timer ticks.
+      this.fetchJobs();
+    }
+
+    const nsl = this.state.namespaces.map(ns => {
+      return <MenuItem value={ns} primaryText={ns} key={ns} />;
+    });
+
     return (
       <div>
         <AppBar />
         <div id="main" style={this.styles.mainStyle}>
           <div style={this.styles.list}>
+            <div>
+              <SelectField
+                floatingLabelText="Namespace"
+                value={this.state.selectedNamespace}
+                onChange={this.handleNamespaceChange}
+              >
+                {nsl}
+              </SelectField>
+            </div>
             <JobList jobs={this.state.tfJobs} />
           </div>
           <div style={this.styles.content}>

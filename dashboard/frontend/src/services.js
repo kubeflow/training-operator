@@ -1,8 +1,8 @@
-// let host = "http://localhost:8080";
-let host = "";
+let host = "http://localhost:8080";
+//let host = "";
 
-export function getTfJobListService() {
-  return fetch(`${host}/api/tfjob`).then(r => r.json());
+export function getTfJobListService(namespace) {
+  return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());
 }
 
 export function createTfJobService(spec) {
@@ -36,4 +36,8 @@ export function deleteTfJob(namespace, name) {
 
 export function getPodLogs(namespace, name) {
   return fetch(`${host}/api/logs/${namespace}/${name}`).then(r => r.json());
+}
+
+export function getNamespaces() {
+  return fetch(`${host}/api/namespace`).then(r => r.json());
 }
