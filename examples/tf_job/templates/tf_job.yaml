@@ -1,5 +1,5 @@
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: {{ .Release.Name }}
 spec:
@@ -10,7 +10,7 @@ spec:
       template:
         spec:
           containers:
-            - image: {{ .Values.image }} 
+            - image: {{ .Values.image }}
               name: tensorflow
           restartPolicy: OnFailure
     - replicas: 1

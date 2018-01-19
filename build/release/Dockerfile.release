@@ -20,7 +20,7 @@
 # tighter controls on the code used to build our releases.
 
 # This Dockerfile is used to create a docker image suitable for building
-# and releasing the TfJob operator.
+# and releasing the TFJob operator.
 FROM golang:1.8.2
 LABEL authors="Jeremy Lewi <jlewi@google.com>"
 
@@ -56,7 +56,7 @@ RUN easy_install pip
 # activate the virtual env by running pipenv shell.
 RUN pip install --upgrade six pyyaml google-api-python-client \
     google-cloud-storage pylint jinja2 \
-    google-auth-httplib2 kubernetes==4.0.0 mock retrying 
+    google-auth-httplib2 kubernetes==4.0.0 mock retrying
 
 # Install gcloud
 
