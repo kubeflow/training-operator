@@ -138,7 +138,9 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   ]
   for t in targets:
     if t == "github.com/tensorflow/k8s/cmd/tf_operator":
-      util.run(["go", "install", "-ldflags", "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit), t])
+      util.run(["go", "install", "-ldflags",
+                "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit),
+                t])
     util.run(["go", "install", t])
 
   # Dashboard's frontend:
@@ -149,12 +151,12 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
 
   # List of paths to copy relative to root.
   sources = [
-      "images/tf_operator/Dockerfile",
+      "build/images/tf_operator/Dockerfile",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
       "dashboard/frontend/build",
-      "grpc_tensorflow_server/grpc_tensorflow_server.py"
+      "hack/grpc_tensorflow_server/grpc_tensorflow_server.py"
   ]
 
   for s in sources:

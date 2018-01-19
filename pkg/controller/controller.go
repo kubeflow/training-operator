@@ -89,7 +89,10 @@ func New(kubeClient kubernetes.Interface, apiExtclient apiextensionsclient.Inter
 				}
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc:    controller.enqueueController,
+				AddFunc: controller.enqueueController,
+				UpdateFunc: func(oldObj, newObj interface{}) {
+					controller.enqueueController(newObj)
+				},
 				DeleteFunc: controller.handleDelete,
 			},
 		})
@@ -122,8 +125,8 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	glog.Info("Starting workers")
-	// Launch two workers to process Foo resources
+	glog.Info("Starting %v workers", threadiness)
+	// Launch workers to process TfJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
@@ -166,9 +169,11 @@ func (c *Controller) processNextWorkItem() bool {
 	return true
 }
 
-// syncJob will sync the job with the given key if it has had its expectations fulfilled, meaning
-// it did not expect to see any more of its pods created or deleted. This function is not meant to be invoked
+// syncTFJob will sync the job with the given. This function is not meant to be invoked
 // concurrently with the same key.
+//
+// When a job is completely processed it will return true indicating that its ok to forget about this job since
+// no more processing will occur for it.
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
@@ -193,7 +198,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	if _, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok {
+	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
+	// The UID's won't match in the event we deleted the job and then recreated the job with the samee name.
+	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
 		nc, err := trainer.NewJob(c.KubeClient, c.TfJobClient, tfJob, &c.config)
 
 		if err != nil {
@@ -214,7 +221,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	if tfJob.Status.State == tfv1alpha1.StateSucceeded {
+	// TODO(jlewi): This logic will need to change when/if we get rid of phases and move to conditions. At that
+	// case we should forget about a job when the appropriate condition is reached.
+	if tfJob.Status.Phase == tfv1alpha1.TfJobPhaseCleanUp {
 		return true, nil
 	} else {
 		return false, nil

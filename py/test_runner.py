@@ -7,13 +7,14 @@ import time
 import uuid
 
 import jinja2
+import yaml
+
 from kubernetes import client as k8s_client
+from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
 from py import util
 from py import tf_job_client
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
-import yaml
 
 def run_test(args):
   """Run a test."""
@@ -53,7 +54,7 @@ def run_test(args):
     results = tf_job_client.wait_for_job(api_client, namespace, name,
                                          status_callback=tf_job_client.log_status)
 
-    if results["status"]["state"] != "succeeded":
+    if results["status"]["state"].lower() != "succeeded":
       t.failure = "Job {0} in namespace {1} in state {2}".format(
         name, namespace, results["status"]["state"])
 

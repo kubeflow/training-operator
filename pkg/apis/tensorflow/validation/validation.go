@@ -10,15 +10,21 @@ import (
 
 // ValidateTfJobSpec checks that the TfJobSpec is valid.
 func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
-	// Check that each replica has a TensorFlow container.
+	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
+		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
+	}
+
+	chiefExists := false
+
+	// Check that each replica has a TensorFlow container and a chief.
 	for _, r := range c.ReplicaSpecs {
 		found := false
 		if r.Template == nil && r.TfReplicaType != tfv1.PS {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
-		if r.TfReplicaType == tfv1.MASTER && *r.Replicas != 1 {
-			return errors.New("The MASTER must have Replicas = 1")
+		if r.TfReplicaType == tfv1.TfReplicaType(c.TerminationPolicy.Chief.ReplicaName) {
+			chiefExists = true
 		}
 
 		if r.TfPort == nil {
@@ -51,14 +57,12 @@ func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
 		}
 	}
 
-	if c.TerminationPolicy != nil {
-		if c.TerminationPolicy.Chief == nil {
-			return errors.New("invalid termination policy, Chief cannot be nil")
-		}
-		if c.TerminationPolicy.Chief.ReplicaName != "MASTER" || c.TerminationPolicy.Chief.ReplicaIndex != 0 {
-			return errors.New("invalid termination policy, Chief should have replicaName=MASTER and index=0")
-		}
+	if !chiefExists {
+		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
 	}
 
+	if c.TensorBoard != nil && c.TensorBoard.LogDir == "" {
+		return fmt.Errorf("tbReplicaSpec.LogDir must be specified")
+	}
 	return nil
 }

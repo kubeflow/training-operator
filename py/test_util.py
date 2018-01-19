@@ -88,16 +88,14 @@ def wrap_test(test_func, test_case):
   finally:
     test_case.time = time.time() - start
 
-def create_junit_xml_file(test_cases, output_path, gcs_client=None):
-  """Create a JUnit XML file.
-
-  The junit schema is specified here:
-  https://www.ibm.com/support/knowledgecenter/en/SSQ2R2_9.5.0/com.ibm.rsar.analysis.codereview.cobol.doc/topics/cac_useresults_junit.html
+def create_xml(test_cases):
+  """Create an Element tree representing the test cases.
 
   Args:
     test_cases: TestSuite or List of test case objects.
-    output_path: Path to write the XML
-    gcs_client: GCS client to use if output is GCS.
+
+  Returns:
+    ElementTree: representing the elements.
   """
   total_time = 0
   failures = 0
@@ -122,15 +120,32 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     # If the time isn't set and no message is set we interpret that as
     # the test not being run.
     if not c.time and not c.failure:
-      attrib["failure"] = "Test was not run."
+      c.failure = "Test was not run."
 
-    if c.failure:
-      attrib["failure"] = c.failure
     e = ElementTree.Element("testcase", attrib)
 
     root.append(e)
 
+    if c.failure:
+      f = ElementTree.Element("failure")
+      f.text = c.failure
+      e.append(f)
+
   t = ElementTree.ElementTree(root)
+  return t
+
+def create_junit_xml_file(test_cases, output_path, gcs_client=None):
+  """Create a JUnit XML file.
+
+  The junit schema is specified here:
+  https://www.ibm.com/support/knowledgecenter/en/SSQ2R2_9.5.0/com.ibm.rsar.analysis.codereview.cobol.doc/topics/cac_useresults_junit.html
+
+  Args:
+    test_cases: TestSuite or List of test case objects.
+    output_path: Path to write the XML
+    gcs_client: GCS client to use if output is GCS.
+  """
+  t = create_xml(test_cases)
   logging.info("Creating %s", output_path)
   if output_path.startswith("gs://"):
     b = six.StringIO()
@@ -142,3 +157,9 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     blob.upload_from_string(b.getvalue())
   else:
     t.write(output_path)
+
+def get_num_failures(xml_string):
+  """Return the number of failures based on the XML string."""
+
+  e = ElementTree.fromstring(xml_string)
+  return int(e.attrib.get("failures", 0))

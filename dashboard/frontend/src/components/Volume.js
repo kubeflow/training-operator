@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField";
 import SelectField from "material-ui/SelectField";
 import MenuItem from "material-ui/MenuItem";
@@ -187,5 +188,11 @@ class Volume extends React.Component {
     this.props.deleteVolume(this.props.id);
   }
 }
+
+Volume.propTypes = {
+  id: PropTypes.string.isRequired,
+  deleteVolume: PropTypes.func.isRequired,
+  setVolumeSpec: PropTypes.func.isRequired
+};
 
 export default Volume;

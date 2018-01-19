@@ -14,12 +14,15 @@
 # limitations under the License.
 """Helper functions for working with prow.
 """
+import argparse
 import json
 import logging
 import os
 import re
-import subprocess
 import time
+
+from google.cloud import storage  # pylint: disable=no-name-in-module
+from py import test_util
 from py import util  # pylint: disable=no-name-in-module
 
 # Default repository organization and name.
@@ -205,3 +208,99 @@ def create_latest(gcs_client, job_name, sha):
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
+
+
+def _get_actual_junit_files(bucket, prefix):
+  actual_junit = set()
+  for b in bucket.list_blobs(prefix=os.path.join(prefix, "junit")):
+    actual_junit.add(os.path.basename(b.name))
+  return actual_junit
+
+def check_no_errors(gcs_client, artifacts_dir, junit_files):
+  """Check that all the XML files exist and there were no errors.
+
+  Args:
+    gcs_client: The GCS client.
+    artifacts_dir: The directory where artifacts should be stored.
+    junit_files: List of the names of the junit files.
+
+  Returns:
+    True if there were no errors and false otherwise.
+  """
+  bucket_name, prefix = util.split_gcs_uri(artifacts_dir)
+  bucket = gcs_client.get_bucket(bucket_name)
+  no_errors = True
+
+  # Get a list of actual junit files.
+  actual_junit = _get_actual_junit_files(bucket, prefix)
+
+  for f in junit_files:
+    full_path = os.path.join(artifacts_dir, f)
+    logging.info("Checking %s", full_path)
+    b = bucket.blob(os.path.join(prefix, f))
+    if not b.exists():
+      logging.error("Missing %s", full_path)
+      no_errors = False
+      continue
+
+    xml_contents = b.download_as_string()
+
+    if test_util.get_num_failures(xml_contents) > 0:
+      logging.info("Test failures in %s", full_path)
+      no_errors = False
+
+  # Check if there were any extra tests that ran and treat
+  # that as a failure.
+  extra = set(actual_junit) - set(junit_files)
+  if extra:
+    logging.error("Extra junit files found: %s", ",".join(extra))
+    no_errors = False
+  return no_errors
+
+def finalize_prow_job(args):
+  """Finalize a prow job.
+
+  Finalizing a PROW job consists of determining the status of the
+  prow job by looking at the junit files and then creating finished.json.
+  """
+  junit_files = args.junit_files.split(",")
+  gcs_client = storage.Client()
+
+  output_dir = get_gcs_output()
+  artifacts_dir = os.path.join(output_dir, "artifacts")
+  no_errors = check_no_errors(gcs_client, artifacts_dir, junit_files)
+
+  create_finished(gcs_client, output_dir, no_errors)
+
+def main():  # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
+
+  # create the top-level parser
+  parser = argparse.ArgumentParser(
+    description="Steps related to prow.")
+  subparsers = parser.add_subparsers()
+
+  #############################################################################
+  # Finalize prow job.
+  parser_finished = subparsers.add_parser(
+    "finalize_job",
+    help="Finalize the prow job.")
+
+  parser_finished.add_argument("--junit_files",
+                               default="", type=str,
+                               help=("A comma separated list of the names of "
+                                     "the expected junit files."))
+  parser_finished.set_defaults(func=finalize_prow_job)
+
+  # parse the args and call whatever function was selected
+  args = parser.parse_args()
+
+  args.func(args)
+
+if __name__ == "__main__":
+  main()

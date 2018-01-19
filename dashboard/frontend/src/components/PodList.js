@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import {
   Table,
   TableBody,
@@ -25,10 +26,11 @@ class PodList extends Component {
 
   actions = [
     <FlatButton
+      key={"close"}
       label="Close"
       primary={true}
       keyboardFocused={true}
-      onClick={_ => this.setState({ isLogModalOpened: false })}
+      onClick={() => this.setState({ isLogModalOpened: false })}
     />
   ];
 
@@ -53,7 +55,7 @@ class PodList extends Component {
                 <TableRowColumn>{p.status.phase}</TableRowColumn>
                 <TableRowColumn>
                   <IconButton>
-                    <ActionSubject onClick={_ => this.getLogsForPod(p)} />
+                    <ActionSubject onClick={() => this.getLogsForPod(p)} />
                   </IconButton>
                 </TableRowColumn>
               </TableRow>
@@ -86,8 +88,12 @@ class PodList extends Component {
       .then(b => {
         this.setState({ logs: b, isLogModalOpened: true });
       })
-      .catch(b => console.error);
+      .catch(e => console.error(e));
   }
 }
+
+PodList.propTypes = {
+  pods: PropTypes.arrayOf(PropTypes.object).isRequired
+};
 
 export default PodList;

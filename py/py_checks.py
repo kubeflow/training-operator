@@ -9,10 +9,11 @@ import os
 import subprocess
 import time
 
+from google.cloud import storage  # pylint: disable=no-name-in-module
+
 from py import util
 from py import test_util
 
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
 def run_lint(args):
   start_time = time.time()
@@ -20,24 +21,38 @@ def run_lint(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["vendor"]
+  dir_excludes = ["dashboard/frontend/node_modules", "vendor",]
+  full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
+                       dir_excludes]
   includes = ["*.py"]
   failed_files = []
   rc_file = os.path.join(args.src_dir, ".pylintrc")
-  for root, dirs, files in os.walk(args.src_dir, topdown=True):
+  for root, dirs, files in os.walk(os.path.abspath(args.src_dir),
+                                   topdown=True):
     # excludes can be done with fnmatch.filter and complementary set,
     # but it's more annoying to read.
-    dirs[:] = [d for d in dirs if d not in dir_excludes]
+    exclude = False
+    for e in full_dir_excludes:
+      if root.startswith(e):
+        exclude = True
+        break
+    if exclude:
+      continue
+
+    dirs[:] = [d for d in dirs]
     for pat in includes:
       for f in fnmatch.filter(files, pat):
         full_path = os.path.join(root, f)
         try:
-          util.run(["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
+          util.run(["pylint", "--rcfile=" + rc_file, full_path],
+                    cwd=args.src_dir)
         except subprocess.CalledProcessError:
           failed_files.append(full_path.strip(args.src_dir))
 
   if failed_files:
-    logging.error("%s files had lint errors.", len(failed_files))
+    failed_files.sort()
+    logging.error("%s files had lint errors:\n%s", len(failed_files),
+                  "\n".join(failed_files))
   else:
     logging.info("No lint issues.")
 
@@ -136,6 +151,11 @@ def add_common_args(parser):
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
   # create the top-level parser
   parser = argparse.ArgumentParser(
       description="Run python code checks.")
@@ -164,6 +184,7 @@ def main():  # pylint: disable=too-many-locals
   # parse the args and call whatever function was selected
   args = parser.parse_args()
   args.func(args)
+  logging.info("Finished")
 
 if __name__ == "__main__":
   main()

@@ -33,15 +33,15 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-      {{- if .Values.config.configmap }}       
+      {{- if .Values.config.configmap }}
         volumeMounts:
           - name: config-volume
             mountPath: /etc/config
       volumes:
         - name: config-volume
           configMap:
-            name: {{ .Values.config.configmap }}      
-      {{- else if .Values.cloud  }}       
+            name: {{ .Values.config.configmap }}
+      {{- else if .Values.cloud  }}
         volumeMounts:
           - name: config-volume
             mountPath: /etc/config

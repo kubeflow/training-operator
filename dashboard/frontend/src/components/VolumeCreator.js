@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import FlatButton from "material-ui/FlatButton";
 import ContentAdd from "material-ui/svg-icons/content/add";
 import omit from "lodash/omit";
@@ -25,7 +26,7 @@ class VolumeCreator extends React.Component {
           label="Add a volume"
           primary={true}
           icon={<ContentAdd />}
-          onClick={_ => this.addVolume()}
+          onClick={() => this.addVolume()}
         />
         {Object.keys(this.state.volumeSpecs).map(k => (
           <Volume
@@ -80,5 +81,9 @@ class VolumeCreator extends React.Component {
     }
   };
 }
+
+VolumeCreator.propTypes = {
+  setVolumesSpec: PropTypes.func.isRequired
+};
 
 export default VolumeCreator;

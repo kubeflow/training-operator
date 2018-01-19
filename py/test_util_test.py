@@ -1,7 +1,9 @@
 from __future__ import print_function
 
 import subprocess
+import StringIO
 import tempfile
+import time
 import unittest
 
 from py import test_util
@@ -28,12 +30,36 @@ class XMLTest(unittest.TestCase):
       print(output)
     expected = ("""<testsuite failures="1" tests="2" time="20">"""
                 """<testcase classname="some_test" name="first" time="10" />"""
-                """<testcase classname="some_test" """
-                """failure="failed for some reason." name="first" """
-                """time="10" /></testsuite>""")
+                """<testcase classname="some_test" name="first" """
+                """time="10"><failure>failed for some reason.</failure>"""
+                """</testcase></testsuite>""")
 
     self.assertEquals(expected, output)
 
+  def test_get_num_failures(self):
+    failure = test_util.TestCase()
+    failure.class_name = "some_test"
+    failure.name = "first"
+    failure.time = 10
+    failure.failure = "failed for some reason."
+
+    e = test_util.create_xml([failure])
+    s = StringIO.StringIO()
+    e.write(s)
+    xml_value = s.getvalue()
+    self.assertEquals(1, test_util.get_num_failures(xml_value))
+
+  def test_get_num_failures_success(self):
+    success = test_util.TestCase()
+    success.class_name = "some_test"
+    success.name = "first"
+    success.time = 10
+
+    e = test_util.create_xml([success])
+    s = StringIO.StringIO()
+    e.write(s)
+    xml_value = s.getvalue()
+    self.assertEquals(0, test_util.get_num_failures(xml_value))
 
 class TestSuiteTest(unittest.TestCase):
   def testSuite(self):
@@ -61,7 +87,7 @@ class TestSuiteTest(unittest.TestCase):
 class TestWrapTest(unittest.TestCase):
   def testOk(self):
     def ok():
-      pass
+      time.sleep(1)
 
     t = test_util.TestCase()
     test_util.wrap_test(ok, t)
@@ -79,6 +105,7 @@ class TestWrapTest(unittest.TestCase):
 
   def testGeneralError(self):
     def run():
+      time.sleep(1)
       raise ValueError("some error")
 
     t = test_util.TestCase()

@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField";
 
 const errorMessage = "This field is required";
@@ -34,5 +35,11 @@ class RequiredTextField extends Component {
     this.props.onChange(event);
   }
 }
+
+RequiredTextField.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string
+};
 
 export default RequiredTextField;
