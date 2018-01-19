@@ -33,7 +33,7 @@ class Home extends Component {
 
   fetchJobs() {
     let ns =
-      this.state.selectedNamespace == all_namespaces_key
+      this.state.selectedNamespace === all_namespaces_key
         ? ""
         : this.state.selectedNamespace;
     getTfJobListService(ns)
@@ -61,7 +61,7 @@ class Home extends Component {
   }
 
   render() {
-    if (this.lastNamespaceQueried != this.state.selectedNamespace) {
+    if (this.lastNamespaceQueried !== this.state.selectedNamespace) {
       // if the user changed the selected namespace we want to refresh immediatly, not once the timer ticks.
       this.fetchJobs();
     }
