@@ -18,6 +18,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/record"
 )
 
 var (
@@ -57,13 +58,14 @@ func TestTFReplicaSet(t *testing.T) {
 		},
 	}
 
-	job, err := initJob(clientSet, &tfJobFake.Clientset{}, jobSpec)
+	recorder := record.NewFakeRecorder(100)
+	job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, jobSpec)
 
 	if err != nil {
 		t.Fatalf("initJob failed: %v", err)
 	}
 
-	replica, err := NewTFReplicaSet(clientSet, *jobSpec.Spec.ReplicaSpecs[0], job)
+	replica, err := NewTFReplicaSet(clientSet, recorder, *jobSpec.Spec.ReplicaSpecs[0], job)
 
 	if err != nil {
 		t.Fatalf("NewTFReplicaSet failed: %v", err)
