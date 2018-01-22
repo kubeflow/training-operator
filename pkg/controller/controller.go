@@ -1,32 +1,40 @@
-// package controller provides a Kubernetes controller for a TensorFlow job resource.
+// Package controller provides a Kubernetes controller for a TensorFlow job resource.
 package controller
 
 import (
 	"errors"
 	"fmt"
-
 	"reflect"
 	"time"
 
-	"github.com/tensorflow/k8s/pkg/trainer"
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
-
 	"github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	listers "github.com/tensorflow/k8s/pkg/client/listers/tensorflow/v1alpha1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
+
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
+	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
+	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
+	listers "github.com/tensorflow/k8s/pkg/client/listers/tensorflow/v1alpha1"
+	"github.com/tensorflow/k8s/pkg/trainer"
+)
+
+const (
+	controllerName = "kubeflow"
 )
 
 var (
@@ -42,7 +50,7 @@ var (
 
 type Controller struct {
 	KubeClient   kubernetes.Interface
-	ApiExtclient apiextensionsclient.Interface
+	APIExtclient apiextensionsclient.Interface
 	TfJobClient  tfjobclient.Interface
 
 	config tfv1alpha1.ControllerConfig
@@ -58,18 +66,30 @@ type Controller struct {
 	// simultaneously in two different workers.
 	WorkQueue workqueue.RateLimitingInterface
 
+	// recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	recorder record.EventRecorder
+
 	syncHandler func(jobKey string) (bool, error)
 }
 
-func New(kubeClient kubernetes.Interface, apiExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
+func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
 	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
 	tfJobInformer := tfJobInformerFactory.Tensorflow().V1alpha1().TfJobs()
 
+	kubeflowscheme.AddToScheme(scheme.Scheme)
+	glog.V(4).Info("Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(glog.Infof)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
+
 	controller := &Controller{
 		KubeClient:   kubeClient,
-		ApiExtclient: apiExtclient,
+		APIExtclient: APIExtclient,
 		TfJobClient:  tfJobClient,
 		WorkQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Tfjobs"),
+		recorder:     recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:   make(map[string]*trainer.TrainingJob),
 		config: config,
@@ -199,9 +219,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	}
 
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
-	// The UID's won't match in the event we deleted the job and then recreated the job with the samee name.
+	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
 	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
-		nc, err := trainer.NewJob(c.KubeClient, c.TfJobClient, tfJob, &c.config)
+		nc, err := trainer.NewJob(c.KubeClient, c.TfJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
 			return false, err
@@ -270,14 +290,14 @@ func (c *Controller) createCRD() error {
 		},
 	}
 
-	_, err := c.ApiExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	_, err := c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = c.ApiExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(helper.CRDName(), metav1.GetOptions{})
+		crd, err = c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(helper.CRDName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -297,7 +317,7 @@ func (c *Controller) createCRD() error {
 	})
 
 	if err != nil {
-		deleteErr := c.ApiExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(helper.CRDName(), nil)
+		deleteErr := c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(helper.CRDName(), nil)
 		if deleteErr != nil {
 			return k8sErrors.NewAggregate([]error{err, deleteErr})
 		}
