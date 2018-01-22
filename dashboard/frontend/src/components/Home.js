@@ -10,19 +10,19 @@ import CreateJob from "./CreateJob";
 import AppBar from "./AppBar";
 import { getTfJobListService, getNamespaces } from "../services";
 
-const all_namespaces_key = "All namespaces";
+const allNamespacesKey = "All namespaces";
 
 class Home extends Component {
   constructor(props) {
     super(props);
     this.state = {
       tfJobs: [],
-      selectedNamespace: all_namespaces_key,
+      selectedNamespace: allNamespacesKey,
       namespaces: []
     };
 
     this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
-    this.lastNamespaceQueried = all_namespaces_key;
+    this.lastNamespaceQueried = allNamespacesKey;
   }
 
   componentDidMount() {
@@ -33,7 +33,7 @@ class Home extends Component {
 
   fetchJobs() {
     let ns =
-      this.state.selectedNamespace === all_namespaces_key
+      this.state.selectedNamespace === allNamespacesKey
         ? ""
         : this.state.selectedNamespace;
     getTfJobListService(ns)
@@ -50,7 +50,7 @@ class Home extends Component {
         this.setState({
           namespaces: b.items
             .map(ns => ns.metadata.name)
-            .concat(all_namespaces_key)
+            .concat(allNamespacesKey)
         })
       )
       .catch(console.error);

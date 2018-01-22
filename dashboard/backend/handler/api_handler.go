@@ -236,8 +236,10 @@ func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, respons
 func (apiHandler *APIHandler) handleGetNamespaces(request *restful.Request, response *restful.Response) {
 	l, err := apiHandler.cManager.ClientSet.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		log.Warningf("failed to list namespaces.")
+		response.WriteError(http.StatusInternalServerError, err)
+	} else {
+		log.Infof("sucessfully listed namespaces")
+		response.WriteHeaderAndEntity(http.StatusOK, l)
 	}
-
-	response.WriteHeaderAndEntity(http.StatusOK, l)
 }
