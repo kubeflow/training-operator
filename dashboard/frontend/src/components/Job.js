@@ -3,7 +3,7 @@ import JobDetail from "./JobDetail.js";
 import ReplicaSpec from "./ReplicaSpec.js";
 import TensorBoard from "./TensorBoard.js";
 import { Card, CardText } from "material-ui/Card";
-import { getTfJobService } from "../services";
+import { getTFJobService } from "../services";
 
 class Job extends Component {
   constructor(props) {
@@ -44,7 +44,7 @@ class Job extends Component {
     }
     return (
       <Card>
-        <CardText> There are no TfJobs to display </CardText>
+        <CardText> There are no TFJobs to display </CardText>
       </Card>
     );
   }
@@ -52,7 +52,7 @@ class Job extends Component {
   displayJob(props) {
     let job = this.getCurrentJob(props);
     if (job) {
-      getTfJobService(job.metadata.namespace, job.metadata.name)
+      getTFJobService(job.metadata.namespace, job.metadata.name)
         .then(b => {
           this.setState({
             tfJob: b.tfJob,

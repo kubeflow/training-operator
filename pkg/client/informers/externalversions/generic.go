@@ -53,7 +53,7 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	switch resource {
 	// Group=Tensorflow, Version=V1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("tfjobs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Tensorflow().V1alpha1().TfJobs().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Tensorflow().V1alpha1().TFJobs().Informer()}, nil
 
 	}
 

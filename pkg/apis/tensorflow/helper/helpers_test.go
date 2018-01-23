@@ -13,19 +13,19 @@ import (
 
 func TestAddAccelertor(t *testing.T) {
 	type testCase struct {
-		in       *tfv1.TfJobSpec
-		expected *tfv1.TfJobSpec
+		in       *tfv1.TFJobSpec
+		expected *tfv1.TFJobSpec
 		config   map[string]tfv1.AcceleratorConfig
 	}
 
 	testCases := []testCase{
 		// Case 1 checks that we look at requests.
 		{
-			in: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			in: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -40,15 +40,15 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
-			expected: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			expected: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -79,7 +79,7 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
@@ -97,11 +97,11 @@ func TestAddAccelertor(t *testing.T) {
 		},
 		// Case 2 checks that we look at limit.
 		{
-			in: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			in: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -116,15 +116,15 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
-			expected: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			expected: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -155,7 +155,7 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
@@ -173,11 +173,11 @@ func TestAddAccelertor(t *testing.T) {
 		},
 		// Case 3 no GPUs
 		{
-			in: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			in: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -187,15 +187,15 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
-			expected: &tfv1.TfJobSpec{
-				ReplicaSpecs: []*tfv1.TfReplicaSpec{
+			expected: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
 					{
 						Replicas: proto.Int32(2),
-						TfPort:   proto.Int32(10),
+						TFPort:   proto.Int32(10),
 						Template: &v1.PodTemplateSpec{
 							Spec: v1.PodSpec{
 								Containers: []v1.Container{
@@ -205,7 +205,7 @@ func TestAddAccelertor(t *testing.T) {
 								},
 							},
 						},
-						TfReplicaType: tfv1.PS,
+						TFReplicaType: tfv1.PS,
 					},
 				},
 			},
@@ -224,7 +224,7 @@ func TestAddAccelertor(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		if err := ConfigureAcceleratorsForTfJobSpec(c.in, c.config); err != nil {
+		if err := ConfigureAcceleratorsForTFJobSpec(c.in, c.config); err != nil {
 			t.Errorf("ConfigureAccelerators error; %v", err)
 		}
 		if !reflect.DeepEqual(c.in, c.expected) {

@@ -6,7 +6,7 @@ import JobList from "./JobList";
 import Job from "./Job";
 import CreateJob from "./CreateJob";
 import AppBar from "./AppBar";
-import { getTfJobListService } from "../services";
+import { getTFJobListService } from "../services";
 
 class Home extends Component {
   constructor(props) {
@@ -22,7 +22,7 @@ class Home extends Component {
   }
 
   fetch() {
-    getTfJobListService()
+    getTFJobListService()
       .then(b => {
         this.setState({ tfJobs: b.items });
       })

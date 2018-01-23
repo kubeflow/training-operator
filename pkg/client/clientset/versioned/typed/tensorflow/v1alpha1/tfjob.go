@@ -25,33 +25,33 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// TfJobsGetter has a method to return a TfJobInterface.
+// TFJobsGetter has a method to return a TFJobInterface.
 // A group's client should implement this interface.
-type TfJobsGetter interface {
-	TfJobs(namespace string) TfJobInterface
+type TFJobsGetter interface {
+	TFJobs(namespace string) TFJobInterface
 }
 
-// TfJobInterface has methods to work with TfJob resources.
-type TfJobInterface interface {
-	Create(*v1alpha1.TfJob) (*v1alpha1.TfJob, error)
-	Update(*v1alpha1.TfJob) (*v1alpha1.TfJob, error)
+// TFJobInterface has methods to work with TFJob resources.
+type TFJobInterface interface {
+	Create(*v1alpha1.TFJob) (*v1alpha1.TFJob, error)
+	Update(*v1alpha1.TFJob) (*v1alpha1.TFJob, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.TfJob, error)
-	List(opts v1.ListOptions) (*v1alpha1.TfJobList, error)
+	Get(name string, options v1.GetOptions) (*v1alpha1.TFJob, error)
+	List(opts v1.ListOptions) (*v1alpha1.TFJobList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.TfJob, err error)
-	TfJobExpansion
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.TFJob, err error)
+	TFJobExpansion
 }
 
-// tfJobs implements TfJobInterface
+// tfJobs implements TFJobInterface
 type tfJobs struct {
 	client rest.Interface
 	ns     string
 }
 
-// newTfJobs returns a TfJobs
-func newTfJobs(c *TensorflowV1alpha1Client, namespace string) *tfJobs {
+// newTFJobs returns a TFJobs
+func newTFJobs(c *TensorflowV1alpha1Client, namespace string) *tfJobs {
 	return &tfJobs{
 		client: c.RESTClient(),
 		ns:     namespace,
@@ -59,8 +59,8 @@ func newTfJobs(c *TensorflowV1alpha1Client, namespace string) *tfJobs {
 }
 
 // Get takes name of the tfJob, and returns the corresponding tfJob object, and an error if there is any.
-func (c *tfJobs) Get(name string, options v1.GetOptions) (result *v1alpha1.TfJob, err error) {
-	result = &v1alpha1.TfJob{}
+func (c *tfJobs) Get(name string, options v1.GetOptions) (result *v1alpha1.TFJob, err error) {
+	result = &v1alpha1.TFJob{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("tfjobs").
@@ -71,9 +71,9 @@ func (c *tfJobs) Get(name string, options v1.GetOptions) (result *v1alpha1.TfJob
 	return
 }
 
-// List takes label and field selectors, and returns the list of TfJobs that match those selectors.
-func (c *tfJobs) List(opts v1.ListOptions) (result *v1alpha1.TfJobList, err error) {
-	result = &v1alpha1.TfJobList{}
+// List takes label and field selectors, and returns the list of TFJobs that match those selectors.
+func (c *tfJobs) List(opts v1.ListOptions) (result *v1alpha1.TFJobList, err error) {
+	result = &v1alpha1.TFJobList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("tfjobs").
@@ -94,8 +94,8 @@ func (c *tfJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a tfJob and creates it.  Returns the server's representation of the tfJob, and an error, if there is any.
-func (c *tfJobs) Create(tfJob *v1alpha1.TfJob) (result *v1alpha1.TfJob, err error) {
-	result = &v1alpha1.TfJob{}
+func (c *tfJobs) Create(tfJob *v1alpha1.TFJob) (result *v1alpha1.TFJob, err error) {
+	result = &v1alpha1.TFJob{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("tfjobs").
@@ -106,8 +106,8 @@ func (c *tfJobs) Create(tfJob *v1alpha1.TfJob) (result *v1alpha1.TfJob, err erro
 }
 
 // Update takes the representation of a tfJob and updates it. Returns the server's representation of the tfJob, and an error, if there is any.
-func (c *tfJobs) Update(tfJob *v1alpha1.TfJob) (result *v1alpha1.TfJob, err error) {
-	result = &v1alpha1.TfJob{}
+func (c *tfJobs) Update(tfJob *v1alpha1.TFJob) (result *v1alpha1.TFJob, err error) {
+	result = &v1alpha1.TFJob{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("tfjobs").
@@ -141,8 +141,8 @@ func (c *tfJobs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.List
 }
 
 // Patch applies the patch and returns the patched tfJob.
-func (c *tfJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.TfJob, err error) {
-	result = &v1alpha1.TfJob{}
+func (c *tfJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.TFJob, err error) {
+	result = &v1alpha1.TFJob{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("tfjobs").
