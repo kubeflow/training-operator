@@ -75,15 +75,13 @@ class Home extends Component {
         <AppBar />
         <div id="main" style={this.styles.mainStyle}>
           <div style={this.styles.list}>
-            <div>
-              <SelectField
-                floatingLabelText="Namespace"
-                value={this.state.selectedNamespace}
-                onChange={this.handleNamespaceChange}
-              >
-                {nsl}
-              </SelectField>
-            </div>
+            <SelectField
+              floatingLabelText="Namespace"
+              value={this.state.selectedNamespace}
+              onChange={this.handleNamespaceChange}
+            >
+              {nsl}
+            </SelectField>
             <JobList jobs={this.state.tfJobs} />
           </div>
           <div style={this.styles.content}>
