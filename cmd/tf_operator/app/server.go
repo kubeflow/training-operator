@@ -52,11 +52,6 @@ var (
 )
 
 func Run(opt *options.ServerOption) error {
-	namespace := os.Getenv("MY_POD_NAMESPACE")
-	if len(namespace) == 0 {
-		glog.Fatalf("must set env MY_POD_NAMESPACE")
-	}
-
 	glog.Infof("tf_operator Version: %v", version.Version)
 	glog.Infof("Git SHA: %s", version.GitSHA)
 	glog.Infof("Go Version: %s", runtime.Version())
@@ -103,7 +98,7 @@ func Run(opt *options.ServerOption) error {
 
 	rl := &resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
-			Namespace: namespace,
+			Namespace: metav1.NamespaceDefault,
 			Name:      "tf-operator",
 		},
 		Client: leaderElectionClient.CoreV1(),

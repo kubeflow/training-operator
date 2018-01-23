@@ -136,13 +136,7 @@ a K8s cluster. Set your environment:
 
 ```sh
 export KUBECONFIG=$(echo ~/.kube/config)
-export MY_POD_NAMESPACE=default
-export MY_POD_NAME=my-pod
 ```
-
-* MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
-  set the corresponding namespace for the resource.
-* TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
 
 Now we are ready to run operator locally:
 
