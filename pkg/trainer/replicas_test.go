@@ -32,17 +32,17 @@ var (
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
-	jobSpec := &tfv1alpha1.TfJob{
+	jobSpec := &tfv1alpha1.TFJob{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
 			UID:  "some-uid",
 		},
-		Spec: tfv1alpha1.TfJobSpec{
+		Spec: tfv1alpha1.TFJobSpec{
 			RuntimeId: "some-runtime",
-			ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+			ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 				{
 					Replicas: proto.Int32(2),
-					TfPort:   proto.Int32(10),
+					TFPort:   proto.Int32(10),
 					Template: &v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -52,7 +52,7 @@ func TestTFReplicaSet(t *testing.T) {
 							},
 						},
 					},
-					TfReplicaType: tfv1alpha1.PS,
+					TFReplicaType: tfv1alpha1.PS,
 				},
 			},
 		},
@@ -161,12 +161,12 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Expected 1 environment variable got %v", len(c.Env))
 		}
 
-		actualTFConfig := &TfConfig{}
+		actualTFConfig := &TFConfig{}
 		if err := json.Unmarshal([]byte(c.Env[0].Value), actualTFConfig); err != nil {
-			t.Fatalf("Could not unmarshal TfConfig %v", err)
+			t.Fatalf("Could not unmarshal TFConfig %v", err)
 		}
 
-		expectedTfConfig := &TfConfig{
+		expectedTFConfig := &TFConfig{
 			Cluster: ClusterSpec{},
 			Task: TaskSpec{
 				Type:  "ps",
@@ -175,8 +175,8 @@ func TestTFReplicaSet(t *testing.T) {
 			Environment: "cloud",
 		}
 
-		if !reflect.DeepEqual(expectedTfConfig, actualTFConfig) {
-			t.Fatalf("Got %v, Want %v", actualTFConfig, expectedTfConfig)
+		if !reflect.DeepEqual(expectedTFConfig, actualTFConfig) {
+			t.Fatalf("Got %v, Want %v", actualTFConfig, expectedTFConfig)
 		}
 	}
 	// Delete the job.

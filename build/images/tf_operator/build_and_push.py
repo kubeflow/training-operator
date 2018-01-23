@@ -54,7 +54,7 @@ def run_and_output(command, cwd=None):
 def main():  # pylint: disable=too-many-locals, too-many-statements
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
-      description="Build docker image for TfJob CRD.")
+      description="Build docker image for TFJob CRD.")
 
   # TODO(jlewi) We should make registry required to avoid people accidentally
   # pushing to tf-on-k8s-dogfood by default.
@@ -95,7 +95,7 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   images_dir = os.path.dirname(this_file)
   root_dir = os.path.abspath(os.path.join(images_dir, os.pardir, os.pardir))
 
-  context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
+  context_dir = tempfile.mkdtemp(prefix="tmpTFJobCrdContext")
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)

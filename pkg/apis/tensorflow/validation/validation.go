@@ -8,8 +8,8 @@ import (
 	"github.com/tensorflow/k8s/pkg/util"
 )
 
-// ValidateTfJobSpec checks that the TfJobSpec is valid.
-func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
+// ValidateTFJobSpec checks that the TFJobSpec is valid.
+func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
 		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
 	}
@@ -19,31 +19,31 @@ func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
 	// Check that each replica has a TensorFlow container and a chief.
 	for _, r := range c.ReplicaSpecs {
 		found := false
-		if r.Template == nil && r.TfReplicaType != tfv1.PS {
+		if r.Template == nil && r.TFReplicaType != tfv1.PS {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
-		if r.TfReplicaType == tfv1.TfReplicaType(c.TerminationPolicy.Chief.ReplicaName) {
+		if r.TFReplicaType == tfv1.TFReplicaType(c.TerminationPolicy.Chief.ReplicaName) {
 			chiefExists = true
 		}
 
-		if r.TfPort == nil {
-			return errors.New("tfReplicaSpec.TfPort can't be nil.")
+		if r.TFPort == nil {
+			return errors.New("tfReplicaSpec.TFPort can't be nil.")
 		}
 
 		// Make sure the replica type is valid.
-		validReplicaTypes := []tfv1.TfReplicaType{tfv1.MASTER, tfv1.PS, tfv1.WORKER}
+		validReplicaTypes := []tfv1.TFReplicaType{tfv1.MASTER, tfv1.PS, tfv1.WORKER}
 
 		isValidReplicaType := false
 		for _, t := range validReplicaTypes {
-			if t == r.TfReplicaType {
+			if t == r.TFReplicaType {
 				isValidReplicaType = true
 				break
 			}
 		}
 
 		if !isValidReplicaType {
-			return fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", r.TfReplicaType, validReplicaTypes)
+			return fmt.Errorf("tfReplicaSpec.TFReplicaType is %v but must be one of %v", r.TFReplicaType, validReplicaTypes)
 		}
 
 		for _, c := range r.Template.Spec.Containers {
@@ -53,7 +53,7 @@ func ValidateTfJobSpec(c *tfv1.TfJobSpec) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Replica type %v is missing a container named %v", r.TfReplicaType, tfv1.TENSORFLOW)
+			return fmt.Errorf("Replica type %v is missing a container named %v", r.TFReplicaType, tfv1.TENSORFLOW)
 		}
 	}
 

@@ -29,7 +29,7 @@ def GetGitHash():
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
-      description="Build Docker images for TfJob samples.")
+      description="Build Docker images for TFJob samples.")
 
   parser.add_argument(
       "--registry",
@@ -57,7 +57,7 @@ if __name__ == "__main__":
   }
   dockerfile_contents = jinja2.Environment(loader=loader).get_template(
       filename).render(base_image=base_images[args.mode])
-  context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
+  context_dir = tempfile.mkdtemp(prefix="tmpTFJobSampleContentxt")
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)

@@ -1,11 +1,11 @@
 // let host = "http://localhost:8080";
 let host = "";
 
-export function getTfJobListService() {
+export function getTFJobListService() {
   return fetch(`${host}/api/tfjob`).then(r => r.json());
 }
 
-export function createTfJobService(spec) {
+export function createTFJobService(spec) {
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
   const options = {
@@ -17,11 +17,11 @@ export function createTfJobService(spec) {
   return fetch(`${host}/api/tfjob`, options).then(r => r.json());
 }
 
-export function getTfJobService(namespace, name) {
+export function getTFJobService(namespace, name) {
   return fetch(`${host}/api/tfjob/${namespace}/${name}`).then(r => r.json());
 }
 
-export function deleteTfJob(namespace, name) {
+export function deleteTFJob(namespace, name) {
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
   const options = {

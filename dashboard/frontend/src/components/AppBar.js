@@ -7,7 +7,7 @@ import FlatButton from "material-ui/FlatButton";
 import ActionDelete from "material-ui/svg-icons/action/delete";
 import Dialog from "material-ui/Dialog";
 
-import { deleteTfJob } from "../services";
+import { deleteTFJob } from "../services";
 
 class AppBar extends Component {
   constructor(props) {
@@ -58,12 +58,12 @@ class AppBar extends Component {
           showMenuIconButton={false}
         />
         <Dialog
-          title="Delete a TfJob"
+          title="Delete a TFJob"
           actions={actions}
           modal={true}
           open={this.state.isModalVisible}
         >
-          {'Are you sure you want to delete TfJob "test" in namespace "test"?'}
+          {'Are you sure you want to delete TFJob "test" in namespace "test"?'}
         </Dialog>
       </div>
     );
@@ -85,7 +85,7 @@ class AppBar extends Component {
     const ns = path[0];
     const name = path[1];
 
-    deleteTfJob(ns, name).catch(console.error);
+    deleteTFJob(ns, name).catch(console.error);
   }
 
   styles = {

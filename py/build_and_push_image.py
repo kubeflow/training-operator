@@ -84,7 +84,7 @@ def build_and_push(dockerfile_template, image, modes=None,
   for mode in modes:
     dockerfile_contents = jinja2.Environment(loader=loader).get_template(
       os.path.basename(dockerfile_template)).render(base_image=base_images[mode])
-    context_dir = tempfile.mkdtemp(prefix="tmpTfJobSampleContentxt")
+    context_dir = tempfile.mkdtemp(prefix="tmpTFJobSampleContentxt")
     logging.info("context_dir: %s", context_dir)
     shutil.rmtree(context_dir)
     shutil.copytree(os.path.dirname(dockerfile_template), context_dir)

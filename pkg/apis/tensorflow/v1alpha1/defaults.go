@@ -10,23 +10,23 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_TfJob sets any unspecified values to defaults
-func SetDefaults_TfJob(obj *TfJob) {
+// SetDefaults_TFJob sets any unspecified values to defaults
+func SetDefaults_TFJob(obj *TFJob) {
 	c := &obj.Spec
 
-	if c.TfImage == "" {
-		c.TfImage = DefaultTFImage
+	if c.TFImage == "" {
+		c.TFImage = DefaultTFImage
 	}
 
 	// Check that each replica has a TensorFlow container.
 	for _, r := range c.ReplicaSpecs {
 
-		if r.TfPort == nil {
-			r.TfPort = proto.Int32(TfPort)
+		if r.TFPort == nil {
+			r.TFPort = proto.Int32(TFPort)
 		}
 
-		if string(r.TfReplicaType) == "" {
-			r.TfReplicaType = MASTER
+		if string(r.TFReplicaType) == "" {
+			r.TFReplicaType = MASTER
 		}
 
 		if r.Replicas == nil {
@@ -34,8 +34,8 @@ func SetDefaults_TfJob(obj *TfJob) {
 		}
 
 		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
-		if r.Template == nil && r.TfReplicaType == PS {
-			setDefault_PSPodTemplateSpec(r, c.TfImage)
+		if r.Template == nil && r.TFReplicaType == PS {
+			setDefault_PSPodTemplateSpec(r, c.TFImage)
 		}
 	}
 	if c.TerminationPolicy == nil {
@@ -49,7 +49,7 @@ func SetDefaults_TfJob(obj *TfJob) {
 
 }
 
-func setDefault_PSPodTemplateSpec(r *TfReplicaSpec, tfImage string) {
+func setDefault_PSPodTemplateSpec(r *TFReplicaSpec, tfImage string) {
 	r.IsDefaultPS = true
 	r.Template = &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{

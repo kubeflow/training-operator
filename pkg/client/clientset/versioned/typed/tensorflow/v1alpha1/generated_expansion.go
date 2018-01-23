@@ -16,4 +16,4 @@ limitations under the License.
 
 package v1alpha1
 
-type TfJobExpansion interface{}
+type TFJobExpansion interface{}

@@ -51,13 +51,13 @@ var (
 type Controller struct {
 	KubeClient   kubernetes.Interface
 	APIExtclient apiextensionsclient.Interface
-	TfJobClient  tfjobclient.Interface
+	TFJobClient  tfjobclient.Interface
 
 	config tfv1alpha1.ControllerConfig
 	jobs   map[string]*trainer.TrainingJob
 
-	TfJobLister listers.TfJobLister
-	TfJobSynced cache.InformerSynced
+	TFJobLister listers.TFJobLister
+	TFJobSynced cache.InformerSynced
 
 	// WorkQueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -75,7 +75,7 @@ type Controller struct {
 
 func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
 	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
-	tfJobInformer := tfJobInformerFactory.Tensorflow().V1alpha1().TfJobs()
+	tfJobInformer := tfJobInformerFactory.Tensorflow().V1alpha1().TFJobs()
 
 	kubeflowscheme.AddToScheme(scheme.Scheme)
 	glog.V(4).Info("Creating event broadcaster")
@@ -87,8 +87,8 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 	controller := &Controller{
 		KubeClient:   kubeClient,
 		APIExtclient: APIExtclient,
-		TfJobClient:  tfJobClient,
-		WorkQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Tfjobs"),
+		TFJobClient:  tfJobClient,
+		WorkQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "TFjobs"),
 		recorder:     recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:   make(map[string]*trainer.TrainingJob),
@@ -101,7 +101,7 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				switch t := obj.(type) {
-				case *tfv1alpha1.TfJob:
+				case *tfv1alpha1.TFJob:
 					glog.V(4).Infof("filter tfjob name: %v", t.Name)
 					return true
 				default:
@@ -117,8 +117,8 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 			},
 		})
 
-	controller.TfJobLister = tfJobInformer.Lister()
-	controller.TfJobSynced = tfJobInformer.Informer().HasSynced
+	controller.TFJobLister = tfJobInformer.Lister()
+	controller.TFJobSynced = tfJobInformer.Informer().HasSynced
 	controller.syncHandler = controller.syncTFJob
 
 	if err := controller.createCRD(); err != nil {
@@ -137,16 +137,16 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer c.WorkQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	glog.Info("Starting TfJob controller")
+	glog.Info("Starting TFJob controller")
 
 	// Wait for the caches to be synced before starting workers
 	glog.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.TfJobSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.TFJobSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	glog.Info("Starting %v workers", threadiness)
-	// Launch workers to process TfJob resources
+	// Launch workers to process TFJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
@@ -208,7 +208,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, fmt.Errorf("invalid job key %q: either namespace or name is missing", key)
 	}
 
-	tfJob, err := c.TfJobLister.TfJobs(ns).Get(name)
+	tfJob, err := c.TFJobLister.TFJobs(ns).Get(name)
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -221,7 +221,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
 	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
 	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
-		nc, err := trainer.NewJob(c.KubeClient, c.TfJobClient, c.recorder, tfJob, &c.config)
+		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
 			return false, err
@@ -235,7 +235,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	tfJob, err = c.TfJobClient.TensorflowV1alpha1().TfJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
+	tfJob, err = c.TFJobClient.TensorflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
 
 	if err != nil {
 		return false, err
@@ -243,7 +243,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	// TODO(jlewi): This logic will need to change when/if we get rid of phases and move to conditions. At that
 	// case we should forget about a job when the appropriate condition is reached.
-	if tfJob.Status.Phase == tfv1alpha1.TfJobPhaseCleanUp {
+	if tfJob.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		return true, nil
 	} else {
 		return false, nil
@@ -263,9 +263,9 @@ func (c *Controller) enqueueController(obj interface{}) {
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
-	tfjob := obj.(*tfv1alpha1.TfJob)
+	tfjob := obj.(*tfv1alpha1.TFJob)
 	if _, ok := c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name]; !ok {
-		glog.V(4).Infof("unsafe state. TfJob was never created but we received delete event")
+		glog.V(4).Infof("unsafe state. TFJob was never created but we received delete event")
 		return
 	}
 
@@ -285,7 +285,7 @@ func (c *Controller) createCRD() error {
 				Plural:   tfv1alpha1.CRDKindPlural,
 				Singular: tfv1alpha1.CRDKind,
 				// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
-				Kind: reflect.TypeOf(tfv1alpha1.TfJob{}).Name(),
+				Kind: reflect.TypeOf(tfv1alpha1.TFJob{}).Name(),
 			},
 		},
 	}

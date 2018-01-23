@@ -9,17 +9,17 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-func TestSetDefaults_TfJob(t *testing.T) {
+func TestSetDefaults_TFJob(t *testing.T) {
 	type testCase struct {
-		in       *TfJob
-		expected *TfJob
+		in       *TFJob
+		expected *TFJob
 	}
 
 	testCases := []testCase{
 		{
-			in: &TfJob{
-				Spec: TfJobSpec{
-					ReplicaSpecs: []*TfReplicaSpec{
+			in: &TFJob{
+				Spec: TFJobSpec{
+					ReplicaSpecs: []*TFReplicaSpec{
 						{
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
@@ -32,15 +32,15 @@ func TestSetDefaults_TfJob(t *testing.T) {
 							},
 						},
 					},
-					TfImage: "tensorflow/tensorflow:1.3.0",
+					TFImage: "tensorflow/tensorflow:1.3.0",
 				},
 			},
-			expected: &TfJob{
-				Spec: TfJobSpec{
-					ReplicaSpecs: []*TfReplicaSpec{
+			expected: &TFJob{
+				Spec: TFJobSpec{
+					ReplicaSpecs: []*TFReplicaSpec{
 						{
 							Replicas: proto.Int32(1),
-							TfPort:   proto.Int32(2222),
+							TFPort:   proto.Int32(2222),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -50,10 +50,10 @@ func TestSetDefaults_TfJob(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: MASTER,
+							TFReplicaType: MASTER,
 						},
 					},
-					TfImage: "tensorflow/tensorflow:1.3.0",
+					TFImage: "tensorflow/tensorflow:1.3.0",
 					TerminationPolicy: &TerminationPolicySpec{
 						Chief: &ChiefSpec{
 							ReplicaName:  "MASTER",
@@ -64,22 +64,22 @@ func TestSetDefaults_TfJob(t *testing.T) {
 			},
 		},
 		{
-			in: &TfJob{
-				Spec: TfJobSpec{
-					ReplicaSpecs: []*TfReplicaSpec{
+			in: &TFJob{
+				Spec: TFJobSpec{
+					ReplicaSpecs: []*TFReplicaSpec{
 						{
-							TfReplicaType: PS,
+							TFReplicaType: PS,
 						},
 					},
-					TfImage: "tensorflow/tensorflow:1.3.0",
+					TFImage: "tensorflow/tensorflow:1.3.0",
 				},
 			},
-			expected: &TfJob{
-				Spec: TfJobSpec{
-					ReplicaSpecs: []*TfReplicaSpec{
+			expected: &TFJob{
+				Spec: TFJobSpec{
+					ReplicaSpecs: []*TFReplicaSpec{
 						{
 							Replicas: proto.Int32(1),
-							TfPort:   proto.Int32(2222),
+							TFPort:   proto.Int32(2222),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -97,11 +97,11 @@ func TestSetDefaults_TfJob(t *testing.T) {
 									RestartPolicy: v1.RestartPolicyOnFailure,
 								},
 							},
-							TfReplicaType: PS,
+							TFReplicaType: PS,
 							IsDefaultPS:   true,
 						},
 					},
-					TfImage: "tensorflow/tensorflow:1.3.0",
+					TFImage: "tensorflow/tensorflow:1.3.0",
 					TerminationPolicy: &TerminationPolicySpec{
 						Chief: &ChiefSpec{
 							ReplicaName:  "MASTER",
@@ -114,7 +114,7 @@ func TestSetDefaults_TfJob(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		SetDefaults_TfJob(c.in)
+		SetDefaults_TFJob(c.in)
 		if !reflect.DeepEqual(c.in, c.expected) {
 			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
 		}

@@ -1,5 +1,5 @@
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: "simple-job"
 spec:

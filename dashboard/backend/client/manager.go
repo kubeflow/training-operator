@@ -13,7 +13,7 @@ import (
 type ClientManager struct {
 	restCfg     *rest.Config
 	ClientSet   *kubernetes.Clientset
-	TfJobClient *versioned.Clientset
+	TFJobClient *versioned.Clientset
 }
 
 func (c *ClientManager) init() {
@@ -31,7 +31,7 @@ func (c *ClientManager) init() {
 
 	tfJobClient := versioned.NewForConfigOrDie(c.restCfg)
 
-	c.TfJobClient = tfJobClient
+	c.TFJobClient = tfJobClient
 }
 
 // NewClientManager creates and init a new instance of ClientManager

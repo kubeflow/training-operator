@@ -114,7 +114,7 @@ def create_latest(bucket, sha, target):
 
 
 def build_operator_image(root_dir, registry, project=None, should_push=True):
-  """Build the main docker image for the TfJob CRD.
+  """Build the main docker image for the TFJob CRD.
   Args:
     root_dir: Root directory of the repository.
     registry: The registry to use.
@@ -122,7 +122,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   Returns:
     build_info: Dictionary containing information about the build.
   """
-  context_dir = tempfile.mkdtemp(prefix="tmpTfJobCrdContext")
+  context_dir = tempfile.mkdtemp(prefix="tmpTFJobCrdContext")
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
     os.makedirs(context_dir)
@@ -231,7 +231,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
 
   # Copy the chart to a temporary directory because we will modify some
   # of its YAML files.
-  chart_build_dir = tempfile.mkdtemp(prefix="tmpTfJobChartBuild")
+  chart_build_dir = tempfile.mkdtemp(prefix="tmpTFJobChartBuild")
   shutil.copytree(os.path.join(src_dir, "tf-job-operator-chart"),
                   os.path.join(chart_build_dir, "tf-job-operator-chart"))
   version = build_info["image"].split(":")[-1]
@@ -404,7 +404,7 @@ def clone_postsubmit(args):
 # TODO(jlewi): Delete this function once
 # https://github.com/tensorflow/k8s/issues/189 is fixed.
 def build_commit(args, branches):
-  top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTfJobSrc")
+  top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTFJobSrc")
   logging.info("Top level directory for source: %s", top_dir)
 
   go_dir = os.path.join(top_dir, "go")

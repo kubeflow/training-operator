@@ -19,19 +19,19 @@ import (
 func TestTBReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
-	jobSpec := &tfv1alpha1.TfJob{
+	jobSpec := &tfv1alpha1.TFJob{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
 			UID:  "some-uid",
 		},
-		Spec: tfv1alpha1.TfJobSpec{
+		Spec: tfv1alpha1.TFJobSpec{
 			RuntimeId: "some-runtime",
-			ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+			ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 				{
 					Replicas:      proto.Int32(1),
-					TfPort:        proto.Int32(10),
+					TFPort:        proto.Int32(10),
 					Template:      &v1.PodTemplateSpec{},
-					TfReplicaType: tfv1alpha1.MASTER,
+					TFReplicaType: tfv1alpha1.MASTER,
 				},
 			},
 			TensorBoard: &tfv1alpha1.TensorBoardSpec{
