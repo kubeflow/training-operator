@@ -24,21 +24,21 @@ defines the ProwJobs.
 ![Test Infrastructure](test_infrastructure.png)
 * Our prow jobs are defined in [config.yaml](https://github.com/kubernetes/test-infra/blob/master/prow/config.yaml)
 * Each prow job defines a K8s PodSpec indicating a command to run
-* Our prow jobs use [airflow.py](../py/airflow.py) to trigger an Airflow pipeline that checks out our code
+* Our prow jobs use [airflow.py](https://github.com/tensorflow/k8s/blob/master/py/airflow.py) to trigger an Airflow pipeline that checks out our code
   and runs our Tests.
 * Our tests are structured as Airflow pipelines so that we can easily perform steps in parallel.
 * The Airflow pipeline is defined in [e2e_tests_dag.py](airflow/dags/e2e_tests_dag.py)
-    * Builds and pushes a Docker image and helm package for the CRD (see [release.py](../py/release.py))
-    * Creates a GKE cluster (see [deploy.py](../py/deploy.py))
-    * Deploys the CRD (see [deploy.py](../py/deploy.py))
-    * Runs the tests (see [deploy.py](../py/deploy.py))
-    * Delete the GKE cluster (see [deploy.py](../py/deploy.py))
+    * Builds and pushes a Docker image and helm package for the CRD (see [release.py](https://github.com/tensorflow/k8s/blob/master/py/release.py))
+    * Creates a GKE cluster (see [deploy.py](https://github.com/tensorflow/k8s/blob/master/py/deploy.py))
+    * Deploys the CRD (see [deploy.py](https://github.com/tensorflow/k8s/blob/master/py/deploy.py))
+    * Runs the tests (see [deploy.py](https://github.com/tensorflow/k8s/blob/master/py/deploy.py))
+    * Delete the GKE cluster (see [deploy.py](https://github.com/tensorflow/k8s/blob/master/py/deploy.py))
     * Copy test results/artifacts to GCS for gubernator
 
 
 ## Accessing the Airflow UI
 
-The best way to connect to the Airflow UI is using kubectl to forwrad a porward
+The best way to connect to the Airflow UI is using kubectl to forward a port
 
 ```
 kubectl port-forward `kubectl get pods --selector=name=airflow -o jsonpath='{.items[*].metadata.name}'` 8180:8080
@@ -108,8 +108,8 @@ Generate the ProwJob Config
 ```
 ./bazel-bin/prow/cmd/mkpj/mkpj --job=$JOB_NAME --config-path=$CONFIG_PATH
 ```
-    * This binary will prompt for needed information like the sha #
-    * The output will be a ProwJob spec which can be instantiated using
+  * This binary will prompt for needed information like the sha #
+  * The output will be a ProwJob spec which can be instantiated using
        kubectl
 
 Create the ProwJob
@@ -118,9 +118,9 @@ Create the ProwJob
 kubectl create -f ${PROW_JOB_YAML_FILE}
 ```
 
-    * To rerun the job bump metadata.name and status.startTime
+  * To rerun the job bump metadata.name and status.startTime
 
-To monitor the job open Prow's UI by navigating to the exteral IP
+To monitor the job open Prow's UI by navigating to the external IP
 associated with the ingress for your Prow cluster or using
 kubectl proxy.
 

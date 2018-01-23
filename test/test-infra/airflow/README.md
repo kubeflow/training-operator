@@ -7,7 +7,7 @@ To facilitate developing and debugging our pipelines we use the following conven
   * Each step in the Airflow pipeline should be a binary
      * This makes it easy to reproduce/debug a step just by invoking the binary
        with the required parameters.
-     * For convenvenience, we often structure our binaries e.g. deploy.py and release.py as binaries with multiple commands where each command corresponds to a different step in the Airflow.
+     * For convenience, we often structure our binaries e.g. deploy.py and release.py as binaries with multiple commands where each command corresponds to a different step in the Airflow.
 
   * We mostly use the PythonOperator step and then invoke each step as a subprocess
     * Each step supports a dryrun mode in which we print out the subprocess command but don't execute it

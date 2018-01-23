@@ -3,6 +3,7 @@
 
 ```sh
 $ tree -d -I 'vendor|bin|.git'
+.
 ├── build
 │   ├── images
 │   │   └── tf_operator
@@ -23,8 +24,8 @@ $ tree -d -I 'vendor|bin|.git'
 │   └── diagrams
 ├── examples
 │   ├── charts
-│   │   ├── tensorboard
-│   │   └── tf-job-operator-chart
+│   │   └── tensorboard
+│   │       └── templates
 │   ├── gke
 │   │   └── notebook_image
 │   ├── tensorflow-models
@@ -33,7 +34,8 @@ $ tree -d -I 'vendor|bin|.git'
 │   └── tf_sample
 │       └── tf_sample
 ├── hack
-├── py
+│   ├── grpc_tensorflow_server
+│   └── scripts
 ├── pkg
 │   ├── apis
 │   │   └── tensorflow
@@ -41,15 +43,36 @@ $ tree -d -I 'vendor|bin|.git'
 │   │       ├── v1alpha1
 │   │       └── validation
 │   ├── client
+│   │   ├── clientset
+│   │   │   └── versioned
+│   │   │       ├── fake
+│   │   │       ├── scheme
+│   │   │       └── typed
+│   │   │           └── tensorflow
+│   │   │               └── v1alpha1
+│   │   │                   └── fake
+│   │   ├── informers
+│   │   │   └── externalversions
+│   │   │       ├── internalinterfaces
+│   │   │       └── tensorflow
+│   │   │           └── v1alpha1
+│   │   └── listers
+│   │       └── tensorflow
+│   │           └── v1alpha1
 │   ├── controller
-│       └── trainer
+│   ├── trainer
 │   └── util
 │       ├── k8sutil
 │       └── retryutil
+├── py
 ├── test
 │   ├── e2e
 │   └── test-infra
 │       └── airflow
+│           └── dags
+├── tf-job-operator-chart
+│   └── templates
+│       └── tests
 └── version
 
 
@@ -68,7 +91,7 @@ ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
-install dependencies, `-v` will ignore subpackage vendor
+Install dependencies, `-v` will ignore subpackage vendor
 
 ```sh
 glide install -v
