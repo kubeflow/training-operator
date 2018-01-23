@@ -25,7 +25,7 @@ import (
 
 type TensorflowV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	TfJobsGetter
+	TFJobsGetter
 }
 
 // TensorflowV1alpha1Client is used to interact with features provided by the tensorflow.org group.
@@ -33,8 +33,8 @@ type TensorflowV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *TensorflowV1alpha1Client) TfJobs(namespace string) TfJobInterface {
-	return newTfJobs(c, namespace)
+func (c *TensorflowV1alpha1Client) TFJobs(namespace string) TFJobInterface {
+	return newTFJobs(c, namespace)
 }
 
 // NewForConfig creates a new TensorflowV1alpha1Client for the given config.

@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/record"
 )
 
 func TestIsRetryableTerminationState(t *testing.T) {
@@ -73,22 +74,22 @@ func TestIsRetryableTerminationState(t *testing.T) {
 
 func TestClusterSpec(t *testing.T) {
 	type TestCase struct {
-		Spec     *tfv1alpha1.TfJob
+		Spec     *tfv1alpha1.TFJob
 		Expected map[string][]string
 	}
 
 	cases := []TestCase{
 		{
-			Spec: &tfv1alpha1.TfJob{
+			Spec: &tfv1alpha1.TFJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "myjob",
 				},
-				Spec: tfv1alpha1.TfJobSpec{
+				Spec: tfv1alpha1.TFJobSpec{
 					RuntimeId: "runtime",
-					ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 						{
 							Replicas: proto.Int32(2),
-							TfPort:   proto.Int32(22),
+							TFPort:   proto.Int32(22),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -98,11 +99,11 @@ func TestClusterSpec(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.PS,
+							TFReplicaType: tfv1alpha1.PS,
 						},
 						{
 							Replicas: proto.Int32(1),
-							TfPort:   proto.Int32(42),
+							TFPort:   proto.Int32(42),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -112,11 +113,11 @@ func TestClusterSpec(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.MASTER,
+							TFReplicaType: tfv1alpha1.MASTER,
 						},
 						{
 							Replicas: proto.Int32(3),
-							TfPort:   proto.Int32(40),
+							TFPort:   proto.Int32(40),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -126,7 +127,7 @@ func TestClusterSpec(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.WORKER,
+							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
 				},
@@ -144,7 +145,8 @@ func TestClusterSpec(t *testing.T) {
 
 		clientSet := fake.NewSimpleClientset()
 
-		job, err := initJob(clientSet, &tfJobFake.Clientset{}, c.Spec)
+		recorder := record.NewFakeRecorder(100)
+		job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, c.Spec)
 
 		if err != nil {
 			t.Fatalf("initJob failed: %v", err)
@@ -172,21 +174,21 @@ func TestJobSetup(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
 	type testCase struct {
-		jobSpec      *tfv1alpha1.TfJob
+		jobSpec      *tfv1alpha1.TFJob
 		expectMounts int
-		expectPhase  tfv1alpha1.TfJobPhase
+		expectPhase  tfv1alpha1.TFJobPhase
 		expectReason string
 		expectState  tfv1alpha1.State
 	}
 
 	testCases := []testCase{
 		{
-			jobSpec: &tfv1alpha1.TfJob{
-				Spec: tfv1alpha1.TfJobSpec{
-					ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+			jobSpec: &tfv1alpha1.TFJob{
+				Spec: tfv1alpha1.TFJobSpec{
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 						{
 							Replicas: proto.Int32(1),
-							TfPort:   proto.Int32(10),
+							TFPort:   proto.Int32(10),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -196,22 +198,22 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.MASTER,
+							TFReplicaType: tfv1alpha1.MASTER,
 						},
 					},
 				},
 			},
 			expectMounts: 0,
-			expectPhase:  tfv1alpha1.TfJobPhaseCreating,
+			expectPhase:  tfv1alpha1.TFJobPhaseCreating,
 			expectState:  tfv1alpha1.StateRunning,
 		},
 		{
-			jobSpec: &tfv1alpha1.TfJob{
-				Spec: tfv1alpha1.TfJobSpec{
-					ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+			jobSpec: &tfv1alpha1.TFJob{
+				Spec: tfv1alpha1.TFJobSpec{
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 						{
 							Replicas: proto.Int32(2),
-							TfPort:   proto.Int32(10),
+							TFPort:   proto.Int32(10),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -226,7 +228,7 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.WORKER,
+							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
 					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
@@ -238,17 +240,17 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 1,
-			expectPhase:  tfv1alpha1.TfJobPhaseCreating,
+			expectPhase:  tfv1alpha1.TFJobPhaseCreating,
 			expectState:  tfv1alpha1.StateRunning,
 		},
 		{
 			// The job should fail setup because the spec is invalid.
-			jobSpec: &tfv1alpha1.TfJob{
-				Spec: tfv1alpha1.TfJobSpec{
-					ReplicaSpecs: []*tfv1alpha1.TfReplicaSpec{
+			jobSpec: &tfv1alpha1.TFJob{
+				Spec: tfv1alpha1.TFJobSpec{
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
 						{
 							Replicas: proto.Int32(2),
-							TfPort:   proto.Int32(10),
+							TFPort:   proto.Int32(10),
 							Template: &v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -263,7 +265,7 @@ func TestJobSetup(t *testing.T) {
 									},
 								},
 							},
-							TfReplicaType: tfv1alpha1.WORKER,
+							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
 					TensorBoard: &tfv1alpha1.TensorBoardSpec{},
@@ -276,7 +278,7 @@ func TestJobSetup(t *testing.T) {
 				},
 			},
 			expectMounts: 0,
-			expectPhase:  tfv1alpha1.TfJobPhaseFailed,
+			expectPhase:  tfv1alpha1.TFJobPhaseFailed,
 			expectState:  tfv1alpha1.StateFailed,
 			expectReason: "invalid job spec: tbReplicaSpec.LogDir must be specified",
 		},
@@ -298,7 +300,8 @@ func TestJobSetup(t *testing.T) {
 
 	for _, c := range testCases {
 
-		job, err := initJob(clientSet, &tfJobFake.Clientset{}, c.jobSpec)
+		recorder := record.NewFakeRecorder(100)
+		job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, c.jobSpec)
 
 		job.setup(config)
 

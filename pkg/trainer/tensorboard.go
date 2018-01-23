@@ -95,7 +95,7 @@ func (s *TBReplicaSet) Create() error {
 				MatchLabels: s.Labels(),
 			},
 			Replicas: proto.Int32(1),
-			Template: s.getDeploymentSpecTemplate(s.Job.job.Spec.TfImage),
+			Template: s.getDeploymentSpecTemplate(s.Job.job.Spec.TFImage),
 		},
 	}
 

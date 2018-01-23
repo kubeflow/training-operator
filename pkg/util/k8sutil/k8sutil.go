@@ -19,7 +19,7 @@ import (
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
 
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
-// method to ensure all resources created for the TfJob are owned by the TfJob.
+// method to ensure all resources created for the TFJob are owned by the TFJob.
 func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	o.SetOwnerReferences(append(o.GetOwnerReferences(), r))
 }

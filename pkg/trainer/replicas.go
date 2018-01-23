@@ -23,26 +23,33 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
+)
+
+const (
+	SuccessfulCreateReason = "SuccessfulCreate"
+	FailedCreateReason     = "FailedCreate"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
 type TFReplicaSet struct {
 	ClientSet kubernetes.Interface
+	recorder  record.EventRecorder
 	// Job is a pointer to the TrainingJob to which this replica belongs.
 	Job  *TrainingJob
-	Spec tfv1alpha1.TfReplicaSpec
+	Spec tfv1alpha1.TFReplicaSpec
 }
 
 // TFReplicas is an interface for managing a set of replicas.
 type TFReplicaSetInterface interface {
 	Create() error
 	Delete() error
-	GetStatus() (tfv1alpha1.TfReplicaStatus, error)
+	GetStatus() (tfv1alpha1.TFReplicaStatus, error)
 }
 
 // TFConfig is a struct representing the TensorFlow config. This struct is turned into an environment
 // which is used by TensorFlow processes to configure themselves.
-type TfConfig struct {
+type TFConfig struct {
 	// Cluster represents a TensorFlow ClusterSpec.
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpechttps://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
 	Cluster ClusterSpec `json:"cluster"`
@@ -52,36 +59,37 @@ type TfConfig struct {
 	Environment string `json:"environment"`
 }
 
-func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec tfv1alpha1.TfReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
-	if tfReplicaSpec.TfReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
+func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecorder, tfReplicaSpec tfv1alpha1.TFReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
+	if tfReplicaSpec.TFReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
 	}
 
-	if tfReplicaSpec.TfPort == nil {
-		return nil, errors.New("tfReplicaSpec.TfPort can't be nil.")
+	if tfReplicaSpec.TFPort == nil {
+		return nil, errors.New("tfReplicaSpec.TFPort can't be nil.")
 	}
 
-	if tfReplicaSpec.Template == nil && tfReplicaSpec.TfReplicaType != tfv1alpha1.PS {
-		return nil, fmt.Errorf("tfReplicatfv1alpha1.Template can't be nil for replica type %v.", tfReplicaSpec.TfReplicaType)
+	if tfReplicaSpec.Template == nil && tfReplicaSpec.TFReplicaType != tfv1alpha1.PS {
+		return nil, fmt.Errorf("tfReplicatfv1alpha1.Template can't be nil for replica type %v.", tfReplicaSpec.TFReplicaType)
 	}
 
 	// Make sure the replica type is valid.
-	validReplicaTypes := []tfv1alpha1.TfReplicaType{tfv1alpha1.MASTER, tfv1alpha1.PS, tfv1alpha1.WORKER}
+	validReplicaTypes := []tfv1alpha1.TFReplicaType{tfv1alpha1.MASTER, tfv1alpha1.PS, tfv1alpha1.WORKER}
 
 	isValidReplicaType := false
 	for _, t := range validReplicaTypes {
-		if t == tfReplicaSpec.TfReplicaType {
+		if t == tfReplicaSpec.TFReplicaType {
 			isValidReplicaType = true
 			break
 		}
 	}
 
 	if !isValidReplicaType {
-		return nil, fmt.Errorf("tfReplicaSpec.TfReplicaType is %v but must be one of %v", tfReplicaSpec.TfReplicaType, validReplicaTypes)
+		return nil, fmt.Errorf("tfReplicaSpec.TFReplicaType is %v but must be one of %v", tfReplicaSpec.TFReplicaType, validReplicaTypes)
 	}
 
 	return &TFReplicaSet{
 		ClientSet: clientSet,
+		recorder:  recorder,
 		Job:       job,
 		Spec:      tfReplicaSpec,
 	}, nil
@@ -91,8 +99,8 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, tfReplicaSpec tfv1alpha1.Tf
 func (s *TFReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
 		"tensorflow.org": "",
-		"job_type":       string(s.Spec.TfReplicaType),
-		// runtime_id is set by Job.setup, which is called after the TfReplicaSet is created.
+		"job_type":       string(s.Spec.TFReplicaType),
+		// runtime_id is set by Job.setup, which is called after the TFReplicaSet is created.
 		// this is why labels aren't a member variable.
 		"runtime_id":  s.Job.job.Spec.RuntimeId,
 		"tf_job_name": s.Job.job.ObjectMeta.Name})
@@ -127,14 +135,16 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 			log.Errorf("Error building PS ConfigMap: %v", err)
 			return err
 		}
-		_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
+		createdCM, err := s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
 		if err != nil {
 			if k8s_errors.IsAlreadyExists(err) {
-				log.Infof("%v already exists.", cm.Name)
+				log.Infof("%v already exists.", createdCM.Name)
 			} else {
 				log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating PS ConfigMap %v returned error.", cm.Name), err})
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating PS ConfigMap %v returned error.", createdCM.Name), err})
 			}
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created configmap: %v", createdCM.Name)
 		}
 
 		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
@@ -178,29 +188,32 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 				Ports: []v1.ServicePort{
 					{
 						Name: "tf-port",
-						Port: *s.Spec.TfPort,
+						Port: *s.Spec.TFPort,
 					},
 				},
 			},
 		}
 
 		log.Infof("Creating Service: %v", service.ObjectMeta.Name)
-		_, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
+		createdService, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
 
 		// If the job already exists do nothing.
 		if err != nil {
 			if k8s_errors.IsAlreadyExists(err) {
 				log.Infof("Service %v already exists.", s.jobName(index))
 			} else {
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", service.ObjectMeta.Name), err})
+				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", createdService.ObjectMeta.Name), err})
 			}
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created service: %v", createdService.Name)
 		}
 
 		// Configure the TFCONFIG environment variable.
-		tfConfig := TfConfig{
+		tfConfig := TFConfig{
 			Cluster: s.Job.ClusterSpec(),
 			Task: TaskSpec{
-				Type:  strings.ToLower(string(s.Spec.TfReplicaType)),
+				Type:  strings.ToLower(string(s.Spec.TFReplicaType)),
 				Index: int(index),
 			},
 			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
@@ -263,7 +276,7 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 
 		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		_, err = s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Create(newJ)
+		createdJob, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Create(newJ)
 
 		// If the job already exists do nothing.
 		if err != nil {
@@ -271,8 +284,11 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 				log.Infof("%v already exists.", s.jobName(index))
 
 			} else {
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", newJ.ObjectMeta.Name), err})
+				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", createdJob.ObjectMeta.Name), err})
 			}
+		} else {
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created job: %v", createdJob.Name)
 		}
 	}
 	return nil
@@ -459,9 +475,9 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 }
 
 // Status returns the status of the replica set.
-func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TfReplicaStatus, error) {
-	status := tfv1alpha1.TfReplicaStatus{
-		TfReplicaType:  s.Spec.TfReplicaType,
+func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TFReplicaStatus, error) {
+	status := tfv1alpha1.TFReplicaStatus{
+		TFReplicaType:  s.Spec.TFReplicaType,
 		State:          tfv1alpha1.ReplicaStateUnknown,
 		ReplicasStates: make(map[tfv1alpha1.ReplicaState]int),
 	}
@@ -507,7 +523,7 @@ func (s *TFReplicaSet) jobName(index int32) string {
 	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
 	// Thus jobname(40 chars)-replicaType(6 chars)-runtimeId(4 chars)-index(4 chars), also leaving some spaces
 	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
-	return fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(string(s.Spec.TfReplicaType)), s.Job.job.Spec.RuntimeId, index)
+	return fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(string(s.Spec.TFReplicaType)), s.Job.job.Spec.RuntimeId, index)
 }
 
 func (s *TFReplicaSet) defaultPSConfigMapName() string {

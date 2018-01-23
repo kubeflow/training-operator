@@ -18,10 +18,10 @@ limitations under the License.
 
 package v1alpha1
 
-// TfJobListerExpansion allows custom methods to be added to
-// TfJobLister.
-type TfJobListerExpansion interface{}
+// TFJobListerExpansion allows custom methods to be added to
+// TFJobLister.
+type TFJobListerExpansion interface{}
 
-// TfJobNamespaceListerExpansion allows custom methods to be added to
-// TfJobNamespaceLister.
-type TfJobNamespaceListerExpansion interface{}
+// TFJobNamespaceListerExpansion allows custom methods to be added to
+// TFJobNamespaceLister.
+type TFJobNamespaceListerExpansion interface{}

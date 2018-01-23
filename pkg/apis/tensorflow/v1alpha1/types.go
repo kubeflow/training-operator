@@ -13,7 +13,7 @@ const (
 	// Value of the APP label that gets applied to a lot of entities.
 	AppLabel = "tensorflow-job"
 	// Defaults for the Spec
-	TfPort   = 2222
+	TFPort   = 2222
 	Replicas = 1
 )
 
@@ -23,14 +23,14 @@ const (
 // +resource:path=tfjob
 
 // TFJob describes tfjob info
-type TfJob struct {
+type TFJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              TfJobSpec   `json:"spec"`
-	Status            TfJobStatus `json:"status"`
+	Spec              TFJobSpec   `json:"spec"`
+	Status            TFJobStatus `json:"status"`
 }
 
-type TfJobSpec struct {
+type TFJobSpec struct {
 	// TODO(jlewi): Can we we get rid of this and use some value from Kubernetes or a random ide.
 	RuntimeId string
 
@@ -38,11 +38,11 @@ type TfJobSpec struct {
 	TensorBoard *TensorBoardSpec `json:"tensorboard"`
 
 	// ReplicaSpecs specifies the TF replicas to run.
-	ReplicaSpecs []*TfReplicaSpec `json:"replicaSpecs"`
+	ReplicaSpecs []*TFReplicaSpec `json:"replicaSpecs"`
 
-	// TfImage defines the tensorflow docker image that should be used for Tensorboard
+	// TFImage defines the tensorflow docker image that should be used for Tensorboard
 	// and the default parameter server
-	TfImage string `json:"tfImage,omitempty"`
+	TFImage string `json:"tfImage,omitempty"`
 
 	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
 	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
@@ -58,13 +58,13 @@ type ChiefSpec struct {
 	ReplicaIndex int    `json:"replicaIndex"`
 }
 
-// TfReplicaType determines how a set of TF processes are handled.
-type TfReplicaType string
+// TFReplicaType determines how a set of TF processes are handled.
+type TFReplicaType string
 
 const (
-	MASTER TfReplicaType = "MASTER"
-	PS     TfReplicaType = "PS"
-	WORKER TfReplicaType = "WORKER"
+	MASTER TFReplicaType = "MASTER"
+	PS     TFReplicaType = "PS"
+	WORKER TFReplicaType = "WORKER"
 )
 
 // ContainerName is an enum for expected containers.
@@ -77,7 +77,7 @@ const (
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
 // This might be useful if you wanted to have a separate set of workers to do eval.
-type TfReplicaSpec struct {
+type TFReplicaSpec struct {
 	// Replicas is the number of desired replicas.
 	// This is a pointer to distinguish between explicit zero and unspecified.
 	// Defaults to 1.
@@ -85,9 +85,9 @@ type TfReplicaSpec struct {
 	// +optional
 	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
-	// TfPort is the port to use for TF services.
-	TfPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
-	TfReplicaType `json:"tfReplicaType"`
+	// TFPort is the port to use for TF services.
+	TFPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
+	TFReplicaType `json:"tfReplicaType"`
 	// IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
 	IsDefaultPS bool
 }
@@ -100,15 +100,15 @@ type TensorBoardSpec struct {
 	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
-type TfJobPhase string
+type TFJobPhase string
 
 const (
-	TfJobPhaseNone     TfJobPhase = ""
-	TfJobPhaseCreating TfJobPhase = "Creating"
-	TfJobPhaseRunning  TfJobPhase = "Running"
-	TfJobPhaseCleanUp  TfJobPhase = "CleanUp"
-	TfJobPhaseFailed   TfJobPhase = "Failed"
-	TfJobPhaseDone     TfJobPhase = "Done"
+	TFJobPhaseNone     TFJobPhase = ""
+	TFJobPhaseCreating TFJobPhase = "Creating"
+	TFJobPhaseRunning  TFJobPhase = "Running"
+	TFJobPhaseCleanUp  TFJobPhase = "CleanUp"
+	TFJobPhaseFailed   TFJobPhase = "Failed"
+	TFJobPhaseDone     TFJobPhase = "Done"
 )
 
 type State string
@@ -120,16 +120,16 @@ const (
 	StateFailed    State = "Failed"
 )
 
-type TfJobStatus struct {
-	// Phase is the TfJob running phase
-	Phase  TfJobPhase `json:"phase"`
+type TFJobStatus struct {
+	// Phase is the TFJob running phase
+	Phase  TFJobPhase `json:"phase"`
 	Reason string     `json:"reason"`
 
 	// State indicates the state of the job.
 	State State `json:"state"`
 
 	// ReplicaStatuses specifies the status of each TF replica.
-	ReplicaStatuses []*TfReplicaStatus `json:"replicaStatuses"`
+	ReplicaStatuses []*TFReplicaStatus `json:"replicaStatuses"`
 }
 
 type ReplicaState string
@@ -141,8 +141,8 @@ const (
 	ReplicaStateSucceeded ReplicaState = "Succeeded"
 )
 
-type TfReplicaStatus struct {
-	TfReplicaType `json:"tf_replica_type"`
+type TFReplicaStatus struct {
+	TFReplicaType `json:"tf_replica_type"`
 
 	// State is the overall state of the replica
 	State ReplicaState `json:"state"`
@@ -154,14 +154,14 @@ type TfReplicaStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjobs
 
-// TfJobList is a list of TfJobs clusters.
-type TfJobList struct {
+// TFJobList is a list of TFJobs clusters.
+type TFJobList struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard list metadata
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	metav1.ListMeta `json:"metadata,omitempty"`
-	// Items is a list of TfJobs
-	Items []TfJob `json:"items"`
+	// Items is a list of TFJobs
+	Items []TFJob `json:"items"`
 }
 
 type ControllerConfig struct {

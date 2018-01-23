@@ -1,4 +1,4 @@
-"""Test runner runs a TfJob test."""
+"""Test runner runs a TFJob test."""
 
 import argparse
 import logging
@@ -119,7 +119,7 @@ def add_common_args(parser):
 def build_parser():
   # create the top-level parser
   parser = argparse.ArgumentParser(
-    description="Run a TfJob test.")
+    description="Run a TFJob test.")
   subparsers = parser.add_subparsers()
 
   parser_test = subparsers.add_parser(

@@ -1,5 +1,5 @@
-// handler is a package handling API requests for managing TfJobs.
-// The primary purpose of handler is implementing the functionality needed by the TfJobs dashboard.
+// handler is a package handling API requests for managing TFJobs.
+// The primary purpose of handler is implementing the functionality needed by the TFJobs dashboard.
 package handler
 
 import (
@@ -23,17 +23,17 @@ type APIHandler struct {
 	cManager client.ClientManager
 }
 
-// TfJobDetail describe the specification of a TfJob
+// TFJobDetail describe the specification of a TFJob
 // as well as related TensorBoard service if any and related pods
-type TfJobDetail struct {
-	TfJob     *v1alpha1.TfJob `json:"tfJob"`
+type TFJobDetail struct {
+	TFJob     *v1alpha1.TFJob `json:"tfJob"`
 	TbService *v1.Service     `json:"tbService"`
 	Pods      []v1.Pod        `json:"pods"`
 }
 
-// TfJobList is a list of TfJobs
-type TfJobList struct {
-	tfJobs []v1alpha1.TfJob `json:"TfJobs"`
+// TFJobList is a list of TFJobs
+type TFJobList struct {
+	tfJobs []v1alpha1.TFJob `json:"TFJobs"`
 }
 
 // NamepsaceList is a list of namespaces
@@ -68,6 +68,7 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob").
+<<<<<<< HEAD
 			To(apiHandler.handleGetTfJobs).
 			Writes(TfJobList{}))
 	
@@ -75,21 +76,25 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 		apiV1Ws.GET("/tfjob/{namespace}").
 			To(apiHandler.handleGetTfJobs).
 			Writes(TfJobList{}))
+=======
+			To(apiHandler.handleGetTFJobs).
+			Writes(TFJobList{}))
+>>>>>>> master
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob/{namespace}/{tfjob}").
-			To(apiHandler.handleGetTfJobDetail).
-			Writes(TfJobDetail{}))
+			To(apiHandler.handleGetTFJobDetail).
+			Writes(TFJobDetail{}))
 
 	apiV1Ws.Route(
 		apiV1Ws.POST("/tfjob").
 			To(apiHandler.handleDeploy).
-			Reads(v1alpha1.TfJob{}).
-			Writes(v1alpha1.TfJob{}))
+			Reads(v1alpha1.TFJob{}).
+			Writes(v1alpha1.TFJob{}))
 
 	apiV1Ws.Route(
 		apiV1Ws.DELETE("/tfjob/{namespace}/{tfjob}").
-			To(apiHandler.handleDeleteTfJob))
+			To(apiHandler.handleDeleteTFJob))
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/logs/{namespace}/{podname}").
@@ -105,6 +110,7 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	return wsContainer, nil
 }
 
+<<<<<<< HEAD
 func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
 	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).List(metav1.ListOptions{})
@@ -118,16 +124,27 @@ func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
 		log.Infof("successfully listed TfJobs under %v namespace(s)", ns)
+=======
+func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
+	//TODO: namespace handling
+	namespace := "default"
+	jobs, err := apiHandler.cManager.TFJobClient.TensorflowV1alpha1().TFJobs(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Warningf("failed to list TFJobs under namespace %v: %v", namespace, err)
+		response.WriteError(http.StatusInternalServerError, err)
+	} else {
+		log.Infof("successfully listed TFJobs under namespace %v", namespace)
+>>>>>>> master
 		response.WriteHeaderAndEntity(http.StatusOK, jobs)
 	}
 }
 
-func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, response *restful.Response) {
+func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
-	job, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).Get(name, metav1.GetOptions{})
+	job, err := apiHandler.cManager.TFJobClient.TensorflowV1alpha1().TFJobs(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		log.Infof("cannot find TfJob %v under namespace %v, error: %v", name, namespace, err)
+		log.Infof("cannot find TFJob %v under namespace %v, error: %v", name, namespace, err)
 		if errors.IsNotFound(err) {
 			response.WriteError(http.StatusNotFound, err)
 		} else {
@@ -136,8 +153,8 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 		return
 	}
 
-	tfJobDetail := TfJobDetail{
-		TfJob: job,
+	tfJobDetail := TFJobDetail{
+		TFJob: job,
 	}
 
 	if job.Spec.TensorBoard != nil {
@@ -145,7 +162,7 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 			LabelSelector: fmt.Sprintf("tensorflow.org=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
 		})
 		if err != nil {
-			log.Warningf("failed to list TensorBoard for TfJob %v under namespace %v, error: %v", job.Name, job.Namespace, err)
+			log.Warningf("failed to list TensorBoard for TFJob %v under namespace %v, error: %v", job.Name, job.Namespace, err)
 			// TODO maybe partial result?
 			response.WriteError(http.StatusNotFound, err)
 			return
@@ -153,10 +170,10 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 			// Should never be more than 1 service that matched, handle error
 			// Handle case where no TensorBoard is found
 			tfJobDetail.TbService = &tbSpec.Items[0]
-			log.Warningf("more than one TensorBoards found for TfJob %v under namespace %v, this should be impossible",
+			log.Warningf("more than one TensorBoards found for TFJob %v under namespace %v, this should be impossible",
 				job.Name, job.Namespace)
 		} else {
-			log.Warningf("Couldn't find a TensorBoard service for TfJob %v under namespace %v", job.Name, job.Namespace)
+			log.Warningf("Couldn't find a TensorBoard service for TFJob %v under namespace %v", job.Name, job.Namespace)
 		}
 	}
 
@@ -165,18 +182,18 @@ func (apiHandler *APIHandler) handleGetTfJobDetail(request *restful.Request, res
 		LabelSelector: fmt.Sprintf("tensorflow.org=,runtime_id=%s", job.Spec.RuntimeId),
 	})
 	if err != nil {
-		log.Warningf("failed to list pods for TfJob %v under namespace %v: %v", name, namespace, err)
+		log.Warningf("failed to list pods for TFJob %v under namespace %v: %v", name, namespace, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully listed pods for TfJob %v under namespace %v", name, namespace)
+		log.Infof("successfully listed pods for TFJob %v under namespace %v", name, namespace)
 		tfJobDetail.Pods = pods.Items
 		response.WriteHeaderAndEntity(http.StatusOK, tfJobDetail)
 	}
 }
 
 func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *restful.Response) {
-	clt := apiHandler.cManager.TfJobClient
-	tfJob := new(v1alpha1.TfJob)
+	clt := apiHandler.cManager.TFJobClient
+	tfJob := new(v1alpha1.TFJob)
 	if err := request.ReadEntity(tfJob); err != nil {
 		response.WriteError(http.StatusBadRequest, err)
 		return
@@ -196,26 +213,26 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 			response.WriteError(http.StatusInternalServerError, err)
 	}
 
-	j, err := clt.TensorflowV1alpha1().TfJobs(tfJob.Namespace).Create(tfJob)
+	j, err := clt.TensorflowV1alpha1().TFJobs(tfJob.Namespace).Create(tfJob)
 	if err != nil {
-		log.Warningf("failed to deploy TfJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully deployed TfJob %v under namespace %v", tfJob.Name, tfJob.Namespace)
+		log.Infof("successfully deployed TFJob %v under namespace %v", tfJob.Name, tfJob.Namespace)
 		response.WriteHeaderAndEntity(http.StatusCreated, j)
 	}
 }
 
-func (apiHandler *APIHandler) handleDeleteTfJob(request *restful.Request, response *restful.Response) {
+func (apiHandler *APIHandler) handleDeleteTFJob(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
-	clt := apiHandler.cManager.TfJobClient
-	err := clt.TensorflowV1alpha1().TfJobs(namespace).Delete(name, &metav1.DeleteOptions{})
+	clt := apiHandler.cManager.TFJobClient
+	err := clt.TensorflowV1alpha1().TFJobs(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
-		log.Warningf("failed to delete TfJob %v under namespace %v: %v", name, namespace, err)
+		log.Warningf("failed to delete TFJob %v under namespace %v: %v", name, namespace, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully deleted TfJob %v under namespace %v", name, namespace)
+		log.Infof("successfully deleted TFJob %v under namespace %v", name, namespace)
 		response.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -225,10 +242,10 @@ func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, respons
 	name := request.PathParameter("podname")
 	logs, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Do().Raw()
 	if err != nil {
-		log.Warningf("failed to get pod logs for TfJob %v under namespace %v: %v", name, namespace, err)
+		log.Warningf("failed to get pod logs for TFJob %v under namespace %v: %v", name, namespace, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully get pod logs for TfJob %v under namespace %v", name, namespace)
+		log.Infof("successfully get pod logs for TFJob %v under namespace %v", name, namespace)
 		response.WriteHeaderAndEntity(http.StatusOK, string(logs))
 	}
 }

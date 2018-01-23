@@ -8,7 +8,7 @@
 
 ## Overview
 
-TfJob provides a Kubernetes custom resource that makes it easy to
+TFJob provides a Kubernetes custom resource that makes it easy to
 run distributed or non-distributed TensorFlow jobs on Kubernetes.
 
 Using a Custom Resource Definition (CRD) gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
@@ -24,7 +24,7 @@ To list jobs
 kubectl get tfjobs
 
 NAME          KINDS
-example-job   TfJob.v1alpha.tensorflow.org
+example-job   TFJob.v1alpha.tensorflow.org
 ```
 
 For additional information about motivation and design for the
@@ -33,14 +33,14 @@ CRD please refer to
 
 ### Requirements
 
-TfJob requires Kubernetes >= 1.8
+TFJob requires Kubernetes >= 1.8
  * CRDs required Kubernetes >= 1.7
- * TfJob depends on Garbage Collection for CRDs which is only supported
+ * TFJob depends on Garbage Collection for CRDs which is only supported
    in >= 1.8
  * GPU support is evolving quickly and its best to use Kubernetes 1.8
    to get the latest features.
 
-## Installing the TfJob CRD and operator on your k8s cluster
+## Installing the TFJob CRD and operator on your k8s cluster
 
 1. Ensure helm is running on your cluster
 
@@ -74,7 +74,7 @@ TfJob requires Kubernetes >= 1.8
     gsutil ls  gs://tf-on-k8s-dogfood-releases
     ```
     * **Avoiding Breakages**
-      * During Alpha there is no guarantees about TfJob API
+      * During Alpha there is no guarantees about TFJob API
         compatibility.
       * To avoid being broken by changes you can pin to a particular
         version of the helm chart and control when you upgrade.
@@ -101,7 +101,7 @@ TfJob requires Kubernetes >= 1.8
 
 > **Caution: the dashboard is in very early development stage!**
 
-`tensorflow/k8s` also includes a dashboard allowing you to monitor and create `TfJobs` through a web UI.  
+`tensorflow/k8s` also includes a dashboard allowing you to monitor and create `TFJobs` through a web UI.
 To deploy the dashboard, set `dashboard.install` to `true`.  
 Note that by default the dashboard will only be accessible from within the cluster or by proxying, as the default `ServiceType` is `ClusterIP`. 
 If you wish to expose the dashboard through an external IP, set `dashboard.serviceType` to `LoadBalancer`.
@@ -172,7 +172,7 @@ Subsequently, any pod requesting a resource of type `alpha.kubernetes.io/nvidia-
 
 ## Creating a job
 
-You create a job by defining a TfJob and then creating it with.
+You create a job by defining a TFJob and then creating it with.
 
 ```
 kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
@@ -182,7 +182,7 @@ In this case the job spec looks like the following
 
 ```
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: "example-job"
 spec:
@@ -214,7 +214,7 @@ The semantics are as follows
 **master**
   * A job must have 1 and only 1 master
   * The pod must contain a container named tensorflow
-  * The overall status of the TfJob is determined by the exit code of the
+  * The overall status of the TFJob is determined by the exit code of the
     tensorflow container
       * 0 = success
       * 1-127 = permanent error
@@ -228,7 +228,7 @@ The semantics are as follows
 **ps**
   * A job can have 0 to N parameter servers
   * parameter servers are automatically restarted if they exit
-  * If you do not specify a container named tensorflow the TfJob
+  * If you do not specify a container named tensorflow the TFJob
     will automatically add a container to the pod that starts a
     standard TensorFlow gRPC server for each PS.
 
@@ -249,14 +249,14 @@ Ensure your K8s cluster is properly configured to use GPUs
   * Nodes must have GPUs attached
   * K8s cluster must recognize the nvidia-gpu resource type
   * GPU drivers must be installed on the cluster.
-  * Your TfJob controller must be configured to properly attach
+  * Your TFJob controller must be configured to properly attach
     volumes and set environment variables needed for GPUs.
 
 To attach GPUs specify the GPU resource on the container e.g.
 
 ```
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: "tf-smoke-gpu"
 spec:
@@ -280,7 +280,7 @@ for using GPUs.
 
 ### Requesting a TensorBoard instance
 
-You can also ask the `TfJob` operator to create a TensorBoard instance
+You can also ask the `TFJob` operator to create a TensorBoard instance
 by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103)
 in your job. The table below describes the important fields in
 [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103).
@@ -299,7 +299,7 @@ volumes to make them available to TensorBoard.
 
 ```
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: "tf-smoke-gpu"
 spec:
@@ -336,7 +336,7 @@ can read/write directly to GCS.
 
 ```
 apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+kind: "TFJob"
 metadata:
   name: "tf-smoke-gpu"
 spec:
@@ -362,7 +362,7 @@ spec:
 
 #### Connecting to TensorBoard
 
-The TfJob operator will create a service named
+The TFJob operator will create a service named
 **tensorboard-$RUNTIME_ID** for your job. You can connect to it
 using the Kubernetes API Server proxy as follows
 
@@ -392,7 +392,7 @@ Here is sample output for an example job
 
 ```
 apiVersion: tensorflow.org/v1alpha1
-kind: TfJob
+kind: TFJob
 metadata:
   clusterName: ""
   creationTimestamp: 2017-10-20T22:27:38Z
@@ -477,7 +477,7 @@ status:
 
 The first thing to note is the **RuntimeId**. This is a random unique
 string which is used to give names to all the K8s resouces
-(e.g Job controllers & services) that are created by the TfJob.
+(e.g Job controllers & services) that are created by the TFJob.
 
 As with other K8s resources status provides information about the state
 of the resource.
@@ -505,7 +505,7 @@ named
 ${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}
 ```
 
-For example, if you have 2 parameter servers and runtime id 76n0 TfJob
+For example, if you have 2 parameter servers and runtime id 76n0 TFJob
 will create the jobs
 
 ```
