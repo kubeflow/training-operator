@@ -8,7 +8,7 @@ import JobList from "./JobList";
 import Job from "./Job";
 import CreateJob from "./CreateJob";
 import AppBar from "./AppBar";
-import { getTfJobListService, getNamespaces } from "../services";
+import { getTFJobListService, getNamespaces } from "../services";
 
 const allNamespacesKey = "All namespaces";
 
@@ -36,7 +36,7 @@ class Home extends Component {
       this.state.selectedNamespace === allNamespacesKey
         ? ""
         : this.state.selectedNamespace;
-    getTfJobListService(ns)
+    getTFJobListService(ns)
       .then(b => {
         this.lastNamespaceQueried = this.state.selectedNamespace;
         this.setState({ tfJobs: b.items });

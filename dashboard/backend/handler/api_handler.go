@@ -68,18 +68,13 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob").
-<<<<<<< HEAD
-			To(apiHandler.handleGetTfJobs).
-			Writes(TfJobList{}))
+			To(apiHandler.handleGetTFJobs).
+			Writes(TFJobList{}))
 	
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob/{namespace}").
-			To(apiHandler.handleGetTfJobs).
-			Writes(TfJobList{}))
-=======
 			To(apiHandler.handleGetTFJobs).
 			Writes(TFJobList{}))
->>>>>>> master
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/tfjob/{namespace}/{tfjob}").
@@ -110,31 +105,19 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	return wsContainer, nil
 }
 
-<<<<<<< HEAD
-func (apiHandler *APIHandler) handleGetTfJobs(request *restful.Request, response *restful.Response) {
+func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	jobs, err := apiHandler.cManager.TfJobClient.TensorflowV1alpha1().TfJobs(namespace).List(metav1.ListOptions{})
+	jobs, err := apiHandler.cManager.TFJobClient.TensorflowV1alpha1().TFJobs(namespace).List(metav1.ListOptions{})
 
 	ns := "all"
 	if namespace != "" {
 		ns = namespace
 	}
 	if err != nil {
-		log.Warningf("failed to list TfJobs under %v namespace(s): %v", ns, err)
+		log.Warningf("failed to list TFJobs under %v namespace(s): %v", ns, err)
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("successfully listed TfJobs under %v namespace(s)", ns)
-=======
-func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
-	//TODO: namespace handling
-	namespace := "default"
-	jobs, err := apiHandler.cManager.TFJobClient.TensorflowV1alpha1().TFJobs(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		log.Warningf("failed to list TFJobs under namespace %v: %v", namespace, err)
-		response.WriteError(http.StatusInternalServerError, err)
-	} else {
-		log.Infof("successfully listed TFJobs under namespace %v", namespace)
->>>>>>> master
+		log.Infof("successfully listed TFJobs under %v namespace(s)", ns)
 		response.WriteHeaderAndEntity(http.StatusOK, jobs)
 	}
 }
@@ -209,7 +192,7 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 			response.WriteError(http.StatusInternalServerError, nsErr)
 		}
 	} else if err != nil {
-			log.Warningf("failed to deploy TfJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+			log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
 			response.WriteError(http.StatusInternalServerError, err)
 	}
 
