@@ -1,7 +1,7 @@
 //let host = "http://localhost:8080";
 let host = "";
 
-export function getTfJobListService(namespace) {
+export function getTFJobListService(namespace) {
   return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());
 }
 
