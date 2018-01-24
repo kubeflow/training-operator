@@ -88,8 +88,6 @@ type TFReplicaSpec struct {
 	// TFPort is the port to use for TF services.
 	TFPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TFReplicaType `json:"tfReplicaType"`
-	// IsDefaultPS denotes if the parameter server should use the default grpc_tensorflow_server
-	IsDefaultPS bool
 }
 
 type TensorBoardSpec struct {

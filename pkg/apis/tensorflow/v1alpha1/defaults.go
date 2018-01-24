@@ -50,7 +50,6 @@ func SetDefaults_TFJob(obj *TFJob) {
 }
 
 func setDefault_PSPodTemplateSpec(r *TFReplicaSpec, tfImage string) {
-	r.IsDefaultPS = true
 	r.Template = &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{

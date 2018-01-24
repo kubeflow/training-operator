@@ -123,8 +123,7 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
-      "dashboard/frontend/build",
-      "hack/grpc_tensorflow_server/grpc_tensorflow_server.py"
+      "dashboard/frontend/build"
   ]
 
   for s in sources:

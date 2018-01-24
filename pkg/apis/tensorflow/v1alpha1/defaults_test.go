@@ -98,7 +98,6 @@ func TestSetDefaults_TFJob(t *testing.T) {
 								},
 							},
 							TFReplicaType: PS,
-							IsDefaultPS:   true,
 						},
 					},
 					TFImage: "tensorflow/tensorflow:1.3.0",
