@@ -26,6 +26,7 @@ $ tree -d -I 'vendor|bin|.git'
 │   ├── charts
 │   │   └── tensorboard
 │   │       └── templates
+│   ├── crd
 │   ├── gke
 │   │   └── notebook_image
 │   ├── tensorflow-models
@@ -157,10 +158,11 @@ EOL
 Now we are ready to run operator locally:
 
 ```sh
+kubectl create -f examples/crd/crd.yaml
 tf_operator -controller_config_file=/tmp/controller_config_file.yaml
 ```
 
-The command creates a CRD `tfjobs` and block watching for creation of the resource kind. To verify local
+The first command creates a CRD `tfjobs`. And the second command runs the operator locally. To verify local
 operator is working, create an example job and you should see jobs created by it.
 
 ```sh

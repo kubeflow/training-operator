@@ -3,4 +3,4 @@ description: K8s Custom Resource and Operator For TensorFlow jobs
 home: https://github.com/tensorflow/k8s
 name: tf-job-operator-chart
 sources: ['https://github.com/tensorflow/k8s']
-version: 0.2.0
+version: 0.2.1
