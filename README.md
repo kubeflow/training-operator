@@ -121,7 +121,7 @@ This sould create a service named `tf-job-dashboard` as well as an additional de
 The CRD must be configured properly to work with your specific Kubernetes cluster.
 Since it will be mounting GPU drivers into your pods, the CRD needs to know where to find them on the Kubernetes agents. It also needs to know which environment variable needs to be injected in the pods.
 
-If your Kubernetes cluster is running on GKE or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `values.yaml`).
+If your Kubernetes cluster is running on GKE or Azure (ACS, AKS, acs-engine) simply pass the provider name to the helm install (or in `tf-job-operator-chart/values.yaml`).
 
 For **GKE**:
 ```
@@ -281,9 +281,9 @@ for using GPUs.
 ### Requesting a TensorBoard instance
 
 You can also ask the `TFJob` operator to create a TensorBoard instance
-by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103)
+by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95)
 in your job. The table below describes the important fields in
-[TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L103).
+[TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95).
 
 | Name | Description | Required | Default |
 |---|---|---|---|
@@ -374,7 +374,7 @@ kubectl proxy
 In a web-browser open up
 
 ```
-http://${PROXY}:8001/api/v1/proxy/namespaces/default/services/tensorboard-${RUNTIMEID}:80/
+http://${PROXY}:8001/api/v1/proxy/namespaces/default/services/tensorboard-${RUNTIME_ID}:80/
 ```
 
 Depending on how you configure the service for TensorBoard and cluster
