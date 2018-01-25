@@ -78,27 +78,9 @@ func TestSetDefaults_TFJob(t *testing.T) {
 				Spec: TFJobSpec{
 					ReplicaSpecs: []*TFReplicaSpec{
 						{
-							Replicas: proto.Int32(1),
-							TFPort:   proto.Int32(2222),
-							Template: &v1.PodTemplateSpec{
-								Spec: v1.PodSpec{
-									Containers: []v1.Container{
-										v1.Container{
-											Image: "tensorflow/tensorflow:1.3.0",
-											Name:  "tensorflow",
-											VolumeMounts: []v1.VolumeMount{
-												v1.VolumeMount{
-													Name:      "ps-config-volume",
-													MountPath: "/ps-server",
-												},
-											},
-										},
-									},
-									RestartPolicy: v1.RestartPolicyOnFailure,
-								},
-							},
+							Replicas:      proto.Int32(1),
+							TFPort:        proto.Int32(2222),
 							TFReplicaType: PS,
-							IsDefaultPS:   true,
 						},
 					},
 					TFImage: "tensorflow/tensorflow:1.3.0",

@@ -8,7 +8,6 @@ metadata:
 data:
   controller-config-file.yaml: |
     tfImage: {{ .Values.tfImage }}
-    grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
     accelerators:
       alpha.kubernetes.io/nvidia-gpu:
         volumes:
@@ -20,7 +19,7 @@ data:
             hostPath: /usr/lib/nvidia-384/bin
           - name: libcuda
             mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
-            hostPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1 
+            hostPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
 {{ else if eq $cloud "gke" }}
 apiVersion: v1
 kind: ConfigMap
@@ -29,5 +28,4 @@ metadata:
 data:
   controller-config-file.yaml: |
     tfImage: {{ .Values.tfImage }}
-    grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
 {{ end }}
