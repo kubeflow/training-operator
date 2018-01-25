@@ -306,9 +306,9 @@ func (j *TrainingJob) Delete() {
 	}
 }
 
-// updateTPRStatus updates the job status based on TraingingJob.status.
-func (j *TrainingJob) updateTPRStatus() error {
-	// If the status hasn't changed then there's no reason to update the TPR.
+// updateCRDStatus updates the job status based on TraingingJob.status.
+func (j *TrainingJob) updateCRDStatus() error {
+	// If the status hasn't changed then there's no reason to update the CRD.
 	if reflect.DeepEqual(j.job.Status, j.status) {
 		return nil
 	}
@@ -331,8 +331,8 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		// The job hasn't been setup.
 		j.setup(config)
 
-		if err := j.updateTPRStatus(); err != nil {
-			log.Warningf("failed to update TPR status: %v", err)
+		if err := j.updateCRDStatus(); err != nil {
+			log.Warningf("failed to update CRD status: %v", err)
 			return err
 		}
 	}
@@ -343,7 +343,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 	if err := j.setupReplicas(); err != nil {
 		log.Errorf("failed to create replicas: %v", err)
 		j.status.Reason = fmt.Sprintf("Could not create in memory datastructures; %v", err)
-		if uErr := j.updateTPRStatus(); err != nil {
+		if uErr := j.updateCRDStatus(); err != nil {
 			log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
 		}
 		return err
@@ -357,7 +357,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		if cErr := j.createResources(config); cErr != nil {
 			// TODO(jlewi): Should we eventually give up and mark the job as failed if we can't create the resources?
 			j.status.Reason = fmt.Sprintf("Could not create job resources; %v", cErr)
-			if err := j.updateTPRStatus(); err != nil {
+			if err := j.updateCRDStatus(); err != nil {
 				log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
 				return err
 			}
@@ -386,9 +386,9 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		}
 	}
 
-	// If the phase changed we should update the TPR.
-	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v, failed to update status error: %v", j.job.ObjectMeta.Name, err)
+	// If the phase changed we should update the CRD.
+	if err := j.updateCRDStatus(); err != nil {
+		log.Warningf("Job %v, failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
@@ -401,11 +401,11 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		return nil
 	}
 
-	// updateTPRStatus will update the status of the TPR with c.Status if c.Status
+	// updateCRDStatus will update the status of the CRD with c.Status if c.Status
 	// doesn't match c.Cluster.status. So you can change c.Status in order to propagate
-	// changes to the TPR status.
-	if err := j.updateTPRStatus(); err != nil {
-		log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
+	// changes to the CRD status.
+	if err := j.updateCRDStatus(); err != nil {
+		log.Warningf("Job %v; failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
