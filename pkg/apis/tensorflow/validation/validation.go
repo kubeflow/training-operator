@@ -19,7 +19,7 @@ func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 	// Check that each replica has a TensorFlow container and a chief.
 	for _, r := range c.ReplicaSpecs {
 		found := false
-		if r.Template == nil && r.TFReplicaType != tfv1.PS {
+		if r.Template == nil {
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 
