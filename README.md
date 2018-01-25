@@ -147,7 +147,6 @@ metadata:
 data:
   controller-config-file.yaml: |
     accelerators:
-      grpcServerFilePath: /opt/mlkube/grpc_tensorflow_server/grpc_tensorflow_server.py
       alpha.kubernetes.io/nvidia-gpu:
         volumes:
           - name: <volume-name> # Desired name of the volume, ex: nvidia-libs
@@ -405,8 +404,7 @@ metadata:
 spec:
   RuntimeId: 76no
   replicaSpecs:
-  - IsDefaultPS: false
-    replicas: 1
+  - replicas: 1
     template:
       metadata:
         creationTimestamp: null
@@ -418,8 +416,7 @@ spec:
         restartPolicy: OnFailure
     tfPort: 2222
     tfReplicaType: MASTER
-  - IsDefaultPS: false
-    replicas: 1
+  - replicas: 1
     template:
       metadata:
         creationTimestamp: null
@@ -431,8 +428,7 @@ spec:
         restartPolicy: OnFailure
     tfPort: 2222
     tfReplicaType: WORKER
-  - IsDefaultPS: true
-    replicas: 2
+  - replicas: 2
     template:
       metadata:
         creationTimestamp: null

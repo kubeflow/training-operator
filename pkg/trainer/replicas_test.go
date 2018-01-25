@@ -346,19 +346,3 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 		}
 	}
 }
-
-func TestTransformClusterSpecForDefaultPS(t *testing.T) {
-
-	cs := ClusterSpec{
-		"master": {"master-0:2222"},
-		"worker": {"worker-0:2222", "worker-1:2222"},
-		"ps":     {"localhost:2222", "ps-1:2222"},
-	}
-	expected := "master|master-0:2222,ps|localhost:2222;ps-1:2222,worker|worker-0:2222;worker-1:2222"
-
-	tx := transformClusterSpecForDefaultPS(cs)
-
-	if tx != expected {
-		t.Errorf("transformClusterSpecForDefaultPS() expected: %v, received: %v", expected, tx)
-	}
-}

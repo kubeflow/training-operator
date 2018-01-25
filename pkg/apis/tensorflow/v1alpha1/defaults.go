@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -32,11 +31,6 @@ func SetDefaults_TFJob(obj *TFJob) {
 		if r.Replicas == nil {
 			r.Replicas = proto.Int32(Replicas)
 		}
-
-		//Set the default configuration for a PS server if the user didn't specify a PodTemplateSpec
-		if r.Template == nil && r.TFReplicaType == PS {
-			setDefault_PSPodTemplateSpec(r, c.TFImage)
-		}
 	}
 	if c.TerminationPolicy == nil {
 		c.TerminationPolicy = &TerminationPolicySpec{
@@ -47,25 +41,4 @@ func SetDefaults_TFJob(obj *TFJob) {
 		}
 	}
 
-}
-
-func setDefault_PSPodTemplateSpec(r *TFReplicaSpec, tfImage string) {
-	r.IsDefaultPS = true
-	r.Template = &v1.PodTemplateSpec{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				v1.Container{
-					Image: tfImage,
-					Name:  "tensorflow",
-					VolumeMounts: []v1.VolumeMount{
-						v1.VolumeMount{
-							Name:      "ps-config-volume",
-							MountPath: "/ps-server",
-						},
-					},
-				},
-			},
-			RestartPolicy: v1.RestartPolicyOnFailure,
-		},
-	}
 }

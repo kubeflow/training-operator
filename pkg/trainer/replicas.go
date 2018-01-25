@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"sort"
 	"strings"
 
 	"github.com/tensorflow/k8s/pkg/util/k8sutil"
@@ -106,70 +104,7 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"tf_job_name": s.Job.job.ObjectMeta.Name})
 }
 
-// Transforms the tfconfig to work with grpc_tensorflow_server
-func transformClusterSpecForDefaultPS(clusterSpec ClusterSpec) string {
-
-	// sort by keys to make unit testing easier
-	keys := []string{}
-	for k := range clusterSpec {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	jobs := []string{}
-	for _, jobType := range keys {
-		hosts := []string{}
-		hosts = append(hosts, clusterSpec[jobType]...)
-		s := jobType + "|" + strings.Join(hosts, ";")
-		jobs = append(jobs, s)
-	}
-
-	return strings.Join(jobs, ",")
-}
-
 func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
-	if s.Spec.IsDefaultPS {
-		// Create the ConfigMap containing the sources for the default Parameter Server
-		err, cm := s.getDefaultPSConfigMap(config)
-		if err != nil {
-			log.Errorf("Error building PS ConfigMap: %v", err)
-			return err
-		}
-		createdCM, err := s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Create(cm)
-		if err != nil {
-			if k8s_errors.IsAlreadyExists(err) {
-				log.Infof("%v already exists.", createdCM.Name)
-			} else {
-				log.Errorf("Error creating PS ConfigMap: %v, %v", cm.ObjectMeta.Name, err)
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating PS ConfigMap %v returned error.", createdCM.Name), err})
-			}
-		} else {
-			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created configmap: %v", createdCM.Name)
-		}
-
-		// Update Volumes to include the ConfigMap containing grpc_tensorflow_server.py
-		name := "ps-config-volume"
-		hasVolume := false
-		for _, v := range s.Spec.Template.Spec.Volumes {
-			if v.Name == name {
-				hasVolume = true
-				break
-			}
-		}
-		if !hasVolume {
-			s.Spec.Template.Spec.Volumes = append(s.Spec.Template.Spec.Volumes, v1.Volume{
-				Name: "ps-config-volume",
-				VolumeSource: v1.VolumeSource{
-					ConfigMap: &v1.ConfigMapVolumeSource{
-						LocalObjectReference: v1.LocalObjectReference{
-							Name: s.defaultPSConfigMapName(),
-						},
-					},
-				},
-			})
-		}
-	}
-
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
@@ -224,11 +159,6 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		if err != nil {
 			log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.ObjectMeta.Name, util.Pformat(tfConfig), err)
 			return err
-		}
-
-		if s.Spec.IsDefaultPS {
-			cs := transformClusterSpecForDefaultPS(s.Job.ClusterSpec())
-			s.Spec.Template.Spec.Containers[0].Command = []string{"python", "/ps-server/grpc_tensorflow_server.py", "--cluster_spec", cs, "--job_name", "ps", "--task_id", fmt.Sprintf("%v", index)}
 		}
 
 		// Make a copy of the template because we will modify it below. .
@@ -292,31 +222,6 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 	}
 	return nil
-}
-
-// Create a ConfigMap containing the source for a simple grpc server (pkg/controller/grpc_tensorflow_server.py)
-// that will be used as default PS
-func (s *TFReplicaSet) getDefaultPSConfigMap(config *tfv1alpha1.ControllerConfig) (error, *v1.ConfigMap) {
-	cm := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: s.defaultPSConfigMapName(),
-		},
-		Data: make(map[string]string),
-	}
-
-	//grab server sources from files
-	filePaths := map[string]string{
-		"grpc_tensorflow_server.py": config.GrpcServerFilePath,
-	}
-	for n, fp := range filePaths {
-		data, err := ioutil.ReadFile(fp)
-		if err != nil {
-			return err, nil
-		}
-		cm.Data[n] = string(data)
-	}
-
-	return nil, cm
 }
 
 // Delete deletes the replicas
