@@ -155,8 +155,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
-      "dashboard/frontend/build",
-      "hack/grpc_tensorflow_server/grpc_tensorflow_server.py"
+      "dashboard/frontend/build"
   ]
 
   for s in sources:
