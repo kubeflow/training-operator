@@ -4,16 +4,13 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +21,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
 	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
@@ -120,10 +116,6 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 	controller.TFJobLister = tfJobInformer.Lister()
 	controller.TFJobSynced = tfJobInformer.Informer().HasSynced
 	controller.syncHandler = controller.syncTFJob
-
-	if err := controller.createCRD(); err != nil {
-		return nil, err
-	}
 
 	return controller, nil
 }
@@ -270,58 +262,4 @@ func (c *Controller) handleDelete(obj interface{}) {
 	}
 
 	c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name].Delete()
-}
-
-func (c *Controller) createCRD() error {
-	crd := &v1beta1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: helper.CRDName(),
-		},
-		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group:   tfv1alpha1.CRDGroup,
-			Version: tfv1alpha1.CRDVersion,
-			Scope:   v1beta1.NamespaceScoped,
-			Names: v1beta1.CustomResourceDefinitionNames{
-				Plural:   tfv1alpha1.CRDKindPlural,
-				Singular: tfv1alpha1.CRDKind,
-				// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
-				Kind: reflect.TypeOf(tfv1alpha1.TFJob{}).Name(),
-			},
-		},
-	}
-
-	_, err := c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return err
-	}
-
-	// wait for CRD being established
-	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(helper.CRDName(), metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		for _, cond := range crd.Status.Conditions {
-			switch cond.Type {
-			case v1beta1.Established:
-				if cond.Status == v1beta1.ConditionTrue {
-					return true, err
-				}
-			case v1beta1.NamesAccepted:
-				if cond.Status == v1beta1.ConditionFalse {
-					glog.Errorf("Name conflict: %v\n", cond.Reason)
-				}
-			}
-		}
-		return false, err
-	})
-
-	if err != nil {
-		deleteErr := c.APIExtclient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(helper.CRDName(), nil)
-		if deleteErr != nil {
-			return k8sErrors.NewAggregate([]error{err, deleteErr})
-		}
-		return err
-	}
-	return nil
 }
