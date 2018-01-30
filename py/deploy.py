@@ -114,7 +114,7 @@ def test(args):
     start = time.time()
     util.run(["helm", "test", "tf-job"])
   except subprocess.CalledProcessError as e:
-    t.failure = "helm test failed;\n" + e.output
+    t.failure = "helm test failed;\n" + (e.output or '')
     # Reraise the exception so that the prow job will fail and the test
     # is marked as a failure.
     # TODO(jlewi): It would be better to this wholistically; e.g. by
