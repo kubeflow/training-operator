@@ -13,7 +13,7 @@ var (
 
 const (
 	// GroupName is the group name use in this package.
-	GroupName = "tensorflow.org"
+	GroupName = "kubeflow.org"
 	// TFJobResourceKind is the kind name.
 	TFJobResourceKind = "TFJob"
 	// GroupVersion is the version.

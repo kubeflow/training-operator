@@ -51,9 +51,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=Tensorflow, Version=V1alpha1
+	// Group=Kubeflow, Version=V1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("tfjobs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Tensorflow().V1alpha1().TFJobs().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1alpha1().TFJobs().Informer()}, nil
 
 	}
 

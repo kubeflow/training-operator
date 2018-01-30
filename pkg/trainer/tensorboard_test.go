@@ -1,19 +1,18 @@
 package trainer
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-
-	"reflect"
-
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
-	"github.com/tensorflow/k8s/pkg/util"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
+
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
+	"github.com/tensorflow/k8s/pkg/util"
 )
 
 func TestTBReplicaSet(t *testing.T) {
@@ -59,10 +58,10 @@ func TestTBReplicaSet(t *testing.T) {
 
 	// Expected labels
 	expectedLabels := map[string]string{
-		"tensorflow.org": "",
-		"app":            "tensorboard",
-		"runtime_id":     "some-runtime",
-		"tf_job_name":    "some-job",
+		"kubeflow.org": "",
+		"app":          "tensorboard",
+		"runtime_id":   "some-runtime",
+		"tf_job_name":  "some-job",
 	}
 
 	trueVal := true

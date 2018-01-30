@@ -34,18 +34,18 @@ type TFJobLister interface {
 	TFJobListerExpansion
 }
 
-// tfJobLister implements the TFJobLister interface.
-type tfJobLister struct {
+// tFJobLister implements the TFJobLister interface.
+type tFJobLister struct {
 	indexer cache.Indexer
 }
 
 // NewTFJobLister returns a new TFJobLister.
 func NewTFJobLister(indexer cache.Indexer) TFJobLister {
-	return &tfJobLister{indexer: indexer}
+	return &tFJobLister{indexer: indexer}
 }
 
 // List lists all TFJobs in the indexer.
-func (s *tfJobLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
+func (s *tFJobLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1alpha1.TFJob))
 	})
@@ -53,8 +53,8 @@ func (s *tfJobLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err
 }
 
 // TFJobs returns an object that can list and get TFJobs.
-func (s *tfJobLister) TFJobs(namespace string) TFJobNamespaceLister {
-	return tfJobNamespaceLister{indexer: s.indexer, namespace: namespace}
+func (s *tFJobLister) TFJobs(namespace string) TFJobNamespaceLister {
+	return tFJobNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
 // TFJobNamespaceLister helps list and get TFJobs.
@@ -66,15 +66,15 @@ type TFJobNamespaceLister interface {
 	TFJobNamespaceListerExpansion
 }
 
-// tfJobNamespaceLister implements the TFJobNamespaceLister
+// tFJobNamespaceLister implements the TFJobNamespaceLister
 // interface.
-type tfJobNamespaceLister struct {
+type tFJobNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
 // List lists all TFJobs in the indexer for a given namespace.
-func (s tfJobNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
+func (s tFJobNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.TFJob, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
 		ret = append(ret, m.(*v1alpha1.TFJob))
 	})
@@ -82,7 +82,7 @@ func (s tfJobNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.TF
 }
 
 // Get retrieves the TFJob from the indexer for a given namespace and name.
-func (s tfJobNamespaceLister) Get(name string) (*v1alpha1.TFJob, error) {
+func (s tFJobNamespaceLister) Get(name string) (*v1alpha1.TFJob, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err

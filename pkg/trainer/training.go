@@ -315,7 +315,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 
 	newJob := j.job
 	newJob.Status = j.status
-	newJob, err := j.tfJobClient.TensorflowV1alpha1().TFJobs(j.job.ObjectMeta.Namespace).Update(newJob)
+	newJob, err := j.tfJobClient.KubeflowV1alpha1().TFJobs(j.job.ObjectMeta.Namespace).Update(newJob)
 	if err != nil {
 		return err
 	}

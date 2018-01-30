@@ -21,7 +21,7 @@ package externalversions
 import (
 	versioned "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/tensorflow/k8s/pkg/client/informers/externalversions/internalinterfaces"
-	tensorflow "github.com/tensorflow/k8s/pkg/client/informers/externalversions/tensorflow"
+	kubeflow "github.com/tensorflow/k8s/pkg/client/informers/externalversions/kubeflow"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -110,9 +110,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Tensorflow() tensorflow.Interface
+	Kubeflow() kubeflow.Interface
 }
 
-func (f *sharedInformerFactory) Tensorflow() tensorflow.Interface {
-	return tensorflow.New(f)
+func (f *sharedInformerFactory) Kubeflow() kubeflow.Interface {
+	return kubeflow.New(f)
 }
