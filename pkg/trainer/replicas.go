@@ -6,15 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
-	// TOOO(jlewi): Rename to apiErrors
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
-	"github.com/tensorflow/k8s/pkg/util"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +15,12 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
+
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"github.com/tensorflow/k8s/pkg/util/k8sutil"
+	// TOOO(jlewi): Rename to apiErrors
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	"github.com/tensorflow/k8s/pkg/util"
 )
 
 const (
@@ -97,7 +96,7 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecord
 func (s *TFReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
 		"kubeflow.org": "",
-		"job_type":       string(s.Spec.TFReplicaType),
+		"job_type":     string(s.Spec.TFReplicaType),
 		// runtime_id is set by Job.setup, which is called after the TFReplicaSet is created.
 		// this is why labels aren't a member variable.
 		"runtime_id":  s.Job.job.Spec.RuntimeId,

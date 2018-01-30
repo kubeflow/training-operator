@@ -7,14 +7,15 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 )
 
 const TbPort = 6006
@@ -176,9 +177,9 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 func (s *TBReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
 		"kubeflow.org": "",
-		"runtime_id":     s.Job.job.Spec.RuntimeId,
-		"app":            "tensorboard",
-		"tf_job_name":    s.Job.job.ObjectMeta.Name,
+		"runtime_id":   s.Job.job.Spec.RuntimeId,
+		"app":          "tensorboard",
+		"tf_job_name":  s.Job.job.ObjectMeta.Name,
 	})
 }
 
