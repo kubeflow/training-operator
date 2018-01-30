@@ -18,7 +18,7 @@ package versioned
 
 import (
 	glog "github.com/golang/glog"
-	tensorflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/tensorflow/v1alpha1"
+	kubeflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -26,27 +26,27 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	TensorflowV1alpha1() tensorflowv1alpha1.TensorflowV1alpha1Interface
+	KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Tensorflow() tensorflowv1alpha1.TensorflowV1alpha1Interface
+	Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	tensorflowV1alpha1 *tensorflowv1alpha1.TensorflowV1alpha1Client
+	kubeflowV1alpha1 *kubeflowv1alpha1.KubeflowV1alpha1Client
 }
 
-// TensorflowV1alpha1 retrieves the TensorflowV1alpha1Client
-func (c *Clientset) TensorflowV1alpha1() tensorflowv1alpha1.TensorflowV1alpha1Interface {
-	return c.tensorflowV1alpha1
+// KubeflowV1alpha1 retrieves the KubeflowV1alpha1Client
+func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface {
+	return c.kubeflowV1alpha1
 }
 
-// Deprecated: Tensorflow retrieves the default version of TensorflowClient.
+// Deprecated: Kubeflow retrieves the default version of KubeflowClient.
 // Please explicitly pick a version.
-func (c *Clientset) Tensorflow() tensorflowv1alpha1.TensorflowV1alpha1Interface {
-	return c.tensorflowV1alpha1
+func (c *Clientset) Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface {
+	return c.kubeflowV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -65,7 +65,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.tensorflowV1alpha1, err = tensorflowv1alpha1.NewForConfig(&configShallowCopy)
+	cs.kubeflowV1alpha1, err = kubeflowv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.tensorflowV1alpha1 = tensorflowv1alpha1.NewForConfigOrDie(c)
+	cs.kubeflowV1alpha1 = kubeflowv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -91,7 +91,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.tensorflowV1alpha1 = tensorflowv1alpha1.New(c)
+	cs.kubeflowV1alpha1 = kubeflowv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

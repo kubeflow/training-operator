@@ -10,7 +10,7 @@ from kubernetes.client.rest import ApiException
 
 from py import util
 
-TF_JOB_GROUP = "tensorflow.org"
+TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_VERSION = "v1alpha1"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"

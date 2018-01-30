@@ -18,8 +18,8 @@ package fake
 
 import (
 	clientset "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	tensorflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/tensorflow/v1alpha1"
-	faketensorflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/tensorflow/v1alpha1/fake"
+	kubeflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1"
+	fakekubeflowv1alpha1 "github.com/tensorflow/k8s/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -60,12 +60,12 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// TensorflowV1alpha1 retrieves the TensorflowV1alpha1Client
-func (c *Clientset) TensorflowV1alpha1() tensorflowv1alpha1.TensorflowV1alpha1Interface {
-	return &faketensorflowv1alpha1.FakeTensorflowV1alpha1{Fake: &c.Fake}
+// KubeflowV1alpha1 retrieves the KubeflowV1alpha1Client
+func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface {
+	return &fakekubeflowv1alpha1.FakeKubeflowV1alpha1{Fake: &c.Fake}
 }
 
-// Tensorflow retrieves the TensorflowV1alpha1Client
-func (c *Clientset) Tensorflow() tensorflowv1alpha1.TensorflowV1alpha1Interface {
-	return &faketensorflowv1alpha1.FakeTensorflowV1alpha1{Fake: &c.Fake}
+// Kubeflow retrieves the KubeflowV1alpha1Client
+func (c *Clientset) Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface {
+	return &fakekubeflowv1alpha1.FakeKubeflowV1alpha1{Fake: &c.Fake}
 }

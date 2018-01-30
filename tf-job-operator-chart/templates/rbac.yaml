@@ -7,7 +7,7 @@ metadata:
     app: tf-job-operator
 rules:
 - apiGroups:
-  - tensorflow.org
+  - kubeflow.org
   resources:
   - tfjobs
   verbs:
@@ -57,7 +57,7 @@ metadata:
     app: tf-job-dashboard
 rules:
 - apiGroups:
-  - tensorflow.org
+  - kubeflow.org
   resources:
   - tfjobs
   verbs:

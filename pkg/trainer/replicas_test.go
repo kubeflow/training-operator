@@ -1,24 +1,22 @@
 package trainer
 
 import (
-	"testing"
-
-	"github.com/golang/protobuf/proto"
-
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"testing"
 	"time"
 
-	"encoding/json"
-
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
-	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/golang/protobuf/proto"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
+
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
+	"github.com/tensorflow/k8s/pkg/util"
 )
 
 var (
@@ -88,11 +86,11 @@ func TestTFReplicaSet(t *testing.T) {
 	for index := 0; index < 2; index++ {
 		// Expected labels
 		expectedLabels := map[string]string{
-			"tensorflow.org": "",
-			"task_index":     fmt.Sprintf("%v", index),
-			"job_type":       "PS",
-			"runtime_id":     "some-runtime",
-			"tf_job_name":    "some-job",
+			"kubeflow.org": "",
+			"task_index":   fmt.Sprintf("%v", index),
+			"job_type":     "PS",
+			"runtime_id":   "some-runtime",
+			"tf_job_name":  "some-job",
 		}
 
 		// Check that a service was created.
