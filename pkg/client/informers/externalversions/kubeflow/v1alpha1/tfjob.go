@@ -22,7 +22,7 @@ import (
 	tensorflow_v1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	versioned "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/tensorflow/k8s/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/tensorflow/k8s/pkg/client/listers/tensorflow/v1alpha1"
+	v1alpha1 "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -37,7 +37,7 @@ type TFJobInformer interface {
 	Lister() v1alpha1.TFJobLister
 }
 
-type tfJobInformer struct {
+type tFJobInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
@@ -48,10 +48,10 @@ func NewTFJobInformer(client versioned.Interface, namespace string, resyncPeriod
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-				return client.TensorflowV1alpha1().TFJobs(namespace).List(options)
+				return client.KubeflowV1alpha1().TFJobs(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-				return client.TensorflowV1alpha1().TFJobs(namespace).Watch(options)
+				return client.KubeflowV1alpha1().TFJobs(namespace).Watch(options)
 			},
 		},
 		&tensorflow_v1alpha1.TFJob{},
@@ -64,10 +64,10 @@ func defaultTFJobInformer(client versioned.Interface, resyncPeriod time.Duration
 	return NewTFJobInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
-func (f *tfJobInformer) Informer() cache.SharedIndexInformer {
+func (f *tFJobInformer) Informer() cache.SharedIndexInformer {
 	return f.factory.InformerFor(&tensorflow_v1alpha1.TFJob{}, defaultTFJobInformer)
 }
 
-func (f *tfJobInformer) Lister() v1alpha1.TFJobLister {
+func (f *tFJobInformer) Lister() v1alpha1.TFJobLister {
 	return v1alpha1.NewTFJobLister(f.Informer().GetIndexer())
 }

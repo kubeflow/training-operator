@@ -72,7 +72,7 @@ rbac:
     with tempfile.NamedTemporaryFile(delete=False) as hf:
       hf.write("""
 name: tf-job-operator-chart
-home: https://github.com/jlewi/mlkube.io
+home: https://github.com/tensorflow/k8s
 version: 0.1.0
 appVersion: 0.1.0
 """)
@@ -84,7 +84,7 @@ appVersion: 0.1.0
       output = yaml.load(hf)
     expected = {
         "name": "tf-job-operator-chart",
-        "home": "https://github.com/jlewi/mlkube.io",
+        "home": "https://github.com/tensorflow/k8s",
         "version": "0.1.0-v20171019",
         "appVersion": "0.1.0-v20171019",
     }

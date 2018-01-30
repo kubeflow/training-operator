@@ -25,7 +25,7 @@ import (
 	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
 	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
 	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	listers "github.com/tensorflow/k8s/pkg/client/listers/tensorflow/v1alpha1"
+	listers "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
 	"github.com/tensorflow/k8s/pkg/trainer"
 )
 
@@ -71,7 +71,7 @@ type Controller struct {
 
 func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
 	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
-	tfJobInformer := tfJobInformerFactory.Tensorflow().V1alpha1().TFJobs()
+	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
 
 	kubeflowscheme.AddToScheme(scheme.Scheme)
 	glog.V(4).Info("Creating event broadcaster")
@@ -227,7 +227,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	tfJob, err = c.TFJobClient.TensorflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
+	tfJob, err = c.TFJobClient.KubeflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
 
 	if err != nil {
 		return false, err
