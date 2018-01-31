@@ -39,6 +39,27 @@ var (
 	timeout = flag.Duration("timeout", 5*time.Minute, "The timeout for the test")
 )
 
+type tfReplicaType tfv1alpha1.TFReplicaType
+
+func (tfrt tfReplicaType) toSpec() *tfv1alpha1.TFReplicaSpec {
+	return &tfv1alpha1.TFReplicaSpec{
+		Replicas:      proto.Int32(1),
+		TFPort:        proto.Int32(2222),
+		TFReplicaType: tfv1alpha1.TFReplicaType(tfrt),
+		Template: &v1.PodTemplateSpec{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:  "tensorflow",
+						Image: *image,
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+			},
+		},
+	}
+}
+
 func run() (string, error) {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
@@ -67,54 +88,9 @@ func run() (string, error) {
 		},
 		Spec: tfv1alpha1.TFJobSpec{
 			ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
-				{
-					Replicas:      proto.Int32(1),
-					TFPort:        proto.Int32(2222),
-					TFReplicaType: tfv1alpha1.MASTER,
-					Template: &v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "tensorflow",
-									Image: *image,
-								},
-							},
-							RestartPolicy: v1.RestartPolicyOnFailure,
-						},
-					},
-				},
-				{
-					Replicas:      proto.Int32(1),
-					TFPort:        proto.Int32(2222),
-					TFReplicaType: tfv1alpha1.PS,
-					Template: &v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "tensorflow",
-									Image: *image,
-								},
-							},
-							RestartPolicy: v1.RestartPolicyOnFailure,
-						},
-					},
-				},
-				{
-					Replicas:      proto.Int32(1),
-					TFPort:        proto.Int32(2222),
-					TFReplicaType: tfv1alpha1.WORKER,
-					Template: &v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "tensorflow",
-									Image: *image,
-								},
-							},
-							RestartPolicy: v1.RestartPolicyOnFailure,
-						},
-					},
-				},
+				tfReplicaType(tfv1alpha1.MASTER).toSpec(),
+				tfReplicaType(tfv1alpha1.PS).toSpec(),
+				tfReplicaType(tfv1alpha1.WORKER).toSpec(),
 			},
 			TensorBoard: &tfv1alpha1.TensorBoardSpec{
 				LogDir: "/tmp/tensorflow",
