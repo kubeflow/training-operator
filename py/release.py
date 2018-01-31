@@ -3,7 +3,10 @@
 
 This module assumes py is a top level python package.
 """
-
+# TODO(jlewi): After we migrate to using Argo for our tests and releases_path
+# I think we should be able to get rid of most of the clone functions because
+# a separate step in the workflow is responsible for checking out the code
+# and it doesn't use this script.
 import argparse
 import datetime
 import glob
@@ -19,8 +22,11 @@ from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import build_and_push_image
 from py import util
 
-REPO_ORG = "tensorflow"
-REPO_NAME = "k8s"
+# Repo org and name can be set via environment variables when running
+# on PROW. But we choose sensible defaults so that we can run locally without
+# setting defaults.
+REPO_ORG = os.getenv("REPO_OWNER", "tensorflow")
+REPO_NAME = os.getenv("REPO_NAME", "k8s")
 
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
@@ -394,8 +400,19 @@ def build_and_push(go_dir, src_dir, args):
 
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
-  go_dir = None
+  go_dir = os.getenv("GOPATH")
+  if not go_dir:
+    raise ValueError("GOPATH environment variable must be set.")
+
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+  go_src_dir = os.path.join(go_dir, "src", REPO_ORG, REPO_NAME)
+
+  if not os.path.exists(go_src_dir):
+    logging.info("Directory %s  doesn't exist.")
+    logging.info("Creating symbolic link %s pointing to %s", go_src_dir, src_dir)
+    os.symlink(src_dir, go_src_dir)
+
   build_and_push(go_dir, src_dir, args)
 
 def clone_repo(args):
