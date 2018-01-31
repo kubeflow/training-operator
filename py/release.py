@@ -113,12 +113,15 @@ def create_latest(bucket, sha, target):
   blob.upload_from_string(json.dumps(data))
 
 
-def build_operator_image(root_dir, registry, project=None, should_push=True):
+def build_operator_image(root_dir, registry, project=None, should_push=True,
+                         version_tag=None):
   """Build the main docker image for the TFJob CRD.
   Args:
     root_dir: Root directory of the repository.
     registry: The registry to use.
     project: If set it will be built using GCB.
+    version_tag: Optional tag for the version. If not specified derive
+      the tag from the git hash.
   Returns:
     build_info: Dictionary containing information about the build.
   """
@@ -170,9 +173,12 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
 
   image_base = registry + "/tf_operator"
 
-  n = datetime.datetime.now()
-  image = (image_base + ":" + n.strftime("v%Y%m%d") + "-" +
-           commit)
+  if not version_tag:
+    logging.info("No version tag specified; computing tag automatically.")
+    n = datetime.datetime.now()
+    version_tag = n.strftime("v%Y%m%d") + "-" + commit
+  logging.info("Using version tag: %s", version_tag)
+  image = image_base + ":" + version_tag
   latest_image = image_base + ":latest"
 
   if project:
@@ -203,7 +209,8 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   return output
 
 def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
-                             gcb_project=None, build_info_path=None):
+                             gcb_project=None, build_info_path=None,
+                             version_tag=None):
   """Build and push the artifacts.
 
   Args:
@@ -216,6 +223,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
       If set to none uses docker to build.
     build_info_path: (Optional): GCS location to write YAML file containing
       information about the build.
+    version_tag: (Optional): The tag to use for the image.
   """
   # Update the GOPATH to the temporary directory.
   env = os.environ.copy()
@@ -226,7 +234,8 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
 
-  build_info = build_operator_image(src_dir, registry, project=gcb_project)
+  build_info = build_operator_image(src_dir, registry, project=gcb_project,
+                                    version_tag=version_tag)
 
   # Copy the chart to a temporary directory because we will modify some
   # of its YAML files.
@@ -380,7 +389,8 @@ def build_and_push(go_dir, src_dir, args):
   build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
                            publish_path=args.releases_path,
                            gcb_project=args.project,
-                           build_info_path=args.build_info_path)
+                           build_info_path=args.build_info_path,
+                           version_tag=args.version_tag)
 
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
@@ -582,6 +592,13 @@ def build_parser():
     type=str,
     help=("Directory containing the source. If not set determined "
           "automatically."))
+
+  build_subparser.add_argument(
+    "--version_tag",
+    default=None,
+    type=str,
+    help=("A string used as the image tag. If not supplied defaults to a "
+          "value based on the git commit."))
 
   add_common_args(build_subparser)
   build_subparser.set_defaults(func=build)
