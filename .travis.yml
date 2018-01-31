@@ -1,27 +1,41 @@
-language: go
+matrix:
+  include:
+    - language: go
+      go: 1.8
+      install:
+        # we cannot enable `gotyp` in gometalinter while at the same time
+        # keep 1.8 here. so I (jiay) went with removing `gotype` for now.
+        # see open issues:
+        # - https://github.com/alecthomas/gometalinter/issues/358
+        # - https://github.com/golang/go/issues/21712
+        # TODO jiayu: re-evaluate the pending issues and add back `gotype`
+        - go get github.com/mattn/goveralls
+        - go get -u github.com/alecthomas/gometalinter
+        - gometalinter --install
+      script:
+        - gometalinter --config=linter_config18.json ./pkg/...
+          # We customize the build step because by default
+          # Travis runs go test -v ./... which will include the vendor
+          # directory.
+          # With go 1.9 vendor will be automatically excluded.
+          # For now though we just run all tests in pkg.
+        - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
 
-go:
-  # we cannot enable `gotyp` in gometalinter while at the same time
-  # keep 1.8 here. so I (jiay) went with removing `gotype` for now.
-  # see open issues:
-  # - https://github.com/alecthomas/gometalinter/issues/358
-  # - https://github.com/golang/go/issues/21712
-  # TODO jiayu: re-evaluate the pending issues and add back `gotype`
-  - 1.8
-  - 1.9
 
-install:
-  # get coveralls.io support
-  - go get github.com/mattn/goveralls
-  - go get -u github.com/alecthomas/gometalinter
-  - gometalinter --install
+    - language: go
+      go: 1.9
+      install:
+        - go get github.com/mattn/goveralls
+        - go get -u github.com/alecthomas/gometalinter
+        - gometalinter --install
+      script:
+        - gometalinter --config=linter_config.json ./pkg/...
+        - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
 
-script:
-  - gometalinter --config=linter_config.json ./pkg/...
-  # We customize the build step because by default
-  # Travis runs go test -v ./... which will include the vendor
-  # directory.
-  # With go 1.9 vendor will be automatically excluded.
-  # For now though we just run all tests in pkg.
-  - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
+    - language: python
+      python: 2.7
+      install:
+        - pip install pylint
 
+      script:
+        - pylint py/*.py
