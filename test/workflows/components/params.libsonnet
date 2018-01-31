@@ -8,9 +8,9 @@
     // Each object below should correspond to a component in the components/ directory
     workflows: {
       bucket: "mlkube-testing_temp",
-      name: "training-presubmit-1-4-39b6",
+      name: "training-presubmit-1-5-31062024",
       namespace: "kubeflow-test-infra",
-      prow_env: "BUILD_NUMBER=2,JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=81,REPO_NAME=k8s,REPO_OWNER=tensorflow",
+      prow_env: "BUILD_NUMBER=2,JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=358,REPO_NAME=k8s,REPO_OWNER=tensorflow",
     },
   },
 }

@@ -33,7 +33,7 @@
       local artifactsDir = outputDir + "/artifacts";
       local goDir = testDir + "/go";
       local srcDir = testDir + "/src";
-      local image = "gcr.io/mlkube-testing/kubeflow-testing";
+      local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
       local nfsVolumeClaim = "kubeflow-testing";
       // The name to use for the volume to use to contain test data.
@@ -137,6 +137,12 @@
                     template: "create-pr-symlink",
                   },
                 ],
+                [
+                  {
+                    name: "py-test",
+                    template: "py-test",
+                  },
+                ],
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",
@@ -171,6 +177,15 @@
               "--project=mlkube-testing",
               "--version_tag=" + versionTag,
             ]),  // build
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
+              "python",
+              "-m",
+              "py.py_checks", 
+              "build", 
+              "--src_dir=" + srcDir,
+              "--project=mlkube-testing",
+              "--junit_path=" +  artifactsDir + "junit_pycheckstest.xml",
+            ]),  // py test
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
