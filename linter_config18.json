@@ -7,7 +7,6 @@
     "errcheck",
     "goconst",
     "goimports",
-    "gotyp",
     "varcheck",
     "gas",
     "staticcheck",
