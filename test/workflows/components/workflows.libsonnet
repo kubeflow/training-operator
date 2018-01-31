@@ -38,7 +38,7 @@
       local nfsVolumeClaim = "kubeflow-testing";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = 
+      local versionTag = name;
       {
         // Build an Argo template to execute a particular command.
         // step_name: Name for the template
@@ -130,7 +130,7 @@
                 [
                   {
                     name: "build",
-                    template: "test-deploy",
+                    template: "build",
                   },
                   {
                     name: "create-pr-symlink",
@@ -167,9 +167,9 @@
               "-m",
               "py.release", 
               "build", 
-              "--src_dir=" + src_dir,
+              "--src_dir=" + srcDir,
               "--project=mlkube-testing",
-              "--version_tag=" + version_tag,
+              "--version_tag=" + versionTag,
             ]),  // build
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
