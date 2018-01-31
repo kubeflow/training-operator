@@ -87,6 +87,17 @@ func run() (string, error) {
 					Replicas:      proto.Int32(1),
 					TFPort:        proto.Int32(2222),
 					TFReplicaType: tfv1alpha1.PS,
+					Template: &v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name:  "tensorflow",
+									Image: *image,
+								},
+							},
+							RestartPolicy: v1.RestartPolicyOnFailure,
+						},
+					},
 				},
 				{
 					Replicas:      proto.Int32(1),

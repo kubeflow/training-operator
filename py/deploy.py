@@ -92,7 +92,7 @@ def setup(args):
               "--set", "rbac.install=true,cloud=gke"])
     util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
-    t.failure = "helm install failed;\n" + e.output
+    t.failure = "helm install failed;\n" + (e.output or "")
   except util.TimeoutError as e:
     t.failure = e.message
   finally:
@@ -114,7 +114,7 @@ def test(args):
     start = time.time()
     util.run(["helm", "test", "tf-job"])
   except subprocess.CalledProcessError as e:
-    t.failure = "helm test failed;\n" + e.output
+    t.failure = "helm test failed;\n" + (e.output or "")
     # Reraise the exception so that the prow job will fail and the test
     # is marked as a failure.
     # TODO(jlewi): It would be better to this wholistically; e.g. by
