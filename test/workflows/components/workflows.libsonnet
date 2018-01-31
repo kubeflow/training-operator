@@ -39,6 +39,15 @@
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
       local versionTag = name;
+      // The directory within the kubeflow_testing submodule containing 
+      // py scripts to use.
+      local kubeflowPy = srcDir + "/kubeflow_test/py";
+
+      local project = "mlkube-testing";
+      // GKE cluster to use
+      local cluster = name;
+      local zone = "us-east1-d";
+      local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
         // Build an Argo template to execute a particular command.
         // step_name: Name for the template
@@ -52,7 +61,7 @@
               {
                 // Add the source directories to the python path.
                 name: "PYTHONPATH",
-                value: srcDir,
+                value: srcDir + ":" + kubeflowPy,
               },
               {
                 // Set the GOPATH
@@ -136,11 +145,20 @@
                     name: "create-pr-symlink",
                     template: "create-pr-symlink",
                   },
-                ],
-                [
                   {
                     name: "py-test",
                     template: "py-test",
+                  },
+                  {
+                    name: "py-lint",
+                    template: "py-lint",
+                  },
+                ],
+                  // Setup cluster needs to run after build because we depend on the chart
+                  // created by the build statement.
+                  {
+                    name: "setup-cluster",
+                    template: "setup-cluster",
                   },
                 ],
                 [{
@@ -181,15 +199,36 @@
               "python",
               "-m",
               "py.py_checks", 
-              "build", 
+              "test", 
               "--src_dir=" + srcDir,
               "--project=mlkube-testing",
-              "--junit_path=" +  artifactsDir + "junit_pycheckstest.xml",
+              "--junit_path=" +  artifactsDir + "/junit_pycheckstest.xml",
             ]),  // py test
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
+              "python",
+              "-m",
+              "py.py_checks", 
+              "lint", 
+              "--src_dir=" + srcDir,
+              "--project=mlkube-testing",
+              "--junit_path=" +  artifactsDir + "/junit_pycheckslint.xml",
+            ]),  // py lint
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
+              "python",
+              "-m",
+              "py.deploy", 
+              "setup", 
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--chart=" + chart,
+              "--accelerator=nvidia-tesla-k80=1",
+              "--junit_path=" +  artifactsDir + "/junit_setupcluster.xml",
+            ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
-              "testing.prow_artifacts",
+              "kubeflow.testing.prow_artifacts",
               "--artifacts_dir=" + outputDir,
               "create_pr_symlink",
               "--bucket=" + bucket,
@@ -197,7 +236,7 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
               "python",
               "-m",
-              "testing.prow_artifacts",
+              "kubeflow.testing.prow_artifacts",
               "--artifacts_dir=" + outputDir,
               "copy_artifacts",
               "--bucket=" + bucket,
