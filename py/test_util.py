@@ -1,3 +1,4 @@
+import errno
 import logging
 import subprocess
 import time
@@ -156,6 +157,19 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
     blob = bucket.blob(path)
     blob.upload_from_string(b.getvalue())
   else:
+    dir_name = os.path.dirname(output_path)
+    if not os.path.exists(dir_name):
+      logging.info("Creating directory %s", dir_name)
+      try:
+        os.makedirs(dir_name)
+      except OSError as e:
+        if e.errno == errno.EEXIST:
+          # The path already exists. This is probably a race condition
+          # with some other test creating the directory.
+          # We should just be able to continue
+          pass
+        else:
+          raise
     t.write(output_path)
 
 def get_num_failures(xml_string):

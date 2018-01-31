@@ -41,7 +41,7 @@
       local versionTag = name;
       // The directory within the kubeflow_testing submodule containing 
       // py scripts to use.
-      local kubeflowPy = srcDir + "/kubeflow_test/py";
+      local kubeflowPy = srcDir + "/kubeflow_testing/py";
 
       local project = "mlkube-testing";
       // GKE cluster to use
@@ -154,7 +154,7 @@
                     template: "py-lint",
                   },
                 ],
-                  // Setup cluster needs to run after build because we depend on the chart
+                [  // Setup cluster needs to run after build because we depend on the chart
                   // created by the build statement.
                   {
                     name: "setup-cluster",
