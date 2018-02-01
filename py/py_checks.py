@@ -21,7 +21,11 @@ def run_lint(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["dashboard/frontend/node_modules", "vendor",]
+  # kubeflow_testing is imported as a submodule so we should exclude it
+  # TODO(jlewi): Perhaps we should get a list of submodules and exclude
+  # them automatically?
+  dir_excludes = ["dashboard/frontend/node_modules", "kubeflow_testing",
+                  "vendor",]
   full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
                        dir_excludes]
   includes = ["*.py"]
@@ -80,7 +84,10 @@ def run_tests(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["vendor"]
+  # kubeflow_testing is imported as a submodule so we should exclude it
+  # TODO(jlewi): Perhaps we should get a list of submodules and exclude
+  # them automatically?
+  dir_excludes = ["kubeflow_testing", "vendor"]
   includes = ["*_test.py"]
   test_cases = []
 
