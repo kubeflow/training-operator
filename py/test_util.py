@@ -1,5 +1,6 @@
 import errno
 import logging
+import os
 import subprocess
 import time
 from xml.etree import ElementTree
