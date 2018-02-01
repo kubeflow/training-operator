@@ -88,7 +88,8 @@ def setup(args):
   t = test_util.TestCase()
   try:
     start = time.time()
-    util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
+    util.run(["helm", "install", chart, "-n", "tf-job", "--namespace=default",
+              "--wait", "--replace",
               "--set", "rbac.install=true,cloud=gke"])
     util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
