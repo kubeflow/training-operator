@@ -35,7 +35,8 @@
       local srcDir = testDir + "/src";
       local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
-      local nfsVolumeClaim = "kubeflow-testing";
+      // local nfsVolumeClaim = "kubeflow-testing";
+      local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
       local versionTag = name;
@@ -154,11 +155,21 @@
                     template: "py-lint",
                   },
                 ],
-                [  // Setup cluster needs to run after build because we depend on the chart
+                [ // Setup cluster needs to run after build because we depend on the chart
                   // created by the build statement.
                   {
                     name: "setup-cluster",
                     template: "setup-cluster",
+                  },
+                ],
+                [
+                  {
+                    name: "run-tests",
+                    template: "run-tests",
+                  },
+                  {
+                    name: "run-gpu-tests",
+                    template: "run-gpu-tests",
                   },
                 ],
                 [{
@@ -225,6 +236,31 @@
               "--accelerator=nvidia-tesla-k80=1",
               "--junit_path=" +  artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
+              "python",
+              "-m",
+              "py.deploy", 
+              "test", 
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,              
+              "--junit_path=" +  artifactsDir + "/junit_e2e.xml",
+            ]),  // run tests
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
+              "python",
+              "-m",
+              "py.test_runner", 
+              "test", 
+              "--spec=" + srcDir + "examples/tf_job_gpu.yaml",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,              
+              "--junit_path=" +  artifactsDir + "/junit_gpu-tests.xml",
+              // tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
+              // TODO(jlewi): The example should be a template and we should rebuild and
+              // and use the newly built sample container.
+              "--image_tag=notag",
+            ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
