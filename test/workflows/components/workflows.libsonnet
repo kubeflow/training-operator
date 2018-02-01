@@ -129,6 +129,8 @@
               },
             },
           ],  // volumes
+          // onExit specifies the template that should always run when the workflow completes.
+          onExit: "exit-handler",
           templates: [
             {
               name: "e2e",
@@ -172,6 +174,16 @@
                     template: "run-gpu-tests",
                   },
                 ],
+              ],
+            },
+            {
+              name: "exit-handler",
+              steps: [
+                [ {
+                    name: "teardown-cluster",
+                    template: "teardown-cluster",
+                  },
+                ],                
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",
@@ -251,7 +263,7 @@
               "-m",
               "py.test_runner", 
               "test", 
-              "--spec=" + srcDir + "examples/tf_job_gpu.yaml",
+              "--spec=" + srcDir + "/examples/tf_job_gpu.yaml",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,              
@@ -269,6 +281,16 @@
               "create_pr_symlink",
               "--bucket=" + bucket,
             ]),  // create-pr-symlink
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
+              "python",
+              "-m",
+              "py.deploy", 
+              "teardown", 
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--junit_path=" +  artifactsDir + "/junit_teardown.xml",
+            ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
               "python",
               "-m",
