@@ -85,7 +85,12 @@ def run_tests(args):
   test_cases = []
 
   env = os.environ.copy()
-  env["PYTHONPATH"] = args.src_dir
+  # TODO(jlewi): Once we switch to using Argo I think we can stop setting
+  # the PYTHONPATH here and just inheriting it from the environment.
+  # When we use ARGO each step will run in its own pod and we can set the
+  # PYTHONPATH environment variable as needed for that pod.
+  env["PYTHONPATH"] = (args.src_dir + ":" +
+                       os.path.join(args.src_dir, "kubeflow_testing", "py"))
 
   num_failed = 0
   for root, dirs, files in os.walk(args.src_dir, topdown=True):
