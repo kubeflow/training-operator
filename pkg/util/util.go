@@ -21,7 +21,12 @@ import (
 	"math/rand"
 	"time"
 
-	log "github.com/golang/glog"
+	"github.com/golang/glog"
+)
+
+const (
+	// Environment variable for namespace when deployed on kubernetes
+	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 )
 
 // Pformat returns a pretty format output of any value that can be marshalled to JSON.
@@ -31,7 +36,7 @@ func Pformat(value interface{}) string {
 	}
 	valueJSON, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
-		log.Warningf("Couldn't pretty format %v, error: %v", value, err)
+		glog.Warningf("Couldn't pretty format %v, error: %v", value, err)
 		return fmt.Sprintf("%v", value)
 	}
 	return string(valueJSON)
