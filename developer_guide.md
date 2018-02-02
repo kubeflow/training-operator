@@ -137,13 +137,10 @@ a K8s cluster. Set your environment:
 
 ```sh
 export KUBECONFIG=$(echo ~/.kube/config)
-export MY_POD_NAMESPACE=default
-export MY_POD_NAME=my-pod
+export KUBEFLOW_NAMESPACE=$(your_namespace)
 ```
 
-* MY_POD_NAMESPACE is used because the CRD is namespace scoped and we use the namespace of the controller to
-  set the corresponding namespace for the resource.
-* TODO(jlewi): Do we still need to set MY_POD_NAME? Why?
+* KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
 
 Now we are ready to run operator locally:
 
