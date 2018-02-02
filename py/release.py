@@ -508,6 +508,13 @@ def add_common_args(parser):
     type=str,
     help="(Optional). The GCS location to write build info to.")
 
+  parser.add_argument(
+    "--version_tag",
+    default=None,
+    type=str,
+    help=("A string used as the image tag. If not supplied defaults to a "
+          "value based on the git commit."))
+
   parser.add_argument("--dryrun", dest="dryrun", action="store_true",
                       help="Do a dry run.")
   parser.add_argument("--no-dryrun", dest="dryrun", action="store_false",
@@ -592,13 +599,6 @@ def build_parser():
     type=str,
     help=("Directory containing the source. If not set determined "
           "automatically."))
-
-  build_subparser.add_argument(
-    "--version_tag",
-    default=None,
-    type=str,
-    help=("A string used as the image tag. If not supplied defaults to a "
-          "value based on the git commit."))
 
   add_common_args(build_subparser)
   build_subparser.set_defaults(func=build)
