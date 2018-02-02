@@ -1,3 +1,0 @@
-[submodule "kubeflow_testing"]
-	path = kubeflow_testing
-	url = https://github.com/jlewi/testing.git
