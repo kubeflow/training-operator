@@ -52,9 +52,10 @@ var (
 )
 
 func Run(opt *options.ServerOption) error {
-	namespace := os.Getenv("MY_POD_NAMESPACE")
+	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
-		glog.Fatalf("must set env MY_POD_NAMESPACE")
+		glog.Infof("EnvKubeflowNamespace not set, use default namespace")
+		namespace = metav1.NamespaceDefault
 	}
 
 	glog.Infof("tf_operator Version: %v", version.Version)

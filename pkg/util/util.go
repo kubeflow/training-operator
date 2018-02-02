@@ -10,6 +10,11 @@ import (
 	log "github.com/golang/glog"
 )
 
+const (
+    // Environment variable for namespace when deployed on kubernetes
+    EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
+)
+
 // Pformat returns a pretty format output of any value that can be marshalled to JSON.
 func Pformat(value interface{}) string {
 	if s, ok := value.(string); ok {
