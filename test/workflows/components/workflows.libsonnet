@@ -42,7 +42,7 @@
       local versionTag = name;
       // The directory within the kubeflow_testing submodule containing 
       // py scripts to use.
-      local kubeflowPy = srcDir + "/kubeflow_testing/py";
+      local kubeflowPy = srcDir + "/kubeflow/testing/py";
 
       local project = "mlkube-testing";
       // GKE cluster to use
@@ -195,8 +195,6 @@
               container: {
                 command: [
                   "/usr/local/bin/checkout.sh",
-                ],
-                args: [
                   srcDir,
                 ],
                 env: prow_env,
