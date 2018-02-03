@@ -42,6 +42,7 @@
       local versionTag = name;
       // The directory within the kubeflow_testing submodule containing 
       // py scripts to use.
+      local k8sPy = srcDir + "/tensorflow/k8s";
       local kubeflowPy = srcDir + "/kubeflow/testing/py";
 
       local project = "mlkube-testing";
@@ -62,7 +63,7 @@
               {
                 // Add the source directories to the python path.
                 name: "PYTHONPATH",
-                value: srcDir + ":" + kubeflowPy,
+                value: k8sPy + ":" + kubeflowPy,
               },
               {
                 // Set the GOPATH
