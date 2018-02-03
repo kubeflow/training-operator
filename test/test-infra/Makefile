@@ -14,9 +14,7 @@
 #
 # TODO(jlewi): We should rename this to something like test-worker-tf-operator
 # But we'll need to update the prow configs
-IMG = gcr.io/mlkube-testing/airflow
-# PROW_IMG is the image used by our Prow jobs to launch our tests.
-PROW_IMG = gcr.io/mlkube-testing/builder
+IMG = gcr.io/mlkube-testing/builder
 TAG := $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | sha256sum | cut -c -6)
 DIR := ${CURDIR}
 
