@@ -62,6 +62,7 @@
           container: {
             command: command,
             image: image,
+            workingDir: srcDir,
             env: [
               {
                 // Add the source directories to the python path.
