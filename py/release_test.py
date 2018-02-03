@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 
@@ -15,6 +16,10 @@ class ReleaseTest(unittest.TestCase):
   @mock.patch("py.release.build_and_push")
   def test_build_postsubmit(self, mock_build_and_push, mock_clone,    # pylint: disable=no-self-use
                             _mock_install, _mock_os, _mock_makedirs):
+    # Make sure REPO_OWNER and REPO_NAME aren't changed by the environment
+    release.REPO_ORG = "tensorflow"
+    release.REPO_NAME = "k8s"
+
     parser = release.build_parser()
     args = parser.parse_args(["postsubmit", "--src_dir=/top/src_dir"])
     release.build_postsubmit(args)
