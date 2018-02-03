@@ -420,10 +420,10 @@ def clone_repo(args):
 
 def clone_pr(args):
   branches = ["pull/{0}/head:pr".format(args.pr)]
-  util.clone_repo(args.src_dir, REPO_OWNER, REPO_NAME, args.commit, branches)
+  util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit, branches)
 
 def clone_postsubmit(args):
-  util.clone_repo(args.src_dir, REPO_OWNER, REPO_NAME, args.commit)
+  util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit)
 
 # TODO(jlewi): Delete this function once
 # https://github.com/tensorflow/k8s/issues/189 is fixed.
