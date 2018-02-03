@@ -46,7 +46,7 @@
       // The directory within the kubeflow_testing submodule containing 
       // py scripts to use.
       local k8sPy = srcDir;
-      local kubeflowPy = srcDir + "/kubeflow/testing/py";
+      local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
 
       local project = "mlkube-testing";
       // GKE cluster to use
