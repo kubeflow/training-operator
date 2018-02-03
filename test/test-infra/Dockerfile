@@ -3,5 +3,7 @@
 FROM gcr.io/mlkube-testing/test-worker:latest
 MAINTAINER kubeflow-team
 
+COPY run.sh  /usr/local/bin/run.sh
+RUN chmod a+x /usr/local/bin/run.sh
 ENTRYPOINT ["/usr/local/bin/run.sh"]
 
