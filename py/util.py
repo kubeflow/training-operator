@@ -494,3 +494,10 @@ def load_kube_config(config_file=None, context=None,
     kubernetes_configuration.Configuration.set_default(config)
   else:
     loader.load_and_set(client_configuration)
+
+def maybe_activate_service_account():
+  if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
+                     "to use service account.")
+  util.run(["gcloud", "auth", "activate-service-account",
+            "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])

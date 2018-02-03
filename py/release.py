@@ -705,12 +705,8 @@ def main():  # pylint: disable=too-many-locals
                               '|%(pathname)s|%(lineno)d| %(message)s'),
                       datefmt='%Y-%m-%dT%H:%M:%S',
                       )
-  if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-    logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
-                 "to use service account.")
-    # Since a service account is set tell gcloud to use it.
-    util.run(["gcloud", "auth", "activate-service-account", "--key-file=" +
-              os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])
+
+  util.maybe_activate_service_account()
 
   parser = build_parser()
 
