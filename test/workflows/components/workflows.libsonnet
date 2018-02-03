@@ -45,7 +45,7 @@
       local versionTag = name;
       // The directory within the kubeflow_testing submodule containing 
       // py scripts to use.
-      local k8sPy = srcDir + "/tensorflow/k8s";
+      local k8sPy = srcDir;
       local kubeflowPy = srcDir + "/kubeflow/testing/py";
 
       local project = "mlkube-testing";
