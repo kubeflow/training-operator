@@ -22,7 +22,7 @@ var (
 	GitSHA  = "Not provided."
 )
 
-// PrintVersion print version info
+// get version info
 func Info() string{
 	return fmt.Sprintf("Version: %v, Git SHA: %s, Go Version: %s, Go OS/Arch: %s/%s", Version, GitSHA, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
