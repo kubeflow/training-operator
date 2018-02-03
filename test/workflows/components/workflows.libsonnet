@@ -32,7 +32,10 @@
       local outputDir = testDir + "/output";
       local artifactsDir = outputDir + "/artifacts";
       local goDir = testDir + "/go";
-      local srcDir = testDir + "/src";
+      // Source directory where all repos should be checked out
+      local srcRootDir = testDir + "/src";
+      // The directory containing the tensorflow/k8s repo
+      local srcDir = srcRootDir + "/tensorflow/k8s";
       local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
@@ -196,7 +199,7 @@
               container: {
                 command: [
                   "/usr/local/bin/checkout.sh",
-                  srcDir,
+                  srcRootDir,
                 ],
                 env: prow_env,
                 image: image,
