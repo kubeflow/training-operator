@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -56,12 +55,9 @@ func Run(opt *options.ServerOption) error {
 		namespace = metav1.NamespaceDefault
 	}
 
-	glog.Infof("tf_operator Version: %v", version.Version)
-	glog.Infof("Git SHA: %s", version.GitSHA)
-	glog.Infof("Go Version: %s", runtime.Version())
-	glog.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	glog.Info(version.Info())
 	if opt.PrintVersion {
-		fmt.Printf("%v\n", version.Version)
+		fmt.Printf("%s\n", version.Info())
 		os.Exit(0)
 	}
 
