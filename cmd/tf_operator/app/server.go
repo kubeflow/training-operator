@@ -61,6 +61,7 @@ func Run(opt *options.ServerOption) error {
 	glog.Infof("Go Version: %s", runtime.Version())
 	glog.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
 	if opt.PrintVersion {
+		fmt.Printf("%v\n", version.Version)
 		os.Exit(0)
 	}
 
