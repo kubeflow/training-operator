@@ -23,8 +23,10 @@ from kubernetes.client import rest
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
-MASTER_REPO_OWNER = "tensorflow"
-MASTER_REPO_NAME = "k8s"
+# We default to environment variables so that it can be set correctly when
+# running under prow.
+MASTER_REPO_OWNER = os.getenv("REPO_OWNER", "tensorflow")
+MASTER_REPO_NAME = os.getenv("REPO_OWNER", "k8s")
 
 # TODO(jlewi): Should we stream the output by polling the subprocess?
 # look at run_and_stream in build_and_push.
@@ -492,3 +494,10 @@ def load_kube_config(config_file=None, context=None,
     kubernetes_configuration.Configuration.set_default(config)
   else:
     loader.load_and_set(client_configuration)
+
+def maybe_activate_service_account():
+  if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
+                     "to use service account.")
+  run(["gcloud", "auth", "activate-service-account",
+       "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])
