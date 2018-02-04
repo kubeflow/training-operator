@@ -134,6 +134,8 @@ def build_parser():
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
 
+  util.maybe_activate_service_account()
+
   parser = build_parser()
 
   # parse the args and call whatever function was selected

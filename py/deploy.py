@@ -88,7 +88,8 @@ def setup(args):
   t = test_util.TestCase()
   try:
     start = time.time()
-    util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
+    util.run(["helm", "install", chart, "-n", "tf-job", "--namespace=default",
+              "--wait", "--replace",
               "--set", "rbac.install=true,cloud=gke"])
     util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
@@ -166,6 +167,9 @@ def add_common_args(parser):
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+
+  util.maybe_activate_service_account()
+
   # create the top-level parser
   parser = argparse.ArgumentParser(
     description="Setup clusters for testing.")
