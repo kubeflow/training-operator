@@ -43,7 +43,7 @@
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
       local versionTag = name;
-      // The directory within the kubeflow_testing submodule containing 
+      // The directory within the kubeflow_testing submodule containing
       // py scripts to use.
       local k8sPy = srcDir;
       local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
@@ -162,7 +162,7 @@
                     template: "py-lint",
                   },
                 ],
-                [ // Setup cluster needs to run after build because we depend on the chart
+                [  // Setup cluster needs to run after build because we depend on the chart
                   // created by the build statement.
                   {
                     name: "setup-cluster",
@@ -184,11 +184,12 @@
             {
               name: "exit-handler",
               steps: [
-                [ {
+                [
+                  {
                     name: "teardown-cluster",
                     template: "teardown-cluster",
                   },
-                ],                
+                ],
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",
@@ -215,8 +216,8 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("build", [
               "python",
               "-m",
-              "py.release", 
-              "build", 
+              "py.release",
+              "build",
               "--src_dir=" + srcDir,
               "--project=mlkube-testing",
               "--version_tag=" + versionTag,
@@ -224,53 +225,53 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
               "python",
               "-m",
-              "py.py_checks", 
-              "test", 
+              "py.py_checks",
+              "test",
               "--src_dir=" + srcDir,
               "--project=mlkube-testing",
-              "--junit_path=" +  artifactsDir + "/junit_pycheckstest.xml",
+              "--junit_path=" + artifactsDir + "/junit_pycheckstest.xml",
             ]),  // py test
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
               "python",
               "-m",
-              "py.py_checks", 
-              "lint", 
+              "py.py_checks",
+              "lint",
               "--src_dir=" + srcDir,
               "--project=mlkube-testing",
-              "--junit_path=" +  artifactsDir + "/junit_pycheckslint.xml",
+              "--junit_path=" + artifactsDir + "/junit_pycheckslint.xml",
             ]),  // py lint
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
               "python",
               "-m",
-              "py.deploy", 
-              "setup", 
+              "py.deploy",
+              "setup",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
               "--chart=" + chart,
               "--accelerator=nvidia-tesla-k80=1",
-              "--junit_path=" +  artifactsDir + "/junit_setupcluster.xml",
+              "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",
-              "py.deploy", 
-              "test", 
+              "py.deploy",
+              "test",
               "--cluster=" + cluster,
               "--zone=" + zone,
-              "--project=" + project,              
-              "--junit_path=" +  artifactsDir + "/junit_e2e.xml",
+              "--project=" + project,
+              "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
               "python",
               "-m",
-              "py.test_runner", 
-              "test", 
+              "py.test_runner",
+              "test",
               "--spec=" + srcDir + "/examples/tf_job_gpu.yaml",
               "--cluster=" + cluster,
               "--zone=" + zone,
-              "--project=" + project,              
-              "--junit_path=" +  artifactsDir + "/junit_gpu-tests.xml",
+              "--project=" + project,
+              "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
               // tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
               // TODO(jlewi): The example should be a template and we should rebuild and
               // and use the newly built sample container.
@@ -287,12 +288,12 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
               "python",
               "-m",
-              "py.deploy", 
-              "teardown", 
+              "py.deploy",
+              "teardown",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
-              "--junit_path=" +  artifactsDir + "/junit_teardown.xml",
+              "--junit_path=" + artifactsDir + "/junit_teardown.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
               "python",
