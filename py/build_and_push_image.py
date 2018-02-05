@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -18,10 +19,16 @@ def GetGitHash(root_dir=None):
   git_hash = git_hash.strip()
 
   modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
-                                           cwd=root_dir)
+                                           cwd=root_dir).decode("utf-8")
+  # Filter vendor files
+  modified = None
+  for file in modified_files.rstrip().split("\n"):
+    if not re.search(r"^vendor\/", file):
+      modified = True
+
   untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
-  if modified_files or untracked_files:
+  if modified or untracked_files:
     diff = subprocess.check_output(["git", "diff"], cwd=root_dir)
 
     sha = hashlib.sha256()
