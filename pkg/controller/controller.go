@@ -151,7 +151,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	glog.Info("Starting %v workers", threadiness)
+	glog.Infof("Starting %v workers", threadiness)
 	// Launch workers to process TFJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
