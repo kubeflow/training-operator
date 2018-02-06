@@ -13,9 +13,10 @@
       prow_env: "JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=358,REPO_NAME=k8s,REPO_OWNER=tensorflow,BUILD_NUMBER=0c57",
     },
     e2e_test: {
+      // Image is the image containing the test program to run.
+      image: "",
+      name: "test-001",
       namespace: "some-namespace",
-      name: "test",
-      image: "gcr.io/tf-on-k8s-dogfood/tf_operator:v20180131-cabc1c0-dirty-e3b0c44",
     },
   },
 }

@@ -161,6 +161,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True,
   # List of paths to copy relative to root.
   sources = [
       "build/images/tf_operator/Dockerfile",
+      "examples/tf_sample/tf_sample/tf_smoke.py",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),

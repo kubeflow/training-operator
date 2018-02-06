@@ -496,8 +496,8 @@ def load_kube_config(config_file=None, context=None,
     loader.load_and_set(client_configuration)
 
 def maybe_activate_service_account():
-  if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+  if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
                      "to use service account.")
-  run(["gcloud", "auth", "activate-service-account",
-       "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])
+    run(["gcloud", "auth", "activate-service-account",
+         "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])
