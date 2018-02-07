@@ -47,6 +47,7 @@
       // py scripts to use.
       local k8sPy = srcDir;
       local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
+      local argoURL = "http://testing-argo.kubeflow.io/timeline/kubeflow-test-infra/" + name
 
       local project = "mlkube-testing";
       // GKE cluster to use
@@ -141,6 +142,10 @@
               name: "e2e",
               steps: [
                 [{
+                  name: "Pending status",
+                  template: "argo-pending-status",
+                }],
+                [{
                   name: "checkout",
                   template: "checkout",
                 }],
@@ -194,6 +199,18 @@
                   name: "copy-artifacts",
                   template: "copy-artifacts",
                 }],
+                [
+                  {
+                    name: "Succeeded Status",
+                    template: "argo-succeeded-status",
+                    when: "{{workflow.status}} == Succeeded"
+                  },
+                  {
+                    name: "Failed Status",
+                    template: "argo-failed-status",
+                    when": "{{workflow.status}} != Succeeded"
+                  },
+                ],
               ],
             },
             {
@@ -303,6 +320,30 @@
               "copy_artifacts",
               "--bucket=" + bucket,
             ]),  // copy-artifacts
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("argo-pending-status", [
+              "python",
+              "-m",
+              "py.github_status",
+              "pending",
+              argoURL,
+              "In progress",
+            ]),  // argo-pending-status
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("argo-succeeded-status", [
+              "python",
+              "-m",
+              "py.github_status",
+              "success",
+              argoURL,
+              "Workflow completed",
+            ]),  // argo-completed-status
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("argo-failed-status", [
+              "python",
+              "-m",
+              "py.github_status",
+              "failure",
+              argoURL,
+              "Workflow failed",
+            ]),  // argo-failed-status
           ],  // templates
         },
       },  // e2e
