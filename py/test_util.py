@@ -1,4 +1,6 @@
 import errno
+# TODO(jlewi): Callers should be using the version of This
+# file in kubeflow/testing. We should delete this file.
 import logging
 import os
 import subprocess
