@@ -204,8 +204,8 @@
                   srcRootDir,
                 ],
                 env: prow_env + [{
-                  "name": "EXTRA_REPOS",
-                  "value": "kubeflow/testing@HEAD",
+                  name: "EXTRA_REPOS",
+                  value: "kubeflow/testing@HEAD",
                 }],
                 image: image,
                 volumeMounts: [
@@ -258,12 +258,12 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",
-              "py.deploy",
+              "py.test_runner",
               "test",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
-              "--app_dir=" + srcDir + /test/workflows", 
+              "--app_dir=" + srcDir + "/test/workflows",
               "--component=simple_tfjob",
               "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
@@ -275,9 +275,9 @@
               "test",
               "--cluster=" + cluster,
               "--zone=" + zone,
-              "--project=" + project,              
-              "--app_dir=" + srcDir + /test/workflows", 
-              "--component=simple_tfjob",
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=simple_gpujob",
               "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
