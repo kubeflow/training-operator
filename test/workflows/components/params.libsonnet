@@ -8,15 +8,9 @@
     // Each object below should correspond to a component in the components/ directory
     workflows: {
       bucket: "mlkube-testing_temp",
-      name: "training-presubmit-1-5-01133157",
+      name: "test-002",
       namespace: "kubeflow-test-infra",
       prow_env: "JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=358,REPO_NAME=k8s,REPO_OWNER=tensorflow,BUILD_NUMBER=0c57",
-    },
-    e2e_test: {
-      // Image is the image containing the test program to run.
-      image: "",
-      name: "test-001",
-      namespace: "some-namespace",
     },
   },
 }
