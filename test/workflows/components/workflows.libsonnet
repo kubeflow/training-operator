@@ -277,7 +277,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=simple_gpujob",
+              "--component=gpu_tfjob",
               "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests

@@ -56,10 +56,11 @@ def run_test(args):
   if not namespace:
     raise ValueError("namespace must be provided as a parameter.")
 
+  start = time.time()
+
   try:
     util.run(["ks", "apply",  env, "-c", args.component],
               cwd=args.app_dir)
-    start = time.time()
 
     logging.info("Created job %s in namespaces %s", name, namespace)
     results = tf_job_client.wait_for_job(api_client, namespace, name,
