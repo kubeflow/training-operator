@@ -1,4 +1,4 @@
-local params = std.extVar("__ksonnet/params").components.e2e_test;
+local params = std.extVar("__ksonnet/params").components.simple_tfjob;
 
 local k = import 'k.libsonnet';
 

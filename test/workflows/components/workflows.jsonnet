@@ -1,6 +1,4 @@
-// local params = std.extVar("__ksonnet/params").components.workflows;
-// DO NOT SUBMIT
-local params= {};
+local params = std.extVar("__ksonnet/params").components.workflows;
 
 local k = import 'k.libsonnet';
 local workflows = import 'workflows.libsonnet';

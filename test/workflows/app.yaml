@@ -1,6 +1,6 @@
 apiVersion: 0.0.1
 kind: ksonnet.io/app
-name: workflows
+name: worfklows-app
 registries:
   incubator:
     gitVersion:

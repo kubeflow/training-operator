@@ -12,5 +12,10 @@
       namespace: "kubeflow-test-infra",
       prow_env: "JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=358,REPO_NAME=k8s,REPO_OWNER=tensorflow,BUILD_NUMBER=0c57",
     },
+    simple_tfjob: {
+      name: "simple-001",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    }
   },
 }
