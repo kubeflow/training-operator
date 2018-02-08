@@ -21,7 +21,11 @@ def run_lint(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["dashboard/frontend/node_modules", "vendor",]
+  # kubeflow_testing is imported as a submodule so we should exclude it
+  # TODO(jlewi): Perhaps we should get a list of submodules and exclude
+  # them automatically?
+  dir_excludes = ["dashboard/frontend/node_modules", "kubeflow_testing",
+                  "vendor",]
   full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
                        dir_excludes]
   includes = ["*.py"]
@@ -80,12 +84,20 @@ def run_tests(args):
   # different results.
   util.run(["pylint", "--version"])
 
-  dir_excludes = ["vendor"]
+  # kubeflow_testing is imported as a submodule so we should exclude it
+  # TODO(jlewi): Perhaps we should get a list of submodules and exclude
+  # them automatically?
+  dir_excludes = ["kubeflow_testing", "vendor"]
   includes = ["*_test.py"]
   test_cases = []
 
   env = os.environ.copy()
-  env["PYTHONPATH"] = args.src_dir
+  # TODO(jlewi): Once we switch to using Argo I think we can stop setting
+  # the PYTHONPATH here and just inheriting it from the environment.
+  # When we use ARGO each step will run in its own pod and we can set the
+  # PYTHONPATH environment variable as needed for that pod.
+  env["PYTHONPATH"] = (args.src_dir + ":" +
+                       os.path.join(args.src_dir, "kubeflow_testing", "py"))
 
   num_failed = 0
   for root, dirs, files in os.walk(args.src_dir, topdown=True):

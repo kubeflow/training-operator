@@ -3,7 +3,10 @@
 
 This module assumes py is a top level python package.
 """
-
+# TODO(jlewi): After we migrate to using Argo for our tests and releases_path
+# I think we should be able to get rid of most of the clone functions because
+# a separate step in the workflow is responsible for checking out the code
+# and it doesn't use this script.
 import argparse
 import datetime
 import glob
@@ -19,8 +22,11 @@ from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import build_and_push_image
 from py import util
 
-REPO_ORG = "tensorflow"
-REPO_NAME = "k8s"
+# Repo org and name can be set via environment variables when running
+# on PROW. But we choose sensible defaults so that we can run locally without
+# setting defaults.
+REPO_ORG = os.getenv("REPO_OWNER", "tensorflow")
+REPO_NAME = os.getenv("REPO_NAME", "k8s")
 
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
@@ -113,12 +119,15 @@ def create_latest(bucket, sha, target):
   blob.upload_from_string(json.dumps(data))
 
 
-def build_operator_image(root_dir, registry, project=None, should_push=True):
+def build_operator_image(root_dir, registry, project=None, should_push=True,
+                         version_tag=None):
   """Build the main docker image for the TFJob CRD.
   Args:
     root_dir: Root directory of the repository.
     registry: The registry to use.
     project: If set it will be built using GCB.
+    version_tag: Optional tag for the version. If not specified derive
+      the tag from the git hash.
   Returns:
     build_info: Dictionary containing information about the build.
   """
@@ -170,9 +179,12 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
 
   image_base = registry + "/tf_operator"
 
-  n = datetime.datetime.now()
-  image = (image_base + ":" + n.strftime("v%Y%m%d") + "-" +
-           commit)
+  if not version_tag:
+    logging.info("No version tag specified; computing tag automatically.")
+    n = datetime.datetime.now()
+    version_tag = n.strftime("v%Y%m%d") + "-" + commit
+  logging.info("Using version tag: %s", version_tag)
+  image = image_base + ":" + version_tag
   latest_image = image_base + ":latest"
 
   if project:
@@ -203,7 +215,8 @@ def build_operator_image(root_dir, registry, project=None, should_push=True):
   return output
 
 def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
-                             gcb_project=None, build_info_path=None):
+                             gcb_project=None, build_info_path=None,
+                             version_tag=None):
   """Build and push the artifacts.
 
   Args:
@@ -216,6 +229,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
       If set to none uses docker to build.
     build_info_path: (Optional): GCS location to write YAML file containing
       information about the build.
+    version_tag: (Optional): The tag to use for the image.
   """
   # Update the GOPATH to the temporary directory.
   env = os.environ.copy()
@@ -226,7 +240,8 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
   if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
 
-  build_info = build_operator_image(src_dir, registry, project=gcb_project)
+  build_info = build_operator_image(src_dir, registry, project=gcb_project,
+                                    version_tag=version_tag)
 
   # Copy the chart to a temporary directory because we will modify some
   # of its YAML files.
@@ -380,12 +395,24 @@ def build_and_push(go_dir, src_dir, args):
   build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
                            publish_path=args.releases_path,
                            gcb_project=args.project,
-                           build_info_path=args.build_info_path)
+                           build_info_path=args.build_info_path,
+                           version_tag=args.version_tag)
 
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
-  go_dir = None
+  go_dir = os.getenv("GOPATH")
+  if not go_dir:
+    raise ValueError("GOPATH environment variable must be set.")
+
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+  go_src_dir = os.path.join(go_dir, "src", REPO_ORG, REPO_NAME)
+
+  if not os.path.exists(go_src_dir):
+    logging.info("Directory %s  doesn't exist.")
+    logging.info("Creating symbolic link %s pointing to %s", go_src_dir, src_dir)
+    os.symlink(src_dir, go_src_dir)
+
   build_and_push(go_dir, src_dir, args)
 
 def clone_repo(args):
@@ -393,12 +420,10 @@ def clone_repo(args):
 
 def clone_pr(args):
   branches = ["pull/{0}/head:pr".format(args.pr)]
-  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit, branches)
+  util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit, branches)
 
 def clone_postsubmit(args):
-  util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit)
+  util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit)
 
 # TODO(jlewi): Delete this function once
 # https://github.com/tensorflow/k8s/issues/189 is fixed.
@@ -413,8 +438,7 @@ def build_commit(args, branches):
   clone_dir = os.path.join(top_dir, REPO_DIR)
   src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
-  util.clone_repo(clone_dir, util.MASTER_REPO_OWNER,
-                  util.MASTER_REPO_NAME, args.commit, branches)
+  util.clone_repo(clone_dir, REPO_ORG, REPO_NAME, args.commit, branches)
 
   # Create a symbolic link in the go path.
   os.makedirs(os.path.dirname(src_dir))
@@ -497,6 +521,13 @@ def add_common_args(parser):
     default="",
     type=str,
     help="(Optional). The GCS location to write build info to.")
+
+  parser.add_argument(
+    "--version_tag",
+    default=None,
+    type=str,
+    help=("A string used as the image tag. If not supplied defaults to a "
+          "value based on the git commit."))
 
   parser.add_argument("--dryrun", dest="dryrun", action="store_true",
                       help="Do a dry run.")
@@ -671,6 +702,8 @@ def main():  # pylint: disable=too-many-locals
                               '|%(pathname)s|%(lineno)d| %(message)s'),
                       datefmt='%Y-%m-%dT%H:%M:%S',
                       )
+
+  util.maybe_activate_service_account()
 
   parser = build_parser()
 
