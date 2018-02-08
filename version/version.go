@@ -13,10 +13,9 @@
 package version
 
 import (
-	"os"
+	"fmt"
 	"runtime"
-
-	log "github.com/golang/glog"
+	"os"
 )
 
 var (
@@ -24,13 +23,18 @@ var (
 	GitSHA  = "Not provided."
 )
 
-// PrintVersion print version info
-func PrintVersion(shouldExit bool) {
-	log.Infof("tf_operator Version: %v", Version)
-	log.Infof("Git SHA: %s", GitSHA)
-	log.Infof("Go Version: %s", runtime.Version())
-	log.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
-	if shouldExit {
-		os.Exit(0)
+func PrintVersionAndExit(){
+	for _, i := range Info(){
+		fmt.Printf("%v\n", i)
+	}
+	os.Exit(0)
+}
+
+func Info() []string{
+	return []string{
+		fmt.Sprintf("Version: %v", Version),
+		fmt.Sprintf("Git SHA: %s", GitSHA),
+		fmt.Sprintf("Go Version: %s", runtime.Version()),
+		fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH),
 	}
 }
