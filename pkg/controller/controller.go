@@ -1,376 +1,279 @@
-// package controller provides a Kubernetes controller for a TensorFlow job resource.
+// Copyright 2018 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package controller provides a Kubernetes controller for a TensorFlow job resource.
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"reflect"
-	"sync"
 	"time"
 
-	"github.com/tensorflow/k8s/pkg/spec"
-	"github.com/tensorflow/k8s/pkg/trainer"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"k8s.io/client-go/kubernetes"
-
-	log "github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/util"
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	kwatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
+
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
+	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
+	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
+	listers "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
+	"github.com/tensorflow/k8s/pkg/trainer"
+)
+
+const (
+	controllerName = "kubeflow"
 )
 
 var (
 	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
 
-	initRetryWaitTime = 30 * time.Second
+	keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	// Workaround for watching CRD resource.
-	// client-go has encoding issue and we want something more predictable.
-	KubeHttpCli *http.Client
-	MasterHost  string
+	// DefaultJobBackOff is the max backoff period, exported for the e2e test
+	DefaultJobBackOff = 10 * time.Second
+	// MaxJobBackOff is the max backoff period, exported for the e2e test
+	MaxJobBackOff = 360 * time.Second
 )
 
-type Event struct {
-	Type   kwatch.EventType
-	Object *spec.TfJob
-}
-
 type Controller struct {
-	Namespace   string
-	KubeCli     kubernetes.Interface
-	ApiCli      apiextensionsclient.Interface
-	TfJobClient k8sutil.TfJobClient
+	KubeClient   kubernetes.Interface
+	APIExtclient apiextensionsclient.Interface
+	TFJobClient  tfjobclient.Interface
 
-	config spec.ControllerConfig
+	config tfv1alpha1.ControllerConfig
 	jobs   map[string]*trainer.TrainingJob
-	// Kubernetes resource version of the jobs
-	jobRVs    map[string]string
-	stopChMap map[string]chan struct{}
 
-	// TODO(jlewi): waitJobs should probably be used to ensure TrainingJob has finished processing
-	// a stop event before shutting down and deleting all jobs.
-	waitJobs sync.WaitGroup
+	TFJobLister listers.TFJobLister
+	TFJobSynced cache.InformerSynced
+
+	// WorkQueue is a rate limited work queue. This is used to queue work to be
+	// processed instead of performing it as soon as a change happens. This
+	// means we can ensure we only process a fixed amount of resources at a
+	// time, and makes it easy to ensure we are never processing the same item
+	// simultaneously in two different workers.
+	WorkQueue workqueue.RateLimitingInterface
+
+	// recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	recorder record.EventRecorder
+
+	syncHandler func(jobKey string) (bool, error)
 }
 
-func New(kubeCli kubernetes.Interface, apiCli apiextensionsclient.Interface, tfJobClient k8sutil.TfJobClient, ns string, config spec.ControllerConfig) *Controller {
-	if tfJobClient == nil {
-		panic("tfJobClient can't be nil")
-	}
-	return &Controller{
-		Namespace:   ns,
-		KubeCli:     kubeCli,
-		ApiCli:      apiCli,
-		TfJobClient: tfJobClient,
+func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
+	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
+	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
+
+	kubeflowscheme.AddToScheme(scheme.Scheme)
+	glog.V(4).Info("Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(glog.Infof)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
+
+	controller := &Controller{
+		KubeClient:   kubeClient,
+		APIExtclient: APIExtclient,
+		TFJobClient:  tfJobClient,
+		WorkQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "TFjobs"),
+		recorder:     recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
-		jobs:      make(map[string]*trainer.TrainingJob),
-		jobRVs:    make(map[string]string),
-		stopChMap: map[string]chan struct{}{},
-		config:    config,
-	}
-}
-
-func (c *Controller) Run() error {
-	var (
-		watchVersion string
-		err          error
-	)
-
-	for {
-		watchVersion, err = c.initResource()
-		if err == nil {
-			log.Infof("Starting watch at version %v", watchVersion)
-			break
-		}
-		log.Errorf("initialization failed: %v", err)
-		log.Infof("retry in %v...", initRetryWaitTime)
-		time.Sleep(initRetryWaitTime)
-		// todo: add max retry?
+		jobs:   make(map[string]*trainer.TrainingJob),
+		config: config,
 	}
 
-	log.Infof("starts running from watch version: %s", watchVersion)
-
-	defer func() {
-		for _, stopC := range c.stopChMap {
-			close(stopC)
-		}
-		c.waitJobs.Wait()
-	}()
-
-	eventCh, errCh := c.watch(watchVersion)
-
-	go func() {
-		pt := newPanicTimer(time.Minute, "unexpected long blocking (> 1 Minute) when handling TfJob event")
-
-		for ev := range eventCh {
-			pt.start()
-			if err := c.handleTfJobEvent(ev); err != nil {
-				log.Warningf("fail to handle event: %v, error %v", util.Pformat(ev), err)
-			}
-			pt.stop()
-		}
-	}()
-	return <-errCh
-}
-
-func (c *Controller) handleTfJobEvent(event *Event) error {
-	tfjob := event.Object
-
-	if tfjob.Status.IsFailed() {
-		if event.Type == kwatch.Deleted {
-			delete(c.jobs, tfjob.Metadata.Name)
-			delete(c.jobRVs, tfjob.Metadata.Name)
-			return nil
-		}
-		return fmt.Errorf("ignore failed TfJob (%s). Please delete its CRD", tfjob.Metadata.Name)
-	}
-
-	// TODO: add validation to spec update.
-	tfjob.Spec.Cleanup()
-	//
-	switch event.Type {
-	case kwatch.Added:
-		// Event indicates that a new instance of the TfJob CRD was created.
-		// So we create a TfJob object to control this resource.
-		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, tfjob, stopC, &c.waitJobs, &c.config)
-
-		if err != nil {
-			return err
-		}
-		//NewJob(kubeCli kubernetes.Interface, job spec.TfJob, stopC <-chan struct{}, wg *sync.WaitGroup)
-
-		c.stopChMap[tfjob.Metadata.Name] = stopC
-		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name] = nc
-		c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
-
-	//case kwatch.Modified:
-	//  if _, ok := c.jobs[tfjob.Metadata.Namespace + "-" + tfjob.Metadata.Name]; !ok {
-	//    return fmt.Errorf("unsafe state. cluster was never created but we received event (%s)", event.Type)
-	//  }
-	//  c.jobs[tfjob.Metadata.Namespace + "-" + tfjob.Metadata.Name].Update(tfjob)
-	//  c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
-	//
-	case kwatch.Deleted:
-		if _, ok := c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name]; !ok {
-			return fmt.Errorf("unsafe state. TfJob was never created but we received event (%s)", event.Type)
-		}
-		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name].Delete()
-		delete(c.jobs, tfjob.Metadata.Name)
-		delete(c.jobRVs, tfjob.Metadata.Name)
-	}
-	return nil
-}
-
-func (c *Controller) findAllTfJobs() (string, error) {
-	log.Info("finding existing jobs...")
-	jobList, err := c.TfJobClient.List(c.Namespace)
-	if err != nil {
-		log.Errorf("There was a problem listing all jobs; error: %v. Please check that RBAC is properly configured.", err)
-		return "", err
-	}
-
-	for _, tfjob := range jobList.Items {
-		if tfjob.Status.IsFailed() {
-			log.Infof("ignore failed TfJob (%s). Please delete its CRD", tfjob.Metadata.Name)
-			continue
-		}
-
-		tfjob.Spec.Cleanup()
-
-		stopC := make(chan struct{})
-		nc, err := trainer.NewJob(c.KubeCli, c.TfJobClient, &tfjob, stopC, &c.waitJobs, &c.config)
-
-		if err != nil {
-			log.Errorf("traininer.NewJob() returned error; %v for job: %v", err, tfjob.Metadata.Name)
-			continue
-		}
-		c.stopChMap[tfjob.Metadata.Name] = stopC
-		c.jobs[tfjob.Metadata.Namespace+"-"+tfjob.Metadata.Name] = nc
-		c.jobRVs[tfjob.Metadata.Name] = tfjob.Metadata.ResourceVersion
-	}
-
-	return jobList.Metadata.ResourceVersion, nil
-}
-
-// makeClusterConfig creates the Config object from a cluster initializing it with data from the
-// controller.
-//func (c *Controller) makeClusterConfig() cluster.Config {
-//  return cluster.Config{
-//    // TODO(jlewi): Do we need a service account?
-//    //ServiceAccount: c.Config.ServiceAccount,
-//    KubeCli: c.KubeCli,
-//  }
-//}
-
-func (c *Controller) initResource() (string, error) {
-	watchVersion := "0"
-	err := c.createCRD()
-	if err != nil {
-		if k8sutil.IsKubernetesResourceAlreadyExistError(err) {
-			log.Infof("TfJob CRD already exists.")
-		} else {
-			log.Errorf("createCRD() returned error: %v", err)
-			return "", fmt.Errorf("fail to create CRD: %v", err)
-		}
-	}
-	// In the event CRD was already initialized, we want to find any existing jobs and instantiate controllers
-	// for them.
-	watchVersion, err = c.findAllTfJobs()
-	if err != nil {
-		log.Errorf("initResource() failed; findAllTfJobs returned error: %v", err)
-		return "", err
-	}
-	return watchVersion, nil
-}
-
-func (c *Controller) createCRD() error {
-	crd := &v1beta1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: spec.CRDName(),
-		},
-		Spec: v1beta1.CustomResourceDefinitionSpec{
-			Group:   spec.CRDGroup,
-			Version: spec.CRDVersion,
-			Scope:   v1beta1.NamespaceScoped,
-			Names: v1beta1.CustomResourceDefinitionNames{
-				Plural: spec.CRDKindPlural,
-				// TODO(jlewi): Do we want to set the singular name?
-				// Kind is the serialized kind of the resource.  It is normally CamelCase and singular.
-				Kind: reflect.TypeOf(spec.TfJob{}).Name(),
+	glog.Info("Setting up event handlers")
+	// Set up an event handler for when Foo resources change
+	tfJobInformer.Informer().AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				switch t := obj.(type) {
+				case *tfv1alpha1.TFJob:
+					glog.V(4).Infof("filter tfjob name: %v", t.Name)
+					return true
+				default:
+					return false
+				}
 			},
-		},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: controller.enqueueController,
+				UpdateFunc: func(oldObj, newObj interface{}) {
+					controller.enqueueController(newObj)
+				},
+				DeleteFunc: controller.handleDelete,
+			},
+		})
+
+	controller.TFJobLister = tfJobInformer.Lister()
+	controller.TFJobSynced = tfJobInformer.Informer().HasSynced
+	controller.syncHandler = controller.syncTFJob
+
+	return controller, nil
+}
+
+// Run will set up the event handlers for types we are interested in, as well
+// as syncing informer caches and starting workers. It will block until stopCh
+// is closed, at which point it will shutdown the workqueue and wait for
+// workers to finish processing their current work items.
+func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
+	defer runtime.HandleCrash()
+	defer c.WorkQueue.ShutDown()
+
+	// Start the informer factories to begin populating the informer caches
+	glog.Info("Starting TFJob controller")
+
+	// Wait for the caches to be synced before starting workers
+	glog.Info("Waiting for informer caches to sync")
+	if ok := cache.WaitForCacheSync(stopCh, c.TFJobSynced); !ok {
+		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	_, err := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return err
+	glog.Infof("Starting %v workers", threadiness)
+	// Launch workers to process TFJob resources
+	for i := 0; i < threadiness; i++ {
+		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	// wait for CRD being established
-	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Get(spec.CRDName(), metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		for _, cond := range crd.Status.Conditions {
-			switch cond.Type {
-			case v1beta1.Established:
-				if cond.Status == v1beta1.ConditionTrue {
-					return true, err
-				}
-			case v1beta1.NamesAccepted:
-				if cond.Status == v1beta1.ConditionFalse {
-					log.Errorf("Name conflict: %v\n", cond.Reason)
-				}
-			}
-		}
-		return false, err
-	})
+	glog.Info("Started workers")
+	<-stopCh
+	glog.Info("Shutting down workers")
 
-	if err != nil {
-		deleteErr := c.ApiCli.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(spec.CRDName(), nil)
-		if deleteErr != nil {
-			return k8sErrors.NewAggregate([]error{err, deleteErr})
-		}
-		return err
-	}
 	return nil
 }
 
-// watch creates a go routine, and watches the TF cluster kind resources from
-// the given watch version. It emits events on the resources through the returned
-// event chan. Errors will be reported through the returned error chan. The go routine
-// exits on any error.
-func (c *Controller) watch(watchVersion string) (<-chan *Event, <-chan error) {
-	eventCh := make(chan *Event)
-	// On unexpected error case, controller should exit
-	errCh := make(chan error, 1)
-
-	go func() {
-		defer close(eventCh)
-		for {
-			resp, err := c.TfJobClient.Watch(MasterHost, c.Namespace, KubeHttpCli, watchVersion)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			if resp.StatusCode != http.StatusOK {
-				log.Infof("WatchClusters response: %+v", resp)
-				resp.Body.Close()
-				errCh <- errors.New("invalid status code: " + resp.Status)
-				return
-			}
-
-			log.Infof("start watching at %v", watchVersion)
-
-			decoder := json.NewDecoder(resp.Body)
-			for {
-				ev, st, err := pollEvent(decoder)
-				if err != nil {
-					if err == io.EOF { // apiserver will close stream periodically
-						log.Info("apiserver closed stream")
-						break
-					}
-
-					log.Errorf("received invalid event from API server: %v", err)
-					errCh <- err
-					return
-				}
-
-				if st != nil {
-					resp.Body.Close()
-
-					if st.Code == http.StatusGone {
-						// event history is outdated.
-						// if nothing has changed, we can go back to watch again.
-						clusterList, err := c.TfJobClient.List(c.Namespace)
-						if err == nil && !c.isClustersCacheStale(clusterList.Items) {
-							watchVersion = clusterList.Metadata.ResourceVersion
-							break
-						}
-
-						// if anything has changed (or error on relist), we have to rebuild the state.
-						// go to recovery path
-						errCh <- ErrVersionOutdated
-						return
-					}
-
-					log.Fatalf("unexpected status response from API server: %v", st.Message)
-				}
-
-				log.Infof("event: %v %v", ev.Type, util.Pformat((ev.Object.Spec)))
-				log.Infof("TfJob event: %v %v", ev.Type, util.Pformat(ev.Object.Spec))
-
-				watchVersion = ev.Object.Metadata.ResourceVersion
-				eventCh <- ev
-			}
-
-			resp.Body.Close()
-		}
-	}()
-
-	return eventCh, errCh
+// runWorker is a long-running function that will continually call the
+// processNextWorkItem function in order to read and process a message on the
+// workqueue.
+func (c *Controller) runWorker() {
+	for c.processNextWorkItem() {
+	}
 }
 
-func (c *Controller) isClustersCacheStale(currentClusters []spec.TfJob) bool {
-	if len(c.jobRVs) != len(currentClusters) {
+// processNextWorkItem will read a single work item off the workqueue and
+// attempt to process it, by calling the syncHandler.
+func (c *Controller) processNextWorkItem() bool {
+	key, quit := c.WorkQueue.Get()
+	if quit {
+		return false
+	}
+	defer c.WorkQueue.Done(key)
+
+	forget, err := c.syncHandler(key.(string))
+	if err == nil {
+		if forget {
+			c.WorkQueue.Forget(key)
+		}
 		return true
 	}
 
-	for _, cc := range currentClusters {
-		rv, ok := c.jobRVs[cc.Metadata.Name]
-		if !ok || rv != cc.Metadata.ResourceVersion {
-			return true
-		}
+	utilruntime.HandleError(fmt.Errorf("Error syncing job: %v", err))
+	c.WorkQueue.AddRateLimited(key)
+
+	return true
+}
+
+// syncTFJob will sync the job with the given. This function is not meant to be invoked
+// concurrently with the same key.
+//
+// When a job is completely processed it will return true indicating that its ok to forget about this job since
+// no more processing will occur for it.
+func (c *Controller) syncTFJob(key string) (bool, error) {
+	startTime := time.Now()
+	defer func() {
+		glog.V(4).Infof("Finished syncing job %q (%v)", key, time.Since(startTime))
+	}()
+
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return false, err
+	}
+	if len(ns) == 0 || len(name) == 0 {
+		return false, fmt.Errorf("invalid job key %q: either namespace or name is missing", key)
 	}
 
-	return false
+	tfJob, err := c.TFJobLister.TFJobs(ns).Get(name)
+
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			glog.V(4).Infof("Job has been deleted: %v", key)
+			return true, nil
+		}
+		return false, err
+	}
+
+	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
+	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
+	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
+		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
+
+		if err != nil {
+			return false, err
+		}
+		c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name] = nc
+	}
+
+	nc := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]
+
+	if err := nc.Reconcile(&c.config); err != nil {
+		return false, err
+	}
+
+	tfJob, err = c.TFJobClient.KubeflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
+
+	if err != nil {
+		return false, err
+	}
+
+	// TODO(jlewi): This logic will need to change when/if we get rid of phases and move to conditions. At that
+	// case we should forget about a job when the appropriate condition is reached.
+	if tfJob.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
+		return true, nil
+	} else {
+		return false, nil
+	}
+
+}
+
+// obj could be an *batch.Job, or a DeletionFinalStateUnknown marker item.
+func (c *Controller) enqueueController(obj interface{}) {
+	key, err := keyFunc(obj)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("Couldn't get key for object %+v: %v", obj, err))
+		return
+	}
+
+	c.WorkQueue.AddRateLimited(key)
+}
+
+func (c *Controller) handleDelete(obj interface{}) {
+	tfjob := obj.(*tfv1alpha1.TFJob)
+	if _, ok := c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name]; !ok {
+		glog.V(4).Infof("unsafe state. TFJob was never created but we received delete event")
+		return
+	}
+
+	c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name].Delete()
 }

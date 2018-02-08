@@ -5,8 +5,8 @@ import datetime
 import logging
 import os
 import re
-import shutil
 import subprocess
+import tempfile
 import time
 import urllib
 import yaml
@@ -18,17 +18,23 @@ import google.auth.transport.requests
 from googleapiclient import errors
 from kubernetes import client as k8s_client
 from kubernetes.config import kube_config
-from kubernetes.client import configuration
+from kubernetes.client import configuration as kubernetes_configuration
 from kubernetes.client import rest
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.
-MASTER_REPO_OWNER = "tensorflow"
-MASTER_REPO_NAME = "k8s"
+# We default to environment variables so that it can be set correctly when
+# running under prow.
+MASTER_REPO_OWNER = os.getenv("REPO_OWNER", "tensorflow")
+MASTER_REPO_NAME = os.getenv("REPO_NAME", "k8s")
 
 # TODO(jlewi): Should we stream the output by polling the subprocess?
 # look at run_and_stream in build_and_push.
-def run(command, cwd=None, env=None, use_print=False, dryrun=False):
+#
+# TODO(jlewi): I think we can delete use_print after updating callers. that
+# was a hack to make output show up in Airflow; I think writing subprocess
+# to a file and then logging it works better.
+def run(command, cwd=None, env=None, dryrun=False):
   """Run a subprocess.
 
   Any subprocess output is emitted through the logging modules.
@@ -37,37 +43,35 @@ def run(command, cwd=None, env=None, use_print=False, dryrun=False):
 
   if not env:
     env = os.environ
+  else:
+    keys = sorted(env.keys())
 
+    lines = []
+    for k in keys:
+      lines.append("{0}={1}".format(k, env[k]))
+    logging.info("Running: Environment:\n%s", "\n".join(lines))
+
+  log_file = None
   try:
     if dryrun:
       command_str = ("Dryrun: Command:\n{0}\nCWD:\n{1}\n"
                      "Environment:\n{2}").format(" ".join(command), cwd, env)
-      if use_print:
-        print(command_str)
-      else:
-        logging.info(command_str)
-      return
-    output = subprocess.check_output(command, cwd=cwd, env=env,
-                                     stderr=subprocess.STDOUT).decode("utf-8")
+      logging.info(command_str)
 
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(output)
-    else:
-      logging.info("Subprocess output:\n%s", output)
-  except subprocess.CalledProcessError as e:
-    if use_print:
-      # With Airflow use print to bypass logging module.
-      print("Subprocess output:\n")
-      print(e.output)
-      # TODO(jlewi): If we don't use logging output ends up not being
-      # captured by logs in Airflow. This is totally messed up. In the meantime
-      # this hack of using logging and print ensures we see errors.
-      logging.info("Subprocess output:\n%s", e.output)
-    else:
-      logging.info("Subprocess output:\n%s", e.output)
-    raise
+    # We write stderr/stdout to a file and then read it and process it.
+    # We do this because if just inherit the handles from the parent the
+    # subprocess output doesn't show up in Airflow. This might be because
+    # we had multiple levels of processes invoking python processes.
+    with tempfile.NamedTemporaryFile(prefix="tmpRunLogs", delete=False,
+                                     mode="w") as hf:
+      log_file = hf.name
+      subprocess.check_call(command, cwd=cwd, env=env,
+                            stdout=hf,
+                            stderr=hf)
+  finally:
+    with open(log_file, "r") as hf:
+      output = hf.read()
+    logging.info("Subprocess output:\n%s", output)
 
 def run_and_output(command, cwd=None, env=None):
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
@@ -132,7 +136,7 @@ def clone_repo(dest, repo_owner=MASTER_REPO_OWNER, repo_name=MASTER_REPO_NAME,
 def install_go_deps(src_dir):
   """Run glide to install dependencies."""
   # Install dependencies
-  run(["glide", "install","--strip-vendor"], cwd=src_dir)
+  run(["glide", "install", "--strip-vendor"], cwd=src_dir)
 
 def to_gcs_uri(bucket, path):
   """Convert bucket and path to a GCS URI."""
@@ -236,26 +240,79 @@ def wait_for_operation(client,
         op_id))
     time.sleep(polling_interval.total_seconds())
 
+  # Linter complains if we don't have a return here even though its unreachable.
+  return None
+
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")
   run(["gcloud", "--project=" + project, "container",
        "clusters", "--zone=" + zone, "get-credentials", cluster_name])
 
-def wait_for_tiller_to_be_ready(api_client):
+def wait_for_deployment(api_client, namespace, name):
+  """Wait for deployment to be ready.
+
+  Args:
+    api_client: K8s api client to use.
+    namespace: The name space for the deployment.
+    name: The name of the deployment.
+
+  Returns:
+    deploy: The deploy object describing the deployment.
+
+  Raises:
+    TimeoutError: If timeout waiting for deployment to be ready.
+  """
   # Wait for tiller to be ready
   end_time = datetime.datetime.now() + datetime.timedelta(minutes=2)
 
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
 
   while datetime.datetime.now() < end_time:
-    deploy = ext_client.read_namespaced_deployment("tiller-deploy", "kube-system")
+    deploy = ext_client.read_namespaced_deployment(name, namespace)
     if deploy.status.ready_replicas >= 1:
-      logging.info("tiller is ready")
-      return
-    logging.info("Waiting for tiller")
+      logging.info("Deployment %s in namespace %s is ready", name, namespace)
+      return deploy
+    logging.info("Waiting for deployment %s in namespace %s", name, namespace)
     time.sleep(10)
 
-  raise ValueError("Timeout waiting for tiller")
+  logging.error("Timeout waiting for deployment %s in namespace %s to be "
+                "ready", name, namespace)
+  raise TimeoutError(
+      "Timeout waiting for deployment {0} in namespace {1}".format(
+      name, namespace))
+
+def wait_for_statefulset(api_client, namespace, name):
+  """Wait for deployment to be ready.
+
+  Args:
+    api_client: K8s api client to use.
+    namespace: The name space for the deployment.
+    name: The name of the stateful set.
+
+  Returns:
+    deploy: The deploy object describing the deployment.
+
+  Raises:
+    TimeoutError: If timeout waiting for deployment to be ready.
+  """
+  # Wait for tiller to be ready
+  end_time = datetime.datetime.now() + datetime.timedelta(minutes=2)
+
+  apps_client = k8s_client.AppsV1beta1Api(api_client)
+
+  while datetime.datetime.now() < end_time:
+    stateful = apps_client.read_namespaced_stateful_set(name, namespace)
+    if stateful.status.ready_replicas >= 1:
+      logging.info("Statefulset %s in namespace %s is ready", name, namespace)
+      return stateful
+    logging.info("Waiting for Statefulset %s in namespace %s", name, namespace)
+    time.sleep(10)
+
+  logging.error("Timeout waiting for statefulset %s in namespace %s to be "
+                "ready", name, namespace)
+  raise TimeoutError(
+      "Timeout waiting for statefulset {0} in namespace {1}".format(
+      name, namespace))
 
 def install_gpu_drivers(api_client):
   """Install GPU drivers on the cluster.
@@ -365,20 +422,22 @@ def setup_cluster(api_client):
 
   if use_gpus:
     install_gpu_drivers(api_client)
-  wait_for_tiller_to_be_ready(api_client)
+  wait_for_deployment(api_client, "kube-system", "tiller-deploy")
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
 class TimeoutError(Exception):
   """An error indicating an operation timed out."""
 
-GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")
 
 def split_gcs_uri(gcs_uri):
   """Split a GCS URI into bucket and path."""
   m = GCS_REGEX.match(gcs_uri)
   bucket = m.group(1)
-  path = m.group(2)
+  path = ""
+  if m.group(2):
+    path = m.group(2).lstrip("/")
   return bucket, path
 
 def _refresh_credentials():
@@ -392,8 +451,12 @@ def _refresh_credentials():
 # TODO(jlewi): This is a work around for
 # https://github.com/kubernetes-incubator/client-python/issues/339.
 # Consider getting rid of this and adopting the solution to that issue.
+#
+# This function is based on
+# https://github.com/kubernetes-client/python-base/blob/master/config/kube_config.py#L331
+# we modify it though so that we can pass through the function to get credentials.
 def load_kube_config(config_file=None, context=None,
-                     client_configuration=configuration,
+                     client_configuration=None,
                      persist_config=True,
                      get_google_credentials=_refresh_credentials,
                      **kwargs):
@@ -419,9 +482,22 @@ def load_kube_config(config_file=None, context=None,
         yaml.safe_dump(config_map, f, default_flow_style=False)
     config_persister = _save_kube_config
 
-  kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
+  loader = kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
     config_file, active_context=context,
-      client_configuration=client_configuration,
-        config_persister=config_persister,
-        get_google_credentials=get_google_credentials,
-        **kwargs).load_and_set()
+    config_persister=config_persister,
+    get_google_credentials=get_google_credentials,
+    **kwargs)
+
+  if client_configuration is None:
+    config = type.__call__(kubernetes_configuration.Configuration)
+    loader.load_and_set(config)
+    kubernetes_configuration.Configuration.set_default(config)
+  else:
+    loader.load_and_set(client_configuration)
+
+def maybe_activate_service_account():
+  if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
+                     "to use service account.")
+  run(["gcloud", "auth", "activate-service-account",
+       "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")])

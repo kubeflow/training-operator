@@ -1,4 +1,4 @@
-"""Some utility functions for working with TfJobs."""
+"""Some utility functions for working with TFJobs."""
 
 import datetime
 import json
@@ -10,13 +10,13 @@ from kubernetes.client.rest import ApiException
 
 from py import util
 
-TF_JOB_GROUP = "tensorflow.org"
+TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_VERSION = "v1alpha1"
 TF_JOB_PLURAL = "tfjobs"
-TF_JOB_KIND = "TfJob"
+TF_JOB_KIND = "TFJob"
 
 def create_tf_job(client, spec):
-  """Create a TfJob.
+  """Create a TFJob.
 
   Args:
     client: A K8s api client.
@@ -94,3 +94,7 @@ def wait_for_job(client, namespace, name,
           name, namespace))
 
     time.sleep(polling_interval.seconds)
+
+  # Linter complains if we don't have a return statement even though
+  # this code is unreachable.
+  return None

@@ -1,4 +1,4 @@
-"""Test runner runs a TfJob test."""
+"""Test runner runs a TFJob test."""
 
 import argparse
 import logging
@@ -7,13 +7,14 @@ import time
 import uuid
 
 import jinja2
+import yaml
+
 from kubernetes import client as k8s_client
+from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
 from py import util
 from py import tf_job_client
-from google.cloud import storage  # pylint: disable=no-name-in-module
 
-import yaml
 
 def run_test(args):
   """Run a test."""
@@ -53,7 +54,7 @@ def run_test(args):
     results = tf_job_client.wait_for_job(api_client, namespace, name,
                                          status_callback=tf_job_client.log_status)
 
-    if results["status"]["state"] != "succeeded":
+    if results["status"]["state"].lower() != "succeeded":
       t.failure = "Job {0} in namespace {1} in state {2}".format(
         name, namespace, results["status"]["state"])
 
@@ -67,6 +68,9 @@ def run_test(args):
   except util.TimeoutError:
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
         name, namespace)
+  except Exception as e: # pylint: disable-msg=broad-except
+    # We want to catch all exceptions because we warm the test as failed.
+    t.failure = e.message
   finally:
     t.time = time.time() - start
     if args.junit_path:
@@ -115,7 +119,7 @@ def add_common_args(parser):
 def build_parser():
   # create the top-level parser
   parser = argparse.ArgumentParser(
-    description="Run a TfJob test.")
+    description="Run a TFJob test.")
   subparsers = parser.add_subparsers()
 
   parser_test = subparsers.add_parser(
@@ -129,6 +133,8 @@ def build_parser():
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+
+  util.maybe_activate_service_account()
 
   parser = build_parser()
 

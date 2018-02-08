@@ -10,10 +10,10 @@ import uuid
 
 import nbconvert
 import nbformat
-from py import util
+import six
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
-import six
+from py import util
 
 SubTuple = collections.namedtuple("SubTuple", ("name", "value", "pattern"))
 

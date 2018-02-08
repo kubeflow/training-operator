@@ -6,11 +6,16 @@ tfImage: tensorflow/tensorflow:1.3.0
 # Which cloud provider is kubernetes hosted on.
 # Supported values are gke or azure.
 # Leave blank to use a default, non-cloud specific config.
-cloud:
+cloud: 
+
+## Wether the dashboard should be installed and the kind of service to use
+dashboard: 
+  install: false
+  serviceType: ClusterIP
 
 config:
   configmap:
-  file: /etc/config/controller_config_file.yaml
+  file: /etc/config/controller-config-file.yaml
 
 ## Install Default RBAC roles and bindings
 rbac:

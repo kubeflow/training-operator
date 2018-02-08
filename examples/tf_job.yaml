@@ -1,5 +1,5 @@
-apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+apiVersion: "kubeflow.org/v1alpha1"
+kind: "TFJob"
 metadata:
   name: "example-job"
 spec:
@@ -22,3 +22,9 @@ spec:
           restartPolicy: OnFailure
     - replicas: 2
       tfReplicaType: PS
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
+          restartPolicy: OnFailure

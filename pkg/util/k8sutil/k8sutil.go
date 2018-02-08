@@ -1,14 +1,27 @@
+// Copyright 2018 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package k8sutil
 
 import (
 	"net"
 	"os"
 
-	"github.com/tensorflow/k8s/pkg/spec"
-
+	log "github.com/golang/glog"
+	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	log "github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -20,7 +33,7 @@ import (
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
 
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
-// method to ensure all resources created for the TfJob are owned by the TfJob.
+// method to ensure all resources created for the TFJob are owned by the TFJob.
 func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	o.SetOwnerReferences(append(o.GetOwnerReferences(), r))
 }
@@ -56,10 +69,14 @@ func GetClusterConfig() (*rest.Config, error) {
 		if err != nil {
 			panic(err)
 		}
-		os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0])
+		if err := os.Setenv("KUBERNETES_SERVICE_HOST", addrs[0]); err != nil {
+			return nil, err
+		}
 	}
 	if len(os.Getenv("KUBERNETES_SERVICE_PORT")) == 0 {
-		os.Setenv("KUBERNETES_SERVICE_PORT", "443")
+		if err := os.Setenv("KUBERNETES_SERVICE_PORT", "443"); err != nil {
+			panic(err)
+		}
 	}
 	return rest.InClusterConfig()
 }
@@ -83,7 +100,7 @@ func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
 		"tf_job": jobName,
-		"app":    spec.AppLabel,
+		"app":    tfv1alpha1.AppLabel,
 	}
 }
 

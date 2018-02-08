@@ -45,7 +45,7 @@ def setup(args):
                 ],
               },
           # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-          "initialClusterVersion": "1.8.1-gke.1",
+          "initialClusterVersion": "1.8.5-gke.0",
       }
   }
 
@@ -70,6 +70,10 @@ def setup(args):
 
   util.setup_cluster(api_client)
 
+  # A None gcs_client should be passed to test_util.create_junit_xml_file
+  # unless chart.startswith("gs://"), e.g. https://storage.googleapis.com/...
+  gcs_client = None
+
   if chart.startswith("gs://"):
     remote = chart
     chart = os.path.join(tempfile.gettempdir(), os.path.basename(chart))
@@ -84,10 +88,14 @@ def setup(args):
   t = test_util.TestCase()
   try:
     start = time.time()
-    util.run(["helm", "install", chart, "-n", "tf-job", "--wait", "--replace",
+    util.run(["helm", "install", chart, "-n", "tf-job", "--namespace=default",
+              "--wait", "--replace",
               "--set", "rbac.install=true,cloud=gke"])
+    util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
-    t.failure = "helm install failed;\n" + e.output
+    t.failure = "helm install failed;\n" + (e.output or "")
+  except util.TimeoutError as e:
+    t.failure = e.message
   finally:
     t.time = time.time() - start
     t.name = "helm-tfjob-install"
@@ -107,7 +115,13 @@ def test(args):
     start = time.time()
     util.run(["helm", "test", "tf-job"])
   except subprocess.CalledProcessError as e:
-    t.failure = "helm test failed;\n" + e.output
+    t.failure = "helm test failed;\n" + (e.output or "")
+    # Reraise the exception so that the prow job will fail and the test
+    # is marked as a failure.
+    # TODO(jlewi): It would be better to this wholistically; e.g. by
+    # processing all the junit xml files and checking for any failures. This
+    # should be more tractable when we migrate off Airflow to Argo.
+    raise
   finally:
     t.time = time.time() - start
     t.name = "e2e-test"
@@ -153,6 +167,9 @@ def add_common_args(parser):
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+
+  util.maybe_activate_service_account()
+
   # create the top-level parser
   parser = argparse.ArgumentParser(
     description="Setup clusters for testing.")

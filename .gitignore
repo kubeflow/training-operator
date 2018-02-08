@@ -2,6 +2,9 @@
 # only so we exclude them.
 bin/
 
+node_modules/
+dashboard/frontend/build
+
 .vscode/
 
 # Compiled python files.

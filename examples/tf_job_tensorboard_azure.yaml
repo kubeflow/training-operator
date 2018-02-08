@@ -1,7 +1,7 @@
-apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+apiVersion: "kubeflow.org/v1alpha1"
+kind: "TFJob"
 metadata:
-  name: "example-job"
+  name: "example-job-tb-azure"
 spec:
   tensorboard:
     logDir: /tmp/tensorflow

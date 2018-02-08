@@ -1,7 +1,7 @@
 # This template is used to verify that REPLICAS, TfPort, and TfReplicaType are properly set to default
 # values if unspecified by the user.
-apiVersion: "tensorflow.org/v1alpha1"
-kind: "TfJob"
+apiVersion: "kubeflow.org/v1alpha1"
+kind: "TFJob"
 metadata:
   name: "example-job-defaults"
 spec:
