@@ -1,4 +1,4 @@
-# K8s Custom Resource and Operator For TensorFlow jobs
+# Kubernetes Operator For TensorFlow jobs
 
 [![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
 [![Coverage Status](https://coveralls.io/repos/github/tensorflow/k8s/badge.svg?branch=master)](https://coveralls.io/github/tensorflow/k8s?branch=master)

@@ -1,8 +1,6 @@
 # Getting Started
 
-## Overview
-
-
+You can install the operator manually on your machine with very few steps.
 
 ## Requirements
 
