@@ -114,7 +114,7 @@ def run_tests(args):
         start_time = time.time()
         test_cases.append(test_case)
         try:
-          util.run(["python", full_path], cwd=args.src_dir, env=env)
+          util.run(["python3", full_path], cwd=args.src_dir, env=env)
         except subprocess.CalledProcessError:
           test_case.failure = "{0} failed.".format(test_case.name)
           num_failed += 1

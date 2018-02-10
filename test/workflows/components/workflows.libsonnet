@@ -214,7 +214,7 @@
               },
             },  // checkout
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("build", [
-              "python",
+              "python3",
               "-m",
               "py.release",
               "build",
@@ -223,7 +223,7 @@
               "--version_tag=" + versionTag,
             ]),  // build
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
-              "python",
+              "python3",
               "-m",
               "py.py_checks",
               "test",
@@ -232,7 +232,7 @@
               "--junit_path=" + artifactsDir + "/junit_pycheckstest.xml",
             ]),  // py test
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
-              "python",
+              "python3",
               "-m",
               "py.py_checks",
               "lint",
@@ -241,7 +241,7 @@
               "--junit_path=" + artifactsDir + "/junit_pycheckslint.xml",
             ]),  // py lint
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
-              "python",
+              "python3",
               "-m",
               "py.deploy",
               "setup",
@@ -253,7 +253,7 @@
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
-              "python",
+              "python3",
               "-m",
               "py.deploy",
               "test",
@@ -263,7 +263,7 @@
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
-              "python",
+              "python3",
               "-m",
               "py.test_runner",
               "test",
@@ -278,7 +278,7 @@
               "--image_tag=notag",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
-              "python",
+              "python3",
               "-m",
               "kubeflow.testing.prow_artifacts",
               "--artifacts_dir=" + outputDir,
@@ -286,7 +286,7 @@
               "--bucket=" + bucket,
             ]),  // create-pr-symlink
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
-              "python",
+              "python3",
               "-m",
               "py.deploy",
               "teardown",
@@ -296,7 +296,7 @@
               "--junit_path=" + artifactsDir + "/junit_teardown.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
-              "python",
+              "python3",
               "-m",
               "kubeflow.testing.prow_artifacts",
               "--artifacts_dir=" + outputDir,
