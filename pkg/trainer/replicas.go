@@ -21,8 +21,6 @@ import (
 	"strings"
 
 	log "github.com/golang/glog"
-	"github.com/golang/protobuf/proto"
-	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,7 +123,7 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		// Create the service.
 		service := &v1.Service{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name:   s.jobName(index),
+				Name:   s.genName(index),
 				Labels: taskLabels,
 				OwnerReferences: []meta_v1.OwnerReference{
 					helper.AsOwner(s.Job.job),
@@ -148,7 +146,7 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		// If the job already exists do nothing.
 		if err != nil {
 			if k8s_errors.IsAlreadyExists(err) {
-				log.Infof("Service %v already exists.", s.jobName(index))
+				log.Infof("Service %v already exists.", s.genName(index))
 			} else {
 				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
 				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating service %v returned error.", createdService.ObjectMeta.Name), err})
@@ -174,38 +172,22 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 			return err
 		}
 
-		// Make a copy of the template because we will modify it below. .
-		newPodSpecTemplate := s.Spec.Template.DeepCopy()
-
-		newJ := &batch.Job{
+		newP := &v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name:   s.jobName(index),
+				Name:   s.genName(index),
 				Labels: taskLabels,
 				OwnerReferences: []meta_v1.OwnerReference{
 					helper.AsOwner(s.Job.job),
 				},
 			},
-			Spec: batch.JobSpec{
-				Completions: proto.Int32(1),
-				Parallelism: proto.Int32(1),
-				Template:    *newPodSpecTemplate,
-			},
-		}
-
-		if newJ.Spec.Template.ObjectMeta.Labels == nil {
-			newJ.Spec.Template.ObjectMeta.Labels = make(map[string]string)
-		}
-
-		// Pods need to be tagged with the labels.
-		for k, v := range taskLabels {
-			newJ.Spec.Template.ObjectMeta.Labels[k] = v
+			Spec: *s.Spec.Template.Spec.DeepCopy(),
 		}
 
 		// Add TF_CONFIG environment variable.
-		for i, _ := range newJ.Spec.Template.Spec.Containers {
+		for i, _ := range newP.Spec.Containers {
 			// We can't get c in the loop variable because that would be by value so our modifications
 			// wouldn't have any effect.
-			c := &newJ.Spec.Template.Spec.Containers[i]
+			c := &newP.Spec.Containers[i]
 			if tfv1alpha1.ContainerName(c.Name) != tfv1alpha1.TENSORFLOW {
 				continue
 			}
@@ -218,20 +200,20 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 			})
 		}
 
-		log.Infof("Creating Job: %v", newJ.ObjectMeta.Name)
-		createdJob, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Create(newJ)
+		log.Infof("Creating Pod: %v", newP.ObjectMeta.Name)
+		createdPod, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Create(newP)
 
-		// If the job already exists do nothing.
+		// If the Pod already exists do nothing.
 		if err != nil {
 			if k8s_errors.IsAlreadyExists(err) {
-				log.Infof("%v already exists.", s.jobName(index))
+				log.Infof("%v already exists.", s.genName(index))
 
 			} else {
 				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
-				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Job %v returned error.", createdJob.ObjectMeta.Name), err})
+				return k8sErrors.NewAggregate([]error{fmt.Errorf("Creating Pod %v returned error.", createdPod.ObjectMeta.Name), err})
 			}
 		} else {
-			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created job: %v", createdJob.Name)
+			s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created Pod: %v", createdPod.Name)
 		}
 	}
 	return nil
@@ -270,11 +252,11 @@ func (s *TFReplicaSet) Delete() error {
 	// Services doesn't support DeleteCollection so we delete them individually.
 	// TODO(jlewi): We should check if this has changed with K8s 1.8 or other releases.
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-		log.V(1).Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName((index)))
-		err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
+		log.V(1).Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.genName((index)))
+		err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.genName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
-			log.Errorf("Error deleting service %v; %v", s.jobName(index), err)
+			log.Errorf("Error deleting service %v; %v", s.genName(index), err)
 			failures = true
 		}
 	}
@@ -359,7 +341,7 @@ func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1a
 }
 
 func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
-	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
+	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Get(s.genName(index), meta_v1.GetOptions{})
 
 	if err != nil {
 		return tfv1alpha1.ReplicaStateUnknown
@@ -436,10 +418,10 @@ func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TFReplicaStatus, error) {
 	return status, nil
 }
 
-func (s *TFReplicaSet) jobName(index int32) string {
+func (s *TFReplicaSet) genName(index int32) string {
 	// Truncate tfjob name to 40 characters
 	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
-	// Thus jobname(40 chars)-replicaType(6 chars)-runtimeId(4 chars)-index(4 chars), also leaving some spaces
+	// Thus genName(40 chars)-replicaType(6 chars)-runtimeId(4 chars)-index(4 chars), also leaving some spaces
 	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
 	return fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(string(s.Spec.TFReplicaType)), s.Job.job.Spec.RuntimeId, index)
 }

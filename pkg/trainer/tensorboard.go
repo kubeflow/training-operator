@@ -64,7 +64,7 @@ func (s *TBReplicaSet) Create() error {
 	// create the service exposing TensorBoard
 	service := &v1.Service{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   s.jobName(),
+			Name:   s.genName(),
 			Labels: s.Labels(),
 			OwnerReferences: []meta_v1.OwnerReference{
 				helper.AsOwner(s.Job.job),
@@ -91,7 +91,7 @@ func (s *TBReplicaSet) Create() error {
 	// If the job already exists do nothing.
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
-			log.Infof("Service %v already exists.", s.jobName())
+			log.Infof("Service %v already exists.", s.genName())
 		} else {
 			return err
 		}
@@ -99,7 +99,7 @@ func (s *TBReplicaSet) Create() error {
 
 	newD := &v1beta1.Deployment{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   s.jobName(),
+			Name:   s.genName(),
 			Labels: s.Labels(),
 			OwnerReferences: []meta_v1.OwnerReference{
 				helper.AsOwner(s.Job.job),
@@ -119,7 +119,7 @@ func (s *TBReplicaSet) Create() error {
 
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
-			log.Infof("%v already exists.", s.jobName())
+			log.Infof("%v already exists.", s.genName())
 		} else {
 			return err
 		}
@@ -131,19 +131,19 @@ func (s *TBReplicaSet) Delete() error {
 	failures := false
 
 	delProp := meta_v1.DeletePropagationForeground
-	log.V(1).Infof("Deleting deployment %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName())
-	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{
+	log.V(1).Infof("Deleting deployment %v:%v", s.Job.job.ObjectMeta.Namespace, s.genName())
+	err := s.ClientSet.ExtensionsV1beta1().Deployments(s.Job.job.ObjectMeta.Namespace).Delete(s.genName(), &meta_v1.DeleteOptions{
 		PropagationPolicy: &delProp,
 	})
 	if err != nil {
-		log.Errorf("There was a problem deleting TensorBoard's deployment %v; %v", s.jobName(), err)
+		log.Errorf("There was a problem deleting TensorBoard's deployment %v; %v", s.genName(), err)
 		failures = true
 	}
 
-	log.V(1).Infof("Deleting service %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName())
-	err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(), &meta_v1.DeleteOptions{})
+	log.V(1).Infof("Deleting service %v:%v", s.Job.job.ObjectMeta.Namespace, s.genName())
+	err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.genName(), &meta_v1.DeleteOptions{})
 	if err != nil {
-		log.Errorf("Error deleting service: %v; %v", s.jobName(), err)
+		log.Errorf("Error deleting service: %v; %v", s.genName(), err)
 		failures = true
 	}
 
@@ -156,7 +156,7 @@ func (s *TBReplicaSet) Delete() error {
 func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpec {
 	// TODO: make the TensorFlow image a parameter of the job operator.
 	c := &v1.Container{
-		Name:  s.jobName(),
+		Name:  s.genName(),
 		Image: image,
 		Command: []string{
 			"tensorboard", "--logdir", s.Spec.LogDir, "--host", "0.0.0.0",
@@ -180,7 +180,7 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 
 	return v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   s.jobName(),
+			Name:   s.genName(),
 			Labels: s.Labels(),
 		},
 		Spec: *ps,
@@ -197,10 +197,10 @@ func (s *TBReplicaSet) Labels() KubernetesLabels {
 	})
 }
 
-func (s *TBReplicaSet) jobName() string {
+func (s *TBReplicaSet) genName() string {
 	// Truncate tfjob name to 40 characters
 	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
-	// Thus jobname(40 chars)-tensorboard(11 chars)-runtimeId(4 chars), also leaving some spaces
+	// Thus genName(40 chars)-tensorboard(11 chars)-runtimeId(4 chars), also leaving some spaces
 	// See https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
 	return fmt.Sprintf("%v-tensorboard-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(s.Job.job.Spec.RuntimeId))
 }
