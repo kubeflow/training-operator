@@ -8,8 +8,7 @@
 
 ## Overview
 
-The operator is a part of [Kubeflow](https://github.com/kubeflow/kubeflow)
-, which provides a Kubernetes custom resource that makes it easy to
+The operator, which is a part of [Kubeflow](https://github.com/kubeflow/kubeflow), provides a Kubernetes custom resource that makes it easy to
 run distributed or non-distributed TensorFlow jobs on Kubernetes.
 
 Using a Custom Resource Definition (CRD) gives users the ability to create and manage TF Jobs just like builtin K8s resources. For example to
@@ -30,7 +29,7 @@ example-job   TFJob.v1alpha.kubeflow.org
 
 ## Getting Started
 
-You can easily setup the environment, You could read [the quick start to start a tour of TFJob operator](docs/get_started.md).
+Setting up the environment is easy. Start by reading [the quick start](docs/get_started.md) to start a tour of TFJob operator.
 
 ## TFJob CRD Design
 
@@ -40,7 +39,7 @@ CRD please refer to
 
 ## Contributing
 
-Feel free to hack on tf-operator! We have prepared [a detailed guide](docs/developer_guide.md), which will help you to get involved into the development.
+Feel free to hack on tf-operator! We have prepared [a detailed guide](docs/developer_guide.md), which will help you to get involved in the development.
 
 ## Community
 
