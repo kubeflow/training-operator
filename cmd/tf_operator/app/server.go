@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -56,12 +55,12 @@ func Run(opt *options.ServerOption) error {
 		namespace = metav1.NamespaceDefault
 	}
 
-	glog.Infof("tf_operator Version: %v", version.Version)
-	glog.Infof("Git SHA: %s", version.GitSHA)
-	glog.Infof("Go Version: %s", runtime.Version())
-	glog.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	// To help debugging, immediately log version
+	glog.Infof("%+v", version.Info())
+
+	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
-		os.Exit(0)
+		version.PrintVersionAndExit()
 	}
 
 	config, err := k8sutil.GetClusterConfig()
