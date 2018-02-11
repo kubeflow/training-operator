@@ -5,6 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/tensorflow/k8s)](https://goreportcard.com/report/github.com/tensorflow/k8s)
 [![Prow Test Dashboard](https://img.shields.io/badge/prow-dashboard-blue.svg)](https://k8s-testgrid.appspot.com/sig-big-data)
 [![Prow Jobs](https://img.shields.io/badge/prow-status-blue.svg)](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
+[![Argo](https://img.shields.io/badge/argo-dashboard-blue.svg)](http://testing-argo.kubeflow.io/timeline)
 
 ## Overview
 
