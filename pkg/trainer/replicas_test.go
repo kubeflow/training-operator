@@ -28,9 +28,9 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
-	"github.com/tensorflow/k8s/pkg/util"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfJobFake "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/fake"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 var (

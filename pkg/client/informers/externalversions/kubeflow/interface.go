@@ -19,8 +19,8 @@ limitations under the License.
 package kubeflow
 
 import (
-	internalinterfaces "github.com/tensorflow/k8s/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/tensorflow/k8s/pkg/client/informers/externalversions/kubeflow/v1alpha1"
+	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

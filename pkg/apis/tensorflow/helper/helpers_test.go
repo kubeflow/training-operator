@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/util"
+	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

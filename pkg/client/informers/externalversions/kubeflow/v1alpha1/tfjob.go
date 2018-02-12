@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	tensorflow_v1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	versioned "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/tensorflow/k8s/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
+	tensorflow_v1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	versioned "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

@@ -21,20 +21,20 @@ import (
 	"reflect"
 
 	log "github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/kubeflow/tf-operator/pkg/util"
 
 	"strings"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/helper"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
