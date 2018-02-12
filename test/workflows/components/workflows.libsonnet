@@ -34,8 +34,8 @@
       local goDir = testDir + "/go";
       // Source directory where all repos should be checked out
       local srcRootDir = testDir + "/src";
-      // The directory containing the tensorflow/k8s repo
-      local srcDir = srcRootDir + "/tensorflow/k8s";
+      // The directory containing the kubeflow/tf-operator repo
+      local srcDir = srcRootDir + "/kubeflow/tf-operator";
       local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";

@@ -30,11 +30,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	// TOOO(jlewi): Rename to apiErrors
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
-	"github.com/tensorflow/k8s/pkg/util"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/helper"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 const (

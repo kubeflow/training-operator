@@ -24,7 +24,7 @@ class ReleaseTest(unittest.TestCase):
     release.build_postsubmit(args)
 
     mock_build_and_push.assert_called_once_with(
-      '/top/src_dir/go', '/top/src_dir/go/src/github.com/tensorflow/k8s',
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
       mock.ANY)
     mock_clone.assert_called_once_with(
       '/top/src_dir/git_tensorflow_k8s', 'tensorflow', 'k8s', None, None)
@@ -41,7 +41,7 @@ class ReleaseTest(unittest.TestCase):
     release.build_pr(args)
 
     mock_build_and_push.assert_called_once_with(
-      '/top/src_dir/go', '/top/src_dir/go/src/github.com/tensorflow/k8s',
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
       mock.ANY)
     mock_clone.assert_called_once_with(
       "/top/src_dir/git_tensorflow_k8s", "tensorflow", "k8s", "22",
@@ -76,7 +76,7 @@ rbac:
     with tempfile.NamedTemporaryFile(delete=False) as hf:
       hf.write("""
 name: tf-job-operator-chart
-home: https://github.com/tensorflow/k8s
+home: https://github.com/kubeflow/tf-operator
 version: 0.1.0
 appVersion: 0.1.0
 """)
@@ -88,7 +88,7 @@ appVersion: 0.1.0
       output = yaml.load(hf)
     expected = {
         "name": "tf-job-operator-chart",
-        "home": "https://github.com/tensorflow/k8s",
+        "home": "https://github.com/kubeflow/tf-operator",
         "version": "0.1.0-v20171019",
         "appVersion": "0.1.0-v20171019",
     }
