@@ -31,15 +31,15 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	"github.com/tensorflow/k8s/pkg/controller"
-	"github.com/tensorflow/k8s/pkg/util"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"github.com/tensorflow/k8s/version"
+	"github.com/kubeflow/tf-operator/cmd/tf_operator/app/options"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/controller"
+	"github.com/kubeflow/tf-operator/pkg/util"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"github.com/kubeflow/tf-operator/version"
 )
 
 var (

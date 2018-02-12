@@ -2,8 +2,8 @@
 package client
 
 import (
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )

@@ -19,9 +19,9 @@ limitations under the License.
 package externalversions
 
 import (
-	versioned "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/tensorflow/k8s/pkg/client/informers/externalversions/internalinterfaces"
-	kubeflow "github.com/tensorflow/k8s/pkg/client/informers/externalversions/kubeflow"
+	versioned "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
+	kubeflow "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"

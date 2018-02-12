@@ -1,6 +1,6 @@
-package: github.com/tensorflow/k8s
+package: github.com/kubeflow/tf-operator
 ignore:
-- github.com/tensorflow/k8s
+- github.com/kubeflow/tf-operator
 import:
 - package: k8s.io/client-go
   version: v5.0.0

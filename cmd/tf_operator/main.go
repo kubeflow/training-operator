@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tensorflow/k8s/cmd/tf_operator/app"
-	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
+	"github.com/kubeflow/tf-operator/cmd/tf_operator/app"
+	"github.com/kubeflow/tf-operator/cmd/tf_operator/app/options"
 )
 
 func main() {

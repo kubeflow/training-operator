@@ -10,7 +10,7 @@ go:
   - 1.8
   - 1.9
 
-go_import_path: github.com/tensorflow/k8s
+go_import_path: github.com/kubeflow/tf-operator
 
 install:
   # get coveralls.io support
@@ -19,7 +19,7 @@ install:
   - gometalinter --install
 
 script:
-  - go build -o tf-operator github.com/tensorflow/k8s/cmd/tf_operator
+  - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf_operator
   - gometalinter --config=linter_config.json ./pkg/...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor
