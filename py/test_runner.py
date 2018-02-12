@@ -6,9 +6,6 @@ import os
 import time
 import uuid
 
-import jinja2
-import yaml
-
 from kubernetes import client as k8s_client
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
@@ -37,7 +34,7 @@ def run_test(args):
   name = None
   namespace = None
   for pair in args.params.split(","):
-    k,v = pair.split("=", 1)
+    k, v = pair.split("=", 1)
     if k == "name":
       name = v
 
@@ -59,7 +56,7 @@ def run_test(args):
   start = time.time()
 
   try:
-    util.run(["ks", "apply",  env, "-c", args.component],
+    util.run(["ks", "apply", env, "-c", args.component],
               cwd=args.app_dir)
 
     logging.info("Created job %s in namespaces %s", name, namespace)
