@@ -32,7 +32,7 @@ class TestProw(unittest.TestCase):
     expected = {
         "timestamp": 1000,
         "repos": {
-            "tensorflow/k8s": "abcd",
+            "kubeflow/tf-operator": "abcd",
         },
     }
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
