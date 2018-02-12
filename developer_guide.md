@@ -85,10 +85,10 @@ Create a symbolic link inside your GOPATH to the location you checked out the co
 
 ```sh
 mkdir -p ${GOPATH}/src/github.com/tensorflow
-ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
+ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/kubeflow/tf-operator
 ```
 
-* GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
+* GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/tf-operator
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
@@ -101,7 +101,7 @@ glide install -v
 Build it
 
 ```sh
-go install github.com/tensorflow/k8s/cmd/tf_operator
+go install github.com/kubeflow/tf-operator/cmd/tf_operator
 ```
 
 ## Building all the artifacts.
@@ -153,7 +153,7 @@ The first command creates a CRD `tfjobs`. And the second command runs the operat
 operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/kubeflow/tf-operator/master/examples/tf_job.yaml
 ```
 
 ## Go version
