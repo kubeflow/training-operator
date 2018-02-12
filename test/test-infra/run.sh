@@ -4,11 +4,11 @@ set -ex
 # Checkout the code.
 /usr/local/bin/checkout.sh /src
 
-# Trigger a workflow	          
+# Trigger a workflow
 python -m kubeflow.testing.run_e2e_workflow \
 	--project=mlkube-testing \
 	--zone=us-east1-d \
 	--cluster=kubeflow-testing \
 	--bucket=kubernetes-jenkins \
 	--component=workflows \
-	--app_dir=/src/tensorflow/k8s/test/workflows
+	--app_dir=/src/kubeflow/tf-operator/test/workflows
