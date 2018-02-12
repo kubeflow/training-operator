@@ -60,7 +60,7 @@ const App = () => {
               rel="stylesheet"
             />
             <div style={headerStyle}>
-              <h1 style={brandingStyle}>TensorFlow/k8s</h1>
+              <h1 style={brandingStyle}>kubeflow/tf-operator</h1>
               <FlatButton
                 label="Create"
                 primary={true}
