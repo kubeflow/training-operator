@@ -8,9 +8,19 @@
     // Each object below should correspond to a component in the components/ directory
     workflows: {
       bucket: "mlkube-testing_temp",
-      name: "training-presubmit-1-5-01133157",
+      name: "jlewi-tf-k8s-presubmit-test-374-6e32",
       namespace: "kubeflow-test-infra",
-      prow_env: "JOB_NAME=tf-k8s-presubmit,JOB_TYPE=presubmit,PULL_NUMBER=358,REPO_NAME=k8s,REPO_OWNER=tensorflow,BUILD_NUMBER=0c57",
+      prow_env: "JOB_NAME=tf-k8s-presubmit-test,JOB_TYPE=presubmit,PULL_NUMBER=374,REPO_NAME=k8s,REPO_OWNER=tensorflow,BUILD_NUMBER=6e32",
+    },
+    simple_tfjob: {
+      name: "simple-001",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
+    gpu_tfjob: {
+      name: "gpu-simple-001",
+      namespace: "kubeflow-test-infra",
+      image: "",
     },
   },
 }
