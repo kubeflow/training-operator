@@ -51,7 +51,7 @@ def run_lint(args):
           util.run(["pylint", "--rcfile=" + rc_file, full_path],
                     cwd=args.src_dir)
         except subprocess.CalledProcessError:
-          failed_files.append(full_path.strip(args.src_dir))
+          failed_files.append(full_path.strip[len(args.src_dir):])
 
   if failed_files:
     failed_files.sort()
