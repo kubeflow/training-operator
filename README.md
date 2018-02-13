@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubeflow/tf-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/tf-operator?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/tf-operator)](https://goreportcard.com/report/github.com/kubeflow/tf-operator)
 [Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
-[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
+[Prow Jobs](https://prow.k8s.io/?repo=kubeflow%2Ftf-operator)
 
 ## Overview
 

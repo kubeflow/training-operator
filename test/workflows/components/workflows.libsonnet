@@ -50,7 +50,14 @@
 
       local project = "mlkube-testing";
       // GKE cluster to use
-      local cluster = name;
+      // We need to truncate the cluster to no more than 40 characters because
+      // cluster names can be a max of 40 characters.
+      // We expect the suffix of the cluster name to be unique salt.
+      local cluster = 
+        if std.length(name) > 40 then
+          std.substr(s, std.length(name) - 40, 40)
+        else 
+        name;
       local zone = "us-east1-d";
       local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
