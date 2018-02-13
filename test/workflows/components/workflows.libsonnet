@@ -145,7 +145,8 @@
             },
           ],  // volumes
           // onExit specifies the template that should always run when the workflow completes.
-          onExit: "exit-handler",
+          // DO NOT SUBMIT this is a hack to leave it up for debugging.
+          // onExit: "exit-handler",
           templates: [
             {
               name: "e2e",
