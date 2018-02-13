@@ -113,7 +113,7 @@ CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-op
 helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>,dashboard.install=true,dashboard.serviceType=LoadBalancer
 ```
 
-This sould create a service named `tf-job-dashboard` as well as an additional deployment named `tf-job-dashboard`.
+This should create a service named `tf-job-dashboard` as well as an additional deployment named `tf-job-dashboard`.
 
 
 ### Configuring the CRD
