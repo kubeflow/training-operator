@@ -55,7 +55,7 @@
       // We expect the suffix of the cluster name to be unique salt.
       local cluster = 
         if std.length(name) > 40 then
-          std.substr(s, std.length(name) - 40, 40)
+          std.substr(name, std.length(name) - 40, 40)
         else 
         name;
       local zone = "us-east1-d";
