@@ -53,9 +53,12 @@
       // We need to truncate the cluster to no more than 40 characters because
       // cluster names can be a max of 40 characters.
       // We expect the suffix of the cluster name to be unique salt.
+      // We prepend a z because cluster name must start with an alphanumeric character
+      // and if we cut the prefix we might end up starting with "-" or other invalid
+      // character for first character.
       local cluster = 
         if std.length(name) > 40 then
-          std.substr(name, std.length(name) - 40, 40)
+          "z" + std.substr(name, std.length(name) - 39, 39)
         else 
         name;
       local zone = "us-east1-d";
