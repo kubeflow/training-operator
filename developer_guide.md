@@ -84,7 +84,7 @@ $ tree -d -I 'vendor|bin|.git'
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
 ```sh
-mkdir -p ${GOPATH}/src/github.com/tensorflow
+mkdir -p ${GOPATH}/src/github.com/kubeflow
 ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/kubeflow/tf-operator
 ```
 
