@@ -3,4 +3,4 @@
 workflows:
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
-    name": tfjob-e2e
+    name: tfjob-e2e
