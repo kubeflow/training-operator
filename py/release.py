@@ -25,8 +25,8 @@ from py import util
 # Repo org and name can be set via environment variables when running
 # on PROW. But we choose sensible defaults so that we can run locally without
 # setting defaults.
-REPO_ORG = os.getenv("REPO_OWNER", "tensorflow")
-REPO_NAME = os.getenv("REPO_NAME", "k8s")
+REPO_ORG = os.getenv("REPO_OWNER", "kubeflow")
+REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
 
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
