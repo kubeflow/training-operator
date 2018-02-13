@@ -78,7 +78,8 @@ def run_test(args):
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
         name, namespace)
   except Exception as e: # pylint: disable-msg=broad-except
-    # We want to catch all exceptions because we warm the test as failed.
+    logging.error("There was a problem running the job; %s", e)
+    # We want to catch all exceptions because we want the test as failed.
     t.failure = e.message
   finally:
     t.time = time.time() - start
