@@ -25,8 +25,8 @@ from py import util
 # Repo org and name can be set via environment variables when running
 # on PROW. But we choose sensible defaults so that we can run locally without
 # setting defaults.
-REPO_ORG = os.getenv("REPO_OWNER", "kubeflow")
-REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
+REPO_ORG = os.getenv("REPO_OWNER", "tensorflow")
+REPO_NAME = os.getenv("REPO_NAME", "k8s")
 
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
@@ -407,7 +407,7 @@ def build_local(args):
 
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-  go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
+  go_src_dir = os.path.join(go_dir, "src", REPO_ORG, REPO_NAME)
 
   if not os.path.exists(go_src_dir):
     logging.info("Directory %s  doesn't exist.")
