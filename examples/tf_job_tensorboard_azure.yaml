@@ -3,18 +3,6 @@ kind: "TFJob"
 metadata:
   name: "example-job-tb-azure"
 spec:
-  tensorboard:
-    logDir: /tmp/tensorflow
-    serviceType: LoadBalancer
-    volumes:
-      - name: azurefile
-        azureFile:
-            secretName: azure-secret
-            shareName: data
-            readOnly: false
-    volumeMounts:
-      - mountPath: /tmp/tensorflow
-        name: azurefile
   replicaSpecs:
     - replicas: 1
       tfPort: 2222

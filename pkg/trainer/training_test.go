@@ -282,7 +282,6 @@ func TestJobSetup(t *testing.T) {
 							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
-					TensorBoard: &tfv1alpha1.TensorBoardSpec{},
 					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
 						Chief: &tfv1alpha1.ChiefSpec{
 							ReplicaName:  string(tfv1alpha1.WORKER),
