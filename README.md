@@ -3,8 +3,12 @@
 [![Build Status](https://travis-ci.org/kubeflow/tf-operator.svg?branch=master)](https://travis-ci.org/kubeflow/tf-operator)
 [![Coverage Status](https://coveralls.io/repos/github/kubeflow/tf-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/tf-operator?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/tf-operator)](https://goreportcard.com/report/github.com/kubeflow/tf-operator)
-[Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
-[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
+
+## Quick Links
+
+* [Prow test dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+* [Prow jobs dashboard](https://prow.k8s.io/?repo=kubeflow%2Ftf-operator)
+* [Argo UI for E2E tests](http://testing-argo.kubeflow.io)
 
 ## Overview
 
@@ -581,3 +585,13 @@ the entry you can expand it to see **resource.labels.pod_id**.
 ## Contributing
 
 Please refer to the [developer_guide](developer_guide.md)
+
+## Community
+
+* [Slack Channel](https://join.slack.com/t/kubeflow/shared_invite/enQtMjgyMzMxNDgyMTQ5LWUwMTIxNmZlZTk2NGU0MmFiNDE4YWJiMzFiOGNkZGZjZmRlNTExNmUwMmQ2NzMwYzk5YzQxOWQyODBlZGY2OTg)
+* [Twitter](http://twitter.com/kubeflow)
+* [Mailing List](https://groups.google.com/forum/#!forum/kubeflow-discuss)
+
+In the interest of fostering an open and welcoming environment, we as contributors and maintainers pledge to making participation in our project and our community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+
+The Kubeflow community is guided by our [Code of Conduct](https://github.com/kubeflow/community/blob/master/CODE_OF_CONDUCT.md), which we encourage everybody to read before participating.
