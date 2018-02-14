@@ -85,7 +85,8 @@ def wait_for_job(client, namespace, name,
     if status_callback:
       status_callback(results)
 
-    if results["status"]["phase"] == "Done":
+    # If we poll the CRD quick enough status won't have been set yet.
+    if results.get("status", {}).get("phase", {}) == "Done":
       return results
 
     if datetime.datetime.now() + polling_interval > end_time:
