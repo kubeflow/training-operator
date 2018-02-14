@@ -87,7 +87,8 @@ def run_test(args):
     logging.error("Exception type: %s", e.__class__)
     logging.error("Exception args: %s", e.args)
     # We want to catch all exceptions because we want the test as failed.
-    t.failure = e.message
+    t.failure = ("Exception occured; type {0} message {1}".format(
+      e.__class__, e.message))
   finally:
     t.time = time.time() - start
     if args.junit_path:

@@ -55,10 +55,10 @@ def create_tf_job(client, spec):
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
   logging.info("Job %s in namespace %s; phase=%s, state=%s,",
-           tf_job["metadata"]["name"],
-           tf_job["metadata"]["namespace"],
-           tf_job["status"]["phase"],
-           tf_job["status"]["state"])
+           tf_job.get("metadata", {}).get("name"),
+           tf_job.get("metadata", {}).get("namespace"),
+           tf_job.get("status", {}).get("phase"),
+           tf_job.get("status", {}).get("state"))
 
 def wait_for_job(client, namespace, name,
                  timeout=datetime.timedelta(minutes=5),
