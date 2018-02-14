@@ -3,8 +3,12 @@
 [![Build Status](https://travis-ci.org/kubeflow/tf-operator.svg?branch=master)](https://travis-ci.org/kubeflow/tf-operator)
 [![Coverage Status](https://coveralls.io/repos/github/kubeflow/tf-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/tf-operator?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/tf-operator)](https://goreportcard.com/report/github.com/kubeflow/tf-operator)
-[Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
-[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
+
+## Quick Links
+
+* [Prow test dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+* [Prow jobs dashboard](https://prow.k8s.io/?repo=kubeflow%2Ftf-operator)
+* [Argo UI for E2E tests](http://testing-argo.kubeflow.io)
 
 ## Overview
 
@@ -581,3 +585,7 @@ the entry you can expand it to see **resource.labels.pod_id**.
 ## Contributing
 
 Please refer to the [developer_guide](developer_guide.md)
+
+## Community
+
+This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
