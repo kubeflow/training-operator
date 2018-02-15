@@ -141,14 +141,14 @@ def build_operator_image(root_dir, registry, project=None, should_push=True,
   commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
-      "github.com/tensorflow/k8s/cmd/tf_operator",
-      "github.com/tensorflow/k8s/test/e2e",
-      "github.com/tensorflow/k8s/dashboard/backend",
+      "github.com/kubeflow/tf-operator/cmd/tf_operator",
+      "github.com/kubeflow/tf-operator/test/e2e",
+      "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
-    if t == "github.com/tensorflow/k8s/cmd/tf_operator":
+    if t == "github.com/kubeflow/tf-operator/cmd/tf_operator":
       util.run(["go", "install", "-ldflags",
-                "-X github.com/tensorflow/k8s/version.GitSHA={}".format(commit),
+                "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit),
                 t])
     util.run(["go", "install", t])
 
@@ -161,6 +161,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True,
   # List of paths to copy relative to root.
   sources = [
       "build/images/tf_operator/Dockerfile",
+      "examples/tf_sample/tf_sample/tf_smoke.py",
       os.path.join(go_path, "bin/tf_operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
@@ -426,7 +427,7 @@ def clone_postsubmit(args):
   util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit)
 
 # TODO(jlewi): Delete this function once
-# https://github.com/tensorflow/k8s/issues/189 is fixed.
+# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
 def build_commit(args, branches):
   top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTFJobSrc")
   logging.info("Top level directory for source: %s", top_dir)
@@ -448,13 +449,13 @@ def build_commit(args, branches):
   build_and_push(go_dir, src_dir, args)
 
 # TODO(jlewi): Delete this function once
-# https://github.com/tensorflow/k8s/issues/189 is fixed.
+# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
   build_commit(args, None)
 
 # TODO(jlewi): Delete this function once
-# https://github.com/tensorflow/k8s/issues/189 is fixed.
+# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
   branches = ["pull/{0}/head:pr".format(args.pr)]

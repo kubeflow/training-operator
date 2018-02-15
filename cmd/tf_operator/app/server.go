@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -32,15 +31,15 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/tensorflow/k8s/cmd/tf_operator/app/options"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	"github.com/tensorflow/k8s/pkg/controller"
-	"github.com/tensorflow/k8s/pkg/util"
-	"github.com/tensorflow/k8s/pkg/util/k8sutil"
-	"github.com/tensorflow/k8s/version"
+	"github.com/kubeflow/tf-operator/cmd/tf_operator/app/options"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/controller"
+	"github.com/kubeflow/tf-operator/pkg/util"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"github.com/kubeflow/tf-operator/version"
 )
 
 var (
@@ -56,12 +55,12 @@ func Run(opt *options.ServerOption) error {
 		namespace = metav1.NamespaceDefault
 	}
 
-	glog.Infof("tf_operator Version: %v", version.Version)
-	glog.Infof("Git SHA: %s", version.GitSHA)
-	glog.Infof("Go Version: %s", runtime.Version())
-	glog.Infof("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+	// To help debugging, immediately log version
+	glog.Infof("%+v", version.Info())
+
+	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
-		os.Exit(0)
+		version.PrintVersionAndExit()
 	}
 
 	config, err := k8sutil.GetClusterConfig()

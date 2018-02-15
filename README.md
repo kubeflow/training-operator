@@ -1,10 +1,14 @@
 # K8s Custom Resource and Operator For TensorFlow jobs
 
-[![Build Status](https://travis-ci.org/tensorflow/k8s.svg?branch=master)](https://travis-ci.org/tensorflow/k8s)
-[![Coverage Status](https://coveralls.io/repos/github/tensorflow/k8s/badge.svg?branch=master)](https://coveralls.io/github/tensorflow/k8s?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/tensorflow/k8s)](https://goreportcard.com/report/github.com/tensorflow/k8s)
-[Prow Test Dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
-[Prow Jobs](https://prow.k8s.io/?repo=tensorflow%2Fk8s)
+[![Build Status](https://travis-ci.org/kubeflow/tf-operator.svg?branch=master)](https://travis-ci.org/kubeflow/tf-operator)
+[![Coverage Status](https://coveralls.io/repos/github/kubeflow/tf-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/tf-operator?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/tf-operator)](https://goreportcard.com/report/github.com/kubeflow/tf-operator)
+
+## Quick Links
+
+* [Prow test dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
+* [Prow jobs dashboard](https://prow.k8s.io/?repo=kubeflow%2Ftf-operator)
+* [Argo UI for E2E tests](http://testing-argo.kubeflow.io)
 
 ## Overview
 
@@ -97,11 +101,11 @@ TFJob requires Kubernetes >= 1.8
     PASSED: tf-job-tfjob-test-pqxkwk
     ```
 
-### Installing `tensorflow/k8s`'s Dashboard
+### Installing `kubeflow/tf-operator`'s Dashboard
 
 > **Caution: the dashboard is in very early development stage!**
 
-`tensorflow/k8s` also includes a dashboard allowing you to monitor and create `TFJobs` through a web UI.
+`kubeflow/tf-operator` also includes a dashboard allowing you to monitor and create `TFJobs` through a web UI.
 To deploy the dashboard, set `dashboard.install` to `true`.
 Note that by default the dashboard will only be accessible from within the cluster or by proxying, as the default `ServiceType` is `ClusterIP`.
 If you wish to expose the dashboard through an external IP, set `dashboard.serviceType` to `LoadBalancer`.
@@ -113,7 +117,7 @@ CHART=https://storage.googleapis.com/tf-on-k8s-dogfood-releases/latest/tf-job-op
 helm install ${CHART} -n tf-job --wait --replace --set cloud=<gke or azure>,dashboard.install=true,dashboard.serviceType=LoadBalancer
 ```
 
-This sould create a service named `tf-job-dashboard` as well as an additional deployment named `tf-job-dashboard`.
+This should create a service named `tf-job-dashboard` as well as an additional deployment named `tf-job-dashboard`.
 
 
 ### Configuring the CRD
@@ -174,7 +178,7 @@ Subsequently, any pod requesting a resource of type `alpha.kubernetes.io/nvidia-
 You create a job by defining a TFJob and then creating it with.
 
 ```
-kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/kubeflow/tf-operator/master/examples/tf_job.yaml
 ```
 
 In this case the job spec looks like the following
@@ -280,9 +284,9 @@ for using GPUs.
 ### Requesting a TensorBoard instance
 
 You can also ask the `TFJob` operator to create a TensorBoard instance
-by including a [TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95)
+by including a [TensorBoardSpec](https://github.com/kubeflow/tf-operator/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95)
 in your job. The table below describes the important fields in
-[TensorBoardSpec](https://github.com/tensorflow/k8s/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95).
+[TensorBoardSpec](https://github.com/kubeflow/tf-operator/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95).
 
 | Name | Description | Required | Default |
 |---|---|---|---|
@@ -581,3 +585,7 @@ the entry you can expand it to see **resource.labels.pod_id**.
 ## Contributing
 
 Please refer to the [developer_guide](developer_guide.md)
+
+## Community
+
+This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.

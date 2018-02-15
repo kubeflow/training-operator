@@ -35,12 +35,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	listers "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/trainer"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	kubeflowscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	listers "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/trainer"
 )
 
 const (

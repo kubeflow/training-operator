@@ -34,8 +34,8 @@
       local goDir = testDir + "/go";
       // Source directory where all repos should be checked out
       local srcRootDir = testDir + "/src";
-      // The directory containing the tensorflow/k8s repo
-      local srcDir = srcRootDir + "/tensorflow/k8s";
+      // The directory containing the kubeflow/tf-operator repo
+      local srcDir = srcRootDir + "/kubeflow/tf-operator";
       local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
@@ -203,7 +203,10 @@
                   "/usr/local/bin/checkout.sh",
                   srcRootDir,
                 ],
-                env: prow_env,
+                env: prow_env + [{
+                  name: "EXTRA_REPOS",
+                  value: "kubeflow/testing@HEAD",
+                }],
                 image: image,
                 volumeMounts: [
                   {
@@ -255,11 +258,14 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python3",
               "-m",
-              "py.deploy",
+              "py.test_runner",
               "test",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=simple_tfjob",
+              "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
@@ -267,15 +273,13 @@
               "-m",
               "py.test_runner",
               "test",
-              "--spec=" + srcDir + "/examples/tf_job_gpu.yaml",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=gpu_tfjob",
+              "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
-              // tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
-              // TODO(jlewi): The example should be a template and we should rebuild and
-              // and use the newly built sample container.
-              "--image_tag=notag",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python3",

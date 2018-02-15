@@ -1,9 +1,14 @@
 # TODO(jlewi): How can we make it work with golang:1.8.2-alpine
 FROM golang:1.8.2
 
+# TODO(jlewi): We should probably change the directory to /opt/kubeflow.
 RUN mkdir -p /opt/mlkube
 RUN mkdir -p /opt/mlkube/test
 RUN mkdir -p /opt/tensorflow_k8s/dashboard/
+RUN mkdir -p /opt/kubeflow/samples
+
+COPY tf_smoke.py /opt/kubeflow/samples/
+RUN chmod a+x /opt/kubeflow/samples/*
 COPY tf_operator /opt/mlkube
 COPY e2e /opt/mlkube/test
 COPY backend /opt/tensorflow_k8s/dashboard/

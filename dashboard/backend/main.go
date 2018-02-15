@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tensorflow/k8s/dashboard/backend/client"
-	"github.com/tensorflow/k8s/dashboard/backend/handler"
+	"github.com/kubeflow/tf-operator/dashboard/backend/client"
+	"github.com/kubeflow/tf-operator/dashboard/backend/handler"
 )
 
 func main() {

@@ -18,8 +18,8 @@ import (
 	"errors"
 	"fmt"
 
-	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/util"
+	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 // ValidateTFJobSpec checks that the TFJobSpec is valid.

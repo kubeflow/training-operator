@@ -6,9 +6,6 @@ import os
 import time
 import uuid
 
-import jinja2
-import yaml
-
 from kubernetes import client as k8s_client
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
@@ -27,28 +24,40 @@ def run_test(args):
 
   api_client = k8s_client.ApiClient()
 
+  salt = uuid.uuid4().hex[0:4]
+
+  # Create a new environment for this run
+  env = "test-env-{0}".format(salt)
+
+  util.run(["ks", "env", "add", env], cwd=args.app_dir)
+
+  name = None
+  namespace = None
+  for pair in args.params.split(","):
+    k, v = pair.split("=", 1)
+    if k == "name":
+      name = v
+
+    if k == "namespace":
+      namespace = v
+    util.run(["ks", "param", "set", "--env=" + env, args.component, k, v],
+             cwd=args.app_dir)
+
+  if not name:
+    raise ValueError("name must be provided as a parameter.")
+
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  t.name = os.path.basename(args.spec)
+  t.name = os.path.basename(name)
 
-  loader = jinja2.FileSystemLoader(os.path.dirname(args.spec))
+  if not namespace:
+    raise ValueError("namespace must be provided as a parameter.")
 
-  if not args.image_tag:
-    raise ValueError("--image_tag must be provided.")
+  start = time.time()
 
-  logging.info("Loading spec from %s with image_tag=%s", args.spec, args.image_tag)
-  spec_contents = jinja2.Environment(loader=loader).get_template(
-    os.path.basename(args.spec)).render(image_tag=args.image_tag)
-
-  spec = yaml.load(spec_contents)
-
-  # Make the job name unique.
-  spec["metadata"]["name"] += "-" + uuid.uuid4().hex[0:4]
   try:
-    start = time.time()
-    api_response = tf_job_client.create_tf_job(api_client, spec)
-    namespace = api_response["metadata"]["namespace"]
-    name = api_response["metadata"]["name"]
+    util.run(["ks", "apply", env, "-c", args.component],
+              cwd=args.app_dir)
 
     logging.info("Created job %s in namespaces %s", name, namespace)
     results = tf_job_client.wait_for_job(api_client, namespace, name,
@@ -80,13 +89,6 @@ def add_common_args(parser):
   """Add a set of common parser arguments."""
 
   parser.add_argument(
-    "--spec",
-    default=None,
-    type=str,
-    required=True,
-    help="Path to the YAML file specifying the test to run.")
-
-  parser.add_argument(
     "--project",
     default=None,
     type=str,
@@ -99,10 +101,22 @@ def add_common_args(parser):
     help=("The name of the cluster."))
 
   parser.add_argument(
-    "--image_tag",
+    "--app_dir",
     default=None,
     type=str,
-    help="The tag for the docker image to use.")
+    help="Directory containing the ksonnet app.")
+
+  parser.add_argument(
+    "--component",
+    default=None,
+    type=str,
+    help="The ksonnet component of the job to run.")
+
+  parser.add_argument(
+    "--params",
+    default=None,
+    type=str,
+    help="Comma separated list of key value pairs to set on the component.")
 
   parser.add_argument(
     "--zone",
@@ -133,6 +147,11 @@ def build_parser():
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
 
   util.maybe_activate_service_account()
 

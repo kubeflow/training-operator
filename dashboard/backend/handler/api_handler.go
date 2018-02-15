@@ -9,8 +9,8 @@ import (
 	log "github.com/golang/glog"
 
 	"github.com/emicklei/go-restful"
-	"github.com/tensorflow/k8s/dashboard/backend/client"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/dashboard/backend/client"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
