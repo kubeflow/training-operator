@@ -63,9 +63,9 @@ def run_test(args):
     results = tf_job_client.wait_for_job(api_client, namespace, name,
                                          status_callback=tf_job_client.log_status)
 
-    if results["status"]["state"].lower() != "succeeded":
+    if results.get("status", {}).get("state", {}).lower() != "succeeded":
       t.failure = "Job {0} in namespace {1} in state {2}".format(
-        name, namespace, results["status"]["state"])
+        name, namespace, results.get("status", {}).get("state", None))
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -78,8 +78,17 @@ def run_test(args):
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
         name, namespace)
   except Exception as e: # pylint: disable-msg=broad-except
-    # We want to catch all exceptions because we warm the test as failed.
-    t.failure = e.message
+    # TODO(jlewi): I'm observing flakes where the exception has message "status"
+    # in an effort to try to nail down this exception we print out more
+    # information about the exception.
+    logging.error("There was a problem running the job; Exception %s", e)
+    logging.error("There was a problem running the job; Exception "
+                  "message: %s", e.message)
+    logging.error("Exception type: %s", e.__class__)
+    logging.error("Exception args: %s", e.args)
+    # We want to catch all exceptions because we want the test as failed.
+    t.failure = ("Exception occured; type {0} message {1}".format(
+      e.__class__, e.message))
   finally:
     t.time = time.time() - start
     if args.junit_path:

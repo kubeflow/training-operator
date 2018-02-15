@@ -55,10 +55,10 @@ def create_tf_job(client, spec):
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
   logging.info("Job %s in namespace %s; phase=%s, state=%s,",
-           tf_job["metadata"]["name"],
-           tf_job["metadata"]["namespace"],
-           tf_job["status"]["phase"],
-           tf_job["status"]["state"])
+           tf_job.get("metadata", {}).get("name"),
+           tf_job.get("metadata", {}).get("namespace"),
+           tf_job.get("status", {}).get("phase"),
+           tf_job.get("status", {}).get("state"))
 
 def wait_for_job(client, namespace, name,
                  timeout=datetime.timedelta(minutes=5),
@@ -85,7 +85,8 @@ def wait_for_job(client, namespace, name,
     if status_callback:
       status_callback(results)
 
-    if results["status"]["phase"] == "Done":
+    # If we poll the CRD quick enough status won't have been set yet.
+    if results.get("status", {}).get("phase", {}) == "Done":
       return results
 
     if datetime.datetime.now() + polling_interval > end_time:

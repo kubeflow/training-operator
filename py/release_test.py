@@ -16,8 +16,8 @@ class ReleaseTest(unittest.TestCase):
   def test_build_postsubmit(self, mock_build_and_push, mock_clone,    # pylint: disable=no-self-use
                             _mock_install, _mock_os, _mock_makedirs):
     # Make sure REPO_OWNER and REPO_NAME aren't changed by the environment
-    release.REPO_ORG = "tensorflow"
-    release.REPO_NAME = "k8s"
+    release.REPO_ORG = "kubeflow"
+    release.REPO_NAME = "tf-operator"
 
     parser = release.build_parser()
     args = parser.parse_args(["postsubmit", "--src_dir=/top/src_dir"])
@@ -27,7 +27,7 @@ class ReleaseTest(unittest.TestCase):
       '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
       mock.ANY)
     mock_clone.assert_called_once_with(
-      '/top/src_dir/git_tensorflow_k8s', 'tensorflow', 'k8s', None, None)
+      '/top/src_dir/git_tensorflow_k8s', 'kubeflow', 'tf-operator', None, None)
 
   @mock.patch("py.release.os.makedirs")
   @mock.patch("py.release.os.symlink")
@@ -44,7 +44,7 @@ class ReleaseTest(unittest.TestCase):
       '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
       mock.ANY)
     mock_clone.assert_called_once_with(
-      "/top/src_dir/git_tensorflow_k8s", "tensorflow", "k8s", "22",
+      "/top/src_dir/git_tensorflow_k8s", "kubeflow", "tf-operator", "22",
       ["pull/10/head:pr"])
 
   def test_update_values(self):
