@@ -27,8 +27,8 @@ from py import util  # pylint: disable=no-name-in-module
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
-GO_REPO_OWNER = "tensorflow"
-GO_REPO_NAME = "k8s"
+GO_REPO_OWNER = "kubeflow"
+GO_REPO_NAME = "tf-operator"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
 
