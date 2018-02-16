@@ -16,7 +16,7 @@ spec:
       - name: tf-job-operator
         image: {{ .Values.image }}
         command:
-          - /opt/mlkube/tf_operator
+          - /opt/mlkube/tf-operator
           {{- if .Values.config.configmap }}
           - --controller-config-file={{ .Values.config.file }}
           {{- else if .Values.cloud }}
