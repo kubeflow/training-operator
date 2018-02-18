@@ -24,8 +24,13 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
+// Scheme : exported var
 var Scheme = runtime.NewScheme()
+
+// Codecs : exported var
 var Codecs = serializer.NewCodecFactory(Scheme)
+
+// ParameterCodec : exported var
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 
 func init() {

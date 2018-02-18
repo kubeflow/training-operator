@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	// Environment variable for namespace when deployed on kubernetes
+	// EnvKubeflowNamespace : Environment variable for namespace when deployed on kubernetes
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 )
 
-// Pformat returns a pretty format output of any value that can be marshalled to JSON.
+// Pformat returns a pretty format output of any value that can be marshaled to JSON.
 func Pformat(value interface{}) string {
 	if s, ok := value.(string); ok {
 		return s

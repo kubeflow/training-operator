@@ -34,7 +34,7 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_TFJob(in *TFJob) {
-	SetDefaults_TFJob(in)
+	SetDefaultsTFJob(in)
 }
 
 func SetObjectDefaults_TFJobList(in *TFJobList) {

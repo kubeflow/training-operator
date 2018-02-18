@@ -24,6 +24,7 @@ import (
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 )
 
+// Interface : contains interface for Discovery and Kubeflow
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface
@@ -43,7 +44,7 @@ func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interfac
 	return c.kubeflowV1alpha1
 }
 
-// Deprecated: Kubeflow retrieves the default version of KubeflowClient.
+// Kubeflow : [DEPRECATED] Kubeflow retrieves the default version of KubeflowClient.
 // Please explicitly pick a version.
 func (c *Clientset) Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface {
 	return c.kubeflowV1alpha1

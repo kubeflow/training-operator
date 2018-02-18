@@ -239,7 +239,7 @@ func (apiHandler *APIHandler) handleGetNamespaces(request *restful.Request, resp
 		log.Warningf("failed to list namespaces.")
 		response.WriteError(http.StatusInternalServerError, err)
 	} else {
-		log.Infof("sucessfully listed namespaces")
+		log.Infof("successfully listed namespaces")
 		response.WriteHeaderAndEntity(http.StatusOK, l)
 	}
 }

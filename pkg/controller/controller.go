@@ -48,6 +48,7 @@ const (
 )
 
 var (
+	// ErrVersionOutdated : exported var to capture the error in apiserver
 	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
 
 	keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
@@ -58,6 +59,7 @@ var (
 	MaxJobBackOff = 360 * time.Second
 )
 
+// Controller is structure to handle various clients
 type Controller struct {
 	KubeClient   kubernetes.Interface
 	APIExtclient apiextensionsclient.Interface
@@ -83,6 +85,7 @@ type Controller struct {
 	syncHandler func(jobKey string) (bool, error)
 }
 
+// New : a method to setting up client handles and returns controller
 func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Interface, tfJobClient tfjobclient.Interface,
 	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
 	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
@@ -251,10 +254,8 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	// case we should forget about a job when the appropriate condition is reached.
 	if tfJob.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		return true, nil
-	} else {
-		return false, nil
 	}
-
+	return false, nil
 }
 
 // obj could be an *batch.Job, or a DeletionFinalStateUnknown marker item.

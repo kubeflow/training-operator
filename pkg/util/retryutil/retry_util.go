@@ -19,6 +19,7 @@ import (
 	"time"
 )
 
+// RetryError : struct contains an int var to count number of retries
 type RetryError struct {
 	n int
 }
@@ -27,11 +28,13 @@ func (e *RetryError) Error() string {
 	return fmt.Sprintf("still failing after %d retries", e.n)
 }
 
+// IsRetryFailure : method to return true when error on retrying
 func IsRetryFailure(err error) bool {
 	_, ok := err.(*RetryError)
 	return ok
 }
 
+// ConditionFunc : conditional method to capture the error
 type ConditionFunc func() (bool, error)
 
 // Retry retries f every interval until after maxRetries.

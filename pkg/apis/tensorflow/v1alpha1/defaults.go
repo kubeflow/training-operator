@@ -23,8 +23,8 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_TFJob sets any unspecified values to defaults
-func SetDefaults_TFJob(obj *TFJob) {
+// SetDefaultsTFJob sets any unspecified values to defaults
+func SetDefaultsTFJob(obj *TFJob) {
 	c := &obj.Spec
 
 	if c.TFImage == "" {

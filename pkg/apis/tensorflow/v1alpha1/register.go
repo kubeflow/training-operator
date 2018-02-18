@@ -21,6 +21,7 @@ import (
 )
 
 var (
+	// SchemeBuilder : an object of runtime.SchemeBuilder
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 	AddToScheme   = SchemeBuilder.AddToScheme
 )
