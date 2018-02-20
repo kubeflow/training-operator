@@ -59,7 +59,7 @@ func ConfigureAcceleratorsForTFJobSpec(c *tfv1.TFJobSpec, accelerators map[strin
 
 				lists := []v1.ResourceList{c.Resources.Limits, c.Resources.Requests}
 				for _, resources := range lists {
-					for name, _ := range resources {
+					for name := range resources {
 
 						if _, ok := accelerators[string(name)]; !ok {
 							continue
@@ -110,10 +110,12 @@ func Cleanup(c *tfv1.TFJobSpec) {
 	// We should have default container images so user doesn't have to provide these.
 }
 
+// CRDName : method returns custom resource definition kind and group.
 func CRDName() string {
 	return fmt.Sprintf("%s.%s", tfv1.CRDKindPlural, tfv1.CRDGroup)
 }
 
+// scalingReason : method returns the reason for scaling the cluster size
 func scalingReason(from, to int) string {
 	return fmt.Sprintf("Current cluster size: %d, desired cluster size: %d", from, to)
 }

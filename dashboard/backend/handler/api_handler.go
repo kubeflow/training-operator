@@ -1,4 +1,4 @@
-// handler is a package handling API requests for managing TFJobs.
+// Package handler is a package handling API requests for managing TFJobs.
 // The primary purpose of handler is implementing the functionality needed by the TFJobs dashboard.
 package handler
 
@@ -36,7 +36,7 @@ type TFJobList struct {
 	tfJobs []v1alpha1.TFJob `json:"TFJobs"`
 }
 
-// NamepsaceList is a list of namespaces
+// NamespaceList is a list of namespaces
 type NamespaceList struct {
 	namespaces []v1.Namespace `json:"namespaces"`
 }

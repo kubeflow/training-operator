@@ -48,6 +48,7 @@ var (
 	retryPeriod   = 3 * time.Second
 )
 
+// Run :
 func Run(opt *options.ServerOption) error {
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {

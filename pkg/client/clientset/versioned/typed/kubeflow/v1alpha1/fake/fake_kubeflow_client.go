@@ -22,10 +22,11 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
+// FakeKubeflowV1alpha1 : creates structure for fake testing
 type FakeKubeflowV1alpha1 struct {
 	*testing.Fake
 }
-
+// TFJobs : returns a fake tf-job instance
 func (c *FakeKubeflowV1alpha1) TFJobs(namespace string) v1alpha1.TFJobInterface {
 	return &FakeTFJobs{c, namespace}
 }

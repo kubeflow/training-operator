@@ -51,7 +51,7 @@ type TFReplicaSet struct {
 	Spec tfv1alpha1.TFReplicaSpec
 }
 
-// TFReplicas is an interface for managing a set of replicas.
+// TFReplicaSetInterface is an interface for managing a set of replicas.
 type TFReplicaSetInterface interface {
 	Create() error
 	Delete() error
@@ -70,6 +70,7 @@ type TFConfig struct {
 	Environment string `json:"environment"`
 }
 
+// NewTFReplicaSet : returns tf replica set for existing replica
 func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecorder, tfReplicaSpec tfv1alpha1.TFReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
 	if tfReplicaSpec.TFReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
@@ -117,6 +118,7 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"tf_job_name": s.Job.job.ObjectMeta.Name})
 }
 
+// Create : creates job for each task
 func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		taskLabels := s.Labels()
@@ -202,7 +204,7 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		}
 
 		// Add TF_CONFIG environment variable.
-		for i, _ := range newJ.Spec.Template.Spec.Containers {
+		for i := range newJ.Spec.Template.Spec.Containers {
 			// We can't get c in the loop variable because that would be by value so our modifications
 			// wouldn't have any effect.
 			c := &newJ.Spec.Template.Spec.Containers[i]
@@ -358,6 +360,7 @@ func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1a
 	return tfv1alpha1.ReplicaStateUnknown
 }
 
+// GetSingleReplicaStatus : return status for a single replica
 func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
 	j, err := s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).Get(s.jobName(index), meta_v1.GetOptions{})
 
@@ -392,7 +395,7 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 	return status
 }
 
-// Status returns the status of the replica set.
+// GetStatus returns the status of the replica set.
 func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TFReplicaStatus, error) {
 	status := tfv1alpha1.TFReplicaStatus{
 		TFReplicaType:  s.Spec.TFReplicaType,

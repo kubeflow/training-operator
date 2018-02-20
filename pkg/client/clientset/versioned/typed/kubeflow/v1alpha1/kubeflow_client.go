@@ -23,6 +23,7 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
+// KubeflowV1alpha1Interface : interface for setting the REST client and TFJobsGetter
 type KubeflowV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	TFJobsGetter
@@ -32,7 +33,7 @@ type KubeflowV1alpha1Interface interface {
 type KubeflowV1alpha1Client struct {
 	restClient rest.Interface
 }
-
+// TFJobs : return TFJobs for given namespace
 func (c *KubeflowV1alpha1Client) TFJobs(namespace string) TFJobInterface {
 	return newTFJobs(c, namespace)
 }

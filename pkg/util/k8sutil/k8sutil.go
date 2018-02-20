@@ -30,14 +30,17 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// RecommendedConfigPathEnvVar : environment variable for path configuration
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
 
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
-// method to ensure all resources created for the TFJob are owned by the TFJob.
+
+// addOwnerRefToObject : method to ensure all resources created for the TFJob are owned by the TFJob.
 func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	o.SetOwnerReferences(append(o.GetOwnerReferences(), r))
 }
 
+// MustNewKubeClient : returns new kubernetes client for cluster configuration
 func MustNewKubeClient() kubernetes.Interface {
 	cfg, err := GetClusterConfig()
 	if err != nil {
@@ -45,7 +48,7 @@ func MustNewKubeClient() kubernetes.Interface {
 	}
 	return kubernetes.NewForConfigOrDie(cfg)
 }
-
+// MustNewApiExtensionsClient : returns new api extension client for cluster configuration
 func MustNewApiExtensionsClient() apiextensionsclient.Interface {
 	cfg, err := GetClusterConfig()
 	if err != nil {
@@ -54,7 +57,7 @@ func MustNewApiExtensionsClient() apiextensionsclient.Interface {
 	return apiextensionsclient.NewForConfigOrDie(cfg)
 }
 
-// Obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
+// GetClusterConfig : Obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
 func GetClusterConfig() (*rest.Config, error) {
 	if len(os.Getenv(RecommendedConfigPathEnvVar)) > 0 {
 		// use the current context in kubeconfig
@@ -81,21 +84,25 @@ func GetClusterConfig() (*rest.Config, error) {
 	return rest.InClusterConfig()
 }
 
+// IsKubernetesResourceAlreadyExistError : returns error when kubernetes resources already exist.
 func IsKubernetesResourceAlreadyExistError(err error) bool {
 	return apierrors.IsAlreadyExists(err)
 }
 
+// IsKubernetesResourceNotFoundError : returns error when there is no kubernetes resource found.
 func IsKubernetesResourceNotFoundError(err error) bool {
 	return apierrors.IsNotFound(err)
 }
 
 // We are using internal api types for cluster related.
+// JobListOpt : returns a list options for a given cluster name
 func JobListOpt(clusterName string) metav1.ListOptions {
 	return metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(LabelsForJob(clusterName)).String(),
 	}
 }
 
+// LabelsForJob : sets the label for tfjob
 func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
@@ -104,6 +111,7 @@ func LabelsForJob(jobName string) map[string]string {
 	}
 }
 
+//CascadeDeleteOptions : It will delete the workload after the grace period
 // TODO(jlewi): CascadeDeletOptions are part of garbage collection policy.
 // Do we want to use this? See
 // https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/

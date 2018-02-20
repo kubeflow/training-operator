@@ -41,6 +41,7 @@ type TBReplicaSet struct {
 	Spec      tfv1alpha1.TensorBoardSpec
 }
 
+// NewTBReplicaSet : returns a replica with initialized values
 func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpec, job *TrainingJob) (*TBReplicaSet, error) {
 	if s.LogDir == "" {
 		return nil, errors.New("tbReplicaSpec.LogDir must be specified")
@@ -52,7 +53,7 @@ func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpe
 		Spec:      s,
 	}, nil
 }
-
+// Create : creates a replica for tensorboard
 func (s *TBReplicaSet) Create() error {
 	// By default we assume TensorBoard's service will be a ClusterIP
 	// unless specified otherwise by the user
@@ -126,7 +127,7 @@ func (s *TBReplicaSet) Create() error {
 	}
 	return nil
 }
-
+// Delete : deletes the replica of TB in case of failure
 func (s *TBReplicaSet) Delete() error {
 	failures := false
 
@@ -187,7 +188,7 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 	}
 
 }
-
+// Labels : returns a map of labels for tensorboard replicas
 func (s *TBReplicaSet) Labels() KubernetesLabels {
 	return KubernetesLabels(map[string]string{
 		"kubeflow.org": "",

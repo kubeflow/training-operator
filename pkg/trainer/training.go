@@ -38,7 +38,7 @@ import (
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
-// ensure correctness on creation.
+// TrainingJob : ensure correctness on creation.
 type TrainingJob struct {
 	job *tfv1alpha1.TFJob
 
@@ -64,7 +64,7 @@ type TrainingJob struct {
 // https://www.tensorflow.org/deploy/distributed#create_a_tftrainclusterspec_to_describe_the_cluster
 // It is a map from job names to network addresses.
 type ClusterSpec map[string][]string
-
+// TaskSpec : structure for storing task type and task index
 type TaskSpec struct {
 	Type  string `json:"type"`
 	Index int    `json:"index"`
@@ -90,7 +90,7 @@ func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplic
 	}
 	return nil, nil
 }
-
+// NewJob : creates and returns an object after initialization
 func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TFJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
 	j, err := initJob(kubeCli, tfJobClient, recorder, job)
 	if err != nil {
@@ -99,11 +99,11 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, rec
 
 	return j, nil
 }
-
+// UID : returns the UID from the job
 func (j *TrainingJob) UID() types.UID {
 	return j.job.ObjectMeta.UID
 }
-
+// ClusterSpec : returns an object of cluster specification
 func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	clusterSpec := make(ClusterSpec)
 
@@ -152,7 +152,7 @@ func (j *TrainingJob) deleteResources() error {
 	}
 	return nil
 }
-
+// GetStatus : returns the replica status
 func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TFReplicaStatus, error) {
 	chief := j.job.Spec.TerminationPolicy.Chief
 	chiefState := tfv1alpha1.ReplicaStateUnknown
@@ -276,7 +276,7 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 	}
 }
 
-// setup Replicas. This creates in memory data structures corresponding to the replicas.
+// setupReplicas : This creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
 
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
@@ -300,7 +300,7 @@ func (j *TrainingJob) setupReplicas() error {
 
 	return nil
 }
-
+// Delete : tries to delete the jobs
 func (j *TrainingJob) Delete() {
 	// TODO(jlewi): Delete is what should cause us to delete the Pods.
 	// we shouldn't delete the pods when the jobs finish because leaving the pods
@@ -339,7 +339,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 	return nil
 }
 
-// reconcile tries to get the job into the desired state.
+// Reconcile : tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseNone {
 		// The job hasn't been setup.
