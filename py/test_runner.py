@@ -4,6 +4,7 @@ import argparse
 import datetime
 import httplib
 import logging
+import json
 import os
 import time
 import uuid
@@ -66,7 +67,7 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
     labels["job_type"] = replica_type
 
   if replica_index:
-    labels["task_index"] =  replica_index
+    labels["task_index"] = replica_index
   return labels
 
 def to_selector(labels):
@@ -77,11 +78,11 @@ def to_selector(labels):
   return ",".join(parts)
 
 def list_pods(client, namespace, label_selector):
-  core = k8s_client.CoreV1Api()
+  core = k8s_client.CoreV1Api(client)
   try:
     pods = core.list_namespaced_pod(namespace, label_selector=label_selector)
     return pods
-  except ApiException as e:
+  except rest.ApiException as e:
     message = ""
     if e.message:
       message = e.message
@@ -103,7 +104,7 @@ def list_pods(client, namespace, label_selector):
         message)
     raise e
 
-def run_test(args):
+def run_test(args): # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
   project = args.project
@@ -153,7 +154,6 @@ def run_test(args):
     # TODO(jlewi): We should make this an argument.
     num_trials = 2
 
-    uids = set()
     for trial in range(num_trials):
       logging.info("Trial %s", trial)
       util.run(["ks", "apply", env, "-c", args.component],
@@ -193,7 +193,9 @@ def run_test(args):
       wait_for_delete(api_client, namespace, name,
                       status_callback=tf_job_client.log_status)
 
-      # Verify the pods have been deleted.
+      # Verify the pods have been deleted. tf_job_client uses foreground
+      # deletion so there shouldn't be any resources for the job left
+      # once the job is gone.
       pods = list_pods(api_client, namespace, pod_selector)
 
       logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
@@ -206,11 +208,8 @@ def run_test(args):
         logging.error(t.failure)
         break
 
-      logging.info("Trial {0} all pods deleted.", trial)
+      logging.info("Trial %s all pods deleted.", trial)
 
-      # Verify resources were actually deleted. tf_job_client uses foreground
-      # deletion so there shouldn't be any resources for the job left
-      # once the job is gone.
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
