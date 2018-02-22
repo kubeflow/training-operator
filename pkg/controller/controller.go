@@ -50,6 +50,8 @@ const (
 var (
 	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
 
+	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+	// key function but it should be just fine for non delete events.
 	keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 	// DefaultJobBackOff is the max backoff period, exported for the e2e test
@@ -123,7 +125,7 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 				UpdateFunc: func(oldObj, newObj interface{}) {
 					controller.enqueueController(newObj)
 				},
-				DeleteFunc: controller.handleDelete,
+				DeleteFunc: controller.enqueueController,
 			},
 		})
 
@@ -226,16 +228,16 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
 	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
-	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
+	if cJob, ok := c.jobs[key]; !ok || cJob.UID() != tfJob.UID {
 		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
 			return false, err
 		}
-		c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name] = nc
+		c.jobs[key] = nc
 	}
 
-	nc := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]
+	nc := c.jobs[key]
 
 	if err := nc.Reconcile(&c.config); err != nil {
 		return false, err
@@ -266,14 +268,4 @@ func (c *Controller) enqueueController(obj interface{}) {
 	}
 
 	c.WorkQueue.AddRateLimited(key)
-}
-
-func (c *Controller) handleDelete(obj interface{}) {
-	tfjob := obj.(*tfv1alpha1.TFJob)
-	if _, ok := c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name]; !ok {
-		glog.V(4).Infof("unsafe state. TFJob was never created but we received delete event")
-		return
-	}
-
-	c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name].Delete()
 }
