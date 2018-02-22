@@ -84,9 +84,9 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, re
 	return j, nil
 }
 
-func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplicaSet, error) {
+func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob, config *tfv1alpha1.ControllerConfig) (*TBReplicaSet, error) {
 	if tj.job.Spec.TensorBoard != nil {
-		return NewTBReplicaSet(clientSet, *tj.job.Spec.TensorBoard, tj)
+		return NewTBReplicaSet(clientSet, *tj.job.Spec.TensorBoard, tj, config)
 	}
 	return nil, nil
 }
@@ -277,7 +277,7 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 }
 
 // setup Replicas. This creates in memory data structures corresponding to the replicas.
-func (j *TrainingJob) setupReplicas() error {
+func (j *TrainingJob) setupReplicas(config *tfv1alpha1.ControllerConfig) error {
 
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
@@ -291,7 +291,7 @@ func (j *TrainingJob) setupReplicas() error {
 	}
 
 	if j.TensorBoard == nil {
-		tb, err := initTensorBoard(j.KubeCli, j)
+		tb, err := initTensorBoard(j.KubeCli, j, config)
 		if err != nil {
 			return err
 		}
@@ -354,7 +354,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 	// setupreplicas initializes data structures inside TrainingJob representing the replicas.
 	// These are go-lang structures which aren't preserved in the APIServer. So we always need to call setupReplicas
 	// unlike setup which only needs to be called once during the lifecycle of the job.
-	if err := j.setupReplicas(); err != nil {
+	if err := j.setupReplicas(config); err != nil {
 		log.Errorf("failed to create replicas: %v", err)
 		j.status.Reason = fmt.Sprintf("Could not create in memory datastructures; %v", err)
 		if uErr := j.updateCRDStatus(); err != nil {
