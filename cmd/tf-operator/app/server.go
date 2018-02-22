@@ -124,8 +124,6 @@ func Run(opt *options.ServerOption) error {
 		},
 	})
 
-	panic("unreachable")
-
 	return nil
 }
 
