@@ -35,19 +35,19 @@ def setup(args):
   machine_type = "n1-standard-8"
 
   cluster_request = {
-      "cluster": {
-          "name": cluster_name,
-          "description": "A GKE cluster for TF.",
-          "initialNodeCount": 1,
-          "nodeConfig": {
-              "machineType": machine_type,
-              "oauthScopes": [
-                  "https://www.googleapis.com/auth/cloud-platform",
-              ],
-          },
-          # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-          "initialClusterVersion": "1.8.5-gke.0",
-      }
+    "cluster": {
+      "name": cluster_name,
+      "description": "A GKE cluster for TF.",
+      "initialNodeCount": 1,
+      "nodeConfig": {
+        "machineType": machine_type,
+        "oauthScopes": [
+          "https://www.googleapis.com/auth/cloud-platform",
+        ],
+      },
+      # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
+      "initialClusterVersion": "1.8.5-gke.0",
+    }
   }
 
   if args.accelerators:
@@ -58,10 +58,10 @@ def setup(args):
     for accelerator_spec in args.accelerators:
       accelerator_type, accelerator_count = accelerator_spec.split("=", 1)
       cluster_request["cluster"]["nodeConfig"]["accelerators"].append({
-          "acceleratorCount":
-          accelerator_count,
-          "acceleratorType":
-          accelerator_type,
+        "acceleratorCount":
+        accelerator_count,
+        "acceleratorType":
+        accelerator_type,
       })
 
   util.create_cluster(gke, project, zone, cluster_request)
@@ -93,8 +93,8 @@ def setup(args):
   try:
     start = time.time()
     util.run([
-        "helm", "install", chart, "-n", "tf-job", "--namespace=default", "--wait",
-        "--replace", "--set", "rbac.install=true,cloud=gke"
+      "helm", "install", chart, "-n", "tf-job", "--namespace=default", "--wait",
+      "--replace", "--set", "rbac.install=true,cloud=gke"
     ])
     util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
@@ -152,20 +152,20 @@ def add_common_args(parser):
     parser: The parser to add command line arguments to.
   """
   parser.add_argument(
-      "--project", default=None, type=str, help=("The project to use."))
+    "--project", default=None, type=str, help=("The project to use."))
   parser.add_argument(
-      "--cluster", default=None, type=str, help=("The name of the cluster."))
+    "--cluster", default=None, type=str, help=("The name of the cluster."))
   parser.add_argument(
-      "--zone",
-      default="us-east1-d",
-      type=str,
-      help=("The zone for the cluster."))
+    "--zone",
+    default="us-east1-d",
+    type=str,
+    help=("The zone for the cluster."))
 
   parser.add_argument(
-      "--junit_path",
-      default="",
-      type=str,
-      help="Where to write the junit xml file with the results.")
+    "--junit_path",
+    default="",
+    type=str,
+    help="Where to write the junit xml file with the results.")
 
 
 def main():  # pylint: disable=too-many-locals
@@ -181,19 +181,19 @@ def main():  # pylint: disable=too-many-locals
   # setup
   #
   parser_setup = subparsers.add_parser(
-      "setup", help="Setup a cluster for testing.")
+    "setup", help="Setup a cluster for testing.")
 
   parser_setup.add_argument(
-      "--accelerator",
-      dest="accelerators",
-      action="append",
-      help="Accelerator to add to the cluster. Should be of the form type=count.")
+    "--accelerator",
+    dest="accelerators",
+    action="append",
+    help="Accelerator to add to the cluster. Should be of the form type=count.")
 
   parser_setup.set_defaults(func=setup)
   add_common_args(parser_setup)
 
   parser_setup.add_argument(
-      "--chart", type=str, required=True, help="The path for the helm chart.")
+    "--chart", type=str, required=True, help="The path for the helm chart.")
 
   #############################################################################
   # test
@@ -207,7 +207,7 @@ def main():  # pylint: disable=too-many-locals
   # teardown
   #
   parser_teardown = subparsers.add_parser(
-      "teardown", help="Teardown the cluster.")
+    "teardown", help="Teardown the cluster.")
   parser_teardown.set_defaults(func=teardown)
   add_common_args(parser_teardown)
 

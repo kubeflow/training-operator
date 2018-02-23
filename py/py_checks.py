@@ -25,12 +25,12 @@ def run_lint(args):
   # TODO(jlewi): Perhaps we should get a list of submodules and exclude
   # them automatically?
   dir_excludes = [
-      "dashboard/frontend/node_modules",
-      "kubeflow_testing",
-      "vendor",
+    "dashboard/frontend/node_modules",
+    "kubeflow_testing",
+    "vendor",
   ]
   full_dir_excludes = [
-      os.path.join(os.path.abspath(args.src_dir), f) for f in dir_excludes
+    os.path.join(os.path.abspath(args.src_dir), f) for f in dir_excludes
   ]
   includes = ["*.py"]
   failed_files = []
@@ -52,7 +52,7 @@ def run_lint(args):
         full_path = os.path.join(root, f)
         try:
           util.run(
-              ["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
+            ["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
         except subprocess.CalledProcessError:
           failed_files.append(full_path.strip[len(args.src_dir):])
 
@@ -73,7 +73,7 @@ def run_lint(args):
   test_case.time = time.time() - start_time
   if failed_files:
     test_case.failure = "Files with lint issues: {0}".format(
-        ", ".join(failed_files))
+      ", ".join(failed_files))
 
   gcs_client = None
   if args.junit_path.startswith("gs://"):
@@ -100,7 +100,7 @@ def run_tests(args):
   # When we use ARGO each step will run in its own pod and we can set the
   # PYTHONPATH environment variable as needed for that pod.
   env["PYTHONPATH"] = (
-      args.src_dir + ":" + os.path.join(args.src_dir, "kubeflow_testing", "py"))
+    args.src_dir + ":" + os.path.join(args.src_dir, "kubeflow_testing", "py"))
 
   num_failed = 0
   for root, dirs, files in os.walk(args.src_dir, topdown=True):
@@ -144,33 +144,33 @@ def add_common_args(parser):
   """Add a set of common parser arguments."""
 
   parser.add_argument(
-      "--src_dir",
-      default=os.getcwd(),
-      type=str,
-      help=("The root directory of the source tree. Defaults to current "
-            "directory."))
+    "--src_dir",
+    default=os.getcwd(),
+    type=str,
+    help=("The root directory of the source tree. Defaults to current "
+          "directory."))
 
   parser.add_argument(
-      "--project",
-      default=None,
-      type=str,
-      help=("(Optional). The project to use with the GCS client."))
+    "--project",
+    default=None,
+    type=str,
+    help=("(Optional). The project to use with the GCS client."))
 
   parser.add_argument(
-      "--junit_path",
-      default=None,
-      type=str,
-      help=("(Optional). The GCS location to write the junit file with the "
-            "results."))
+    "--junit_path",
+    default=None,
+    type=str,
+    help=("(Optional). The GCS location to write the junit file with the "
+          "results."))
 
 
 def main():  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
   logging.basicConfig(
-      level=logging.INFO,
-      format=('%(levelname)s|%(asctime)s'
-              '|%(pathname)s|%(lineno)d| %(message)s'),
-      datefmt='%Y-%m-%dT%H:%M:%S',
+    level=logging.INFO,
+    format=('%(levelname)s|%(asctime)s'
+            '|%(pathname)s|%(lineno)d| %(message)s'),
+    datefmt='%Y-%m-%dT%H:%M:%S',
   )
   # create the top-level parser
   parser = argparse.ArgumentParser(description="Run python code checks.")

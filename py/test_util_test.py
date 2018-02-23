@@ -105,7 +105,7 @@ class TestWrapTest(unittest.TestCase):
 
     def run():
       raise subprocess.CalledProcessError(
-          10, "some command", output="some output")
+        10, "some command", output="some output")
 
     t = test_util.TestCase()
     self.assertRaises(subprocess.CalledProcessError, test_util.wrap_test, run,

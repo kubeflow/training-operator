@@ -17,9 +17,9 @@ class TestProw(unittest.TestCase):
     blob = prow.create_finished(gcs_client, "gs://bucket/output", True)
 
     expected = {
-        "timestamp": 1000,
-        "result": "SUCCESS",
-        "metadata": {},
+      "timestamp": 1000,
+      "result": "SUCCESS",
+      "metadata": {},
     }
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
@@ -31,18 +31,18 @@ class TestProw(unittest.TestCase):
     blob = prow.create_started(gcs_client, "gs://bucket/output", "abcd")
 
     expected = {
-        "timestamp": 1000,
-        "repos": {
-            "kubeflow/tf-operator": "abcd",
-        },
+      "timestamp": 1000,
+      "repos": {
+        "kubeflow/tf-operator": "abcd",
+      },
     }
     blob.upload_from_string.assert_called_once_with(json.dumps(expected))
 
   def testGetSymlinkOutput(self):
     location = prow.get_symlink_output("10", "mlkube-build-presubmit", "20")
     self.assertEquals(
-        "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
-        location)
+      "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
+      location)
 
   def testCreateSymlinkOutput(self):  # pylint: disable=no-self-use
     """Test create started for periodic job."""
@@ -62,7 +62,7 @@ class TestProw(unittest.TestCase):
     mock_get_failures.return_value = 0
     junit_files = ["junit_1.xml"]
     self.assertTrue(
-        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
+      prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
 
   @mock.patch("py.prow.test_util.get_num_failures")
   @mock.patch("py.prow._get_actual_junit_files")
@@ -75,7 +75,7 @@ class TestProw(unittest.TestCase):
     mock_get_failures.return_value = 1
     junit_files = ["junit_1.xml"]
     self.assertFalse(
-        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
+      prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
 
   @mock.patch("py.prow.test_util.get_num_failures")
   @mock.patch("py.prow._get_actual_junit_files")
@@ -89,7 +89,7 @@ class TestProw(unittest.TestCase):
     mock_get_failures.return_value = 0
     junit_files = ["junit_1.xml"]
     self.assertFalse(
-        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
+      prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
 
 
 if __name__ == "__main__":

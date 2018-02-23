@@ -15,12 +15,12 @@ class ReleaseTest(unittest.TestCase):
   @mock.patch("py.release.util.clone_repo")
   @mock.patch("py.release.build_and_push")
   def test_build_postsubmit(
-          self,
-          mock_build_and_push,
-          mock_clone,  # pylint: disable=no-self-use
-          _mock_install,
-          _mock_os,
-          _mock_makedirs):
+      self,
+      mock_build_and_push,
+      mock_clone,  # pylint: disable=no-self-use
+      _mock_install,
+      _mock_os,
+      _mock_makedirs):
     # Make sure REPO_OWNER and REPO_NAME aren't changed by the environment
     release.REPO_ORG = "kubeflow"
     release.REPO_NAME = "tf-operator"
@@ -30,8 +30,8 @@ class ReleaseTest(unittest.TestCase):
     release.build_postsubmit(args)
 
     mock_build_and_push.assert_called_once_with(
-        '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
-        mock.ANY)
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
+      mock.ANY)
     mock_clone.assert_called_once_with('/top/src_dir/git_tensorflow_k8s',
                                        'kubeflow', 'tf-operator', None, None)
 
@@ -44,12 +44,12 @@ class ReleaseTest(unittest.TestCase):
                     _mock_os, _mock_makedirs):  # pylint: disable=no-self-use
     parser = release.build_parser()
     args = parser.parse_args(
-        ["pr", "--pr=10", "--commit=22", "--src_dir=/top/src_dir"])
+      ["pr", "--pr=10", "--commit=22", "--src_dir=/top/src_dir"])
     release.build_pr(args)
 
     mock_build_and_push.assert_called_once_with(
-        '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
-        mock.ANY)
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
+      mock.ANY)
     mock_clone.assert_called_once_with("/top/src_dir/git_tensorflow_k8s",
                                        "kubeflow", "tf-operator", "22",
                                        ["pull/10/head:pr"])
@@ -94,10 +94,10 @@ appVersion: 0.1.0
     with open(chart_file) as hf:
       output = yaml.load(hf)
     expected = {
-        "name": "tf-job-operator-chart",
-        "home": "https://github.com/kubeflow/tf-operator",
-        "version": "0.1.0-v20171019",
-        "appVersion": "0.1.0-v20171019",
+      "name": "tf-job-operator-chart",
+      "home": "https://github.com/kubeflow/tf-operator",
+      "version": "0.1.0-v20171019",
+      "appVersion": "0.1.0-v20171019",
     }
     self.assertEquals(expected, output)
 

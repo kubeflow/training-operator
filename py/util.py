@@ -64,7 +64,7 @@ def run(command, cwd=None, env=None, dryrun=False):
     # subprocess output doesn't show up in Airflow. This might be because
     # we had multiple levels of processes invoking python processes.
     with tempfile.NamedTemporaryFile(
-            prefix="tmpRunLogs", delete=False, mode="w") as hf:
+        prefix="tmpRunLogs", delete=False, mode="w") as hf:
       log_file = hf.name
       subprocess.check_call(command, cwd=cwd, env=env, stdout=hf, stderr=hf)
   finally:
@@ -82,7 +82,7 @@ def run_and_output(command, cwd=None, env=None):
   # So prefer using run if we don't need to return the output.
   try:
     output = subprocess.check_output(
-        command, cwd=cwd, env=env, stderr=subprocess.STDOUT).decode("utf-8")
+      command, cwd=cwd, env=env, stderr=subprocess.STDOUT).decode("utf-8")
     logging.info("Subprocess output:\n%s", output)
   except subprocess.CalledProcessError as e:
     logging.info("Subprocess output:\n%s", e.output)
@@ -121,21 +121,21 @@ def clone_repo(dest,
   if branches:
     for b in branches:
       run(
-          [
-              "git",
-              "fetch",
-              "origin",
-              b,
-          ], cwd=dest)
+        [
+          "git",
+          "fetch",
+          "origin",
+          b,
+        ], cwd=dest)
 
     if not sha:
       b = branches[-1].split(":", 1)[-1]
       run(
-          [
-              "git",
-              "checkout",
-              b,
-          ], cwd=dest)
+        [
+          "git",
+          "checkout",
+          b,
+        ], cwd=dest)
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
@@ -169,7 +169,7 @@ def create_cluster(gke, project, zone, cluster_request):
     cluster_rquest: The request for the cluster.
   """
   request = gke.projects().zones().clusters().create(
-      body=cluster_request, projectId=project, zone=zone)
+    body=cluster_request, projectId=project, zone=zone)
 
   try:
     logging.info("Creating cluster; project=%s, zone=%s, name=%s", project,
@@ -200,7 +200,7 @@ def delete_cluster(gke, name, project, zone):
   """
 
   request = gke.projects().zones().clusters().delete(
-      clusterId=name, projectId=project, zone=zone)
+    clusterId=name, projectId=project, zone=zone)
 
   try:
     response = request.execute()
@@ -241,10 +241,10 @@ def wait_for_operation(client,
   while True:
     if zone:
       op = client.projects().zones().operations().get(
-          projectId=project, zone=zone, operationId=op_id).execute()
+        projectId=project, zone=zone, operationId=op_id).execute()
     else:
       op = client.globalOperations().get(
-          project=project, operation=op_id).execute()
+        project=project, operation=op_id).execute()
 
     status = op.get("status", "")
     # Need to handle other status's
@@ -252,7 +252,7 @@ def wait_for_operation(client,
       return op
     if datetime.datetime.now() > endtime:
       raise TimeoutError(
-          "Timed out waiting for op: {0} to complete.".format(op_id))
+        "Timed out waiting for op: {0} to complete.".format(op_id))
     time.sleep(polling_interval.total_seconds())
 
   # Linter complains if we don't have a return here even though its unreachable.
@@ -262,8 +262,8 @@ def wait_for_operation(client,
 def configure_kubectl(project, zone, cluster_name):
   logging.info("Configuring kubectl")
   run([
-      "gcloud", "--project=" + project, "container", "clusters", "--zone=" + zone,
-      "get-credentials", cluster_name
+    "gcloud", "--project=" + project, "container", "clusters", "--zone=" + zone,
+    "get-credentials", cluster_name
   ])
 
 
@@ -297,8 +297,8 @@ def wait_for_deployment(api_client, namespace, name):
   logging.error("Timeout waiting for deployment %s in namespace %s to be "
                 "ready", name, namespace)
   raise TimeoutError(
-      "Timeout waiting for deployment {0} in namespace {1}".format(
-          name, namespace))
+    "Timeout waiting for deployment {0} in namespace {1}".format(
+      name, namespace))
 
 
 def wait_for_statefulset(api_client, namespace, name):
@@ -331,8 +331,8 @@ def wait_for_statefulset(api_client, namespace, name):
   logging.error("Timeout waiting for statefulset %s in namespace %s to be "
                 "ready", name, namespace)
   raise TimeoutError(
-      "Timeout waiting for statefulset {0} in namespace {1}".format(
-          name, namespace))
+    "Timeout waiting for statefulset {0} in namespace {1}".format(
+      name, namespace))
 
 
 def install_gpu_drivers(api_client):
@@ -472,7 +472,7 @@ def split_gcs_uri(gcs_uri):
 def _refresh_credentials():
   # userinfo.email scope was insufficient for authorizing requests to K8s.
   credentials, _ = google.auth.default(
-      scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    scopes=["https://www.googleapis.com/auth/cloud-platform"])
   request = google.auth.transport.requests.Request()
   credentials.refresh(request)
   return credentials
@@ -516,11 +516,11 @@ def load_kube_config(config_file=None,
     config_persister = _save_kube_config
 
   loader = kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
-      config_file,
-      active_context=context,
-      config_persister=config_persister,
-      get_google_credentials=get_google_credentials,
-      **kwargs)
+    config_file,
+    active_context=context,
+    config_persister=config_persister,
+    get_google_credentials=get_google_credentials,
+    **kwargs)
 
   if client_configuration is None:
     config = type.__call__(kubernetes_configuration.Configuration)
@@ -535,6 +535,6 @@ def maybe_activate_service_account():
     logging.info("GOOGLE_APPLICATION_CREDENTIALS is set; configuring gcloud "
                  "to use service account.")
     run([
-        "gcloud", "auth", "activate-service-account",
-        "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+      "gcloud", "auth", "activate-service-account",
+      "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     ])

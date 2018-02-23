@@ -114,16 +114,16 @@ def create_xml(test_cases):
     if c.failure:
       failures += 1
   attrib = {
-      "failures": "{0}".format(failures),
-      "tests": "{0}".format(len(test_cases)),
-      "time": "{0}".format(total_time)
+    "failures": "{0}".format(failures),
+    "tests": "{0}".format(len(test_cases)),
+    "time": "{0}".format(total_time)
   }
   root = ElementTree.Element("testsuite", attrib)
 
   for c in test_cases:
     attrib = {
-        "classname": c.class_name,
-        "name": c.name,
+      "classname": c.class_name,
+      "name": c.name,
     }
     if c.time:
       attrib["time"] = "{0}".format(c.time)

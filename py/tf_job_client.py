@@ -28,7 +28,7 @@ def create_tf_job(client, spec):
     # Create a Resource
     namespace = spec["metadata"].get("namespace", "default")
     api_response = crd_api.create_namespaced_custom_object(
-        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec)
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
   except ApiException as e:
@@ -41,8 +41,8 @@ def create_tf_job(client, spec):
       except ValueError:
         # There was a problem parsing the body of the response as json.
         logging.error(
-            ("Exception when calling DefaultApi->"
-             "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
+          ("Exception when calling DefaultApi->"
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
@@ -56,13 +56,13 @@ def delete_tf_job(client, namespace, name):
   crd_api = k8s_client.CustomObjectsApi(client)
   try:
     body = {
-        # Set garbage collection so that job won't be deleted until all
-        # owned references are deleted.
-        "propagationPolicy": "Foreground",
+      # Set garbage collection so that job won't be deleted until all
+      # owned references are deleted.
+      "propagationPolicy": "Foreground",
     }
     logging.info("Deleting job %s.%s", namespace, name)
     api_response = crd_api.delete_namespaced_custom_object(
-        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body)
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body)
     logging.info("Deleted job %s.%s", namespace, name)
     return api_response
   except ApiException as e:
@@ -75,8 +75,8 @@ def delete_tf_job(client, namespace, name):
       except ValueError:
         # There was a problem parsing the body of the response as json.
         logging.error(
-            ("Exception when calling DefaultApi->"
-             "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
+          ("Exception when calling DefaultApi->"
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
@@ -118,7 +118,7 @@ def wait_for_job(client,
   end_time = datetime.datetime.now() + timeout
   while True:
     results = crd_api.get_namespaced_custom_object(
-        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name)
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name)
 
     if status_callback:
       status_callback(results)
@@ -129,8 +129,8 @@ def wait_for_job(client,
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
-          "Timeout waiting for job {0} in namespace {1} to finish.".format(
-              name, namespace))
+        "Timeout waiting for job {0} in namespace {1} to finish.".format(
+          name, namespace))
 
     time.sleep(polling_interval.seconds)
 

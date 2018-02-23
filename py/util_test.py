@@ -26,10 +26,9 @@ class UtilTest(unittest.TestCase):
 
     response = k8s_client.V1beta1StatefulSet()
     response.status = k8s_client.V1beta1StatefulSetStatus(
-        ready_replicas=1, replicas=1)
+      ready_replicas=1, replicas=1)
     api_client.call_api.return_value = response
-    result = util.wait_for_statefulset(
-        api_client, "some-namespace", "some-set")
+    result = util.wait_for_statefulset(api_client, "some-namespace", "some-set")
     self.assertIsNotNone(result)
 
   def testSplitGcsUri(self):
