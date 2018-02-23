@@ -11,14 +11,15 @@ import tempfile
 
 import jinja2
 
+
 def GetGitHash(root_dir=None):
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                     cwd=root_dir).decode("utf-8")
+  git_hash = subprocess.check_output(
+      ["git", "rev-parse", "--short", "HEAD"], cwd=root_dir).decode("utf-8")
   git_hash = git_hash.strip()
 
-  modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
-                                           cwd=root_dir)
+  modified_files = subprocess.check_output(
+      ["git", "ls-files", "--modified"], cwd=root_dir)
   untracked_files = subprocess.check_output(
       ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   if modified_files or untracked_files:
@@ -31,10 +32,11 @@ def GetGitHash(root_dir=None):
 
   return git_hash
 
+
 def run_and_stream(cmd):
   logging.info("Running %s", " ".join(cmd))
-  process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+  process = subprocess.Popen(
+      cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
   while process.poll() is None:
     process.stdout.flush()
@@ -47,10 +49,15 @@ def run_and_stream(cmd):
 
   if process.returncode != 0:
     raise ValueError("cmd: {0} exited with code {1}".format(
-      " ".join(cmd), process.returncode))
+        " ".join(cmd), process.returncode))
 
-def build_and_push(dockerfile_template, image, modes=None,
-                   skip_push=False, base_images=None, project=None):
+
+def build_and_push(dockerfile_template,
+                   image,
+                   modes=None,
+                   skip_push=False,
+                   base_images=None,
+                   project=None):
   """Build and push images based on a Dockerfile template.
 
   Args:
@@ -83,7 +90,8 @@ def build_and_push(dockerfile_template, image, modes=None,
   images = {}
   for mode in modes:
     dockerfile_contents = jinja2.Environment(loader=loader).get_template(
-      os.path.basename(dockerfile_template)).render(base_image=base_images[mode])
+        os.path.basename(dockerfile_template)).render(
+        base_image=base_images[mode])
     context_dir = tempfile.mkdtemp(prefix="tmpTFJobSampleContentxt")
     logging.info("context_dir: %s", context_dir)
     shutil.rmtree(context_dir)
@@ -108,53 +116,61 @@ def build_and_push(dockerfile_template, image, modes=None,
           run_and_stream(["docker", "--", "push", full_image])
           logging.info("Pushed image: %s", full_image)
     else:
-      run_and_stream(["gcloud", "container", "builds", "submit", context_dir,
-                      "--tag=" + full_image, "--project=" + project])
+      run_and_stream([
+          "gcloud", "container", "builds", "submit", context_dir,
+          "--tag=" + full_image, "--project=" + project
+      ])
   return images
+
 
 def main():
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
-    description="Build Docker images based off of TensorFlow.")
+      description="Build Docker images based off of TensorFlow.")
 
   parser.add_argument(
-    "--image",
+      "--image",
       default="gcr.io/tf-on-k8s-dogfood",
       type=str,
       help="The image path to use; mode will be applied as a suffix.")
 
   parser.add_argument(
-    "--dockerfile",
-      required=True,
-      type=str,
-      help="The path to the Dockerfile")
+      "--dockerfile", required=True, type=str, help="The path to the Dockerfile")
 
   # TODO(jlewi): Should we make this a list so we can build both images with one command.
   parser.add_argument(
-    '--mode',
+      '--mode',
       default=["cpu", "gpu"],
-        dest="modes",
-        action="append",
-        help='Which image to build; options are cpu or gpu')
+      dest="modes",
+      action="append",
+      help='Which image to build; options are cpu or gpu')
 
   parser.add_argument(
-    '--gcb_project',
+      '--gcb_project',
       default=None,
       help=("(Optional) if specified build the images using GCB and this "
             "project."))
 
-  parser.add_argument("--no-push", dest="should_push", action="store_false",
-                      help="Do not push the image once build is finished.")
+  parser.add_argument(
+      "--no-push",
+      dest="should_push",
+      action="store_false",
+      help="Do not push the image once build is finished.")
 
   args = parser.parse_args()
 
   base_images = {
-    "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
-    "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
+      "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
+      "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
   }
 
-  build_and_push(args.dockerfile, args.modes, not args.should_push, base_images,
-                 project=args.gcb_project)
+  build_and_push(
+      args.dockerfile,
+      args.modes,
+      not args.should_push,
+      base_images,
+      project=args.gcb_project)
+
 
 if __name__ == "__main__":
   main()

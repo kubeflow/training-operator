@@ -8,6 +8,7 @@ from py import prow
 
 
 class TestProw(unittest.TestCase):
+
   @mock.patch("prow.time.time")
   def testCreateFinished(self, mock_time):  # pylint: disable=no-self-use
     """Test create finished"""
@@ -60,8 +61,8 @@ class TestProw(unittest.TestCase):
     mock_get_junit.return_value = set(["junit_1.xml"])
     mock_get_failures.return_value = 0
     junit_files = ["junit_1.xml"]
-    self.assertTrue(prow.check_no_errors(gcs_client, artifacts_dir,
-                                         junit_files))
+    self.assertTrue(
+        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
 
   @mock.patch("py.prow.test_util.get_num_failures")
   @mock.patch("py.prow._get_actual_junit_files")
@@ -73,12 +74,13 @@ class TestProw(unittest.TestCase):
     mock_get_junit.return_value = set(["junit_1.xml"])
     mock_get_failures.return_value = 1
     junit_files = ["junit_1.xml"]
-    self.assertFalse(prow.check_no_errors(gcs_client, artifacts_dir,
-                                          junit_files))
+    self.assertFalse(
+        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
 
   @mock.patch("py.prow.test_util.get_num_failures")
   @mock.patch("py.prow._get_actual_junit_files")
-  def testCheckNoErrorsFailureExtraJunit(self, mock_get_junit, mock_get_failures):
+  def testCheckNoErrorsFailureExtraJunit(self, mock_get_junit,
+                                         mock_get_failures):
     # Verify that check no errors returns false when there are extra
     # junit files
     gcs_client = mock.MagicMock(spec=storage.Client)
@@ -86,7 +88,9 @@ class TestProw(unittest.TestCase):
     mock_get_junit.return_value = set(["junit_0.xml", "junit_1.xml"])
     mock_get_failures.return_value = 0
     junit_files = ["junit_1.xml"]
-    self.assertFalse(prow.check_no_errors(gcs_client, artifacts_dir,
-                                          junit_files))
+    self.assertFalse(
+        prow.check_no_errors(gcs_client, artifacts_dir, junit_files))
+
+
 if __name__ == "__main__":
   unittest.main()
