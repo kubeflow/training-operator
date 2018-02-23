@@ -1,4 +1,4 @@
-// Package handler is a package handling API requests for managing TFJobs.
+//Package handler is a package handling API requests for managing TFJobs.
 // The primary purpose of handler is implementing the functionality needed by the TFJobs dashboard.
 package handler
 
@@ -33,12 +33,12 @@ type TFJobDetail struct {
 
 // TFJobList is a list of TFJobs
 type TFJobList struct {
-	tfJobs []v1alpha1.TFJob `json:"TFJobs"`
+	TFJobs []v1alpha1.TFJob `json:"TFJobs"`
 }
 
 // NamespaceList is a list of namespaces
 type NamespaceList struct {
-	namespaces []v1.Namespace `json:"namespaces"`
+	Namespaces []v1.Namespace `json:"Namespaces"`
 }
 
 // CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
@@ -98,8 +98,8 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/namespace").
-		To(apiHandler.handleGetNamespaces).
-		Writes(NamespaceList{}))
+			To(apiHandler.handleGetNamespaces).
+			Writes(NamespaceList{}))
 
 	wsContainer.Add(apiV1Ws)
 	return wsContainer, nil
@@ -192,8 +192,8 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 			response.WriteError(http.StatusInternalServerError, nsErr)
 		}
 	} else if err != nil {
-			log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
-			response.WriteError(http.StatusInternalServerError, err)
+		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	j, err := clt.KubeflowV1alpha1().TFJobs(tfJob.Namespace).Create(tfJob)

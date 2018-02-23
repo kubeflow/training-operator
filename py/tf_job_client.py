@@ -52,11 +52,48 @@ def create_tf_job(client, spec):
           message)
     raise e
 
+def delete_tf_job(client, namespace, name):
+  crd_api = k8s_client.CustomObjectsApi(client)
+  try:
+    body = {
+      # Set garbage collection so that job won't be deleted until all
+      # owned references are deleted.
+      "propagationPolicy": "Foreground",
+    }
+    logging.info("Deleting job %s.%s", namespace, name)
+    api_response = crd_api.delete_namespaced_custom_object(
+        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name,
+        body)
+    logging.info("Deleted job %s.%s", namespace, name)
+    return api_response
+  except ApiException as e:
+    message = ""
+    if e.message:
+      message = e.message
+    if e.body:
+      try:
+        body = json.loads(e.body)
+      except ValueError:
+        # There was a problem parsing the body of the response as json.
+        logging.error(
+            ("Exception when calling DefaultApi->"
+              "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"),
+              e.body)
+        raise
+      message = body.get("message")
+
+    logging.error(
+        ("Exception when calling DefaultApi->"
+         "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+          message)
+    raise e
+
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
-  logging.info("Job %s in namespace %s; phase=%s, state=%s,",
+  logging.info("Job %s in namespace %s; uid=%s; phase=%s, state=%s,",
            tf_job.get("metadata", {}).get("name"),
            tf_job.get("metadata", {}).get("namespace"),
+           tf_job.get("metadata", {}).get("uid"),
            tf_job.get("status", {}).get("phase"),
            tf_job.get("status", {}).get("state"))
 
