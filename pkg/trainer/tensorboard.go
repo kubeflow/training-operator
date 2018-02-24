@@ -39,9 +39,10 @@ type TBReplicaSet struct {
 	ClientSet kubernetes.Interface
 	Job       *TrainingJob
 	Spec      tfv1alpha1.TensorBoardSpec
+	Config    *tfv1alpha1.ControllerConfig
 }
 
-func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpec, job *TrainingJob) (*TBReplicaSet, error) {
+func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpec, job *TrainingJob, config *tfv1alpha1.ControllerConfig) (*TBReplicaSet, error) {
 	if s.LogDir == "" {
 		return nil, errors.New("tbReplicaSpec.LogDir must be specified")
 	}
@@ -50,6 +51,7 @@ func NewTBReplicaSet(clientSet kubernetes.Interface, s tfv1alpha1.TensorBoardSpe
 		ClientSet: clientSet,
 		Job:       job,
 		Spec:      s,
+		Config:    config,
 	}, nil
 }
 
@@ -174,6 +176,10 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 	ps := &v1.PodSpec{
 		Containers: []v1.Container{*c},
 		Volumes:    make([]v1.Volume, 0),
+	}
+
+	if s.Config.SchedulerName != "" {
+		ps.SchedulerName = s.Config.SchedulerName
 	}
 
 	ps.Volumes = append(ps.Volumes, s.Spec.Volumes...)

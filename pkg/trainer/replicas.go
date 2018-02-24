@@ -177,6 +177,10 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		// Make a copy of the template because we will modify it below. .
 		newPodSpecTemplate := s.Spec.Template.DeepCopy()
 
+		if newPodSpecTemplate.Spec.SchedulerName == "" {
+			newPodSpecTemplate.Spec.SchedulerName = config.SchedulerName
+		}
+
 		newJ := &batch.Job{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   s.jobName(index),

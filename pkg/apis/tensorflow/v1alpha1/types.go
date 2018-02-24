@@ -184,6 +184,10 @@ type ControllerConfig struct {
 
 	// Path to the file containing the grpc server source
 	GrpcServerFilePath string
+
+	// SchedulerName will be assigned to v1.Pod.Spec.SchedulerName for specifying a scheduler
+	// which handles the pods of tf-operator
+	SchedulerName string
 }
 
 // AcceleratorVolume represents a host path that must be mounted into
