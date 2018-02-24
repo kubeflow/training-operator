@@ -62,7 +62,7 @@ def ks_deploy(app_dir, component, params, env=None):
 
   logging.info("Using app directory: %s", app_dir)
 
-  util.run(["ks", "env", "add", env])
+  util.run(["ks", "env", "add", env], cwd=app_dir)
 
   for k, v in params.iteritems():
     util.run(["ks", "param", "set", "--env=" + env, component, k, v],
@@ -119,8 +119,6 @@ def setup(args):
   # Create an API client object to talk to the K8s master.
   api_client = k8s_client.ApiClient()
 
-  util.setup_cluster(api_client)
-
   t = test_util.TestCase()
   try:
     start = time.time()
@@ -136,6 +134,9 @@ def setup(args):
     #TODO(jlewi): Create namespace.
     _setup_namespace(api_client, args.namespace)
     ks_deploy(args.test_app_dir, component, params)
+
+    # Setup GPUs.
+    util.setup_cluster(api_client)
 
     # Verify that the TfJob operator is actually deployed.
     tf_job_deployment_name = "tf-job-operator"
