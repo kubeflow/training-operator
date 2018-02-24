@@ -7,8 +7,8 @@ go:
   # - https://github.com/alecthomas/gometalinter/issues/358
   # - https://github.com/golang/go/issues/21712
   # TODO jiayu: re-evaluate the pending issues and add back `gotype`
-  - 1.8
-  - 1.9
+  - "1.8"
+  - "1.9"
   - "1.10"
 
 go_import_path: github.com/kubeflow/tf-operator
