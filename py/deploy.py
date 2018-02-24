@@ -153,6 +153,7 @@ def setup(args):
     t.time = time.time() - start
     t.name = "kubeflow-deploy"
     t.class_name = "GKE"
+    gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
 def teardown(args):
