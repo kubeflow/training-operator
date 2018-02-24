@@ -44,7 +44,7 @@ def _setup_namespace(api_client, name):
 
 # TODO(jlewi): We should probably make this a reusable function since a
 # lot of test code code use it.
-def ks_deploy(app_dir, component, params, env=None):
+def ks_deploy(app_dir, component, params, env=None, account=None):
   """Deploy the specified ksonnet component.
 
   Args:
@@ -53,6 +53,7 @@ def ks_deploy(app_dir, component, params, env=None):
     params: A dictionary of parameters to set.
     env: (Optional) The environment to use, if none is specified a new one
       is created.
+    account: (Optional) The account to use.
   """
   # TODO(jlewi): It might be better if the test creates the app and uses
   # the latest stable release of the ksonnet configs.
@@ -69,6 +70,8 @@ def ks_deploy(app_dir, component, params, env=None):
                cwd=app_dir)
 
   apply_command = ["ks", "apply", env, "-c", component]
+  if account:
+    apply_command.append(["--as=" + account])
   util.run(apply_command, cwd=app_dir)
 
 def setup(args):
@@ -138,7 +141,7 @@ def setup(args):
               "--clusterrole=cluster-admin", "--user=" + account])
 
     _setup_namespace(api_client, args.namespace)
-    ks_deploy(args.test_app_dir, component, params)
+    ks_deploy(args.test_app_dir, component, params, account)
 
     # Setup GPUs.
     util.setup_cluster(api_client)
