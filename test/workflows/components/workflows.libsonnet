@@ -309,7 +309,7 @@
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
+              "--app_dir=" + srcDir + "/test/test-app",
               "--component=gpu_tfjob",
               "--params=name=gpu-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
