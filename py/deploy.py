@@ -131,7 +131,11 @@ def setup(args):
 
     component = "core"
 
-    #TODO(jlewi): Create namespace.
+    account = util.run(["gcloud", "config", "get-value", "account", "--quiet"])
+    logging.info("Using GCP account %s", account)
+    util.run(["kubectl", "create", "clusterrolebinding", "default-admin",
+              "--clusterrole=cluster-admin", "--user=" + account])
+
     _setup_namespace(api_client, args.namespace)
     ks_deploy(args.test_app_dir, component, params)
 
