@@ -135,7 +135,7 @@ def setup(args):
     component = "core"
 
     account = util.run_and_output(
-      ["gcloud", "config", "get-value", "account", "--quiet"])
+      ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
     logging.info("Using GCP account %s", account)
     util.run(["kubectl", "create", "clusterrolebinding", "default-admin",
               "--clusterrole=cluster-admin", "--user=" + account])
