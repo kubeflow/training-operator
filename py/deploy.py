@@ -71,7 +71,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
 
   apply_command = ["ks", "apply", env, "-c", component]
   if account:
-    apply_command.append(["--as=" + account])
+    apply_command.append("--as=" + account)
   util.run(apply_command, cwd=app_dir)
 
 def setup(args):
