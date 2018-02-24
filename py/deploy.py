@@ -5,74 +5,19 @@ This binary is primarily intended for use in managing resources for our tests.
 """
 
 import argparse
-import datetime
 import logging
+import os
 import subprocess
+import tempfile
 import time
-import uuid
 
 from kubernetes import client as k8s_client
-from kubernetes.client import rest
+
 from googleapiclient import discovery
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
 from py import test_util
 from py import util
-
-def _setup_namespace(api_client, name):
-  """Create the namespace for the test.
-  """
-
-  api = k8s_client.CoreV1Api(api_client)
-  namespace = k8s_client.V1Namespace()
-  namespace.api_version = "v1"
-  namespace.kind = "Namespace"
-  namespace.metadata = k8s_client.V1ObjectMeta(name=name, labels={
-    "app": "tf-job-test",
-    }
-  )
-
-  try:
-    logging.info("Creating namespace %s", namespace.metadata.name)
-    namespace = api.create_namespace(namespace)
-    logging.info("Namespace %s created.", namespace.metadata.name)
-  except rest.ApiException as e:
-    if e.status == 409:
-      logging.info("Namespace %s already exists.", namespace.metadata.name)
-    else:
-      raise
-
-# TODO(jlewi): We should probably make this a reusable function since a
-# lot of test code code use it.
-def ks_deploy(app_dir, component, params, env=None, account=None):
-  """Deploy the specified ksonnet component.
-
-  Args:
-    app_dir: The ksonnet directory
-    component: Name of the component to deployed
-    params: A dictionary of parameters to set.
-    env: (Optional) The environment to use, if none is specified a new one
-      is created.
-    account: (Optional) The account to use.
-  """
-  # TODO(jlewi): It might be better if the test creates the app and uses
-  # the latest stable release of the ksonnet configs.
-  now = datetime.datetime.now()
-  if not env:
-    env = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
-
-  logging.info("Using app directory: %s", app_dir)
-
-  util.run(["ks", "env", "add", env], cwd=app_dir)
-
-  for k, v in params.iteritems():
-    util.run(["ks", "param", "set", "--env=" + env, component, k, v],
-               cwd=app_dir)
-
-  apply_command = ["ks", "apply", env, "-c", component]
-  if account:
-    apply_command.append(["--as=" + account])
-  util.run(apply_command, cwd=app_dir)
 
 def setup(args):
   """Setup a GKE cluster for TensorFlow jobs.
@@ -85,6 +30,7 @@ def setup(args):
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
+  chart = args.chart
   machine_type = "n1-standard-8"
 
   cluster_request = {
@@ -122,51 +68,64 @@ def setup(args):
   # Create an API client object to talk to the K8s master.
   api_client = k8s_client.ApiClient()
 
+  util.setup_cluster(api_client)
+
+  # A None gcs_client should be passed to test_util.create_junit_xml_file
+  # unless chart.startswith("gs://"), e.g. https://storage.googleapis.com/...
+  gcs_client = None
+
+  if chart.startswith("gs://"):
+    remote = chart
+    chart = os.path.join(tempfile.gettempdir(), os.path.basename(chart))
+    gcs_client = storage.Client(project=project)
+    bucket_name, path = util.split_gcs_uri(remote)
+
+    bucket = gcs_client.get_bucket(bucket_name)
+    blob = bucket.blob(path)
+    logging.info("Downloading %s to %s", remote, chart)
+    blob.download_to_filename(chart)
+
   t = test_util.TestCase()
   try:
     start = time.time()
-
-    params = {
-      "tfJobImage": args.image,
-      "name": "kubeflow-core",
-      "namespace": args.namespace,
-    }
-
-    component = "core"
-
-    account = util.run_and_output(
-      ["gcloud", "config", "get-value", "account", "--quiet"])
-    logging.info("Using GCP account %s", account)
-    util.run(["kubectl", "create", "clusterrolebinding", "default-admin",
-              "--clusterrole=cluster-admin", "--user=" + account])
-
-    _setup_namespace(api_client, args.namespace)
-    ks_deploy(args.test_app_dir, component, params, account=account)
-
-    # Setup GPUs.
-    util.setup_cluster(api_client)
-
-    # Verify that the TfJob operator is actually deployed.
-    tf_job_deployment_name = "tf-job-operator"
-    logging.info("Verifying TfJob controller started.")
-
-    # TODO(jlewi): We should verify the image of the operator is the correct.
-    util.wait_for_deployment(api_client, args.namespace,
-                             tf_job_deployment_name)
-
-  # Reraise the exception so that the step fails because there's no point
-  # continuing the test.
+    util.run(["helm", "install", chart, "-n", "tf-job", "--namespace=default",
+              "--wait", "--replace",
+              "--set", "rbac.install=true,cloud=gke"])
+    util.wait_for_deployment(api_client, "default", "tf-job-operator")
   except subprocess.CalledProcessError as e:
-    t.failure = "kubeflow-deploy failed;\n" + (e.output or "")
-    raise
+    t.failure = "helm install failed;\n" + (e.output or "")
   except util.TimeoutError as e:
     t.failure = e.message
+  finally:
+    t.time = time.time() - start
+    t.name = "helm-tfjob-install"
+    t.class_name = "GKE"
+    test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
+
+def test(args):
+  """Run the tests."""
+  gcs_client = storage.Client(project=args.project)
+  project = args.project
+  cluster_name = args.cluster
+  zone = args.zone
+  util.configure_kubectl(project, zone, cluster_name)
+
+  t = test_util.TestCase()
+  try:
+    start = time.time()
+    util.run(["helm", "test", "tf-job"])
+  except subprocess.CalledProcessError as e:
+    t.failure = "helm test failed;\n" + (e.output or "")
+    # Reraise the exception so that the prow job will fail and the test
+    # is marked as a failure.
+    # TODO(jlewi): It would be better to this wholistically; e.g. by
+    # processing all the junit xml files and checking for any failures. This
+    # should be more tractable when we migrate off Airflow to Argo.
     raise
   finally:
     t.time = time.time() - start
-    t.name = "kubeflow-deploy"
+    t.name = "e2e-test"
     t.class_name = "GKE"
-    gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
 def teardown(args):
@@ -233,21 +192,20 @@ def main():  # pylint: disable=too-many-locals
   add_common_args(parser_setup)
 
   parser_setup.add_argument(
-    "--test_app_dir",
-    help="The directory containing the ksonnet app used for testing.",
-  )
+    "--chart",
+    type=str,
+    required=True,
+    help="The path for the helm chart.")
 
-  now = datetime.datetime.now()
-  parser_setup.add_argument(
-    "--namespace",
-    default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
-    help="The directory containing the ksonnet app used for testing.",
-  )
+  #############################################################################
+  # test
+  #
+  parser_test = subparsers.add_parser(
+    "test",
+    help="Run the tests.")
 
-  parser_setup.add_argument(
-    "--image",
-    help="The image to use",
-  )
+  parser_test.set_defaults(func=test)
+  add_common_args(parser_test)
 
   #############################################################################
   # teardown
