@@ -386,7 +386,9 @@ def setup_cluster(api_client):
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
-class TimeoutError(Exception):
+# TODO(jlewi): TimeoutError is a built in exception in python3 so we can
+# delete this when we go to Python3.
+class TimeoutError(Exception): # pylint: disable=redefined-builtin
   """An error indicating an operation timed out."""
 
 GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")

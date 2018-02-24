@@ -25,6 +25,7 @@ def run_lint(args):
   # TODO(jlewi): Perhaps we should get a list of submodules and exclude
   # them automatically?
   dir_excludes = ["dashboard/frontend/node_modules", "kubeflow_testing",
+                  "test/test-app",
                   "vendor",]
   full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
                        dir_excludes]

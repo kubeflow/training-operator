@@ -70,7 +70,7 @@ image: gcr.io/image:v20171019
 rbac:
   install: false
   apiVersion: v1beta1"""
-      self.assertEquals(expected, output)
+      self.assertEqual(expected, output)
 
   def test_update_chart_file(self):
     with tempfile.NamedTemporaryFile(delete=False) as hf:
@@ -92,7 +92,7 @@ appVersion: 0.1.0
         "version": "0.1.0-v20171019",
         "appVersion": "0.1.0-v20171019",
     }
-    self.assertEquals(expected, output)
+    self.assertEqual(expected, output)
 
 
 if __name__ == "__main__":
