@@ -7,14 +7,12 @@ This binary is primarily intended for use in managing resources for our tests.
 import argparse
 import datetime
 import logging
-import os
 import subprocess
-import tempfile
 import time
 import uuid
 
 from kubernetes import client as k8s_client
-
+from kubernetes.client import rest
 from googleapiclient import discovery
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
@@ -56,6 +54,8 @@ def ks_deploy(app_dir, component, params, env=None):
     env: (Optional) The environment to use, if none is specified a new one
       is created.
   """
+  # TODO(jlewi): It might be better if the test creates the app and uses
+  # the latest stable release of the ksonnet configs.
   now = datetime.datetime.now()
   if not env:
     env = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
@@ -68,7 +68,7 @@ def ks_deploy(app_dir, component, params, env=None):
     util.run(["ks", "param", "set", "--env=" + env, component, k, v],
                cwd=app_dir)
 
-  apply_command = ["ks", "apply", environment, "-c", component]
+  apply_command = ["ks", "apply", env, "-c", component]
   util.run(apply_command, cwd=app_dir)
 
 def setup(args):
@@ -135,7 +135,7 @@ def setup(args):
 
     #TODO(jlewi): Create namespace.
     _setup_namespace(api_client, args.namespace)
-    deploy_core(args.test_app_dir, component, params)
+    ks_deploy(args.test_app_dir, component, params)
 
     # Verify that the TfJob operator is actually deployed.
     tf_job_deployment_name = "tf-job-operator"
