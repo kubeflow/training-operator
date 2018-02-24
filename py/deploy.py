@@ -145,10 +145,14 @@ def setup(args):
     util.wait_for_deployment(api_client, args.namespace,
                              tf_job_deployment_name)
 
+  # Reraise the exception so that the step fails because there's no point
+  # continuing the test.
   except subprocess.CalledProcessError as e:
     t.failure = "kubeflow-deploy failed;\n" + (e.output or "")
+    raise
   except util.TimeoutError as e:
     t.failure = e.message
+    raise
   finally:
     t.time = time.time() - start
     t.name = "kubeflow-deploy"

@@ -27,6 +27,10 @@
     zone:: "us-east1-d",
     // Default registry to use.
     registry:: "gcr.io/" + $.defaultParams.project,
+
+    // The image tag to use.
+    // Defaults to a value based on the name.
+    versionTag:: null,
   },
 
   // overrides is a dictionary of parameters to provide in addition to defaults.
@@ -53,7 +57,9 @@
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = name;
+      local versionTag = if params.versionTag != null then
+        params.VersionTag
+        else name;
       local tfJobImage = params.registry + ":" + versionTag;
 
       // The namespace on the cluster we spin up to deploy into.
@@ -279,6 +285,7 @@
               "--namespace=" + deployNamespace,
               "--image=" + tfJobImage,
               "--accelerator=nvidia-tesla-k80=1",
+              "--test_app_dir=" + srcDir + "/test/workflows",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
