@@ -29,12 +29,12 @@ class UtilTest(unittest.TestCase):
 
   def testSplitGcsUri(self):
     bucket, path = util.split_gcs_uri("gs://some-bucket/some/path")
-    self.assertEquals("some-bucket", bucket)
-    self.assertEquals("some/path", path)
+    self.assertEqual("some-bucket", bucket)
+    self.assertEqual("some/path", path)
 
     bucket, path = util.split_gcs_uri("gs://some-bucket")
-    self.assertEquals("some-bucket", bucket)
-    self.assertEquals("", path)
+    self.assertEqual("some-bucket", bucket)
+    self.assertEqual("", path)
 
 if __name__ == "__main__":
   unittest.main()

@@ -39,7 +39,7 @@ class TestProw(unittest.TestCase):
 
   def testGetSymlinkOutput(self):
     location = prow.get_symlink_output("10", "mlkube-build-presubmit", "20")
-    self.assertEquals(
+    self.assertEqual(
         "gs://kubernetes-jenkins/pr-logs/directory/mlkube-build-presubmit/20.txt",
         location)
 

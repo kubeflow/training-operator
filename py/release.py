@@ -292,7 +292,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
       if not t.startswith("latest"):
         build_info["helm_chart"] = gcs_path
       if blob.exists() and not t.startswith("latest"):
-        logging.warn("%s already exists", gcs_path)
+        logging.warning("%s already exists", gcs_path)
         continue
       logging.info("Uploading %s to %s.", chart_archive, gcs_path)
       blob.upload_from_filename(chart_archive)
