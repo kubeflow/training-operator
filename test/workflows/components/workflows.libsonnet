@@ -285,7 +285,7 @@
               "--namespace=" + deployNamespace,
               "--image=" + tfJobImage,
               "--accelerator=nvidia-tesla-k80=1",
-              "--test_app_dir=" + srcDir + "/test/workflows",
+              "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
@@ -309,7 +309,7 @@
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
-              "--app_dir=" + srcDir + "/test/test-app",
+              "--app_dir=" + srcDir + "/test/worklows",
               "--component=gpu_tfjob",
               "--params=name=gpu-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
