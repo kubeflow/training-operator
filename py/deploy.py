@@ -56,7 +56,11 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     account: (Optional) The account to use.
   """
   # TODO(jlewi): It might be better if the test creates the app and uses
-  # the latest stable release of the ksonnet configs.
+  # the latest stable release of the ksonnet configs. That however will cause
+  # problems when we make changes to the TFJob operator that require changes
+  # to the ksonnet configs. One advantage of checking in the app is that
+  # we can modify the files in vendor if needed so that changes to the code
+  # and config can be submitted in the same pr.
   now = datetime.datetime.now()
   if not env:
     env = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
