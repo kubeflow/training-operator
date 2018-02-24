@@ -5,11 +5,13 @@ This binary is primarily intended for use in managing resources for our tests.
 """
 
 import argparse
+import datetime
 import logging
 import os
 import subprocess
 import tempfile
 import time
+import uuid
 
 from kubernetes import client as k8s_client
 
@@ -80,7 +82,6 @@ def setup(args):
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
-  chart = args.chart
   machine_type = "n1-standard-8"
 
   cluster_request = {
@@ -222,6 +223,7 @@ def main():  # pylint: disable=too-many-locals
     help="The directory containing the ksonnet app used for testing.",
   )
 
+  now = datetime.datetime.now()
   parser_setup.add_argument(
     "--namespace",
     default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
