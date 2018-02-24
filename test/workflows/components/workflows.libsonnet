@@ -22,11 +22,11 @@
 
 
   // default parameters.
-  defaultParams::{
+  defaultParams:: {
     project:: "mlkube-testing",
     zone:: "us-east1-d",
     // Default registry to use.
-    registry:: "gcr.io/" + project,
+    registry:: "gcr.io/" + $.defaultParams.project,
   },
 
   // overrides is a dictionary of parameters to provide in addition to defaults.
@@ -52,12 +52,12 @@
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
-      local dataVolume = "kubeflow-test-volume";      
+      local dataVolume = "kubeflow-test-volume";
       local versionTag = name;
       local tfJobImage = params.registry + ":" + versionTag;
 
       // The namespace on the cluster we spin up to deploy into.
-      local kubeflowDeploy = "kubeflow";
+      local deployNamespace = "kubeflow";
       // The directory within the kubeflow_testing submodule containing
       // py scripts to use.
       local k8sPy = srcDir;
@@ -71,11 +71,11 @@
       // We prepend a z because cluster name must start with an alphanumeric character
       // and if we cut the prefix we might end up starting with "-" or other invalid
       // character for first character.
-      local cluster = 
+      local cluster =
         if std.length(name) > 40 then
           "z" + std.substr(name, std.length(name) - 39, 39)
-        else 
-        name;
+        else
+          name;
       local zone = params.zone;
       local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
@@ -212,8 +212,8 @@
                 [{
                   name: "teardown-cluster",
                   template: "teardown-cluster",
-                  
-                },],
+
+                }],
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",
