@@ -60,7 +60,7 @@
       local versionTag = if params.versionTag != null then
         params.VersionTag
         else name;
-      local tfJobImage = params.registry + ":" + versionTag;
+      local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
