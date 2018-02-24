@@ -141,7 +141,7 @@ def setup(args):
               "--clusterrole=cluster-admin", "--user=" + account])
 
     _setup_namespace(api_client, args.namespace)
-    ks_deploy(args.test_app_dir, component, params, account)
+    ks_deploy(args.test_app_dir, component, params, account=account)
 
     # Setup GPUs.
     util.setup_cluster(api_client)
