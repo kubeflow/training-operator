@@ -24,18 +24,16 @@ def run_lint(args):
   # kubeflow_testing is imported as a submodule so we should exclude it
   # TODO(jlewi): Perhaps we should get a list of submodules and exclude
   # them automatically?
-  dir_excludes = [
-    "dashboard/frontend/node_modules",
-    "kubeflow_testing",
-    "vendor",
-  ]
-  full_dir_excludes = [
-    os.path.join(os.path.abspath(args.src_dir), f) for f in dir_excludes
-  ]
+  dir_excludes = ["dashboard/frontend/node_modules", "kubeflow_testing",
+                  "test/test-app",
+                  "vendor",]
+  full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
+                       dir_excludes]
   includes = ["*.py"]
   failed_files = []
   rc_file = os.path.join(args.src_dir, ".pylintrc")
-  for root, dirs, files in os.walk(os.path.abspath(args.src_dir), topdown=True):
+  for root, dirs, files in os.walk(os.path.abspath(args.src_dir),
+                                   topdown=True):
     # excludes can be done with fnmatch.filter and complementary set,
     # but it's more annoying to read.
     exclude = False
@@ -51,10 +49,10 @@ def run_lint(args):
       for f in fnmatch.filter(files, pat):
         full_path = os.path.join(root, f)
         try:
-          util.run(
-            ["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
+          util.run(["pylint", "--rcfile=" + rc_file, full_path],
+                    cwd=args.src_dir)
         except subprocess.CalledProcessError:
-          failed_files.append(full_path.strip[len(args.src_dir):])
+          failed_files.append(full_path[len(args.src_dir):])
 
   if failed_files:
     failed_files.sort()
@@ -62,6 +60,7 @@ def run_lint(args):
                   "\n".join(failed_files))
   else:
     logging.info("No lint issues.")
+
 
   if not args.junit_path:
     logging.info("No --junit_path.")
@@ -72,8 +71,7 @@ def run_lint(args):
   test_case.name = "pylint"
   test_case.time = time.time() - start_time
   if failed_files:
-    test_case.failure = "Files with lint issues: {0}".format(
-      ", ".join(failed_files))
+    test_case.failure = "Files with lint issues: {0}".format(", ".join(failed_files))
 
   gcs_client = None
   if args.junit_path.startswith("gs://"):
@@ -99,8 +97,8 @@ def run_tests(args):
   # the PYTHONPATH here and just inheriting it from the environment.
   # When we use ARGO each step will run in its own pod and we can set the
   # PYTHONPATH environment variable as needed for that pod.
-  env["PYTHONPATH"] = (
-    args.src_dir + ":" + os.path.join(args.src_dir, "kubeflow_testing", "py"))
+  env["PYTHONPATH"] = (args.src_dir + ":" +
+                       os.path.join(args.src_dir, "kubeflow_testing", "py"))
 
   num_failed = 0
   for root, dirs, files in os.walk(args.src_dir, topdown=True):
@@ -113,7 +111,7 @@ def run_tests(args):
 
         test_case = test_util.TestCase()
         test_case.class_name = "pytest"
-        test_case.name = full_path.strip(args.src_dir)
+        test_case.name = full_path[len(args.src_dir):]
         start_time = time.time()
         test_cases.append(test_case)
         try:
@@ -128,6 +126,7 @@ def run_tests(args):
     logging.error("%s tests failed.", num_failed)
   else:
     logging.info("No lint issues.")
+
 
   if not args.junit_path:
     logging.info("No --junit_path.")
@@ -145,10 +144,10 @@ def add_common_args(parser):
 
   parser.add_argument(
     "--src_dir",
-    default=os.getcwd(),
-    type=str,
-    help=("The root directory of the source tree. Defaults to current "
-          "directory."))
+      default=os.getcwd(),
+      type=str,
+      help=("The root directory of the source tree. Defaults to current "
+            "directory."))
 
   parser.add_argument(
     "--project",
@@ -163,17 +162,16 @@ def add_common_args(parser):
     help=("(Optional). The GCS location to write the junit file with the "
           "results."))
 
-
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
-  logging.basicConfig(
-    level=logging.INFO,
-    format=('%(levelname)s|%(asctime)s'
-            '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',
-  )
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
   # create the top-level parser
-  parser = argparse.ArgumentParser(description="Run python code checks.")
+  parser = argparse.ArgumentParser(
+      description="Run python code checks.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
@@ -200,7 +198,6 @@ def main():  # pylint: disable=too-many-locals
   args = parser.parse_args()
   args.func(args)
   logging.info("Finished")
-
 
 if __name__ == "__main__":
   main()

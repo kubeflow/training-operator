@@ -36,7 +36,6 @@ GCB_PROJECT = "tf-on-k8s-releasing"
 # Directory to checkout the source.
 REPO_DIR = "git_tensorflow_k8s"
 
-
 def get_latest_green_presubmit(gcs_client):
   """Find the commit corresponding to the latest passing postsubmit."""
   bucket = gcs_client.get_bucket(RESULTS_BUCKET)
@@ -100,7 +99,6 @@ def get_last_release(bucket):
   data = json.loads(contents)
   return data.get("sha", "").strip()
 
-
 def create_latest(bucket, sha, target):
   """Create a file in GCS with information about the latest release.
 
@@ -114,17 +112,14 @@ def create_latest(bucket, sha, target):
   logging.info("Creating GCS output: %s", util.to_gcs_uri(bucket.name, path))
 
   data = {
-    "sha": sha.strip(),
-    "target": target,
+      "sha": sha.strip(),
+      "target": target,
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
 
 
-def build_operator_image(root_dir,
-                         registry,
-                         project=None,
-                         should_push=True,
+def build_operator_image(root_dir, registry, project=None, should_push=True,
                          version_tag=None):
   """Build the main docker image for the TFJob CRD.
   Args:
@@ -146,32 +141,31 @@ def build_operator_image(root_dir,
   commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
-    "github.com/kubeflow/tf-operator/cmd/tf-operator",
-    "github.com/kubeflow/tf-operator/test/e2e",
-    "github.com/kubeflow/tf-operator/dashboard/backend",
+      "github.com/kubeflow/tf-operator/cmd/tf-operator",
+      "github.com/kubeflow/tf-operator/test/e2e",
+      "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     if t == "github.com/kubeflow/tf-operator/cmd/tf-operator":
-      util.run([
-        "go", "install", "-ldflags",
-        "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit), t
-      ])
+      util.run(["go", "install", "-ldflags",
+                "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit),
+                t])
     util.run(["go", "install", t])
 
   # Dashboard's frontend:
   # Resolving dashboard's front-end dependencies
-  util.run(
-    ["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "install"])
+  util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "install"])
   # Building dashboard's front-end
   util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "build"])
 
   # List of paths to copy relative to root.
   sources = [
-    "build/images/tf_operator/Dockerfile",
-    "examples/tf_sample/tf_sample/tf_smoke.py",
-    os.path.join(go_path, "bin/tf-operator"),
-    os.path.join(go_path, "bin/e2e"),
-    os.path.join(go_path, "bin/backend"), "dashboard/frontend/build"
+      "build/images/tf_operator/Dockerfile",
+      "examples/tf_sample/tf_sample/tf_smoke.py",
+      os.path.join(go_path, "bin/tf-operator"),
+      os.path.join(go_path, "bin/e2e"),
+      os.path.join(go_path, "bin/backend"),
+      "dashboard/frontend/build"
   ]
 
   for s in sources:
@@ -195,15 +189,12 @@ def build_operator_image(root_dir,
   latest_image = image_base + ":latest"
 
   if project:
-    util.run([
-      "gcloud", "container", "builds", "submit", context_dir, "--tag=" + image,
-      "--project=" + project
-    ])
+    util.run(["gcloud", "container", "builds", "submit", context_dir,
+              "--tag=" + image, "--project=" + project])
 
     # Add the latest tag.
-    util.run([
-      "gcloud", "container", "images", "add-tag", "--quiet", image, latest_image
-    ])
+    util.run(["gcloud", "container", "images", "add-tag", "--quiet", image,
+              latest_image])
 
   else:
     util.run(["docker", "build", "-t", image, context_dir])
@@ -224,13 +215,8 @@ def build_operator_image(root_dir,
   }
   return output
 
-
-def build_and_push_artifacts(go_dir,
-                             src_dir,
-                             registry,
-                             publish_path=None,
-                             gcb_project=None,
-                             build_info_path=None,
+def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
+                             gcb_project=None, build_info_path=None,
                              version_tag=None):
   """Build and push the artifacts.
 
@@ -255,15 +241,14 @@ def build_and_push_artifacts(go_dir,
   if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
 
-  build_info = build_operator_image(
-    src_dir, registry, project=gcb_project, version_tag=version_tag)
+  build_info = build_operator_image(src_dir, registry, project=gcb_project,
+                                    version_tag=version_tag)
 
   # Copy the chart to a temporary directory because we will modify some
   # of its YAML files.
   chart_build_dir = tempfile.mkdtemp(prefix="tmpTFJobChartBuild")
-  shutil.copytree(
-    os.path.join(src_dir, "tf-job-operator-chart"),
-    os.path.join(chart_build_dir, "tf-job-operator-chart"))
+  shutil.copytree(os.path.join(src_dir, "tf-job-operator-chart"),
+                  os.path.join(chart_build_dir, "tf-job-operator-chart"))
   version = build_info["image"].split(":")[-1]
   values_file = os.path.join(chart_build_dir, "tf-job-operator-chart",
                              "values.yaml")
@@ -279,12 +264,8 @@ def build_and_push_artifacts(go_dir,
     logging.info("Delete previous build: %s", m)
     os.unlink(m)
 
-  util.run(
-    [
-      "helm", "package", "--save=false", "--destination=" + bin_dir,
-      "./tf-job-operator-chart"
-    ],
-    cwd=chart_build_dir)
+  util.run(["helm", "package", "--save=false", "--destination=" + bin_dir,
+            "./tf-job-operator-chart"], cwd=chart_build_dir)
 
   matches = glob.glob(os.path.join(bin_dir, "tf-job-operator-chart*.tgz"))
 
@@ -311,7 +292,7 @@ def build_and_push_artifacts(go_dir,
       if not t.startswith("latest"):
         build_info["helm_chart"] = gcs_path
       if blob.exists() and not t.startswith("latest"):
-        logging.warn("%s already exists", gcs_path)
+        logging.warning("%s already exists", gcs_path)
         continue
       logging.info("Uploading %s to %s.", chart_archive, gcs_path)
       blob.upload_from_filename(chart_archive)
@@ -326,7 +307,6 @@ def build_and_push_artifacts(go_dir,
     paths.append(build_info_path)
 
   write_build_info(build_info, paths, project=gcb_project)
-
 
 def write_build_info(build_info, paths, project=None):
   """Write the build info files.
@@ -349,13 +329,11 @@ def write_build_info(build_info, paths, project=None):
       with open(p, mode='w') as hf:
         hf.write(contents)
 
-
 def build(args):
   """Build the code."""
   if not args.src_dir:
     logging.info("--src_dir not set")
-    args.src_dir = os.path.abspath(
-      os.path.join(os.path.dirname(__file__), ".."))
+    args.src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
   logging.info("Use --src_dir=%s", args.src_dir)
 
   go_dir = os.getenv("GOPATH")
@@ -382,7 +360,7 @@ def build(args):
 
     if target != args.src_dir:
       message = "{0} is a symbolic link to {1}; but --src_dir={2}".format(
-        go_src_dir, target, args.src_dir)
+                 go_src_dir, target, args.src_dir)
       logging.error(message)
       raise ValueError(message)
   elif go_src_dir != args.src_dir:
@@ -401,7 +379,6 @@ def build(args):
   # being set in the environment.
   build_and_push(go_dir, args.src_dir, args)
 
-
 def build_and_push(go_dir, src_dir, args):
   if args.dryrun:
     logging.info("dryrun...")
@@ -416,15 +393,11 @@ def build_and_push(go_dir, src_dir, args):
       }
       write_build_info(build_info, paths, project=args.project)
     return
-  build_and_push_artifacts(
-    go_dir,
-    src_dir,
-    registry=args.registry,
-    publish_path=args.releases_path,
-    gcb_project=args.project,
-    build_info_path=args.build_info_path,
-    version_tag=args.version_tag)
-
+  build_and_push_artifacts(go_dir, src_dir, registry=args.registry,
+                           publish_path=args.releases_path,
+                           gcb_project=args.project,
+                           build_info_path=args.build_info_path,
+                           version_tag=args.version_tag)
 
 def build_local(args):
   """Build the artifacts from the local copy of the code."""
@@ -438,25 +411,20 @@ def build_local(args):
 
   if not os.path.exists(go_src_dir):
     logging.info("Directory %s  doesn't exist.")
-    logging.info("Creating symbolic link %s pointing to %s", go_src_dir,
-                 src_dir)
+    logging.info("Creating symbolic link %s pointing to %s", go_src_dir, src_dir)
     os.symlink(src_dir, go_src_dir)
 
   build_and_push(go_dir, src_dir, args)
 
-
 def clone_repo(args):
   args.clone_func(args)
-
 
 def clone_pr(args):
   branches = ["pull/{0}/head:pr".format(args.pr)]
   util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit, branches)
 
-
 def clone_postsubmit(args):
   util.clone_repo(args.src_dir, REPO_ORG, REPO_NAME, args.commit)
-
 
 # TODO(jlewi): Delete this function once
 # https://github.com/kubeflow/tf-operator/issues/189 is fixed.
@@ -480,13 +448,11 @@ def build_commit(args, branches):
   util.install_go_deps(clone_dir)
   build_and_push(go_dir, src_dir, args)
 
-
 # TODO(jlewi): Delete this function once
 # https://github.com/kubeflow/tf-operator/issues/189 is fixed.
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
   build_commit(args, None)
-
 
 # TODO(jlewi): Delete this function once
 # https://github.com/kubeflow/tf-operator/issues/189 is fixed.
@@ -495,14 +461,12 @@ def build_pr(args):
   branches = ["pull/{0}/head:pr".format(args.pr)]
   build_commit(args, branches)
 
-
 def clone_lastgreen(args):
   gcs_client = storage.Client()
   sha = get_latest_green_presubmit(gcs_client)
 
   util.clone_repo(args.src_dir, util.MASTER_REPO_OWNER, util.MASTER_REPO_NAME,
                   sha)
-
 
 def build_new_release(args):  # pylint: disable=too-many-locals
   """Find the latest release and build the artifacts if they are newer then
@@ -530,15 +494,14 @@ def build_new_release(args):  # pylint: disable=too-many-locals
 
   build(args)
 
-
 def add_common_args(parser):
   """Add a set of common parser arguments."""
 
   parser.add_argument(
     "--registry",
-    default="gcr.io/mlkube-testing",
-    type=str,
-    help="The docker registry to use.")
+      default="gcr.io/mlkube-testing",
+      type=str,
+      help="The docker registry to use.")
 
   parser.add_argument(
     "--project",
@@ -567,19 +530,16 @@ def add_common_args(parser):
     help=("A string used as the image tag. If not supplied defaults to a "
           "value based on the git commit."))
 
-  parser.add_argument(
-    "--dryrun", dest="dryrun", action="store_true", help="Do a dry run.")
-  parser.add_argument(
-    "--no-dryrun",
-    dest="dryrun",
-    action="store_false",
-    help="Don't do a dry run.")
+  parser.add_argument("--dryrun", dest="dryrun", action="store_true",
+                      help="Do a dry run.")
+  parser.add_argument("--no-dryrun", dest="dryrun", action="store_false",
+                      help="Don't do a dry run.")
   parser.set_defaults(dryrun=False)
-
 
 def build_parser():
   # create the top-level parser
-  parser = argparse.ArgumentParser(description="Build the release artifacts.")
+  parser = argparse.ArgumentParser(
+    description="Build the release artifacts.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
@@ -589,7 +549,8 @@ def build_parser():
   # This mode builds the artifacts from the local copy of the code.
 
   parser_clone = subparsers.add_parser(
-    "clone", help="Clone and checkout the repository.")
+    "clone",
+    help="Clone and checkout the repository.")
 
   parser_clone.add_argument(
     "--src_dir",
@@ -600,7 +561,8 @@ def build_parser():
   clone_subparsers = parser_clone.add_subparsers()
 
   last_green = clone_subparsers.add_parser(
-    "lastgreen", help="Clone the last green postsubmit.")
+    "lastgreen",
+    help="Clone the last green postsubmit.")
 
   last_green.add_argument(
     "--commit",
@@ -610,10 +572,15 @@ def build_parser():
 
   last_green.set_defaults(clone_func=clone_lastgreen)
 
-  pr = clone_subparsers.add_parser("pr", help="Clone the pull request.")
+  pr = clone_subparsers.add_parser(
+    "pr",
+    help="Clone the pull request.")
 
   pr.add_argument(
-    "--pr", default=None, required=True, help="The pull request to check out..")
+    "--pr",
+    default=None,
+    required=True,
+    help="The pull request to check out..")
 
   pr.add_argument(
     "--commit",
@@ -624,7 +591,8 @@ def build_parser():
   pr.set_defaults(clone_func=clone_pr)
 
   postsubmit = clone_subparsers.add_parser(
-    "postsubmit", help="Clone a postsubmit.")
+    "postsubmit",
+    help="Clone a postsubmit.")
 
   postsubmit.add_argument(
     "--commit",
@@ -657,14 +625,16 @@ def build_parser():
   # This mode builds the artifacts from the local copy of the code.
 
   parser_local = subparsers.add_parser(
-    "local", help="Build the artifacts from the local copy of the code.")
+    "local",
+    help="Build the artifacts from the local copy of the code.")
 
   add_common_args(parser_local)
   parser_local.set_defaults(func=build_local)
 
   # Build a particular postsubmit hash.
   parser_postsubmit = subparsers.add_parser(
-    "postsubmit", help="Build the artifacts from a postsubmit.")
+    "postsubmit",
+    help="Build the artifacts from a postsubmit.")
   parser_postsubmit.set_defaults(func=build_postsubmit)
 
   add_common_args(parser_postsubmit)
@@ -672,14 +642,14 @@ def build_parser():
   parser_postsubmit.add_argument(
     "--commit",
     default=None,
-    type=str,
-    help="Optional a particular commit to checkout and build.")
+      type=str,
+      help="Optional a particular commit to checkout and build.")
 
   parser_postsubmit.add_argument(
     "--src_dir",
     default=None,
-    type=str,
-    help="(Optional) Directory to checkout the source to.")
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   ############################################################################
   # Build new release
@@ -700,37 +670,39 @@ def build_parser():
   ############################################################################
   # Pull Request
   parser_pr = subparsers.add_parser(
-    "pr", help=("Build the artifacts from the specified pull request. "))
+    "pr",
+    help=("Build the artifacts from the specified pull request. "))
 
   add_common_args(parser_pr)
 
   parser_pr.add_argument(
-    "--pr", required=True, type=str, help="The PR to build.")
+    "--pr",
+    required=True,
+      type=str,
+      help="The PR to build.")
 
   parser_pr.add_argument(
     "--commit",
     default=None,
-    type=str,
-    help="Optional a particular commit to checkout and build.")
+      type=str,
+      help="Optional a particular commit to checkout and build.")
 
   parser_pr.add_argument(
     "--src_dir",
     default=None,
-    type=str,
-    help="(Optional) Directory to checkout the source to.")
+      type=str,
+      help="(Optional) Directory to checkout the source to.")
 
   parser_pr.set_defaults(func=build_pr)
   return parser
 
-
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
-  logging.basicConfig(
-    level=logging.INFO,
-    format=('%(levelname)s|%(asctime)s'
-            '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',
-  )
+  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
 
   util.maybe_activate_service_account()
 
@@ -740,7 +712,6 @@ def main():  # pylint: disable=too-many-locals
   args = parser.parse_args()
   # TODO: this line fails in Python 3 because library API change.
   args.func(args)
-
 
 if __name__ == "__main__":
   main()
