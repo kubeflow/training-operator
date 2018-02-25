@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/kubeflow/tf-operator/cmd/tf_operator/app/options"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -123,8 +123,6 @@ func Run(opt *options.ServerOption) error {
 			},
 		},
 	})
-
-	panic("unreachable")
 
 	return nil
 }

@@ -9,7 +9,7 @@ $ tree -d -I 'vendor|bin|.git'
 │   │   └── tf_operator
 │   └── release
 ├── cmd
-│   └── tf_operator
+│   └── tf-operator
 │       └── app
 │           └── options
 ├── dashboard
@@ -101,7 +101,7 @@ glide install -v
 Build it
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf_operator
+go install github.com/kubeflow/tf-operator/cmd/tf-operator
 ```
 
 ## Building all the artifacts.
@@ -146,7 +146,7 @@ Now we are ready to run operator locally:
 
 ```sh
 kubectl create -f examples/crd/crd.yaml
-tf_operator --logtostderr
+tf-operator --logtostderr
 ```
 
 The first command creates a CRD `tfjobs`. And the second command runs the operator locally. To verify local

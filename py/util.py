@@ -25,8 +25,8 @@ from kubernetes.client import rest
 # This should match the values used in Go imports.
 # We default to environment variables so that it can be set correctly when
 # running under prow.
-MASTER_REPO_OWNER = os.getenv("REPO_OWNER", "tensorflow")
-MASTER_REPO_NAME = os.getenv("REPO_NAME", "k8s")
+MASTER_REPO_OWNER = os.getenv("REPO_OWNER", "kubeflow")
+MASTER_REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
 
 # TODO(jlewi): Should we stream the output by polling the subprocess?
 # look at run_and_stream in build_and_push.
@@ -426,7 +426,9 @@ def setup_cluster(api_client):
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
-class TimeoutError(Exception):
+# TODO(jlewi): In python3 TimeoutError is built in. So once we are using
+# python3 fully we can delete this.
+class TimeoutError(Exception):  # pylint: disable=redefined-builtin
   """An error indicating an operation timed out."""
 
 GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")

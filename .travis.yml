@@ -7,8 +7,9 @@ go:
   # - https://github.com/alecthomas/gometalinter/issues/358
   # - https://github.com/golang/go/issues/21712
   # TODO jiayu: re-evaluate the pending issues and add back `gotype`
-  - 1.8
-  - 1.9
+  - "1.8"
+  - "1.9"
+  - "1.10"
 
 go_import_path: github.com/kubeflow/tf-operator
 
@@ -19,7 +20,7 @@ install:
   - gometalinter --install
 
 script:
-  - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf_operator
+  - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf-operator
   - gometalinter --config=linter_config.json ./pkg/...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor

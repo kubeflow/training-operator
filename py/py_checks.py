@@ -25,6 +25,7 @@ def run_lint(args):
   # TODO(jlewi): Perhaps we should get a list of submodules and exclude
   # them automatically?
   dir_excludes = ["dashboard/frontend/node_modules", "kubeflow_testing",
+                  "test/test-app",
                   "vendor",]
   full_dir_excludes = [os.path.join(os.path.abspath(args.src_dir), f) for f in
                        dir_excludes]
@@ -51,7 +52,7 @@ def run_lint(args):
           util.run(["pylint", "--rcfile=" + rc_file, full_path],
                     cwd=args.src_dir)
         except subprocess.CalledProcessError:
-          failed_files.append(full_path.strip(args.src_dir))
+          failed_files.append(full_path[len(args.src_dir):])
 
   if failed_files:
     failed_files.sort()
@@ -110,7 +111,7 @@ def run_tests(args):
 
         test_case = test_util.TestCase()
         test_case.class_name = "pytest"
-        test_case.name = full_path.strip(args.src_dir)
+        test_case.name = full_path[len(args.src_dir):]
         start_time = time.time()
         test_cases.append(test_case)
         try:

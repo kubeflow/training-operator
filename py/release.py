@@ -25,8 +25,8 @@ from py import util
 # Repo org and name can be set via environment variables when running
 # on PROW. But we choose sensible defaults so that we can run locally without
 # setting defaults.
-REPO_ORG = os.getenv("REPO_OWNER", "tensorflow")
-REPO_NAME = os.getenv("REPO_NAME", "k8s")
+REPO_ORG = os.getenv("REPO_OWNER", "kubeflow")
+REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
 
 RESULTS_BUCKET = "mlkube-testing-results"
 JOB_NAME = "tf-k8s-postsubmit"
@@ -141,12 +141,12 @@ def build_operator_image(root_dir, registry, project=None, should_push=True,
   commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
-      "github.com/kubeflow/tf-operator/cmd/tf_operator",
+      "github.com/kubeflow/tf-operator/cmd/tf-operator",
       "github.com/kubeflow/tf-operator/test/e2e",
       "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
-    if t == "github.com/kubeflow/tf-operator/cmd/tf_operator":
+    if t == "github.com/kubeflow/tf-operator/cmd/tf-operator":
       util.run(["go", "install", "-ldflags",
                 "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit),
                 t])
@@ -162,7 +162,7 @@ def build_operator_image(root_dir, registry, project=None, should_push=True,
   sources = [
       "build/images/tf_operator/Dockerfile",
       "examples/tf_sample/tf_sample/tf_smoke.py",
-      os.path.join(go_path, "bin/tf_operator"),
+      os.path.join(go_path, "bin/tf-operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
       "dashboard/frontend/build"
@@ -292,7 +292,7 @@ def build_and_push_artifacts(go_dir, src_dir, registry, publish_path=None,
       if not t.startswith("latest"):
         build_info["helm_chart"] = gcs_path
       if blob.exists() and not t.startswith("latest"):
-        logging.warn("%s already exists", gcs_path)
+        logging.warning("%s already exists", gcs_path)
         continue
       logging.info("Uploading %s to %s.", chart_archive, gcs_path)
       blob.upload_from_filename(chart_archive)
