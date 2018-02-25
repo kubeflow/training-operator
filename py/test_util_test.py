@@ -1,7 +1,7 @@
-from __future__ import print_function
+
 
 import subprocess
-import StringIO
+import io
 import tempfile
 import time
 import unittest
@@ -44,7 +44,7 @@ class XMLTest(unittest.TestCase):
     failure.failure = "failed for some reason."
 
     e = test_util.create_xml([failure])
-    s = StringIO.StringIO()
+    s = io.StringIO()
     e.write(s)
     xml_value = s.getvalue()
     self.assertEqual(1, test_util.get_num_failures(xml_value))
@@ -56,7 +56,7 @@ class XMLTest(unittest.TestCase):
     success.time = 10
 
     e = test_util.create_xml([success])
-    s = StringIO.StringIO()
+    s = io.StringIO()
     e.write(s)
     xml_value = s.getvalue()
     self.assertEqual(0, test_util.get_num_failures(xml_value))

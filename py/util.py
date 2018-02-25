@@ -1,5 +1,5 @@
 """Utilities used by our python scripts for building and releasing."""
-from __future__ import print_function
+
 
 import datetime
 import logging
@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import yaml
 
 import google.auth
@@ -326,7 +326,7 @@ def install_gpu_drivers(api_client):
   logging.info("Install GPU Drivers.")
   # Fetch the daemonset to install the drivers.
   link = "https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/k8s-1.8/device-plugin-daemonset.yaml"  # pylint: disable=line-too-long
-  f = urllib.urlopen(link)
+  f = urllib.request.urlopen(link)
   daemonset_spec = yaml.load(f)
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
   try:
