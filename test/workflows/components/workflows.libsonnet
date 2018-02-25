@@ -31,6 +31,9 @@
     // The image tag to use.
     // Defaults to a value based on the name.
     versionTag:: null,
+
+    // The name of the secret containing GCP credentials.
+    gcpCredentialsSecretName:: "kubeflow-testing-credentials",
   },
 
   // overrides is a dictionary of parameters to provide in addition to defaults.
@@ -58,7 +61,7 @@
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
       local versionTag = if params.versionTag != null then
-        params.VersionTag
+        params.versionTag
         else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
@@ -155,7 +158,7 @@
             {
               name: "gcp-credentials",
               secret: {
-                secretName: "kubeflow-testing-credentials",
+                secretName: params.gcpCredentialsSecretName,
               },
             },
             {
@@ -166,8 +169,7 @@
             },
           ],  // volumes
           // onExit specifies the template that should always run when the workflow completes.
-          // DO NOT SUBMIT leave cluster up for debugging.
-          // onExit: "exit-handler",
+          onExit: "exit-handler",
           templates: [
             {
               name: "e2e",
