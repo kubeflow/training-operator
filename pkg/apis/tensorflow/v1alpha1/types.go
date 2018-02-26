@@ -60,6 +60,9 @@ type TFJobSpec struct {
 
 	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
 	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
+
+	// SchedulerName specifies the name of scheduler which should handle the TFJob
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 type TerminationPolicySpec struct {

@@ -178,6 +178,8 @@ func (s *TBReplicaSet) getDeploymentSpecTemplate(image string) v1.PodTemplateSpe
 
 	ps.Volumes = append(ps.Volumes, s.Spec.Volumes...)
 
+	ps.SchedulerName = s.Job.SchedulerName()
+
 	return v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   s.jobName(),
