@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,8 @@ var (
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
+	testSchedulerName := "test-scheduler"
+
 	jobSpec := &tfv1alpha1.TFJob{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
@@ -67,6 +70,7 @@ func TestTFReplicaSet(t *testing.T) {
 					TFReplicaType: tfv1alpha1.PS,
 				},
 			},
+			SchedulerName: testSchedulerName,
 		},
 	}
 
@@ -167,6 +171,10 @@ func TestTFReplicaSet(t *testing.T) {
 		c := p.Spec.Containers[0]
 		if len(c.Env) != 1 {
 			t.Fatalf("Expected 1 environment variable got %v", len(c.Env))
+		}
+
+		if strings.Compare(p.Spec.SchedulerName, testSchedulerName) != 0 {
+			t.Fatalf("p.Spec.Template.Spec.SchedulerName; Got %v; want %v", p.Spec.SchedulerName, testSchedulerName)
 		}
 
 		actualTFConfig := &TFConfig{}

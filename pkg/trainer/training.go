@@ -412,3 +412,7 @@ func (j *TrainingJob) name() string {
 func (j *TrainingJob) fullname() string {
 	return j.job.ObjectMeta.GetNamespace() + ":" + j.job.ObjectMeta.GetName()
 }
+
+func (j *TrainingJob) SchedulerName() string {
+	return j.job.Spec.SchedulerName
+}
