@@ -11,7 +11,9 @@ import six
 
 from py import util
 
+
 class TestCase(object):
+
   def __init__(self, class_name="", name=""):
     self.class_name = class_name
     self.name = name
@@ -19,6 +21,7 @@ class TestCase(object):
     self.time = None
     # String describing the failure.
     self.failure = None
+
 
 class TestSuite(object):
   """A suite of test cases."""
@@ -66,6 +69,7 @@ class TestSuite(object):
     """Return an iterator of TestCases."""
     return six.itervalues(self._cases)
 
+
 def wrap_test(test_func, test_case):
   """Wrap a test func.
 
@@ -83,14 +87,14 @@ def wrap_test(test_func, test_case):
   try:
     test_func()
   except subprocess.CalledProcessError as e:
-    test_case.failure = (
-       "Subprocess failed;\n{0}".format(e.output))
+    test_case.failure = ("Subprocess failed;\n{0}".format(e.output))
     raise
   except Exception as e:
     test_case.failure = "Test failed; " + e.message
     raise
   finally:
     test_case.time = time.time() - start
+
 
 def create_xml(test_cases):
   """Create an Element tree representing the test cases.
@@ -109,8 +113,11 @@ def create_xml(test_cases):
 
     if c.failure:
       failures += 1
-  attrib = {"failures": "{0}".format(failures), "tests": "{0}".format(len(test_cases)),
-            "time": "{0}".format(total_time)}
+  attrib = {
+    "failures": "{0}".format(failures),
+    "tests": "{0}".format(len(test_cases)),
+    "time": "{0}".format(total_time)
+  }
   root = ElementTree.Element("testsuite", attrib)
 
   for c in test_cases:
@@ -137,6 +144,7 @@ def create_xml(test_cases):
 
   t = ElementTree.ElementTree(root)
   return t
+
 
 def create_junit_xml_file(test_cases, output_path, gcs_client=None):
   """Create a JUnit XML file.
@@ -174,6 +182,7 @@ def create_junit_xml_file(test_cases, output_path, gcs_client=None):
         else:
           raise
     t.write(output_path)
+
 
 def get_num_failures(xml_string):
   """Return the number of failures based on the XML string."""
