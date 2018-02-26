@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,8 @@ var (
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
+	testSchedulerName := "test-scheduler"
+
 	jobSpec := &tfv1alpha1.TFJob{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
@@ -67,6 +70,7 @@ func TestTFReplicaSet(t *testing.T) {
 					TFReplicaType: tfv1alpha1.PS,
 				},
 			},
+			SchedulerName: testSchedulerName,
 		},
 	}
 
@@ -166,6 +170,10 @@ func TestTFReplicaSet(t *testing.T) {
 
 		if !reflect.DeepEqual(j.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
 			t.Fatalf("Job.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(j.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
+		}
+
+		if strings.Compare(j.Spec.Template.Spec.SchedulerName, testSchedulerName) != 0 {
+			t.Fatalf("Job.Spec.Template.Spec.SchedulerName; Got %v; want %v", j.Spec.Template.Spec.SchedulerName, testSchedulerName)
 		}
 
 		c := j.Spec.Template.Spec.Containers[0]
