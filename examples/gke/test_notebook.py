@@ -17,7 +17,6 @@ from py import util
 
 SubTuple = collections.namedtuple("SubTuple", ("name", "value", "pattern"))
 
-
 def replace_vars(lines, new_values):
   """Substitutite in the values of the variables.
 
@@ -37,8 +36,8 @@ def replace_vars(lines, new_values):
     new_value = v
     if isinstance(v, six.string_types):
       new_value = "\"{0}\"".format(v)
-    matches.append(
-      SubTuple(k, new_value, re.compile(r"\s*{0}\s*=.*".format(k))))
+    matches.append(SubTuple(k, new_value,
+                            re.compile(r"\s*{0}\s*=.*".format(k))))
 
   for i, l in enumerate(lines):
     for p in matches:
@@ -55,11 +54,9 @@ def replace_vars(lines, new_values):
     if not k in matched:
       unmatched.append(k)
   if unmatched:
-    raise ValueError(
-      "No matches for variables {0}".format(", ".join(unmatched)))
+    raise ValueError("No matches for variables {0}".format(", ".join(unmatched)))
 
   return lines
-
 
 def strip_appendix(lines):
   """Remove all code in the appendix."""
@@ -69,7 +66,6 @@ def strip_appendix(lines):
     if p.match(lines[i], re.IGNORECASE):
       return lines[0:i]
   raise ValueError("Could not find Appendix")
-
 
 def strip_unexecutable(lines):
   """Remove all code that we can't execute"""
@@ -81,9 +77,7 @@ def strip_unexecutable(lines):
     valid.append(l)
   return valid
 
-
 class TestNotebook(unittest.TestCase):
-
   @staticmethod
   def run_test(project, zone, cluster, new_values):  # pylint: disable=too-many-locals
     # TODO(jeremy@lewi.us): Need to configure the notebook and test to build
@@ -113,8 +107,8 @@ class TestNotebook(unittest.TestCase):
 
     modified = strip_unexecutable(modified)
 
-    with tempfile.NamedTemporaryFile(
-        suffix="notebook.py", prefix="tmpGke", mode="w", delete=False) as hf:
+    with tempfile.NamedTemporaryFile(suffix="notebook.py", prefix="tmpGke",
+                                     mode="w", delete=False) as hf:
       code_path = hf.name
       hf.write("\n".join(modified))
     logging.info("Wrote notebook to: %s", code_path)
@@ -127,15 +121,15 @@ class TestNotebook(unittest.TestCase):
       runpy.run_path(code_path)
     finally:
       logging.info("Deleting cluster; project=%s, zone=%s, name=%s", project,
-                   zone, cluster)
+                  zone, cluster)
       util.delete_cluster(gke, cluster, project, zone)
 
   def testCpu(self):
     """Test using CPU only."""
     now = datetime.datetime.now()
     project = "mlkube-testing"
-    cluster = (
-      "gke-nb-test-" + now.strftime("v%Y%m%d") + "-" + uuid.uuid4().hex[0:4])
+    cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
+                 + uuid.uuid4().hex[0:4])
     zone = "us-east1-d"
     new_values = {
       "project": project,
@@ -153,8 +147,8 @@ class TestNotebook(unittest.TestCase):
     """Test using CPU only."""
     now = datetime.datetime.now()
     project = "mlkube-testing"
-    cluster = (
-      "gke-nb-test-" + now.strftime("v%Y%m%d") + "-" + uuid.uuid4().hex[0:4])
+    cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
+                 + uuid.uuid4().hex[0:4])
     zone = "us-east1-c"
     new_values = {
       "project": project,
@@ -170,11 +164,10 @@ class TestNotebook(unittest.TestCase):
     }
     self.run_test(project, zone, cluster, new_values)
 
-
 if __name__ == "__main__":
-  logging.basicConfig(
-    level=logging.INFO,
-    format=('%(levelname)s|%(asctime)s'
-            '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+  logging.basicConfig(level=logging.INFO,
+                      format=('%(levelname)s|%(asctime)s'
+                              '|%(pathname)s|%(lineno)d| %(message)s'),
+                      datefmt='%Y-%m-%dT%H:%M:%S',
+                      )
   unittest.main()
