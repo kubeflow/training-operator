@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,12 +51,12 @@ var (
 func Run(opt *options.ServerOption) error {
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
-		glog.Infof("EnvKubeflowNamespace not set, use default namespace")
+		log.Infof("EnvKubeflowNamespace not set, use default namespace")
 		namespace = metav1.NamespaceDefault
 	}
 
 	// To help debugging, immediately log version
-	glog.Infof("%+v", version.Info())
+	log.Infof("%+v", version.Info())
 
 	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
@@ -119,7 +119,7 @@ func Run(opt *options.ServerOption) error {
 		Callbacks: election.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
-				glog.Fatalf("leader election lost")
+				log.Fatalf("leader election lost")
 			},
 		},
 	})
@@ -130,19 +130,19 @@ func Run(opt *options.ServerOption) error {
 func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfig {
 	controllerConfig := &v1alpha1.ControllerConfig{}
 	if controllerConfigFile != "" {
-		glog.Infof("Loading controller config from %v.", controllerConfigFile)
+		log.Infof("Loading controller config from %v.", controllerConfigFile)
 		data, err := ioutil.ReadFile(controllerConfigFile)
 		if err != nil {
-			glog.Fatalf("Could not read file: %v. Error: %v", controllerConfigFile, err)
+			log.Fatalf("Could not read file: %v. Error: %v", controllerConfigFile, err)
 			return controllerConfig
 		}
 		err = yaml.Unmarshal(data, controllerConfig)
 		if err != nil {
-			glog.Fatalf("Could not parse controller config; Error: %v\n", err)
+			log.Fatalf("Could not parse controller config; Error: %v\n", err)
 		}
-		glog.Infof("ControllerConfig: %v", util.Pformat(controllerConfig))
+		log.Infof("ControllerConfig: %v", util.Pformat(controllerConfig))
 	} else {
-		glog.Info("No controller_config_file provided; using empty config.")
+		log.Info("No controller_config_file provided; using empty config.")
 	}
 	return controllerConfig
 }

@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -36,7 +36,7 @@ func Pformat(value interface{}) string {
 	}
 	valueJSON, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
-		glog.Warningf("Couldn't pretty format %v, error: %v", value, err)
+		log.Warningf("Couldn't pretty format %v, error: %v", value, err)
 		return fmt.Sprintf("%v", value)
 	}
 	return string(valueJSON)

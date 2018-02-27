@@ -18,10 +18,9 @@ package trainer
 import (
 	"fmt"
 
-	"reflect"
-
-	log "github.com/golang/glog"
 	"github.com/kubeflow/tf-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"reflect"
 
 	"strings"
 
@@ -367,7 +366,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 			j.status.Phase = tfv1alpha1.TFJobPhaseDone
 			j.status.State = tfv1alpha1.StateSucceeded
 		} else {
-			log.V(1).Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 		}
 	}
 

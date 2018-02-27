@@ -1,5 +1,5 @@
-hash: f014310f627220e19810126a1402f19d92ada49272ee1a409649b3703f6c4698
-updated: 2018-02-26T11:38:34.075412-08:00
+hash: e840859029ef696a6e8200185d6b8713ad2f8e610186f6cf9a36efb0b93b8976
+updated: 2018-02-26T17:45:07.369829-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -78,6 +78,10 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/onrik/logrus
+  version: 6a64e23a4923a8d0d4db2806dcf3e55af1e48f61
+  subpackages:
+  - filename
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/PuerkitoBio/purell
