@@ -16,7 +16,7 @@ def GetGitHash():
   git_hash = git_hash.strip().decode("utf-8")
   modified_files = subprocess.check_output(["git", "ls-files", "--modified"])
   untracked_files = subprocess.check_output(
-      ["git", "ls-files", "--others", "--exclude-standard"])
+    ["git", "ls-files", "--others", "--exclude-standard"])
   if modified_files or untracked_files:
     diff = subprocess.check_output(["git", "diff"])
     sha = hashlib.sha256()
@@ -29,20 +29,20 @@ def GetGitHash():
 if __name__ == "__main__":
   logging.getLogger().setLevel(logging.INFO)
   parser = argparse.ArgumentParser(
-      description="Build Docker images for TFJob samples.")
+    description="Build Docker images for TFJob samples.")
 
   parser.add_argument(
-      "--registry",
-      default="gcr.io/tf-on-k8s-dogfood",
-      type=str,
-      help="The docker registry to use.")
+    "--registry",
+    default="gcr.io/tf-on-k8s-dogfood",
+    type=str,
+    help="The docker registry to use.")
 
   # TODO(jlewi): Should we make this a list so we can build both images with one command.
   parser.add_argument(
-      '--mode',
-      default="cpu",
-      type=str,
-      help='Which image to build; options are cpu or gpu')
+    '--mode',
+    default="cpu",
+    type=str,
+    help='Which image to build; options are cpu or gpu')
 
   args = parser.parse_args()
 
@@ -52,11 +52,12 @@ if __name__ == "__main__":
   loader = jinja2.FileSystemLoader(images_dir)
 
   base_images = {
-      "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
-      "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
+    "cpu": "gcr.io/tensorflow/tensorflow:1.3.0",
+    "gpu": "gcr.io/tensorflow/tensorflow:1.3.0-gpu",
   }
-  dockerfile_contents = jinja2.Environment(loader=loader).get_template(
-      filename).render(base_image=base_images[args.mode])
+  dockerfile_contents = jinja2.Environment(
+    loader=loader).get_template(filename).render(
+      base_image=base_images[args.mode])
   context_dir = tempfile.mkdtemp(prefix="tmpTFJobSampleContentxt")
   logging.info("context_dir: %s", context_dir)
   if not os.path.exists(context_dir):
@@ -69,8 +70,8 @@ if __name__ == "__main__":
 
   # List of paths to copy relative to root.
   sources = [
-      # TODO(jlewi): Should we build a pip package?
-      "examples/tf_sample/tf_sample/tf_smoke.py",
+    # TODO(jlewi): Should we build a pip package?
+    "examples/tf_sample/tf_sample/tf_smoke.py",
   ]
 
   for s in sources:

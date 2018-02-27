@@ -4,7 +4,9 @@ from kubespawner.spawner import KubeSpawner
 from jhub_remote_user_authenticator.remote_user_auth import RemoteUserAuthenticator
 from oauthenticator.github import GitHubOAuthenticator
 
+
 class KubeFormSpawner(KubeSpawner):
+
   def _options_form_default(self):
     return '''
     <label for='image'>Image</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -29,7 +31,8 @@ class KubeFormSpawner(KubeSpawner):
     options['image'] = formdata.get('image', [''])[0].strip()
     options['cpu_guarantee'] = formdata.get('cpu_guarantee', [''])[0].strip()
     options['mem_guarantee'] = formdata.get('mem_guarantee', [''])[0].strip()
-    options['extra_resource_limits'] = formdata.get('extra_resource_limits', [''])[0].strip()
+    options['extra_resource_limits'] = formdata.get('extra_resource_limits',
+                                                    [''])[0].strip()
     return options
 
   @property
@@ -59,6 +62,7 @@ class KubeFormSpawner(KubeSpawner):
     if self.user_options.get('extra_resource_limits'):
       extra = json.loads(self.user_options['extra_resource_limits'])
     return extra
+
 
 ###################################################
 ### JupyterHub Options
@@ -91,18 +95,13 @@ c.KubeSpawner.user_storage_pvc_ensure = True
 # How much disk space do we want?
 c.KubeSpawner.user_storage_capacity = '10Gi'
 c.KubeSpawner.pvc_name_template = 'claim-{username}{servername}'
-c.KubeSpawner.volumes = [
-  {
-    'name': 'volume-{username}{servername}',
-    'persistentVolumeClaim': {
-      'claimName': 'claim-{username}{servername}'
-    }
+c.KubeSpawner.volumes = [{
+  'name': 'volume-{username}{servername}',
+  'persistentVolumeClaim': {
+    'claimName': 'claim-{username}{servername}'
   }
-]
-c.KubeSpawner.volume_mounts = [
-  {
-    'mountPath': '/home/jovyan/work',
-    'name': 'volume-{username}{servername}'
-  }
-]
-
+}]
+c.KubeSpawner.volume_mounts = [{
+  'mountPath': '/home/jovyan/work',
+  'name': 'volume-{username}{servername}'
+}]

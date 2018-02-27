@@ -20,10 +20,10 @@ def parse_args():
   parser = argparse.ArgumentParser()
 
   parser.add_argument(
-      "--sleep_secs",
-      default=0,
-      type=int,
-      help=("Amount of time to sleep at the end"))
+    "--sleep_secs",
+    default=0,
+    type=int,
+    help=("Amount of time to sleep at the end"))
 
   # TODO(jlewi): We ignore unknown arguments because the backend is currently
   # setting some flags to empty values like metadata path.
@@ -69,7 +69,7 @@ def run(server, cluster_spec):  # pylint: disable=too-many-statements, too-many-
 
     logging.info("Server target: %s", target)
     with tf.Session(
-            target, config=tf.ConfigProto(log_device_placement=True)) as sess:
+        target, config=tf.ConfigProto(log_device_placement=True)) as sess:
       sess.run(init_op)
       for r in results:
         result = sess.run(r)
@@ -100,10 +100,10 @@ def main():
   if cluster_spec:
     cluster_spec_object = tf.train.ClusterSpec(cluster_spec)
     server_def = tf.train.ServerDef(
-        cluster=cluster_spec_object.as_cluster_def(),
-        protocol="grpc",
-        job_name=task["type"],
-        task_index=task["index"])
+      cluster=cluster_spec_object.as_cluster_def(),
+      protocol="grpc",
+      job_name=task["type"],
+      task_index=task["index"])
 
     logging.info("server_def: %s", server_def)
 
@@ -114,8 +114,8 @@ def main():
 
     # Assigns ops to the local worker by default.
     device_func = tf.train.replica_device_setter(
-        worker_device="/job:worker/task:%d" % server_def.task_index,
-        cluster=server_def.cluster)
+      worker_device="/job:worker/task:%d" % server_def.task_index,
+      cluster=server_def.cluster)
   else:
     # This should return a null op device setter since we are using
     # all the defaults.

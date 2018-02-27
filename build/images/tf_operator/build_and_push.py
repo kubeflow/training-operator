@@ -16,16 +16,17 @@ import yaml
 # TODO(jlewi): build_and_push.py should be obsolete. We should be able to
 # use py/release.py
 
+
 def GetGitHash(root_dir):
   # The image tag is based on the githash.
-  git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                     cwd=root_dir).decode("utf-8")
+  git_hash = subprocess.check_output(
+    ["git", "rev-parse", "--short", "HEAD"], cwd=root_dir).decode("utf-8")
   git_hash = git_hash.strip()
 
-  modified_files = subprocess.check_output(["git", "ls-files", "--modified"],
-                                           cwd=root_dir)
+  modified_files = subprocess.check_output(
+    ["git", "ls-files", "--modified"], cwd=root_dir)
   untracked_files = subprocess.check_output(
-      ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
+    ["git", "ls-files", "--others", "--exclude-standard"], cwd=root_dir)
   if modified_files or untracked_files:
     diff = subprocess.check_output(["git", "diff"], cwd=root_dir)
 
@@ -54,34 +55,43 @@ def run_and_output(command, cwd=None):
 def main():  # pylint: disable=too-many-locals, too-many-statements
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals, too-many-statements
   parser = argparse.ArgumentParser(
-      description="Build docker image for TFJob CRD.")
+    description="Build docker image for TFJob CRD.")
 
   # TODO(jlewi) We should make registry required to avoid people accidentally
   # pushing to tf-on-k8s-dogfood by default.
   parser.add_argument(
-      "--registry",
-      default="gcr.io/tf-on-k8s-dogfood",
-      type=str,
-      help="The docker registry to use.")
+    "--registry",
+    default="gcr.io/tf-on-k8s-dogfood",
+    type=str,
+    help="The docker registry to use.")
 
   parser.add_argument(
-      "--project",
-      default="",
-      type=str,
-      help="Project to use with Google Container Builder when using GCB.")
+    "--project",
+    default="",
+    type=str,
+    help="Project to use with Google Container Builder when using GCB.")
 
   parser.add_argument(
-      "--output",
-      default="",
-      type=str,
-      help="Path to write a YAML file with build info.")
+    "--output",
+    default="",
+    type=str,
+    help="Path to write a YAML file with build info.")
 
-  parser.add_argument("--gcb", dest="use_gcb", action="store_true",
-                      help="Use Google Container Builder to build the image.")
-  parser.add_argument("--no-gcb", dest="use_gcb", action="store_false",
-                      help="Use Docker to build the image.")
-  parser.add_argument("--no-push", dest="should_push", action="store_false",
-                      help="Do not push the image once build is finished.")
+  parser.add_argument(
+    "--gcb",
+    dest="use_gcb",
+    action="store_true",
+    help="Use Google Container Builder to build the image.")
+  parser.add_argument(
+    "--no-gcb",
+    dest="use_gcb",
+    action="store_false",
+    help="Use Docker to build the image.")
+  parser.add_argument(
+    "--no-push",
+    dest="should_push",
+    action="store_false",
+    help="Do not push the image once build is finished.")
 
   parser.set_defaults(use_gcb=False)
 
@@ -104,9 +114,9 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   go_path = os.environ["GOPATH"]
 
   targets = [
-      "github.com/kubeflow/tf-operator/cmd/tf-operator",
-      "github.com/kubeflow/tf-operator/test/e2e",
-      "github.com/kubeflow/tf-operator/dashboard/backend",
+    "github.com/kubeflow/tf-operator/cmd/tf-operator",
+    "github.com/kubeflow/tf-operator/test/e2e",
+    "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     subprocess.check_call(["go", "install", t])
@@ -119,11 +129,10 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   root_dir = os.path.abspath(os.path.join(images_dir, '..', '..'))
   # List of paths to copy relative to root.
   sources = [
-      "build/images/tf_operator/Dockerfile",
-      os.path.join(go_path, "bin/tf-operator"),
-      os.path.join(go_path, "bin/e2e"),
-      os.path.join(go_path, "bin/backend"),
-      "dashboard/frontend/build"
+    "build/images/tf_operator/Dockerfile",
+    os.path.join(go_path, "bin/tf-operator"),
+    os.path.join(go_path, "bin/e2e"),
+    os.path.join(go_path, "bin/backend"), "dashboard/frontend/build"
   ]
 
   for s in sources:
@@ -143,12 +152,15 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   latest_image = image_base + ":latest"
 
   if args.use_gcb:
-    run(["gcloud", "container", "builds", "submit", context_dir,
-         "--tag=" + image, "--project=" + args.project])
+    run([
+      "gcloud", "container", "builds", "submit", context_dir, "--tag=" + image,
+      "--project=" + args.project
+    ])
 
     # Add the latest tag.
-    run(["gcloud", "container", "images", "add-tag", "--quiet", image,
-         latest_image])
+    run([
+      "gcloud", "container", "images", "add-tag", "--quiet", image, latest_image
+    ])
 
   else:
     run(["docker", "build", "-t", image, context_dir])
@@ -168,6 +180,7 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
     output = {"image": image}
     with open(args.output, mode='w') as hf:
       yaml.dump(output, hf)
+
 
 if __name__ == "__main__":
   main()

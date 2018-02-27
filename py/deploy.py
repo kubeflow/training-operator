@@ -19,6 +19,7 @@ from google.cloud import storage  # pylint: disable=no-name-in-module
 from py import test_util
 from py import util
 
+
 def _setup_namespace(api_client, name):
   """Create the namespace for the test.
   """
@@ -27,10 +28,10 @@ def _setup_namespace(api_client, name):
   namespace = k8s_client.V1Namespace()
   namespace.api_version = "v1"
   namespace.kind = "Namespace"
-  namespace.metadata = k8s_client.V1ObjectMeta(name=name, labels={
-    "app": "tf-job-test",
-    }
-  )
+  namespace.metadata = k8s_client.V1ObjectMeta(
+    name=name, labels={
+      "app": "tf-job-test",
+    })
 
   try:
     logging.info("Creating namespace %s", namespace.metadata.name)
@@ -41,6 +42,7 @@ def _setup_namespace(api_client, name):
       logging.info("Namespace %s already exists.", namespace.metadata.name)
     else:
       raise
+
 
 # TODO(jlewi): We should probably make this a reusable function since a
 # lot of test code code use it.
@@ -70,13 +72,14 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   util.run(["ks", "env", "add", env], cwd=app_dir)
 
   for k, v in params.iteritems():
-    util.run(["ks", "param", "set", "--env=" + env, component, k, v],
-               cwd=app_dir)
+    util.run(
+      ["ks", "param", "set", "--env=" + env, component, k, v], cwd=app_dir)
 
   apply_command = ["ks", "apply", env, "-c", component]
   if account:
     apply_command.append("--as=" + account)
   util.run(apply_command, cwd=app_dir)
+
 
 def setup(args):
   """Setup a GKE cluster for TensorFlow jobs.
@@ -93,18 +96,18 @@ def setup(args):
 
   cluster_request = {
     "cluster": {
-        "name": cluster_name,
-          "description": "A GKE cluster for TF.",
-          "initialNodeCount": 1,
-          "nodeConfig": {
-            "machineType": machine_type,
-              "oauthScopes": [
-                "https://www.googleapis.com/auth/cloud-platform",
-                ],
-              },
-          # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-          "initialClusterVersion": "1.8.5-gke.0",
-      }
+      "name": cluster_name,
+      "description": "A GKE cluster for TF.",
+      "initialNodeCount": 1,
+      "nodeConfig": {
+        "machineType": machine_type,
+        "oauthScopes": [
+          "https://www.googleapis.com/auth/cloud-platform",
+        ],
+      },
+      # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
+      "initialClusterVersion": "1.8.5-gke.0",
+    }
   }
 
   if args.accelerators:
@@ -114,9 +117,12 @@ def setup(args):
     cluster_request["cluster"]["nodeConfig"]["accelerators"] = []
     for accelerator_spec in args.accelerators:
       accelerator_type, accelerator_count = accelerator_spec.split("=", 1)
-      cluster_request["cluster"]["nodeConfig"]["accelerators"].append(
-        {"acceleratorCount": accelerator_count,
-         "acceleratorType": accelerator_type, })
+      cluster_request["cluster"]["nodeConfig"]["accelerators"].append({
+        "acceleratorCount":
+        accelerator_count,
+        "acceleratorType":
+        accelerator_type,
+      })
 
   util.create_cluster(gke, project, zone, cluster_request)
 
@@ -141,8 +147,10 @@ def setup(args):
     account = util.run_and_output(
       ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
     logging.info("Using GCP account %s", account)
-    util.run(["kubectl", "create", "clusterrolebinding", "default-admin",
-              "--clusterrole=cluster-admin", "--user=" + account])
+    util.run([
+      "kubectl", "create", "clusterrolebinding", "default-admin",
+      "--clusterrole=cluster-admin", "--user=" + account
+    ])
 
     _setup_namespace(api_client, args.namespace)
     ks_deploy(args.test_app_dir, component, params, account=account)
@@ -155,8 +163,7 @@ def setup(args):
     logging.info("Verifying TfJob controller started.")
 
     # TODO(jlewi): We should verify the image of the operator is the correct.
-    util.wait_for_deployment(api_client, args.namespace,
-                             tf_job_deployment_name)
+    util.wait_for_deployment(api_client, args.namespace, tf_job_deployment_name)
 
   # Reraise the exception so that the step fails because there's no point
   # continuing the test.
@@ -173,6 +180,7 @@ def setup(args):
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
+
 def teardown(args):
   """Teardown the resources."""
   gke = discovery.build("container", "v1")
@@ -182,6 +190,7 @@ def teardown(args):
   zone = args.zone
   util.delete_cluster(gke, cluster_name, project, zone)
 
+
 def add_common_args(parser):
   """Add common command line arguments to a parser.
 
@@ -189,15 +198,9 @@ def add_common_args(parser):
     parser: The parser to add command line arguments to.
   """
   parser.add_argument(
-    "--project",
-    default=None,
-    type=str,
-    help=("The project to use."))
+    "--project", default=None, type=str, help=("The project to use."))
   parser.add_argument(
-    "--cluster",
-    default=None,
-    type=str,
-    help=("The name of the cluster."))
+    "--cluster", default=None, type=str, help=("The name of the cluster."))
   parser.add_argument(
     "--zone",
     default="us-east1-d",
@@ -210,22 +213,21 @@ def add_common_args(parser):
     type=str,
     help="Where to write the junit xml file with the results.")
 
+
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
 
   util.maybe_activate_service_account()
 
   # create the top-level parser
-  parser = argparse.ArgumentParser(
-    description="Setup clusters for testing.")
+  parser = argparse.ArgumentParser(description="Setup clusters for testing.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
   # setup
   #
   parser_setup = subparsers.add_parser(
-    "setup",
-      help="Setup a cluster for testing.")
+    "setup", help="Setup a cluster for testing.")
 
   parser_setup.add_argument(
     "--accelerator",
@@ -238,33 +240,30 @@ def main():  # pylint: disable=too-many-locals
 
   parser_setup.add_argument(
     "--test_app_dir",
-    help="The directory containing the ksonnet app used for testing.",
-  )
+    help="The directory containing the ksonnet app used for testing.",)
 
   now = datetime.datetime.now()
   parser_setup.add_argument(
     "--namespace",
     default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
-    help="The directory containing the ksonnet app used for testing.",
-  )
+    help="The directory containing the ksonnet app used for testing.",)
 
   parser_setup.add_argument(
     "--image",
-    help="The image to use",
-  )
+    help="The image to use",)
 
   #############################################################################
   # teardown
   #
   parser_teardown = subparsers.add_parser(
-    "teardown",
-    help="Teardown the cluster.")
+    "teardown", help="Teardown the cluster.")
   parser_teardown.set_defaults(func=teardown)
   add_common_args(parser_teardown)
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()
   args.func(args)
+
 
 if __name__ == "__main__":
   main()
