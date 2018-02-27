@@ -1,4 +1,3 @@
-
 ## Directories Layout
 
 ```sh
@@ -75,8 +74,6 @@ $ tree -d -I 'vendor|bin|.git'
 │   └── templates
 │       └── tests
 └── version
-
-
 ```
 
 ## Building the Operator
@@ -164,11 +161,12 @@ On ubuntu the default go package appears to be gccgo-go which has problems see [
 
 ### Python
 
-* Use two spaces for indents in keeping with Python style
+* Use [yapf](https://github.com/google/yapf) to format Python code
+* `yapf` style is configured in `.style.yapf` file
 * To autoformat code
 
   ```sh
-  autopep8 -i --indent-size=2 path/to/module.py
+  yapf -i py/**/*.py
   ```
 
 * To sort imports

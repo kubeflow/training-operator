@@ -18,7 +18,9 @@ from py import util
 from py import tf_job_client
 
 
-def wait_for_delete(client, namespace, name,
+def wait_for_delete(client,
+                    namespace,
+                    name,
                     timeout=datetime.timedelta(minutes=5),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
@@ -55,14 +57,15 @@ def wait_for_delete(client, namespace, name,
 
     time.sleep(polling_interval.seconds)
 
+
 def get_labels(name, runtime_id, replica_type=None, replica_index=None):
   """Return labels.
   """
   labels = {
-          "kubeflow.org": "",
-                "tf_job_name": name,
-                "runtime_id": runtime_id,
-        }
+    "kubeflow.org": "",
+    "tf_job_name": name,
+    "runtime_id": runtime_id,
+  }
   if replica_type:
     labels["job_type"] = replica_type
 
@@ -70,12 +73,14 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
     labels["task_index"] = replica_index
   return labels
 
+
 def to_selector(labels):
   parts = []
   for k, v in labels.items():
     parts.append("{0}={1}".format(k, v))
 
   return ",".join(parts)
+
 
 def list_pods(client, namespace, label_selector):
   core = k8s_client.CoreV1Api(client)
@@ -93,18 +98,17 @@ def list_pods(client, namespace, label_selector):
         # There was a problem parsing the body of the response as json.
         logging.error(
           ("Exception when calling DefaultApi->"
-             "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"),
-            e.body)
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
-    logging.error(
-      ("Exception when calling DefaultApi->"
-         "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-        message)
+    logging.error(("Exception when calling DefaultApi->"
+                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                  message)
     raise e
 
-def run_test(args): # pylint: disable=too-many-branches,too-many-statements
+
+def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
   project = args.project
@@ -131,8 +135,9 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
 
     if k == "namespace":
       namespace = v
-    util.run(["ks", "param", "set", "--env=" + env, args.component, k, v],
-             cwd=args.app_dir)
+    util.run(
+      ["ks", "param", "set", "--env=" + env, args.component, k, v],
+      cwd=args.app_dir)
 
   if not name:
     raise ValueError("name must be provided as a parameter.")
@@ -156,22 +161,22 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
 
     for trial in range(num_trials):
       logging.info("Trial %s", trial)
-      util.run(["ks", "apply", env, "-c", args.component],
-               cwd=args.app_dir)
+      util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
 
       logging.info("Created job %s in namespaces %s", name, namespace)
-      results = tf_job_client.wait_for_job(api_client, namespace, name,
-                                           status_callback=tf_job_client.log_status)
+      results = tf_job_client.wait_for_job(
+        api_client, namespace, name, status_callback=tf_job_client.log_status)
 
       if results.get("status", {}).get("state", {}).lower() != "succeeded":
         t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
-          trial, name, namespace, results.get("status", {}).get("state", None))
+          trial, name, namespace,
+          results.get("status", {}).get("state", None))
         logging.error(t.failure)
         break
 
       runtime_id = results.get("spec", {}).get("RuntimeId")
-      logging.info("Trial %s Job %s in namespace %s runtime ID %s",
-                   trial, name, namespace, runtime_id)
+      logging.info("Trial %s Job %s in namespace %s runtime ID %s", trial, name,
+                   namespace, runtime_id)
 
       # TODO(jlewi): We should check that pods were created for each replica
       pod_labels = get_labels(name, runtime_id)
@@ -183,15 +188,15 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
 
       if not pods.items:
         t.failure = ("Trial {0} Job {1} in namespace {2} no pods found for "
-                     " selector {3}").format(
-                     trial, name, namespace, pod_selector)
+                     " selector {3}").format(trial, name, namespace,
+                                             pod_selector)
         logging.error(t.failure)
         break
 
       tf_job_client.delete_tf_job(api_client, namespace, name)
 
-      wait_for_delete(api_client, namespace, name,
-                      status_callback=tf_job_client.log_status)
+      wait_for_delete(
+        api_client, namespace, name, status_callback=tf_job_client.log_status)
 
       # Verify the pods have been deleted. tf_job_client uses foreground
       # deletion so there shouldn't be any resources for the job left
@@ -199,17 +204,16 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
       pods = list_pods(api_client, namespace, pod_selector)
 
       logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
-                       len(pods.items))
+                   len(pods.items))
 
       if pods.items:
         t.failure = ("Trial {0} Job {1} in namespace {2} pods found for "
-                         " selector {3}; pods\n{4}").format(
-                           trial, name, namespace, pod_selector, pods)
+                     " selector {3}; pods\n{4}").format(trial, name, namespace,
+                                                        pod_selector, pods)
         logging.error(t.failure)
         break
 
       logging.info("Trial %s all pods deleted.", trial)
-
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -222,7 +226,7 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
       name, namespace)
     logging.error(t.failure)
-  except Exception as e: # pylint: disable-msg=broad-except
+  except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
     # in an effort to try to nail down this exception we print out more
     # information about the exception.
@@ -239,20 +243,15 @@ def run_test(args): # pylint: disable=too-many-branches,too-many-statements
     if args.junit_path:
       test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
+
 def add_common_args(parser):
   """Add a set of common parser arguments."""
 
   parser.add_argument(
-    "--project",
-    default=None,
-    type=str,
-    help=("The project to use."))
+    "--project", default=None, type=str, help=("The project to use."))
 
   parser.add_argument(
-    "--cluster",
-    default=None,
-    type=str,
-    help=("The name of the cluster."))
+    "--cluster", default=None, type=str, help=("The name of the cluster."))
 
   parser.add_argument(
     "--app_dir",
@@ -284,28 +283,28 @@ def add_common_args(parser):
     type=str,
     help="Where to write the junit xml file with the results.")
 
+
 def build_parser():
   # create the top-level parser
-  parser = argparse.ArgumentParser(
-    description="Run a TFJob test.")
+  parser = argparse.ArgumentParser(description="Run a TFJob test.")
   subparsers = parser.add_subparsers()
 
-  parser_test = subparsers.add_parser(
-    "test",
-    help="Run a tfjob test.")
+  parser_test = subparsers.add_parser("test", help="Run a tfjob test.")
 
   add_common_args(parser_test)
   parser_test.set_defaults(func=run_test)
 
   return parser
 
+
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
-  logging.basicConfig(level=logging.INFO,
-                      format=('%(levelname)s|%(asctime)s'
-                              '|%(pathname)s|%(lineno)d| %(message)s'),
-                      datefmt='%Y-%m-%dT%H:%M:%S',
-                      )
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
+  logging.basicConfig(
+    level=logging.INFO,
+    format=('%(levelname)s|%(asctime)s'
+            '|%(pathname)s|%(lineno)d| %(message)s'),
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   util.maybe_activate_service_account()
 
@@ -314,6 +313,7 @@ def main():  # pylint: disable=too-many-locals
   # parse the args and call whatever function was selected
   args = parser.parse_args()
   args.func(args)
+
 
 if __name__ == "__main__":
   main()
