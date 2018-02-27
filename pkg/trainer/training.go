@@ -48,8 +48,6 @@ type TrainingJob struct {
 
 	Replicas []*TFReplicaSet
 
-	TensorBoard *TBReplicaSet
-
 	tfJobClient tfjobclient.Interface
 
 	// in memory state of the job.
@@ -76,19 +74,11 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, re
 		tfJobClient: tfJobClient,
 		recorder:    recorder,
 		Replicas:    make([]*TFReplicaSet, 0),
-		TensorBoard: nil,
 		job:         job,
 		status:      *job.Status.DeepCopy(),
 	}
 
 	return j, nil
-}
-
-func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplicaSet, error) {
-	if tj.job.Spec.TensorBoard != nil {
-		return NewTBReplicaSet(clientSet, *tj.job.Spec.TensorBoard, tj)
-	}
-	return nil, nil
 }
 
 func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TFJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
@@ -120,7 +110,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
-// createResources creates all the replicas and TensorBoard if requested
+// createResources creates all the replicas if requested
 func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error {
 	for _, r := range j.Replicas {
 		if err := r.Create(config); err != nil {
@@ -128,16 +118,10 @@ func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error
 		}
 	}
 
-	if j.TensorBoard != nil {
-		if err := j.TensorBoard.Create(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// deleteResources deletes the replicas and TensorBoard it it was created
+// deleteResources deletes the replicas it it was created
 func (j *TrainingJob) deleteResources() error {
 	for _, r := range j.Replicas {
 		if err := r.Delete(); err != nil {
@@ -145,11 +129,6 @@ func (j *TrainingJob) deleteResources() error {
 		}
 	}
 
-	if j.TensorBoard != nil {
-		if err := j.TensorBoard.Delete(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -288,14 +267,6 @@ func (j *TrainingJob) setupReplicas() error {
 			}
 			j.Replicas = append(j.Replicas, r)
 		}
-	}
-
-	if j.TensorBoard == nil {
-		tb, err := initTensorBoard(j.KubeCli, j)
-		if err != nil {
-			return err
-		}
-		j.TensorBoard = tb
 	}
 
 	return nil

@@ -158,108 +158,6 @@ spec:
 Follow TensorFlow's [instructions](https://www.kubeflow.org/tutorials/using_gpu)
 for using GPUs.
 
-### Requesting a TensorBoard instance
-
-You can also ask the `TFJob` operator to create a TensorBoard instance
-by including a [TensorBoardSpec](https://github.com/kubeflow/tf-operator/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95)
-in your job. The table below describes the important fields in
-[TensorBoardSpec](https://github.com/kubeflow/tf-operator/blob/master/pkg/apis/tensorflow/v1alpha1/types.go#L95).
-
-| Name | Description | Required | Default |
-|---|---|---|---|
-| `logDir` | Specifies the directory where TensorBoard will look to find TensorFlow event files that it can display | Yes | `None` |
-| `volumes` | `Volumes` information that will be passed to the TensorBoard `deployment` | No | [] |
-| `volumeMounts` | `VolumeMounts` information that will be passed to the TensorBoard `deployment` | No | [] |
-| `serviceType` | `ServiceType` information that will be passed to the TensorBoard `service`| No | `ClusterIP` |
-
-#### TensorBoard on Azure
-
-On Azure you can store your event files on an Azure Files and use
-volumes to make them available to TensorBoard.
-
-```
-apiVersion: "kubeflow.org/v1alpha1"
-kind: "TFJob"
-metadata:
-  name: "tf-smoke-gpu"
-spec:
-  replica_specs:
-    - replicas: 1
-      tfReplicaType: MASTER
-      template:
-        spec:
-          containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
-              name: tensorflow
-              resources:
-                limits:
-                  alpha.kubernetes.io/nvidia-gpu: 1
-          restartPolicy: OnFailure
-  tensorboard:
-    logDir: /tmp/tensorflow
-    volumes:
-      - name: azurefile
-        azureFile:
-            secretName: azure-secret
-            shareName: data
-            readOnly: false
-    volumeMounts:
-      - mountPath: /tmp/tensorflow
-        name: azurefile
-
-```
-
-#### TensorBoard on GKE
-
-On GKE you can store your event files on GCS and TensorBoard/TensorFlow
-can read/write directly to GCS.
-
-```
-apiVersion: "kubeflow.org/v1alpha1"
-kind: "TFJob"
-metadata:
-  name: "tf-smoke-gpu"
-spec:
-  replica_specs:
-    - replicas: 1
-      tfPort: 2222
-      tfReplicaType: MASTER
-      template:
-        spec:
-          containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
-              name: tensorflow
-              args:
-                - --log_dir=gs://my-bucket/logdir
-              resources:
-                limits:
-                  alpha.kubernetes.io/nvidia-gpu: 1
-          restartPolicy: OnFailure
-  tensorboard:
-    logDir: gs://my-bucket/logdir
-
-```
-
-#### Connecting to TensorBoard
-
-The TFJob operator will create a service named
-**tensorboard-$RUNTIME_ID** for your job. You can connect to it
-using the Kubernetes API Server proxy as follows
-
-Start the K8s proxy
-```
-kubectl proxy
-```
-
-In a web-browser open up
-
-```
-http://${PROXY}:8001/api/v1/proxy/namespaces/default/services/tensorboard-${RUNTIME_ID}:80/
-```
-
-Depending on how you configure the service for TensorBoard and cluster
-you can make TensorBoard available without using the K8s proxy.
-
 ## Monitoring your job
 
 To get the status of your job
@@ -324,11 +222,6 @@ spec:
         restartPolicy: OnFailure
     tfPort: 2222
     tfReplicaType: PS
-  tensorboard:
-    logDir: /tmp/tensorflow
-    serviceType: ""
-    volumeMounts: null
-    volumes: null
   tfImage: tensorflow/tensorflow:1.3.0
 status:
   conditions: null
