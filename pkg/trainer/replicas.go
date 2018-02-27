@@ -122,6 +122,12 @@ func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
 		taskLabels := s.Labels()
 		taskLabels["task_index"] = fmt.Sprintf("%v", index)
 
+		if len(s.Spec.TFExtraLabels) > 0 {
+			for key, value := range *s.Spec.TFExtraLabels[index] {
+				taskLabels[key] = value
+			}
+		}
+
 		// Create the service.
 		service := &v1.Service{
 			ObjectMeta: meta_v1.ObjectMeta{
