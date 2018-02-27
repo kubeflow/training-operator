@@ -69,6 +69,11 @@ func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 		if !found {
 			return fmt.Errorf("Replica type %v is missing a container named %v", r.TFReplicaType, tfv1.TENSORFLOW)
 		}
+
+		extraLabelSize := len(r.TFExtraLabels)
+		if extraLabelSize != 0 && int32(extraLabelSize) != *r.Replicas {
+			return fmt.Errorf("Expect tfReplicaSpec.tfExtraLabels size is 0 or equal to tfReplicaSpec.replicas but tfReplicaSpec.tfExtraLabels is %v", extraLabelSize)
+		}
 	}
 
 	if !chiefExists {

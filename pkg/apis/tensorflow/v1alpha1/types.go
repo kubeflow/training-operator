@@ -98,6 +98,7 @@ type TFReplicaSpec struct {
 	// TFPort is the port to use for TF services.
 	TFPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TFReplicaType `json:"tfReplicaType"`
+	TFExtraLabels []*map[string]string `json:"tfExtraLabels,omitempty" protobuf:"varint,4,opt,name=tfExtraLabels"`
 }
 
 type TFJobPhase string
