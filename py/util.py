@@ -300,6 +300,7 @@ def wait_for_deployment(api_client, namespace, name):
                      format(name, namespace))
 
 
+
 def wait_for_statefulset(api_client, namespace, name):
   """Wait for deployment to be ready.
 
@@ -331,6 +332,7 @@ def wait_for_statefulset(api_client, namespace, name):
                 "ready", name, namespace)
   raise TimeoutError("Timeout waiting for statefulset {0} in namespace {1}".
                      format(name, namespace))
+
 
 
 def install_gpu_drivers(api_client):
@@ -386,6 +388,7 @@ def cluster_has_gpu_nodes(api_client):
     if "cloud.google.com/gke-accelerator" in n.metadata.labels:
       return True
   return False
+
 
 
 def setup_cluster(api_client):
@@ -475,7 +478,8 @@ def load_kube_config(config_file=None,
     config_persister = _save_kube_config
 
   loader = kube_config._get_kube_config_loader_for_yaml_file(  # pylint: disable=protected-access
-    config_file, active_context=context,
+    config_file,
+    active_context=context,
     config_persister=config_persister,
     get_google_credentials=get_google_credentials,
     **kwargs)
