@@ -48,8 +48,8 @@ def run_and_stream(cmd):
     logging.info(line.strip())
 
   if process.returncode != 0:
-    raise ValueError(
-      "cmd: {0} exited with code {1}".format(" ".join(cmd), process.returncode))
+    raise ValueError("cmd: {0} exited with code {1}".format(
+      " ".join(cmd), process.returncode))
 
 
 def build_and_push(dockerfile_template,
@@ -89,8 +89,8 @@ def build_and_push(dockerfile_template,
 
   images = {}
   for mode in modes:
-    dockerfile_contents = jinja2.Environment(
-      loader=loader).get_template(os.path.basename(dockerfile_template)).render(
+    dockerfile_contents = jinja2.Environment(loader=loader).get_template(
+      os.path.basename(dockerfile_template)).render(
         base_image=base_images[mode])
     context_dir = tempfile.mkdtemp(prefix="tmpTFJobSampleContentxt")
     logging.info("context_dir: %s", context_dir)

@@ -729,7 +729,8 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   util.maybe_activate_service_account()
 

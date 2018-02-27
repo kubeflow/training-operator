@@ -285,7 +285,8 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   # create the top-level parser
   parser = argparse.ArgumentParser(description="Steps related to prow.")

@@ -169,7 +169,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       if results.get("status", {}).get("state", {}).lower() != "succeeded":
         t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
-          trial, name, namespace, results.get("status", {}).get("state", None))
+          trial, name, namespace,
+          results.get("status", {}).get("state", None))
         logging.error(t.failure)
         break
 
@@ -302,7 +303,8 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   util.maybe_activate_service_account()
 

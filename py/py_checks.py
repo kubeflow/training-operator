@@ -59,8 +59,8 @@ def run_lint(args):
 
   if failed_files:
     failed_files.sort()
-    logging.error("%s files had lint errors:\n%s",
-                  len(failed_files), "\n".join(failed_files))
+    logging.error("%s files had lint errors:\n%s", len(failed_files),
+                  "\n".join(failed_files))
   else:
     logging.info("No lint issues.")
 
@@ -171,7 +171,8 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
   # create the top-level parser
   parser = argparse.ArgumentParser(description="Run python code checks.")
   subparsers = parser.add_subparsers()
