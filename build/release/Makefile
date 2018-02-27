@@ -20,7 +20,7 @@ all: build
 build:
 	@echo {\"image\": \"$(IMG):$(TAG)\"} > version.json
 	mkdir -p py
-	cp ../py/*.py ./py/
+	cp ../../py/*.py ./py/
 	docker build -t $(IMG):$(TAG) -f Dockerfile.release .
 	docker tag $(IMG):$(TAG) $(IMG):latest
 	@echo Built $(IMG):$(TAG) and tagged with latest
