@@ -99,6 +99,63 @@ func TestValidate(t *testing.T) {
 			},
 			expectingError: false,
 		},
+		{
+			in: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TFReplicaType: tfv1.WORKER,
+						Replicas:      proto.Int32(2),
+						TFExtraLabels: []*map[string]string{0: {"label1": "value1"}},
+					},
+				},
+				TFImage: "tensorflow/tensorflow:1.3.0",
+				TerminationPolicy: &tfv1.TerminationPolicySpec{
+					Chief: &tfv1.ChiefSpec{
+						ReplicaName:  "WORKER",
+						ReplicaIndex: 0,
+					},
+				},
+			},
+			// Expect ReplicaSpecs.TFExtraLabels equal to 0 or ReplicaSpecs.Replicas
+			expectingError: true,
+		},
+		{
+			in: &tfv1.TFJobSpec{
+				ReplicaSpecs: []*tfv1.TFReplicaSpec{
+					{
+						Template: &v1.PodTemplateSpec{
+							Spec: v1.PodSpec{
+								Containers: []v1.Container{
+									{
+										Name: "tensorflow",
+									},
+								},
+							},
+						},
+						TFReplicaType: tfv1.WORKER,
+						Replicas:      proto.Int32(2),
+						TFExtraLabels: []*map[string]string{0: {"label1": "value1"}, 1: {"label2": "value2"}},
+					},
+				},
+				TFImage: "tensorflow/tensorflow:1.3.0",
+				TerminationPolicy: &tfv1.TerminationPolicySpec{
+					Chief: &tfv1.ChiefSpec{
+						ReplicaName:  "WORKER",
+						ReplicaIndex: 0,
+					},
+				},
+			},
+			expectingError: false,
+		},
 	}
 
 	for _, c := range testCases {
