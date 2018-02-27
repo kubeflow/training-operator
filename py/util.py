@@ -281,7 +281,7 @@ def wait_for_deployment(api_client, namespace, name):
   Raises:
     TimeoutError: If timeout waiting for deployment to be ready.
   """
-  # Wait for tiller to be ready
+  # Wait for deployment to be ready
   end_time = datetime.datetime.now() + datetime.timedelta(minutes=2)
 
   ext_client = k8s_client.ExtensionsV1beta1Api(api_client)
@@ -296,9 +296,9 @@ def wait_for_deployment(api_client, namespace, name):
 
   logging.error("Timeout waiting for deployment %s in namespace %s to be "
                 "ready", name, namespace)
-  raise TimeoutError(
-    "Timeout waiting for deployment {0} in namespace {1}".format(
-      name, namespace))
+  raise TimeoutError("Timeout waiting for deployment {0} in namespace {1}".
+                     format(name, namespace))
+
 
 
 def wait_for_statefulset(api_client, namespace, name):
@@ -330,9 +330,9 @@ def wait_for_statefulset(api_client, namespace, name):
 
   logging.error("Timeout waiting for statefulset %s in namespace %s to be "
                 "ready", name, namespace)
-  raise TimeoutError(
-    "Timeout waiting for statefulset {0} in namespace {1}".format(
-      name, namespace))
+  raise TimeoutError("Timeout waiting for statefulset {0} in namespace {1}".
+                     format(name, namespace))
+
 
 
 def install_gpu_drivers(api_client):
@@ -390,43 +390,6 @@ def cluster_has_gpu_nodes(api_client):
   return False
 
 
-def create_tiller_service_accounts(api_client):
-  logging.info("Creating service account for tiller.")
-  api = k8s_client.CoreV1Api(api_client)
-  body = yaml.load("""apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tiller
-  namespace: kube-system""")
-  try:
-    api.create_namespaced_service_account("kube-system", body)
-  except rest.ApiException as e:
-    if e.status == 409:
-      logging.info("Service account tiller already exists.")
-    else:
-      raise
-  body = yaml.load("""apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-""")
-  rbac_api = k8s_client.RbacAuthorizationV1beta1Api(api_client)
-  try:
-    rbac_api.create_cluster_role_binding(body)
-  except rest.ApiException as e:
-    if e.status == 409:
-      logging.info("Role binding for service account tiller already exists.")
-    else:
-      raise
-
 
 def setup_cluster(api_client):
   """Setup a cluster.
@@ -437,8 +400,6 @@ def setup_cluster(api_client):
   Args:
     use_gpus
   """
-  create_tiller_service_accounts(api_client)
-  run(["helm", "init", "--service-account=tiller"])
   use_gpus = cluster_has_gpu_nodes(api_client)
   if use_gpus:
     logging.info("GPUs detected in cluster.")
@@ -447,13 +408,12 @@ def setup_cluster(api_client):
 
   if use_gpus:
     install_gpu_drivers(api_client)
-  wait_for_deployment(api_client, "kube-system", "tiller-deploy")
   if use_gpus:
     wait_for_gpu_driver_install(api_client)
 
 
-# TODO(jlewi): In python3 TimeoutError is built in. So once we are using
-# python3 fully we can delete this.
+# TODO(jlewi): TimeoutError is a built in exception in python3 so we can
+# delete this when we go to Python3.
 class TimeoutError(Exception):  # pylint: disable=redefined-builtin
   """An error indicating an operation timed out."""
 
