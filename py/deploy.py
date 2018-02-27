@@ -52,11 +52,18 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   Args:
     app_dir: The ksonnet directory
     component: Name of the component to deployed
-    params: A dictionary of parameters to set.
+    params: A dictionary of parameters to set; can be empty but should not be
+      None.
     env: (Optional) The environment to use, if none is specified a new one
       is created.
     account: (Optional) The account to use.
+    
+  Raises:
+    ValueError: If input arguments aren't valid.
   """
+  if not component:
+    raise ValueError("component can't be None.")
+    
   # TODO(jlewi): It might be better if the test creates the app and uses
   # the latest stable release of the ksonnet configs. That however will cause
   # problems when we make changes to the TFJob operator that require changes
