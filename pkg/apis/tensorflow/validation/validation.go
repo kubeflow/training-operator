@@ -75,8 +75,5 @@ func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
 	}
 
-	if c.TensorBoard != nil && c.TensorBoard.LogDir == "" {
-		return fmt.Errorf("tbReplicaSpec.LogDir must be specified")
-	}
 	return nil
 }

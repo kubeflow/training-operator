@@ -24,11 +24,10 @@ type APIHandler struct {
 }
 
 // TFJobDetail describe the specification of a TFJob
-// as well as related TensorBoard service if any and related pods
+// if any and related pods
 type TFJobDetail struct {
-	TFJob     *v1alpha1.TFJob `json:"tfJob"`
-	TbService *v1.Service     `json:"tbService"`
-	Pods      []v1.Pod        `json:"pods"`
+	TFJob *v1alpha1.TFJob `json:"tfJob"`
+	Pods  []v1.Pod        `json:"pods"`
 }
 
 // TFJobList is a list of TFJobs
@@ -138,26 +137,6 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 
 	tfJobDetail := TFJobDetail{
 		TFJob: job,
-	}
-
-	if job.Spec.TensorBoard != nil {
-		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services(namespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("kubeflow.org=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
-		})
-		if err != nil {
-			log.Warningf("failed to list TensorBoard for TFJob %v under namespace %v, error: %v", job.Name, job.Namespace, err)
-			// TODO maybe partial result?
-			response.WriteError(http.StatusNotFound, err)
-			return
-		} else if len(tbSpec.Items) > 0 {
-			// Should never be more than 1 service that matched, handle error
-			// Handle case where no TensorBoard is found
-			tfJobDetail.TbService = &tbSpec.Items[0]
-			log.Warningf("more than one TensorBoards found for TFJob %v under namespace %v, this should be impossible",
-				job.Name, job.Namespace)
-		} else {
-			log.Warningf("Couldn't find a TensorBoard service for TFJob %v under namespace %v", job.Name, job.Namespace)
-		}
 	}
 
 	// Get associated pods

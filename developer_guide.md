@@ -22,9 +22,6 @@ $ tree -d -I 'vendor|bin|.git'
 ├── docs
 │   └── diagrams
 ├── examples
-│   ├── charts
-│   │   └── tensorboard
-│   │       └── templates
 │   ├── crd
 │   ├── gke
 │   │   └── notebook_image

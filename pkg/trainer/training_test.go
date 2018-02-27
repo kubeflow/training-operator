@@ -282,19 +282,12 @@ func TestJobSetup(t *testing.T) {
 							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
-					TensorBoard: &tfv1alpha1.TensorBoardSpec{},
-					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
-						Chief: &tfv1alpha1.ChiefSpec{
-							ReplicaName:  string(tfv1alpha1.WORKER),
-							ReplicaIndex: 0,
-						},
-					},
 				},
 			},
 			expectMounts: 0,
 			expectPhase:  tfv1alpha1.TFJobPhaseFailed,
 			expectState:  tfv1alpha1.StateFailed,
-			expectReason: "invalid job spec: tbReplicaSpec.LogDir must be specified",
+			expectReason: "invalid job spec: Missing ReplicaSpec for chief: MASTER",
 		},
 	}
 
