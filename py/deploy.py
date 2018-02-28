@@ -44,9 +44,7 @@ def setup(args):
         "oauthScopes": [
           "https://www.googleapis.com/auth/cloud-platform",
         ],
-      },
-      # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-      "initialClusterVersion": "1.8.5-gke.0",
+      }
     }
   }
 
