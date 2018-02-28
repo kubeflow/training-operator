@@ -57,13 +57,13 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     env: (Optional) The environment to use, if none is specified a new one
       is created.
     account: (Optional) The account to use.
-    
+
   Raises:
     ValueError: If input arguments aren't valid.
   """
   if not component:
     raise ValueError("component can't be None.")
-    
+
   # TODO(jlewi): It might be better if the test creates the app and uses
   # the latest stable release of the ksonnet configs. That however will cause
   # problems when we make changes to the TFJob operator that require changes
@@ -112,8 +112,6 @@ def setup(args):
           "https://www.googleapis.com/auth/cloud-platform",
         ],
       },
-      # TODO(jlewi): Stop pinning GKE version once 1.8 becomes the default.
-      "initialClusterVersion": "1.8.5-gke.0",
     }
   }
 
