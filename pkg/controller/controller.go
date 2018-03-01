@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -90,9 +90,9 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
 
 	kubeflowscheme.AddToScheme(scheme.Scheme)
-	glog.V(4).Info("Creating event broadcaster")
+	log.Debug("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.Infof)
+	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
@@ -107,14 +107,14 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 		config: config,
 	}
 
-	glog.Info("Setting up event handlers")
+	log.Info("Setting up event handlers")
 	// Set up an event handler for when Foo resources change
 	tfJobInformer.Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				switch t := obj.(type) {
 				case *tfv1alpha1.TFJob:
-					glog.V(4).Infof("filter tfjob name: %v", t.Name)
+					log.Debugf("filter tfjob name: %v", t.Name)
 					return true
 				default:
 					return false
@@ -145,23 +145,23 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer c.WorkQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	glog.Info("Starting TFJob controller")
+	log.Info("Starting TFJob controller")
 
 	// Wait for the caches to be synced before starting workers
-	glog.Info("Waiting for informer caches to sync")
+	log.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.TFJobSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	glog.Infof("Starting %v workers", threadiness)
+	log.Infof("Starting %v workers", threadiness)
 	// Launch workers to process TFJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	glog.Info("Started workers")
+	log.Info("Started workers")
 	<-stopCh
-	glog.Info("Shutting down workers")
+	log.Info("Shutting down workers")
 
 	return nil
 }
@@ -205,7 +205,7 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
-		glog.V(4).Infof("Finished syncing job %q (%v)", key, time.Since(startTime))
+		log.Debugf("Finished syncing job %q (%v)", key, time.Since(startTime))
 	}()
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -220,7 +220,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			glog.V(4).Infof("Job has been deleted: %v", key)
+			log.Debugf("Job has been deleted: %v", key)
 			return true, nil
 		}
 		return false, err
