@@ -49,6 +49,12 @@ var (
 )
 
 func Run(opt *options.ServerOption) error {
+
+	// Check if the -version flag was passed and, if so, print the version and exit.
+	if opt.PrintVersion {
+		version.PrintVersionAndExit()
+	}
+
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace")
@@ -57,11 +63,6 @@ func Run(opt *options.ServerOption) error {
 
 	// To help debugging, immediately log version
 	log.Infof("%+v", version.Info())
-
-	// Check if the -version flag was passed and, if so, print the version and exit.
-	if opt.PrintVersion {
-		version.PrintVersionAndExit()
-	}
 
 	config, err := k8sutil.GetClusterConfig()
 	if err != nil {
