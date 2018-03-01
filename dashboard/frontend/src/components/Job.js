@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import JobDetail from "./JobDetail.js";
 import ReplicaSpec from "./ReplicaSpec.js";
-import TensorBoard from "./TensorBoard.js";
 import { Card, CardText } from "material-ui/Card";
 import { getTFJobService } from "../services";
 
@@ -34,9 +33,6 @@ class Job extends Component {
         <div>
           <div style={this.divStyle}>
             <JobDetail tfjob={job} />
-          </div>
-          <div style={this.divStyle}>
-            <TensorBoard service={this.state.tbService} />
           </div>
           {replicaSpecs}
         </div>

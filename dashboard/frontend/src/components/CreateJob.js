@@ -8,7 +8,6 @@ import RaisedButton from "material-ui/RaisedButton";
 import { withRouter } from "react-router-dom";
 
 import { createTFJobService } from "../services";
-import CreateTensorBoard from "./CreateTensorBoard";
 import RequiredTextField from "./RequiredTextField";
 import VolumeCreator from "./VolumeCreator";
 import EnvVarCreator from "./EnvVarCreator";
@@ -33,8 +32,6 @@ class CreateJob extends Component {
       psImage: "",
       psCommand: "",
       psArgs: "",
-      tbIsPresent: false,
-      tbSpec: {},
       masterVolumeSpec: {},
       workerVolumeSpec: {},
       psVolumeSpec: {},
@@ -44,7 +41,6 @@ class CreateJob extends Component {
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
-    this.setTensorboardSpec = this.setTensorboardSpec.bind(this);
     this.cancel = this.cancel.bind(this);
     this.deploy = this.deploy.bind(this);
     this.setMasterVolumesSpec = this.setMasterVolumesSpec.bind(this);
@@ -53,10 +49,6 @@ class CreateJob extends Component {
     this.setMasterEnvVars = this.setMasterEnvVars.bind(this);
     this.setWorkerEnvVars = this.setWorkerEnvVars.bind(this);
     this.setPSEnvVars = this.setPSEnvVars.bind(this);
-  }
-
-  setTensorboardSpec(tbSpec) {
-    this.setState({ tbSpec });
   }
 
   handleInputChange(event) {
@@ -230,20 +222,6 @@ class CreateJob extends Component {
               <VolumeCreator setVolumesSpec={this.setPSVolumesSpec} />
             </div>
           )}
-
-          {/* TENSORBOARD */}
-          <Divider style={this.styles.divider} />
-          <h3 style={this.styles.header}>TensorBoard</h3>
-          <Toggle
-            label="Enabled"
-            defaultToggled={false}
-            name="tbIsPresent"
-            onToggle={this.handleInputChange}
-            style={this.styles.toggle}
-          />
-          {this.state.tbIsPresent && (
-            <CreateTensorBoard setTensorBoardSpec={this.setTensorboardSpec} />
-          )}
         </CardText>
         <CardActions>
           <RaisedButton label="Deploy" primary={true} onClick={this.deploy} />
@@ -301,10 +279,6 @@ class CreateJob extends Component {
         replicaSpecs: rs
       }
     };
-
-    if (this.state.tbIsPresent) {
-      spec.spec.tensorboard = this.state.tbSpec;
-    }
 
     createTFJobService(spec)
       .then(() => this.props.history.push("/"))
