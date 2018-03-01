@@ -98,7 +98,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 		replicaNames := make([]string, 0, *p.Spec.Replicas)
 
 		for i := int32(0); i < *p.Spec.Replicas; i++ {
-			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.jobName(i), *p.Spec.TFPort))
+			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.genName(i), *p.Spec.TFPort))
 		}
 
 		clusterSpec[strings.ToLower(string(p.Spec.TFReplicaType))] = replicaNames
@@ -366,6 +366,11 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		} else {
 			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 		}
+	}
+
+	// sync pods
+	for _, rc := range j.Replicas {
+		rc.SyncPods()
 	}
 
 	// If the phase changed we should update the CRD.
