@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
+	log "github.com/sirupsen/logrus"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -250,7 +250,7 @@ func (s *TFReplicaSet) Delete() error {
 		LabelSelector: selector,
 	}
 
-	log.V(1).Infof("Deleting Jobs namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
+	log.Infof("Deleting Jobs namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
 	err = s.ClientSet.BatchV1().Jobs(s.Job.job.ObjectMeta.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
@@ -259,7 +259,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// We need to delete the completed pods.
-	log.V(1).Infof("Deleting Pods namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
+	log.Infof("Deleting Pods namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
 	err = s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
@@ -270,7 +270,7 @@ func (s *TFReplicaSet) Delete() error {
 	// Services doesn't support DeleteCollection so we delete them individually.
 	// TODO(jlewi): We should check if this has changed with K8s 1.8 or other releases.
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-		log.V(1).Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName((index)))
+		log.Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.jobName((index)))
 		err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.jobName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
@@ -280,7 +280,7 @@ func (s *TFReplicaSet) Delete() error {
 	}
 
 	// If the ConfigMap for the default parameter server exists, we delete it
-	log.V(1).Infof("Get ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
+	log.Infof("Get ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
 	_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
 	if err != nil {
 		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
@@ -288,7 +288,7 @@ func (s *TFReplicaSet) Delete() error {
 			failures = true
 		}
 	} else {
-		log.V(1).Infof("Delete ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
+		log.Infof("Delete ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
 		err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Errorf("There was a problem deleting the ConfigMaps; %v", err)
@@ -304,7 +304,7 @@ func (s *TFReplicaSet) Delete() error {
 
 // replicaStatusFromPodList returns a status from a list of pods for a job.
 func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1alpha1.ReplicaState {
-	log.V(1).Infof("Get replicaStatus from PodList: %v", util.Pformat(l))
+	log.Infof("Get replicaStatus from PodList: %v", util.Pformat(l))
 	var latest *v1.Pod
 	for _, i := range l.Items {
 		if latest == nil {
