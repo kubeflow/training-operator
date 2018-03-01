@@ -17,23 +17,21 @@ package trainer
 
 import (
 	"fmt"
-
-	"github.com/kubeflow/tf-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
 	"reflect"
-
 	"strings"
 
-	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/helper"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
