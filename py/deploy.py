@@ -245,17 +245,20 @@ def main():  # pylint: disable=too-many-locals
 
   parser_setup.add_argument(
     "--test_app_dir",
-    help="The directory containing the ksonnet app used for testing.",)
+    help="The directory containing the ksonnet app used for testing.",
+  )
 
   now = datetime.datetime.now()
   parser_setup.add_argument(
     "--namespace",
     default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
-    help="The directory containing the ksonnet app used for testing.",)
+    help="The directory containing the ksonnet app used for testing.",
+  )
 
   parser_setup.add_argument(
     "--image",
-    help="The image to use",)
+    help="The image to use",
+  )
 
   #############################################################################
   # teardown
