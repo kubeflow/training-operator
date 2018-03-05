@@ -98,7 +98,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 		replicaNames := make([]string, 0, *p.Spec.Replicas)
 
 		for i := int32(0); i < *p.Spec.Replicas; i++ {
-			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.jobName(i), *p.Spec.TFPort))
+			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.genName(i), *p.Spec.TFPort))
 		}
 
 		clusterSpec[strings.ToLower(string(p.Spec.TFReplicaType))] = replicaNames
@@ -365,6 +365,22 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 			j.status.State = tfv1alpha1.StateSucceeded
 		} else {
 			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+		}
+	}
+
+	// sync pods
+	for _, rc := range j.Replicas {
+		err := rc.SyncPods()
+		if err != nil {
+			log.Errorf("SyncPods error: %v", err)
+		}
+	}
+
+	// sync services
+	for _, rc := range j.Replicas {
+		err := rc.SyncServices()
+		if err != nil {
+			log.Errorf("SyncServices error: %v", err)
 		}
 	}
 
