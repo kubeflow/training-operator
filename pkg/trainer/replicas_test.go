@@ -348,7 +348,7 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		status := replicaStatusFromPodList(c.PodList, tfv1alpha1.ContainerName(c.Name))
+		status := replicaStatusFromPodList(c.PodList, c.Name)
 		if status != c.Expected {
 			t.Errorf("replicaStatusFromPodList(%+v, %v)=%v ; want %v", c.PodList, c.Name, status, c.Expected)
 		}
