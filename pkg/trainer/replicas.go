@@ -193,7 +193,7 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 		// We can't get c in the loop variable because that would be by value so our modifications
 		// wouldn't have any effect.
 		c := &pod.Spec.Containers[i]
-		if tfv1alpha1.ContainerName(c.Name) != tfv1alpha1.TENSORFLOW {
+		if c.Name != tfv1alpha1.DefaultTFContainer {
 			continue
 		}
 		if len(c.Env) == 0 {
