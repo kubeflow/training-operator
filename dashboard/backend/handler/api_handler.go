@@ -61,7 +61,7 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws := new(restful.WebService)
 
-	apiV1Ws.Path("/api").
+	apiV1Ws.Path("/tfjobs/api").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 

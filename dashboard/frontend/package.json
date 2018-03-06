@@ -2,6 +2,7 @@
   "name": "tensorflowk8s-dashboard",
   "version": "0.1.0",
   "description": "Dashboard for kubeflow/tf-operator.",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "lodash": "^4.17.4",
