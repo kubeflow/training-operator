@@ -193,7 +193,7 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 		// We can't get c in the loop variable because that would be by value so our modifications
 		// wouldn't have any effect.
 		c := &pod.Spec.Containers[i]
-		if tfv1alpha1.ContainerName(c.Name) != tfv1alpha1.TENSORFLOW {
+		if c.Name != tfv1alpha1.DefaultTFContainer {
 			continue
 		}
 		if len(c.Env) == 0 {
@@ -275,7 +275,7 @@ func (s *TFReplicaSet) Delete() error {
 }
 
 // replicaStatusFromPodList returns a status from a list of pods for a job.
-func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1alpha1.ReplicaState {
+func replicaStatusFromPodList(l v1.PodList, name string) tfv1alpha1.ReplicaState {
 	var latest *v1.Pod
 	for _, i := range l.Items {
 		if latest == nil {
@@ -294,7 +294,7 @@ func replicaStatusFromPodList(l v1.PodList, name tfv1alpha1.ContainerName) tfv1a
 	var tfState v1.ContainerState
 
 	for _, i := range latest.Status.ContainerStatuses {
-		if i.Name != string(name) {
+		if i.Name != name {
 			continue
 		}
 
@@ -359,7 +359,7 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 		return tfv1alpha1.ReplicaStateFailed
 	}
 
-	status := replicaStatusFromPodList(*l, tfv1alpha1.TENSORFLOW)
+	status := replicaStatusFromPodList(*l, tfv1alpha1.DefaultTFContainer)
 	return status
 }
 

@@ -61,13 +61,13 @@ func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 		}
 
 		for _, c := range r.Template.Spec.Containers {
-			if c.Name == string(tfv1.TENSORFLOW) {
+			if c.Name == tfv1.DefaultTFContainer {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("Replica type %v is missing a container named %v", r.TFReplicaType, tfv1.TENSORFLOW)
+			return fmt.Errorf("Replica type %v is missing a container named %s", r.TFReplicaType, tfv1.DefaultTFContainer)
 		}
 	}
 
