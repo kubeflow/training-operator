@@ -211,12 +211,6 @@ func (j *TrainingJob) masterName() string {
 
 // setup the training job.
 func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
-	if j.job == nil {
-		j.status.Reason = "Internal error; setup failed; job is missing spec."
-		j.status.Phase = tfv1alpha1.TFJobPhaseFailed
-		j.status.State = tfv1alpha1.StateFailed
-	}
-
 	err := func() error {
 		// If the job has already started we shouldn't set it up again.
 		if j.status.Phase != tfv1alpha1.TFJobPhaseNone {
