@@ -2,7 +2,7 @@ import React from "react";
 import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import getMuiTheme from "material-ui/styles/getMuiTheme";
 import FlatButton from "material-ui/FlatButton";
-import { BrowserRouter as Router, Link } from "react-router-dom";
+import { HashRouter as Router, Link } from "react-router-dom";
 import { orange700, orange400 } from "material-ui/styles/colors";
 import ContentAdd from "material-ui/svg-icons/content/add";
 
