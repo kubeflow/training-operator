@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,19 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator/app"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
+	"github.com/onrik/logrus/filename"
+	log "github.com/sirupsen/logrus"
 )
+
+func init() {
+	// Add filename as one of the fields of the structured log message
+	filenameHook := filename.NewHook()
+	filenameHook.Field = "filename"
+	log.AddHook(filenameHook)
+}
 
 func main() {
 	s := options.NewServerOption()
@@ -29,9 +36,13 @@ func main() {
 
 	flag.Parse()
 
+	if s.JsonLogFormat {
+		// Output logs in a json format so that it can be parsed by services like Stackdriver
+		log.SetFormatter(&log.JSONFormatter{})
+	}
+
 	if err := app.Run(s); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		log.Fatalf("%v\n", err)
 	}
 
 }

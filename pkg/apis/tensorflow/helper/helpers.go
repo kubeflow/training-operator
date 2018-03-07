@@ -53,7 +53,7 @@ func ConfigureAcceleratorsForTFJobSpec(c *tfv1.TFJobSpec, accelerators map[strin
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 		for i, c := range r.Template.Spec.Containers {
-			if c.Name == string(tfv1.TENSORFLOW) {
+			if c.Name == tfv1.DefaultTFContainer {
 				// Identify the accelerators attached to this container.
 				a := map[string]tfv1.AcceleratorConfig{}
 

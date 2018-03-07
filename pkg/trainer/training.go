@@ -17,24 +17,21 @@ package trainer
 
 import (
 	"fmt"
-
 	"reflect"
-
-	log "github.com/golang/glog"
-	"github.com/kubeflow/tf-operator/pkg/util"
-
 	"strings"
 
-	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/helper"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -101,7 +98,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 		replicaNames := make([]string, 0, *p.Spec.Replicas)
 
 		for i := int32(0); i < *p.Spec.Replicas; i++ {
-			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.jobName(i), *p.Spec.TFPort))
+			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.genName(i), *p.Spec.TFPort))
 		}
 
 		clusterSpec[strings.ToLower(string(p.Spec.TFReplicaType))] = replicaNames
@@ -214,12 +211,6 @@ func (j *TrainingJob) masterName() string {
 
 // setup the training job.
 func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
-	if j.job == nil {
-		j.status.Reason = "Internal error; setup failed; job is missing spec."
-		j.status.Phase = tfv1alpha1.TFJobPhaseFailed
-		j.status.State = tfv1alpha1.StateFailed
-	}
-
 	err := func() error {
 		// If the job has already started we shouldn't set it up again.
 		if j.status.Phase != tfv1alpha1.TFJobPhaseNone {
@@ -367,7 +358,23 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 			j.status.Phase = tfv1alpha1.TFJobPhaseDone
 			j.status.State = tfv1alpha1.StateSucceeded
 		} else {
-			log.V(1).Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+		}
+	}
+
+	// sync pods
+	for _, rc := range j.Replicas {
+		err := rc.SyncPods()
+		if err != nil {
+			log.Errorf("SyncPods error: %v", err)
+		}
+	}
+
+	// sync services
+	for _, rc := range j.Replicas {
+		err := rc.SyncServices()
+		if err != nil {
+			log.Errorf("SyncServices error: %v", err)
 		}
 	}
 
@@ -404,4 +411,8 @@ func (j *TrainingJob) name() string {
 // fullname returns the namespace and name for the job.
 func (j *TrainingJob) fullname() string {
 	return j.job.ObjectMeta.GetNamespace() + ":" + j.job.ObjectMeta.GetName()
+}
+
+func (j *TrainingJob) SchedulerName() string {
+	return j.job.Spec.SchedulerName
 }

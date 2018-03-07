@@ -56,6 +56,9 @@ type TFJobSpec struct {
 
 	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
 	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
+
+	// SchedulerName specifies the name of scheduler which should handle the TFJob
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 type TerminationPolicySpec struct {
@@ -77,12 +80,9 @@ const (
 	WORKER TFReplicaType = "WORKER"
 )
 
-// ContainerName is an enum for expected containers.
-type ContainerName string
-
 const (
-	TENSORFLOW     ContainerName = "tensorflow"
-	DefaultTFImage string        = "tensorflow/tensorflow:1.3.0"
+	DefaultTFContainer string = "tensorflow"
+	DefaultTFImage     string = "tensorflow/tensorflow:1.3.0"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.

@@ -296,9 +296,9 @@ def wait_for_deployment(api_client, namespace, name):
 
   logging.error("Timeout waiting for deployment %s in namespace %s to be "
                 "ready", name, namespace)
-  raise TimeoutError("Timeout waiting for deployment {0} in namespace {1}".
-                     format(name, namespace))
-
+  raise TimeoutError(
+    "Timeout waiting for deployment {0} in namespace {1}".format(
+      name, namespace))
 
 
 def wait_for_statefulset(api_client, namespace, name):
@@ -330,9 +330,9 @@ def wait_for_statefulset(api_client, namespace, name):
 
   logging.error("Timeout waiting for statefulset %s in namespace %s to be "
                 "ready", name, namespace)
-  raise TimeoutError("Timeout waiting for statefulset {0} in namespace {1}".
-                     format(name, namespace))
-
+  raise TimeoutError(
+    "Timeout waiting for statefulset {0} in namespace {1}".format(
+      name, namespace))
 
 
 def install_gpu_drivers(api_client):
@@ -388,7 +388,6 @@ def cluster_has_gpu_nodes(api_client):
     if "cloud.google.com/gke-accelerator" in n.metadata.labels:
       return True
   return False
-
 
 
 def setup_cluster(api_client):

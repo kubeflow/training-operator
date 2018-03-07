@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,8 @@ var (
 func TestTFReplicaSet(t *testing.T) {
 	clientSet := fake.NewSimpleClientset()
 
+	testSchedulerName := "test-scheduler"
+
 	jobSpec := &tfv1alpha1.TFJob{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "some-job",
@@ -67,6 +70,7 @@ func TestTFReplicaSet(t *testing.T) {
 					TFReplicaType: tfv1alpha1.PS,
 				},
 			},
+			SchedulerName: testSchedulerName,
 		},
 	}
 
@@ -136,41 +140,41 @@ func TestTFReplicaSet(t *testing.T) {
 			t.Fatalf("Service.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(s.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 
-		// Check that a job was created.
-		l, err := clientSet.BatchV1().Jobs(replica.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{})
+		// Check that a pod was created.
+		l, err := clientSet.CoreV1().Pods(replica.Job.job.ObjectMeta.Namespace).List(meta_v1.ListOptions{})
 		if err != nil {
-			t.Fatalf("List jobs error; %v", err)
+			t.Fatalf("List pods error; %v", err)
 		}
 
 		if len(l.Items) != 2 {
-			t.Fatalf("Expected 1 job got %v", len(l.Items))
+			t.Fatalf("Expected 1 pod got %v", len(l.Items))
 		}
 
-		j := l.Items[index]
+		p := l.Items[index]
 
-		if !reflect.DeepEqual(expectedLabels, j.ObjectMeta.Labels) {
-			t.Fatalf("Job Labels; Got %v Want: %v", expectedLabels, j.ObjectMeta.Labels)
+		if !reflect.DeepEqual(expectedLabels, p.ObjectMeta.Labels) {
+			t.Fatalf("Pod Labels; Got %v Want: %v", expectedLabels, p.ObjectMeta.Labels)
 		}
 
-		if j.ObjectMeta.Name != name {
-			t.Fatalf("Job.ObjectMeta.Name = %v; want %v", j.ObjectMeta.Name, name)
+		if len(p.Spec.Containers) != 1 {
+			t.Fatalf("Expected 1 container got %v", len(p.Spec.Containers))
 		}
 
-		if len(j.Spec.Template.Spec.Containers) != 1 {
-			t.Fatalf("Expected 1 container got %v", len(j.Spec.Template.Spec.Containers))
+		if len(p.ObjectMeta.OwnerReferences) != 1 {
+			t.Fatalf("Expected 1 owner reference got %v", len(p.ObjectMeta.OwnerReferences))
 		}
 
-		if len(j.ObjectMeta.OwnerReferences) != 1 {
-			t.Fatalf("Expected 1 owner reference got %v", len(j.ObjectMeta.OwnerReferences))
+		if !reflect.DeepEqual(p.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
+			t.Fatalf("Pod.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(p.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
 		}
 
-		if !reflect.DeepEqual(j.ObjectMeta.OwnerReferences[0], expectedOwnerReference) {
-			t.Fatalf("Job.Metadata.OwnerReferences; Got %v; want %v", util.Pformat(j.ObjectMeta.OwnerReferences[0]), util.Pformat(expectedOwnerReference))
-		}
-
-		c := j.Spec.Template.Spec.Containers[0]
+		c := p.Spec.Containers[0]
 		if len(c.Env) != 1 {
 			t.Fatalf("Expected 1 environment variable got %v", len(c.Env))
+		}
+
+		if strings.Compare(p.Spec.SchedulerName, testSchedulerName) != 0 {
+			t.Fatalf("p.Spec.Template.Spec.SchedulerName; Got %v; want %v", p.Spec.SchedulerName, testSchedulerName)
 		}
 
 		actualTFConfig := &TFConfig{}
@@ -352,7 +356,7 @@ func TestTFReplicaSetStatusFromPodList(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		status := replicaStatusFromPodList(c.PodList, tfv1alpha1.ContainerName(c.Name))
+		status := replicaStatusFromPodList(c.PodList, c.Name)
 		if status != c.Expected {
 			t.Errorf("replicaStatusFromPodList(%+v, %v)=%v ; want %v", c.PodList, c.Name, status, c.Expected)
 		}
