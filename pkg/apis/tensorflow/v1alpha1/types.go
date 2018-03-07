@@ -48,14 +48,10 @@ type TFJobSpec struct {
 	// TODO(jlewi): Can we we get rid of this and use some value from Kubernetes or a random ide.
 	RuntimeId string
 
-	//TensorBoardSpec specifies the configuration to start a TensorBoard deployment
-	TensorBoard *TensorBoardSpec `json:"tensorboard"`
-
 	// ReplicaSpecs specifies the TF replicas to run.
 	ReplicaSpecs []*TFReplicaSpec `json:"replicaSpecs"`
 
-	// TFImage defines the tensorflow docker image that should be used for Tensorboard
-	// and the default parameter server
+	// TFImage defines the tensorflow docker image that should be used for default parameter server
 	TFImage string `json:"tfImage,omitempty"`
 
 	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
@@ -81,12 +77,9 @@ const (
 	WORKER TFReplicaType = "WORKER"
 )
 
-// ContainerName is an enum for expected containers.
-type ContainerName string
-
 const (
-	TENSORFLOW     ContainerName = "tensorflow"
-	DefaultTFImage string        = "tensorflow/tensorflow:1.3.0"
+	DefaultTFContainer string = "tensorflow"
+	DefaultTFImage     string = "tensorflow/tensorflow:1.3.0"
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
@@ -102,14 +95,6 @@ type TFReplicaSpec struct {
 	// TFPort is the port to use for TF services.
 	TFPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TFReplicaType `json:"tfReplicaType"`
-}
-
-type TensorBoardSpec struct {
-	//Location of TensorFlow event files
-	LogDir       string           `json:"logDir"`
-	Volumes      []v1.Volume      `json:"volumes"`
-	VolumeMounts []v1.VolumeMount `json:"volumeMounts"`
-	ServiceType  v1.ServiceType   `json:"serviceType"`
 }
 
 type TFJobPhase string

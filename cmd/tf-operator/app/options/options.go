@@ -25,6 +25,7 @@ type ServerOption struct {
 	ControllerConfigFile string
 	PrintVersion         bool
 	GCInterval           time.Duration
+	JsonLogFormat        bool
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -40,4 +41,5 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
 	fs.DurationVar(&s.GCInterval, "gc-interval", 10*time.Minute, "GC interval")
 	fs.StringVar(&s.ControllerConfigFile, "controller-config-file", "", "Path to file containing the controller config.")
+	fs.BoolVar(&s.JsonLogFormat, "json-log-format", true, "Set true to use json style log format. Set false to use plaintext style log format")
 }

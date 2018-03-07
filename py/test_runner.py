@@ -217,8 +217,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
-    #  1. Check tensorboard is created if its part of the job spec.
-    #  2. Check that all resources are garbage collected.
+    #  1. Check that all resources are garbage collected.
     # TODO(jlewi): Add an option to add chaos and randomly kill various resources?
     # TODO(jlewi): Are there other generic validation checks we should
     # run.
