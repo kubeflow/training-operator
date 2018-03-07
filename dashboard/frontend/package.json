@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Dashboard for kubeflow/tf-operator.",
   "homepage": ".",
+  "proxy": "http://localhost:8080/tfjobs/",
   "private": true,
   "dependencies": {
     "lodash": "^4.17.4",
