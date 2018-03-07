@@ -171,6 +171,8 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 		Spec: *s.Spec.Template.Spec.DeepCopy(),
 	}
 
+	pod.Spec.SchedulerName = s.Job.SchedulerName()
+
 	// Configure the TFCONFIG environment variable.
 	tfConfig := TFConfig{
 		Cluster: s.Job.ClusterSpec(),
