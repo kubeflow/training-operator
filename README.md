@@ -8,7 +8,7 @@
 
 * [Prow test dashboard](https://k8s-testgrid.appspot.com/sig-big-data)
 * [Prow jobs dashboard](https://prow.k8s.io/?repo=kubeflow%2Ftf-operator)
-* [Argo UI for E2E tests](http://testing-argo.kubeflow.io)
+* [Argo UI for E2E tests](http://testing-argo.kubeflow.org)
 
 ## Overview
 
