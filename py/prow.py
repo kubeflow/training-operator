@@ -27,10 +27,11 @@ from py import util  # pylint: disable=no-name-in-module
 
 # Default repository organization and name.
 # This should match the values used in Go imports.
-GO_REPO_OWNER = "tensorflow"
-GO_REPO_NAME = "k8s"
+GO_REPO_OWNER = "kubeflow"
+GO_REPO_NAME = "tf-operator"
 
 GCS_REGEX = re.compile("gs://([^/]*)/(.*)")
+
 
 def get_gcs_output():
   """Return the GCS directory where test outputs should be written to."""
@@ -42,24 +43,25 @@ def get_gcs_output():
   if pull_number:
     output = ("gs://kubernetes-jenkins/pr-logs/pull/{owner}_{repo}/"
               "{pull_number}/{job}/{build}").format(
-                  owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
-                  pull_number=pull_number,
-                  job=job_name,
-                  build=os.getenv("BUILD_NUMBER"))
+                owner=GO_REPO_OWNER,
+                repo=GO_REPO_NAME,
+                pull_number=pull_number,
+                job=job_name,
+                build=os.getenv("BUILD_NUMBER"))
     return output
   elif os.getenv("REPO_OWNER"):
     # It is a postsubmit job
     output = ("gs://kubernetes-jenkins/logs/{owner}_{repo}/"
               "{job}/{build}").format(
-                  owner=GO_REPO_OWNER, repo=GO_REPO_NAME,
-                  job=job_name,
-                  build=os.getenv("BUILD_NUMBER"))
+                owner=GO_REPO_OWNER,
+                repo=GO_REPO_NAME,
+                job=job_name,
+                build=os.getenv("BUILD_NUMBER"))
     return output
 
   # Its a periodic job
   output = ("gs://kubernetes-jenkins/logs/{job}/{build}").format(
-      job=job_name,
-      build=os.getenv("BUILD_NUMBER"))
+    job=job_name, build=os.getenv("BUILD_NUMBER"))
   return output
 
 
@@ -72,8 +74,7 @@ def get_symlink_output(pull_number, job_name, build_number):
     return ""
   output = ("gs://kubernetes-jenkins/pr-logs/directory/"
             "{job}/{build}.txt").format(
-                job=job_name,
-                build=build_number)
+              job=job_name, build=build_number)
   return output
 
 
@@ -92,11 +93,12 @@ def create_started(gcs_client, output_dir, sha):
   # https://github.com/kubernetes/test-infra/tree/master/gubernator#job-artifact-gcs-layout
   # For a list of fields expected by gubernator
   started = {
-      "timestamp": int(time.time()),
-      "repos": {
-          # List all repos used and their versions.
-          GO_REPO_OWNER + "/" + GO_REPO_NAME: sha,
-      },
+    "timestamp": int(time.time()),
+    "repos": {
+      # List all repos used and their versions.
+      GO_REPO_OWNER + "/" + GO_REPO_NAME:
+      sha,
+    },
   }
 
   PULL_REFS = os.getenv("PULL_REFS", "")
@@ -129,12 +131,12 @@ def create_finished(gcs_client, output_dir, success):
   if success:
     result = "SUCCESS"
   finished = {
-      "timestamp": int(time.time()),
-      "result": result,
-      # Dictionary of extra key value pairs to display to the user.
-      # TODO(jlewi): Perhaps we should add the GCR path of the Docker image
-      # we are running in. We'd have to plumb this in from bootstrap.
-      "metadata": {},
+    "timestamp": int(time.time()),
+    "result": result,
+    # Dictionary of extra key value pairs to display to the user.
+    # TODO(jlewi): Perhaps we should add the GCR path of the Docker image
+    # we are running in. We'd have to plumb this in from bootstrap.
+    "metadata": {},
   }
 
   m = GCS_REGEX.match(output_dir)
@@ -177,6 +179,7 @@ def upload_outputs(gcs_client, output_dir, build_log):
     blob = bucket.blob(os.path.join(path, "build-log.txt"))
     blob.upload_from_filename(build_log)
 
+
 def get_commit_from_env():
   """Get the commit to test from prow environment variables."""
   # If this is a presubmit PULL_PULL_SHA will be set see:
@@ -191,6 +194,7 @@ def get_commit_from_env():
 
   return sha
 
+
 def create_latest(gcs_client, job_name, sha):
   """Create a file in GCS with information about the latest passing postsubmit.
   """
@@ -202,9 +206,9 @@ def create_latest(gcs_client, job_name, sha):
   logging.info("Creating GCS output: bucket: %s, path: %s.", bucket_name, path)
 
   data = {
-      "status": "passing",
-      "job": job_name,
-      "sha": sha,
+    "status": "passing",
+    "job": job_name,
+    "sha": sha,
   }
   blob = bucket.blob(path)
   blob.upload_from_string(json.dumps(data))
@@ -215,6 +219,7 @@ def _get_actual_junit_files(bucket, prefix):
   for b in bucket.list_blobs(prefix=os.path.join(prefix, "junit")):
     actual_junit.add(os.path.basename(b.name))
   return actual_junit
+
 
 def check_no_errors(gcs_client, artifacts_dir, junit_files):
   """Check that all the XML files exist and there were no errors.
@@ -257,6 +262,7 @@ def check_no_errors(gcs_client, artifacts_dir, junit_files):
     no_errors = False
   return no_errors
 
+
 def finalize_prow_job(args):
   """Finalize a prow job.
 
@@ -272,35 +278,38 @@ def finalize_prow_job(args):
 
   create_finished(gcs_client, output_dir, no_errors)
 
+
 def main():  # pylint: disable=too-many-locals
-  logging.getLogger().setLevel(logging.INFO) # pylint: disable=too-many-locals
-  logging.basicConfig(level=logging.INFO,
-                      format=('%(levelname)s|%(asctime)s'
-                              '|%(pathname)s|%(lineno)d| %(message)s'),
-                      datefmt='%Y-%m-%dT%H:%M:%S',
-                      )
+  logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
+  logging.basicConfig(
+    level=logging.INFO,
+    format=('%(levelname)s|%(asctime)s'
+            '|%(pathname)s|%(lineno)d| %(message)s'),
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   # create the top-level parser
-  parser = argparse.ArgumentParser(
-    description="Steps related to prow.")
+  parser = argparse.ArgumentParser(description="Steps related to prow.")
   subparsers = parser.add_subparsers()
 
   #############################################################################
   # Finalize prow job.
   parser_finished = subparsers.add_parser(
-    "finalize_job",
-    help="Finalize the prow job.")
+    "finalize_job", help="Finalize the prow job.")
 
-  parser_finished.add_argument("--junit_files",
-                               default="", type=str,
-                               help=("A comma separated list of the names of "
-                                     "the expected junit files."))
+  parser_finished.add_argument(
+    "--junit_files",
+    default="",
+    type=str,
+    help=("A comma separated list of the names of "
+          "the expected junit files."))
   parser_finished.set_defaults(func=finalize_prow_job)
 
   # parse the args and call whatever function was selected
   args = parser.parse_args()
 
   args.func(args)
+
 
 if __name__ == "__main__":
   main()

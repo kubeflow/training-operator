@@ -20,9 +20,27 @@
       )
     else [],
 
-  parts(namespace, name):: {
+
+  // default parameters.
+  defaultParams:: {
+    project:: "mlkube-testing",
+    zone:: "us-east1-d",
+    // Default registry to use.
+    registry:: "gcr.io/" + $.defaultParams.project,
+
+    // The image tag to use.
+    // Defaults to a value based on the name.
+    versionTag:: null,
+
+    // The name of the secret containing GCP credentials.
+    gcpCredentialsSecretName:: "kubeflow-testing-credentials",
+  },
+
+  // overrides is a dictionary of parameters to provide in addition to defaults.
+  parts(namespace, name, overrides={}):: {
     // Workflow to run the e2e test.
     e2e(prow_env, bucket):
+      local params = $.defaultParams + overrides;
       // mountPath is the directory where the volume to store the test data
       // should be mounted.
       local mountPath = "/mnt/" + "test-data-volume";
@@ -34,24 +52,40 @@
       local goDir = testDir + "/go";
       // Source directory where all repos should be checked out
       local srcRootDir = testDir + "/src";
-      // The directory containing the tensorflow/k8s repo
-      local srcDir = srcRootDir + "/tensorflow/k8s";
+      // The directory containing the kubeflow/tf-operator repo
+      local srcDir = srcRootDir + "/kubeflow/tf-operator";
       local image = "gcr.io/mlkube-testing/test-worker";
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = name;
+      local versionTag = if params.versionTag != null then
+        params.versionTag
+        else name;
+      local tfJobImage = params.registry + "/tf_operator:" + versionTag;
+
+      // The namespace on the cluster we spin up to deploy into.
+      local deployNamespace = "kubeflow";
       // The directory within the kubeflow_testing submodule containing
       // py scripts to use.
       local k8sPy = srcDir;
       local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
 
-      local project = "mlkube-testing";
+      local project = params.project;
       // GKE cluster to use
-      local cluster = name;
-      local zone = "us-east1-d";
+      // We need to truncate the cluster to no more than 40 characters because
+      // cluster names can be a max of 40 characters.
+      // We expect the suffix of the cluster name to be unique salt.
+      // We prepend a z because cluster name must start with an alphanumeric character
+      // and if we cut the prefix we might end up starting with "-" or other invalid
+      // character for first character.
+      local cluster =
+        if std.length(name) > 40 then
+          "z" + std.substr(name, std.length(name) - 39, 39)
+        else
+          name;
+      local zone = params.zone;
       local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
         // Build an Argo template to execute a particular command.
@@ -124,7 +158,7 @@
             {
               name: "gcp-credentials",
               secret: {
-                secretName: "kubeflow-testing-credentials",
+                secretName: params.gcpCredentialsSecretName,
               },
             },
             {
@@ -134,7 +168,7 @@
               },
             },
           ],  // volumes
-          // onExit specifies the template that should always run when the workflow completes.
+          // onExit specifies the template that should always run when the workflow completes.          
           onExit: "exit-handler",
           templates: [
             {
@@ -184,12 +218,11 @@
             {
               name: "exit-handler",
               steps: [
-                [
-                  {
-                    name: "teardown-cluster",
-                    template: "teardown-cluster",
-                  },
-                ],
+                [{
+                  name: "teardown-cluster",
+                  template: "teardown-cluster",
+
+                }],
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",
@@ -203,7 +236,10 @@
                   "/usr/local/bin/checkout.sh",
                   srcRootDir,
                 ],
-                env: prow_env,
+                env: prow_env + [{
+                  name: "EXTRA_REPOS",
+                  value: "kubeflow/testing@HEAD",
+                }],
                 image: image,
                 volumeMounts: [
                   {
@@ -219,7 +255,8 @@
               "py.release",
               "build",
               "--src_dir=" + srcDir,
-              "--project=mlkube-testing",
+              "--registry=" + params.registry,
+              "--project=" + project,
               "--version_tag=" + versionTag,
             ]),  // build
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
@@ -228,7 +265,7 @@
               "py.py_checks",
               "test",
               "--src_dir=" + srcDir,
-              "--project=mlkube-testing",
+              "--project=" + project,
               "--junit_path=" + artifactsDir + "/junit_pycheckstest.xml",
             ]),  // py test
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
@@ -237,7 +274,7 @@
               "py.py_checks",
               "lint",
               "--src_dir=" + srcDir,
-              "--project=mlkube-testing",
+              "--project=" + project,
               "--junit_path=" + artifactsDir + "/junit_pycheckslint.xml",
             ]),  // py lint
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
@@ -248,18 +285,23 @@
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
-              "--chart=" + chart,
+              "--namespace=" + deployNamespace,
+              "--image=" + tfJobImage,
               "--accelerator=nvidia-tesla-k80=1",
+              "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",
-              "py.deploy",
+              "py.test_runner",
               "test",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=simple_tfjob",
+              "--params=name=simple-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
@@ -267,15 +309,13 @@
               "-m",
               "py.test_runner",
               "test",
-              "--spec=" + srcDir + "/examples/tf_job_gpu.yaml",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=gpu_tfjob",
+              "--params=name=gpu-tfjob,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
-              // tf_job_gpu.yaml has the image tag hardcoded so the tag doesn't matter.
-              // TODO(jlewi): The example should be a template and we should rebuild and
-              // and use the newly built sample container.
-              "--image_tag=notag",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",

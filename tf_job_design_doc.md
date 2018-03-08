@@ -32,7 +32,7 @@ The input from the K8s team that developed CRDs and various controllers is that 
 ## TFJob Resource
 
 The TFJob CRD defines a TFJob resource for K8s.
-The [TFJob](https://github.com/tensorflow/k8s/blob/master/pkg/spec/tf_job.go#L55)
+The [TFJob](https://github.com/kubeflow/tf-operator/blob/master/pkg/spec/tf_job.go#L55)
 resource is a collection of TfReplicas. Each TfReplica corresponds to a
 set of TensorFlow processes performing a role in the job;
 e.g. master, parameter server or worker. The set of replica types can be expanded (it is just an enum) to support new TF patterns such as eval workers. Figure 1. shows an example yaml spec for a distributed job.
@@ -44,8 +44,6 @@ kind: "TFJob"
 metadata:
   name: "example-job"
 spec:
-  tensorboard:
-    logDir: gs://my-job/log-dir
   replicaSpecs:
     - replicas: 1
       tfReplicaType: MASTER
@@ -70,7 +68,7 @@ spec:
     - replicas: 1
       tfReplicaType: PS
 ```
-**Fig 1.** An example job spec for a distributed Training job with 1 master, 2 workers and 1 PS. TensorBoard is configured by specifying the location of the event files.
+**Fig 1.** An example job spec for a distributed Training job with 1 master, 2 workers and 1 PS.
 
 As illustrated by Fig 1, I made an explicit decision not to try to hide or replace K8s abstractions. For example, each TfReplica contains a standard K8s [PodTemplate](https://kubernetes.io/docs/api-reference/v1.7/#podtemplate-v1-core) to specify the processes (including TF) to run in each replica. I did this because K8s already provides a widely adopted and understood API. So introducing new concepts in place of K8s concepts is just confusing. Furthermore, exposing the [PodTemplate](https://kubernetes.io/docs/api-reference/v1.7/#podtemplate-v1-core) makes it easy for TFJob users to leverage K8s features. For example, TFJob users can use K8s to attach volumes to their TF processes. This makes it easy to use TF in conjunction with any storage system supported by K8s (e.g. PDs, NFS, etc...)
 
@@ -78,21 +76,16 @@ As illustrated by Fig 1, I made an explicit decision not to try to hide or repla
 
 The controller can be used to configure defaults for TFJob to create a simpler user experience. The most common use for this right now is supporting GPUs. To use GPUs, the NVIDIA drivers and libraries need to be mounted from the host into the container. This step should become unnecessary with Kubernetes 1.8. The TFJob controller will automatically add these volume mounts based on configuration specified when the controller is started. This prevents users from having to specify them for each job. Instead, only the cluster administrator who deploys the TFJob controller needs to know how the volumes should be configured.
 
-Another use case is minimizing the boilerplate users have to write to run standard processes (e.g. [Parameter Servers](https://github.com/tensorflow/k8s/pull/36#discussion_r141135711) or TensorBoard) using official TF Docker images.
+Another use case is minimizing the boilerplate users have to write to run standard processes (e.g. [Parameter Servers](https://github.com/kubeflow/tf-operator/pull/36#discussion_r141135711)) using official TF Docker images.
 
 
 ## Controller
 
 The controller manages a distributed TFJob by creating a series of Job controllers Fig 2. The TFJob controller sets the environment variable TF_CONFIG to make the TensorFlow cluster spec and replica type (PS, WORKER, MASTER) and replica index available to TensorFlow code. The Job controller takes care of restarting TensorFlow processes that terminate due to an error. Additional logic in the TFJob controller looks at exit codes and fails the job if a TF process exits with an exit code indicating a permanent error. The TFJob controller treats exit codes of 1-127 as permanent errors; this is an arbitrary convention.
 
-When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/tensorflow/k8s/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TFJob is deleted. This allows the logs to be fetched via kubectl logs.
+When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/kubeflow/tf-operator/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TFJob is deleted. This allows the logs to be fetched via kubectl logs.
 
 ![Resources for TFJob](docs/diagrams/tfjob_k8s_resources.svg)
-
-
-## TensorBoard
-
-If a user specifies the log dir as part of the TFJob spec, then the TFJob controller will launch TensorBoard as part of the job. TensorBoard will run until the job is deleted. A service is also created to give the TensorBoard process a stable DNS name. The DNS name is a deterministic function of the job name; the port is always the same e.g. 80. The user can list services to find the relevant one. Nonetheless, the experience today is still rough, especially when a user has lots of jobs in the cluster. I expect that we will make various usability improvements; for example we might publish the relevant URI for accessing TensorBoard in the TFJob status.
 
 
 ## Non-distributed training
@@ -122,4 +115,3 @@ Rather than use a CRD, we could use a tool like Helm or Ksonnet to create templa
 One disadvantage of templates is that they do not provide a mechanism to add custom control logic.  None of the K8s builtin controllers provide a mechanism for distinguishing between retryable and permanent errors. Furthermore, the built in controllers don't propagate errors; if worker i fails with a permanent error this error won't cause the parameter servers and master controllers to be terminated.
 
 Another major disadvantage is that the templating approach forces users to manually manage multiple K8s resources.
-

@@ -17,24 +17,21 @@ package trainer
 
 import (
 	"fmt"
-
 	"reflect"
-
-	log "github.com/golang/glog"
-	"github.com/tensorflow/k8s/pkg/util"
-
 	"strings"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/validation"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	"github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/helper"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/helper"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -47,8 +44,6 @@ type TrainingJob struct {
 	recorder record.EventRecorder
 
 	Replicas []*TFReplicaSet
-
-	TensorBoard *TBReplicaSet
 
 	tfJobClient tfjobclient.Interface
 
@@ -76,19 +71,11 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, re
 		tfJobClient: tfJobClient,
 		recorder:    recorder,
 		Replicas:    make([]*TFReplicaSet, 0),
-		TensorBoard: nil,
 		job:         job,
 		status:      *job.Status.DeepCopy(),
 	}
 
 	return j, nil
-}
-
-func initTensorBoard(clientSet kubernetes.Interface, tj *TrainingJob) (*TBReplicaSet, error) {
-	if tj.job.Spec.TensorBoard != nil {
-		return NewTBReplicaSet(clientSet, *tj.job.Spec.TensorBoard, tj)
-	}
-	return nil, nil
 }
 
 func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TFJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
@@ -111,7 +98,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 		replicaNames := make([]string, 0, *p.Spec.Replicas)
 
 		for i := int32(0); i < *p.Spec.Replicas; i++ {
-			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.jobName(i), *p.Spec.TFPort))
+			replicaNames = append(replicaNames, fmt.Sprintf("%v:%v", p.genName(i), *p.Spec.TFPort))
 		}
 
 		clusterSpec[strings.ToLower(string(p.Spec.TFReplicaType))] = replicaNames
@@ -120,7 +107,7 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
-// createResources creates all the replicas and TensorBoard if requested
+// createResources creates all the replicas if requested
 func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error {
 	for _, r := range j.Replicas {
 		if err := r.Create(config); err != nil {
@@ -128,16 +115,10 @@ func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error
 		}
 	}
 
-	if j.TensorBoard != nil {
-		if err := j.TensorBoard.Create(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// deleteResources deletes the replicas and TensorBoard it it was created
+// deleteResources deletes the replicas it it was created
 func (j *TrainingJob) deleteResources() error {
 	for _, r := range j.Replicas {
 		if err := r.Delete(); err != nil {
@@ -145,11 +126,6 @@ func (j *TrainingJob) deleteResources() error {
 		}
 	}
 
-	if j.TensorBoard != nil {
-		if err := j.TensorBoard.Delete(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -235,12 +211,6 @@ func (j *TrainingJob) masterName() string {
 
 // setup the training job.
 func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
-	if j.job == nil {
-		j.status.Reason = "Internal error; setup failed; job is missing spec."
-		j.status.Phase = tfv1alpha1.TFJobPhaseFailed
-		j.status.State = tfv1alpha1.StateFailed
-	}
-
 	err := func() error {
 		// If the job has already started we shouldn't set it up again.
 		if j.status.Phase != tfv1alpha1.TFJobPhaseNone {
@@ -288,14 +258,6 @@ func (j *TrainingJob) setupReplicas() error {
 			}
 			j.Replicas = append(j.Replicas, r)
 		}
-	}
-
-	if j.TensorBoard == nil {
-		tb, err := initTensorBoard(j.KubeCli, j)
-		if err != nil {
-			return err
-		}
-		j.TensorBoard = tb
 	}
 
 	return nil
@@ -396,7 +358,23 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 			j.status.Phase = tfv1alpha1.TFJobPhaseDone
 			j.status.State = tfv1alpha1.StateSucceeded
 		} else {
-			log.V(1).Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+		}
+	}
+
+	// sync pods
+	for _, rc := range j.Replicas {
+		err := rc.SyncPods()
+		if err != nil {
+			log.Errorf("SyncPods error: %v", err)
+		}
+	}
+
+	// sync services
+	for _, rc := range j.Replicas {
+		err := rc.SyncServices()
+		if err != nil {
+			log.Errorf("SyncServices error: %v", err)
 		}
 	}
 
@@ -433,4 +411,8 @@ func (j *TrainingJob) name() string {
 // fullname returns the namespace and name for the job.
 func (j *TrainingJob) fullname() string {
 	return j.job.ObjectMeta.GetNamespace() + ":" + j.job.ObjectMeta.GetName()
+}
+
+func (j *TrainingJob) SchedulerName() string {
+	return j.job.Spec.SchedulerName
 }

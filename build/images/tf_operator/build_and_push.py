@@ -104,9 +104,9 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   go_path = os.environ["GOPATH"]
 
   targets = [
-      "github.com/tensorflow/k8s/cmd/tf_operator",
-      "github.com/tensorflow/k8s/test/e2e",
-      "github.com/tensorflow/k8s/dashboard/backend",
+      "github.com/kubeflow/tf-operator/cmd/tf-operator",
+      "github.com/kubeflow/tf-operator/test/e2e",
+      "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     subprocess.check_call(["go", "install", t])
@@ -120,7 +120,7 @@ def main():  # pylint: disable=too-many-locals, too-many-statements
   # List of paths to copy relative to root.
   sources = [
       "build/images/tf_operator/Dockerfile",
-      os.path.join(go_path, "bin/tf_operator"),
+      os.path.join(go_path, "bin/tf-operator"),
       os.path.join(go_path, "bin/e2e"),
       os.path.join(go_path, "bin/backend"),
       "dashboard/frontend/build"

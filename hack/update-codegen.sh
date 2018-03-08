@@ -29,6 +29,6 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "defaulter,deepcopy,client,informer,lister" \
- github.com/tensorflow/k8s/pkg/client github.com/tensorflow/k8s/pkg/apis \
-  tensorflow:v1alpha1
-
+ github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
+ tensorflow:v1alpha1 \
+ --go-header-file ${SCRIPT_ROOT}/hack/boilerplate/boilerplate.go.txt

@@ -15,6 +15,7 @@ TF_JOB_VERSION = "v1alpha1"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
 
+
 def create_tf_job(client, spec):
   """Create a TFJob.
 
@@ -27,7 +28,7 @@ def create_tf_job(client, spec):
     # Create a Resource
     namespace = spec["metadata"].get("namespace", "default")
     api_response = crd_api.create_namespaced_custom_object(
-        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec)
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
   except ApiException as e:
@@ -40,27 +41,64 @@ def create_tf_job(client, spec):
       except ValueError:
         # There was a problem parsing the body of the response as json.
         logging.error(
-            ("Exception when calling DefaultApi->"
-              "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"),
-              e.body)
+          ("Exception when calling DefaultApi->"
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
-    logging.error(
-        ("Exception when calling DefaultApi->"
-         "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-          message)
+    logging.error(("Exception when calling DefaultApi->"
+                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                  message)
     raise e
+
+
+def delete_tf_job(client, namespace, name):
+  crd_api = k8s_client.CustomObjectsApi(client)
+  try:
+    body = {
+      # Set garbage collection so that job won't be deleted until all
+      # owned references are deleted.
+      "propagationPolicy": "Foreground",
+    }
+    logging.info("Deleting job %s.%s", namespace, name)
+    api_response = crd_api.delete_namespaced_custom_object(
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body)
+    logging.info("Deleted job %s.%s", namespace, name)
+    return api_response
+  except ApiException as e:
+    message = ""
+    if e.message:
+      message = e.message
+    if e.body:
+      try:
+        body = json.loads(e.body)
+      except ValueError:
+        # There was a problem parsing the body of the response as json.
+        logging.error(
+          ("Exception when calling DefaultApi->"
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
+        raise
+      message = body.get("message")
+
+    logging.error(("Exception when calling DefaultApi->"
+                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                  message)
+    raise e
+
 
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
-  logging.info("Job %s in namespace %s; phase=%s, state=%s,",
-           tf_job["metadata"]["name"],
-           tf_job["metadata"]["namespace"],
-           tf_job["status"]["phase"],
-           tf_job["status"]["state"])
+  logging.info("Job %s in namespace %s; uid=%s; phase=%s, state=%s,",
+               tf_job.get("metadata", {}).get("name"),
+               tf_job.get("metadata", {}).get("namespace"),
+               tf_job.get("metadata", {}).get("uid"),
+               tf_job.get("status", {}).get("phase"),
+               tf_job.get("status", {}).get("state"))
 
-def wait_for_job(client, namespace, name,
+
+def wait_for_job(client,
+                 namespace,
+                 name,
                  timeout=datetime.timedelta(minutes=5),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
@@ -80,12 +118,13 @@ def wait_for_job(client, namespace, name,
   end_time = datetime.datetime.now() + timeout
   while True:
     results = crd_api.get_namespaced_custom_object(
-        TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name)
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name)
 
     if status_callback:
       status_callback(results)
 
-    if results["status"]["phase"] == "Done":
+    # If we poll the CRD quick enough status won't have been set yet.
+    if results.get("status", {}).get("phase", {}) == "Done":
       return results
 
     if datetime.datetime.now() + polling_interval > end_time:

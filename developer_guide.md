@@ -1,4 +1,3 @@
-
 ## Directories Layout
 
 ```sh
@@ -9,7 +8,7 @@ $ tree -d -I 'vendor|bin|.git'
 │   │   └── tf_operator
 │   └── release
 ├── cmd
-│   └── tf_operator
+│   └── tf-operator
 │       └── app
 │           └── options
 ├── dashboard
@@ -23,9 +22,6 @@ $ tree -d -I 'vendor|bin|.git'
 ├── docs
 │   └── diagrams
 ├── examples
-│   ├── charts
-│   │   └── tensorboard
-│   │       └── templates
 │   ├── crd
 │   ├── gke
 │   │   └── notebook_image
@@ -75,8 +71,6 @@ $ tree -d -I 'vendor|bin|.git'
 │   └── templates
 │       └── tests
 └── version
-
-
 ```
 
 ## Building the Operator
@@ -84,11 +78,11 @@ $ tree -d -I 'vendor|bin|.git'
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
 ```sh
-mkdir -p ${GOPATH}/src/github.com/tensorflow
-ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/tensorflow/k8s
+mkdir -p ${GOPATH}/src/github.com/kubeflow
+ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/kubeflow/tf-operator
 ```
 
-* GIT_TRAINING should be the location where you checked out https://github.com/tensorflow/k8s
+* GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/tf-operator
 
 Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
 
@@ -101,7 +95,7 @@ glide install -v
 Build it
 
 ```sh
-go install github.com/tensorflow/k8s/cmd/tf_operator
+go install github.com/kubeflow/tf-operator/cmd/tf-operator
 ```
 
 ## Building all the artifacts.
@@ -146,14 +140,14 @@ Now we are ready to run operator locally:
 
 ```sh
 kubectl create -f examples/crd/crd.yaml
-tf_operator --logtostderr
+tf-operator --logtostderr
 ```
 
 The first command creates a CRD `tfjobs`. And the second command runs the operator locally. To verify local
 operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-kubectl create -f https://raw.githubusercontent.com/tensorflow/k8s/master/examples/tf_job.yaml
+kubectl create -f https://raw.githubusercontent.com/kubeflow/tf-operator/master/examples/tf_job.yaml
 ```
 
 ## Go version
@@ -164,11 +158,12 @@ On ubuntu the default go package appears to be gccgo-go which has problems see [
 
 ### Python
 
-* Use two spaces for indents in keeping with Python style
+* Use [yapf](https://github.com/google/yapf) to format Python code
+* `yapf` style is configured in `.style.yapf` file
 * To autoformat code
 
   ```sh
-  autopep8 -i --indent-size=2 path/to/module.py
+  yapf -i py/**/*.py
   ```
 
 * To sort imports

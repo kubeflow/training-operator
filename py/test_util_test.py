@@ -8,7 +8,9 @@ import unittest
 
 from py import test_util
 
+
 class XMLTest(unittest.TestCase):
+
   def test_write_xml(self):
     with tempfile.NamedTemporaryFile(delete=False) as hf:
       pass
@@ -34,7 +36,7 @@ class XMLTest(unittest.TestCase):
                 """time="10"><failure>failed for some reason.</failure>"""
                 """</testcase></testsuite>""")
 
-    self.assertEquals(expected, output)
+    self.assertEqual(expected, output)
 
   def test_get_num_failures(self):
     failure = test_util.TestCase()
@@ -47,7 +49,7 @@ class XMLTest(unittest.TestCase):
     s = StringIO.StringIO()
     e.write(s)
     xml_value = s.getvalue()
-    self.assertEquals(1, test_util.get_num_failures(xml_value))
+    self.assertEqual(1, test_util.get_num_failures(xml_value))
 
   def test_get_num_failures_success(self):
     success = test_util.TestCase()
@@ -59,9 +61,11 @@ class XMLTest(unittest.TestCase):
     s = StringIO.StringIO()
     e.write(s)
     xml_value = s.getvalue()
-    self.assertEquals(0, test_util.get_num_failures(xml_value))
+    self.assertEqual(0, test_util.get_num_failures(xml_value))
+
 
 class TestSuiteTest(unittest.TestCase):
+
   def testSuite(self):
     """Test TestSuite."""
     s = test_util.TestSuite("test_class")
@@ -72,10 +76,10 @@ class TestSuiteTest(unittest.TestCase):
     c2.time = 200
 
     c1_get = s.get("c1")
-    self.assertEquals(100, c1_get.time)
+    self.assertEqual(100, c1_get.time)
 
     c2_get = s.get("c2")
-    self.assertEquals(200, c2_get.time)
+    self.assertEqual(200, c2_get.time)
 
     names = set()
 
@@ -84,26 +88,33 @@ class TestSuiteTest(unittest.TestCase):
 
     self.assertItemsEqual(["c1", "c2"], names)
 
+
 class TestWrapTest(unittest.TestCase):
+
   def testOk(self):
+
     def ok():
       time.sleep(1)
 
     t = test_util.TestCase()
     test_util.wrap_test(ok, t)
     self.assertGreater(t.time, 0)
-    self.assertEquals(None, t.failure)
+    self.assertEqual(None, t.failure)
 
   def testSubprocessError(self):
+
     def run():
-      raise subprocess.CalledProcessError(10, "some command", output="some output")
+      raise subprocess.CalledProcessError(
+        10, "some command", output="some output")
 
     t = test_util.TestCase()
-    self.assertRaises(subprocess.CalledProcessError, test_util.wrap_test, run, t)
+    self.assertRaises(subprocess.CalledProcessError, test_util.wrap_test, run,
+                      t)
     self.assertGreater(t.time, 0)
-    self.assertEquals("Subprocess failed;\nsome output", t.failure)
+    self.assertEqual("Subprocess failed;\nsome output", t.failure)
 
   def testGeneralError(self):
+
     def run():
       time.sleep(1)
       raise ValueError("some error")
@@ -111,7 +122,8 @@ class TestWrapTest(unittest.TestCase):
     t = test_util.TestCase()
     self.assertRaises(ValueError, test_util.wrap_test, run, t)
     self.assertGreater(t.time, 0)
-    self.assertEquals("Test failed; some error", t.failure)
+    self.assertEqual("Test failed; some error", t.failure)
+
 
 if __name__ == "__main__":
   unittest.main()

@@ -1,4 +1,4 @@
-// handler is a package handling API requests for managing TFJobs.
+//Package handler is a package handling API requests for managing TFJobs.
 // The primary purpose of handler is implementing the functionality needed by the TFJobs dashboard.
 package handler
 
@@ -9,8 +9,8 @@ import (
 	log "github.com/golang/glog"
 
 	"github.com/emicklei/go-restful"
-	"github.com/tensorflow/k8s/dashboard/backend/client"
-	"github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/dashboard/backend/client"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,21 +24,20 @@ type APIHandler struct {
 }
 
 // TFJobDetail describe the specification of a TFJob
-// as well as related TensorBoard service if any and related pods
+// if any and related pods
 type TFJobDetail struct {
-	TFJob     *v1alpha1.TFJob `json:"tfJob"`
-	TbService *v1.Service     `json:"tbService"`
-	Pods      []v1.Pod        `json:"pods"`
+	TFJob *v1alpha1.TFJob `json:"tfJob"`
+	Pods  []v1.Pod        `json:"pods"`
 }
 
 // TFJobList is a list of TFJobs
 type TFJobList struct {
-	tfJobs []v1alpha1.TFJob `json:"TFJobs"`
+	TFJobs []v1alpha1.TFJob `json:"TFJobs"`
 }
 
-// NamepsaceList is a list of namespaces
+// NamespaceList is a list of namespaces
 type NamespaceList struct {
-	namespaces []v1.Namespace `json:"namespaces"`
+	Namespaces []v1.Namespace `json:"Namespaces"`
 }
 
 // CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
@@ -98,8 +97,8 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws.Route(
 		apiV1Ws.GET("/namespace").
-		To(apiHandler.handleGetNamespaces).
-		Writes(NamespaceList{}))
+			To(apiHandler.handleGetNamespaces).
+			Writes(NamespaceList{}))
 
 	wsContainer.Add(apiV1Ws)
 	return wsContainer, nil
@@ -140,26 +139,6 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 		TFJob: job,
 	}
 
-	if job.Spec.TensorBoard != nil {
-		tbSpec, err := apiHandler.cManager.ClientSet.CoreV1().Services(namespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("kubeflow.org=,app=tensorboard,runtime_id=%s", job.Spec.RuntimeId),
-		})
-		if err != nil {
-			log.Warningf("failed to list TensorBoard for TFJob %v under namespace %v, error: %v", job.Name, job.Namespace, err)
-			// TODO maybe partial result?
-			response.WriteError(http.StatusNotFound, err)
-			return
-		} else if len(tbSpec.Items) > 0 {
-			// Should never be more than 1 service that matched, handle error
-			// Handle case where no TensorBoard is found
-			tfJobDetail.TbService = &tbSpec.Items[0]
-			log.Warningf("more than one TensorBoards found for TFJob %v under namespace %v, this should be impossible",
-				job.Name, job.Namespace)
-		} else {
-			log.Warningf("Couldn't find a TensorBoard service for TFJob %v under namespace %v", job.Name, job.Namespace)
-		}
-	}
-
 	// Get associated pods
 	pods, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("kubeflow.org=,runtime_id=%s", job.Spec.RuntimeId),
@@ -192,8 +171,8 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 			response.WriteError(http.StatusInternalServerError, nsErr)
 		}
 	} else if err != nil {
-			log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
-			response.WriteError(http.StatusInternalServerError, err)
+		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+		response.WriteError(http.StatusInternalServerError, err)
 	}
 
 	j, err := clt.KubeflowV1alpha1().TFJobs(tfJob.Namespace).Create(tfJob)

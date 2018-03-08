@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfJobFake "github.com/tensorflow/k8s/pkg/client/clientset/versioned/fake"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfJobFake "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/fake"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -282,19 +282,12 @@ func TestJobSetup(t *testing.T) {
 							TFReplicaType: tfv1alpha1.WORKER,
 						},
 					},
-					TensorBoard: &tfv1alpha1.TensorBoardSpec{},
-					TerminationPolicy: &tfv1alpha1.TerminationPolicySpec{
-						Chief: &tfv1alpha1.ChiefSpec{
-							ReplicaName:  string(tfv1alpha1.WORKER),
-							ReplicaIndex: 0,
-						},
-					},
 				},
 			},
 			expectMounts: 0,
 			expectPhase:  tfv1alpha1.TFJobPhaseFailed,
 			expectState:  tfv1alpha1.StateFailed,
-			expectReason: "invalid job spec: tbReplicaSpec.LogDir must be specified",
+			expectReason: "invalid job spec: Missing ReplicaSpec for chief: MASTER",
 		},
 	}
 

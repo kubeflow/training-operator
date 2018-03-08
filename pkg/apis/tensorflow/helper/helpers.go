@@ -17,8 +17,8 @@ package helper
 import (
 	"fmt"
 
-	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/util"
+	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/util"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,7 +53,7 @@ func ConfigureAcceleratorsForTFJobSpec(c *tfv1.TFJobSpec, accelerators map[strin
 			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
 		}
 		for i, c := range r.Template.Spec.Containers {
-			if c.Name == string(tfv1.TENSORFLOW) {
+			if c.Name == tfv1.DefaultTFContainer {
 				// Identify the accelerators attached to this container.
 				a := map[string]tfv1.AcceleratorConfig{}
 

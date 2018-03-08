@@ -1,5 +1,5 @@
-hash: db991ad2b10f156326ad7f4db14962f14f173bde26506dd97012e2d2b3223b9c
-updated: 2017-12-29T09:38:25.794405174+08:00
+hash: 1fd95471a5ebca601a6f3fd2abc4f70f9939ad8a4671e6bf36b26d3614395b40
+updated: 2018-02-28T19:16:22.161316-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -32,7 +32,7 @@ imports:
   - proto
   - sortkeys
 - name: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -40,6 +40,7 @@ imports:
 - name: github.com/golang/protobuf
   version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
+  - jsonpb
   - proto
   - ptypes
   - ptypes/any
@@ -77,14 +78,18 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/onrik/logrus
+  version: 6a64e23a4923a8d0d4db2806dcf3e55af1e48f61
+  subpackages:
+  - filename
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
-- name: github.com/rs/cors
-  version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
+- name: github.com/sirupsen/logrus
+  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: golang.org/x/crypto
@@ -96,13 +101,10 @@ imports:
   subpackages:
   - context
   - context/ctxhttp
-  - html
-  - html/atom
   - http2
   - http2/hpack
   - idna
   - lex/httplex
-  - websocket
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
@@ -306,6 +308,7 @@ imports:
   - util/homedir
   - util/integer
   - util/jsonpath
+  - util/workqueue
 - name: k8s.io/code-generator
   version: 25fd8c8ddbf75b223882df4479f8b8e615da05ae
 - name: k8s.io/kube-openapi

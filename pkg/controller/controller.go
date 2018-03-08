@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,12 +35,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	tfv1alpha1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/tensorflow/k8s/pkg/client/clientset/versioned"
-	kubeflowscheme "github.com/tensorflow/k8s/pkg/client/clientset/versioned/scheme"
-	informers "github.com/tensorflow/k8s/pkg/client/informers/externalversions"
-	listers "github.com/tensorflow/k8s/pkg/client/listers/kubeflow/v1alpha1"
-	"github.com/tensorflow/k8s/pkg/trainer"
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	kubeflowscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	listers "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha1"
+	"github.com/kubeflow/tf-operator/pkg/trainer"
 )
 
 const (
@@ -50,6 +50,8 @@ const (
 var (
 	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
 
+	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+	// key function but it should be just fine for non delete events.
 	keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 	// DefaultJobBackOff is the max backoff period, exported for the e2e test
@@ -88,9 +90,9 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
 
 	kubeflowscheme.AddToScheme(scheme.Scheme)
-	glog.V(4).Info("Creating event broadcaster")
+	log.Debug("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.Infof)
+	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
@@ -105,14 +107,14 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 		config: config,
 	}
 
-	glog.Info("Setting up event handlers")
+	log.Info("Setting up event handlers")
 	// Set up an event handler for when Foo resources change
 	tfJobInformer.Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				switch t := obj.(type) {
 				case *tfv1alpha1.TFJob:
-					glog.V(4).Infof("filter tfjob name: %v", t.Name)
+					log.Debugf("filter tfjob name: %v", t.Name)
 					return true
 				default:
 					return false
@@ -123,7 +125,7 @@ func New(kubeClient kubernetes.Interface, APIExtclient apiextensionsclient.Inter
 				UpdateFunc: func(oldObj, newObj interface{}) {
 					controller.enqueueController(newObj)
 				},
-				DeleteFunc: controller.handleDelete,
+				DeleteFunc: controller.enqueueController,
 			},
 		})
 
@@ -143,23 +145,23 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer c.WorkQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	glog.Info("Starting TFJob controller")
+	log.Info("Starting TFJob controller")
 
 	// Wait for the caches to be synced before starting workers
-	glog.Info("Waiting for informer caches to sync")
+	log.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.TFJobSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	glog.Infof("Starting %v workers", threadiness)
+	log.Infof("Starting %v workers", threadiness)
 	// Launch workers to process TFJob resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	glog.Info("Started workers")
+	log.Info("Started workers")
 	<-stopCh
-	glog.Info("Shutting down workers")
+	log.Info("Shutting down workers")
 
 	return nil
 }
@@ -203,7 +205,7 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
-		glog.V(4).Infof("Finished syncing job %q (%v)", key, time.Since(startTime))
+		log.Debugf("Finished syncing job %q (%v)", key, time.Since(startTime))
 	}()
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -218,7 +220,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			glog.V(4).Infof("Job has been deleted: %v", key)
+			log.Debugf("Job has been deleted: %v", key)
 			return true, nil
 		}
 		return false, err
@@ -226,16 +228,16 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
 	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
-	if cJob, ok := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]; !ok || cJob.UID() != tfJob.UID {
+	if cJob, ok := c.jobs[key]; !ok || cJob.UID() != tfJob.UID {
 		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
 			return false, err
 		}
-		c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name] = nc
+		c.jobs[key] = nc
 	}
 
-	nc := c.jobs[tfJob.ObjectMeta.Namespace+"-"+tfJob.ObjectMeta.Name]
+	nc := c.jobs[key]
 
 	if err := nc.Reconcile(&c.config); err != nil {
 		return false, err
@@ -266,14 +268,4 @@ func (c *Controller) enqueueController(obj interface{}) {
 	}
 
 	c.WorkQueue.AddRateLimited(key)
-}
-
-func (c *Controller) handleDelete(obj interface{}) {
-	tfjob := obj.(*tfv1alpha1.TFJob)
-	if _, ok := c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name]; !ok {
-		glog.V(4).Infof("unsafe state. TFJob was never created but we received delete event")
-		return
-	}
-
-	c.jobs[tfjob.ObjectMeta.Namespace+"-"+tfjob.ObjectMeta.Name].Delete()
 }

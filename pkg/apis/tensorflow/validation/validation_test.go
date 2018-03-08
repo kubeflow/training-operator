@@ -17,7 +17,7 @@ package validation
 import (
 	"testing"
 
-	tfv1 "github.com/tensorflow/k8s/pkg/apis/tensorflow/v1alpha1"
+	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/api/core/v1"
