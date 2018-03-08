@@ -42,9 +42,18 @@ def run(command, cwd=None, env=None, dryrun=False):
   """
   logging.info("Running: %s \ncwd=%s", " ".join(command), cwd)
 
+  # In case the release is done from a non-linux machine
+  # we enforce correct GOOS and GOARCH
+  extra_envs = {
+    "GOOS": "linux",
+    "GOARCH": "amd64"
+    }
+
   if not env:
-    env = os.environ
+    env = os.environ.copy()
+    env.update(extra_envs)
   else:
+    env.update(extra_envs)
     keys = sorted(env.keys())
 
     lines = []
