@@ -15,7 +15,7 @@ import logging
 import os
 import shutil
 import tempfile
-
+import platform
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
@@ -165,13 +165,19 @@ def build_operator_image(root_dir,
   # Building dashboard's front-end
   util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "build"])
 
+  # If the release is not done from a Linux machine
+  # we need to grab the artefacts from /bin/linux_amd64
+  bin_path = "bin"
+  if platform.system() != "Linux":
+    bin_path += "/linux_amd64"
+
   # List of paths to copy relative to root.
   sources = [
     "build/images/tf_operator/Dockerfile",
     "examples/tf_sample/tf_sample/tf_smoke.py",
-    os.path.join(go_path, "bin/tf-operator"),
-    os.path.join(go_path, "bin/e2e"),
-    os.path.join(go_path, "bin/backend"), "dashboard/frontend/build"
+    os.path.join(go_path, bin_path, "tf-operator"),
+    os.path.join(go_path, bin_path,"e2e"),
+    os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build"
   ]
 
   for s in sources:
@@ -434,7 +440,7 @@ def build_local(args):
 
   src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-  go_src_dir = os.path.join(go_dir, "src", REPO_ORG, REPO_NAME)
+  go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
   if not os.path.exists(go_src_dir):
     logging.info("Directory %s  doesn't exist.")
