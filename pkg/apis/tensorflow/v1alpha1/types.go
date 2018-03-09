@@ -172,6 +172,9 @@ type ControllerConfig struct {
 
 	// Path to the file containing the grpc server source
 	GrpcServerFilePath string
+
+	// A flag for enabling gang scheduling by kube-arbitrator
+	EnableGangScheduling bool
 }
 
 // AcceleratorVolume represents a host path that must be mounted into
