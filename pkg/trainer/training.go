@@ -313,6 +313,14 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		return err
 	}
 
+	// sync PDB
+	for _, rc := range j.Replicas {
+		err := rc.SyncPdb()
+		if err != nil {
+			log.Errorf("SyncPdb error: %v", err)
+		}
+	}
+
 	// sync pods
 	for _, rc := range j.Replicas {
 		err := rc.SyncPods()

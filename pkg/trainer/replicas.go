@@ -22,9 +22,11 @@ import (
 
 	log "github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -498,4 +500,31 @@ func (s *TFReplicaSet) genPodName(index int32) string {
 
 func (s *TFReplicaSet) defaultPSConfigMapName() string {
 	return fmt.Sprintf("cm-ps-%v", s.Job.job.Spec.RuntimeId)
+}
+
+// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+func (s *TFReplicaSet) SyncPdb() error {
+	minAvailable := intstr.FromInt(int(*s.Spec.Replicas))
+	pdb := &v1beta1.PodDisruptionBudget{
+		Spec: v1beta1.PodDisruptionBudgetSpec{
+			MinAvailable: &minAvailable,
+			Selector: &meta_v1.LabelSelector{
+				MatchLabels: s.Labels(),
+			},
+		},
+	}
+
+	createdPdb, err := s.ClientSet.PolicyV1beta1().PodDisruptionBudgets(s.Job.job.ObjectMeta.Namespace).Create(pdb)
+	if err != nil {
+		if k8s_errors.IsAlreadyExists(err) {
+			log.Infof("PDB: %v already exists.", s.Job.job.ObjectMeta.Name)
+			return nil
+		}
+
+		s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+		return err
+	}
+
+	s.recorder.Eventf(s.Job.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
+	return nil
 }
