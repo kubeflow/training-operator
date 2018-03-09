@@ -107,17 +107,6 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
-// createResources creates all the replicas if requested
-func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error {
-	for _, r := range j.Replicas {
-		if err := r.Create(config); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // deleteResources deletes the replicas it it was created
 func (j *TrainingJob) deleteResources() error {
 	for _, r := range j.Replicas {
@@ -248,7 +237,6 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 
 // setup Replicas. This creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
-
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
 		for _, t := range j.job.Spec.ReplicaSpecs {
@@ -325,43 +313,6 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		return err
 	}
 
-	// TODO(jlewi): Can we determine from the CRD status whether we should
-	// Create the resources or not? We need to ensure the resources exist so for
-	// now we always call Create.
-	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseCreating || j.job.Status.Phase == tfv1alpha1.TFJobPhaseRunning {
-		// We call Create to make sure all the resources exist and are running.
-		if cErr := j.createResources(config); cErr != nil {
-			// TODO(jlewi): Should we eventually give up and mark the job as failed if we can't create the resources?
-			j.status.Reason = fmt.Sprintf("Could not create job resources; %v", cErr)
-			if err := j.updateCRDStatus(); err != nil {
-				log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
-				return err
-			}
-			log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
-			return cErr
-		}
-
-		state, replicaStatuses, err := j.GetStatus()
-
-		j.status.ReplicaStatuses = replicaStatuses
-		if err != nil {
-			log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
-			return err
-		}
-		// TODO(jlewi): We should update the Phase if we detect the job is done.
-		if state == tfv1alpha1.StateFailed {
-			log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseDone
-			j.status.State = tfv1alpha1.StateFailed
-		} else if state == tfv1alpha1.StateSucceeded {
-			log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseDone
-			j.status.State = tfv1alpha1.StateSucceeded
-		} else {
-			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
-		}
-	}
-
 	// sync pods
 	for _, rc := range j.Replicas {
 		err := rc.SyncPods()
@@ -376,6 +327,37 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		if err != nil {
 			log.Errorf("SyncServices error: %v", err)
 		}
+	}
+
+	if err := j.updateCRDStatus(); err != nil {
+		log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
+		return err
+	}
+
+	// Call GetStatus in each reconcile loop
+	state, replicaStatuses, err := j.GetStatus()
+
+	j.status.ReplicaStatuses = replicaStatuses
+	if err != nil {
+		log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
+		return err
+	}
+
+	// TODO(jlewi): We should update the Phase if we detect the job is done.
+	if state == tfv1alpha1.StateFailed {
+		log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.State = tfv1alpha1.StateFailed
+	} else if state == tfv1alpha1.StateSucceeded {
+		log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.State = tfv1alpha1.StateSucceeded
+	} else if state == tfv1alpha1.StateRunning {
+		log.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseRunning
+		j.status.State = tfv1alpha1.StateRunning
+	} else {
+		log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 	}
 
 	// If the phase changed we should update the CRD.

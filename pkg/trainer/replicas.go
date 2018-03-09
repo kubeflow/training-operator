@@ -115,17 +115,6 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"tf_job_name": s.Job.job.ObjectMeta.Name})
 }
 
-func (s *TFReplicaSet) Create(config *tfv1alpha1.ControllerConfig) error {
-	// Create services
-	err := s.SyncServices()
-	if err != nil {
-		return err
-	}
-
-	// Create pods
-	return s.SyncPods()
-}
-
 // CreateServiceWithIndex will create a new service with specify index
 func (s *TFReplicaSet) CreateServiceWithIndex(index int32) (*v1.Service, error) {
 	taskLabels := s.Labels()
