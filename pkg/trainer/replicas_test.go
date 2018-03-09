@@ -87,8 +87,12 @@ func TestTFReplicaSet(t *testing.T) {
 		t.Fatalf("NewTFReplicaSet failed: %v", err)
 	}
 
-	if err := replica.Create(&tfv1alpha1.ControllerConfig{}); err != nil {
-		t.Fatalf("replica.Create() error; %v", err)
+	if err := replica.SyncPods(); err != nil {
+		t.Fatalf("replica.SyncPods() error; %v", err)
+	}
+
+	if err := replica.SyncServices(); err != nil {
+		t.Fatalf("replica.SyncServices() error; %v", err)
 	}
 
 	trueVal := true
