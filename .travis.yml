@@ -27,4 +27,4 @@ script:
   # directory.
   # With go 1.9 vendor will be automatically excluded.
   # For now though we just run all tests in pkg.
-  - $GOPATH/bin/goveralls -service=travis-ci -v -package ./pkg/...
+  - goveralls -service=travis-ci -v -package ./pkg/... -ignore "pkg/client/*/*,pkg/apis/tensorflow/*/zz_generated.*.go"
