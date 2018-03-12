@@ -23,7 +23,7 @@
 
   // default parameters.
   defaultParams:: {
-    project:: "mlkube-testing",
+    project:: "kubeflow-ci",
     zone:: "us-east1-d",
     // Default registry to use.
     registry:: "gcr.io/" + $.defaultParams.project,
