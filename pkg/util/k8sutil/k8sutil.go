@@ -19,7 +19,6 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -45,14 +44,6 @@ func MustNewKubeClient() kubernetes.Interface {
 		log.Fatal(err)
 	}
 	return kubernetes.NewForConfigOrDie(cfg)
-}
-
-func MustNewApiExtensionsClient() apiextensionsclient.Interface {
-	cfg, err := GetClusterConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return apiextensionsclient.NewForConfigOrDie(cfg)
 }
 
 // Obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
