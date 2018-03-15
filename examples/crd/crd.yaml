@@ -4,7 +4,7 @@ metadata:
   name: tfjobs.kubeflow.org
 spec:
   group: kubeflow.org
-  version: v1alpha1
+  version: v1alpha2
   names:
     kind: TFJob
     singular: tfjob
