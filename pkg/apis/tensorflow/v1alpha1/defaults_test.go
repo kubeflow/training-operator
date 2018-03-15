@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/kubeflow/tf-operator/pkg/util"
 	"k8s.io/api/core/v1"
 )
 
@@ -112,7 +111,7 @@ func TestSetDefaults_TFJob(t *testing.T) {
 	for _, c := range testCases {
 		SetDefaults_TFJob(c.in)
 		if !reflect.DeepEqual(c.in, c.expected) {
-			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
+			t.Errorf("Want\n%+v; Got\n %+v", c.expected, c.in)
 		}
 	}
 }
