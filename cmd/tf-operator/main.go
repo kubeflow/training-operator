@@ -37,7 +37,7 @@ func main() {
 
 	flag.Parse()
 
-	if s.JsonLogFormat {
+	if s.JSONLogFormat {
 		// Output logs in a json format so that it can be parsed by services like Stackdriver
 		log.SetFormatter(&log.JSONFormatter{})
 	}
