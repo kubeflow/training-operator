@@ -329,7 +329,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	tfjob, err := tc.tfJobLister.TFJobs(namespace).Get(name)
+	sharedtfjob, err := tc.tfJobLister.TFJobs(namespace).Get(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Infof("TFJob has been deleted: %v", key)
@@ -339,6 +339,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
+	tfjob := sharedtfjob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
 	var reconcileTFJobsErr error
@@ -434,8 +435,8 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 }
 
 func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
-	// TODO
-	return nil
+	_, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Update(tfjob)
+	return err
 }
 
 // resolveControllerRef returns the tfjob referenced by a ControllerRef,
