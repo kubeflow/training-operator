@@ -16,36 +16,39 @@ package app
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	kubeinformers "k8s.io/client-go/informers"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	restclientset "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
-	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/controller"
-	"github.com/kubeflow/tf-operator/pkg/util"
-	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/version"
 )
 
 var (
+	// leader election config
 	leaseDuration = 15 * time.Second
 	renewDuration = 5 * time.Second
 	retryPeriod   = 3 * time.Second
 )
+
+const RecommendedKubeConfigPathEnv = "KUBECONFIG"
 
 func Run(opt *options.ServerOption) error {
 
@@ -54,40 +57,51 @@ func Run(opt *options.ServerOption) error {
 		version.PrintVersionAndExit()
 	}
 
-	namespace := os.Getenv(util.EnvKubeflowNamespace)
+	namespace := os.Getenv(v1alpha2.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace")
 		namespace = metav1.NamespaceDefault
 	}
 
-	// To help debugging, immediately log version
+	// To help debugging, immediately log version.
 	log.Infof("%+v", version.Info())
 
-	config, err := k8sutil.GetClusterConfig()
+	// Set up signals so we handle the first shutdown signal gracefully.
+	stopCh := signals.SetupSignalHandler()
+
+	// Note: ENV KUBECONFIG will overwrite user defined Kubeconfig option.
+	if len(os.Getenv(RecommendedKubeConfigPathEnv)) > 0 {
+		// use the current context in kubeconfig
+		// This is very useful for running locally.
+		opt.Kubeconfig = os.Getenv(RecommendedKubeConfigPathEnv)
+	}
+
+	// Get kubernetes config.
+	kcfg, err := clientcmd.BuildConfigFromFlags(opt.MasterURL, opt.Kubeconfig)
+	if err != nil {
+		log.Fatalf("Error building kubeconfig: %s", err.Error())
+	}
+
+	// Create clients.
+	kubeClientSet, leaderElectionClientSet, tfJobClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
 
-	kubeClient, leaderElectionClient, tfJobClient, err := createClients(config)
-	if err != nil {
-		return err
-	}
+	// Create informer factory.
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, time.Second*30)
+	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, time.Second*30)
 
-	controllerConfig := readControllerConfig(opt.ControllerConfigFile)
+	// Create tf controller.
+	tc := controller.NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 
-	neverStop := make(chan struct{})
-	defer close(neverStop)
+	// Start informer goroutines.
+	go kubeInformerFactory.Start(stopCh)
+	go tfJobInformerFactory.Start(stopCh)
 
-	tfJobInformerFactory := informers.NewSharedInformerFactory(tfJobClient, time.Second*30)
-	controller, err := controller.New(kubeClient, tfJobClient, *controllerConfig, tfJobInformerFactory)
-	if err != nil {
-		return err
-	}
-
-	go tfJobInformerFactory.Start(neverStop)
-
-	run := func(stopCh <-chan struct{}) {
-		controller.Run(1, stopCh)
+	// Set leader election start function.
+	run := func(<-chan struct{}) {
+		tc.Run(opt.Threadiness, stopCh)
 	}
 
 	id, err := os.Hostname()
@@ -104,13 +118,14 @@ func Run(opt *options.ServerOption) error {
 			Namespace: namespace,
 			Name:      "tf-operator",
 		},
-		Client: leaderElectionClient.CoreV1(),
+		Client: leaderElectionClientSet.CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: recorder,
 		},
 	}
 
+	// Start leader election.
 	election.RunOrDie(election.LeaderElectionConfig{
 		Lock:          rl,
 		LeaseDuration: leaseDuration,
@@ -127,41 +142,21 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfig {
-	controllerConfig := &v1alpha1.ControllerConfig{}
-	if controllerConfigFile != "" {
-		log.Infof("Loading controller config from %v.", controllerConfigFile)
-		data, err := ioutil.ReadFile(controllerConfigFile)
-		if err != nil {
-			log.Fatalf("Could not read file: %v. Error: %v", controllerConfigFile, err)
-			return controllerConfig
-		}
-		err = yaml.Unmarshal(data, controllerConfig)
-		if err != nil {
-			log.Fatalf("Could not parse controller config; Error: %v\n", err)
-		}
-		log.Infof("ControllerConfig: %v", util.Pformat(controllerConfig))
-	} else {
-		log.Info("No controller_config_file provided; using empty config.")
-	}
-	return controllerConfig
-}
-
-func createClients(config *rest.Config) (clientset.Interface, clientset.Interface, tfjobclient.Interface, error) {
-	kubeClient, err := clientset.NewForConfig(rest.AddUserAgent(config, "tfjob_operator"))
+func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, error) {
+	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	leaderElectionClient, err := clientset.NewForConfig(rest.AddUserAgent(config, "leader-election"))
+	leaderElectionClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "leader-election"))
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	tfJobClient, err := tfjobclient.NewForConfig(config)
+	tfJobClientSet, err := tfjobclientset.NewForConfig(config)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	return kubeClient, leaderElectionClient, tfJobClient, nil
+	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, nil
 }
