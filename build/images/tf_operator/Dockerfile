@@ -1,6 +1,5 @@
 FROM centos:7
 
-# TODO(jlewi): How can we make it work with golang:1.8.2-alpine
 ENV GOLANG_VERSION 1.8.2
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
 ENV GOLANG_DOWNLOAD_SHA256 5477d6c9a4f96fa120847fafa88319d7b56b5d5068e41c3587eebe248b939be7
