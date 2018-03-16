@@ -1,5 +1,14 @@
+FROM centos:7
+
 # TODO(jlewi): How can we make it work with golang:1.8.2-alpine
-FROM golang:1.8.2
+ENV GOLANG_VERSION 1.8.2
+ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
+ENV GOLANG_DOWNLOAD_SHA256 5477d6c9a4f96fa120847fafa88319d7b56b5d5068e41c3587eebe248b939be7
+RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
+	&& echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
+	&& tar -C /usr/local -xzf golang.tar.gz \
+	&& rm golang.tar.gz
+ENV PATH /usr/local/go/bin:$PATH
 
 # TODO(jlewi): We should probably change the directory to /opt/kubeflow.
 RUN mkdir -p /opt/mlkube
