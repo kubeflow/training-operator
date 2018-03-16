@@ -237,6 +237,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     # We want to catch all exceptions because we want the test as failed.
     t.failure = ("Exception occured; type {0} message {1}".format(
       e.__class__, e.message))
+    raise
   finally:
     t.time = time.time() - start
     if args.junit_path:
