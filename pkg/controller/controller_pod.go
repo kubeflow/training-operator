@@ -76,7 +76,13 @@ func (tc *TFJobController) reconcilePods(
 			labels[tfReplicaTypeLabel] = rt
 			labels[tfReplicaIndexLabel] = index
 
-			pTemplate.Labels = labels
+			if pTemplate.Labels == nil {
+				pTemplate.Labels = make(map[string]string)
+			}
+
+			for key, value := range labels {
+				pTemplate.Labels[key] = value
+			}
 
 			// Generate TF_CONFIG JSON string.
 			tfConfigStr := genTFConfigJSONStr(tfjob, rt, index)
