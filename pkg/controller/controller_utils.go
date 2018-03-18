@@ -717,3 +717,55 @@ func (r RealServiceControl) createServices(namespace string, service *v1.Service
 
 	return nil
 }
+
+type FakeServiceControl struct {
+	sync.Mutex
+	Templates       []v1.Service
+	ControllerRefs  []metav1.OwnerReference
+	DeletePodName   []string
+	Patches         [][]byte
+	Err             error
+	CreateLimit     int
+	CreateCallCount int
+}
+
+var _ ServiceControlInterface = &FakeServiceControl{}
+
+func (f *FakeServiceControl) PatchService(namespace, name string, data []byte) error {
+	f.Lock()
+	defer f.Unlock()
+	f.Patches = append(f.Patches, data)
+	if f.Err != nil {
+		return f.Err
+	}
+	return nil
+}
+
+func (f *FakeServiceControl) CreateServices(namespace string, service *v1.Service, object runtime.Object) error {
+	f.Lock()
+	defer f.Unlock()
+	f.CreateCallCount++
+	if f.CreateLimit != 0 && f.CreateCallCount > f.CreateLimit {
+		return fmt.Errorf("Not creating service, limit %d already reached (create call %d)", f.CreateLimit, f.CreateCallCount)
+	}
+	f.Templates = append(f.Templates, *service)
+	if f.Err != nil {
+		return f.Err
+	}
+	return nil
+}
+
+func (f *FakeServiceControl) CreateServicesWithControllerRef(namespace string, service *v1.Service, object runtime.Object, controllerRef *metav1.OwnerReference) error {
+	f.Lock()
+	defer f.Unlock()
+	f.CreateCallCount++
+	if f.CreateLimit != 0 && f.CreateCallCount > f.CreateLimit {
+		return fmt.Errorf("Not creating service, limit %d already reached (create call %d)", f.CreateLimit, f.CreateCallCount)
+	}
+	f.Templates = append(f.Templates, *service)
+	f.ControllerRefs = append(f.ControllerRefs, *controllerRef)
+	if f.Err != nil {
+		return f.Err
+	}
+	return nil
+}
