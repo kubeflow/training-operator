@@ -22,7 +22,7 @@ var (
 	Version = "0.3.0+git"
 	GitSHA  = "Not provided."
 )
-// PrintVersionAndExit prints versions from the array returned by Info() and exit
+
 func PrintVersionAndExit(){
 	for _, i := range Info(){
 		fmt.Printf("%v\n", i)
@@ -30,7 +30,6 @@ func PrintVersionAndExit(){
 	os.Exit(0)
 }
 
-// Info returns an array of various service versions
 func Info() []string{
 	return []string{
 		fmt.Sprintf("Version: %v", Version),

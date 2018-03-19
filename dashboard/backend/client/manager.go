@@ -1,4 +1,4 @@
-// client is a package handling authentication/communication with kubernetes API
+// Client is a package handling authentication/communication with kubernetes API
 package client
 
 import (
