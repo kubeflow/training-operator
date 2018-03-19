@@ -144,6 +144,15 @@ func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, pendingP
 	}
 }
 
+func getCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
+	for _, v := range tfJob.Status.Conditions {
+		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
 func TestNormalPath(t *testing.T) {
 	testCases := map[string]struct {
 		worker int
@@ -162,17 +171,25 @@ func TestNormalPath(t *testing.T) {
 		// expectations
 		expectedCreations int32
 		expectedDeletions int32
-		expectedActive    int32
-		expectedSucceeded int32
-		expectedFailed    int32
+
+		expectedActiveWorkerPods    int32
+		expectedSucceededWorkerPods int32
+		expectedFailedWorkerPods    int32
+
+		expectedActivePSPods    int32
+		expectedSucceededPSPods int32
+		expectedFailedPSPods    int32
 		// TODO(gaocegege): Add condition check.
-		// expectedCondition       *tfv1alpha2.TFJobConditionType
-		// expectedConditionReason string
+		expectedCondition       *tfv1alpha2.TFJobConditionType
+		expectedConditionReason string
 	}{
 		"Local TFJob created": {
 			1, 0,
 			nil, true, 0, 0, 0, 0,
-			1, 0, 1, 0, 0,
+			1, 0,
+			1, 0, 0,
+			0, 0, 0,
+			nil, "",
 		},
 	}
 
@@ -196,6 +213,11 @@ func TestNormalPath(t *testing.T) {
 		controller.tfJobListerSynced = alwaysReady
 		controller.podListerSynced = alwaysReady
 		controller.serviceListerSynced = alwaysReady
+		var actual *tfv1alpha2.TFJob
+		controller.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
+			actual = tfJob
+			return nil
+		}
 
 		// Run the test logic.
 		tfJob := newTFJob(tc.worker, tc.ps)
@@ -217,8 +239,68 @@ func TestNormalPath(t *testing.T) {
 		if forget != tc.jobKeyForget {
 			t.Errorf("%s: unexpected forget value. Expected %v, saw %v\n", name, tc.jobKeyForget, forget)
 		}
-		if int32(len(controller.podControl.(*FakePodControl).Templates)) != tc.expectedCreations {
-			t.Errorf("%s: unexpected number of creates.  Expected %d, saw %d\n", name, tc.expectedCreations, len(controller.podControl.(*FakePodControl).Templates))
+
+		fakePodControl := controller.podControl.(*FakePodControl)
+		if int32(len(fakePodControl.Templates)) != tc.expectedCreations {
+			t.Errorf("%s: unexpected number of creates.  Expected %d, saw %d\n", name, tc.expectedCreations, len(fakePodControl.Templates))
+		}
+		if int32(len(fakePodControl.DeletePodName)) != tc.expectedDeletions {
+			t.Errorf("%s: unexpected number of deletes.  Expected %d, saw %d\n", name, tc.expectedDeletions, len(fakePodControl.DeletePodName))
+		}
+		// Each create should have an accompanying ControllerRef.
+		if len(fakePodControl.ControllerRefs) != int(tc.expectedCreations) {
+			t.Errorf("%s: unexpected number of ControllerRefs.  Expected %d, saw %d\n", name, tc.expectedCreations, len(fakePodControl.ControllerRefs))
+		}
+		// Make sure the ControllerRefs are correct.
+		for _, controllerRef := range fakePodControl.ControllerRefs {
+			if got, want := controllerRef.APIVersion, tfv1alpha2.SchemeGroupVersion.String(); got != want {
+				t.Errorf("controllerRef.APIVersion = %q, want %q", got, want)
+			}
+			if got, want := controllerRef.Kind, tfv1alpha2.TFJobResourceKind; got != want {
+				t.Errorf("controllerRef.Kind = %q, want %q", got, want)
+			}
+			if got, want := controllerRef.Name, tfJob.Name; got != want {
+				t.Errorf("controllerRef.Name = %q, want %q", got, want)
+			}
+			if got, want := controllerRef.UID, tfJob.UID; got != want {
+				t.Errorf("controllerRef.UID = %q, want %q", got, want)
+			}
+			if controllerRef.Controller == nil || *controllerRef.Controller != true {
+				t.Errorf("controllerRef.Controller is not set to true")
+			}
+		}
+		// Validate worker status.
+		if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker] != nil {
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Active != tc.expectedActiveWorkerPods {
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveWorkerPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Active)
+			}
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Succeeded != tc.expectedSucceededWorkerPods {
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededWorkerPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Succeeded)
+			}
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != tc.expectedFailedWorkerPods {
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedWorkerPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed)
+			}
+		}
+		// Validate PS status.
+		if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS] != nil {
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Active != tc.expectedActivePSPods {
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActivePSPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Active)
+			}
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Succeeded != tc.expectedSucceededPSPods {
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededPSPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Succeeded)
+			}
+			if actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Failed != tc.expectedFailedPSPods {
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedPSPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Failed)
+			}
+		}
+		// TODO(gaocegege): Set StartTime for the status.
+		// Validate StartTime.
+		// if actual.Status.StartTime == nil {
+		// 	t.Errorf("%s: .status.startTime was not set", name)
+		// }
+		// Validate conditions.
+		if tc.expectedCondition != nil && !getCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
+			t.Errorf("%s: expected completion condition.  Got %#v", name, actual.Status.Conditions)
 		}
 	}
 }
