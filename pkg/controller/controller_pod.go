@@ -50,6 +50,8 @@ func (tc *TFJobController) reconcilePods(
 	// Get active pods for this TFReplicaType.
 	activePods := filterActivePodsForTFReplicaType(pods, rt)
 
+	succeeded, failed := getPodStatus(pods)
+
 	diff := len(activePods) - int(*(spec.Replicas))
 
 	if diff < 0 {
@@ -57,7 +59,7 @@ func (tc *TFJobController) reconcilePods(
 		diffIndexes := getDiffPodIndexes(activePods, *spec.Replicas)
 		if diff+len(diffIndexes) != 0 {
 			// This should never happened.
-			return fmt.Errorf("diff is not equal to length of diffIndexes")
+			return fmt.Errorf("pods diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
 		}
 
 		expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
@@ -117,6 +119,23 @@ func (tc *TFJobController) reconcilePods(
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.
+	}
+
+	if tfjob.Status.TFReplicaStatuses == nil {
+		tfjob.Status.TFReplicaStatuses = make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaStatus)
+	}
+
+	if _, ok := tfjob.Status.TFReplicaStatuses[rtype]; !ok {
+		tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
+	}
+
+	tfjob.Status.TFReplicaStatuses[rtype].Active = int32(len(activePods))
+	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
+	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
+
+	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
+	if err := tc.updateTFJobStatus(tfjob); err != nil {
+		return err
 	}
 
 	return nil
@@ -276,4 +295,22 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (tc *TFJobController) deletePod(obj interface{}) {
 	// TODO(CPH): handle this gracefully.
+}
+
+// getPodStatus returns no of succeeded and failed pods running a job
+func getPodStatus(pods []*v1.Pod) (succeeded, failed int32) {
+	succeeded = int32(filterPods(pods, v1.PodSucceeded))
+	failed = int32(filterPods(pods, v1.PodFailed))
+	return
+}
+
+// filterPods returns pods based on their phase.
+func filterPods(pods []*v1.Pod, phase v1.PodPhase) int {
+	result := 0
+	for i := range pods {
+		if phase == pods[i].Status.Phase {
+			result++
+		}
+	}
+	return result
 }
