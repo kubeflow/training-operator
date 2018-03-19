@@ -57,7 +57,7 @@ func (tc *TFJobController) reconcileServices(
 		diffIndexes := getDiffServiceIndexes(activeServices, *spec.Replicas)
 		if diff+len(diffIndexes) != 0 {
 			// This should never happened.
-			return fmt.Errorf("diff is not equal to length of diffIndexes")
+			return fmt.Errorf("services diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
 		}
 
 		expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
@@ -75,10 +75,6 @@ func (tc *TFJobController) reconcileServices(
 			labels[tfReplicaIndexLabel] = index
 
 			service := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   genGeneralName(tfjobKey, rt, index),
-					Labels: labels,
-				},
 				Spec: v1.ServiceSpec{
 					Selector: labels,
 					Ports: []v1.ServicePort{
@@ -89,6 +85,9 @@ func (tc *TFJobController) reconcileServices(
 					},
 				},
 			}
+
+			service.Name = genGeneralName(tfjobKey, rt, index)
+			service.Labels = labels
 
 			err := tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
 			if err != nil && errors.IsTimeout(err) {
