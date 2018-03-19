@@ -115,10 +115,16 @@ func (s *TFReplicaSet) Labels() KubernetesLabels {
 		"tf_job_name": s.Job.job.ObjectMeta.Name})
 }
 
+// LabelsByIndex returns the labels for a pod in this replica set.
+func (s *TFReplicaSet) LabelsByIndex(index int32) KubernetesLabels {
+	labels := s.Labels()
+	labels["task_index"] = fmt.Sprintf("%v", index)
+	return labels
+}
+
 // CreateServiceWithIndex will create a new service with specify index
 func (s *TFReplicaSet) CreateServiceWithIndex(index int32) (*v1.Service, error) {
-	taskLabels := s.Labels()
-	taskLabels["task_index"] = fmt.Sprintf("%v", index)
+	taskLabels := s.LabelsByIndex(index)
 
 	// Create the service.
 	service := &v1.Service{
@@ -146,8 +152,7 @@ func (s *TFReplicaSet) CreateServiceWithIndex(index int32) (*v1.Service, error) 
 
 // CreatePodWithIndex will create a new pod with specify index
 func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
-	taskLabels := s.Labels()
-	taskLabels["task_index"] = fmt.Sprintf("%v", index)
+	taskLabels := s.LabelsByIndex(index)
 
 	pod := &v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -331,8 +336,7 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 		return tfv1alpha1.ReplicaStateSucceeded
 	}
 
-	labels := s.Labels()
-	labels["task_index"] = fmt.Sprintf("%v", index)
+	labels := s.LabelsByIndex(index)
 	selector, err := labels.ToSelector()
 	if err != nil {
 		log.Errorf("labels.ToSelector() error; %v", err)
@@ -403,8 +407,7 @@ func (s *TFReplicaSet) SyncPods() error {
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 
 		// Label to get all pods of this TFReplicaType + index
-		labels := s.Labels()
-		labels["task_index"] = fmt.Sprintf("%v", index)
+		labels := s.LabelsByIndex(index)
 
 		labelSelector, err := labels.ToSelector()
 		if err != nil {
