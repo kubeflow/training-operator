@@ -47,7 +47,6 @@ var (
 	retryPeriod   = 3 * time.Second
 )
 
-// Run starts the tf-operator service 
 func Run(opt *options.ServerOption) error {
 
 	// Check if the -version flag was passed and, if so, print the version and exit.

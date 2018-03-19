@@ -49,7 +49,7 @@ type TFReplicaSet struct {
 	Spec tfv1alpha1.TFReplicaSpec
 }
 
-// TFReplicaSetInterface is an interface for managing a set of replicas.
+// TFReplicas is an interface for managing a set of replicas.
 type TFReplicaSetInterface interface {
 	Create() error
 	Delete() error
@@ -68,7 +68,6 @@ type TFConfig struct {
 	Environment string `json:"environment"`
 }
 
-// NewTFReplicaSet returns TFReplicaSet object for existing replica
 func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecorder, tfReplicaSpec tfv1alpha1.TFReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
 	if tfReplicaSpec.TFReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
@@ -181,7 +180,7 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 	}
 
 	// Add TF_CONFIG environment variable.
-	for i := range pod.Spec.Containers {
+	for i, _ := range pod.Spec.Containers {
 		// We can't get c in the loop variable because that would be by value so our modifications
 		// wouldn't have any effect.
 		c := &pod.Spec.Containers[i]
@@ -321,7 +320,6 @@ func replicaStatusFromPodList(l v1.PodList, name string) tfv1alpha1.ReplicaState
 	return tfv1alpha1.ReplicaStateUnknown
 }
 
-// GetSingleReplicaStatus returns status for a single replica
 func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
 	p, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Get(s.genName(index), meta_v1.GetOptions{})
 
@@ -356,7 +354,7 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 	return status
 }
 
-// GetStatus returns the status of the replica set.
+// Status returns the status of the replica set.
 func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TFReplicaStatus, error) {
 	status := tfv1alpha1.TFReplicaStatus{
 		TFReplicaType:  s.Spec.TFReplicaType,

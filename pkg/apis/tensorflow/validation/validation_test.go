@@ -105,7 +105,7 @@ func TestValidate(t *testing.T) {
 		job := &tfv1.TFJob{
 			Spec: *c.in,
 		}
-		tfv1.SetObjectDefaultsTFJob(job)
+		tfv1.SetObjectDefaults_TFJob(job)
 		if err := ValidateTFJobSpec(&job.Spec); (err != nil) != c.expectingError {
 			t.Errorf("unexpected validation result: %v", err)
 		}

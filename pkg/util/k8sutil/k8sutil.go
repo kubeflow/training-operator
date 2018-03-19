@@ -30,16 +30,14 @@ import (
 	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 )
 
-// RecommendedConfigPathEnvVar is a environment variable for path configuration
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
 
 // TODO(jlewi): I think this function is used to add an owner to a resource. I think we we should use this
-// addOwnerRefToObject method to ensure all resources created for the TFJob are owned by the TFJob.
+// method to ensure all resources created for the TFJob are owned by the TFJob.
 func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	o.SetOwnerReferences(append(o.GetOwnerReferences(), r))
 }
 
-// MustNewKubeClient returns new kubernetes client for cluster configuration
 func MustNewKubeClient() kubernetes.Interface {
 	cfg, err := GetClusterConfig()
 	if err != nil {
@@ -48,7 +46,7 @@ func MustNewKubeClient() kubernetes.Interface {
 	return kubernetes.NewForConfigOrDie(cfg)
 }
 
-// GetClusterConfig obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
+// Obtain the config from the Kube configuration used by kubeconfig, or from k8s cluster.
 func GetClusterConfig() (*rest.Config, error) {
 	if len(os.Getenv(RecommendedConfigPathEnvVar)) > 0 {
 		// use the current context in kubeconfig
@@ -75,17 +73,14 @@ func GetClusterConfig() (*rest.Config, error) {
 	return rest.InClusterConfig()
 }
 
-// IsKubernetesResourceAlreadyExistError throws error when kubernetes resources already exist.
 func IsKubernetesResourceAlreadyExistError(err error) bool {
 	return apierrors.IsAlreadyExists(err)
 }
 
-// // IsKubernetesResourceNotFoundError throws error when there is no kubernetes resource found.
 func IsKubernetesResourceNotFoundError(err error) bool {
 	return apierrors.IsNotFound(err)
 }
 
-// JobListOpt returns a list of options after assigning the label selector for a given cluster name
 // We are using internal api types for cluster related.
 func JobListOpt(clusterName string) metav1.ListOptions {
 	return metav1.ListOptions{
@@ -93,7 +88,6 @@ func JobListOpt(clusterName string) metav1.ListOptions {
 	}
 }
 
-// LabelsForJob returns map which stores the tf_job name and app label.
 func LabelsForJob(jobName string) map[string]string {
 	return map[string]string{
 		// TODO(jlewi): Need to set appropriate labels for TF.
@@ -102,8 +96,7 @@ func LabelsForJob(jobName string) map[string]string {
 	}
 }
 
-//CascadeDeleteOptions deletes the workload after the grace period
-// TODO(jlewi): CascadeDeleteOptions are part of garbage collection policy.
+// TODO(jlewi): CascadeDeletOptions are part of garbage collection policy.
 // Do we want to use this? See
 // https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/
 func CascadeDeleteOptions(gracePeriodSeconds int64) *metav1.DeleteOptions {

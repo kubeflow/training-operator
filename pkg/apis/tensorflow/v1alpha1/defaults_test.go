@@ -110,7 +110,7 @@ func TestSetDefaults_TFJob(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		SetDefaultsTFJob(c.in)
+		SetDefaults_TFJob(c.in)
 		if !reflect.DeepEqual(c.in, c.expected) {
 			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
 		}
