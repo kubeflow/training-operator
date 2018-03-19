@@ -61,7 +61,10 @@ func (tc *TFJobController) reconcileServices(
 		}
 
 		expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
-		tc.expectations.ExpectCreations(expectationServicesKey, int(diff))
+		err := tc.expectations.ExpectCreations(expectationServicesKey, diff)
+		if err != nil {
+			return err
+		}
 
 		for _, index := range diffIndexes {
 			log.Infof("need to create new service: %s-%s", rt, index)
@@ -104,6 +107,7 @@ func (tc *TFJobController) reconcileServices(
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.
+		log.Infof("need to delete service but it is not implemented yet")
 	}
 
 	return nil

@@ -139,7 +139,7 @@ type TFJobStatus struct {
 // TFReplicaStatus represents the current observed state of the TFReplica.
 type TFReplicaStatus struct {
 	// The number of actively running pods.
-	Active int32 `json:"active,omitempty""`
+	Active int32 `json:"active,omitempty"`
 
 	// The number of pods which reached phase Succeeded.
 	Succeeded int32 `json:"succeeded,omitempty"`

@@ -63,7 +63,10 @@ func (tc *TFJobController) reconcilePods(
 		}
 
 		expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
-		tc.expectations.ExpectCreations(expectationPodsKey, int(diff))
+		err := tc.expectations.ExpectCreations(expectationPodsKey, diff)
+		if err != nil {
+			return err
+		}
 
 		for _, index := range diffIndexes {
 			log.Infof("need to create new pod: %s-%s", rt, index)
@@ -119,6 +122,7 @@ func (tc *TFJobController) reconcilePods(
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.
+		log.Infof("need to delete pod but it is not implemented yet")
 	}
 
 	if tfjob.Status.TFReplicaStatuses == nil {
