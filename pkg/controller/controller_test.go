@@ -103,9 +103,11 @@ func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
 }
 
 func newPod(name string, tfJob *tfv1alpha2.TFJob) *v1.Pod {
-	tfjobKey, err := KeyFunc(tfJob)
-	if err != nil {
-		fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfJob, err)
+	var tfjobKey string
+	if len(tfJob.Namespace) > 0 {
+		tfjobKey = fmt.Sprintf("%s/%s", tfJob.Namespace, tfJob.Name)
+	} else {
+		tfjobKey = tfJob.Name
 	}
 
 	return &v1.Pod{
