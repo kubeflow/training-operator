@@ -51,6 +51,20 @@ type TFJobSpec struct {
 	//     "Worker": TFReplicaSpec,
 	//   }
 	TFReplicaSpecs map[TFReplicaType]*TFReplicaSpec `json:"tfReplicaSpecs"`
+}
+
+// TFReplicaSpec is a description of the TFReplica
+type TFReplicaSpec struct {
+	// Replicas is the desired number of replicas of the given template.
+	// If unspecified, defaults to 1.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Template is the object that describes the pod that
+	// will be created for this TFReplica.
+	// We use RestartPolicy in PodTemplateSpec
+	// to describe how the containers within the pod should be restarted.
+	// Please set this restart policy carefully according to your code.
+	Template v1.PodTemplateSpec `json:"template,omitempty"`
 
 	// Restart policy for all TFReplicas within the TFJob.
 	// One of Always, OnFailure, Never and ExitCode.
@@ -76,20 +90,6 @@ const (
 	// - 128-255: retryable error, will restart the pod.
 	RestartPolicyExitCode RestartPolicy = "ExitCode"
 )
-
-// TFReplicaSpec is a description of the TFReplica
-type TFReplicaSpec struct {
-	// Replicas is the desired number of replicas of the given template.
-	// If unspecified, defaults to 1.
-	Replicas *int32 `json:"replicas,omitempty"`
-
-	// Template is the object that describes the pod that
-	// will be created for this TFReplica.
-	// We use RestartPolicy in PodTemplateSpec
-	// to describe how the containers within the pod should be restarted.
-	// Please set this restart policy carefully according to your code.
-	Template v1.PodTemplateSpec `json:"template,omitempty"`
-}
 
 // TFReplicaType is the type for TFReplica.
 type TFReplicaType string
