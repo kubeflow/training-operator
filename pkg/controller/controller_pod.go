@@ -129,11 +129,11 @@ func (tc *TFJobController) reconcilePods(
 		tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
 	}
 
+	// Update the active status since we have created -diff pods during the loop.
 	tfjob.Status.TFReplicaStatuses[rtype].Active -= int32(diff)
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 
-	log.Info(tfjob.Status.TFReplicaStatuses[rtype])
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	if err := tc.updateStatusHandler(tfjob); err != nil {
 		return err
