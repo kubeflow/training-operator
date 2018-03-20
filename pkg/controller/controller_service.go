@@ -107,7 +107,7 @@ func (tc *TFJobController) reconcileServices(
 			}
 		}
 	} else if diff > 0 {
-		// TODO(CPH): Need to delete pods.
+		// TODO(CPH): Need to delete service.
 		log.Infof("need to delete service but it is not implemented yet")
 	}
 
