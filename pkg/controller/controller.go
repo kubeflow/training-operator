@@ -83,11 +83,14 @@ type Controller struct {
 	recorder record.EventRecorder
 
 	syncHandler func(jobKey string) (bool, error)
+
+	enableGangScheduling bool
 }
 
 // New method sets up service client handles and returns controller object
 func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
-	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory) (*Controller, error) {
+	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory,
+	enableGangScheduling bool) (*Controller, error) {
 	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha1().TFJobs()
 
 	kubeflowscheme.AddToScheme(scheme.Scheme)
@@ -103,8 +106,9 @@ func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
 		WorkQueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "TFjobs"),
 		recorder:    recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
-		jobs:   make(map[string]*trainer.TrainingJob),
-		config: config,
+		jobs:                 make(map[string]*trainer.TrainingJob),
+		config:               config,
+		enableGangScheduling: enableGangScheduling,
 	}
 
 	log.Info("Setting up event handlers")
@@ -239,7 +243,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	nc := c.jobs[key]
 
-	if err := nc.Reconcile(&c.config); err != nil {
+	if err := nc.Reconcile(&c.config, c.enableGangScheduling); err != nil {
 		return false, err
 	}
 
