@@ -22,7 +22,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -53,6 +57,8 @@ type TrainingJob struct {
 	status tfv1alpha1.TFJobStatus
 
 	memberCounter int
+
+	pdb *v1beta1.PodDisruptionBudget
 }
 
 // ClusterSpec represents a cluster TensorFlow specification.
@@ -268,6 +274,14 @@ func (j *TrainingJob) Delete() {
 	if cErr := j.deleteResources(); cErr != nil {
 		log.Errorf("trainingJob.deleteResources() error; %v", cErr)
 	}
+
+	if j.pdb != nil {
+		// if the job has PDB for gang scheduling, delete it
+		err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Delete(j.pdb.ObjectMeta.Name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			log.Errorf("Error deleting PDB %v; %v", j.pdb.ObjectMeta.Name, err)
+		}
+	}
 }
 
 // updateCRDStatus updates the job status based on TraingingJob.status.
@@ -290,7 +304,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 }
 
 // reconcile tries to get the job into the desired state.
-func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
+func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangScheduling bool) error {
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
@@ -311,6 +325,15 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 			log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
 		}
 		return err
+	}
+
+	// sync PDB for gang scheduling
+	// TODO(mitake): replace PDB with a newer mechanism if it is replaced
+	if enableGangScheduling {
+		err := j.syncPdb()
+		if err != nil {
+			log.Errorf("SyncPdb error: %v", err)
+		}
 	}
 
 	// sync pods
@@ -397,4 +420,49 @@ func (j *TrainingJob) fullname() string {
 
 func (j *TrainingJob) SchedulerName() string {
 	return j.job.Spec.SchedulerName
+}
+
+// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+func (j *TrainingJob) syncPdb() error {
+	nrReplicas := int32(0)
+	for _, r := range j.Replicas {
+		nrReplicas += *r.Spec.Replicas
+	}
+
+	if nrReplicas == 1 {
+		// gang scheduling isn't required by a non distributed training process
+		return nil
+	}
+
+	minAvailable := intstr.FromInt(int(nrReplicas))
+	pdb := &v1beta1.PodDisruptionBudget{
+		ObjectMeta: meta_v1.ObjectMeta{
+			GenerateName: "tf-job-pdb-",
+		},
+		Spec: v1beta1.PodDisruptionBudgetSpec{
+			MinAvailable: &minAvailable,
+			Selector: &meta_v1.LabelSelector{
+				MatchLabels: map[string]string{
+					"runtime_id":  j.job.Spec.RuntimeId,
+					"tf_job_name": j.job.ObjectMeta.Name,
+				},
+			},
+		},
+	}
+
+	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
+	if err != nil {
+		if k8s_errors.IsAlreadyExists(err) {
+			log.Infof("PDB: %v already exists.", j.job.ObjectMeta.Name)
+			return nil
+		}
+
+		j.recorder.Eventf(j.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+		return err
+	}
+
+	j.pdb = createdPdb
+
+	j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
+	return nil
 }
