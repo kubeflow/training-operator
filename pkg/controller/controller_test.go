@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -302,6 +303,7 @@ func TestNormalPath(t *testing.T) {
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+		log.Info(podIndexer.List())
 
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
