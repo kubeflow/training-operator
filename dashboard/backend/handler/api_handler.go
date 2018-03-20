@@ -61,7 +61,20 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 	apiV1Ws := new(restful.WebService)
 
-	apiV1Ws.Path("/api").
+	// Issue was figuring out which part of the url corresponded to the application itself, and which parts were related to the proxying.
+	// If we have this url with kubectl proxy + ambassador:
+	// `127.0.0.1:8001/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/`
+	// Proxy parts are:
+	// `127.0.0.1:8001/api/v1/namespaces/kubeflow/services/ambassador:80/proxy`
+	// Application parts are (depending on how the rewrite is configured in ambassador):
+	// `/tfjobs/ui/`
+	// So the way the application handles it, is finding the first occurence of tfjobs in the url and appending /api/ to reach the backend.
+	// Finally, by rewriting in ambassador to `/tfjobs/` and not `/` and by having the backend listening on
+	// `/tfjobs/ui` and `/tfjobs/api` we ensure that the logic won't break when not using ambassador, i.e:
+	// When using a dev server: `127.0.0.1:3000/tfjobs/ui`
+	// When proxying directly on the dashboard service:
+	// `http://127.0.0.1:8001/api/v1/namespaces/kubeflow/services/tf-job-dashboard:80/proxy/tfjobs/ui/#/`
+	apiV1Ws.Path("/tfjobs/api").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 

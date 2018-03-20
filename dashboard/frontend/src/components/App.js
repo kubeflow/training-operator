@@ -2,7 +2,18 @@ import React from "react";
 import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
 import getMuiTheme from "material-ui/styles/getMuiTheme";
 import FlatButton from "material-ui/FlatButton";
-import { BrowserRouter as Router, Link } from "react-router-dom";
+
+// BrowserRouter is a traditional router, If I currently am at the root `/` and I navigate to `/new`
+// the resulting route will be: `${baseroute}/new`. However this breaks with ambassador:
+// If I am at `/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/` and I navigate to `/new` I still end up on `/new`
+// And we also can't just figure out the proxy part of the url and preprend it to each link
+// such as: `/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/new` since the go backend
+// is configured to only handle `/tfjobs/ui` and not `/api/v1/...`
+// So instead we can use the HashRouter, which will only use the part of the url located after a # to infer it's current state
+// So `/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/#`
+// will become `/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/#/new.`
+// This works regardless of how the dashboard is accessed. This is also how the k8s dashboard works
+import { HashRouter as Router, Link } from "react-router-dom";
 import { orange700, orange400 } from "material-ui/styles/colors";
 import ContentAdd from "material-ui/svg-icons/content/add";
 

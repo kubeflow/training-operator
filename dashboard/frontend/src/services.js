@@ -1,5 +1,6 @@
-//let host = "http://localhost:8080";
-let host = "";
+import { getHost } from "./utils";
+
+const host = getHost();
 
 export function getTFJobListService(namespace) {
   return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());

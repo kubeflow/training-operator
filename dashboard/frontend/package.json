@@ -2,6 +2,13 @@
   "name": "tensorflowk8s-dashboard",
   "version": "0.1.0",
   "description": "Dashboard for kubeflow/tf-operator.",
+  "//": [
+    "Homepage defines where the frontend will query for the static assets.",
+    "If not specified the static assets will be queried at the root, i.e: 127.0.0.1:8001/static which breaks.",
+    "'.' means that we query at the path where the application is served. ",
+    "i.e: http://127.0.0.1:8001/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/static"
+  ],
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "lodash": "^4.17.4",
