@@ -17,4 +17,8 @@ package v1alpha2
 const (
 	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
+
+	defaultPortName = "default-tfjob-port"
+	defaultPort     = 2222
+	defaultImage    = "tensorflow/tensorflow:1.3.0"
 )
