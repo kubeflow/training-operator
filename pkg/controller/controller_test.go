@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/cloudflare/cfssl/log"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
@@ -279,7 +278,6 @@ func TestNormalPath(t *testing.T) {
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
-		log.Info(podIndexer.List())
 
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
