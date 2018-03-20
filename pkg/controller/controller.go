@@ -56,7 +56,6 @@ const (
 	hit   = "hit"
 	noHit = "no-hit"
 
-	defaultPort    = 2222
 	defaultPortStr = "2222"
 )
 
