@@ -22,15 +22,22 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/cloudflare/cfssl/log"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+)
+
+const (
+	testImageName = "test-image-for-kubeflow-tf-operator:latest"
+	testTFJobName = "test-tfjob"
+	labelWorker   = "worker"
+	labelPS       = "ps"
 )
 
 var alwaysReady = func() bool { return true }
@@ -46,10 +53,22 @@ func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobCl
 	return controller, kubeInformerFactory, tfJobInformerFactory
 }
 
+func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
+	return v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Image: testImageName,
+				},
+			},
+		},
+	}
+}
+
 func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := &tfv1alpha2.TFJob{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foobar",
+			Name:      testTFJobName,
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: tfv1alpha2.TFJobSpec{
@@ -61,15 +80,7 @@ func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
 		worker := int32(worker)
 		workerReplicaSpec := &tfv1alpha2.TFReplicaSpec{
 			Replicas: &worker,
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Image: "foo/bar",
-						},
-					},
-				},
-			},
+			Template: newTFReplicaSpecTemplate(),
 		}
 		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] = workerReplicaSpec
 	}
@@ -78,15 +89,7 @@ func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
 		ps := int32(ps)
 		psReplicaSpec := &tfv1alpha2.TFReplicaSpec{
 			Replicas: &ps,
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Image: "foo/bar",
-						},
-					},
-				},
-			},
+			Template: newTFReplicaSpecTemplate(),
 		}
 		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] = psReplicaSpec
 	}
@@ -102,47 +105,47 @@ func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
 	}
 }
 
-func newPod(name string, tfJob *tfv1alpha2.TFJob) *v1.Pod {
-	var tfjobKey string
-	if len(tfJob.Namespace) > 0 {
-		tfjobKey = fmt.Sprintf("%s/%s", tfJob.Namespace, tfJob.Name)
-	} else {
-		tfjobKey = tfJob.Name
-	}
-
+func newBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Labels:          genLabels(tfjobKey),
+			Labels:          genLabels(getKey(tfJob, t)),
 			Namespace:       tfJob.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
 		},
 	}
 }
 
+func newPod(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Pod {
+	pod := newBasePod(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
+	pod.Labels[tfReplicaTypeLabel] = typ
+	pod.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	return pod
+}
+
 // create count pods with the given phase for the given tfJob
-func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob) []v1.Pod {
-	pods := []v1.Pod{}
+func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ string, t *testing.T) []*v1.Pod {
+	pods := []*v1.Pod{}
 	for i := int32(0); i < count; i++ {
-		newPod := newPod(fmt.Sprintf("pod-%v", rand.String(10)), tfJob)
+		newPod := newPod(tfJob, typ, int(i), t)
 		newPod.Status = v1.PodStatus{Phase: status}
-		pods = append(pods, *newPod)
+		pods = append(pods, newPod)
 	}
 	return pods
 }
 
-func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, pendingPods, activePods, succeededPods, failedPods int32) {
-	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob) {
-		podIndexer.Add(&pod)
+func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
+	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob, typ, t) {
+		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob) {
-		podIndexer.Add(&pod)
+	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob, typ, t) {
+		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob) {
-		podIndexer.Add(&pod)
+	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob, typ, t) {
+		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob) {
-		podIndexer.Add(&pod)
+	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob, typ, t) {
+		podIndexer.Add(pod)
 	}
 }
 
@@ -163,10 +166,16 @@ func TestNormalPath(t *testing.T) {
 		// pod setup
 		podControllerError error
 		jobKeyForget       bool
-		pendingPods        int32
-		activePods         int32
-		succeededPods      int32
-		failedPods         int32
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
 
 		// TODO(gaocegege): Add service setup.
 
@@ -181,16 +190,59 @@ func TestNormalPath(t *testing.T) {
 		expectedActivePSPods    int32
 		expectedSucceededPSPods int32
 		expectedFailedPSPods    int32
+
 		// TODO(gaocegege): Add condition check.
 		expectedCondition       *tfv1alpha2.TFJobConditionType
 		expectedConditionReason string
 	}{
-		"Local TFJob created": {
+		"Local TFJob is created": {
 			1, 0,
-			nil, true, 0, 0, 0, 0,
+			nil, true,
+			0, 0, 0, 0,
+			0, 0, 0, 0,
 			1, 0,
 			1, 0, 0,
 			0, 0, 0,
+			nil, "",
+		},
+		"Distributed TFJob (4 workers, 2 PS) is created": {
+			4, 2,
+			nil, true,
+			0, 0, 0, 0,
+			0, 0, 0, 0,
+			6, 0,
+			4, 0, 0,
+			2, 0, 0,
+			nil, "",
+		},
+		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are pending": {
+			4, 2,
+			nil, true,
+			4, 0, 0, 0,
+			2, 0, 0, 0,
+			0, 0,
+			4, 0, 0,
+			2, 0, 0,
+			nil, "",
+		},
+		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are running": {
+			4, 2,
+			nil, true,
+			0, 4, 0, 0,
+			0, 2, 0, 0,
+			0, 0,
+			4, 0, 0,
+			2, 0, 0,
+			nil, "",
+		},
+		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending": {
+			4, 2,
+			nil, true,
+			2, 0, 0, 0,
+			1, 0, 0, 0,
+			3, 0,
+			4, 0, 0,
+			2, 0, 0,
 			nil, "",
 		},
 	}
@@ -225,7 +277,9 @@ func TestNormalPath(t *testing.T) {
 		tfJob := newTFJob(tc.worker, tc.ps)
 		tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs().Informer().GetIndexer().Add(tfJob)
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		setPodsStatuses(podIndexer, tfJob, tc.pendingPods, tc.activePods, tc.succeededPods, tc.failedPods)
+		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+		log.Info(podIndexer.List())
 
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
