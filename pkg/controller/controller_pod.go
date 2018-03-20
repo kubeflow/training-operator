@@ -78,6 +78,7 @@ func (tc *TFJobController) reconcilePods(
 			pTemplate := spec.Template.DeepCopy()
 
 			labels := genLabels(tfjobKey)
+			// Set type and index for the worker.
 			labels[tfReplicaTypeLabel] = rt
 			labels[tfReplicaIndexLabel] = index
 
@@ -134,7 +135,7 @@ func (tc *TFJobController) reconcilePods(
 	}
 
 	// Update the active status since we have created -diff pods during the loop.
-	tfjob.Status.TFReplicaStatuses[rtype].Active -= int32(diff)
+	tfjob.Status.TFReplicaStatuses[rtype].Active = int32(len(activePods) - diff)
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 
