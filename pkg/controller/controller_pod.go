@@ -139,11 +139,7 @@ func (tc *TFJobController) reconcilePods(
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
-	if err := tc.updateStatusHandler(tfjob); err != nil {
-		return err
-	}
-
-	return nil
+	return tc.updateStatusHandler(tfjob)
 }
 
 // getDiffPodIndexes checks and gets diff indexes from desired and current.

@@ -102,8 +102,9 @@ func (tc *TFJobController) reconcileServices(
 				// receive any update, and the controller will create a new
 				// pod when the expectation expires.
 				return nil
+			} else if err != nil {
+				return err
 			}
-			return err
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.

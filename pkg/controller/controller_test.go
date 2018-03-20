@@ -267,7 +267,7 @@ func TestNormalPath(t *testing.T) {
 			if got, want := controllerRef.UID, tfJob.UID; got != want {
 				t.Errorf("controllerRef.UID = %q, want %q", got, want)
 			}
-			if controllerRef.Controller == nil || *controllerRef.Controller != true {
+			if controllerRef.Controller == nil || !*controllerRef.Controller {
 				t.Errorf("controllerRef.Controller is not set to true")
 			}
 		}
