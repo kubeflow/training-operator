@@ -167,8 +167,8 @@ func TestNormalPath(t *testing.T) {
 		ps     int
 
 		// pod setup
-		podControllerError error
-		jobKeyForget       bool
+		ControllerError error
+		jobKeyForget    bool
 
 		pendingWorkerPods   int32
 		activeWorkerPods    int32
@@ -305,7 +305,7 @@ func TestNormalPath(t *testing.T) {
 
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
-		if tc.podControllerError != nil {
+		if tc.ControllerError != nil {
 			if err == nil {
 				t.Errorf("%s: Syncing jobs would return error when podController exception", name)
 			}
