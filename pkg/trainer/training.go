@@ -22,7 +22,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -53,6 +57,8 @@ type TrainingJob struct {
 	status tfv1alpha1.TFJobStatus
 
 	memberCounter int
+
+	pdb *v1beta1.PodDisruptionBudget
 }
 
 // ClusterSpec represents a cluster TensorFlow specification.
@@ -105,17 +111,6 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	}
 
 	return clusterSpec
-}
-
-// createResources creates all the replicas if requested
-func (j *TrainingJob) createResources(config *tfv1alpha1.ControllerConfig) error {
-	for _, r := range j.Replicas {
-		if err := r.Create(config); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // deleteResources deletes the replicas it it was created
@@ -248,7 +243,6 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 
 // setup Replicas. This creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
-
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
 		for _, t := range j.job.Spec.ReplicaSpecs {
@@ -280,6 +274,14 @@ func (j *TrainingJob) Delete() {
 	if cErr := j.deleteResources(); cErr != nil {
 		log.Errorf("trainingJob.deleteResources() error; %v", cErr)
 	}
+
+	if j.pdb != nil {
+		// if the job has PDB for gang scheduling, delete it
+		err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Delete(j.pdb.ObjectMeta.Name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			log.Errorf("Error deleting PDB %v; %v", j.pdb.ObjectMeta.Name, err)
+		}
+	}
 }
 
 // updateCRDStatus updates the job status based on TraingingJob.status.
@@ -302,7 +304,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 }
 
 // reconcile tries to get the job into the desired state.
-func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
+func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangScheduling bool) error {
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
@@ -325,40 +327,12 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		return err
 	}
 
-	// TODO(jlewi): Can we determine from the CRD status whether we should
-	// Create the resources or not? We need to ensure the resources exist so for
-	// now we always call Create.
-	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseCreating || j.job.Status.Phase == tfv1alpha1.TFJobPhaseRunning {
-		// We call Create to make sure all the resources exist and are running.
-		if cErr := j.createResources(config); cErr != nil {
-			// TODO(jlewi): Should we eventually give up and mark the job as failed if we can't create the resources?
-			j.status.Reason = fmt.Sprintf("Could not create job resources; %v", cErr)
-			if err := j.updateCRDStatus(); err != nil {
-				log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
-				return err
-			}
-			log.Errorf("trainingJobCreateReplicas() error; %v", cErr)
-			return cErr
-		}
-
-		state, replicaStatuses, err := j.GetStatus()
-
-		j.status.ReplicaStatuses = replicaStatuses
+	// sync PDB for gang scheduling
+	// TODO(mitake): replace PDB with a newer mechanism if it is replaced
+	if enableGangScheduling {
+		err := j.syncPdb()
 		if err != nil {
-			log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
-			return err
-		}
-		// TODO(jlewi): We should update the Phase if we detect the job is done.
-		if state == tfv1alpha1.StateFailed {
-			log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseDone
-			j.status.State = tfv1alpha1.StateFailed
-		} else if state == tfv1alpha1.StateSucceeded {
-			log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseDone
-			j.status.State = tfv1alpha1.StateSucceeded
-		} else {
-			log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+			log.Errorf("SyncPdb error: %v", err)
 		}
 	}
 
@@ -376,6 +350,37 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig) error {
 		if err != nil {
 			log.Errorf("SyncServices error: %v", err)
 		}
+	}
+
+	if err := j.updateCRDStatus(); err != nil {
+		log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
+		return err
+	}
+
+	// Call GetStatus in each reconcile loop
+	state, replicaStatuses, err := j.GetStatus()
+
+	j.status.ReplicaStatuses = replicaStatuses
+	if err != nil {
+		log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
+		return err
+	}
+
+	// TODO(jlewi): We should update the Phase if we detect the job is done.
+	if state == tfv1alpha1.StateFailed {
+		log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.State = tfv1alpha1.StateFailed
+	} else if state == tfv1alpha1.StateSucceeded {
+		log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.State = tfv1alpha1.StateSucceeded
+	} else if state == tfv1alpha1.StateRunning {
+		log.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
+		j.status.Phase = tfv1alpha1.TFJobPhaseRunning
+		j.status.State = tfv1alpha1.StateRunning
+	} else {
+		log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 	}
 
 	// If the phase changed we should update the CRD.
@@ -415,4 +420,49 @@ func (j *TrainingJob) fullname() string {
 
 func (j *TrainingJob) SchedulerName() string {
 	return j.job.Spec.SchedulerName
+}
+
+// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+func (j *TrainingJob) syncPdb() error {
+	nrReplicas := int32(0)
+	for _, r := range j.Replicas {
+		nrReplicas += *r.Spec.Replicas
+	}
+
+	if nrReplicas == 1 {
+		// gang scheduling isn't required by a non distributed training process
+		return nil
+	}
+
+	minAvailable := intstr.FromInt(int(nrReplicas))
+	pdb := &v1beta1.PodDisruptionBudget{
+		ObjectMeta: meta_v1.ObjectMeta{
+			GenerateName: "tf-job-pdb-",
+		},
+		Spec: v1beta1.PodDisruptionBudgetSpec{
+			MinAvailable: &minAvailable,
+			Selector: &meta_v1.LabelSelector{
+				MatchLabels: map[string]string{
+					"runtime_id":  j.job.Spec.RuntimeId,
+					"tf_job_name": j.job.ObjectMeta.Name,
+				},
+			},
+		},
+	}
+
+	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
+	if err != nil {
+		if k8s_errors.IsAlreadyExists(err) {
+			log.Infof("PDB: %v already exists.", j.job.ObjectMeta.Name)
+			return nil
+		}
+
+		j.recorder.Eventf(j.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+		return err
+	}
+
+	j.pdb = createdPdb
+
+	j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
+	return nil
 }
