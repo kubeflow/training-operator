@@ -80,7 +80,7 @@ func Run(opt *options.ServerOption) error {
 	defer close(neverStop)
 
 	tfJobInformerFactory := informers.NewSharedInformerFactory(tfJobClient, time.Second*30)
-	controller, err := controller.New(kubeClient, tfJobClient, *controllerConfig, tfJobInformerFactory)
+	controller, err := controller.New(kubeClient, tfJobClient, *controllerConfig, tfJobInformerFactory, opt.EnableGangScheduling)
 	if err != nil {
 		return err
 	}
