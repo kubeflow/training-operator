@@ -92,7 +92,6 @@ func (tc *TFJobController) reconcilePods(
 			if tfConfigStr == "" {
 				return nil
 			}
-
 			// Add TF_CONFIG environment variable.
 			for _, c := range pTemplate.Spec.Containers {
 				if len(c.Env) == 0 {
@@ -114,8 +113,9 @@ func (tc *TFJobController) reconcilePods(
 				// receive any update, and the controller will create a new
 				// pod when the expectation expires.
 				return nil
+			} else if err != nil {
+				return err
 			}
-			return err
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.
@@ -129,12 +129,13 @@ func (tc *TFJobController) reconcilePods(
 		tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
 	}
 
-	tfjob.Status.TFReplicaStatuses[rtype].Active = int32(len(activePods))
+	// Update the active status since we have created -diff pods during the loop.
+	tfjob.Status.TFReplicaStatuses[rtype].Active -= int32(diff)
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
-	if err := tc.updateTFJobStatus(tfjob); err != nil {
+	if err := tc.updateStatusHandler(tfjob); err != nil {
 		return err
 	}
 

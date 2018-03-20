@@ -104,6 +104,8 @@ type TFJobController struct {
 	// To allow injection of syncTFJob for testing.
 	syncHandler func(tfJobKey string) (bool, error)
 
+	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
+
 	// Listers for TFJob, Pod and Service
 	// tfJobLister can list/get tfjobs from the shared informer's store.
 	tfJobLister tfjoblisters.TFJobLister
@@ -191,6 +193,7 @@ func NewTFJobController(
 
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
+	tc.updateStatusHandler = tc.updateTFJobStatus
 
 	// Create tfjob informer.
 	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs()
