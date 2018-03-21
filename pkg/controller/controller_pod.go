@@ -253,16 +253,18 @@ func (tc *TFJobController) addPod(obj interface{}) {
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
 		if tfjob == nil {
+			log.Info("This pod's tfjob does not exists")
 			return
 		}
 
 		tfjobKey, err := KeyFunc(tfjob)
 		if err != nil {
+			log.Infof("Failed to get the key of the tfjob: %v", err)
 			return
 		}
 
 		if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-			log.Infof("This pod maybe not created by tf-operator")
+			log.Info("This pod maybe not created by tf-operator")
 			return
 		}
 
