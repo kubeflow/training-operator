@@ -137,6 +137,9 @@ func (s *TFReplicaSet) CreateServiceWithIndex(index int32) (*v1.Service, error) 
 		},
 		Spec: v1.ServiceSpec{
 			Selector: taskLabels,
+			// We use headless services here, because we don't need load balancing
+			// since there is a single pod that is the backend for each service.
+			ClusterIP: "None",
 			Ports: []v1.ServicePort{
 				{
 					Name: "tf-port",
