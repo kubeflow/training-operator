@@ -465,7 +465,7 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func TestQueue(t *testing.T) {
+func TestAddTFJob(t *testing.T) {
 	// Prepare the clientset and controller for the test.
 	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
 		Host: "",
