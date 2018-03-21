@@ -40,7 +40,7 @@ const (
 	labelPS       = "ps"
 
 	sleepInterval = 2 * time.Second
-	threadCount   = 16
+	threadCount   = 1
 )
 
 var alwaysReady = func() bool { return true }
@@ -463,4 +463,46 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
 	}
+}
+
+func TestQueue(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	},
+	)
+	controller, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
+	controller.tfJobListerSynced = alwaysReady
+	controller.podListerSynced = alwaysReady
+	controller.serviceListerSynced = alwaysReady
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		controller.Run(threadCount, stopCh)
+	}
+	go run(stopCh)
+
+	var key string
+	controller.syncHandler = func(tfJobKey string) (bool, error) {
+		key = tfJobKey
+		return true, nil
+	}
+
+	tfJob := newTFJob(1, 0)
+	controller.addTFJob(tfJob)
+	time.Sleep(sleepInterval)
+	if key != getKey(tfJob, t) {
+		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
+	}
+	close(stopCh)
 }
