@@ -44,6 +44,7 @@ type TFJob struct {
 	Status            TFJobStatus `json:"status"`
 }
 
+// TFJobSpec structure for storing the TFJob specifications
 type TFJobSpec struct {
 	// TODO(jlewi): Can we we get rid of this and use some value from Kubernetes or a random ide.
 	RuntimeId string
@@ -61,11 +62,13 @@ type TFJobSpec struct {
 	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
+// TerminationPolicySpec structure for storing specifications for process termination
 type TerminationPolicySpec struct {
 	// Chief policy waits for a particular process (which is the chief) to exit.
 	Chief *ChiefSpec `json:"chief,omitempty"`
 }
 
+// ChiefSpec structure storing the replica name and replica index
 type ChiefSpec struct {
 	ReplicaName  string `json:"replicaName"`
 	ReplicaIndex int    `json:"replicaIndex"`
@@ -86,7 +89,7 @@ const (
 )
 
 // TODO(jlewi): We probably want to add a name field. This would allow us to have more than 1 type of each worker.
-// This might be useful if you wanted to have a separate set of workers to do eval.
+// // TFReplicaSpec might be useful if you wanted to have a separate set of workers to do eval.
 type TFReplicaSpec struct {
 	// Replicas is the number of desired replicas.
 	// This is a pointer to distinguish between explicit zero and unspecified.
@@ -100,6 +103,7 @@ type TFReplicaSpec struct {
 	TFReplicaType `json:"tfReplicaType"`
 }
 
+// TFJobPhase is a enum to store the phase of tf job
 type TFJobPhase string
 
 const (
@@ -111,6 +115,7 @@ const (
 	TFJobPhaseDone     TFJobPhase = "Done"
 )
 
+// State is a enum to store the state of tf job
 type State string
 
 const (
@@ -120,6 +125,7 @@ const (
 	StateFailed    State = "Failed"
 )
 
+// TFJobStatus is a structure for storing the status of tf jobs
 type TFJobStatus struct {
 	// Phase is the TFJob running phase
 	Phase  TFJobPhase `json:"phase"`
@@ -132,6 +138,7 @@ type TFJobStatus struct {
 	ReplicaStatuses []*TFReplicaStatus `json:"replicaStatuses"`
 }
 
+// ReplicaState is a enum to store the status of replica
 type ReplicaState string
 
 const (
@@ -141,6 +148,7 @@ const (
 	ReplicaStateSucceeded ReplicaState = "Succeeded"
 )
 
+// TFReplicaStatus  is a structure for storing the status of tf replica
 type TFReplicaStatus struct {
 	TFReplicaType `json:"tf_replica_type"`
 
@@ -164,6 +172,7 @@ type TFJobList struct {
 	Items []TFJob `json:"items"`
 }
 
+// ControllerConfig is a structure for storing the controller configuration
 type ControllerConfig struct {
 	// Accelerators is a map from the name of the accelerator to the config for that accelerator.
 	// This should match the value specified as a container limit.
@@ -182,11 +191,13 @@ type AcceleratorVolume struct {
 	MountPath string
 }
 
+// AcceleratorConfig represents accelerator volumes to be mounted into container along with environment variables.
 type AcceleratorConfig struct {
 	Volumes []AcceleratorVolume
 	EnvVars []EnvironmentVariableConfig
 }
 
+// EnvironmentVariableConfig represents the environment variables and their values.
 type EnvironmentVariableConfig struct {
 	Name  string
 	Value string

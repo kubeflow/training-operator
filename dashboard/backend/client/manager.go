@@ -1,4 +1,4 @@
-// Client is a package handling authentication/communication with kubernetes API
+// client is a package handling authentication/communication with kubernetes API
 package client
 
 import (
@@ -16,6 +16,7 @@ type ClientManager struct {
 	TFJobClient *versioned.Clientset
 }
 
+// init methods initiates the TFJob client for given cluster config
 func (c *ClientManager) init() {
 	restCfg, err := k8sutil.GetClusterConfig()
 	if err != nil {

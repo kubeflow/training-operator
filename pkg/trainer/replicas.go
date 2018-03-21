@@ -49,7 +49,7 @@ type TFReplicaSet struct {
 	Spec tfv1alpha1.TFReplicaSpec
 }
 
-// TFReplicas is an interface for managing a set of replicas.
+// TFReplicaSetInterface is an interface for managing a set of replicas.
 type TFReplicaSetInterface interface {
 	Create() error
 	Delete() error
@@ -68,6 +68,7 @@ type TFConfig struct {
 	Environment string `json:"environment"`
 }
 
+// NewTFReplicaSet returns TFReplicaSet object for existing replica
 func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecorder, tfReplicaSpec tfv1alpha1.TFReplicaSpec, job *TrainingJob) (*TFReplicaSet, error) {
 	if tfReplicaSpec.TFReplicaType == tfv1alpha1.MASTER && *tfReplicaSpec.Replicas != 1 {
 		return nil, errors.New("The MASTER must have Replicas = 1")
@@ -185,7 +186,7 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 	}
 
 	// Add TF_CONFIG environment variable.
-	for i, _ := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
 		// We can't get c in the loop variable because that would be by value so our modifications
 		// wouldn't have any effect.
 		c := &pod.Spec.Containers[i]
@@ -325,6 +326,7 @@ func replicaStatusFromPodList(l v1.PodList, name string) tfv1alpha1.ReplicaState
 	return tfv1alpha1.ReplicaStateUnknown
 }
 
+// GetSingleReplicaStatus returns status for a single replica
 func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
 	p, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Get(s.genName(index), meta_v1.GetOptions{})
 
@@ -358,7 +360,7 @@ func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaSta
 	return status
 }
 
-// Status returns the status of the replica set.
+// GetStatus returns the status of the replica set.
 func (s *TFReplicaSet) GetStatus() (tfv1alpha1.TFReplicaStatus, error) {
 	status := tfv1alpha1.TFReplicaStatus{
 		TFReplicaType:  s.Spec.TFReplicaType,
@@ -486,6 +488,7 @@ func (s *TFReplicaSet) SyncServices() error {
 	return nil
 }
 
+// genName generates the name which is concatenation of jabName, TFReplicaType, job RunId and index
 func (s *TFReplicaSet) genName(index int32) string {
 	// Truncate tfjob name to 40 characters
 	// The whole job name should be compliant with the DNS_LABEL spec, up to a max length of 63 characters
@@ -494,11 +497,12 @@ func (s *TFReplicaSet) genName(index int32) string {
 	return fmt.Sprintf("%v-%v-%v-%v", fmt.Sprintf("%.40s", s.Job.job.ObjectMeta.Name), strings.ToLower(string(s.Spec.TFReplicaType)), s.Job.job.Spec.RuntimeId, index)
 }
 
+// genPodName generate a new pod name with random string
 func (s *TFReplicaSet) genPodName(index int32) string {
-	// Generate a new pod name with random string
 	return s.genName(index) + "-" + util.RandString(5)
 }
 
+//  defaultPSConfigMapName returns the map default PS configuration map name using job's runtimeId
 func (s *TFReplicaSet) defaultPSConfigMapName() string {
 	return fmt.Sprintf("cm-ps-%v", s.Job.job.Spec.RuntimeId)
 }

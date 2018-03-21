@@ -23,7 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-func TestSetDefaults_TFJob(t *testing.T) {
+func TestSetDefaultsTFJob(t *testing.T) {
 	type testCase struct {
 		in       *TFJob
 		expected *TFJob
@@ -110,7 +110,7 @@ func TestSetDefaults_TFJob(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		SetDefaults_TFJob(c.in)
+		SetDefaultsTFJob(c.in)
 		if !reflect.DeepEqual(c.in, c.expected) {
 			t.Errorf("Want\n%v; Got\n %v", util.Pformat(c.expected), util.Pformat(c.in))
 		}
