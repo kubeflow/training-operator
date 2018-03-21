@@ -19,6 +19,7 @@ package controller
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +38,9 @@ const (
 	testTFJobName = "test-tfjob"
 	labelWorker   = "worker"
 	labelPS       = "ps"
+
+	sleepInterval = 2 * time.Second
+	threadCount   = 16
 )
 
 var alwaysReady = func() bool { return true }
@@ -426,5 +430,37 @@ func TestNormalPath(t *testing.T) {
 		if tc.expectedCondition != nil && !getCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
 			t.Errorf("%s: expected completion condition.  Got %#v", name, actual.Status.Conditions)
 		}
+	}
+}
+
+func TestRun(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	},
+	)
+	controller, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
+	controller.tfJobListerSynced = alwaysReady
+	controller.podListerSynced = alwaysReady
+	controller.serviceListerSynced = alwaysReady
+
+	stopCh := make(chan struct{})
+	go func() {
+		time.Sleep(sleepInterval)
+		close(stopCh)
+	}()
+	err := controller.Run(threadCount, stopCh)
+	if err != nil {
+		t.Errorf("Failed to run: %v", err)
 	}
 }
