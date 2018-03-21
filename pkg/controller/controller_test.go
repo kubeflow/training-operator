@@ -123,10 +123,10 @@ func newPod(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Po
 }
 
 // create count pods with the given phase for the given tfJob
-func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ string, t *testing.T) []*v1.Pod {
+func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ string, start int32, t *testing.T) []*v1.Pod {
 	pods := []*v1.Pod{}
 	for i := int32(0); i < count; i++ {
-		newPod := newPod(tfJob, typ, int(i), t)
+		newPod := newPod(tfJob, typ, int(start+i), t)
 		newPod.Status = v1.PodStatus{Phase: status}
 		pods = append(pods, newPod)
 	}
@@ -134,16 +134,20 @@ func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ st
 }
 
 func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
-	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob, typ, t) {
+	var index int32
+	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob, typ, index, t) {
 		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob, typ, t) {
+	index += pendingPods
+	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob, typ, index, t) {
 		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob, typ, t) {
+	index += activePods
+	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index, t) {
 		podIndexer.Add(pod)
 	}
-	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob, typ, t) {
+	index += succeededPods
+	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob, typ, index, t) {
 		podIndexer.Add(pod)
 	}
 }
@@ -163,8 +167,8 @@ func TestNormalPath(t *testing.T) {
 		ps     int
 
 		// pod setup
-		podControllerError error
-		jobKeyForget       bool
+		ControllerError error
+		jobKeyForget    bool
 
 		pendingWorkerPods   int32
 		activeWorkerPods    int32
@@ -244,6 +248,26 @@ func TestNormalPath(t *testing.T) {
 			2, 0, 0,
 			nil, "",
 		},
+		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending, 1 worker is running": {
+			4, 2,
+			nil, true,
+			2, 1, 0, 0,
+			1, 0, 0, 0,
+			2, 0,
+			4, 0, 0,
+			2, 0, 0,
+			nil, "",
+		},
+		"Distributed TFJob (4 workers, 2 PS) is succeeded": {
+			4, 2,
+			nil, true,
+			0, 0, 4, 0,
+			0, 0, 2, 0,
+			0, 0,
+			0, 4, 0,
+			0, 2, 0,
+			nil, "",
+		},
 	}
 
 	for name, tc := range testCases {
@@ -281,7 +305,7 @@ func TestNormalPath(t *testing.T) {
 
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
-		if tc.podControllerError != nil {
+		if tc.ControllerError != nil {
 			if err == nil {
 				t.Errorf("%s: Syncing jobs would return error when podController exception", name)
 			}

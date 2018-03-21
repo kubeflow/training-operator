@@ -46,17 +46,18 @@ func (tc *TFJobController) reconcilePods(
 
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
-
-	// Get active pods for this TFReplicaType.
-	activePods := filterActivePodsForTFReplicaType(pods, rt)
-
+	// Get all pods for the type rt.
+	pods = filterPodsForTFReplicaType(pods, rt)
+	activePods := FilterActivePods(pods)
 	succeeded, failed := getPodStatus(pods)
 
-	diff := len(activePods) - int(*(spec.Replicas))
+	// Expect to have `replicas - succeeded` pods alive.
+	expected := *spec.Replicas - succeeded
+	diff := len(activePods) - int(expected)
 
 	if diff < 0 {
 		// Need to create new pods.
-		diffIndexes := getDiffPodIndexes(activePods, *spec.Replicas)
+		diffIndexes := getDiffPodIndexes(activePods, expected)
 		if diff+len(diffIndexes) != 0 {
 			// This should never happened.
 			return fmt.Errorf("pods diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
@@ -135,7 +136,7 @@ func (tc *TFJobController) reconcilePods(
 	}
 
 	// Update the active status since we have created -diff pods during the loop.
-	tfjob.Status.TFReplicaStatuses[rtype].Active = int32(len(activePods) - diff)
+	tfjob.Status.TFReplicaStatuses[rtype].Active = expected
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 
@@ -214,11 +215,8 @@ func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, 
 	return cm.ClaimPods(pods)
 }
 
-// filterActivePodsForTFReplicaType returns pods that have not terminated,
-// and belong to a TFReplicaType.
-func filterActivePodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v1.Pod {
-	activePods := FilterActivePods(pods)
-
+// filterPodsForTFReplicaType returns pods belong to a TFReplicaType.
+func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v1.Pod {
 	var result []*v1.Pod
 
 	tfReplicaSelector := &metav1.LabelSelector{
@@ -227,7 +225,7 @@ func filterActivePodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v
 
 	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
 
-	for _, pod := range activePods {
+	for _, pod := range pods {
 		selector, _ := metav1.LabelSelectorAsSelector(tfReplicaSelector)
 		if !selector.Matches(labels.Set(pod.Labels)) {
 			continue
