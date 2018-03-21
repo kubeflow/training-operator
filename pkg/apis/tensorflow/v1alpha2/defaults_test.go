@@ -107,33 +107,6 @@ func TestSetDefaultTFJob(t *testing.T) {
 			},
 			expected: expectedTFJob(),
 		},
-		"set default restart policy": {
-			original: &TFJob{
-				Spec: TFJobSpec{
-					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
-						TFReplicaTypeWorker: &TFReplicaSpec{
-							Replicas: Int32(1),
-							Template: v1.PodTemplateSpec{
-								Spec: v1.PodSpec{
-									Containers: []v1.Container{
-										v1.Container{
-											Image: testImage,
-											Ports: []v1.ContainerPort{
-												v1.ContainerPort{
-													Name:          defaultPortName,
-													ContainerPort: defaultPort,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: expectedTFJob(),
-		},
 	}
 
 	for name, tc := range testCases {

@@ -40,19 +40,16 @@ func setDefaultPort(spec *v1.PodSpec) {
 	}
 }
 
-func setDefaultRestartPolicy(spec *TFReplicaSpec) {
-	if spec.RestartPolicy == RestartPolicy("") {
-		spec.RestartPolicy = RestartPolicyAlways
+func setDefaultReplicas(spec *TFReplicaSpec) {
+	if spec.Replicas == nil {
+		spec.Replicas = Int32(1)
 	}
 }
 
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfjob *TFJob) {
 	for _, spec := range tfjob.Spec.TFReplicaSpecs {
-		if spec.Replicas == nil {
-			spec.Replicas = Int32(1)
-		}
+		setDefaultReplicas(spec)
 		setDefaultPort(&spec.Template.Spec)
-		setDefaultRestartPolicy(spec)
 	}
 }
