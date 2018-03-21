@@ -225,6 +225,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
       name, namespace)
     logging.error(t.failure)
+    raise
   except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
     # in an effort to try to nail down this exception we print out more
@@ -237,6 +238,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     # We want to catch all exceptions because we want the test as failed.
     t.failure = ("Exception occured; type {0} message {1}".format(
       e.__class__, e.message))
+    raise
   finally:
     t.time = time.time() - start
     if args.junit_path:
