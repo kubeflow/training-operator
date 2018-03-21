@@ -40,14 +40,6 @@ func setDefaultPort(spec *v1.PodSpec) {
 	}
 }
 
-func setDefaultImage(spec *v1.PodSpec) {
-	for i := range spec.Containers {
-		if spec.Containers[i].Image == "" {
-			spec.Containers[i].Image = defaultImage
-		}
-	}
-}
-
 func setDefaultRestartPolicy(spec *TFReplicaSpec) {
 	if spec.RestartPolicy == RestartPolicy("") {
 		spec.RestartPolicy = RestartPolicyAlways
@@ -60,8 +52,7 @@ func SetDefaults_TFJob(tfjob *TFJob) {
 		if spec.Replicas == nil {
 			spec.Replicas = Int32(1)
 		}
-		setDefaultPort(&(spec.Template.Spec))
-		setDefaultImage(&(spec.Template.Spec))
+		setDefaultPort(&spec.Template.Spec)
 		setDefaultRestartPolicy(spec)
 	}
 }

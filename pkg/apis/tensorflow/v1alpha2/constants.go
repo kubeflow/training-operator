@@ -20,5 +20,4 @@ const (
 
 	defaultPortName = "tfjob-port"
 	defaultPort     = 2222
-	defaultImage    = "tensorflow/tensorflow:1.3.0"
 )

@@ -21,6 +21,10 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+const (
+	testImage = "test-image:latest"
+)
+
 func expectedTFJob() *TFJob {
 	return &TFJob{
 		Spec: TFJobSpec{
@@ -32,7 +36,7 @@ func expectedTFJob() *TFJob {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
 								v1.Container{
-									Image: defaultImage,
+									Image: testImage,
 									Ports: []v1.ContainerPort{
 										v1.ContainerPort{
 											Name:          defaultPortName,
@@ -64,34 +68,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										v1.Container{
-											Image: defaultImage,
-											Ports: []v1.ContainerPort{
-												v1.ContainerPort{
-													Name:          defaultPortName,
-													ContainerPort: defaultPort,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: expectedTFJob(),
-		},
-		"set default image": {
-			original: &TFJob{
-				Spec: TFJobSpec{
-					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
-						TFReplicaTypeWorker: &TFReplicaSpec{
-							Replicas:      Int32(1),
-							RestartPolicy: RestartPolicyAlways,
-							Template: v1.PodTemplateSpec{
-								Spec: v1.PodSpec{
-									Containers: []v1.Container{
-										v1.Container{
+											Image: testImage,
 											Ports: []v1.ContainerPort{
 												v1.ContainerPort{
 													Name:          defaultPortName,
@@ -119,7 +96,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										v1.Container{
-											Image: defaultImage,
+											Image: testImage,
 										},
 									},
 								},
@@ -140,7 +117,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										v1.Container{
-											Image: defaultImage,
+											Image: testImage,
 											Ports: []v1.ContainerPort{
 												v1.ContainerPort{
 													Name:          defaultPortName,
