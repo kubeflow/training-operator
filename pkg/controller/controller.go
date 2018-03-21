@@ -22,7 +22,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -199,7 +198,7 @@ func NewTFJobController(
 
 	// Set up an event handler for when tfjob resources change.
 	tfJobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    tc.enqueueTFJob,
+		AddFunc:    tc.addTFJob,
 		UpdateFunc: tc.updateTFJob,
 		// This will enter the sync loop and no-op,
 		// because the tfjob has been deleted from the store.
@@ -427,6 +426,14 @@ func genLabels(tfjobKey string) map[string]string {
 		"group_name": tfv1alpha2.GroupName,
 		"tf_job_key": strings.Replace(tfjobKey, "/", "-", -1),
 	}
+}
+
+// When a pod is added, set the defaults and enqueue the current tfjob.
+func (tc *TFJobController) addTFJob(obj interface{}) {
+	tfjob := obj.(*tfv1alpha2.TFJob)
+	log.Infof("Adding tfjob: %s", tfjob.Name)
+	scheme.Scheme.Default(tfjob)
+	tc.enqueueTFJob(obj)
 }
 
 // When a pod is updated, enqueue the current tfjob.

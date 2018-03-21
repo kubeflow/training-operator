@@ -1,0 +1,13 @@
+apiVersion: "kubeflow.org/v1alpha2"
+kind: "TFJob"
+metadata:
+  name: "simple-job"
+spec:
+  tfReplicaSpecs:
+    Worker:
+      template:
+        spec:
+          containers:
+            - name: worker-busybox
+              image: busybox
+              command: ["sleep", "30000"]

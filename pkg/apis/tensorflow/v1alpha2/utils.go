@@ -14,10 +14,22 @@
 
 package v1alpha2
 
-const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
+import (
+	"encoding/json"
+	"fmt"
 
-	defaultPortName = "tfjob-port"
-	defaultPort     = 2222
+	log "github.com/sirupsen/logrus"
 )
+
+// Pformat returns a pretty format output of any value that can be marshalled to JSON.
+func Pformat(value interface{}) string {
+	if s, ok := value.(string); ok {
+		return s
+	}
+	valueJSON, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		log.Warningf("Couldn't pretty format %v, error: %v", value, err)
+		return fmt.Sprintf("%v", value)
+	}
+	return string(valueJSON)
+}
