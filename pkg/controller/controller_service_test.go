@@ -31,8 +31,8 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 )
 
-func newBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
-	return &v1.Pod{
+func newBaseService(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Service {
+	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Labels:          genLabels(getKey(tfJob, t)),
@@ -42,44 +42,30 @@ func newBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
 	}
 }
 
-func newPod(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Pod {
-	pod := newBasePod(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
-	pod.Labels[tfReplicaTypeLabel] = typ
-	pod.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
-	return pod
+func newService(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Service {
+	service := newBaseService(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
+	service.Labels[tfReplicaTypeLabel] = typ
+	service.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	return service
 }
 
 // create count pods with the given phase for the given tfJob
-func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ string, start int32, t *testing.T) []*v1.Pod {
-	pods := []*v1.Pod{}
+func newServiceList(count int32, tfJob *tfv1alpha2.TFJob, typ string, t *testing.T) []*v1.Service {
+	services := []*v1.Service{}
 	for i := int32(0); i < count; i++ {
-		newPod := newPod(tfJob, typ, int(start+i), t)
-		newPod.Status = v1.PodStatus{Phase: status}
-		pods = append(pods, newPod)
+		newService := newService(tfJob, typ, int(i), t)
+		services = append(services, newService)
 	}
-	return pods
+	return services
 }
 
-func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
-	var index int32
-	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += pendingPods
-	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += activePods
-	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += succeededPods
-	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
+func setServices(serviceIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, activeWorkerServices int32, t *testing.T) {
+	for _, service := range newServiceList(activeWorkerServices, tfJob, typ, t) {
+		serviceIndexer.Add(service)
 	}
 }
 
-func TestAddPod(t *testing.T) {
+func TestAddService(t *testing.T) {
 	// Prepare the clientset and controller for the test.
 	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
 		Host: "",
@@ -115,9 +101,9 @@ func TestAddPod(t *testing.T) {
 
 	tfJob := newTFJob(1, 0)
 	tfJobIndexer.Add(tfJob)
-	pod := newPod(tfJob, labelWorker, 0, t)
+	service := newService(tfJob, labelWorker, 0, t)
 
-	controller.addPod(pod)
+	controller.addService(service)
 	time.Sleep(sleepInterval)
 	if key != getKey(tfJob, t) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
