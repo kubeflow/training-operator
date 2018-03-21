@@ -415,8 +415,7 @@ func (s *TFReplicaSet) SyncPods() error {
 		}
 
 		// Filter the unactive pods
-		fieldSelector := "status.phase!=" + string(v1.PodFailed) +
-			",deletionTimestamp!=nil"
+		fieldSelector := fmt.Sprintf("status.phase!=%s", string(v1.PodFailed))
 
 		options := meta_v1.ListOptions{
 			LabelSelector: labelSelector,
@@ -425,9 +424,12 @@ func (s *TFReplicaSet) SyncPods() error {
 
 		// List to get pods
 		pl, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).List(options)
+		if err != nil {
+			return err
+		}
 
 		if len(pl.Items) == 0 {
-			log.Infof("Pod  not found, create new one.")
+			log.Infof("No pod found for job %s, creating a new one.", s.Job.name)
 			// Create the pod
 			createdPod, err := s.CreatePodWithIndex(index)
 

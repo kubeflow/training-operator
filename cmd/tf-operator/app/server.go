@@ -56,7 +56,7 @@ func Run(opt *options.ServerOption) error {
 
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
-		log.Infof("EnvKubeflowNamespace not set, use default namespace")
+		log.Infof("KUBEFLOW_NAMESPACE not set, using default namespace")
 		namespace = metav1.NamespaceDefault
 	}
 
