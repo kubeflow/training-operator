@@ -30,7 +30,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 }
 
 func setDefaultPort(spec *v1.PodSpec) {
-	for i, _ := range spec.Containers {
+	for i := range spec.Containers {
 		if len(spec.Containers[i].Ports) == 0 {
 			spec.Containers[i].Ports = append(spec.Containers[i].Ports, v1.ContainerPort{
 				Name:          defaultPortName,
@@ -41,7 +41,7 @@ func setDefaultPort(spec *v1.PodSpec) {
 }
 
 func setDefaultImage(spec *v1.PodSpec) {
-	for i, _ := range spec.Containers {
+	for i := range spec.Containers {
 		if spec.Containers[i].Image == "" {
 			spec.Containers[i].Image = defaultImage
 		}
