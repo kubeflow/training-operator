@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -41,7 +42,11 @@ const (
 	threadCount   = 1
 )
 
-var alwaysReady = func() bool { return true }
+var (
+	alwaysReady = func() bool { return true }
+
+	errDefault = errors.New("default-error")
+)
 
 func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
@@ -425,4 +430,32 @@ func TestAddTFJob(t *testing.T) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
 	}
 	close(stopCh)
+}
+
+func TestProcessWrongKey(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	},
+	)
+	controller, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
+	controller.syncHandler = func(tfJobKey string) (bool, error) {
+		return false, errDefault
+	}
+
+	tfJob := newTFJob(1, 0)
+	controller.addTFJob(tfJob)
+	if controller.processNextWorkItem() == false {
+		t.Error("processNextWorkItem error: expected true got false")
+	}
 }
