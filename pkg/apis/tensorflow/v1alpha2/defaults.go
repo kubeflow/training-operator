@@ -1,3 +1,17 @@
+// Copyright 2018 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package v1alpha2
 
 import (
@@ -15,11 +29,10 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-func setDefaultPort(spec *TFReplicaSpec) {
-	// TODO(gaocegege): Set ports for init containers, maybe.
-	for _, container := range spec.Template.Spec.Containers {
-		if len(container.Ports) == 0 {
-			container.Ports = append(container.Ports, v1.ContainerPort{
+func setDefaultPort(spec *v1.PodSpec) {
+	for i, _ := range spec.Containers {
+		if len(spec.Containers[i].Ports) == 0 {
+			spec.Containers[i].Ports = append(spec.Containers[i].Ports, v1.ContainerPort{
 				Name:          defaultPortName,
 				ContainerPort: defaultPort,
 			})
@@ -27,10 +40,10 @@ func setDefaultPort(spec *TFReplicaSpec) {
 	}
 }
 
-func setDefaultImage(spec *TFReplicaSpec) {
-	for _, container := range spec.Template.Spec.Containers {
-		if container.Image == "" {
-			container.Image = defaultImage
+func setDefaultImage(spec *v1.PodSpec) {
+	for i, _ := range spec.Containers {
+		if spec.Containers[i].Image == "" {
+			spec.Containers[i].Image = defaultImage
 		}
 	}
 }
@@ -43,12 +56,12 @@ func setDefaultRestartPolicy(spec *TFReplicaSpec) {
 
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfjob *TFJob) {
-	for typ, spec := range tfjob.Spec.TFReplicaSpecs {
+	for _, spec := range tfjob.Spec.TFReplicaSpecs {
 		if spec.Replicas == nil {
 			spec.Replicas = Int32(1)
 		}
-		setDefaultPort(spec)
-		setDefaultImage(spec)
+		setDefaultPort(&(spec.Template.Spec))
+		setDefaultImage(&(spec.Template.Spec))
 		setDefaultRestartPolicy(spec)
 	}
 }

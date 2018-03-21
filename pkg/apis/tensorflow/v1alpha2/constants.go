@@ -18,7 +18,7 @@ const (
 	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 
-	defaultPortName = "default-tfjob-port"
+	defaultPortName = "tfjob-port"
 	defaultPort     = 2222
 	defaultImage    = "tensorflow/tensorflow:1.3.0"
 )
