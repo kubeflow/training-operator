@@ -38,10 +38,10 @@ const (
 
 // TFJob describes tfjob info
 type TFJob struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              TFJobSpec   `json:"spec"`
-	Status            TFJobStatus `json:"status"`
+	metav1.TypeMeta    `json:",inline"`
+	metav1.ObjectMeta  `json:"metadata,omitempty"`
+	Spec   TFJobSpec   `json:"spec"`
+	Status TFJobStatus `json:"status"`
 }
 
 type TFJobSpec struct {
@@ -96,7 +96,7 @@ type TFReplicaSpec struct {
 	Replicas *int32              `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 	Template *v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 	// TFPort is the port to use for TF services.
-	TFPort        *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
+	TFPort *int32 `json:"tfPort,omitempty" protobuf:"varint,1,opt,name=tfPort"`
 	TFReplicaType `json:"tfReplicaType"`
 }
 
@@ -164,14 +164,30 @@ type TFJobList struct {
 	Items []TFJob `json:"items"`
 }
 
+// ControllerConfig specifies the configuration for the controller.
 type ControllerConfig struct {
 	// Accelerators is a map from the name of the accelerator to the config for that accelerator.
 	// This should match the value specified as a container limit.
 	// e.g. alpha.kubernetes.io/nvidia-gpu
 	Accelerators map[string]AcceleratorConfig
 
-	// Path to the file containing the grpc server source
+	// GrpcServerFilePath is the path to the file containing the grpc server source
 	GrpcServerFilePath string
+
+	// CloudEnvironmentName if non-empty specifies the name of the cloud environment, e.g. `azure` or `GKE`
+	CloudEnvironmentName string
+}
+
+func (in *ControllerConfig) GetGPUResourceName() v1.ResourceName {
+	// TODO: case-insensitive?
+	switch in.CloudEnvironmentName {
+	case "azure":
+		return "nvidia.com/gpu"
+	case "gke":
+		return "alpha.kubernetes.io/nvidia-gpu"
+	default:
+		return ""
+	}
 }
 
 // AcceleratorVolume represents a host path that must be mounted into
