@@ -152,6 +152,36 @@ func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ stri
 	}
 }
 
+func newService(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Service {
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            fmt.Sprintf("%s-%d", typ, index),
+			Labels:          genLabels(getKey(tfJob, t)),
+			Namespace:       tfJob.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
+		},
+	}
+	service.Labels[tfReplicaTypeLabel] = typ
+	service.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	return service
+}
+
+// create count pods with the given phase for the given tfJob
+func newServiceList(count int32, tfJob *tfv1alpha2.TFJob, typ string, t *testing.T) []*v1.Service {
+	services := []*v1.Service{}
+	for i := int32(0); i < count; i++ {
+		newService := newService(tfJob, typ, int(i), t)
+		services = append(services, newService)
+	}
+	return services
+}
+
+func setServices(serviceIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, activeWorkerServices int32, t *testing.T) {
+	for _, service := range newServiceList(activeWorkerServices, tfJob, typ, t) {
+		serviceIndexer.Add(service)
+	}
+}
+
 func getCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
 	for _, v := range tfJob.Status.Conditions {
 		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
@@ -180,11 +210,13 @@ func TestNormalPath(t *testing.T) {
 		succeededPSPods int32
 		failedPSPods    int32
 
-		// TODO(gaocegege): Add service setup.
+		activeWorkerServices int32
+		activePSServices     int32
 
 		// expectations
-		expectedCreations int32
-		expectedDeletions int32
+		expectedPodCreations     int32
+		expectedPodDeletions     int32
+		expectedServiceCreations int32
 
 		expectedActiveWorkerPods    int32
 		expectedSucceededWorkerPods int32
@@ -194,7 +226,6 @@ func TestNormalPath(t *testing.T) {
 		expectedSucceededPSPods int32
 		expectedFailedPSPods    int32
 
-		// TODO(gaocegege): Add condition check.
 		expectedCondition       *tfv1alpha2.TFJobConditionType
 		expectedConditionReason string
 	}{
@@ -203,7 +234,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			0, 0, 0, 0,
 			0, 0, 0, 0,
-			1, 0,
+			0, 0,
+			1, 0, 1,
 			1, 0, 0,
 			0, 0, 0,
 			nil, "",
@@ -213,7 +245,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			0, 0, 0, 0,
 			0, 0, 0, 0,
-			6, 0,
+			0, 0,
+			6, 0, 6,
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
@@ -223,7 +256,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			4, 0, 0, 0,
 			2, 0, 0, 0,
-			0, 0,
+			4, 2,
+			0, 0, 0,
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
@@ -233,7 +267,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			0, 4, 0, 0,
 			0, 2, 0, 0,
-			0, 0,
+			4, 2,
+			0, 0, 0,
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
@@ -243,7 +278,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			2, 0, 0, 0,
 			1, 0, 0, 0,
-			3, 0,
+			2, 1,
+			3, 0, 3,
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
@@ -253,7 +289,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			2, 1, 0, 0,
 			1, 0, 0, 0,
-			2, 0,
+			3, 1,
+			2, 0, 2,
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
@@ -263,7 +300,8 @@ func TestNormalPath(t *testing.T) {
 			nil, true,
 			0, 0, 4, 0,
 			0, 0, 2, 0,
-			0, 0,
+			4, 2,
+			0, 0, 0,
 			0, 4, 0,
 			0, 2, 0,
 			nil, "",
@@ -303,6 +341,10 @@ func TestNormalPath(t *testing.T) {
 		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
 
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		setServices(serviceIndexer, tfJob, labelWorker, tc.activeWorkerServices, t)
+		setServices(serviceIndexer, tfJob, labelPS, tc.activePSServices, t)
+
 		forget, err := controller.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
 		if tc.ControllerError != nil {
@@ -319,15 +361,19 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		fakePodControl := controller.podControl.(*FakePodControl)
-		if int32(len(fakePodControl.Templates)) != tc.expectedCreations {
-			t.Errorf("%s: unexpected number of creates.  Expected %d, saw %d\n", name, tc.expectedCreations, len(fakePodControl.Templates))
+		fakeServiceControl := controller.serviceControl.(*FakeServiceControl)
+		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
+			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
 		}
-		if int32(len(fakePodControl.DeletePodName)) != tc.expectedDeletions {
-			t.Errorf("%s: unexpected number of deletes.  Expected %d, saw %d\n", name, tc.expectedDeletions, len(fakePodControl.DeletePodName))
+		if int32(len(fakeServiceControl.Templates)) != tc.expectedServiceCreations {
+			t.Errorf("%s: unexpected number of service creates.  Expected %d, saw %d\n", name, tc.expectedServiceCreations, len(fakeServiceControl.Templates))
+		}
+		if int32(len(fakePodControl.DeletePodName)) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", name, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
 		}
 		// Each create should have an accompanying ControllerRef.
-		if len(fakePodControl.ControllerRefs) != int(tc.expectedCreations) {
-			t.Errorf("%s: unexpected number of ControllerRefs.  Expected %d, saw %d\n", name, tc.expectedCreations, len(fakePodControl.ControllerRefs))
+		if len(fakePodControl.ControllerRefs) != int(tc.expectedPodCreations) {
+			t.Errorf("%s: unexpected number of ControllerRefs.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.ControllerRefs))
 		}
 		// Make sure the ControllerRefs are correct.
 		for _, controllerRef := range fakePodControl.ControllerRefs {
