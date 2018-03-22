@@ -47,6 +47,6 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
 
-	fs.BoolVar(&s.JSONLogFormat, "json-log-format", true,
+	fs.BoolVar(&s.JSONLogFormat, "json-log-format", false,
 		"Set true to use json style log format. Set false to use plaintext style log format")
 }
