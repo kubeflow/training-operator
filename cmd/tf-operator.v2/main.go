@@ -20,12 +20,12 @@ import (
 	"github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubeflow/tf-operator/cmd/tf-operator/app"
-	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 )
 
 func init() {
-	// Add filename as one of the fields of the structured log message
+	// Add filename as one of the fields of the structured log message.
 	filenameHook := filename.NewHook()
 	filenameHook.Field = "filename"
 	log.AddHook(filenameHook)
@@ -37,8 +37,8 @@ func main() {
 
 	flag.Parse()
 
-	if s.JsonLogFormat {
-		// Output logs in a json format so that it can be parsed by services like Stackdriver
+	if s.JSONLogFormat {
+		// Output logs in a json format so that it can be parsed by services like Stackdriver.
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 

@@ -30,8 +30,12 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha2 \
+ tensorflow:v1alpha1,v1alpha2 \
  --go-header-file ${SCRIPT_ROOT}/hack/boilerplate/boilerplate.go.txt
+
+# Notice: The code in code-generator does not generate defaulter by default.
+echo "Generating defaulters"
+${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1 -O zz_generated.defaults "$@"
 
 # Notice: The code in code-generator does not generate defaulter by default.
 echo "Generating defaulters"
