@@ -23,6 +23,7 @@ import (
 	time "time"
 )
 
+// NewInformerFunc a helping method for SharedInformerFactory interface
 type NewInformerFunc func(versioned.Interface, time.Duration) cache.SharedIndexInformer
 
 // SharedInformerFactory a small interface to allow for adding an informer without an import cycle
