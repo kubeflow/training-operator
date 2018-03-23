@@ -1,6 +1,18 @@
-# Read test/e2e/dist-mnist for how to build test image
-# kubeflow/tf-dist-mnist-test:1.0
+### Distributed mnist model for e2e test
 
+This folder containers docker file and distributed mnist model for e2e test.
+
+**Build Image**
+
+The default image name and tag is `kubeflow/tf-dist-mnist-test:1.0`.
+
+```shell
+./build_dist_mnist.sh
+```
+
+**Create TFJob YAML**
+
+```yaml
 apiVersion: "kubeflow.org/v1alpha2"
 kind: "TFJob"
 metadata:
@@ -24,3 +36,4 @@ spec:
             - name: dist-mnist-worker
               image: kubeflow/tf-dist-mnist-test:1.0
               args: ["train_steps", "50000"]
+```
