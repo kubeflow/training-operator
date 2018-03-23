@@ -121,7 +121,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   # as part of GKE cluster creation and store the config in the NFS directory.
   # This would make the handling of credentials
   # and KUBECONFIG more consistent between GKE and minikube and eventually
-  # this could be extended to other K8s deployments.  
+  # this could be extended to other K8s deployments.
   if cluster_name:
     util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
