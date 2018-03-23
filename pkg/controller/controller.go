@@ -47,6 +47,7 @@ const (
 )
 
 var (
+	// ErrVersionOutdated is a exported var to capture the error in apiserver
 	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
 
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
@@ -59,6 +60,7 @@ var (
 	MaxJobBackOff = 360 * time.Second
 )
 
+// Controller is structure to manage various service clients
 type Controller struct {
 	KubeClient  kubernetes.Interface
 	TFJobClient tfjobclient.Interface
@@ -85,6 +87,7 @@ type Controller struct {
 	enableGangScheduling bool
 }
 
+// New method sets up service client handles and returns controller object
 func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
 	config tfv1alpha1.ControllerConfig, tfJobInformerFactory informers.SharedInformerFactory,
 	enableGangScheduling bool) (*Controller, error) {
@@ -254,9 +257,8 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	// case we should forget about a job when the appropriate condition is reached.
 	if tfJob.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
 
 }
 

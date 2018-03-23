@@ -47,6 +47,7 @@ var (
 	retryPeriod   = 3 * time.Second
 )
 
+// Run starts the tf-operator service
 func Run(opt *options.ServerOption) error {
 
 	// Check if the -version flag was passed and, if so, print the version and exit.
@@ -127,6 +128,7 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
+// readControllerConfig reads the controller config file and maps it to controller config object
 func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfig {
 	controllerConfig := &v1alpha1.ControllerConfig{}
 	if controllerConfigFile != "" {
@@ -147,6 +149,7 @@ func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfi
 	return controllerConfig
 }
 
+// createClients creates clients three clients for given client configuration
 func createClients(config *rest.Config) (clientset.Interface, clientset.Interface, tfjobclient.Interface, error) {
 	kubeClient, err := clientset.NewForConfig(rest.AddUserAgent(config, "tfjob_operator"))
 	if err != nil {

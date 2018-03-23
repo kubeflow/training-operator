@@ -39,6 +39,7 @@ import (
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
+// TrainingJob represents a training job specification.
 // ensure correctness on creation.
 type TrainingJob struct {
 	job *tfv1alpha1.TFJob
@@ -66,11 +67,13 @@ type TrainingJob struct {
 // It is a map from job names to network addresses.
 type ClusterSpec map[string][]string
 
+// TaskSpec represents a Task specification.
 type TaskSpec struct {
 	Type  string `json:"type"`
 	Index int    `json:"index"`
 }
 
+//initJob initiate a training job and returns the job specifications.
 func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TFJob) (*TrainingJob, error) {
 	j := &TrainingJob{
 		KubeCli:     kubeCli,
@@ -84,6 +87,7 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, re
 	return j, nil
 }
 
+// NewJob method invokes the initJob and check for error
 func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, recorder record.EventRecorder, job *tfv1alpha1.TFJob, config *tfv1alpha1.ControllerConfig) (*TrainingJob, error) {
 	j, err := initJob(kubeCli, tfJobClient, recorder, job)
 	if err != nil {
@@ -93,10 +97,12 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, rec
 	return j, nil
 }
 
+// UID returns the user ID of the requesting user
 func (j *TrainingJob) UID() types.UID {
 	return j.job.ObjectMeta.UID
 }
 
+// ClusterSpec returns the cluster specification for the training job provided
 func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	clusterSpec := make(ClusterSpec)
 
@@ -124,6 +130,7 @@ func (j *TrainingJob) deleteResources() error {
 	return nil
 }
 
+// GetStatus returns the status of training job provided
 func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TFReplicaStatus, error) {
 	chief := j.job.Spec.TerminationPolicy.Chief
 	chiefState := tfv1alpha1.ReplicaStateUnknown
@@ -200,6 +207,7 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 	return true
 }
 
+// masterName returns the name of master replica of provided training job
 func (j *TrainingJob) masterName() string {
 	return fmt.Sprintf("master-%v-0", j.job.Spec.RuntimeId)
 }
@@ -241,7 +249,7 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 	}
 }
 
-// setup Replicas. This creates in memory data structures corresponding to the replicas.
+// // setupReplicas creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
@@ -257,6 +265,7 @@ func (j *TrainingJob) setupReplicas() error {
 	return nil
 }
 
+// Delete methods deletes the pods and frees the allocated resources
 func (j *TrainingJob) Delete() {
 	// TODO(jlewi): Delete is what should cause us to delete the Pods.
 	// we shouldn't delete the pods when the jobs finish because leaving the pods
@@ -303,7 +312,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 	return nil
 }
 
-// reconcile tries to get the job into the desired state.
+// Reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangScheduling bool) error {
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseNone {
 		// The job hasn't been setup.
@@ -409,6 +418,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	return nil
 }
 
+// name returns the name of the given training job.
 func (j *TrainingJob) name() string {
 	return j.job.ObjectMeta.GetName()
 }
@@ -418,6 +428,7 @@ func (j *TrainingJob) fullname() string {
 	return j.job.ObjectMeta.GetNamespace() + ":" + j.job.ObjectMeta.GetName()
 }
 
+// SchedulerName returns the scheduler name for the job.
 func (j *TrainingJob) SchedulerName() string {
 	return j.job.Spec.SchedulerName
 }
