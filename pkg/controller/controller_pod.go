@@ -108,6 +108,11 @@ func (tc *TFJobController) reconcilePods(
 				})
 			}
 
+			// Set restart policy
+			if spec.RestartPolicy != "ExitCode" {
+				pTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+			}
+
 			err := tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, pTemplate, tfjob, controllerRef)
 			if err != nil && errors.IsTimeout(err) {
 				// Pod is created but its initialization has timed out.
