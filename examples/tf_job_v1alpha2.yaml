@@ -1,0 +1,24 @@
+apiVersion: "kubeflow.org/v1alpha2"
+kind: "TFJob"
+metadata:
+  name: "example-job-1"
+spec:
+  tfReplicaSpecs:
+    PS:
+      replicas: 2
+      template:
+        spec:
+          containers:
+            - name: ps-busybox
+              image: busybox
+              command: ["sleep", "30000"]
+          restartPolicy: OnFailure
+    Worker:
+      replicas: 4
+      template:
+        spec:
+          containers:
+            - name: worker-busybox
+              image: busybox
+              command: ["sleep", "30000"]
+          restartPolicy: OnFailure

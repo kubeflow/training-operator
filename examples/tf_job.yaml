@@ -1,24 +1,30 @@
-apiVersion: "kubeflow.org/v1alpha2"
+apiVersion: "kubeflow.org/v1alpha1"
 kind: "TFJob"
 metadata:
-  name: "example-job-1"
+  name: "example-job"
 spec:
-  tfReplicaSpecs:
-    PS:
-      replicas: 2
+  replicaSpecs:
+    - replicas: 1
+      tfReplicaType: MASTER
       template:
         spec:
           containers:
-            - name: ps-busybox
-              image: busybox
-              command: ["sleep", "30000"]
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
           restartPolicy: OnFailure
-    Worker:
-      replicas: 4
+    - replicas: 1
+      tfReplicaType: WORKER
       template:
         spec:
           containers:
-            - name: worker-busybox
-              image: busybox
-              command: ["sleep", "30000"]
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 2
+      tfReplicaType: PS
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
           restartPolicy: OnFailure
