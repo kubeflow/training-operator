@@ -190,6 +190,9 @@ func (c *Controller) processNextWorkItem() bool {
 	forget, err := c.syncHandler(key.(string))
 	if err == nil {
 		if forget {
+			log.WithFields(log.Fields{
+				"job": key,
+			}).Infof("WorkQueue forgetting key %v", key)
 			c.WorkQueue.Forget(key)
 		}
 		return true
@@ -209,7 +212,9 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
-		log.Debugf("Finished syncing job %q (%v)", key, time.Since(startTime))
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("Finished syncing job %q (%v)", key, time.Since(startTime))
 	}()
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -224,7 +229,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Debugf("Job has been deleted: %v", key)
+			log.WithFields(log.Fields{
+				"job": key,
+			}).Infof("Job has been deleted: %v", key)
 			return true, nil
 		}
 		return false, err
@@ -233,9 +240,15 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
 	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
 	if cJob, ok := c.jobs[key]; !ok || cJob.UID() != tfJob.UID {
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("Creating new job %v", key)
 		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
+			log.WithFields(log.Fields{
+				"job": key,
+			}).Errorf("There was a problem creating NewJob %v; Error: %v", key, err)
 			return false, err
 		}
 		c.jobs[key] = nc
