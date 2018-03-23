@@ -98,11 +98,11 @@ func (tc *TFJobController) reconcilePods(
 				return nil
 			}
 			// Add TF_CONFIG environment variable.
-			for _, c := range pTemplate.Spec.Containers {
-				if len(c.Env) == 0 {
-					c.Env = make([]v1.EnvVar, 0)
+			for i, _ := range pTemplate.Spec.Containers {
+				if len(pTemplate.Spec.Containers[i].Env) == 0 {
+					pTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
 				}
-				c.Env = append(c.Env, v1.EnvVar{
+				pTemplate.Spec.Containers[i].Env = append(pTemplate.Spec.Containers[i].Env, v1.EnvVar{
 					Name:  "TF_CONFIG",
 					Value: tfConfigStr,
 				})
