@@ -107,6 +107,15 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, rec
 	return j, nil
 }
 
+// Update replaces the TFJob corresponding to TrainingJob with the provided job.
+// This function is used when the Spec/Status of the job is modified outside the controller.
+// For example, if the user issues a delete request. This will update the metadata on the object
+// so we need to replace the spec.
+func (j *TrainingJob) Update(newJob *tfv1alpha1.TFJob) {
+	j.contextLogger.Info("Updating job to %+v", newJob)
+	j.job = newJob
+}
+
 // UID returns the user ID of the requesting user
 func (j *TrainingJob) UID() types.UID {
 	return j.job.ObjectMeta.UID

@@ -265,6 +265,10 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 			return false, err
 		}
 		c.jobs[key] = nc
+	} else {
+		// Replace the TFJob stored inside TrainingJob with the latest job.
+		// We need to do this to pull in the latest changes to the spec/status.
+		c.jobs[key].Update(tfJob)
 	}
 
 	nc := c.jobs[key]
@@ -273,6 +277,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
+	// TODO(jlewi): Why do we issue a get request again here?
 	tfJob, err = c.TFJobClient.KubeflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
 
 	if err != nil {
