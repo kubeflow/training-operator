@@ -34,13 +34,13 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/juju/ratelimit"
 	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	kubeflowscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	listers "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha1"
 	"github.com/kubeflow/tf-operator/pkg/trainer"
-	"github.com/juju/ratelimit"
 )
 
 const (
