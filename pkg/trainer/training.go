@@ -324,6 +324,7 @@ func (j *TrainingJob) updateCRDStatus() error {
 
 // Reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangScheduling bool) error {
+	// TODO(jlewi): This doesn't seem to be a reliable way to detect deletion.
 	if j.job.ObjectMeta.DeletionTimestamp != nil {
 		j.contextLogger.Info("Deletion timestamp set; skipping reconcile")
 		// Job is in the process of being deleted so do nothing.
@@ -362,19 +363,22 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 		}
 	}
 
-	// sync pods
-	for _, rc := range j.Replicas {
-		err := rc.SyncPods()
-		if err != nil {
-			j.contextLogger.Errorf("SyncPods error: %v", err)
+	// Only sync pods and services if we are running.
+	if j.status.Phase == tfv1alpha1.TFJobPhaseCreating || j.status.Phase == tfv1alpha1.TFJobPhaseRunning {
+		// sync pods
+		for _, rc := range j.Replicas {
+			err := rc.SyncPods()
+			if err != nil {
+				j.contextLogger.Errorf("SyncPods error: %v", err)
+			}
 		}
-	}
 
-	// sync services
-	for _, rc := range j.Replicas {
-		err := rc.SyncServices()
-		if err != nil {
-			j.contextLogger.Errorf("SyncServices error: %v", err)
+		// sync services
+		for _, rc := range j.Replicas {
+			err := rc.SyncServices()
+			if err != nil {
+				j.contextLogger.Errorf("SyncServices error: %v", err)
+			}
 		}
 	}
 
