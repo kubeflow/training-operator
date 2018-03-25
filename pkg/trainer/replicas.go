@@ -442,7 +442,7 @@ func (s *TFReplicaSet) SyncPods() error {
 		}
 
 		if len(pl.Items) == 0 {
-			s.contextLogger.Infof("No pod found for job %s, creating a new one.", s.Job.name)
+			s.contextLogger.Infof("Job %s missing pod for replica %s index %s, creating a new one.", s.Job.name(), string(s.Spec.TFReplicaType), index)
 			// Create the pod
 			createdPod, err := s.CreatePodWithIndex(index)
 

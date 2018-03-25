@@ -40,6 +40,7 @@ import (
 	informers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	listers "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha1"
 	"github.com/kubeflow/tf-operator/pkg/trainer"
+	"github.com/juju/ratelimit"
 )
 
 const (
@@ -100,10 +101,19 @@ func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
+	// Use a ratelimiter with overall  and per-item rate limitting.
+	// The overall is a token bucket and the per-item is exponential
+	// For the per item
+	rateLimiter := workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+		&workqueue.BucketRateLimiter{Bucket: ratelimit.NewBucketWithRate(float64(10), int64(100))},
+	)
+
 	controller := &Controller{
 		KubeClient:  kubeClient,
 		TFJobClient: tfJobClient,
-		WorkQueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "TFjobs"),
+		WorkQueue:   workqueue.NewNamedRateLimitingQueue(rateLimiter, "TFjobs"),
 		recorder:    recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:                 make(map[string]*trainer.TrainingJob),
@@ -187,17 +197,20 @@ func (c *Controller) processNextWorkItem() bool {
 	}
 	defer c.WorkQueue.Done(key)
 
-	forget, err := c.syncHandler(key.(string))
+	_, err := c.syncHandler(key.(string))
 	if err == nil {
-		if forget {
-			log.WithFields(log.Fields{
-				"job": key,
-			}).Infof("WorkQueue forgetting key %v", key)
-			c.WorkQueue.Forget(key)
-		}
+		// Calling forget resets the rate limiter for this item.
+		// Since the sync was processed successfully we want to reset the ratelimiter
+		// so that future events can be processed immediately.
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("WorkQueue forgetting key %v", key)
+		c.WorkQueue.Forget(key)
 		return true
 	}
 
+	// There was an error processing the key so to retry we requeue it.
+	// The WorkQueue uses a rate limiter to control when the key gets retried.
 	utilruntime.HandleError(fmt.Errorf("Error syncing job: %v", err))
 	c.WorkQueue.AddRateLimited(key)
 
