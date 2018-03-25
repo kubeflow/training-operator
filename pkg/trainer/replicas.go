@@ -38,7 +38,7 @@ import (
 const (
 	SuccessfulCreateReason = "SuccessfulCreate"
 	FailedCreateReason     = "FailedCreate"
-	indexField = "replica"
+	indexField             = "replica"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -107,8 +107,8 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecord
 		Job:       job,
 		Spec:      tfReplicaSpec,
 		contextLogger: log.WithFields(log.Fields{
-			"job_type": string(tfReplicaSpec.TFReplicaType),
-			"runtime_id": job.job.Spec.RuntimeId,
+			"job_type":    string(tfReplicaSpec.TFReplicaType),
+			"runtime_id":  job.job.Spec.RuntimeId,
 			"tf_job_name": job.job.ObjectMeta.Name,
 			// We use job to match the key used in controller.go
 			// In controller.go we log the key used with the workqueue.
