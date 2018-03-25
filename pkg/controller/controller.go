@@ -77,6 +77,21 @@ type Controller struct {
 	// means we can ensure we only process a fixed amount of resources at a
 	// time, and makes it easy to ensure we are never processing the same item
 	// simultaneously in two different workers.
+	//
+	// Items in the work queue correspond to the name of the job.
+	// In response to various events (e.g. Add, Update, Delete), the informer
+	// is configured to add events to the queue. Since the item in the queue
+	// represents a job and not a particular event, we end up aggregating events for
+	// a job and ensure that a particular job isn't being processed by multiple
+	// workers simultaneously.
+	//
+	// We rely on the informer to periodically generate Update events. This ensures
+	// we regularly check on each TFJob and take any action needed.
+	//
+	// If there is a problem processing a job, processNextWorkItem just requeues
+	// the work item. This ensures that we end up retrying it. In this case
+	// we rely on the rateLimiter in the worker queue to retry with exponential
+	// backoff.
 	WorkQueue workqueue.RateLimitingInterface
 
 	// recorder is an event recorder for recording Event resources to the
@@ -195,6 +210,7 @@ func (c *Controller) processNextWorkItem() bool {
 	if quit {
 		return false
 	}
+
 	defer c.WorkQueue.Done(key)
 
 	_, err := c.syncHandler(key.(string))
