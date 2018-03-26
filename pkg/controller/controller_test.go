@@ -106,7 +106,7 @@ func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
 	return key
 }
 
-func getCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
+func checkCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
 	for _, v := range tfJob.Status.Conditions {
 		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
 			return true
@@ -347,7 +347,7 @@ func TestNormalPath(t *testing.T) {
 		// 	t.Errorf("%s: .status.startTime was not set", name)
 		// }
 		// Validate conditions.
-		if tc.expectedCondition != nil && !getCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
+		if tc.expectedCondition != nil && !checkCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
 			t.Errorf("%s: expected completion condition.  Got %#v", name, actual.Status.Conditions)
 		}
 	}

@@ -168,9 +168,9 @@ type TFJobCondition struct {
 type TFJobConditionType string
 
 const (
-	// TFJobCreated means all sub-resources (e.g. services/pods) of this TFJob
-	// have been successfully created.
-	// But they are waiting to be scheduled and launched.
+	// TFJobCreated means the tfjob has been accepted by the system,
+	// but one or more of the pods/services has not been started.
+	// This includes time before pods being scheduled and launched.
 	TFJobCreated TFJobConditionType = "Created"
 
 	// TFJobRunning means all sub-resources (e.g. services/pods) of this TFJob
