@@ -44,10 +44,8 @@ const (
 var (
 	alwaysReady = func() bool { return true }
 
-	tfJobCreated   = tfv1alpha2.TFJobCreated
 	tfJobRunning   = tfv1alpha2.TFJobRunning
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
-	tfJobFailed    = tfv1alpha2.TFJobFailed
 )
 
 func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
