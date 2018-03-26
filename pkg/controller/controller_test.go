@@ -417,6 +417,9 @@ func TestAddTFJob(t *testing.T) {
 		key = tfJobKey
 		return true, nil
 	}
+	controller.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
+		return nil
+	}
 
 	tfJob := newTFJob(1, 0)
 	controller.addTFJob(tfJob)
