@@ -53,6 +53,48 @@ func (tc *TFJobController) reconcilePods(
 
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := *spec.Replicas - succeeded
+
+	// All workers are succeeded, leave a succeeded condition.
+	if expected == 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
+		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+		if err != nil {
+			log.Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+	}
+
+	// Some workers are still active (running or pending), leave a running condition.
+	if len(activePods) > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
+		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+		if err != nil {
+			log.Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+	}
+
+	// All workers are running, set StartTime
+	if len(activePods) == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
+		now := metav1.Now()
+		tfjob.Status.StartTime = &now
+		err := tc.updateStatusHandler(tfjob)
+		if err != nil {
+			log.Infof("Set tfjob start time error: %v", err)
+			return err
+		}
+	}
+
+	// Some workers or pss are failed , leave a failed condition.
+	if failed > 0 {
+		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobRunningReason, msg)
+		if err != nil {
+			log.Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+	}
+
 	diff := len(activePods) - int(expected)
 
 	if diff < 0 {
