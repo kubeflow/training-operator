@@ -41,7 +41,14 @@ const (
 	threadCount   = 1
 )
 
-var alwaysReady = func() bool { return true }
+var (
+	alwaysReady = func() bool { return true }
+
+	tfJobCreated   = tfv1alpha2.TFJobCreated
+	tfJobRunning   = tfv1alpha2.TFJobRunning
+	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
+	tfJobFailed    = tfv1alpha2.TFJobFailed
+)
 
 func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
@@ -162,6 +169,7 @@ func TestNormalPath(t *testing.T) {
 			1, 0, 1,
 			1, 0, 0,
 			0, 0, 0,
+			// We can not check if it is created since the condition is set in addTFJob.
 			nil, "",
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created": {
@@ -184,7 +192,7 @@ func TestNormalPath(t *testing.T) {
 			0, 0, 0,
 			4, 0, 0,
 			2, 0, 0,
-			nil, "",
+			&tfJobRunning, tfJobRunningReason,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are running": {
 			4, 2,
@@ -195,7 +203,7 @@ func TestNormalPath(t *testing.T) {
 			0, 0, 0,
 			4, 0, 0,
 			2, 0, 0,
-			nil, "",
+			&tfJobRunning, tfJobRunningReason,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending": {
 			4, 2,
@@ -217,7 +225,7 @@ func TestNormalPath(t *testing.T) {
 			2, 0, 2,
 			4, 0, 0,
 			2, 0, 0,
-			nil, "",
+			&tfJobRunning, tfJobRunningReason,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is succeeded": {
 			4, 2,
@@ -228,7 +236,7 @@ func TestNormalPath(t *testing.T) {
 			0, 0, 0,
 			0, 4, 0,
 			0, 2, 0,
-			nil, "",
+			&tfJobSucceeded, tfJobSucceededReason,
 		},
 	}
 
