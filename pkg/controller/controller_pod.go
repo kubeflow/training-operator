@@ -88,7 +88,7 @@ func (tc *TFJobController) reconcilePods(
 	// Some workers or pss are failed , leave a failed condition.
 	if failed > 0 {
 		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobRunningReason, msg)
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 		if err != nil {
 			log.Infof("Append tfjob condition error: %v", err)
 			return err
