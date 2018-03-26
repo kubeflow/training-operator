@@ -159,6 +159,9 @@ func TestNormalPath(t *testing.T) {
 
 		expectedCondition       *tfv1alpha2.TFJobConditionType
 		expectedConditionReason string
+
+		// There are some cases that should not check start time since the field should be set in the previous sync loop.
+		needCheckStartTime bool
 	}{
 		"Local TFJob is created": {
 			1, 0,
@@ -171,6 +174,7 @@ func TestNormalPath(t *testing.T) {
 			0, 0, 0,
 			// We can not check if it is created since the condition is set in addTFJob.
 			nil, "",
+			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created": {
 			4, 2,
@@ -182,6 +186,7 @@ func TestNormalPath(t *testing.T) {
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
+			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are pending": {
 			4, 2,
@@ -193,6 +198,7 @@ func TestNormalPath(t *testing.T) {
 			4, 0, 0,
 			2, 0, 0,
 			&tfJobRunning, tfJobRunningReason,
+			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are running": {
 			4, 2,
@@ -204,6 +210,7 @@ func TestNormalPath(t *testing.T) {
 			4, 0, 0,
 			2, 0, 0,
 			&tfJobRunning, tfJobRunningReason,
+			true,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending": {
 			4, 2,
@@ -215,6 +222,7 @@ func TestNormalPath(t *testing.T) {
 			4, 0, 0,
 			2, 0, 0,
 			nil, "",
+			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending, 1 worker is running": {
 			4, 2,
@@ -226,6 +234,7 @@ func TestNormalPath(t *testing.T) {
 			4, 0, 0,
 			2, 0, 0,
 			&tfJobRunning, tfJobRunningReason,
+			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is succeeded": {
 			4, 2,
@@ -237,6 +246,7 @@ func TestNormalPath(t *testing.T) {
 			0, 4, 0,
 			0, 2, 0,
 			&tfJobSucceeded, tfJobSucceededReason,
+			false,
 		},
 	}
 
@@ -349,11 +359,10 @@ func TestNormalPath(t *testing.T) {
 				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedPSPods, actual.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypePS].Failed)
 			}
 		}
-		// TODO(gaocegege): Set StartTime for the status.
 		// Validate StartTime.
-		// if actual.Status.StartTime == nil {
-		// 	t.Errorf("%s: .status.startTime was not set", name)
-		// }
+		if tc.needCheckStartTime && actual.Status.StartTime == nil {
+			t.Errorf("%s: StartTime was not set", name)
+		}
 		// Validate conditions.
 		if tc.expectedCondition != nil && !checkCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
 			t.Errorf("%s: expected completion condition.  Got %#v", name, actual.Status.Conditions)
