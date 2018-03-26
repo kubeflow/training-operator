@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/juju/ratelimit"
 	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	kubeflowscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -76,6 +77,21 @@ type Controller struct {
 	// means we can ensure we only process a fixed amount of resources at a
 	// time, and makes it easy to ensure we are never processing the same item
 	// simultaneously in two different workers.
+	//
+	// Items in the work queue correspond to the name of the job.
+	// In response to various events (e.g. Add, Update, Delete), the informer
+	// is configured to add events to the queue. Since the item in the queue
+	// represents a job and not a particular event, we end up aggregating events for
+	// a job and ensure that a particular job isn't being processed by multiple
+	// workers simultaneously.
+	//
+	// We rely on the informer to periodically generate Update events. This ensures
+	// we regularly check on each TFJob and take any action needed.
+	//
+	// If there is a problem processing a job, processNextWorkItem just requeues
+	// the work item. This ensures that we end up retrying it. In this case
+	// we rely on the rateLimiter in the worker queue to retry with exponential
+	// backoff.
 	WorkQueue workqueue.RateLimitingInterface
 
 	// recorder is an event recorder for recording Event resources to the
@@ -100,10 +116,19 @@ func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
+	// Use a ratelimiter with overall  and per-item rate limitting.
+	// The overall is a token bucket and the per-item is exponential
+	// For the per item
+	rateLimiter := workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+		&workqueue.BucketRateLimiter{Bucket: ratelimit.NewBucketWithRate(float64(10), int64(100))},
+	)
+
 	controller := &Controller{
 		KubeClient:  kubeClient,
 		TFJobClient: tfJobClient,
-		WorkQueue:   workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "TFjobs"),
+		WorkQueue:   workqueue.NewNamedRateLimitingQueue(rateLimiter, "TFjobs"),
 		recorder:    recorder,
 		// TODO(jlewi)): What to do about cluster.Cluster?
 		jobs:                 make(map[string]*trainer.TrainingJob),
@@ -185,16 +210,23 @@ func (c *Controller) processNextWorkItem() bool {
 	if quit {
 		return false
 	}
+
 	defer c.WorkQueue.Done(key)
 
-	forget, err := c.syncHandler(key.(string))
+	_, err := c.syncHandler(key.(string))
 	if err == nil {
-		if forget {
-			c.WorkQueue.Forget(key)
-		}
+		// Calling forget resets the rate limiter for this item.
+		// Since the sync was processed successfully we want to reset the ratelimiter
+		// so that future events can be processed immediately.
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("WorkQueue forgetting key %v", key)
+		c.WorkQueue.Forget(key)
 		return true
 	}
 
+	// There was an error processing the key so to retry we requeue it.
+	// The WorkQueue uses a rate limiter to control when the key gets retried.
 	utilruntime.HandleError(fmt.Errorf("Error syncing job: %v", err))
 	c.WorkQueue.AddRateLimited(key)
 
@@ -209,7 +241,9 @@ func (c *Controller) processNextWorkItem() bool {
 func (c *Controller) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	defer func() {
-		log.Debugf("Finished syncing job %q (%v)", key, time.Since(startTime))
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("Finished syncing job %q (%v)", key, time.Since(startTime))
 	}()
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -224,7 +258,9 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Debugf("Job has been deleted: %v", key)
+			log.WithFields(log.Fields{
+				"job": key,
+			}).Infof("Job has been deleted: %v", key)
 			return true, nil
 		}
 		return false, err
@@ -233,12 +269,22 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 	// Create a new TrainingJob if there is no TrainingJob stored for it in the jobs map or if the UID's don't match.
 	// The UID's won't match in the event we deleted the job and then recreated the job with the same name.
 	if cJob, ok := c.jobs[key]; !ok || cJob.UID() != tfJob.UID {
+		log.WithFields(log.Fields{
+			"job": key,
+		}).Infof("Creating new job %v", key)
 		nc, err := trainer.NewJob(c.KubeClient, c.TFJobClient, c.recorder, tfJob, &c.config)
 
 		if err != nil {
+			log.WithFields(log.Fields{
+				"job": key,
+			}).Errorf("There was a problem creating NewJob %v; Error: %v", key, err)
 			return false, err
 		}
 		c.jobs[key] = nc
+	} else {
+		// Replace the TFJob stored inside TrainingJob with the latest job.
+		// We need to do this to pull in the latest changes to the spec/status.
+		c.jobs[key].Update(tfJob)
 	}
 
 	nc := c.jobs[key]
@@ -247,6 +293,7 @@ func (c *Controller) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
+	// TODO(jlewi): Why do we issue a get request again here?
 	tfJob, err = c.TFJobClient.KubeflowV1alpha1().TFJobs(tfJob.ObjectMeta.Namespace).Get(tfJob.ObjectMeta.Name, metav1.GetOptions{})
 
 	if err != nil {

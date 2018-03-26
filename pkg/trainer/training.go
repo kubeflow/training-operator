@@ -60,6 +60,9 @@ type TrainingJob struct {
 	memberCounter int
 
 	pdb *v1beta1.PodDisruptionBudget
+
+	// contextLogger is a logger to use for logging information about this replica.
+	contextLogger *log.Entry
 }
 
 // ClusterSpec represents a cluster TensorFlow specification.
@@ -82,6 +85,13 @@ func initJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, re
 		Replicas:    make([]*TFReplicaSet, 0),
 		job:         job,
 		status:      *job.Status.DeepCopy(),
+
+		contextLogger: log.WithFields(log.Fields{
+			// We use job to match the key used in controller.go
+			// In controller.go we log the key used with the workqueue.
+			"job": job.ObjectMeta.Namespace + "/" + job.ObjectMeta.Name,
+			"uid": job.ObjectMeta.UID,
+		}),
 	}
 
 	return j, nil
@@ -95,6 +105,15 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, rec
 	}
 
 	return j, nil
+}
+
+// Update replaces the TFJob corresponding to TrainingJob with the provided job.
+// This function is used when the Spec/Status of the job is modified outside the controller.
+// For example, if the user issues a delete request. This will update the metadata on the object
+// so we need to replace the spec.
+func (j *TrainingJob) Update(newJob *tfv1alpha1.TFJob) {
+	j.contextLogger.Info("Updating job to %+v", *newJob)
+	j.job = newJob
 }
 
 // UID returns the user ID of the requesting user
@@ -271,7 +290,7 @@ func (j *TrainingJob) Delete() {
 	// we shouldn't delete the pods when the jobs finish because leaving the pods
 	// allows us to get the logs from the pods after the job finishes.
 	//
-	log.Infof("TFJob %v deleted by the user", j.fullname())
+	j.contextLogger.Infof("TFJob %v deleted by the user", j.fullname())
 	// TODO(jlewi): This logic is probably insufficient.
 	if j.job.Status.Phase != tfv1alpha1.TFJobPhaseCleanUp {
 		j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
@@ -281,14 +300,14 @@ func (j *TrainingJob) Delete() {
 	// we just rely on K8s garbage collection to delete the resources before
 	// deleting TFJob?
 	if cErr := j.deleteResources(); cErr != nil {
-		log.Errorf("trainingJob.deleteResources() error; %v", cErr)
+		j.contextLogger.Errorf("trainingJob.deleteResources() error; %v", cErr)
 	}
 
 	if j.pdb != nil {
 		// if the job has PDB for gang scheduling, delete it
 		err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Delete(j.pdb.ObjectMeta.Name, &meta_v1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting PDB %v; %v", j.pdb.ObjectMeta.Name, err)
+			j.contextLogger.Errorf("Error deleting PDB %v; %v", j.pdb.ObjectMeta.Name, err)
 		}
 	}
 }
@@ -314,12 +333,20 @@ func (j *TrainingJob) updateCRDStatus() error {
 
 // Reconcile tries to get the job into the desired state.
 func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangScheduling bool) error {
+	// TODO(jlewi): This doesn't seem to be a reliable way to detect deletion.
+	if j.job.ObjectMeta.DeletionTimestamp != nil {
+		j.contextLogger.Info("Deletion timestamp set; skipping reconcile")
+		// Job is in the process of being deleted so do nothing.
+		// We especially don't want to create new resources as that could block deletion.
+		return nil
+	}
+
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseNone {
 		// The job hasn't been setup.
 		j.setup(config)
 
 		if err := j.updateCRDStatus(); err != nil {
-			log.Warningf("failed to update CRD status: %v", err)
+			j.contextLogger.Warningf("failed to update CRD status: %v", err)
 			return err
 		}
 	}
@@ -328,10 +355,10 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	// These are go-lang structures which aren't preserved in the APIServer. So we always need to call setupReplicas
 	// unlike setup which only needs to be called once during the lifecycle of the job.
 	if err := j.setupReplicas(); err != nil {
-		log.Errorf("failed to create replicas: %v", err)
+		j.contextLogger.Errorf("failed to create replicas: %v", err)
 		j.status.Reason = fmt.Sprintf("Could not create in memory datastructures; %v", err)
 		if uErr := j.updateCRDStatus(); err != nil {
-			log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
+			j.contextLogger.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
 		}
 		return err
 	}
@@ -341,28 +368,31 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	if enableGangScheduling {
 		err := j.syncPdb()
 		if err != nil {
-			log.Errorf("SyncPdb error: %v", err)
+			j.contextLogger.Errorf("SyncPdb error: %v", err)
 		}
 	}
 
-	// sync pods
-	for _, rc := range j.Replicas {
-		err := rc.SyncPods()
-		if err != nil {
-			log.Errorf("SyncPods error: %v", err)
+	// Only sync pods and services if we are running.
+	if j.status.Phase == tfv1alpha1.TFJobPhaseCreating || j.status.Phase == tfv1alpha1.TFJobPhaseRunning {
+		// sync pods
+		for _, rc := range j.Replicas {
+			err := rc.SyncPods()
+			if err != nil {
+				j.contextLogger.Errorf("SyncPods error: %v", err)
+			}
 		}
-	}
 
-	// sync services
-	for _, rc := range j.Replicas {
-		err := rc.SyncServices()
-		if err != nil {
-			log.Errorf("SyncServices error: %v", err)
+		// sync services
+		for _, rc := range j.Replicas {
+			err := rc.SyncServices()
+			if err != nil {
+				j.contextLogger.Errorf("SyncServices error: %v", err)
+			}
 		}
 	}
 
 	if err := j.updateCRDStatus(); err != nil {
-		log.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
+		j.contextLogger.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
@@ -371,36 +401,36 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 
 	j.status.ReplicaStatuses = replicaStatuses
 	if err != nil {
-		log.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
+		j.contextLogger.Errorf("GetStatus() for job %v returned error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
 	// TODO(jlewi): We should update the Phase if we detect the job is done.
 	if state == tfv1alpha1.StateFailed {
-		log.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
+		j.contextLogger.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
 		j.status.Phase = tfv1alpha1.TFJobPhaseDone
 		j.status.State = tfv1alpha1.StateFailed
 	} else if state == tfv1alpha1.StateSucceeded {
-		log.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
+		j.contextLogger.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
 		j.status.Phase = tfv1alpha1.TFJobPhaseDone
 		j.status.State = tfv1alpha1.StateSucceeded
 	} else if state == tfv1alpha1.StateRunning {
-		log.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
+		j.contextLogger.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
 		j.status.Phase = tfv1alpha1.TFJobPhaseRunning
 		j.status.State = tfv1alpha1.StateRunning
 	} else {
-		log.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
+		j.contextLogger.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
 	}
 
 	// If the phase changed we should update the CRD.
 	if err := j.updateCRDStatus(); err != nil {
-		log.Warningf("Job %v, failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
+		j.contextLogger.Warningf("Job %v, failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		if cErr := j.deleteResources(); cErr != nil {
-			log.Errorf("Job %v trainingJob.Delete() error; %v", j.job.ObjectMeta.Name, cErr)
+			j.contextLogger.Errorf("Job %v trainingJob.Delete() error; %v", j.job.ObjectMeta.Name, cErr)
 		}
 		// j.status.SetPhase(spec.TFJobPhaseDone)
 		// Return from run because we want to stop reconciling the object.
@@ -411,7 +441,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	// doesn't match c.Cluster.status. So you can change c.Status in order to propagate
 	// changes to the CRD status.
 	if err := j.updateCRDStatus(); err != nil {
-		log.Warningf("Job %v; failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
+		j.contextLogger.Warningf("Job %v; failed to update CRD status error: %v", j.job.ObjectMeta.Name, err)
 		return err
 	}
 
@@ -464,7 +494,7 @@ func (j *TrainingJob) syncPdb() error {
 	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
-			log.Infof("PDB: %v already exists.", j.job.ObjectMeta.Name)
+			j.contextLogger.Infof("PDB: %v already exists.", j.job.ObjectMeta.Name)
 			return nil
 		}
 
