@@ -23,7 +23,6 @@ import (
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,6 +47,7 @@ var (
 	retryPeriod   = 3 * time.Second
 )
 
+// Run starts the tf-operator service
 func Run(opt *options.ServerOption) error {
 
 	// Check if the -version flag was passed and, if so, print the version and exit.
@@ -57,7 +57,7 @@ func Run(opt *options.ServerOption) error {
 
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
-		log.Infof("EnvKubeflowNamespace not set, use default namespace")
+		log.Infof("KUBEFLOW_NAMESPACE not set, using default namespace")
 		namespace = metav1.NamespaceDefault
 	}
 
@@ -69,7 +69,7 @@ func Run(opt *options.ServerOption) error {
 		return err
 	}
 
-	kubeClient, leaderElectionClient, tfJobClient, apiExtensionsclient, err := createClients(config)
+	kubeClient, leaderElectionClient, tfJobClient, err := createClients(config)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func Run(opt *options.ServerOption) error {
 	defer close(neverStop)
 
 	tfJobInformerFactory := informers.NewSharedInformerFactory(tfJobClient, time.Second*30)
-	controller, err := controller.New(kubeClient, apiExtensionsclient, tfJobClient, *controllerConfig, tfJobInformerFactory)
+	controller, err := controller.New(kubeClient, tfJobClient, *controllerConfig, tfJobInformerFactory, opt.EnableGangScheduling)
 	if err != nil {
 		return err
 	}
@@ -128,6 +128,7 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
+// readControllerConfig reads the controller config file and maps it to controller config object
 func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfig {
 	controllerConfig := &v1alpha1.ControllerConfig{}
 	if controllerConfigFile != "" {
@@ -148,26 +149,22 @@ func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfi
 	return controllerConfig
 }
 
-func createClients(config *rest.Config) (clientset.Interface, clientset.Interface, tfjobclient.Interface, apiextensionsclient.Interface, error) {
+// createClients creates clients three clients for given client configuration
+func createClients(config *rest.Config) (clientset.Interface, clientset.Interface, tfjobclient.Interface, error) {
 	kubeClient, err := clientset.NewForConfig(rest.AddUserAgent(config, "tfjob_operator"))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	leaderElectionClient, err := clientset.NewForConfig(rest.AddUserAgent(config, "leader-election"))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	tfJobClient, err := tfjobclient.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	apiExtensionsclient, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	return kubeClient, leaderElectionClient, tfJobClient, apiExtensionsclient, nil
+	return kubeClient, leaderElectionClient, tfJobClient, nil
 }

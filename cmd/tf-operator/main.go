@@ -17,10 +17,11 @@ package main
 import (
 	"flag"
 
-	"github.com/kubeflow/tf-operator/cmd/tf-operator/app"
-	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
 	"github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/kubeflow/tf-operator/cmd/tf-operator/app"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
 )
 
 func init() {

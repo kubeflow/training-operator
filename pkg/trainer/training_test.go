@@ -22,8 +22,10 @@ import (
 	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfJobFake "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/fake"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
 )
@@ -339,6 +341,149 @@ func TestJobSetup(t *testing.T) {
 
 		if len(job.job.Spec.ReplicaSpecs[0].Template.Spec.Containers[0].VolumeMounts) != c.expectMounts {
 			t.Errorf("Expect %v VolumeMounts got %v", c.expectMounts, len(job.job.Spec.ReplicaSpecs[0].Template.Spec.Containers[0].VolumeMounts))
+		}
+	}
+}
+
+func TestPDBForGangScheduling(t *testing.T) {
+	clientSet := fake.NewSimpleClientset()
+
+	type testCase struct {
+		jobSpec   *tfv1alpha1.TFJob
+		expectPdb *v1beta1.PodDisruptionBudget
+	}
+
+	minAvailable3 := intstr.FromInt(3)
+
+	testCases := []testCase{
+		{
+			jobSpec: &tfv1alpha1.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "some-meta-name",
+				},
+				Spec: tfv1alpha1.TFJobSpec{
+					RuntimeId: "some-runtime-id",
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
+						{
+							Replicas: proto.Int32(1),
+							TFPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
+							TFReplicaType: tfv1alpha1.WORKER,
+						},
+					},
+				},
+			},
+			expectPdb: nil,
+		},
+
+		{
+			jobSpec: &tfv1alpha1.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "some-meta-name",
+				},
+				Spec: tfv1alpha1.TFJobSpec{
+					RuntimeId: "some-runtime-id",
+					ReplicaSpecs: []*tfv1alpha1.TFReplicaSpec{
+						{
+							Replicas: proto.Int32(1),
+							TFPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
+							TFReplicaType: tfv1alpha1.MASTER,
+						},
+						{
+							Replicas: proto.Int32(1),
+							TFPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
+							TFReplicaType: tfv1alpha1.PS,
+						},
+						{
+							Replicas: proto.Int32(1),
+							TFPort:   proto.Int32(10),
+							Template: &v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name: "tensorflow",
+										},
+									},
+								},
+							},
+							TFReplicaType: tfv1alpha1.WORKER,
+						},
+					},
+				},
+			},
+			expectPdb: &v1beta1.PodDisruptionBudget{
+				Spec: v1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &minAvailable3,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"runtime_id":  "some-runtime-id",
+							"tf_job_name": "some-meta-name",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, c := range testCases {
+		recorder := record.NewFakeRecorder(100)
+		job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, c.jobSpec)
+		if err != nil {
+			t.Errorf("j.initJob() error: %v", err)
+		}
+
+		err = job.setupReplicas()
+		if err != nil {
+			t.Errorf("j.setupReplicas() error: %v", err)
+		}
+
+		err = job.syncPdb()
+		if err != nil {
+			t.Errorf("j.Reconcile() error: %v", err)
+		}
+
+		actualPdbList, err := clientSet.PolicyV1beta1().PodDisruptionBudgets(job.job.ObjectMeta.Namespace).List(metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("Could not get PDB List: %v", err)
+		}
+		if len(actualPdbList.Items) != 1 && c.expectPdb != nil {
+			t.Fatalf("k8s should have one PDB but the length of actually created PDB isn't 1, Got %d", len(actualPdbList.Items))
+		}
+
+		if c.expectPdb == nil {
+			// non distributed training job, shouldn't have PDB
+			continue
+		}
+
+		actualPdb := actualPdbList.Items[0]
+		if !reflect.DeepEqual(c.expectPdb.Spec, actualPdb.Spec) {
+			t.Fatalf("Got %v, Want %v", actualPdb.Spec, c.expectPdb.Spec)
 		}
 	}
 }

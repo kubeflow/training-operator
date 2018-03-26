@@ -52,7 +52,7 @@ def wait_for_delete(client,
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
-        "Timeout waiting for job {0} in namespace {1} to finish.".format(
+        "Timeout waiting for job {0} in namespace {1} to be deleted.".format(
           name, namespace))
 
     time.sleep(polling_interval.seconds)
@@ -195,6 +195,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       tf_job_client.delete_tf_job(api_client, namespace, name)
 
+      logging.info("Waiting for job %s in namespaces %s to be deleted.", name, namespace)
       wait_for_delete(
         api_client, namespace, name, status_callback=tf_job_client.log_status)
 
