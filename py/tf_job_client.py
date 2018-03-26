@@ -63,7 +63,7 @@ def delete_tf_job(client, namespace, name):
     logging.info("Deleting job %s.%s", namespace, name)
     api_response = crd_api.delete_namespaced_custom_object(
       TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body)
-    logging.info("Deleted job %s.%s", namespace, name)
+    logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
     return api_response
   except ApiException as e:
     message = ""
@@ -99,7 +99,7 @@ def log_status(tf_job):
 def wait_for_job(client,
                  namespace,
                  name,
-                 timeout=datetime.timedelta(minutes=5),
+                 timeout=datetime.timedelta(minutes=10),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
   """Wait for the specified job to finish.

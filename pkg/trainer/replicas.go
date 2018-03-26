@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +38,7 @@ import (
 const (
 	SuccessfulCreateReason = "SuccessfulCreate"
 	FailedCreateReason     = "FailedCreate"
+	indexField             = "replica"
 )
 
 // TFReplicaSet is a set of TF processes all acting as the same role (e.g. worker
@@ -47,6 +48,9 @@ type TFReplicaSet struct {
 	// Job is a pointer to the TrainingJob to which this replica belongs.
 	Job  *TrainingJob
 	Spec tfv1alpha1.TFReplicaSpec
+
+	// contextLogger is a logger to use for logging information about this replica.
+	contextLogger *log.Entry
 }
 
 // TFReplicaSetInterface is an interface for managing a set of replicas.
@@ -102,6 +106,14 @@ func NewTFReplicaSet(clientSet kubernetes.Interface, recorder record.EventRecord
 		recorder:  recorder,
 		Job:       job,
 		Spec:      tfReplicaSpec,
+		contextLogger: log.WithFields(log.Fields{
+			"job_type":    string(tfReplicaSpec.TFReplicaType),
+			"runtime_id":  job.job.Spec.RuntimeId,
+			"tf_job_name": job.job.ObjectMeta.Name,
+			// We use job to match the key used in controller.go
+			// In controller.go we log the key used with the workqueue.
+			"job": job.job.ObjectMeta.Namespace + "/" + job.job.ObjectMeta.Name,
+		}),
 	}, nil
 }
 
@@ -150,7 +162,9 @@ func (s *TFReplicaSet) CreateServiceWithIndex(index int32) (*v1.Service, error) 
 		},
 	}
 
-	log.Infof("Creating service: %v", service.ObjectMeta.Name)
+	s.contextLogger.WithFields(log.Fields{
+		indexField: index,
+	}).Infof("Creating service: %v", service.ObjectMeta.Name)
 	return s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Create(service)
 }
 
@@ -184,7 +198,7 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 
 	tfConfigJson, err := json.Marshal(tfConfig)
 	if err != nil {
-		log.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.ObjectMeta.Name, util.Pformat(tfConfig), err)
+		s.contextLogger.Errorf("Job: %v serializing tfConfig: %v return error; %v", s.Job.job.ObjectMeta.Name, util.Pformat(tfConfig), err)
 		return nil, err
 	}
 
@@ -205,7 +219,9 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 		})
 	}
 
-	log.Infof("Creating pod: %v", pod.ObjectMeta.Name)
+	s.contextLogger.WithFields(log.Fields{
+		indexField: index,
+	}).Infof("Creating pod: %v", pod.ObjectMeta.Name)
 	return s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Create(pod)
 }
 
@@ -222,48 +238,50 @@ func (s *TFReplicaSet) Delete() error {
 		LabelSelector: selector,
 	}
 
-	log.V(1).Infof("Deleting Jobs namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
+	s.contextLogger.Infof("Deleting Jobs namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
 	err = s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
-		log.Errorf("There was a problem deleting the jobs; %v", err)
+		s.contextLogger.Errorf("There was a problem deleting the jobs; %v", err)
 		failures = true
 	}
 
 	// We need to delete the completed pods.
-	log.Infof("Deleting Pods namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
+	s.contextLogger.Infof("Deleting Pods namespace=%v selector=%v", s.Job.job.ObjectMeta.Namespace, selector)
 	err = s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
 
 	if err != nil {
-		log.Errorf("There was a problem deleting the pods; %v", err)
+		s.contextLogger.Errorf("There was a problem deleting the pods; %v", err)
 		failures = true
 	}
 
 	// Services doesn't support DeleteCollection so we delete them individually.
 	// TODO(jlewi): We should check if this has changed with K8s 1.8 or other releases.
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
-		log.V(1).Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.genName((index)))
+		s.contextLogger.WithFields(log.Fields{
+			indexField: index,
+		}).Infof("Deleting Service %v:%v", s.Job.job.ObjectMeta.Namespace, s.genName((index)))
 		err = s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Delete(s.genName(index), &meta_v1.DeleteOptions{})
 
 		if err != nil {
-			log.Errorf("Error deleting service %v; %v", s.genName(index), err)
+			s.contextLogger.Errorf("Error deleting service %v; %v", s.genName(index), err)
 			failures = true
 		}
 	}
 
 	// If the ConfigMap for the default parameter server exists, we delete it
-	log.Infof("Get ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
+	s.contextLogger.Infof("Get ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
 	_, err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Get(s.defaultPSConfigMapName(), meta_v1.GetOptions{})
 	if err != nil {
 		if !k8sutil.IsKubernetesResourceNotFoundError(err) {
-			log.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
+			s.contextLogger.Errorf("Error deleting ConfigMap %v; %v", s.defaultPSConfigMapName(), err)
 			failures = true
 		}
 	} else {
-		log.Infof("Delete ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
+		s.contextLogger.Infof("Delete ConfigMaps %v:%v", s.Job.job.ObjectMeta.Namespace, s.defaultPSConfigMapName())
 		err = s.ClientSet.CoreV1().ConfigMaps(s.Job.job.ObjectMeta.Namespace).Delete(s.defaultPSConfigMapName(), &meta_v1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("There was a problem deleting the ConfigMaps; %v", err)
+			s.contextLogger.Errorf("There was a problem deleting the ConfigMaps; %v", err)
 			failures = true
 		}
 	}
@@ -331,20 +349,10 @@ func replicaStatusFromPodList(l v1.PodList, name string) tfv1alpha1.ReplicaState
 
 // GetSingleReplicaStatus returns status for a single replica
 func (s *TFReplicaSet) GetSingleReplicaStatus(index int32) tfv1alpha1.ReplicaState {
-	p, err := s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Get(s.genName(index), meta_v1.GetOptions{})
-
-	if err != nil {
-		return tfv1alpha1.ReplicaStateUnknown
-	}
-
-	if v1.PodSucceeded == p.Status.Phase {
-		return tfv1alpha1.ReplicaStateSucceeded
-	}
-
 	labels := s.LabelsByIndex(index)
 	selector, err := labels.ToSelector()
 	if err != nil {
-		log.Errorf("labels.ToSelector() error; %v", err)
+		s.contextLogger.Errorf("labels.ToSelector() error; %v", err)
 		return tfv1alpha1.ReplicaStateFailed
 	}
 
@@ -434,14 +442,14 @@ func (s *TFReplicaSet) SyncPods() error {
 		}
 
 		if len(pl.Items) == 0 {
-			log.Infof("No pod found for job %s, creating a new one.", s.Job.name)
+			s.contextLogger.Infof("Job %s missing pod for replica %s index %s, creating a new one.", s.Job.name(), string(s.Spec.TFReplicaType), index)
 			// Create the pod
 			createdPod, err := s.CreatePodWithIndex(index)
 
 			// If the pod already exists do nothing.
 			if err != nil {
 				if k8s_errors.IsAlreadyExists(err) {
-					log.Infof("Pod: %v already exists.", createdPod.ObjectMeta.Name)
+					s.contextLogger.Infof("Pod: %v already exists.", createdPod.ObjectMeta.Name)
 					continue
 				}
 				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
@@ -466,14 +474,14 @@ func (s *TFReplicaSet) SyncServices() error {
 	for index := int32(0); index < *s.Spec.Replicas; index++ {
 		_, err := s.ClientSet.CoreV1().Services(s.Job.job.ObjectMeta.Namespace).Get(s.genName(index), meta_v1.GetOptions{})
 		if err != nil && k8s_errors.IsNotFound(err) {
-			log.Infof("Service: %v not found, create new one.", s.genName(index))
+			s.contextLogger.Infof("Service: %v not found, create new one.", s.genName(index))
 			// Create the service
 			createdService, err := s.CreateServiceWithIndex(index)
 
 			// If the service already exists do nothing.
 			if err != nil {
 				if k8s_errors.IsAlreadyExists(err) {
-					log.Infof("Service: %v already exists.", s.genName(index))
+					s.contextLogger.Infof("Service: %v already exists.", s.genName(index))
 					continue
 				}
 				s.recorder.Eventf(s.Job.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
