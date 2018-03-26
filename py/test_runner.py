@@ -114,7 +114,16 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
-  util.configure_kubectl(project, zone, cluster_name)
+  # TODO(jlewi): When using GKE we should copy the .kube config and any other
+  # files to the test directory. We should then set the environment variable
+  # KUBECONFIG to point at that file. This should prevent us from having
+  # to rerun util.configure_kubectl on each step. Instead we could run it once
+  # as part of GKE cluster creation and store the config in the NFS directory.
+  # This would make the handling of credentials
+  # and KUBECONFIG more consistent between GKE and minikube and eventually
+  # this could be extended to other K8s deployments.
+  if cluster_name:
+    util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
 
   api_client = k8s_client.ApiClient()
