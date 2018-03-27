@@ -663,6 +663,24 @@ func IsPodActive(p *v1.Pod) bool {
 		p.DeletionTimestamp == nil
 }
 
+// filterRunningPods returns pods that is running.
+func filterRunningPods(pods []*v1.Pod) []*v1.Pod {
+	var result []*v1.Pod
+	for _, p := range pods {
+		if isPodRunning(p) {
+			result = append(result, p)
+		} else {
+			glog.V(4).Infof("Ignoring inactive pod %v/%v in state %v, deletion time %v",
+				p.Namespace, p.Name, p.Status.Phase, p.DeletionTimestamp)
+		}
+	}
+	return result
+}
+
+func isPodRunning(p *v1.Pod) bool {
+	return v1.PodRunning == p.Status.Phase
+}
+
 // ServiceControlInterface is an interface that knows how to add or delete Services
 // created as an interface to allow testing.
 type ServiceControlInterface interface {

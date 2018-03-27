@@ -50,6 +50,7 @@ func (tc *TFJobController) reconcilePods(
 	pods = filterPodsForTFReplicaType(pods, rt)
 	activePods := FilterActivePods(pods)
 	succeeded, failed := getPodStatus(pods)
+	runningPods := filterRunningPods(pods)
 
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := *spec.Replicas - succeeded
@@ -64,8 +65,8 @@ func (tc *TFJobController) reconcilePods(
 		}
 	}
 
-	// Some workers are still active (running or pending), leave a running condition.
-	if len(activePods) > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
+	// Some workers are still running, leave a running condition.
+	if len(runningPods) > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 		if err != nil {
@@ -75,7 +76,7 @@ func (tc *TFJobController) reconcilePods(
 	}
 
 	// All workers are running, set StartTime
-	if len(activePods) == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
+	if len(runningPods) == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 	}
