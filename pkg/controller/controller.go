@@ -367,6 +367,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
 func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
+	log.Infof("Reconcile TFJobs %s", tfjob.Name)
 
 	pods, err := tc.getPodsForTFJob(tfjob)
 
@@ -398,7 +399,8 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
-	return nil
+	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
+	return tc.updateStatusHandler(tfjob)
 }
 
 func genGeneralName(tfjobKey, rtype, index string) string {
@@ -445,8 +447,7 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 	scheme.Scheme.Default(tfjob)
 
 	// Leave a created condition.
-	newTFJob := tfjob.DeepCopy()
-	err := tc.updateTFJobConditions(newTFJob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
+	err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
 	if err != nil {
 		log.Infof("Append tfjob condition error: %v", err)
 		return
@@ -470,8 +471,7 @@ func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
 func (tc *TFJobController) updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
-	err := tc.updateStatusHandler(tfjob)
-	return err
+	return nil
 }
 
 // resolveControllerRef returns the tfjob referenced by a ControllerRef,

@@ -78,11 +78,6 @@ func (tc *TFJobController) reconcilePods(
 	if len(activePods) == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
-		err := tc.updateStatusHandler(tfjob)
-		if err != nil {
-			log.Infof("Set tfjob start time error: %v", err)
-			return err
-		}
 	}
 
 	// Some workers or pss are failed , leave a failed condition.
@@ -186,9 +181,7 @@ func (tc *TFJobController) reconcilePods(
 	tfjob.Status.TFReplicaStatuses[rtype].Active = expected
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
-
-	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
-	return tc.updateStatusHandler(tfjob)
+	return nil
 }
 
 // getDiffPodIndexes checks and gets diff indexes from desired and current.
