@@ -416,7 +416,7 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 		j.status.State = tfv1alpha1.StateSucceeded
 	} else if state == tfv1alpha1.StateRunning {
 		j.contextLogger.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
-		j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
+		j.status.Phase = tfv1alpha1.TFJobPhaseRunning
 		j.status.State = tfv1alpha1.StateRunning
 	} else {
 		j.contextLogger.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
