@@ -218,10 +218,11 @@
             {
               name: "exit-handler",
               steps: [
-                [{
-                  name: "teardown-cluster",
-                  template: "teardown-cluster",
-                }],
+                // DO NOT SUBMIT comment out to facilitate debugging.
+                //[{
+                //  name: "teardown-cluster",
+                //  template: "teardown-cluster",
+                //}],
                 [{
                   name: "copy-artifacts",
                   template: "copy-artifacts",

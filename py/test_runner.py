@@ -6,6 +6,7 @@ import httplib
 import logging
 import json
 import os
+import re
 import time
 import uuid
 
@@ -58,6 +59,39 @@ def wait_for_delete(client,
     time.sleep(polling_interval.seconds)
 
 
+def wait_for_pods_to_be_deleted(client,
+                                namespace,
+                                pod_selector,
+                                timeout=datetime.timedelta(minutes=5),
+                                polling_interval=datetime.timedelta(
+                                  seconds=30)):
+  """Wait for the specified job to be deleted.
+
+  Args:
+    client: K8s api client.
+    namespace: Namespace.
+    pod_selector: Selector for the pods.
+    timeout: How long to wait for the job.
+    polling_interval: How often to poll for the status of the job.
+    status_callback: (Optional): Callable. If supplied this callable is
+      invoked after we poll the job. Callable takes a single argument which
+      is the job.
+  """
+  end_time = datetime.datetime.now() + timeout
+  while True:
+    pods = list_pods(client, namespace, pod_selector)
+
+    logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
+
+    if not pods.items:
+      return
+
+    if datetime.datetime.now() + polling_interval > end_time:
+      raise util.TimeoutError("Timeout waiting for pods to be deleted.")
+
+    time.sleep(polling_interval.seconds)
+
+
 def get_labels(name, runtime_id, replica_type=None, replica_index=None):
   """Return labels.
   """
@@ -106,6 +140,73 @@ def list_pods(client, namespace, label_selector):
                    "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
                   message)
     raise e
+
+
+def get_events(client, namespace, uid):
+  """Get the events for the provided object."""
+  core = k8s_client.CoreV1Api(client)
+  try:
+    # We can't filter by labels because events don't appear to have anyone
+    # and I didn't see an easy way to get them.
+    events = core.list_namespaced_event(namespace)
+  except rest.ApiException as e:
+    message = ""
+    if e.message:
+      message = e.message
+    if e.body:
+      try:
+        body = json.loads(e.body)
+      except ValueError:
+        # There was a problem parsing the body of the response as json.
+        logging.error(
+          ("Exception when calling DefaultApi->"
+           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
+        raise
+      message = body.get("message")
+
+    logging.error(("Exception when calling DefaultApi->"
+                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                  message)
+    raise e
+
+  matching = []
+
+  for e in events.items:
+    if e.involved_object.uid != uid:
+      continue
+    matching.append(e)
+
+  return matching
+
+
+def parse_events(events):
+  """Parse events.
+
+  Args:
+    events: List of events.
+
+  Returns
+    pods_created: Set of unique pod names created.
+    services_created: Set of unique services created.
+  """
+  pattern = re.compile("Created.*(pod|Service).*: (.*)", re.IGNORECASE)
+
+  pods = set()
+  services = set()
+  for e in events:
+    m = re.match(pattern, e.message)
+    if not m:
+      continue
+
+    kind = m.group(1)
+    name = m.group(2)
+
+    if kind.lower() == "pod":
+      pods.add(name)
+    elif kind.lower() == "service":
+      services.add(name)
+
+  return pods, services
 
 
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
@@ -178,8 +279,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       if results.get("status", {}).get("state", {}).lower() != "succeeded":
         t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
-          trial, name, namespace,
-          results.get("status", {}).get("state", None))
+          trial, name, namespace, results.get("status", {}).get("state", None))
         logging.error(t.failure)
         break
 
@@ -187,43 +287,43 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       logging.info("Trial %s Job %s in namespace %s runtime ID %s", trial, name,
                    namespace, runtime_id)
 
-      # TODO(jlewi): We should check that pods were created for each replica
-      pod_labels = get_labels(name, runtime_id)
-      pod_selector = to_selector(pod_labels)
-      pods = list_pods(api_client, namespace, pod_selector)
+      uid = results.get("metadata", {}).get("uid")
+      events = get_events(api_client, namespace, uid)
+      created_pods, created_services = parse_events(events)
 
-      logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
-                   len(pods.items))
+      num_expected = 0
+      for replica in results.get("spec", {}).get("replicaSpecs", []):
+        num_expected += replica.get("replicas", 0)
 
-      if not pods.items:
-        t.failure = ("Trial {0} Job {1} in namespace {2} no pods found for "
-                     " selector {3}").format(trial, name, namespace,
-                                             pod_selector)
+      creation_failures = []
+      if len(created_pods) != num_expected:
+        message = ("Expected {0} pods to be created but only "
+                   "got {1} create events.").format(num_expected,
+                                                    len(created_pods))
+        creation_failures.append(message)
+
+      if len(created_services) != num_expected:
+        message = ("Expected {0} services to be created but only "
+                   "got {1} create events.").format(num_expected,
+                                                    len(created_services))
+        creation_failures.append(message)
+
+      if creation_failures:
+        t.failure = "Trial {0} Job {1} in namespace {2}: {3}".format(
+          trial, name, namespace, ", ".join(creation_failures))
         logging.error(t.failure)
         break
+      pod_labels = get_labels(name, runtime_id)
+      pod_selector = to_selector(pod_labels)
+
+      wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
       tf_job_client.delete_tf_job(api_client, namespace, name)
 
-      logging.info("Waiting for job %s in namespaces %s to be deleted.", name, namespace)
+      logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
+                   namespace)
       wait_for_delete(
         api_client, namespace, name, status_callback=tf_job_client.log_status)
-
-      # Verify the pods have been deleted. tf_job_client uses foreground
-      # deletion so there shouldn't be any resources for the job left
-      # once the job is gone.
-      pods = list_pods(api_client, namespace, pod_selector)
-
-      logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
-                   len(pods.items))
-
-      if pods.items:
-        t.failure = ("Trial {0} Job {1} in namespace {2} pods found for "
-                     " selector {3}; pods\n{4}").format(trial, name, namespace,
-                                                        pod_selector, pods)
-        logging.error(t.failure)
-        break
-
-      logging.info("Trial %s all pods deleted.", trial)
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -312,8 +412,7 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',
-  )
+    datefmt='%Y-%m-%dT%H:%M:%S',)
 
   util.maybe_activate_service_account()
 
