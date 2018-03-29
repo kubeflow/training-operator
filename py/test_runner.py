@@ -58,12 +58,13 @@ def wait_for_delete(client,
 
     time.sleep(polling_interval.seconds)
 
+
 def wait_for_pods_to_be_deleted(client,
                                 namespace,
-                    pod_selector,
-                    timeout=datetime.timedelta(minutes=5),
-                    polling_interval=datetime.timedelta(seconds=30),
-                    status_callback=None):
+                                pod_selector,
+                                timeout=datetime.timedelta(minutes=5),
+                                polling_interval=datetime.timedelta(
+                                  seconds=30)):
   """Wait for the specified job to be deleted.
 
   Args:
@@ -79,17 +80,17 @@ def wait_for_pods_to_be_deleted(client,
   end_time = datetime.datetime.now() + timeout
   while True:
     pods = list_pods(client, namespace, pod_selector)
-      
+
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
 
     if not pods.items:
       return
 
     if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError(
-        "Timeout waiting for pods to be deleted.")
+      raise util.TimeoutError("Timeout waiting for pods to be deleted.")
 
     time.sleep(polling_interval.seconds)
+
 
 def get_labels(name, runtime_id, replica_type=None, replica_index=None):
   """Return labels.
@@ -147,7 +148,7 @@ def get_events(client, namespace, uid):
   try:
     # We can't filter by labels because events don't appear to have anyone
     # and I didn't see an easy way to get them.
-    events = core.list_namespaced_event(namespace)    
+    events = core.list_namespaced_event(namespace)
   except rest.ApiException as e:
     message = ""
     if e.message:
@@ -174,37 +175,39 @@ def get_events(client, namespace, uid):
     if e.involved_object.uid != uid:
       continue
     matching.append(e)
-    
+
   return matching
+
 
 def parse_events(events):
   """Parse events.
-  
+
   Args:
     events: List of events.
-    
+
   Returns
     pods_created: Set of unique pod names created.
     services_created: Set of unique services created.
   """
   pattern = re.compile("Created.*(pod|Service).*: (.*)", re.IGNORECASE)
-  
+
   pods = set()
   services = set()
   for e in events:
     m = re.match(pattern, e.message)
     if not m:
       continue
-    
+
     kind = m.group(1)
     name = m.group(2)
-    
+
     if kind.lower() == "pod":
       pods.add(name)
     elif kind.lower() == "service":
       services.add(name)
-      
-  return pods,services
+
+  return pods, services
+
 
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
@@ -276,8 +279,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       if results.get("status", {}).get("state", {}).lower() != "succeeded":
         t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
-          trial, name, namespace,
-          results.get("status", {}).get("state", None))
+          trial, name, namespace, results.get("status", {}).get("state", None))
         logging.error(t.failure)
         break
 
@@ -295,17 +297,17 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       creation_failures = []
       if len(created_pods) != num_expected:
-          message = ("Expected {0} pods to be created but only "
-                     "got {1} create events.").format(
-                     num_expected, len(created_pods))
-          creation_failures.append(message)
-      
+        message = ("Expected {0} pods to be created but only "
+                   "got {1} create events.").format(num_expected,
+                                                    len(created_pods))
+        creation_failures.append(message)
+
       if len(created_services) != num_expected:
         message = ("Expected {0} services to be created but only "
-                   "got {1} create events.").format(
-                   num_expected, len(created_services))
+                   "got {1} create events.").format(num_expected,
+                                                    len(created_services))
         creation_failures.append(message)
-      
+
       if creation_failures:
         t.failure = "Trial {0} Job {1} in namespace {2}: {3}".format(
           trial, name, namespace, ", ".join(creation_failures))
@@ -318,7 +320,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       tf_job_client.delete_tf_job(api_client, namespace, name)
 
-      logging.info("Waiting for job %s in namespaces %s to be deleted.", name, 
+      logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                    namespace)
       wait_for_delete(
         api_client, namespace, name, status_callback=tf_job_client.log_status)
@@ -410,8 +412,7 @@ def main():  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',
-  )
+    datefmt='%Y-%m-%dT%H:%M:%S',)
 
   util.maybe_activate_service_account()
 
