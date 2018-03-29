@@ -408,15 +408,15 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	// TODO(jlewi): We should update the Phase if we detect the job is done.
 	if state == tfv1alpha1.StateFailed {
 		j.contextLogger.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
-		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
 		j.status.State = tfv1alpha1.StateFailed
 	} else if state == tfv1alpha1.StateSucceeded {
 		j.contextLogger.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
-		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
 		j.status.State = tfv1alpha1.StateSucceeded
 	} else if state == tfv1alpha1.StateRunning {
 		j.contextLogger.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
-		j.status.Phase = tfv1alpha1.TFJobPhaseRunning
+		j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
 		j.status.State = tfv1alpha1.StateRunning
 	} else {
 		j.contextLogger.Infof("Job %v status=%v", j.job.ObjectMeta.Name, util.Pformat(j.status))
@@ -431,10 +431,10 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		if cErr := j.deleteResources(); cErr != nil {
 			j.contextLogger.Errorf("Job %v trainingJob.Delete() error; %v", j.job.ObjectMeta.Name, cErr)
+			// Return an error so that we stay in phase cleanup and retry.
+			return cErr
 		}
-		// j.status.SetPhase(spec.TFJobPhaseDone)
-		// Return from run because we want to stop reconciling the object.
-		return nil
+		j.status.Phase = tfv1alpha1.TFJobPhaseDone
 	}
 
 	// updateCRDStatus will update the status of the CRD with c.Status if c.Status

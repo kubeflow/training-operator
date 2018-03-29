@@ -187,7 +187,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       logging.info("Trial %s Job %s in namespace %s runtime ID %s", trial, name,
                    namespace, runtime_id)
 
-      # TODO(jlewi): We should check that pods were created for each replica
+      # TODO(jlewi): We should check that pods were created for each replica.
+      # We could do that by looking at Kubernetes events. The TFJob will
+      # have deleted the pods.
       pod_labels = get_labels(name, runtime_id)
       pod_selector = to_selector(pod_labels)
       pods = list_pods(api_client, namespace, pod_selector)
@@ -195,10 +197,10 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
                    len(pods.items))
 
-      if not pods.items:
-        t.failure = ("Trial {0} Job {1} in namespace {2} no pods found for "
-                     " selector {3}").format(trial, name, namespace,
-                                             pod_selector)
+      if pods.items:
+        t.failure = ("Trial {0} Job {1} in namespace {2} found  {3} pods for "
+                     " selector {4}").format(trial, name, namespace, len(
+                       pods.items), pod_selector)
         logging.error(t.failure)
         break
 
@@ -207,23 +209,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       logging.info("Waiting for job %s in namespaces %s to be deleted.", name, namespace)
       wait_for_delete(
         api_client, namespace, name, status_callback=tf_job_client.log_status)
-
-      # Verify the pods have been deleted. tf_job_client uses foreground
-      # deletion so there shouldn't be any resources for the job left
-      # once the job is gone.
-      pods = list_pods(api_client, namespace, pod_selector)
-
-      logging.info("Trial %s selector: %s matched %s pods", trial, pod_selector,
-                   len(pods.items))
-
-      if pods.items:
-        t.failure = ("Trial {0} Job {1} in namespace {2} pods found for "
-                     " selector {3}; pods\n{4}").format(trial, name, namespace,
-                                                        pod_selector, pods)
-        logging.error(t.failure)
-        break
-
-      logging.info("Trial %s all pods deleted.", trial)
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
