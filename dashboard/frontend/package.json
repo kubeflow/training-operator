@@ -9,6 +9,7 @@
     "i.e: http://127.0.0.1:8001/api/v1/namespaces/kubeflow/services/ambassador:80/proxy/tfjobs/ui/static"
   ],
   "homepage": ".",
+  "proxy": "http://localhost:8080/tfjobs/",
   "private": true,
   "dependencies": {
     "lodash": "^4.17.4",
