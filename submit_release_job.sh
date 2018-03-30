@@ -24,7 +24,7 @@ PROW_VAR="JOB_NAME=${JOB_NAME},JOB_TYPE=${JOB_TYPE},REPO_NAME=${REPO_NAME}"
 PROW_VAR="${PROW_VAR},REPO_OWNER=${REPO_OWNER},BUILD_NUMBER=${BUILD_NUMBER}" 
 PROW_VAR="${PROW_VAR},PULL_BASE_SHA=${PULL_BASE_SHA}" 
 
-cd test/workflows
+cd $(git rev-parse --show-toplevel)/test/workflows
 
 ks param set --env=${ENV} workflows namespace kubeflow-releasing
 ks param set --env=${ENV} workflows name "${USER}-${JOB_NAME}-${PULL_BASE_SHA}-${BUILD_NUMBER}"
