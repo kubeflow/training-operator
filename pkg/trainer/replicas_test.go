@@ -157,7 +157,7 @@ func TestTFReplicaSet(t *testing.T) {
 		p := l.Items[index]
 
 		if !reflect.DeepEqual(expectedLabels, p.ObjectMeta.Labels) {
-			t.Fatalf("Pod Labels; Got %v Want: %v", expectedLabels, p.ObjectMeta.Labels)
+			t.Fatalf("Pod Labels; Got %v Want: %v", p.ObjectMeta.Labels, expectedLabels)
 		}
 
 		if len(p.Spec.Containers) != 1 {
