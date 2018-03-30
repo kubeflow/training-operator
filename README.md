@@ -97,8 +97,7 @@ The semantics are as follows
   * The overall status of the TFJob is determined by the exit code of the
     tensorflow container
       * 0 = success
-      * 1-127 = permanent error
-      * 128-255 = retryable error
+      * others = permanent error
 
 **worker**
   * A job can have 0 to N workers

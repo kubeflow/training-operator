@@ -187,45 +187,6 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TFReplicaStat
 	return state, replicaStatuses, nil
 }
 
-// isRetryableTerminationState returns true if a container terminated in a state
-// that we consider retryable.
-func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
-	// TODO(jlewi): Need to match logic in
-	// https://cs.corp.google.com/piper///depot/google3/cloud/ml/beta/job/training_job_state_util.cc?l=88
-	if s.Reason == "OOMKilled" {
-		// If the user's process causes an OOM and Docker kills the container,
-		// the termination reason of ContainerState will be specified to
-		// 'OOMKilled'. In this case, we can't assume this to be a retryable error.
-		//
-		// This check should happen before checking the termination log, since
-		// if the container terminated with an OOM, the termination log may not
-		// be written.
-		return false
-	}
-
-	// TODO(jlewi): Should we use the exit code reported in the termination
-	// log message and not the ExitCode reported by the container.
-
-	if s.ExitCode >= 0 && s.ExitCode <= 127 {
-		// For the exit_code in [0, 127]:
-		//   0 means success,
-		//   1 - 127 corresponds to permanent user errors.
-		// We don't want to retry for both cases.
-		// More info about exit status can be found in:
-		// https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html
-		return false
-	}
-
-	// For the remaining cases that exit_code from workers that doesn't
-	// fall into [0, 127]. They can be:
-	//   137 corresponds to SIGKILL,
-	//   143 corresponds to SIGTERM,
-	//   other values that have undefined behavior.
-	// We treat them as internal errors for now and all the internal errors
-	// will be retired.
-	return true
-}
-
 // masterName returns the name of master replica of provided training job
 func (j *TrainingJob) masterName() string {
 	return fmt.Sprintf("master-%v-0", j.job.Spec.RuntimeId)
@@ -268,7 +229,7 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 	}
 }
 
-// // setupReplicas creates in memory data structures corresponding to the replicas.
+// setupReplicas creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
