@@ -1,0 +1,7 @@
+# This file specifies files that are not uploaded to GCP
+# Uses same syntax as gitignore
+
+.git
+.gitignore
+#!include:.gitignore
+vendor
