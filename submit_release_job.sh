@@ -9,6 +9,8 @@ set -ex
 
 COMMIT=$1
 
+ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 JOB_NAME="tf-operator-release"
 JOB_TYPE=tf-operator-release
 BUILD_NUMBER=$(uuidgen)
@@ -20,11 +22,12 @@ DATE=`date +%Y%m%d`
 PULL_BASE_SHA=${COMMIT:0:8}
 VERSION_TAG="v${DATE}-${PULL_BASE_SHA}"
 
+
 PROW_VAR="JOB_NAME=${JOB_NAME},JOB_TYPE=${JOB_TYPE},REPO_NAME=${REPO_NAME}"
 PROW_VAR="${PROW_VAR},REPO_OWNER=${REPO_OWNER},BUILD_NUMBER=${BUILD_NUMBER}" 
 PROW_VAR="${PROW_VAR},PULL_BASE_SHA=${PULL_BASE_SHA}" 
 
-cd $(git rev-parse --show-toplevel)/test/workflows
+cd ${ROOT}/test/workflows
 
 ks param set --env=${ENV} workflows namespace kubeflow-releasing
 ks param set --env=${ENV} workflows name "${USER}-${JOB_NAME}-${PULL_BASE_SHA}-${BUILD_NUMBER}"
