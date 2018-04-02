@@ -206,11 +206,11 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 	if s.ExitCode == 130 || s.ExitCode == 137 || s.ExitCode == 143 {
 		// We think it's retryable error if the container exits due to the following sys signals
 		// that are usually caused by trainsient issues(e.g. VM was rescheduled):
-        //   130 = (128+2) Container terminated by Control-C
-        //   137 = (128+9) Container received a SIGKILL
-        //   143 = (128+15) Container received a SIGTERM
-        // The exit code of container will be 128 + n for fatal error signals.
-        // More info can be found in https://stackoverflow.com/questions/31297616/what-is-the-authoritative-list-of-docker-run-exit-codes
+		//   130 = (128+2) Container terminated by Control-C
+		//   137 = (128+9) Container received a SIGKILL
+		//   143 = (128+15) Container received a SIGTERM
+		// The exit code of container will be 128 + n for fatal error signals.
+		// More info can be found in https://stackoverflow.com/questions/31297616/what-is-the-authoritative-list-of-docker-run-exit-codes
 		return true
 	}
 
