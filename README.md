@@ -97,7 +97,8 @@ The semantics are as follows
   * The overall status of the TFJob is determined by the exit code of the
     tensorflow container
       * 0 = success
-      * others = permanent error
+      * 130(contianer terminated by Control-C) or 137(container received a SIGKILL) or 143(container received a SIGTERM) = retryable error
+      * others = permanent errora 
 
 **worker**
   * A job can have 0 to N workers

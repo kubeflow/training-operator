@@ -187,6 +187,36 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TFReplicaStat
 	return state, replicaStatuses, nil
 }
 
+// isRetryableTerminationState returns true if a container terminated in a state
+// that we consider retryable.
+func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
+	// TODO(jlewi): Need to match logic in
+	// https://cs.corp.google.com/piper///depot/google3/cloud/ml/beta/job/training_job_state_util.cc?l=88
+	if s.Reason == "OOMKilled" {
+		// If the user's process causes an OOM and Docker kills the container,
+		// the termination reason of ContainerState will be specified to
+		// 'OOMKilled'. In this case, we can't assume this to be a retryable error.
+		//
+		// This check should happen before checking the termination log, since
+		// if the container terminated with an OOM, the termination log may not
+		// be written.
+		return false
+	}
+
+	if s.ExitCode == 130 || s.ExitCode == 137 || s.ExitCode == 143 {
+		// We think it's retryable error if the container exits due to the following sys signals
+		// that are usually caused by trainsient issues(e.g. VM was rescheduled):
+        //   130 = (128+2) Container terminated by Control-C
+        //   137 = (128+9) Container received a SIGKILL
+        //   143 = (128+15) Container received a SIGTERM
+        // The exit code of container will be 128 + n for fatal error signals.
+        // More info can be found in https://stackoverflow.com/questions/31297616/what-is-the-authoritative-list-of-docker-run-exit-codes
+		return true
+	}
+
+	return false
+}
+
 // masterName returns the name of master replica of provided training job
 func (j *TrainingJob) masterName() string {
 	return fmt.Sprintf("master-%v-0", j.job.Spec.RuntimeId)

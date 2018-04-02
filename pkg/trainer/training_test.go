@@ -30,6 +30,76 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
+func TestIsRetryableTerminationState(t *testing.T) {
+	type TestCase struct {
+		State    v1.ContainerStateTerminated
+		Expected bool
+	}
+
+	cases := []TestCase{
+		{
+			// Since reason is empty we don't trust the exit code.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 0,
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 0,
+				Message:  "some reason",
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 1,
+				Message:  "some reason",
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 1,
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 244,
+				Message:  "some reason",
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 244,
+				Reason:   "OOMKilled",
+			},
+			Expected: false,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 137,
+			},
+			Expected: true,
+		},
+		{
+			State: v1.ContainerStateTerminated{
+				ExitCode: 143,
+			},
+			Expected: true,
+		},			
+	}
+
+	for _, c := range cases {
+		actual := isRetryableTerminationState(&c.State)
+		if actual != c.Expected {
+			t.Errorf("isRetryableTerminationState(%+v)=%v want %v", c.State, actual, c.Expected)
+		}
+	}
+}
+
 func TestClusterSpec(t *testing.T) {
 	type TestCase struct {
 		Spec     *tfv1alpha1.TFJob
