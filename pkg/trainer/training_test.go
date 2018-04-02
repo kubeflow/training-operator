@@ -89,7 +89,7 @@ func TestIsRetryableTerminationState(t *testing.T) {
 				ExitCode: 143,
 			},
 			Expected: true,
-		},			
+		},
 	}
 
 	for _, c := range cases {
