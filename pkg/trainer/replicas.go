@@ -336,10 +336,10 @@ func replicaStatusFromPodList(l v1.PodList, name string) tfv1alpha1.ReplicaState
 		}
 
 		if isRetryableTerminationState(tfState.Terminated) {
-			// Since its a retryable error just return RUNNING.	
-			// We can just let Kubernetes restart the container to retry.	
-			return tfv1alpha1.ReplicaStateRunning	
-		}	
+			// Since its a retryable error just return RUNNING.
+			// We can just let Kubernetes restart the container to retry.
+			return tfv1alpha1.ReplicaStateRunning
+		}
 
 		// TODO(wenzhel): Should consider to return more info about pod to users.
 		return tfv1alpha1.ReplicaStateFailed
