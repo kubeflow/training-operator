@@ -113,7 +113,7 @@ const (
 
 // TFJobStatus represents the current observed state of the TFJob.
 type TFJobStatus struct {
-	// Represents is an array of current observed TFJob conditions.
+	// Conditions is an array of current observed TFJob conditions.
 	Conditions []TFJobCondition `json:"conditions"`
 
 	// TFReplicaStatuses is map of TFReplicaType and TFReplicaStatus,
