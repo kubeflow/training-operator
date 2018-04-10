@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"k8s.io/api/core/v1"
+
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 const (
@@ -112,7 +114,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 	for name, tc := range testCases {
 		SetDefaults_TFJob(tc.original)
 		if !reflect.DeepEqual(tc.original, tc.expected) {
-			t.Errorf("%s: Want\n%v; Got\n %v", name, Pformat(tc.expected), Pformat(tc.original))
+			t.Errorf("%s: Want\n%v; Got\n %v", name, util.Pformat(tc.expected), util.Pformat(tc.original))
 		}
 	}
 }
