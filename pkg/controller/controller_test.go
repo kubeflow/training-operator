@@ -195,7 +195,7 @@ func TestNormalPath(t *testing.T) {
 			0, 0, 0,
 			4, 0, 0,
 			2, 0, 0,
-			&tfJobRunning, tfJobRunningReason,
+			nil, "",
 			false,
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are running": {
@@ -363,7 +363,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		// Validate conditions.
 		if tc.expectedCondition != nil && !checkCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
-			t.Errorf("%s: expected completion condition.  Got %#v", name, actual.Status.Conditions)
+			t.Errorf("%s: expected condition %#v, got %#v", name, *tc.expectedCondition, actual.Status.Conditions)
 		}
 	}
 }
