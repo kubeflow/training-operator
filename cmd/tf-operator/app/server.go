@@ -66,7 +66,7 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// To help debugging, immediately log version
-	log.Infof("%+v", version.Info())
+	log.Infof("%+v", version.Info(apiVersion))
 
 	config, err := k8sutil.GetClusterConfig()
 	if err != nil {
