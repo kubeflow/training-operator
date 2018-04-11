@@ -30,7 +30,7 @@
     "pkg/apis/tensorflow/validation/validation_test.go",
     "pkg/apis/tensorflow/v1alpha2/zz_generated.deepcopy.go",
     "pkg/apis/tensorflow/v1alpha2/zz_generated.defaults.go",
-    "pkg/controller/controller_utils.go"
+    "pkg/controller.v2/controller_utils.go"
   ],
   "Deadline": "300s",
   "Skip": ["pkg/client"]
