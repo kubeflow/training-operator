@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
