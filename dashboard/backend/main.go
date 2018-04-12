@@ -20,11 +20,11 @@ func main() {
 		log.Fatalf("Error while creating the API Handler: %v", err)
 	}
 
-	http.Handle("/api/", apiHandler)
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("/opt/tensorflow_k8s/dashboard/frontend/build/"))))
+	http.Handle("/tfjobs/ui/", http.StripPrefix("/tfjobs/ui/", http.FileServer(http.Dir("/opt/tensorflow_k8s/dashboard/frontend/build/"))))
+	http.Handle("/tfjobs/api/", apiHandler)
 
 	p := ":8080"
-	log.Println("Listening on", p)
+	log.Println("Dashboard available at /tfjobs/ui/ on port", p)
 
 	http.ListenAndServe(p, nil)
 

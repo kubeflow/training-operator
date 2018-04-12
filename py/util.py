@@ -1,6 +1,7 @@
 """Utilities used by our python scripts for building and releasing."""
 from __future__ import print_function
 
+# TODO(jlewi): We should remove this file and use util in kubeflow/testing repository.
 import datetime
 import logging
 import os

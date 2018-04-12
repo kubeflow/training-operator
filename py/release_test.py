@@ -36,7 +36,7 @@ class ReleaseTest(unittest.TestCase):
   @mock.patch("py.release.util.install_go_deps")
   @mock.patch("py.release.util.clone_repo")
   @mock.patch("py.release.build_and_push")
-  def test_build_pr( # pylint: disable=no-self-use
+  def test_build_pr(# pylint: disable=no-self-use
       self,
       mock_build_and_push,
       mock_clone,

@@ -41,7 +41,7 @@ TFJob requires Kubernetes >= 1.8
  * CRDs required Kubernetes >= 1.7
  * TFJob depends on Garbage Collection for CRDs which is only supported
    in >= 1.8
- * GPU support is evolving quickly and its best to use Kubernetes 1.8
+ * GPU support is evolving quickly and its best to use Kubernetes 1.8+
    to get the latest features.
 
 ## Installing the TFJob CRD and operator on your k8s cluster
@@ -121,16 +121,13 @@ should be created for each replica.
 
 ### Using GPUs
 
-**Note** The use of GPUs and K8s is still in flux.
-The following works with GKE & K8s 1.7.2. If this doesn't work on
+The following works with GKE & K8s 1.8+. If this doesn't work on
 your setup please consider opening an issue.
 
-Ensure your K8s cluster is properly configured to use GPUs
+Ensure your K8s cluster is properly configured to use GPUs ([instructions for GKE](https://cloud.google.com/kubernetes-engine/docs/concepts/gpus), [generic instructions](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/))
   * Nodes must have GPUs attached
-  * K8s cluster must recognize the nvidia-gpu resource type
+  * K8s cluster must recognize the `nvidia.com/gpu` resource type
   * GPU drivers must be installed on the cluster.
-  * Your TFJob controller must be configured to properly attach
-    volumes and set environment variables needed for GPUs.
 
 To attach GPUs specify the GPU resource on the container e.g.
 
@@ -140,22 +137,20 @@ kind: "TFJob"
 metadata:
   name: "tf-smoke-gpu"
 spec:
-  replica_specs:
-    - replicas: 1
-      tfPort: 2222
-      tfReplicaType: MASTER
+  replicaSpecs:
+    - tfReplicaType: MASTER
       template:
         spec:
           containers:
-            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:latest
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:dc944ff
               name: tensorflow
               resources:
                 limits:
-                  alpha.kubernetes.io/nvidia-gpu: 1
+                  nvidia.com/gpu: 1
           restartPolicy: OnFailure
 ```
 
-Follow TensorFlow's [instructions](https://www.kubeflow.org/tutorials/using_gpu)
+Follow TensorFlow's [instructions](https://www.tensorflow.org/tutorials/using_gpu)
 for using GPUs.
 
 ## Monitoring your job

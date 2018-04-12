@@ -23,16 +23,13 @@ go run dashboard/backend/main.go
 
 At this point the backend will be running on port `8080`.
 
-For development, modify `frontend/src/services.js` to point the local backend server (make sure you don't commit this change):
-```js
-let host = "http://localhost:8080";
-```
-
 Start the frontend's development server in another terminal with:
 ```sh
 cd dashboard/frontend
 yarn start
 ```
+
+This should open a window in your browser (in port `3000`).  
 
 The development server will rebuild the application and refresh your browser automatically every time you save a file.
 
