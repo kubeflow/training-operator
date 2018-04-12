@@ -111,6 +111,7 @@ type TFJobController struct {
 	// To allow injection of syncTFJob for testing.
 	syncHandler func(tfJobKey string) (bool, error)
 
+	// To allow injection of updateStatus for testing.
 	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
 
 	// Listers for TFJob, Pod and Service
