@@ -55,7 +55,6 @@ var (
 const RecommendedKubeConfigPathEnv = "KUBECONFIG"
 
 func Run(opt *options.ServerOption) error {
-
 	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
 		version.PrintVersionAndExit(apiVersion)
