@@ -35,7 +35,7 @@ func NewServerOption() *ServerOption {
 
 // AddFlags adds flags for a specific CMServer to the specified FlagSet.
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&s.Kubeconfig, "kubeconfig", "~/.kube/config",
+	fs.StringVar(&s.Kubeconfig, "kubeconfig", "",
 		`Path to a kubeconfig, only required if out-of-cluster.`)
 
 	fs.StringVar(&s.MasterURL, "master", "",
