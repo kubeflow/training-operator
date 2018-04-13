@@ -145,7 +145,7 @@ func (tc *TFJobController) reconcilePods(
 			}
 
 			// Set restart policy
-			if spec.RestartPolicy != "ExitCode" {
+			if spec.RestartPolicy != tfv1alpha2.RestartPolicyExitCode {
 				pTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 			}
 
