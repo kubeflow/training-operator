@@ -1,79 +1,8 @@
-## Directories Layout
+# Developer Guide
 
-```sh
-$ tree -d -I 'vendor|bin|.git'
-.
-├── build
-│   ├── images
-│   │   └── tf_operator
-│   └── release
-├── cmd
-│   └── tf-operator
-│       └── app
-│           └── options
-├── dashboard
-│   ├── backend
-│   │   ├── client
-│   │   └── handler
-│   └── frontend
-│       ├── public
-│       └── src
-│           └── components
-├── docs
-│   └── diagrams
-├── examples
-│   ├── crd
-│   ├── gke
-│   │   └── notebook_image
-│   ├── tensorflow-models
-│   ├── tf_job
-│   │   └── templates
-│   └── tf_sample
-│       └── tf_sample
-├── hack
-│   ├── grpc_tensorflow_server
-│   └── scripts
-├── pkg
-│   ├── apis
-│   │   └── tensorflow
-│   │       ├── helper
-│   │       ├── v1alpha1
-│   │       └── validation
-│   ├── client
-│   │   ├── clientset
-│   │   │   └── versioned
-│   │   │       ├── fake
-│   │   │       ├── scheme
-│   │   │       └── typed
-│   │   │           └── tensorflow
-│   │   │               └── v1alpha1
-│   │   │                   └── fake
-│   │   ├── informers
-│   │   │   └── externalversions
-│   │   │       ├── internalinterfaces
-│   │   │       └── tensorflow
-│   │   │           └── v1alpha1
-│   │   └── listers
-│   │       └── tensorflow
-│   │           └── v1alpha1
-│   ├── controller
-│   ├── trainer
-│   └── util
-│       ├── k8sutil
-│       └── retryutil
-├── py
-├── test
-│   ├── e2e
-│   └── test-infra
-│       └── airflow
-│           └── dags
-├── tf-job-operator-chart
-│   └── templates
-│       └── tests
-└── version
-```
+There are two versions of operator: one for v1alpha1 and one for v1alpha2.
 
-## Building the Operator
+## Building the operator
 
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
@@ -96,6 +25,12 @@ Build it
 
 ```sh
 go install github.com/kubeflow/tf-operator/cmd/tf-operator
+```
+
+If you want to build the operator for v1alpha2, please use the command here:
+
+```sh
+go install github.com/kubeflow/tf-operator/cmd/tf-operator.v2
 ```
 
 ## Building all the artifacts.
