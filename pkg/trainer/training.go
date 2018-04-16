@@ -494,7 +494,7 @@ func (j *TrainingJob) syncPdb() error {
 	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
-			j.contextLogger.Infof("PDB: %v already exists.", "tf-job-pdb-" + j.job.ObjectMeta.Name)
+			j.contextLogger.Infof("PDB: %v already exists.", "tf-job-pdb-"+j.job.ObjectMeta.Name)
 			return nil
 		}
 
