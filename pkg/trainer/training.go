@@ -478,7 +478,7 @@ func (j *TrainingJob) syncPdb() error {
 	minAvailable := intstr.FromInt(int(nrReplicas))
 	pdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: meta_v1.ObjectMeta{
-			GenerateName: "tf-job-pdb-",
+			Name: "tf-job-pdb-" + j.job.ObjectMeta.Name,
 		},
 		Spec: v1beta1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
@@ -494,7 +494,7 @@ func (j *TrainingJob) syncPdb() error {
 	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
 	if err != nil {
 		if k8s_errors.IsAlreadyExists(err) {
-			j.contextLogger.Infof("PDB: %v already exists.", j.job.ObjectMeta.Name)
+			j.contextLogger.Infof("PDB: %v already exists.", "tf-job-pdb-"+j.job.ObjectMeta.Name)
 			return nil
 		}
 
