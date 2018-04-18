@@ -17,6 +17,7 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ func (tc *TFJobController) reconcilePods(
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 		if err != nil {
-			log.Infof("Append tfjob condition error: %v", err)
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
 		}
 	}
@@ -68,7 +69,7 @@ func (tc *TFJobController) reconcilePods(
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 		if err != nil {
-			log.Infof("Append tfjob condition error: %v", err)
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
 		}
 	}
@@ -84,7 +85,7 @@ func (tc *TFJobController) reconcilePods(
 		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 		if err != nil {
-			log.Infof("Append tfjob condition error: %v", err)
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
 		}
 	}
@@ -93,7 +94,7 @@ func (tc *TFJobController) reconcilePods(
 
 	if diff < 0 {
 		// Need to create new pods.
-		diffIndexes := getDiffPodIndexes(activePods, expected)
+		diffIndexes := getDiffPodIndexes(activePods, expected, loggerForTFJob(tfjob))
 		if diff+len(diffIndexes) != 0 {
 			// This should never happened.
 			return fmt.Errorf("pods diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
@@ -106,7 +107,7 @@ func (tc *TFJobController) reconcilePods(
 		}
 
 		for _, index := range diffIndexes {
-			log.Infof("need to create new pod: %s-%s", rt, index)
+			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%s", rt, index)
 
 			// Create OwnerReference.
 			controllerRef := genOwnerReference(tfjob)
@@ -165,7 +166,7 @@ func (tc *TFJobController) reconcilePods(
 		}
 	} else if diff > 0 {
 		// TODO(CPH): Need to delete pods.
-		log.Infof("need to delete pod but it is not implemented yet")
+		loggerForTFJob(tfjob).Infof("need to delete pod but it is not implemented yet")
 	}
 
 	if tfjob.Status.TFReplicaStatuses == nil {
@@ -184,7 +185,7 @@ func (tc *TFJobController) reconcilePods(
 }
 
 // getDiffPodIndexes checks and gets diff indexes from desired and current.
-func getDiffPodIndexes(activePods []*v1.Pod, replicas int32) []string {
+func getDiffPodIndexes(activePods []*v1.Pod, replicas int32, logger *log.Entry) []string {
 	desiredIndexes := make(map[string]string)
 
 	for i := int32(0); i < replicas; i++ {
@@ -197,6 +198,15 @@ func getDiffPodIndexes(activePods []*v1.Pod, replicas int32) []string {
 		}
 
 		index := pod.Labels[tfReplicaIndexLabel]
+		indexNum, err := strconv.Atoi(index)
+		if err != nil {
+			logger.Warningf("The label index should be integer: %s", index)
+		} else {
+			// The situation should not happen.
+			if indexNum < 0 || indexNum >= int(replicas) {
+				logger.Warningf("The label index is not expected: %d", indexNum)
+			}
+		}
 
 		if _, ok := desiredIndexes[index]; ok {
 			desiredIndexes[index] = hit
@@ -292,18 +302,18 @@ func (tc *TFJobController) addPod(obj interface{}) {
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
 		if tfjob == nil {
-			log.Info("This pod's tfjob does not exists")
+			loggerForTFJob(tfjob).Info("This pod's tfjob does not exists")
 			return
 		}
 
 		tfjobKey, err := KeyFunc(tfjob)
 		if err != nil {
-			log.Infof("Failed to get the key of the tfjob: %v", err)
+			loggerForTFJob(tfjob).Infof("Failed to get the key of the tfjob: %v", err)
 			return
 		}
 
 		if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-			log.Info("This pod maybe not created by tf-operator")
+			loggerForTFJob(tfjob).Info("This pod maybe not created by tf-operator")
 			return
 		}
 
