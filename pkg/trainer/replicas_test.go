@@ -74,6 +74,8 @@ func TestTFReplicaSet(t *testing.T) {
 		},
 	}
 
+	jobSpec.Spec.ReplicaSpecs[0].Template.Labels = map[string]string{"some-label": "some-value"}
+	jobSpec.Spec.ReplicaSpecs[0].Template.Annotations = map[string]string{"some-anno": "some-value"}
 	recorder := record.NewFakeRecorder(100)
 	job, err := initJob(clientSet, &tfJobFake.Clientset{}, recorder, jobSpec)
 
@@ -107,12 +109,24 @@ func TestTFReplicaSet(t *testing.T) {
 
 	for index := 0; index < 2; index++ {
 		// Expected labels
-		expectedLabels := map[string]string{
+		expectedServiceLabels := map[string]string{
 			"kubeflow.org": "",
 			"task_index":   fmt.Sprintf("%v", index),
 			"job_type":     "PS",
 			"runtime_id":   "some-runtime",
 			"tf_job_name":  "some-job",
+		}
+		expectedPodLabels := map[string]string{
+			"kubeflow.org": "",
+			"task_index":   fmt.Sprintf("%v", index),
+			"job_type":     "PS",
+			"runtime_id":   "some-runtime",
+			"tf_job_name":  "some-job",
+			"some-label":   "some-value",
+		}
+
+		expectedPodAnnotations := map[string]string{
+			"some-anno": "some-value",
 		}
 
 		// Check that a service was created.
@@ -127,8 +141,8 @@ func TestTFReplicaSet(t *testing.T) {
 
 		s := sList.Items[index]
 
-		if !reflect.DeepEqual(expectedLabels, s.ObjectMeta.Labels) {
-			t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedLabels)
+		if !reflect.DeepEqual(expectedServiceLabels, s.ObjectMeta.Labels) {
+			t.Fatalf("Service Labels; Got %v Want: %v", s.ObjectMeta.Labels, expectedServiceLabels)
 		}
 
 		name := fmt.Sprintf("some-job-ps-some-runtime-%v", index)
@@ -156,8 +170,12 @@ func TestTFReplicaSet(t *testing.T) {
 
 		p := l.Items[index]
 
-		if !reflect.DeepEqual(expectedLabels, p.ObjectMeta.Labels) {
-			t.Fatalf("Pod Labels; Got %v Want: %v", p.ObjectMeta.Labels, expectedLabels)
+		if !reflect.DeepEqual(expectedPodLabels, p.ObjectMeta.Labels) {
+			t.Fatalf("Pod Labels; Got %v Want: %v", p.ObjectMeta.Labels, expectedPodLabels)
+		}
+
+		if !reflect.DeepEqual(expectedPodAnnotations, p.ObjectMeta.Annotations) {
+			t.Fatalf("Pod Annotations; Got %v Want: %v", p.ObjectMeta.Annotations, expectedPodAnnotations)
 		}
 
 		if len(p.Spec.Containers) != 1 {

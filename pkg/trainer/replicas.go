@@ -174,8 +174,9 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 
 	pod := &v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   s.genPodName(index),
-			Labels: taskLabels,
+			Name:        s.genPodName(index),
+			Labels:      taskLabels,
+			Annotations: map[string]string{},
 			OwnerReferences: []meta_v1.OwnerReference{
 				helper.AsOwner(s.Job.job),
 			},
@@ -184,6 +185,19 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 	}
 
 	pod.Spec.SchedulerName = s.Job.SchedulerName()
+
+	// copy labels and annotations to pod from tfjob
+	for k, v := range s.Spec.Template.Labels {
+		if _, ok := pod.Labels[k]; !ok {
+			pod.Labels[k] = v
+		}
+	}
+
+	for k, v := range s.Spec.Template.Annotations {
+		if _, ok := pod.Annotations[k]; !ok {
+			pod.Annotations[k] = v
+		}
+	}
 
 	// Configure the TFCONFIG environment variable.
 	tfConfig := TFConfig{
