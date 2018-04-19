@@ -90,6 +90,7 @@ func (tc *TFJobController) reconcilePods(
 		}
 	}
 
+	// TODO(gaocegege): Use syncPods to sync all replicas to ensure that all replicas only has one pod running/succeeded.
 	diff := len(activePods) - int(expected)
 
 	if diff < 0 {
@@ -182,6 +183,40 @@ func (tc *TFJobController) reconcilePods(
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
 	return nil
+}
+
+func (tc *TFJobController) syncPods(pods []*v1.Pod, replicas int, logger *log.Entry) {
+	podSlices := getPodSlices(pods, replicas, logger)
+	for index, podSlice := range podSlices {
+		if len(podSlice) > 1 {
+			logger.Warning("We have to many pods for the worker %d", index)
+			// Kill some
+		}
+		if len(podSlice) == 0 {
+			// Create one
+		}
+		// We already have one, and check if it is succeede or something else.
+		// pod := podSlice[0]
+	}
+}
+
+func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
+	podSlices := make([][]*v1.Pod, 0)
+	for _, pod := range pods {
+		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
+			logger.Warning("The pod do not have the index label.")
+		}
+		index, err := strconv.Atoi(pod.Labels[tfReplicaIndexLabel])
+		if err != nil {
+			logger.Warning("Error when strconv.Atoi: %v", err)
+		}
+		if index < 0 || index >= replicas {
+			logger.Warningf("The label index is not expected: %d", index)
+		}
+
+		podSlices[index] = append(podSlices[index], pod)
+	}
+	return podSlices
 }
 
 // getDiffPodIndexes checks and gets diff indexes from desired and current.
