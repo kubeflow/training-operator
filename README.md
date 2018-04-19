@@ -97,8 +97,19 @@ The semantics are as follows
   * The overall status of the TFJob is determined by the exit code of the
     tensorflow container
       * 0 = success
-      * 130(contianer terminated by Control-C) or 137(container received a SIGKILL) or 143(container received a SIGTERM) = retryable error
-      * others = permanent errora 
+      * 1 || 2 || 126 || 127 || 128 || 139 = Permanent errors:
+          * 1: general errors
+          * 2: misuse of shell builtins
+          * 126: Command invoked cannot execute
+          * 127: Command not found
+          * 128: Invalid argument to exit
+          * 139: terminated by SIGSEGV(Invalid memory reference)
+      * 130 || 137 || 143 = retryable error for unexpected system signals:
+          * 130: contianer terminated by Control-C 
+          * 137: container received a SIGKILL
+          * 143: container received a SIGTERM
+      * 138 = Reserved in tf-operator for user specified retryable errors
+      * others = Undefined
 
 **worker**
   * A job can have 0 to N workers
