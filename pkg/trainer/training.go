@@ -203,14 +203,16 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 		return false
 	}
 
-	if s.ExitCode == 1 || s.ExitCode == 2 || s.ExitCode == 126 || s.ExitCode == 127 || s.ExitCode == 128 || s.ExitCode == 139 {
-		// Refers to http://tldp.org/LDP/abs/html/exitcodes.html, we identify the following exit codes as permanent errors:
-		// 1: General errors
-		// 2: Misuse of shell builtins
-		// 126: Command invoked cannot execute
-		// 127: Command not found
-		// 128: Invalid argument to exit
-		// 139(128+11): terminated by SIGSEGV(Invalid memory reference)
+	if s.ExitCode == 1 || s.ExitCode == 2 || s.ExitCode == 126 ||
+		s.ExitCode == 127 || s.ExitCode == 128 || s.ExitCode == 139 {
+		// Refers to http://tldp.org/LDP/abs/html/exitcodes.html, we identify the following exit codes
+		// as permanent errors:
+		//   1: General errors
+		//   2: Misuse of shell builtins
+		//   126: Command invoked cannot execute
+		//   127: Command not found
+		//   128: Invalid argument to exit
+		//   139(128+11): terminated by SIGSEGV(Invalid memory reference)
 		return false
 	}
 
@@ -221,7 +223,9 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 		//   137(128+9): Container received a SIGKILL
 		//   143(128+15): Container received a SIGTERM
 		// The exit code of container will be 128 + n for fatal error signals.
-		// More info can be found in https://stackoverflow.com/questions/31297616/what-is-the-authoritative-list-of-docker-run-exit-codes
+		// More info can be found in:
+		//   http://tldp.org/LDP/abs/html/exitcodes.html,
+		//   https://stackoverflow.com/questions/31297616/what-is-the-authoritative-list-of-docker-run-exit-codes
 		return true
 	}
 
