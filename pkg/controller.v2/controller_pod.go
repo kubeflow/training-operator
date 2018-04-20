@@ -37,17 +37,11 @@ func (tc *TFJobController) reconcilePods(
 	pods []*v1.Pod,
 	rtype tfv1alpha2.TFReplicaType,
 	spec *tfv1alpha2.TFReplicaSpec) error {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return err
-	}
 
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
 	// Get all pods for the type rt.
 	pods = filterPodsForTFReplicaType(pods, rt)
-	activePods := FilterActivePods(pods)
 	succeeded, failed := getPodStatus(pods)
 	runningPods := filterRunningPods(pods)
 
@@ -90,84 +84,21 @@ func (tc *TFJobController) reconcilePods(
 		}
 	}
 
-	// TODO(gaocegege): Use syncPods to sync all replicas to ensure that all replicas only has one pod running/succeeded.
-	diff := len(activePods) - int(expected)
-
-	if diff < 0 {
-		// Need to create new pods.
-		diffIndexes := getDiffPodIndexes(activePods, expected, loggerForTFJob(tfjob))
-		if diff+len(diffIndexes) != 0 {
-			// This should never happened.
-			return fmt.Errorf("pods diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
+	podSlices := getPodSlices(pods, int(*spec.Replicas), loggerForTFJob(tfjob))
+	for index, podSlice := range podSlices {
+		if len(podSlice) > 1 {
+			loggerForTFJob(tfjob).Warning("We have to many pods for the worker %d", index)
+			// TODO(gaocegege): Kill some pods.
 		}
-
-		expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
-		err := tc.expectations.ExpectCreations(expectationPodsKey, diff)
-		if err != nil {
-			return err
-		}
-
-		for _, index := range diffIndexes {
+		if len(podSlice) == 0 {
 			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%s", rt, index)
-
-			// Create OwnerReference.
-			controllerRef := genOwnerReference(tfjob)
-
-			// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-			pTemplate := spec.Template.DeepCopy()
-
-			labels := genLabels(tfjobKey)
-			// Set type and index for the worker.
-			labels[tfReplicaTypeLabel] = rt
-			labels[tfReplicaIndexLabel] = index
-
-			if pTemplate.Labels == nil {
-				pTemplate.Labels = make(map[string]string)
-			}
-
-			for key, value := range labels {
-				pTemplate.Labels[key] = value
-			}
-
-			// Generate TF_CONFIG JSON string.
-			tfConfigStr := genTFConfigJSONStr(tfjob, rt, index)
-
-			if tfConfigStr == "" {
-				return nil
-			}
-			// Add TF_CONFIG environment variable.
-			for i, _ := range pTemplate.Spec.Containers {
-				if len(pTemplate.Spec.Containers[i].Env) == 0 {
-					pTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
-				}
-				pTemplate.Spec.Containers[i].Env = append(pTemplate.Spec.Containers[i].Env, v1.EnvVar{
-					Name:  "TF_CONFIG",
-					Value: tfConfigStr,
-				})
-			}
-
-			// Set restart policy
-			if spec.RestartPolicy != tfv1alpha2.RestartPolicyExitCode {
-				pTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
-			}
-
-			err := tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, pTemplate, tfjob, controllerRef)
-			if err != nil && errors.IsTimeout(err) {
-				// Pod is created but its initialization has timed out.
-				// If the initialization is successful eventually, the
-				// controller will observe the creation via the informer.
-				// If the initialization fails, or if the pod keeps
-				// uninitialized for a long time, the informer will not
-				// receive any update, and the controller will create a new
-				// pod when the expectation expires.
-				return nil
-			} else if err != nil {
+			err := tc.createNewPod(tfjob, rt, string(index), spec)
+			if err != nil {
 				return err
 			}
 		}
-	} else if diff > 0 {
-		// TODO(CPH): Need to delete pods.
-		loggerForTFJob(tfjob).Infof("need to delete pod but it is not implemented yet")
+		// We already have one, and check if it is succeede or something else.
+		// pod := podSlice[0]
 	}
 
 	if tfjob.Status.TFReplicaStatuses == nil {
@@ -185,23 +116,77 @@ func (tc *TFJobController) reconcilePods(
 	return nil
 }
 
-func (tc *TFJobController) syncPods(pods []*v1.Pod, replicas int, logger *log.Entry) {
-	podSlices := getPodSlices(pods, replicas, logger)
-	for index, podSlice := range podSlices {
-		if len(podSlice) > 1 {
-			logger.Warning("We have to many pods for the worker %d", index)
-			// Kill some
-		}
-		if len(podSlice) == 0 {
-			// Create one
-		}
-		// We already have one, and check if it is succeede or something else.
-		// pod := podSlice[0]
+func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
+	tfjobKey, err := KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		return err
 	}
+	expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
+	err = tc.expectations.ExpectCreations(expectationPodsKey, 1)
+	if err != nil {
+		return err
+	}
+
+	// Create OwnerReference.
+	controllerRef := genOwnerReference(tfjob)
+
+	// Set type and index for the worker.
+	labels := genLabels(tfjobKey)
+	labels[tfReplicaTypeLabel] = rt
+	labels[tfReplicaIndexLabel] = index
+
+	podTemplate := spec.Template.DeepCopy()
+
+	if podTemplate.Labels == nil {
+		podTemplate.Labels = make(map[string]string)
+	}
+
+	for key, value := range labels {
+		podTemplate.Labels[key] = value
+	}
+
+	// Generate TF_CONFIG JSON string.
+	tfConfigStr := genTFConfigJSONStr(tfjob, rt, index)
+
+	if tfConfigStr == "" {
+		return nil
+	}
+	// Add TF_CONFIG environment variable.
+	for i, _ := range podTemplate.Spec.Containers {
+		if len(podTemplate.Spec.Containers[i].Env) == 0 {
+			podTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+		}
+		podTemplate.Spec.Containers[i].Env = append(podTemplate.Spec.Containers[i].Env, v1.EnvVar{
+			Name:  "TF_CONFIG",
+			Value: tfConfigStr,
+		})
+	}
+
+	// TODO(gaocegege): Deal with RestartPolicyExitCode.
+	// Set restart policy
+	if spec.RestartPolicy != tfv1alpha2.RestartPolicyExitCode {
+		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+	}
+
+	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
+	if err != nil && errors.IsTimeout(err) {
+		// Pod is created but its initialization has timed out.
+		// If the initialization is successful eventually, the
+		// controller will observe the creation via the informer.
+		// If the initialization fails, or if the pod keeps
+		// uninitialized for a long time, the informer will not
+		// receive any update, and the controller will create a new
+		// pod when the expectation expires.
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
-	podSlices := make([][]*v1.Pod, 0)
+	podSlices := make([][]*v1.Pod, replicas)
 	for _, pod := range pods {
 		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
 			logger.Warning("The pod do not have the index label.")
@@ -212,9 +197,9 @@ func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
 		}
 		if index < 0 || index >= replicas {
 			logger.Warningf("The label index is not expected: %d", index)
+		} else {
+			podSlices[index] = append(podSlices[index], pod)
 		}
-
-		podSlices[index] = append(podSlices[index], pod)
 	}
 	return podSlices
 }
