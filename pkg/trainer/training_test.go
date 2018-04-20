@@ -69,7 +69,7 @@ func TestIsRetryableTerminationState(t *testing.T) {
 				ExitCode: 244,
 				Message:  "some reason",
 			},
-			Expected: true,
+			Expected: false,
 		},
 		{
 			State: v1.ContainerStateTerminated{
@@ -77,6 +77,34 @@ func TestIsRetryableTerminationState(t *testing.T) {
 				Reason:   "OOMKilled",
 			},
 			Expected: false,
+		},
+		{
+			// Exit code that indicates container was killed by SIGKILL.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 137,
+			},
+			Expected: true,
+		},
+		{
+			// Exit code reserved for user defined retryable errors.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 138,
+			},
+			Expected: true,
+		},
+		{
+			// Exit code that indicates container was killed by SIGSEGV.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 139,
+			},
+			Expected: false,
+		},
+		{
+			// Exit code that indicates container was killed by SIGTERM.
+			State: v1.ContainerStateTerminated{
+				ExitCode: 143,
+			},
+			Expected: true,
 		},
 	}
 

@@ -36,6 +36,7 @@ import (
 	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/kubeflow/tf-operator/pkg/util"
+	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
 // TODO(jlewi): We should switch a New pattern and make trainingJob private so we can
@@ -190,8 +191,6 @@ func (j *TrainingJob) GetStatus() (tfv1alpha1.State, []*tfv1alpha1.TFReplicaStat
 // isRetryableTerminationState returns true if a container terminated in a state
 // that we consider retryable.
 func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
-	// TODO(jlewi): Need to match logic in
-	// https://cs.corp.google.com/piper///depot/google3/cloud/ml/beta/job/training_job_state_util.cc?l=88
 	if s.Reason == "OOMKilled" {
 		// If the user's process causes an OOM and Docker kills the container,
 		// the termination reason of ContainerState will be specified to
@@ -203,27 +202,7 @@ func isRetryableTerminationState(s *v1.ContainerStateTerminated) bool {
 		return false
 	}
 
-	// TODO(jlewi): Should we use the exit code reported in the termination
-	// log message and not the ExitCode reported by the container.
-
-	if s.ExitCode >= 0 && s.ExitCode <= 127 {
-		// For the exit_code in [0, 127]:
-		//   0 means success,
-		//   1 - 127 corresponds to permanent user errors.
-		// We don't want to retry for both cases.
-		// More info about exit status can be found in:
-		// https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html
-		return false
-	}
-
-	// For the remaining cases that exit_code from workers that doesn't
-	// fall into [0, 127]. They can be:
-	//   137 corresponds to SIGKILL,
-	//   143 corresponds to SIGTERM,
-	//   other values that have undefined behavior.
-	// We treat them as internal errors for now and all the internal errors
-	// will be retired.
-	return true
+	return train_util.IsRetryableExitCode(s.ExitCode)
 }
 
 // masterName returns the name of master replica of provided training job
@@ -268,7 +247,7 @@ func (j *TrainingJob) setup(config *tfv1alpha1.ControllerConfig) {
 	}
 }
 
-// // setupReplicas creates in memory data structures corresponding to the replicas.
+// setupReplicas creates in memory data structures corresponding to the replicas.
 func (j *TrainingJob) setupReplicas() error {
 	if len(j.Replicas) != len(j.job.Spec.ReplicaSpecs) {
 		j.Replicas = make([]*TFReplicaSet, 0, len(j.job.Spec.ReplicaSpecs))
