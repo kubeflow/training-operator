@@ -13,7 +13,7 @@ params + {
       namespace: "kubeflow-releasing",
       project: "kubeflow-releasing",
       prow_env: "JOB_NAME=tf-operator-release,JOB_TYPE=tf-operator-release,REPO_NAME=tf-operator,REPO_OWNER=kubeflow,BUILD_NUMBER=78e4,PULL_BASE_SHA=a7511ff",
-      registry: "gcr.io/kubeflow-images-staging",
+      registry: "gcr.io/kubeflow-images-public",
       versionTag: "v20180329-a7511ff",
       zone: "us-central1-a",
     },
