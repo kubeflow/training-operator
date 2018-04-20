@@ -41,6 +41,10 @@ import (
 	"github.com/kubeflow/tf-operator/version"
 )
 
+const (
+	apiVersion = "v1alpha1"
+)
+
 var (
 	leaseDuration = 15 * time.Second
 	renewDuration = 5 * time.Second
@@ -52,7 +56,7 @@ func Run(opt *options.ServerOption) error {
 
 	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
-		version.PrintVersionAndExit()
+		version.PrintVersionAndExit(apiVersion)
 	}
 
 	namespace := os.Getenv(util.EnvKubeflowNamespace)
@@ -62,7 +66,7 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// To help debugging, immediately log version
-	log.Infof("%+v", version.Info())
+	log.Infof("%+v", version.Info(apiVersion))
 
 	config, err := k8sutil.GetClusterConfig()
 	if err != nil {
