@@ -1,5 +1,8 @@
-# TODO(jlewi): How can we make it work with golang:1.8.2-alpine
-FROM golang:1.8.2
+FROM centos:7
+
+ENV GOLANG_VERSION 1.8.3
+
+RUN yum -y install go && yum clean all
 
 # TODO(jlewi): We should probably change the directory to /opt/kubeflow.
 RUN mkdir -p /opt/mlkube
