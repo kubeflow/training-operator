@@ -57,6 +57,8 @@ func (tc *TFJobController) reconcilePods(
 	// All workers are succeeded, leave a succeeded condition.
 	if expected == 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
