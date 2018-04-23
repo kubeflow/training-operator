@@ -33,7 +33,7 @@ example-job   TFJob.v1alpha.kubeflow.org
 
 For additional information about motivation and design for the
 CRD please refer to
-[tf_job_design_doc.md](tf_job_design_doc.md).
+[tf-job design document](tf_job_design_doc.md) and [design document proposal for v1alpha2](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 
 ### Requirements
 
@@ -105,7 +105,7 @@ The semantics are as follows
           * 128: invalid argument to exit
           * 139: contianer terminated by SIGSEGV(Invalid memory reference)
       * 130 || 137 || 143 = retryable error for unexpected system signals:
-          * 130: contianer terminated by Control-C 
+          * 130: contianer terminated by Control-C
           * 137: container received a SIGKILL
           * 143: container received a SIGTERM
       * 138 = reserved in tf-operator for user specified retryable errors
