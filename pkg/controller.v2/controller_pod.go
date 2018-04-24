@@ -91,7 +91,7 @@ func (tc *TFJobController) reconcilePods(
 			// TODO(gaocegege): Kill some pods.
 		}
 		if len(podSlice) == 0 {
-			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%s", rt, index)
+			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%d", rt, index)
 			err := tc.createNewPod(tfjob, rt, string(index), spec)
 			if err != nil {
 				return err
@@ -186,6 +186,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 }
 
 func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
+	logger.Infof("%v", pods)
 	podSlices := make([][]*v1.Pod, replicas)
 	for _, pod := range pods {
 		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
