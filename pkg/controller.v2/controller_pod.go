@@ -141,10 +141,12 @@ func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
 	for _, pod := range pods {
 		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
 			logger.Warning("The pod do not have the index label.")
+			continue
 		}
 		index, err := strconv.Atoi(pod.Labels[tfReplicaIndexLabel])
 		if err != nil {
 			logger.Warning("Error when strconv.Atoi: %v", err)
+			continue
 		}
 		if index < 0 || index >= replicas {
 			logger.Warningf("The label index is not expected: %d", index)
