@@ -136,7 +136,6 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 }
 
 func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
-	logger.Infof("%v", pods)
 	podSlices := make([][]*v1.Pod, replicas)
 	for _, pod := range pods {
 		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
