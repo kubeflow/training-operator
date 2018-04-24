@@ -157,47 +157,6 @@ func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
 	return podSlices
 }
 
-// getDiffPodIndexes checks and gets diff indexes from desired and current.
-func getDiffPodIndexes(activePods []*v1.Pod, replicas int32, logger *log.Entry) []string {
-	desiredIndexes := make(map[string]string)
-
-	for i := int32(0); i < replicas; i++ {
-		desiredIndexes[fmt.Sprintf("%d", i)] = noHit
-	}
-
-	for _, pod := range activePods {
-		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
-			continue
-		}
-
-		index := pod.Labels[tfReplicaIndexLabel]
-		indexNum, err := strconv.Atoi(index)
-		if err != nil {
-			logger.Warningf("The label index should be integer: %s", index)
-			continue
-		} else {
-			// The situation should not happen.
-			if indexNum < 0 || indexNum >= int(replicas) {
-				logger.Warningf("The label index is not expected: %d", indexNum)
-				continue
-			}
-		}
-
-		if _, ok := desiredIndexes[index]; ok {
-			desiredIndexes[index] = hit
-		}
-	}
-
-	diffIndexes := []string{}
-	for index, hit := range desiredIndexes {
-		if hit == noHit {
-			diffIndexes = append(diffIndexes, index)
-		}
-	}
-
-	return diffIndexes
-}
-
 // getPodsForTFJob returns the set of pods that this tfjob should manage.
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned Pods are pointers into the cache.
