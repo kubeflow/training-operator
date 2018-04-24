@@ -45,8 +45,9 @@ func (tc *TFJobController) reconcilePods(
 	succeeded, failed := getPodStatus(pods)
 	runningPods := filterRunningPods(pods)
 	running := len(runningPods)
+	replicas := int(*spec.Replicas)
 
-	podSlices := getPodSlices(pods, int(*spec.Replicas), loggerForTFJob(tfjob))
+	podSlices := getPodSlices(pods, replicas, loggerForTFJob(tfjob))
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
 			loggerForTFJob(tfjob).Warning("We have to many pods for the worker %d", index)
@@ -59,64 +60,10 @@ func (tc *TFJobController) reconcilePods(
 				return err
 			}
 		}
-		// We already have one, and check if it is succeede or something else.
-		// pod := podSlice[0]
+		// We already have one, and check if it is succeeded or something else.
 	}
 
-	// Expect to have `replicas - succeeded` pods alive.
-	expected := *spec.Replicas - succeeded
-
-	// All workers are succeeded, leave a succeeded condition.
-	if expected == 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-		now := metav1.Now()
-		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
-		}
-	}
-
-	// Some workers are still running, leave a running condition.
-	if running > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
-		}
-	}
-
-	// All workers are running, set StartTime
-	if running == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		now := metav1.Now()
-		tfjob.Status.StartTime = &now
-	}
-
-	// Some workers or pss are failed , leave a failed condition.
-	if failed > 0 {
-		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
-		}
-	}
-
-	if tfjob.Status.TFReplicaStatuses == nil {
-		tfjob.Status.TFReplicaStatuses = make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaStatus)
-	}
-
-	if _, ok := tfjob.Status.TFReplicaStatuses[rtype]; !ok {
-		tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
-	}
-
-	// Update the active status since we have created -diff pods during the loop.
-	tfjob.Status.TFReplicaStatuses[rtype].Active = expected
-	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
-	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
-	return nil
+	return tc.UpdateStatus(tfjob, rtype, replicas, running, succeeded, failed)
 }
 
 func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
@@ -225,10 +172,12 @@ func getDiffPodIndexes(activePods []*v1.Pod, replicas int32, logger *log.Entry) 
 		indexNum, err := strconv.Atoi(index)
 		if err != nil {
 			logger.Warningf("The label index should be integer: %s", index)
+			continue
 		} else {
 			// The situation should not happen.
 			if indexNum < 0 || indexNum >= int(replicas) {
 				logger.Warningf("The label index is not expected: %d", indexNum)
+				continue
 			}
 		}
 

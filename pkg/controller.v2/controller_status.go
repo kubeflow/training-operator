@@ -8,13 +8,15 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
-func (tc *TFJobController) UpdateStatus(tfjob *tfv1alpha2.TFJob, replicas int, succeeded, failed int32) {
+func (tc *TFJobController) UpdateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas, running int, succeeded, failed int32) error {
 	// Expect to have `replicas - succeeded` pods alive.
-	expected := replicas - succeeded
+	expected := int32(replicas) - succeeded
 
 	// All workers are succeeded, leave a succeeded condition.
 	if expected == 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -60,4 +62,5 @@ func (tc *TFJobController) UpdateStatus(tfjob *tfv1alpha2.TFJob, replicas int, s
 	tfjob.Status.TFReplicaStatuses[rtype].Active = expected
 	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
 	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
+	return nil
 }
