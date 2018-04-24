@@ -44,6 +44,24 @@ func (tc *TFJobController) reconcilePods(
 	pods = filterPodsForTFReplicaType(pods, rt)
 	succeeded, failed := getPodStatus(pods)
 	runningPods := filterRunningPods(pods)
+	running := len(runningPods)
+
+	podSlices := getPodSlices(pods, int(*spec.Replicas), loggerForTFJob(tfjob))
+	for index, podSlice := range podSlices {
+		if len(podSlice) > 1 {
+			loggerForTFJob(tfjob).Warning("We have to many pods for the worker %d", index)
+			// TODO(gaocegege): Kill some pods.
+		}
+		if len(podSlice) == 0 {
+			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%d", rt, index)
+			err := tc.createNewPod(tfjob, rt, string(index), spec)
+			if err != nil {
+				return err
+			}
+		}
+		// We already have one, and check if it is succeede or something else.
+		// pod := podSlice[0]
+	}
 
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := *spec.Replicas - succeeded
@@ -61,7 +79,7 @@ func (tc *TFJobController) reconcilePods(
 	}
 
 	// Some workers are still running, leave a running condition.
-	if len(runningPods) > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
+	if running > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 		if err != nil {
@@ -71,7 +89,7 @@ func (tc *TFJobController) reconcilePods(
 	}
 
 	// All workers are running, set StartTime
-	if len(runningPods) == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
+	if running == int(*spec.Replicas) && rtype == tfv1alpha2.TFReplicaTypeWorker {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 	}
@@ -84,23 +102,6 @@ func (tc *TFJobController) reconcilePods(
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
 		}
-	}
-
-	podSlices := getPodSlices(pods, int(*spec.Replicas), loggerForTFJob(tfjob))
-	for index, podSlice := range podSlices {
-		if len(podSlice) > 1 {
-			loggerForTFJob(tfjob).Warning("We have to many pods for the worker %d", index)
-			// TODO(gaocegege): Kill some pods.
-		}
-		if len(podSlice) == 0 {
-			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%d", rt, index)
-			err := tc.createNewPod(tfjob, rt, string(index), spec)
-			if err != nil {
-				return err
-			}
-		}
-		// We already have one, and check if it is succeede or something else.
-		// pod := podSlice[0]
 	}
 
 	if tfjob.Status.TFReplicaStatuses == nil {
