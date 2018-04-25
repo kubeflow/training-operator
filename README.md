@@ -103,9 +103,9 @@ The semantics are as follows
           * 126: command invoked cannot execute
           * 127: command not found
           * 128: invalid argument to exit
-          * 139: contianer terminated by SIGSEGV(Invalid memory reference)
+          * 139: container terminated by SIGSEGV(Invalid memory reference)
       * 130 || 137 || 143 = retryable error for unexpected system signals:
-          * 130: contianer terminated by Control-C
+          * 130: container terminated by Control-C
           * 137: container received a SIGKILL
           * 143: container received a SIGTERM
       * 138 = reserved in tf-operator for user specified retryable errors
