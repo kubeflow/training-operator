@@ -3,41 +3,58 @@ package controller
 import (
 	"fmt"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
-func (tc *TFJobController) UpdateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas, running int, succeeded, failed int32) error {
+const (
+	// tfJobCreatedReason is added in a tfjob when it is created.
+	tfJobCreatedReason = "TFJobCreated"
+	// tfJobSucceededReason is added in a tfjob when it is succeeded.
+	tfJobSucceededReason = "TFJobSucceeded"
+	// tfJobSucceededReason is added in a tfjob when it is running.
+	tfJobRunningReason = "TFJobRunning"
+	// tfJobSucceededReason is added in a tfjob when it is failed.
+	tfJobFailedReason = "TFJobFailed"
+)
+
+// updateStatus updates the status of the tfjob.
+func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
 	// Expect to have `replicas - succeeded` pods alive.
-	expected := int32(replicas) - succeeded
+	expected := replicas - int(tfjob.Status.TFReplicaStatuses[rtype].Succeeded)
+	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
+	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
-	// All workers are succeeded, leave a succeeded condition.
-	if expected == 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-		now := metav1.Now()
-		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
+	if rtype == tfv1alpha2.TFReplicaTypeWorker {
+		// All workers are running, set StartTime.
+		if running == replicas {
+			now := metav1.Now()
+			tfjob.Status.StartTime = &now
 		}
-	}
 
-	// Some workers are still running, leave a running condition.
-	if running > 0 && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
+		// Some workers are still running, leave a running condition.
+		if running > 0 {
+			msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+			if err != nil {
+				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
+			}
 		}
-	}
 
-	// All workers are running, set StartTime
-	if running == replicas && rtype == tfv1alpha2.TFReplicaTypeWorker {
-		now := metav1.Now()
-		tfjob.Status.StartTime = &now
+		// All workers are succeeded, leave a succeeded condition.
+		if expected == 0 {
+			msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+			now := metav1.Now()
+			tfjob.Status.CompletionTime = &now
+			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+			if err != nil {
+				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
+			}
+		}
 	}
 
 	// Some workers or pss are failed , leave a failed condition.
@@ -49,18 +66,31 @@ func (tc *TFJobController) UpdateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 			return err
 		}
 	}
+	return nil
+}
 
+// initializeTFReplicaStatuses initializes the TFReplicaStatuses for replica.
+func initializeTFReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) {
 	if tfjob.Status.TFReplicaStatuses == nil {
 		tfjob.Status.TFReplicaStatuses = make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaStatus)
 	}
 
-	if _, ok := tfjob.Status.TFReplicaStatuses[rtype]; !ok {
-		tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
-	}
+	tfjob.Status.TFReplicaStatuses[rtype] = &tfv1alpha2.TFReplicaStatus{}
+}
 
-	// Update the active status since we have created -diff pods during the loop.
-	tfjob.Status.TFReplicaStatuses[rtype].Active = expected
-	tfjob.Status.TFReplicaStatuses[rtype].Succeeded = succeeded
-	tfjob.Status.TFReplicaStatuses[rtype].Failed = failed
-	return nil
+// updateTFJobReplicaStatuses updates the TFJobReplicaStatuses according to the pod.
+func updateTFJobReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, pod *v1.Pod) {
+	switch pod.Status.Phase {
+	case v1.PodRunning, v1.PodPending:
+		tfjob.Status.TFReplicaStatuses[rtype].Active++
+	case v1.PodSucceeded:
+		tfjob.Status.TFReplicaStatuses[rtype].Succeeded++
+	case v1.PodFailed:
+		tfjob.Status.TFReplicaStatuses[rtype].Failed++
+	}
+}
+
+// increaseTFJobReplicaStatusesActive increases active in TFJobReplicaStatuses.
+func increaseTFJobReplicaStatusesActive(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) {
+	tfjob.Status.TFReplicaStatuses[rtype].Active++
 }

@@ -42,30 +42,55 @@ func (tc *TFJobController) reconcilePods(
 	rt := strings.ToLower(string(rtype))
 	// Get all pods for the type rt.
 	pods = filterPodsForTFReplicaType(pods, rt)
-	succeeded, failed := getPodStatus(pods)
-	runningPods := filterRunningPods(pods)
-	running := len(runningPods)
 	replicas := int(*spec.Replicas)
 
-	podSlices := getPodSlices(pods, replicas, loggerForTFJob(tfjob))
+	initializeTFReplicaStatuses(tfjob, rtype)
+
+	podSlices := getPodSlices(pods, replicas, loggerForReplica(tfjob, rt))
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
-			loggerForTFJob(tfjob).Warning("We have to many pods for the worker %d", index)
+			loggerForReplica(tfjob, rt).Warning("We have to many pods for the worker %d", index)
 			// TODO(gaocegege): Kill some pods.
-		}
-		if len(podSlice) == 0 {
-			loggerForTFJob(tfjob).Infof("need to create new pod: %s-%d", rt, index)
+		} else if len(podSlice) == 0 {
+			loggerForReplica(tfjob, rt).Infof("need to create new pod: %s-%d", rt, index)
 			err := tc.createNewPod(tfjob, rt, string(index), spec)
 			if err != nil {
 				return err
 			}
+			increaseTFJobReplicaStatusesActive(tfjob, rtype)
+		} else {
+			// We already have one, and check the status.
+			pod := podSlice[0]
+			updateTFJobReplicaStatuses(tfjob, rtype, pod)
 		}
-		// We already have one, and check if it is succeeded or something else.
 	}
 
-	return tc.UpdateStatus(tfjob, rtype, replicas, running, succeeded, failed)
+	return tc.updateStatus(tfjob, rtype, replicas)
 }
 
+// getPodSlices returns a slice, which element is the slice of pod.
+func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
+	podSlices := make([][]*v1.Pod, replicas)
+	for _, pod := range pods {
+		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
+			logger.Warning("The pod do not have the index label.")
+			continue
+		}
+		index, err := strconv.Atoi(pod.Labels[tfReplicaIndexLabel])
+		if err != nil {
+			logger.Warning("Error when strconv.Atoi: %v", err)
+			continue
+		}
+		if index < 0 || index >= replicas {
+			logger.Warningf("The label index is not expected: %d", index)
+		} else {
+			podSlices[index] = append(podSlices[index], pod)
+		}
+	}
+	return podSlices
+}
+
+// createNewPod creates a new pod for the given index and type.
 func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
@@ -103,7 +128,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		return nil
 	}
 	// Add TF_CONFIG environment variable.
-	for i, _ := range podTemplate.Spec.Containers {
+	for i := range podTemplate.Spec.Containers {
 		if len(podTemplate.Spec.Containers[i].Env) == 0 {
 			podTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
 		}
@@ -133,27 +158,6 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		return err
 	}
 	return nil
-}
-
-func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
-	podSlices := make([][]*v1.Pod, replicas)
-	for _, pod := range pods {
-		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
-			logger.Warning("The pod do not have the index label.")
-			continue
-		}
-		index, err := strconv.Atoi(pod.Labels[tfReplicaIndexLabel])
-		if err != nil {
-			logger.Warning("Error when strconv.Atoi: %v", err)
-			continue
-		}
-		if index < 0 || index >= replicas {
-			logger.Warningf("The label index is not expected: %d", index)
-		} else {
-			podSlices[index] = append(podSlices[index], pod)
-		}
-	}
-	return podSlices
 }
 
 // getPodsForTFJob returns the set of pods that this tfjob should manage.
@@ -235,7 +239,7 @@ func (tc *TFJobController) addPod(obj interface{}) {
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
 		if tfjob == nil {
-			loggerForTFJob(tfjob).Info("This pod's tfjob does not exists")
+			log.Info("This pod's tfjob does not exists")
 			return
 		}
 
@@ -279,22 +283,4 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (tc *TFJobController) deletePod(obj interface{}) {
 	// TODO(CPH): handle this gracefully.
-}
-
-// getPodStatus returns no of succeeded and failed pods running a job
-func getPodStatus(pods []*v1.Pod) (succeeded, failed int32) {
-	succeeded = int32(filterPods(pods, v1.PodSucceeded))
-	failed = int32(filterPods(pods, v1.PodFailed))
-	return
-}
-
-// filterPods returns pods based on their phase.
-func filterPods(pods []*v1.Pod, phase v1.PodPhase) int {
-	result := 0
-	for i := range pods {
-		if phase == pods[i].Status.Phase {
-			result++
-		}
-	}
-	return result
 }
