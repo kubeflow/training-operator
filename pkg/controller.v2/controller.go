@@ -56,15 +56,6 @@ const (
 	noHit = "no-hit"
 
 	defaultPortStr = "2222"
-
-	// tfJobCreatedReason is added in a tfjob when it is created.
-	tfJobCreatedReason = "TFJobCreated"
-	// tfJobSucceededReason is added in a tfjob when it is succeeded.
-	tfJobSucceededReason = "TFJobSucceeded"
-	// tfJobSucceededReason is added in a tfjob when it is running.
-	tfJobRunningReason = "TFJobRunning"
-	// tfJobSucceededReason is added in a tfjob when it is failed.
-	tfJobFailedReason = "TFJobFailed"
 )
 
 // controllerKind contains the schema.GroupVersionKind for this controller type.
