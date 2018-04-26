@@ -54,7 +54,7 @@
       local srcRootDir = testDir + "/src";
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
-      local image = "gcr.io/mlkube-testing/test-worker";
+      local image = "gcr.io/kubeflow-ci/test-worker";
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
