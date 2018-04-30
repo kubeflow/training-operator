@@ -458,6 +458,9 @@ func (j *TrainingJob) syncPdb() error {
 	pdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: "tf-job-pdb-" + j.job.ObjectMeta.Name,
+			OwnerReferences: []meta_v1.OwnerReference{
+				helper.AsOwner(j.job),
+			},
 		},
 		Spec: v1beta1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
