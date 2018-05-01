@@ -503,7 +503,7 @@ func (j *TrainingJob) syncPdb() error {
 			return err
 		}
 
-		j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
+		j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.ObjectMeta.Name)
 	}
 
 	j.pdb = createdPdb
