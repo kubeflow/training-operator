@@ -388,6 +388,7 @@ func TestPDBForGangScheduling(t *testing.T) {
 			jobSpec: &tfv1alpha1.TFJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "some-meta-name",
+					UID:  "some-meta-uid",
 				},
 				Spec: tfv1alpha1.TFJobSpec{
 					RuntimeId: "some-runtime-id",
