@@ -127,7 +127,7 @@ class TestNotebook(unittest.TestCase):
   def testCpu(self):
     """Test using CPU only."""
     now = datetime.datetime.now()
-    project = "mlkube-testing"
+    project = "kubeflow-ci"
     cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
                  + uuid.uuid4().hex[0:4])
     zone = "us-east1-d"
@@ -135,9 +135,9 @@ class TestNotebook(unittest.TestCase):
       "project": project,
       "cluster_name": cluster,
       "zone": zone,
-      "registry": "gcr.io/mlkube-testing",
-      "data_dir": "gs://mlkube-testing_temp/cifar10/data",
-      "job_dirs": "gs://mlkube-testing_temp/cifar10/jobs",
+      "registry": "gcr.io/kubeflow-ci",
+      "data_dir": "gs://kubeflow-ci_temp/cifar10/data",
+      "job_dirs": "gs://kubeflow-ci_temp/cifar10/jobs",
       "num_steps": 10,
       "use_gpu": False,
     }
@@ -146,7 +146,7 @@ class TestNotebook(unittest.TestCase):
   def testGpu(self):
     """Test using CPU only."""
     now = datetime.datetime.now()
-    project = "mlkube-testing"
+    project = "kubeflow-ci"
     cluster = ("gke-nb-test-" + now.strftime("v%Y%m%d") + "-"
                  + uuid.uuid4().hex[0:4])
     zone = "us-east1-c"
@@ -154,9 +154,9 @@ class TestNotebook(unittest.TestCase):
       "project": project,
       "cluster_name": cluster,
       "zone": zone,
-      "registry": "gcr.io/mlkube-testing",
-      "data_dir": "gs://mlkube-testing_temp/cifar10/data",
-      "job_dirs": "gs://mlkube-testing_temp/cifar10/jobs",
+      "registry": "gcr.io/kubeflow-ci",
+      "data_dir": "gs://kubeflow-ci_temp/cifar10/data",
+      "job_dirs": "gs://kubeflow-ci_temp/cifar10/jobs",
       "num_steps": 10,
       "use_gpu": True,
       "accelerator": "nvidia-tesla-k80",

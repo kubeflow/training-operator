@@ -198,7 +198,7 @@ def get_commit_from_env():
 def create_latest(gcs_client, job_name, sha):
   """Create a file in GCS with information about the latest passing postsubmit.
   """
-  bucket_name = "mlkube-testing-results"
+  bucket_name = "kubeflow-ci-results"
   path = os.path.join(job_name, "latest_green.json")
 
   bucket = gcs_client.get_bucket(bucket_name)
