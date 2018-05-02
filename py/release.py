@@ -28,7 +28,7 @@ from py import util
 REPO_ORG = os.getenv("REPO_OWNER", "kubeflow")
 REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
 
-RESULTS_BUCKET = "mlkube-testing-results"
+RESULTS_BUCKET = "kubeflow-ci-results"
 JOB_NAME = "tf-k8s-postsubmit"
 
 GCB_PROJECT = "tf-on-k8s-releasing"
@@ -542,7 +542,7 @@ def add_common_args(parser):
 
   parser.add_argument(
     "--registry",
-    default="gcr.io/mlkube-testing",
+    default="gcr.io/kubeflow-ci",
     type=str,
     help="The docker registry to use.")
 
