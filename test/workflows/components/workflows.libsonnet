@@ -260,20 +260,16 @@
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
               "python",
               "-m",
-              "py.py_checks",
-              "test",
+              "kubeflow.testing.test_py_checks",
+              "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
-              "--project=" + project,
-              "--junit_path=" + artifactsDir + "/junit_pycheckstest.xml",
             ]),  // py test
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
               "python",
               "-m",
-              "py.py_checks",
-              "lint",
+              "kubeflow.testing.test_py_lint",
+              "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
-              "--project=" + project,
-              "--junit_path=" + artifactsDir + "/junit_pycheckslint.xml",
             ]),  // py lint
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
               "python",
