@@ -9,7 +9,6 @@ This module assumes py is a top level python package.
 # and it doesn't use this script.
 import argparse
 import datetime
-import glob
 import json
 import logging
 import os
@@ -234,7 +233,6 @@ def build_operator_image(root_dir,
 def build_and_push_artifacts(go_dir,
                              src_dir,
                              registry,
-                             publish_path=None,
                              gcb_project=None,
                              build_info_path=None,
                              version_tag=None):
@@ -244,8 +242,6 @@ def build_and_push_artifacts(go_dir,
     go_dir: The GOPATH directory
     src_dir: The root directory where we checked out the repo.
     registry: Docker registry to use.
-    publish_path: (Optional) The GCS path where artifacts should be published.
-       Set to none to only build locally.
     gcb_project: The project to use with GCB to build docker images.
       If set to none uses docker to build.
     build_info_path: (Optional): GCS location to write YAML file containing
@@ -263,67 +259,6 @@ def build_and_push_artifacts(go_dir,
 
   build_info = build_operator_image(
     src_dir, registry, project=gcb_project, version_tag=version_tag)
-
-  # Copy the chart to a temporary directory because we will modify some
-  # of its YAML files.
-  chart_build_dir = tempfile.mkdtemp(prefix="tmpTFJobChartBuild")
-  shutil.copytree(
-    os.path.join(src_dir, "tf-job-operator-chart"),
-    os.path.join(chart_build_dir, "tf-job-operator-chart"))
-  version = build_info["image"].split(":")[-1]
-  values_file = os.path.join(chart_build_dir, "tf-job-operator-chart",
-                             "values.yaml")
-  update_values(values_file, build_info["image"])
-
-  chart_file = os.path.join(chart_build_dir, "tf-job-operator-chart",
-                            "Chart.yaml")
-  update_chart(chart_file, version)
-
-  # Delete any existing matches because we assume there is only 1 below.
-  matches = glob.glob(os.path.join(bin_dir, "tf-job-operator-chart*.tgz"))
-  for m in matches:
-    logging.info("Delete previous build: %s", m)
-    os.unlink(m)
-
-  util.run(
-    [
-      "helm", "package", "--save=false", "--destination=" + bin_dir,
-      "./tf-job-operator-chart"
-    ],
-    cwd=chart_build_dir)
-
-  matches = glob.glob(os.path.join(bin_dir, "tf-job-operator-chart*.tgz"))
-
-  if len(matches) != 1:
-    raise ValueError(
-      "Expected 1 chart archive to match but found {0}".format(matches))
-
-  chart_archive = matches[0]
-
-  release_path = version
-
-  targets = [
-    os.path.join(release_path, os.path.basename(chart_archive)),
-    "latest/tf-job-operator-chart-latest.tgz",
-  ]
-
-  if publish_path:
-    gcs_client = storage.Client(project=gcb_project)
-    bucket_name, base_path = util.split_gcs_uri(publish_path)
-    bucket = gcs_client.get_bucket(bucket_name)
-    for t in targets:
-      blob = bucket.blob(os.path.join(base_path, t))
-      gcs_path = util.to_gcs_uri(bucket_name, blob.name)
-      if not t.startswith("latest"):
-        build_info["helm_chart"] = gcs_path
-      if blob.exists() and not t.startswith("latest"):
-        logging.warning("%s already exists", gcs_path)
-        continue
-      logging.info("Uploading %s to %s.", chart_archive, gcs_path)
-      blob.upload_from_filename(chart_archive)
-
-    create_latest(bucket, build_info["commit"],
-                  util.to_gcs_uri(bucket_name, targets[0]))
 
   # Always write to the bin dir.
   paths = [os.path.join(bin_dir, "build_info.yaml")]
@@ -426,7 +361,6 @@ def build_and_push(go_dir, src_dir, args):
     go_dir,
     src_dir,
     registry=args.registry,
-    publish_path=args.releases_path,
     gcb_project=args.project,
     build_info_path=args.build_info_path,
     version_tag=args.version_tag)

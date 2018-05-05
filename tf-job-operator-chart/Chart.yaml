@@ -1,6 +1,0 @@
-appVersion: 0.1.0
-description: K8s Custom Resource and Operator For TensorFlow jobs
-home: https://github.com/kubeflow/tf-operator
-name: tf-job-operator-chart
-sources: ['https://github.com/kubeflow/tf-operator']
-version: 0.2.1
