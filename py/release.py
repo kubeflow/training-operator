@@ -9,7 +9,6 @@ This module assumes py is a top level python package.
 # and it doesn't use this script.
 import argparse
 import datetime
-import glob
 import json
 import logging
 import os
@@ -234,7 +233,6 @@ def build_operator_image(root_dir,
 def build_and_push_artifacts(go_dir,
                              src_dir,
                              registry,
-                             publish_path=None,
                              gcb_project=None,
                              build_info_path=None,
                              version_tag=None):
@@ -244,8 +242,6 @@ def build_and_push_artifacts(go_dir,
     go_dir: The GOPATH directory
     src_dir: The root directory where we checked out the repo.
     registry: Docker registry to use.
-    publish_path: (Optional) The GCS path where artifacts should be published.
-       Set to none to only build locally.
     gcb_project: The project to use with GCB to build docker images.
       If set to none uses docker to build.
     build_info_path: (Optional): GCS location to write YAML file containing
@@ -365,7 +361,6 @@ def build_and_push(go_dir, src_dir, args):
     go_dir,
     src_dir,
     registry=args.registry,
-    publish_path=args.releases_path,
     gcb_project=args.project,
     build_info_path=args.build_info_path,
     version_tag=args.version_tag)
