@@ -14,7 +14,8 @@ class ReleaseTest(unittest.TestCase):
   @mock.patch("py.release.util.clone_repo")
   @mock.patch("py.release.build_and_push")
   def test_build_postsubmit(  # pylint: disable=no-self-use
-      self, mock_build_and_push, mock_clone):
+      self, mock_build_and_push, mock_clone, _mock_install, _mock_os,
+      _mock_makedirs):
     # Make sure REPO_OWNER and REPO_NAME aren't changed by the environment
     release.REPO_ORG = "kubeflow"
     release.REPO_NAME = "tf-operator"
@@ -37,7 +38,10 @@ class ReleaseTest(unittest.TestCase):
   def test_build_pr(# pylint: disable=no-self-use
       self,
       mock_build_and_push,
-      mock_clone):
+      mock_clone,
+      _mock_install,
+      _mock_os,
+      _mock_makedirs):
     parser = release.build_parser()
     args = parser.parse_args(
       ["pr", "--pr=10", "--commit=22", "--src_dir=/top/src_dir"])
