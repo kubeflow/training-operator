@@ -2,7 +2,7 @@
 
 import argparse
 import datetime
-import httplib
+import http.client
 import logging
 import json
 import os
@@ -45,7 +45,7 @@ def wait_for_delete(client,
         tf_job_client.TF_JOB_GROUP, tf_job_client.TF_JOB_VERSION, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
     except rest.ApiException as e:
-      if e.status == httplib.NOT_FOUND:
+      if e.status == http.client.NOT_FOUND:
         return
       raise
     if status_callback:
@@ -110,7 +110,7 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
 
 def to_selector(labels):
   parts = []
-  for k, v in labels.iteritems():
+  for k, v in labels.items():
     parts.append("{0}={1}".format(k, v))
 
   return ",".join(parts)

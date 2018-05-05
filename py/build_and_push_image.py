@@ -80,7 +80,7 @@ def build_and_push(dockerfile_template,
        image that was built.
   """
   if not modes:
-    modes = base_images.keys()
+    modes = list(base_images.keys())
 
   loader = jinja2.FileSystemLoader(os.path.dirname(dockerfile_template))
 
