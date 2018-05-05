@@ -111,7 +111,7 @@ def setup(args):
         "oauthScopes": [
           "https://www.googleapis.com/auth/cloud-platform",
         ],
-      },
+      }
     }
   }
 
