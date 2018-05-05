@@ -442,22 +442,21 @@ func (j *TrainingJob) SchedulerName() string {
 	return j.job.Spec.SchedulerName
 }
 
-// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
-func (j *TrainingJob) syncPdb() error {
-	nrReplicas := int32(0)
-	for _, r := range j.Replicas {
-		nrReplicas += *r.Spec.Replicas
-	}
+// genPdbName generate a new pdb name
+func (j *TrainingJob) genPdbName() string {
+	return "tf-job-pdb-" + j.job.ObjectMeta.Name
+}
 
-	if nrReplicas == 1 {
-		// gang scheduling isn't required by a non distributed training process
-		return nil
-	}
+func (j *TrainingJob) CreatePdb(nrReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
 
+	// Create the pdb.
 	minAvailable := intstr.FromInt(int(nrReplicas))
 	pdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: "tf-job-pdb-" + j.job.ObjectMeta.Name,
+			Name: j.genPdbName(),
+			OwnerReferences: []meta_v1.OwnerReference{
+				helper.AsOwner(j.job),
+			},
 		},
 		Spec: v1beta1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
@@ -469,20 +468,44 @@ func (j *TrainingJob) syncPdb() error {
 			},
 		},
 	}
+	j.contextLogger.Infof("Creating PDB: %v", pdb.ObjectMeta.Name)
+	return j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
+}
 
-	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
-	if err != nil {
-		if k8s_errors.IsAlreadyExists(err) {
-			j.contextLogger.Infof("PDB: %v already exists.", "tf-job-pdb-"+j.job.ObjectMeta.Name)
-			return nil
+// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+func (j *TrainingJob) syncPdb() error {
+
+	nrReplicas := int32(0)
+	for _, r := range j.Replicas {
+		nrReplicas += *r.Spec.Replicas
+	}
+
+	if nrReplicas == 1 {
+		// gang scheduling isn't required by a non distributed training process
+		return nil
+	}
+
+	createdPdb, err := j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Get(j.genPdbName(), meta_v1.GetOptions{})
+
+	if err != nil && k8s_errors.IsNotFound(err) {
+		j.contextLogger.Infof("PDB: %v not found, create new one.", j.genPdbName())
+
+		// Create the pdb
+		createdPdb, err := j.CreatePdb(nrReplicas)
+
+		// If the pdb already exists do nothing.
+		if err != nil {
+			if k8s_errors.IsAlreadyExists(err) {
+				j.contextLogger.Infof("PDB: %v already exists.", j.genPdbName())
+				return nil
+			}
+			j.recorder.Eventf(j.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
+			return err
 		}
 
-		j.recorder.Eventf(j.job, v1.EventTypeWarning, FailedCreateReason, "Error creating: %v", err)
-		return err
+		j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
 	}
 
 	j.pdb = createdPdb
-
-	j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
 	return nil
 }
