@@ -377,7 +377,7 @@ def build_local(args):
   go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
   if not os.path.exists(go_src_dir):
-    logging.info("Directory %s  doesn't exist.")
+    logging.info("Directory %s  doesn't exist.", go_src_dir)
     logging.info("Creating symbolic link %s pointing to %s", go_src_dir,
                  src_dir)
     os.symlink(src_dir, go_src_dir)
