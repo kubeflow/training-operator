@@ -13,12 +13,12 @@ ln -sf ${GIT_TRAINING} ${GOPATH}/src/github.com/kubeflow/tf-operator
 
 * GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/tf-operator
 
-Resolve dependencies (if you don't have glide install, check how to do it [here](https://github.com/Masterminds/glide/blob/master/README.md#install))
+Resolve dependencies (if you don't have dep install, check how to do it [here](https://github.com/golang/dep))
 
-Install dependencies, `-v` will ignore subpackage vendor
+Install dependencies
 
 ```sh
-glide install -v
+dep ensure
 ```
 
 Build it
