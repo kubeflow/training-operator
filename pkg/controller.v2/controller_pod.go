@@ -53,7 +53,7 @@ func (tc *TFJobController) reconcilePods(
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new pod: %s-%d", rt, index)
-			err := tc.createNewPod(tfjob, rt, string(index), spec)
+			err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
 			}
