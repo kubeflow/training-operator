@@ -96,7 +96,7 @@ func initializeTFReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFRep
 // updateTFJobReplicaStatuses updates the TFJobReplicaStatuses according to the pod.
 func updateTFJobReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, pod *v1.Pod) {
 	switch pod.Status.Phase {
-	case v1.PodRunning, v1.PodPending:
+	case v1.PodRunning:
 		tfjob.Status.TFReplicaStatuses[rtype].Active++
 	case v1.PodSucceeded:
 		tfjob.Status.TFReplicaStatuses[rtype].Succeeded++
