@@ -30,11 +30,11 @@ import (
 )
 
 var (
-	image   = flag.String("image", "", "The Docker image containing the TF program to run.")
-	name   = flag.String("name", "", "The name for the TFJob to create..")
-	namespace   = flag.String("namespace", "default", "The namespace to create the test job in.")
-	numJobs = flag.Int("num_jobs", 1, "The number of jobs to run.")
-	timeout = flag.Duration("timeout", 5*time.Minute, "The timeout for the test")
+	image     = flag.String("image", "", "The Docker image containing the TF program to run.")
+	name      = flag.String("name", "", "The name for the TFJob to create..")
+	namespace = flag.String("namespace", "default", "The namespace to create the test job in.")
+	numJobs   = flag.Int("num_jobs", 1, "The number of jobs to run.")
+	timeout   = flag.Duration("timeout", 5*time.Minute, "The timeout for the test")
 )
 
 type tfReplicaType tfv1alpha1.TFReplicaType
