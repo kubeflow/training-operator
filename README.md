@@ -24,7 +24,7 @@ kubectl create -f examples/tf_job.yaml
 
 To list jobs
 
-```
+```bash
 kubectl get tfjobs
 
 NAME          KINDS
@@ -60,7 +60,7 @@ kubectl create -f https://raw.githubusercontent.com/kubeflow/tf-operator/master/
 
 In this case the job spec looks like the following
 
-```
+```yaml
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "TFJob"
 metadata:
@@ -142,7 +142,7 @@ Ensure your K8s cluster is properly configured to use GPUs ([instructions for GK
 
 To attach GPUs specify the GPU resource on the container e.g.
 
-```
+```yaml
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "TFJob"
 metadata:
@@ -168,13 +168,13 @@ for using GPUs.
 
 To get the status of your job
 
-```
+```bash
 kubectl get -o yaml tfjobs $JOB
 ```
 
 Here is sample output for an example job
 
-```
+```yaml
 apiVersion: kubeflow.org/v1alpha1
 kind: TFJob
 metadata:
@@ -294,7 +294,7 @@ ps-76no-1
 Logging follows standard K8s logging practices.
 
 You can use kubectl to get standard output/error for any of
-your containers.
+your running containers.
 
 First find the pod created by the job controller for the replica of
 index. Pods will be named
@@ -311,6 +311,8 @@ Once you've identified your pod you can get the logs using kubectl.
 ```
 kubectl logs ${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}-${RADNOM}
 ```
+
+We delete pods when a job completes to save resources (See [#512](https://github.com/kubeflow/tf-operator/pull/512)). Thus if you need to access to the log after the job is finished, you need to configure a log backend on your own.
 
 If your cluster takes advantage of K8s
 [logging infrastructure](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
