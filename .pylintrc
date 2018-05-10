@@ -9,7 +9,7 @@
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=third_party,jupyterhub_spawner.py
+ignore=third_party,jupyterhub_spawner.py,dist_mnist.py
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
