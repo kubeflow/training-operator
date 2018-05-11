@@ -19,14 +19,15 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	log "github.com/golang/glog"
-	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
-	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/util"
 	"k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 var (
@@ -230,7 +231,7 @@ func main() {
 			} else {
 				numFailed += 1
 			}
-		case <-time.After(endTime.Sub(time.Now())):
+		case <-time.After(time.Until(endTime)):
 			log.Errorf("Timeout waiting for TFJob to finish.")
 			fmt.Println("timeout 2")
 		}
