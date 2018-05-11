@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
@@ -197,7 +198,7 @@ func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, 
 		}
 		return fresh, nil
 	})
-	cm := NewPodControllerRefManager(tc.podControl, tfjob, selector, controllerKind, canAdoptFunc)
+	cm := controller.NewPodControllerRefManager(tc.podControl, tfjob, selector, controllerKind, canAdoptFunc)
 	return cm.ClaimPods(pods)
 }
 
