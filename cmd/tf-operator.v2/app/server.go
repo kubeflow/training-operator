@@ -103,7 +103,9 @@ func Run(opt *options.ServerOption) error {
 
 	// Set leader election start function.
 	run := func(<-chan struct{}) {
-		tc.Run(opt.Threadiness, stopCh)
+		if err := tc.Run(1, stopCh); err != nil {
+			log.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 
 	id, err := os.Hostname()

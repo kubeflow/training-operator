@@ -26,6 +26,7 @@ func main() {
 	p := ":8080"
 	log.Println("Dashboard available at /tfjobs/ui/ on port", p)
 
-	http.ListenAndServe(p, nil)
-
+	if err = http.ListenAndServe(p, nil); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
 }

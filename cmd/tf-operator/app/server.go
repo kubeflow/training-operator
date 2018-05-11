@@ -92,7 +92,9 @@ func Run(opt *options.ServerOption) error {
 	go tfJobInformerFactory.Start(neverStop)
 
 	run := func(stopCh <-chan struct{}) {
-		controller.Run(1, stopCh)
+		if err := controller.Run(1, stopCh); err != nil {
+			log.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 
 	id, err := os.Hostname()
