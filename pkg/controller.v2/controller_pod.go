@@ -58,7 +58,6 @@ func (tc *TFJobController) reconcilePods(
 			if err != nil {
 				return err
 			}
-			increaseTFJobReplicaStatusesActive(tfjob, rtype)
 		} else {
 			// We already have one, and check the status.
 			pod := podSlice[0]
