@@ -145,7 +145,9 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 	if err != nil {
 		log.Infof("cannot find TFJob %v under namespace %v, error: %v", name, namespace, err)
 		if errors.IsNotFound(err) {
-			response.WriteError(http.StatusNotFound, err)
+			if newErr := response.WriteError(http.StatusNotFound, err); newErr != nil {
+				log.Errorf("Failed to write response: %v", newErr)
+			}
 		} else {
 			if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
 				log.Errorf("Failed to write response: %v", newErr)
@@ -180,7 +182,9 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 	clt := apiHandler.cManager.TFJobClient
 	tfJob := new(v1alpha1.TFJob)
 	if err := request.ReadEntity(tfJob); err != nil {
-		response.WriteError(http.StatusBadRequest, err)
+		if newErr := response.WriteError(http.StatusBadRequest, err); newErr != nil {
+			log.Errorf("Failed to write response: %v", newErr)
+		}
 		return
 	}
 
@@ -191,7 +195,9 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		_, nsErr := apiHandler.cManager.ClientSet.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tfJob.Namespace}})
 		if nsErr != nil {
 			log.Warningf("failed to create namespace %v for TFJob %v: %v", tfJob.Namespace, tfJob.Name, nsErr)
-			response.WriteError(http.StatusInternalServerError, nsErr)
+			if newErr := response.WriteError(http.StatusInternalServerError, nsErr); newErr != nil {
+				log.Errorf("Failed to write response: %v", newErr)
+			}
 		}
 	} else if err != nil {
 		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
@@ -208,7 +214,9 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		}
 	} else {
 		log.Infof("successfully deployed TFJob %v under namespace %v", tfJob.Name, tfJob.Namespace)
-		response.WriteHeaderAndEntity(http.StatusCreated, j)
+		if err = response.WriteHeaderAndEntity(http.StatusCreated, j); err != nil {
+			log.Errorf("Failed to write response: %v", err)
+		}
 	}
 }
 
