@@ -17,6 +17,7 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -276,7 +277,35 @@ func (tc *TFJobController) addPod(obj interface{}) {
 // If the labels of the pod have changed we need to awaken both the old
 // and new replica set. old and cur must be *v1.Pod types.
 func (tc *TFJobController) updatePod(old, cur interface{}) {
-	// TODO(CPH): handle this gracefully.
+	curPod := cur.(*v1.Pod)
+	oldPod := old.(*v1.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
+		return
+	}
+
+	curControllerRef := metav1.GetControllerOf(curPod)
+	oldControllerRef := metav1.GetControllerOf(oldPod)
+	controllerRefChanged := !reflect.DeepEqual(curControllerRef, oldControllerRef)
+	if controllerRefChanged && oldControllerRef != nil {
+		// The ControllerRef was changed. Sync the old controller, if any.
+		if job := tc.resolveControllerRef(oldPod.Namespace, oldControllerRef); job != nil {
+			log.Infof("pod ControllerRef updated: %v, %v", curPod, oldPod)
+			tc.enqueueTFJob(job)
+		}
+	}
+
+	// If it has a ControllerRef, that's all that matters.
+	if curControllerRef != nil {
+		job := tc.resolveControllerRef(curPod.Namespace, curControllerRef)
+		if job == nil {
+			return
+		}
+		log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
+		tc.enqueueTFJob(job)
+		return
+	}
 }
 
 // When a pod is deleted, enqueue the tfjob that manages the pod and update its expectations.
