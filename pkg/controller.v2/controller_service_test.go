@@ -18,7 +18,6 @@ package controller
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,17 +92,19 @@ func TestAddService(t *testing.T) {
 	go run(stopCh)
 
 	var key string
+	syncChan := make(chan string)
 	controller.syncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
+		<-syncChan
 		return true, nil
 	}
 
 	tfJob := newTFJob(1, 0)
 	tfJobIndexer.Add(tfJob)
 	service := newService(tfJob, labelWorker, 0, t)
-
 	controller.addService(service)
-	time.Sleep(sleepInterval)
+
+	syncChan <- "sync"
 	if key != getKey(tfJob, t) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
 	}

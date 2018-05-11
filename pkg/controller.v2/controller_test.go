@@ -36,7 +36,7 @@ const (
 	labelWorker   = "worker"
 	labelPS       = "ps"
 
-	sleepInterval = 2 * time.Second
+	sleepInterval = 500 * time.Millisecond
 	threadCount   = 1
 )
 
@@ -402,8 +402,11 @@ func TestRun(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	go func() {
+		// It is a hack to let the controller stop to run without errors.
+		// We can not just send a struct to stopCh because there are multiple
+		// receivers in controller.Run.
 		time.Sleep(sleepInterval)
-		close(stopCh)
+		stopCh <- struct{}{}
 	}()
 	err := controller.Run(threadCount, stopCh)
 	if err != nil {
@@ -439,8 +442,10 @@ func TestAddTFJob(t *testing.T) {
 	go run(stopCh)
 
 	var key string
+	syncChan := make(chan string)
 	controller.syncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
+		<-syncChan
 		return true, nil
 	}
 	controller.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
@@ -449,7 +454,8 @@ func TestAddTFJob(t *testing.T) {
 
 	tfJob := newTFJob(1, 0)
 	controller.addTFJob(tfJob)
-	time.Sleep(sleepInterval)
+
+	syncChan <- "sync"
 	if key != getKey(tfJob, t) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
 	}
