@@ -127,8 +127,8 @@ func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response
 	}
 	if err != nil {
 		log.Warningf("failed to list TFJobs under %v namespace(s): %v", ns, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully listed TFJobs under %v namespace(s)", ns)
@@ -145,12 +145,12 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 	if err != nil {
 		log.Infof("cannot find TFJob %v under namespace %v, error: %v", name, namespace, err)
 		if errors.IsNotFound(err) {
-			if newErr := response.WriteError(http.StatusNotFound, err); newErr != nil {
-				log.Errorf("Failed to write response: %v", newErr)
+			if err2 := response.WriteError(http.StatusNotFound, err); err2 != nil {
+				log.Errorf("Failed to write response: %v", err2)
 			}
 		} else {
-			if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-				log.Errorf("Failed to write response: %v", newErr)
+			if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+				log.Errorf("Failed to write response: %v", err2)
 			}
 		}
 		return
@@ -166,8 +166,8 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 	})
 	if err != nil {
 		log.Warningf("failed to list pods for TFJob %v under namespace %v: %v", name, namespace, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully listed pods for TFJob %v under namespace %v", name, namespace)
@@ -182,8 +182,8 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 	clt := apiHandler.cManager.TFJobClient
 	tfJob := new(v1alpha1.TFJob)
 	if err := request.ReadEntity(tfJob); err != nil {
-		if newErr := response.WriteError(http.StatusBadRequest, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusBadRequest, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 		return
 	}
@@ -195,22 +195,22 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		_, nsErr := apiHandler.cManager.ClientSet.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tfJob.Namespace}})
 		if nsErr != nil {
 			log.Warningf("failed to create namespace %v for TFJob %v: %v", tfJob.Namespace, tfJob.Name, nsErr)
-			if newErr := response.WriteError(http.StatusInternalServerError, nsErr); newErr != nil {
-				log.Errorf("Failed to write response: %v", newErr)
+			if err2 := response.WriteError(http.StatusInternalServerError, nsErr); err2 != nil {
+				log.Errorf("Failed to write response: %v", err2)
 			}
 		}
 	} else if err != nil {
 		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	}
 
 	j, err := clt.KubeflowV1alpha1().TFJobs(tfJob.Namespace).Create(tfJob)
 	if err != nil {
 		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully deployed TFJob %v under namespace %v", tfJob.Name, tfJob.Namespace)
@@ -227,8 +227,8 @@ func (apiHandler *APIHandler) handleDeleteTFJob(request *restful.Request, respon
 	err := clt.KubeflowV1alpha1().TFJobs(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Warningf("failed to delete TFJob %v under namespace %v: %v", name, namespace, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully deleted TFJob %v under namespace %v", name, namespace)
@@ -242,8 +242,8 @@ func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, respons
 	logs, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Do().Raw()
 	if err != nil {
 		log.Warningf("failed to get pod logs for TFJob %v under namespace %v: %v", name, namespace, err)
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully get pod logs for TFJob %v under namespace %v", name, namespace)
@@ -257,8 +257,8 @@ func (apiHandler *APIHandler) handleGetNamespaces(request *restful.Request, resp
 	l, err := apiHandler.cManager.ClientSet.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
 		log.Warningf("failed to list namespaces.")
-		if newErr := response.WriteError(http.StatusInternalServerError, err); newErr != nil {
-			log.Errorf("Failed to write response: %v", newErr)
+		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
+			log.Errorf("Failed to write response: %v", err2)
 		}
 	} else {
 		log.Infof("successfully listed namespaces")
