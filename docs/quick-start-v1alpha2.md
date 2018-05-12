@@ -1,8 +1,6 @@
-# Quick Start (for V1alpha2)
+# Testing v1alpha2
 
-## Installing v1alpha2 CRD and operator
-
-We recommend to deploy Kubeflow in order to use the TFJob v1alpha1 operator. While v1alpha2 is still in experimental, we recommend to run the operator locally. Please have a look at [developer_guide.md](../developer_guide.md)
+v1alpha2 is not ready yet but if you still want to try it out you can run it locally by following the instructions below. You need to run it locally because it is not included in Kubeflow yet. Please have a look at [developer_guide.md](../developer_guide.md)
 
 ## Create a TFJob
 
