@@ -132,7 +132,7 @@ def build_operator_image(root_dir,
     registry: The registry to use.
     project: If set it will be built using GCB.
     should_push: Should push the image to the registry, Defaule is True.
-    push_with_docker: Using docker to push image to the registry instead 
+    push_with_docker: Using docker to push image to the registry instead
       of using gcloud, Default is False.
     version_tag: Optional tag for the version. If not specified derive
       the tag from the git hash.
@@ -221,25 +221,29 @@ def build_operator_image(root_dir,
     util.run(["docker", "tag", image, latest_image])
 
     if should_push:
-      if push_with_docker:
-        util.run(["docker", "push", image])
-        logging.info("Pushed image: %s", image)
-
-        util.run(["docker", "push", image])
-        logging.info("Pushed image: %s", image)
-      
-      else:
-        util.run(["gcloud", "docker", "--", "push", image])
-        logging.info("Pushed image: %s", image)
-
-        util.run(["gcloud", "docker", "--", "push", latest_image])
-        logging.info("Pushed image: %s", latest_image)
+      _push_image(image, latest_image, push_with_docker)
 
   output = {
     "image": image,
     "commit": commit,
   }
   return output
+
+
+def _push_image(image, latest_image, push_with_docker):
+  if push_with_docker:
+    util.run(["docker", "push", image])
+    logging.info("Pushed image: %s", image)
+
+    util.run(["docker", "push", image])
+    logging.info("Pushed image: %s", image)
+
+  else:
+    util.run(["gcloud", "docker", "--", "push", image])
+    logging.info("Pushed image: %s", image)
+
+    util.run(["gcloud", "docker", "--", "push", latest_image])
+    logging.info("Pushed image: %s", latest_image)
 
 
 def build_and_push_artifacts(go_dir,
@@ -273,8 +277,11 @@ def build_and_push_artifacts(go_dir,
     os.makedirs(bin_dir)
 
   build_info = build_operator_image(
-    src_dir, registry, project=gcb_project,
-    push_with_docker=push_with_docker, version_tag=version_tag)
+    src_dir,
+    registry,
+    project=gcb_project,
+    push_with_docker=push_with_docker,
+    version_tag=version_tag)
 
   # Always write to the bin dir.
   paths = [os.path.join(bin_dir, "build_info.yaml")]
@@ -536,8 +543,8 @@ def add_common_args(parser):
   parser.add_argument(
     "--push_with_docker",
     action="store_true",
-    help="Using docker to push image."
-  )
+    help="Using docker to push image.")
+
 
 def build_parser():
   # create the top-level parser
