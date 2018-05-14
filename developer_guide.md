@@ -61,6 +61,19 @@ python -m py.release local --registry=${REGISTRY}
 
 Running the operator locally (as opposed to deploying it on a K8s cluster) is convenient for debugging/development.
 
+### Run a Kubernetes cluster
+
+First, you need to run a Kubernetes cluster locally. There are lots of choices:
+
+- [local-up-cluster.sh in Kubernetes](https://github.com/kubernetes/kubernetes/blob/master/hack/local-up-cluster.sh)
+- [minikube](https://github.com/kubernetes/minikube)
+
+`local-up-cluster.sh` runs a single-node Kubernetes cluster locally, but Minikube runs a single-node Kubernetes cluster inside a VM. It is all compilable with the controller, but the Kubernetes version should be `1.8` or above.
+
+Notice: If you use `local-up-cluster.sh`, please make sure that the kube-dns is up, see [kubernetes/kubernetes#47739](https://github.com/kubernetes/kubernetes/issues/47739) for more details.
+
+### Configure KUBECONFIG and KUBEFLOW_NAMESPACE
+
 We can configure the operator to run locally using the configuration available in your kubeconfig to communicate with
 a K8s cluster. Set your environment:
 
@@ -71,18 +84,44 @@ export KUBEFLOW_NAMESPACE=$(your_namespace)
 
 * KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
 
+### Create the TFJob CRD
+
+After the cluster is up, the TFJob CRD should be created on the cluster.
+
+```bash
+# If you are using v1alpha1
+kubectl create -f ./examples/crd/crd.yml
+```
+
+Or
+
+```bash
+# If you are using v1alpha1
+kubectl create -f ./examples/crd/crd-v1alpha2.yml
+```
+
+### Run Operator
+
 Now we are ready to run operator locally:
 
 ```sh
-kubectl create -f examples/crd/crd.yaml
-tf-operator --logtostderr
+tf-operator
 ```
 
-The first command creates a CRD `tfjobs`. And the second command runs the operator locally. To verify local
-operator is working, create an example job and you should see jobs created by it.
+To verify local operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-kubectl create -f https://raw.githubusercontent.com/kubeflow/tf-operator/master/examples/tf_job.yaml
+# If you are using v1alpha1
+kubectl create -f ./examples/tf_job.yaml
+```
+
+Or
+
+```bash
+# If you are using v1alpha2
+cd ./test/e2e/dist-mnist
+docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
+kubectl create -f ./tf-job-mnist.yaml
 ```
 
 ## Go version
