@@ -124,7 +124,6 @@ def build_operator_image(root_dir,
                          registry,
                          project=None,
                          should_push=True,
-                         push_with_docker=False,
                          version_tag=None):
   """Build the main docker image for the TFJob CRD.
   Args:
@@ -132,8 +131,6 @@ def build_operator_image(root_dir,
     registry: The registry to use.
     project: If set it will be built using GCB.
     should_push: Should push the image to the registry, Defaule is True.
-    push_with_docker: Using docker to push image to the registry instead
-      of using gcloud, Default is False.
     version_tag: Optional tag for the version. If not specified derive
       the tag from the git hash.
   Returns:
@@ -221,7 +218,7 @@ def build_operator_image(root_dir,
     util.run(["docker", "tag", image, latest_image])
 
     if should_push:
-      _push_image(image, latest_image, push_with_docker)
+      _push_image(image, latest_image)
 
   output = {
     "image": image,
@@ -230,19 +227,19 @@ def build_operator_image(root_dir,
   return output
 
 
-def _push_image(image, latest_image, push_with_docker):
-  if push_with_docker:
-    util.run(["docker", "push", image])
-    logging.info("Pushed image: %s", image)
-
-    util.run(["docker", "push", image])
-    logging.info("Pushed image: %s", image)
-
-  else:
+def _push_image(image, latest_image):
+  if "gcr.io" in image:
     util.run(["gcloud", "docker", "--", "push", image])
     logging.info("Pushed image: %s", image)
 
     util.run(["gcloud", "docker", "--", "push", latest_image])
+    logging.info("Pushed image: %s", latest_image)
+
+  else:
+    util.run(["docker", "push", image])
+    logging.info("Pushed image: %s", image)
+
+    util.run(["docker", "push", latest_image])
     logging.info("Pushed image: %s", latest_image)
 
 
@@ -250,7 +247,6 @@ def build_and_push_artifacts(go_dir,
                              src_dir,
                              registry,
                              gcb_project=None,
-                             push_with_docker=False,
                              build_info_path=None,
                              version_tag=None):
   """Build and push the artifacts.
@@ -261,8 +257,6 @@ def build_and_push_artifacts(go_dir,
     registry: Docker registry to use.
     gcb_project: The project to use with GCB to build docker images.
       If set to none uses docker to build.
-    push_with_docker: (Optional): Using docker to push image to replace
-      gcloud.
     build_info_path: (Optional): GCS location to write YAML file containing
       information about the build.
     version_tag: (Optional): The tag to use for the image.
@@ -277,11 +271,7 @@ def build_and_push_artifacts(go_dir,
     os.makedirs(bin_dir)
 
   build_info = build_operator_image(
-    src_dir,
-    registry,
-    project=gcb_project,
-    push_with_docker=push_with_docker,
-    version_tag=version_tag)
+    src_dir, registry, project=gcb_project, version_tag=version_tag)
 
   # Always write to the bin dir.
   paths = [os.path.join(bin_dir, "build_info.yaml")]
@@ -385,7 +375,6 @@ def build_and_push(go_dir, src_dir, args):
     src_dir,
     registry=args.registry,
     gcb_project=args.project,
-    push_with_docker=args.push_with_docker,
     build_info_path=args.build_info_path,
     version_tag=args.version_tag)
 
@@ -539,11 +528,6 @@ def add_common_args(parser):
     action="store_false",
     help="Don't do a dry run.")
   parser.set_defaults(dryrun=False)
-
-  parser.add_argument(
-    "--push_with_docker",
-    action="store_true",
-    help="Using docker to push image.")
 
 
 def build_parser():
