@@ -48,7 +48,14 @@ var (
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
 )
 
-func newTFJobController(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod controller.ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
+func newTFJobController(
+	kubeClientSet kubeclientset.Interface,
+	tfJobClientSet tfjobclientset.Interface,
+	resyncPeriod controller.ResyncPeriodFunc,
+) (
+	*TFJobController,
+	kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory,
+) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
