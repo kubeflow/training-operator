@@ -130,6 +130,7 @@ def build_operator_image(root_dir,
     root_dir: Root directory of the repository.
     registry: The registry to use.
     project: If set it will be built using GCB.
+    should_push: Should push the image to the registry, Defaule is True.
     version_tag: Optional tag for the version. If not specified derive
       the tag from the git hash.
   Returns:
@@ -217,17 +218,29 @@ def build_operator_image(root_dir,
     util.run(["docker", "tag", image, latest_image])
 
     if should_push:
-      util.run(["gcloud", "docker", "--", "push", image])
-      logging.info("Pushed image: %s", image)
-
-      util.run(["gcloud", "docker", "--", "push", latest_image])
-      logging.info("Pushed image: %s", latest_image)
+      _push_image(image, latest_image)
 
   output = {
     "image": image,
     "commit": commit,
   }
   return output
+
+
+def _push_image(image, latest_image):
+  if "gcr.io" in image:
+    util.run(["gcloud", "docker", "--", "push", image])
+    logging.info("Pushed image: %s", image)
+
+    util.run(["gcloud", "docker", "--", "push", latest_image])
+    logging.info("Pushed image: %s", latest_image)
+
+  else:
+    util.run(["docker", "push", image])
+    logging.info("Pushed image: %s", image)
+
+    util.run(["docker", "push", latest_image])
+    logging.info("Pushed image: %s", latest_image)
 
 
 def build_and_push_artifacts(go_dir,
