@@ -94,7 +94,7 @@ func TestAddPod(t *testing.T) {
 		},
 	},
 	)
-	ctr, _, tfJobInformerFactory := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr, _, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
 	ctr.tfJobListerSynced = alwaysReady
 	ctr.podListerSynced = alwaysReady
 	ctr.serviceListerSynced = alwaysReady

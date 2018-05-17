@@ -48,7 +48,7 @@ var (
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
 )
 
-func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod controller.ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
+func newTFJobController(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod controller.ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
@@ -276,7 +276,7 @@ func TestNormalPath(t *testing.T) {
 			},
 		},
 		)
-		ctr, kubeInformerFactory, tfJobInformerFactory := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		ctr, kubeInformerFactory, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
 		ctr.tfJobListerSynced = alwaysReady
 		ctr.podListerSynced = alwaysReady
 		ctr.serviceListerSynced = alwaysReady
@@ -396,7 +396,7 @@ func TestRun(t *testing.T) {
 		},
 	},
 	)
-	ctr, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
 	ctr.tfJobListerSynced = alwaysReady
 	ctr.podListerSynced = alwaysReady
 	ctr.serviceListerSynced = alwaysReady
@@ -431,7 +431,7 @@ func TestAddTFJob(t *testing.T) {
 		},
 	},
 	)
-	ctr, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
 	ctr.tfJobListerSynced = alwaysReady
 	ctr.podListerSynced = alwaysReady
 	ctr.serviceListerSynced = alwaysReady
