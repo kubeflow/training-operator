@@ -24,6 +24,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -47,15 +48,22 @@ var (
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
 )
 
-func newTFJobControllerFromClient(kubeClientSet kubeclientset.Interface, tfJobClientSet tfjobclientset.Interface, resyncPeriod ResyncPeriodFunc) (*TFJobController, kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory) {
+func newTFJobController(
+	kubeClientSet kubeclientset.Interface,
+	tfJobClientSet tfjobclientset.Interface,
+	resyncPeriod controller.ResyncPeriodFunc,
+) (
+	*TFJobController,
+	kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory,
+) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
-	controller := NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
-	controller.podControl = &FakePodControl{}
+	ctr := NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	ctr.podControl = &controller.FakePodControl{}
 	// TODO(gaocegege): Add FakeServiceControl.
-	controller.serviceControl = &FakeServiceControl{}
-	return controller, kubeInformerFactory, tfJobInformerFactory
+	ctr.serviceControl = &FakeServiceControl{}
+	return ctr, kubeInformerFactory, tfJobInformerFactory
 }
 
 func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
@@ -275,12 +283,12 @@ func TestNormalPath(t *testing.T) {
 			},
 		},
 		)
-		controller, kubeInformerFactory, tfJobInformerFactory := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
-		controller.tfJobListerSynced = alwaysReady
-		controller.podListerSynced = alwaysReady
-		controller.serviceListerSynced = alwaysReady
+		ctr, kubeInformerFactory, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		ctr.tfJobListerSynced = alwaysReady
+		ctr.podListerSynced = alwaysReady
+		ctr.serviceListerSynced = alwaysReady
 		var actual *tfv1alpha2.TFJob
-		controller.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
+		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			actual = tfJob
 			return nil
 		}
@@ -296,7 +304,7 @@ func TestNormalPath(t *testing.T) {
 		setServices(serviceIndexer, tfJob, labelWorker, tc.activeWorkerServices, t)
 		setServices(serviceIndexer, tfJob, labelPS, tc.activePSServices, t)
 
-		forget, err := controller.syncTFJob(getKey(tfJob, t))
+		forget, err := ctr.syncTFJob(getKey(tfJob, t))
 		// We need requeue syncJob task if podController error
 		if tc.ControllerError != nil {
 			if err == nil {
@@ -311,8 +319,8 @@ func TestNormalPath(t *testing.T) {
 			t.Errorf("%s: unexpected forget value. Expected %v, saw %v\n", name, tc.jobKeyForget, forget)
 		}
 
-		fakePodControl := controller.podControl.(*FakePodControl)
-		fakeServiceControl := controller.serviceControl.(*FakeServiceControl)
+		fakePodControl := ctr.podControl.(*controller.FakePodControl)
+		fakeServiceControl := ctr.serviceControl.(*FakeServiceControl)
 		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
 			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
 		}
@@ -395,10 +403,10 @@ func TestRun(t *testing.T) {
 		},
 	},
 	)
-	controller, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
-	controller.tfJobListerSynced = alwaysReady
-	controller.podListerSynced = alwaysReady
-	controller.serviceListerSynced = alwaysReady
+	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobListerSynced = alwaysReady
+	ctr.podListerSynced = alwaysReady
+	ctr.serviceListerSynced = alwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
@@ -408,7 +416,7 @@ func TestRun(t *testing.T) {
 		time.Sleep(sleepInterval)
 		stopCh <- struct{}{}
 	}()
-	err := controller.Run(threadCount, stopCh)
+	err := ctr.Run(threadCount, stopCh)
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
 	}
@@ -430,30 +438,30 @@ func TestAddTFJob(t *testing.T) {
 		},
 	},
 	)
-	controller, _, _ := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
-	controller.tfJobListerSynced = alwaysReady
-	controller.podListerSynced = alwaysReady
-	controller.serviceListerSynced = alwaysReady
+	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobListerSynced = alwaysReady
+	ctr.podListerSynced = alwaysReady
+	ctr.serviceListerSynced = alwaysReady
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		controller.Run(threadCount, stopCh)
+		ctr.Run(threadCount, stopCh)
 	}
 	go run(stopCh)
 
 	var key string
 	syncChan := make(chan string)
-	controller.syncHandler = func(tfJobKey string) (bool, error) {
+	ctr.syncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
 		<-syncChan
 		return true, nil
 	}
-	controller.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
+	ctr.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
 		return nil
 	}
 
 	tfJob := newTFJob(1, 0)
-	controller.addTFJob(tfJob)
+	ctr.addTFJob(tfJob)
 
 	syncChan <- "sync"
 	if key != getKey(tfJob, t) {

@@ -24,6 +24,7 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -79,21 +80,21 @@ func TestAddService(t *testing.T) {
 		},
 	},
 	)
-	controller, _, tfJobInformerFactory := newTFJobControllerFromClient(kubeClientSet, tfJobClientSet, NoResyncPeriodFunc)
-	controller.tfJobListerSynced = alwaysReady
-	controller.podListerSynced = alwaysReady
-	controller.serviceListerSynced = alwaysReady
+	ctr, _, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobListerSynced = alwaysReady
+	ctr.podListerSynced = alwaysReady
+	ctr.serviceListerSynced = alwaysReady
 	tfJobIndexer := tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs().Informer().GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		controller.Run(threadCount, stopCh)
+		ctr.Run(threadCount, stopCh)
 	}
 	go run(stopCh)
 
 	var key string
 	syncChan := make(chan string)
-	controller.syncHandler = func(tfJobKey string) (bool, error) {
+	ctr.syncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
 		<-syncChan
 		return true, nil
@@ -102,7 +103,7 @@ func TestAddService(t *testing.T) {
 	tfJob := newTFJob(1, 0)
 	tfJobIndexer.Add(tfJob)
 	service := newService(tfJob, labelWorker, 0, t)
-	controller.addService(service)
+	ctr.addService(service)
 
 	syncChan <- "sync"
 	if key != getKey(tfJob, t) {

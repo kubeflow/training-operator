@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -58,14 +59,20 @@ const (
 	defaultPortStr = "2222"
 )
 
-// controllerKind contains the schema.GroupVersionKind for this controller type.
-var controllerKind = tfv1alpha2.SchemeGroupVersion.WithKind("TFJob")
+var (
+	// controllerKind contains the schema.GroupVersionKind for this controller type.
+	controllerKind   = tfv1alpha2.SchemeGroupVersion.WithKind("TFJob")
+	groupVersionKind = schema.GroupVersionKind{
+		Group:   tfv1alpha2.GroupName,
+		Version: tfv1alpha2.GroupVersion,
+		Kind:    tfv1alpha2.TFJobResourceKind,
+	}
 
-var groupVersionKind = schema.GroupVersionKind{
-	Group:   tfv1alpha2.GroupName,
-	Version: tfv1alpha2.GroupVersion,
-	Kind:    tfv1alpha2.TFJobResourceKind,
-}
+	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
+	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+	// key function but it should be just fine for non delete events.
+	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+)
 
 // TFJobControllerConfiguration contains configuration of tf-operator.
 // DefaultTimerConfig is the suggested tf-operator configuration for production.
@@ -88,7 +95,7 @@ type TFJobController struct {
 	config TFJobControllerConfiguration
 
 	// podControl is used to add or delete pods.
-	podControl PodControlInterface
+	podControl controller.PodControlInterface
 
 	// serviceControl is used to add or delete services.
 	serviceControl ServiceControlInterface
@@ -140,7 +147,7 @@ type TFJobController struct {
 	// - "tf-operator/tfjob-abc/ps/pods", expects 2 adds.
 	// - "tf-operator/tfjob-abc/worker/services", expects 4 adds.
 	// - "tf-operator/tfjob-abc/worker/pods", expects 4 adds.
-	expectations ControllerExpectationsInterface
+	expectations controller.ControllerExpectationsInterface
 
 	// workQueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -169,7 +176,7 @@ func NewTFJobController(
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClientSet.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
-	realPodControl := RealPodControl{
+	realPodControl := controller.RealPodControl{
 		KubeClient: kubeClientSet,
 		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tfjob-controller"}),
 	}
@@ -185,7 +192,7 @@ func NewTFJobController(
 		serviceControl: realServiceControl,
 		kubeClientSet:  kubeClientSet,
 		tfJobClientSet: tfJobClientSet,
-		expectations:   NewControllerExpectations(),
+		expectations:   controller.NewControllerExpectations(),
 		workQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "tfjobs"),
 		recorder:       recorder,
 	}
