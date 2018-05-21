@@ -147,11 +147,13 @@ def build_operator_image(root_dir,
 
   targets = [
     "github.com/kubeflow/tf-operator/cmd/tf-operator",
+    "github.com/kubeflow/tf-operator/cmd/tf-operator.v2",
     "github.com/kubeflow/tf-operator/test/e2e",
     "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
-    if t == "github.com/kubeflow/tf-operator/cmd/tf-operator":
+    if t in ["github.com/kubeflow/tf-operator/cmd/tf-operator",
+             "github.com/kubeflow/tf-operator/cmd/tf-operator.v2"]:
       util.run([
         "go", "install", "-ldflags",
         "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit), t
