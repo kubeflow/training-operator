@@ -94,7 +94,7 @@ IMAGE_PIXELS = 28
 #       {'cluster': cluster,
 #        'task': {'type': 'worker', 'index': 1}})
 
-def main():
+def main(unused_argv):
   # Parse environment variable TF_CONFIG to get job_name and task_index
 
   # If not explicitly specified in the constructor and the TF_CONFIG
