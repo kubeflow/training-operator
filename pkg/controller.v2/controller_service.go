@@ -46,12 +46,14 @@ func (tc *TFJobController) reconcileServices(
 	rt := strings.ToLower(string(rtype))
 
 	replicas := int(*spec.Replicas)
+	// Get all pods for the type rt.
+	services = filterServicesForTFReplicaType(services, rt)
 
 	serviceSlices := getServiceSlices(services, replicas, loggerForReplica(tfjob, rt))
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warning("We have to many services for %s %d", rt, index)
+			loggerForReplica(tfjob, rt).Warningf("We have to many services for %s %d", rt, index)
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
@@ -75,7 +77,7 @@ func getServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [
 		}
 		index, err := strconv.Atoi(service.Labels[tfReplicaIndexLabel])
 		if err != nil {
-			logger.Warning("Error when strconv.Atoi: %v", err)
+			logger.Warningf("Error when strconv.Atoi: %v", err)
 			continue
 		}
 		if index < 0 || index >= replicas {
@@ -181,9 +183,8 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 	return cm.ClaimServices(services)
 }
 
-// filterActiveServicesForTFReplicaType returns service that have not terminated,
-// and belong to a TFReplicaType.
-func filterActiveServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) []*v1.Service {
+// filterServicesForTFReplicaType returns service belong to a TFReplicaType.
+func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) []*v1.Service {
 	var result []*v1.Service
 
 	tfReplicaSelector := &metav1.LabelSelector{
