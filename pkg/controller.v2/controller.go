@@ -53,9 +53,6 @@ const (
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
 
-	hit   = "hit"
-	noHit = "no-hit"
-
 	defaultPortStr = "2222"
 )
 
