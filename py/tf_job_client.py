@@ -3,6 +3,7 @@
 import datetime
 import json
 import logging
+import multiprocessing
 import time
 
 from kubernetes import client as k8s_client
@@ -15,6 +16,8 @@ TF_JOB_VERSION = "v1alpha1"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
 
+# How long to wait in seconds for requests to the ApiServer
+TIMEOUT = 120
 
 def create_tf_job(client, spec):
   """Create a TFJob.
@@ -27,8 +30,9 @@ def create_tf_job(client, spec):
   try:
     # Create a Resource
     namespace = spec["metadata"].get("namespace", "default")
-    api_response = crd_api.create_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec)
+    thread = crd_api.create_namespaced_custom_object(
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec, async=True)
+    api_response = thread.get(TIMEOUT)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
   except ApiException as e:
@@ -61,8 +65,10 @@ def delete_tf_job(client, namespace, name):
       "propagationPolicy": "Foreground",
     }
     logging.info("Deleting job %s.%s", namespace, name)
-    api_response = crd_api.delete_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body)
+    thread = crd_api.delete_namespaced_custom_object(
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body,
+      async=True)
+    api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
     return api_response
   except ApiException as e:
@@ -117,15 +123,25 @@ def wait_for_job(client,
   crd_api = k8s_client.CustomObjectsApi(client)
   end_time = datetime.datetime.now() + timeout
   while True:
-    results = crd_api.get_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name)
+    # By setting async=True ApiClient returns multiprocessing.pool.AsyncResult
+    # If we don't set async=True then it could potentially block forever.
+    thread = crd_api.get_namespaced_custom_object(
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, async=True)
 
-    if status_callback:
-      status_callback(results)
+    # Try to get the result but timeout.
+    results = None
+    try:
+      results = thread.get(TIMEOUT)
+    except multiprocessing.TimeoutError:
+      logging.error("Timeout trying to get TFJob.")
 
-    # If we poll the CRD quick enough status won't have been set yet.
-    if results.get("status", {}).get("phase", {}) == "Done":
-      return results
+    if results:
+      if status_callback:
+        status_callback(results)
+
+      # If we poll the CRD quick enough status won't have been set yet.
+      if results.get("status", {}).get("phase", {}) == "Done":
+        return results
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
