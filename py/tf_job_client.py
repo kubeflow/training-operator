@@ -66,7 +66,7 @@ def delete_tf_job(client, namespace, name):
     }
     logging.info("Deleting job %s.%s", namespace, name)
     thread = crd_api.delete_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body, 
+      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body,
       async=True)
     api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
@@ -127,7 +127,7 @@ def wait_for_job(client,
     # If we don't set async=True then it could potentially block forever.
     thread = crd_api.get_namespaced_custom_object(
       TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, async=True)
-    
+
     # Try to get the result but timeout.
     results = None
     try:
@@ -138,7 +138,7 @@ def wait_for_job(client,
     if results:
       if status_callback:
         status_callback(results)
-  
+
       # If we poll the CRD quick enough status won't have been set yet.
       if results.get("status", {}).get("phase", {}) == "Done":
         return results
