@@ -17,18 +17,18 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "~5.0.0"
+  version = "~6.0.0"
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "~v1.8.9"
+  version = "~v1.9.0"
 
 [[constraint]]
-  branch = "release-1.8"
+  branch = "release-1.9"
   name = "k8s.io/api"
 
 [[constraint]]
-  branch = "release-1.8"
+  branch = "release-1.9"
   name = "k8s.io/apimachinery"
 
 [[constraint]]
@@ -43,4 +43,4 @@ required = [
 
 [[constraint]]
   name = "k8s.io/apiserver"
-  version = "~kubernetes-1.8.5"
+  version = "~kubernetes-1.9"
