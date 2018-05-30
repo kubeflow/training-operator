@@ -339,7 +339,7 @@ func TestNormalPath(t *testing.T) {
 			if got, want := controllerRef.APIVersion, tfv1alpha2.SchemeGroupVersion.String(); got != want {
 				t.Errorf("controllerRef.APIVersion = %q, want %q", got, want)
 			}
-			if got, want := controllerRef.Kind, tfv1alpha2.TFJobResourceKind; got != want {
+			if got, want := controllerRef.Kind, tfv1alpha2.Kind; got != want {
 				t.Errorf("controllerRef.Kind = %q, want %q", got, want)
 			}
 			if got, want := controllerRef.Name, tfJob.Name; got != want {
