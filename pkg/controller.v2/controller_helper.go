@@ -15,9 +15,11 @@
 package controller
 
 import (
+	"encoding/json"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
@@ -46,4 +48,18 @@ func genLabels(tfjobKey string) map[string]string {
 func genGeneralName(tfjobKey, rtype, index string) string {
 	n := tfjobKey + "-" + rtype + "-" + index
 	return strings.Replace(n, "/", "-", -1)
+}
+
+// convertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
+func convertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstructured, error) {
+	var unstructured unstructured.Unstructured
+	b, err := json.Marshal(tfJob)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, &unstructured); err != nil {
+		return nil, err
+	}
+	return &unstructured, nil
 }

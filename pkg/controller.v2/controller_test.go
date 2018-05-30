@@ -49,6 +49,7 @@ var (
 )
 
 func newTFJobController(
+	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
@@ -59,7 +60,9 @@ func newTFJobController(
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
-	ctr := NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	tfJobInformer := NewUnstructuredTFJobInformer(config)
+
+	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 	ctr.podControl = &controller.FakePodControl{}
 	// TODO(gaocegege): Add FakeServiceControl.
 	ctr.serviceControl = &FakeServiceControl{}
@@ -80,6 +83,9 @@ func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
 
 func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := &tfv1alpha2.TFJob{
+		TypeMeta: metav1.TypeMeta{
+			Kind: tfv1alpha2.Kind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testTFJobName,
 			Namespace: metav1.NamespaceDefault,
@@ -276,17 +282,19 @@ func TestNormalPath(t *testing.T) {
 			},
 		},
 		)
-		tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
 				GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 			},
-		},
-		)
-		ctr, kubeInformerFactory, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-		ctr.tfJobListerSynced = alwaysReady
-		ctr.podListerSynced = alwaysReady
-		ctr.serviceListerSynced = alwaysReady
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		ctr.tfJobInformerSynced = alwaysReady
+		ctr.podInformerSynced = alwaysReady
+		ctr.serviceInformerSynced = alwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+
 		var actual *tfv1alpha2.TFJob
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			actual = tfJob
@@ -295,7 +303,15 @@ func TestNormalPath(t *testing.T) {
 
 		// Run the test logic.
 		tfJob := newTFJob(tc.worker, tc.ps)
-		tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs().Informer().GetIndexer().Add(tfJob)
+		unstructured, err := convertTFJobToUnstructured(tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
@@ -396,17 +412,17 @@ func TestRun(t *testing.T) {
 		},
 	},
 	)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
 			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 		},
-	},
-	)
-	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobListerSynced = alwaysReady
-	ctr.podListerSynced = alwaysReady
-	ctr.serviceListerSynced = alwaysReady
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
@@ -431,17 +447,18 @@ func TestAddTFJob(t *testing.T) {
 		},
 	},
 	)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
 			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 		},
-	},
-	)
-	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobListerSynced = alwaysReady
-	ctr.podListerSynced = alwaysReady
-	ctr.serviceListerSynced = alwaysReady
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
@@ -461,7 +478,14 @@ func TestAddTFJob(t *testing.T) {
 	}
 
 	tfJob := newTFJob(1, 0)
-	ctr.addTFJob(tfJob)
+	unstructured, err := convertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+	ctr.addTFJob(unstructured)
 
 	syncChan <- "sync"
 	if key != getKey(tfJob, t) {

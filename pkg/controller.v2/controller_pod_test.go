@@ -87,18 +87,18 @@ func TestAddPod(t *testing.T) {
 		},
 	},
 	)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
 			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 		},
-	},
-	)
-	ctr, _, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobListerSynced = alwaysReady
-	ctr.podListerSynced = alwaysReady
-	ctr.serviceListerSynced = alwaysReady
-	tfJobIndexer := tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs().Informer().GetIndexer()
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
@@ -115,7 +115,14 @@ func TestAddPod(t *testing.T) {
 	}
 
 	tfJob := newTFJob(1, 0)
-	tfJobIndexer.Add(tfJob)
+	unstructured, err := convertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
 	pod := newPod(tfJob, labelWorker, 0, t)
 	ctr.addPod(pod)
 

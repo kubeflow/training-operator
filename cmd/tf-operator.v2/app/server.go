@@ -95,8 +95,10 @@ func Run(opt *options.ServerOption) error {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod)
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
 
+	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg)
+
 	// Create tf controller.
-	tc := controller.NewTFJobController(kcfg, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	tc := controller.NewTFJobController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
@@ -104,6 +106,7 @@ func Run(opt *options.ServerOption) error {
 	// We do not use the generated informer because of
 	// https://github.com/kubeflow/tf-operator/issues/561
 	// go tfJobInformerFactory.Start(stopCh)
+	go unstructuredInformer.Informer().Run(stopCh)
 
 	// Set leader election start function.
 	run := func(<-chan struct{}) {

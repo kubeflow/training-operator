@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -41,6 +40,7 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
 )
 
@@ -92,9 +92,6 @@ var DefaultTFJobControllerConfiguration TFJobControllerConfiguration = TFJobCont
 
 type TFJobController struct {
 	config TFJobControllerConfiguration
-
-	// restConfig is to create the unstructured informer.
-	restConfig *restclientset.Config
 
 	// podControl is used to add or delete pods.
 	podControl controller.PodControlInterface
@@ -168,7 +165,8 @@ type TFJobController struct {
 
 // NewTFJobController returns a new TFJob controller.
 func NewTFJobController(
-	kcfg *restclientset.Config,
+	// This variable is for unstructured informer.
+	tfJobInformer tfjobinformersv1alpha2.TFJobInformer,
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
@@ -196,7 +194,6 @@ func NewTFJobController(
 
 	// Create new TFJobController.
 	tc := &TFJobController{
-		restConfig:     kcfg,
 		podControl:     realPodControl,
 		serviceControl: realServiceControl,
 		kubeClientSet:  kubeClientSet,
@@ -209,9 +206,6 @@ func NewTFJobController(
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus
-
-	// Create tfjob informer.
-	tfJobInformer := NewUnstructuredTFJobInformer(kcfg)
 
 	// Set up an event handler for when tfjob resources change.
 	tfJobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -263,8 +257,6 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer tc.workQueue.ShutDown()
 
-	go tc.tfJobInformer.Run(stopCh)
-
 	// Start the informer factories to begin populating the informer caches.
 	log.Info("Starting TFJob controller")
 
@@ -314,6 +306,7 @@ func (tc *TFJobController) processNextWorkItem() bool {
 
 	_, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
+		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
