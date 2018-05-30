@@ -12,73 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package controller provides a Kubernetes controller for a TFJob resource.
 package controller
 
 import (
-	"fmt"
 	"testing"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 )
 
-func newBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Labels:          genLabels(getKey(tfJob, t)),
-			Namespace:       tfJob.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
-		},
-	}
-}
-
-func newPod(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Pod {
-	pod := newBasePod(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
-	pod.Labels[tfReplicaTypeLabel] = typ
-	pod.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
-	return pod
-}
-
-// create count pods with the given phase for the given tfJob
-func newPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ string, start int32, t *testing.T) []*v1.Pod {
-	pods := []*v1.Pod{}
-	for i := int32(0); i < count; i++ {
-		newPod := newPod(tfJob, typ, int(start+i), t)
-		newPod.Status = v1.PodStatus{Phase: status}
-		pods = append(pods, newPod)
-	}
-	return pods
-}
-
-func setPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
-	var index int32
-	for _, pod := range newPodList(pendingPods, v1.PodPending, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += pendingPods
-	for _, pod := range newPodList(activePods, v1.PodRunning, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += activePods
-	for _, pod := range newPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-	index += succeededPods
-	for _, pod := range newPodList(failedPods, v1.PodFailed, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
-	}
-}
-
-func TestAddPod(t *testing.T) {
+func TestAddTFJob(t *testing.T) {
 	// Prepare the clientset and controller for the test.
 	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
 		Host: "",
@@ -113,22 +62,88 @@ func TestAddPod(t *testing.T) {
 		<-syncChan
 		return true, nil
 	}
+	ctr.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
+		return nil
+	}
 
 	tfJob := newTFJob(1, 0)
 	unstructured, err := convertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
-
 	if err := tfJobIndexer.Add(unstructured); err != nil {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
-	pod := newPod(tfJob, labelWorker, 0, t)
-	ctr.addPod(pod)
+	ctr.addTFJob(unstructured)
 
 	syncChan <- "sync"
 	if key != getKey(tfJob, t) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
 	}
 	close(stopCh)
+}
+
+func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
+	tfJob := &tfv1alpha2.TFJob{
+		TypeMeta: metav1.TypeMeta{
+			Kind: tfv1alpha2.Kind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testTFJobName,
+			Namespace: metav1.NamespaceDefault,
+		},
+		Spec: tfv1alpha2.TFJobSpec{
+			TFReplicaSpecs: make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec),
+		},
+	}
+
+	if worker > 0 {
+		worker := int32(worker)
+		workerReplicaSpec := &tfv1alpha2.TFReplicaSpec{
+			Replicas: &worker,
+			Template: newTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] = workerReplicaSpec
+	}
+
+	if ps > 0 {
+		ps := int32(ps)
+		psReplicaSpec := &tfv1alpha2.TFReplicaSpec{
+			Replicas: &ps,
+			Template: newTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] = psReplicaSpec
+	}
+	return tfJob
+}
+
+func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
+	key, err := KeyFunc(tfJob)
+	if err != nil {
+		t.Errorf("Unexpected error getting key for job %v: %v", tfJob.Name, err)
+		return ""
+	}
+	return key
+}
+
+func checkCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
+	for _, v := range tfJob.Status.Conditions {
+		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
+func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
+	return v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Image: testImageName,
+					Args:  []string{"Fake", "Fake"},
+				},
+			},
+		},
+	}
 }

@@ -49,6 +49,7 @@ var (
 	leaseDuration = 15 * time.Second
 	renewDuration = 5 * time.Second
 	retryPeriod   = 3 * time.Second
+	resyncPeriod  = 30 * time.Second
 )
 
 const RecommendedKubeConfigPathEnv = "KUBECONFIG"
@@ -91,15 +92,21 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create informer factory.
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, time.Second*30)
-	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, time.Second*30)
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod)
+	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
+
+	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg)
 
 	// Create tf controller.
-	tc := controller.NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	tc := controller.NewTFJobController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
-	go tfJobInformerFactory.Start(stopCh)
+
+	// We do not use the generated informer because of
+	// https://github.com/kubeflow/tf-operator/issues/561
+	// go tfJobInformerFactory.Start(stopCh)
+	go unstructuredInformer.Informer().Run(stopCh)
 
 	// Set leader election start function.
 	run := func(<-chan struct{}) {

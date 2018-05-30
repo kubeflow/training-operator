@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,6 +48,7 @@ var (
 )
 
 func newTFJobController(
+	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
@@ -59,72 +59,12 @@ func newTFJobController(
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
-	ctr := NewTFJobController(kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	tfJobInformer := NewUnstructuredTFJobInformer(config)
+
+	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 	ctr.podControl = &controller.FakePodControl{}
-	// TODO(gaocegege): Add FakeServiceControl.
 	ctr.serviceControl = &FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
-}
-
-func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
-	return v1.PodTemplateSpec{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				v1.Container{
-					Image: testImageName,
-				},
-			},
-		},
-	}
-}
-
-func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
-	tfJob := &tfv1alpha2.TFJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testTFJobName,
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: tfv1alpha2.TFJobSpec{
-			TFReplicaSpecs: make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec),
-		},
-	}
-
-	if worker > 0 {
-		worker := int32(worker)
-		workerReplicaSpec := &tfv1alpha2.TFReplicaSpec{
-			Replicas: &worker,
-			Template: newTFReplicaSpecTemplate(),
-		}
-		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] = workerReplicaSpec
-	}
-
-	if ps > 0 {
-		ps := int32(ps)
-		psReplicaSpec := &tfv1alpha2.TFReplicaSpec{
-			Replicas: &ps,
-			Template: newTFReplicaSpecTemplate(),
-		}
-		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] = psReplicaSpec
-	}
-	return tfJob
-}
-
-func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
-	key, err := KeyFunc(tfJob)
-	if err != nil {
-		t.Errorf("Unexpected error getting key for job %v: %v", tfJob.Name, err)
-		return ""
-	}
-	return key
-}
-
-func checkCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
-	for _, v := range tfJob.Status.Conditions {
-		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
-			return true
-		}
-	}
-	return false
 }
 
 func TestNormalPath(t *testing.T) {
@@ -276,17 +216,19 @@ func TestNormalPath(t *testing.T) {
 			},
 		},
 		)
-		tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
 				GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 			},
-		},
-		)
-		ctr, kubeInformerFactory, tfJobInformerFactory := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-		ctr.tfJobListerSynced = alwaysReady
-		ctr.podListerSynced = alwaysReady
-		ctr.serviceListerSynced = alwaysReady
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		ctr.tfJobInformerSynced = alwaysReady
+		ctr.podInformerSynced = alwaysReady
+		ctr.serviceInformerSynced = alwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+
 		var actual *tfv1alpha2.TFJob
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			actual = tfJob
@@ -295,7 +237,15 @@ func TestNormalPath(t *testing.T) {
 
 		// Run the test logic.
 		tfJob := newTFJob(tc.worker, tc.ps)
-		tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs().Informer().GetIndexer().Add(tfJob)
+		unstructured, err := convertTFJobToUnstructured(tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
@@ -339,7 +289,7 @@ func TestNormalPath(t *testing.T) {
 			if got, want := controllerRef.APIVersion, tfv1alpha2.SchemeGroupVersion.String(); got != want {
 				t.Errorf("controllerRef.APIVersion = %q, want %q", got, want)
 			}
-			if got, want := controllerRef.Kind, tfv1alpha2.TFJobResourceKind; got != want {
+			if got, want := controllerRef.Kind, tfv1alpha2.Kind; got != want {
 				t.Errorf("controllerRef.Kind = %q, want %q", got, want)
 			}
 			if got, want := controllerRef.Name, tfJob.Name; got != want {
@@ -396,17 +346,17 @@ func TestRun(t *testing.T) {
 		},
 	},
 	)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
+	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
 			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 		},
-	},
-	)
-	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobListerSynced = alwaysReady
-	ctr.podListerSynced = alwaysReady
-	ctr.serviceListerSynced = alwaysReady
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
@@ -420,52 +370,4 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
 	}
-}
-
-func TestAddTFJob(t *testing.T) {
-	// Prepare the clientset and controller for the test.
-	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
-		},
-	},
-	)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
-		},
-	},
-	)
-	ctr, _, _ := newTFJobController(kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobListerSynced = alwaysReady
-	ctr.podListerSynced = alwaysReady
-	ctr.serviceListerSynced = alwaysReady
-
-	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
-		ctr.Run(threadCount, stopCh)
-	}
-	go run(stopCh)
-
-	var key string
-	syncChan := make(chan string)
-	ctr.syncHandler = func(tfJobKey string) (bool, error) {
-		key = tfJobKey
-		<-syncChan
-		return true, nil
-	}
-	ctr.updateStatusHandler = func(tfjob *tfv1alpha2.TFJob) error {
-		return nil
-	}
-
-	tfJob := newTFJob(1, 0)
-	ctr.addTFJob(tfJob)
-
-	syncChan <- "sync"
-	if key != getKey(tfJob, t) {
-		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
-	}
-	close(stopCh)
 }
