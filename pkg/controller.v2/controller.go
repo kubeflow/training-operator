@@ -111,7 +111,7 @@ type TFJobController struct {
 	// To allow injection of updateStatus for testing.
 	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
 
-	// tfJobInformer is a temporay field for unstructured informer support.
+	// tfJobInformer is a temporary field for unstructured informer support.
 	tfJobInformer cache.SharedIndexInformer
 
 	// Listers for TFJob, Pod and Service
