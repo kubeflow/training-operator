@@ -46,7 +46,7 @@ func (tc *TFJobController) reconcileServices(
 	rt := strings.ToLower(string(rtype))
 
 	replicas := int(*spec.Replicas)
-	// Get all pods for the type rt.
+	// Get all services for the type rt.
 	services = filterServicesForTFReplicaType(services, rt)
 
 	serviceSlices := getServiceSlices(services, replicas, loggerForReplica(tfjob, rt))
@@ -68,6 +68,8 @@ func (tc *TFJobController) reconcileServices(
 }
 
 // getServiceSlices returns a slice, which element is the slice of service.
+// Assume the return object is serviceSlices, then serviceSlices[i] is an
+// array of pointers to services corresponding to Services for replica i.
 func getServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [][]*v1.Service {
 	serviceSlices := make([][]*v1.Service, replicas)
 	for _, service := range services {
