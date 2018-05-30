@@ -269,7 +269,7 @@ class CreateJob extends Component {
         )
       );
     }
-
+    // TODO: Refactor this to v1alpha2
     let spec = {
       metadata: {
         name: this.state.name,
