@@ -41,3 +41,7 @@ ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/ap
 echo "Generating defaulters for v1alpha2"
 ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 cd - > /dev/null
+
+echo "Generating OpenAPI specification for v1alpha2"
+${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2,k8s.io/api/core/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+cd - > /dev/null
