@@ -17,6 +17,7 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -40,115 +41,112 @@ func (tc *TFJobController) reconcileServices(
 	services []*v1.Service,
 	rtype tfv1alpha2.TFReplicaType,
 	spec *tfv1alpha2.TFReplicaSpec) error {
+
+	// Convert TFReplicaType to lower string.
+	rt := strings.ToLower(string(rtype))
+
+	replicas := int(*spec.Replicas)
+	// Get all services for the type rt.
+	services = filterServicesForTFReplicaType(services, rt)
+
+	serviceSlices := getServiceSlices(services, replicas, loggerForReplica(tfjob, rt))
+
+	for index, serviceSlice := range serviceSlices {
+		if len(serviceSlice) > 1 {
+			loggerForReplica(tfjob, rt).Warningf("We have to many services for %s %d", rt, index)
+			// TODO(gaocegege): Kill some services.
+		} else if len(serviceSlice) == 0 {
+			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
+			err := tc.createNewService(tfjob, rt, strconv.Itoa(index), spec)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// getServiceSlices returns a slice, which element is the slice of service.
+// Assume the return object is serviceSlices, then serviceSlices[i] is an
+// array of pointers to services corresponding to Services for replica i.
+func getServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [][]*v1.Service {
+	serviceSlices := make([][]*v1.Service, replicas)
+	for _, service := range services {
+		if _, ok := service.Labels[tfReplicaIndexLabel]; !ok {
+			logger.Warning("The service do not have the index label.")
+			continue
+		}
+		index, err := strconv.Atoi(service.Labels[tfReplicaIndexLabel])
+		if err != nil {
+			logger.Warningf("Error when strconv.Atoi: %v", err)
+			continue
+		}
+		if index < 0 || index >= replicas {
+			logger.Warningf("The label index is not expected: %d", index)
+		} else {
+			serviceSlices[index] = append(serviceSlices[index], service)
+		}
+	}
+	return serviceSlices
+}
+
+// createNewService creates a new service for the given index and type.
+func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
 
-	// Convert TFReplicaType to lower string.
-	rt := strings.ToLower(string(rtype))
+	expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
+	err = tc.expectations.ExpectCreations(expectationServicesKey, 1)
+	if err != nil {
+		return err
+	}
 
-	// Get active services for this TFReplicaType.
-	activeServices := filterActiveServicesForTFReplicaType(services, rt)
+	// Create OwnerReference.
+	controllerRef := genOwnerReference(tfjob)
 
-	diff := len(activeServices) - int(*(spec.Replicas))
+	// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
+	labels := genLabels(tfjobKey)
+	labels[tfReplicaTypeLabel] = rt
+	labels[tfReplicaIndexLabel] = index
 
-	if diff < 0 {
-		// Need to create new services.
-		diffIndexes := getDiffServiceIndexes(activeServices, *spec.Replicas)
-		if diff+len(diffIndexes) != 0 {
-			// This should never happened.
-			return fmt.Errorf("services diff(%d) is not equal to length(%d) of diffIndexes", diff, len(diffIndexes))
-		}
-
-		expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
-		err := tc.expectations.ExpectCreations(expectationServicesKey, diff)
-		if err != nil {
-			return err
-		}
-
-		for _, index := range diffIndexes {
-			log.Infof("need to create new service: %s-%s", rt, index)
-
-			// Create OwnerReference.
-			controllerRef := genOwnerReference(tfjob)
-
-			// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-			labels := genLabels(tfjobKey)
-			labels[tfReplicaTypeLabel] = rt
-			labels[tfReplicaIndexLabel] = index
-
-			service := &v1.Service{
-				Spec: v1.ServiceSpec{
-					Selector: labels,
-					Ports: []v1.ServicePort{
-						{
-							Name: genGeneralName(tfjobKey, rt, index),
-							Port: defaultServicePort,
-						},
-					},
+	service := &v1.Service{
+		Spec: v1.ServiceSpec{
+			Selector: labels,
+			Ports: []v1.ServicePort{
+				{
+					Name: genGeneralName(tfjobKey, rt, index),
+					Port: defaultServicePort,
 				},
-			}
-
-			service.Name = genGeneralName(tfjobKey, rt, index)
-			service.Labels = labels
-
-			err := tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
-			if err != nil && errors.IsTimeout(err) {
-				// Service is created but its initialization has timed out.
-				// If the initialization is successful eventually, the
-				// controller will observe the creation via the informer.
-				// If the initialization fails, or if the pod keeps
-				// uninitialized for a long time, the informer will not
-				// receive any update, and the controller will create a new
-				// pod when the expectation expires.
-				return nil
-			} else if err != nil {
-				return err
-			}
-		}
-	} else if diff > 0 {
-		// TODO(CPH): Need to delete service.
-		log.Infof("need to delete service but it is not implemented yet")
+			},
+		},
 	}
 
+	service.Name = genGeneralName(tfjobKey, rt, index)
+	service.Labels = labels
+
+	err = tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
+	if err != nil && errors.IsTimeout(err) {
+		// Service is created but its initialization has timed out.
+		// If the initialization is successful eventually, the
+		// controller will observe the creation via the informer.
+		// If the initialization fails, or if the service keeps
+		// uninitialized for a long time, the informer will not
+		// receive any update, and the controller will create a new
+		// service when the expectation expires.
+		return nil
+	} else if err != nil {
+		return err
+	}
 	return nil
-}
-
-// getDiffServiceIndexes checks and gets diff indexes from desired and current.
-func getDiffServiceIndexes(activeServices []*v1.Service, replicas int32) []string {
-	desiredIndexes := make(map[string]string)
-
-	for i := int32(0); i < replicas; i++ {
-		desiredIndexes[fmt.Sprintf("%d", i)] = noHit
-	}
-
-	for _, service := range activeServices {
-		if _, ok := service.Labels[tfReplicaIndexLabel]; !ok {
-			continue
-		}
-
-		index := service.Labels[tfReplicaIndexLabel]
-
-		if _, ok := desiredIndexes[index]; ok {
-			desiredIndexes[index] = hit
-		}
-	}
-
-	diffIndexes := []string{}
-	for index, hit := range desiredIndexes {
-		if hit == noHit {
-			diffIndexes = append(diffIndexes, index)
-		}
-	}
-
-	return diffIndexes
 }
 
 // getServicesForTFJob returns the set of services that this tfjob should manage.
 // It also reconciles ControllerRef by adopting/orphaning.
-// Note that the returned Pods are pointers into the cache.
+// Note that the returned services are pointers into the cache.
 func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Service, error) {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
@@ -172,7 +170,7 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 	}
 
 	// If any adoptions are attempted, we should first recheck for deletion
-	// with an uncached quorum read sometime after listing Pods (see #42639).
+	// with an uncached quorum read sometime after listing services (see #42639).
 	canAdoptFunc := RecheckDeletionTimestamp(func() (metav1.Object, error) {
 		fresh, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Get(tfjob.Name, metav1.GetOptions{})
 		if err != nil {
@@ -187,9 +185,8 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 	return cm.ClaimServices(services)
 }
 
-// filterActiveServicesForTFReplicaType returns service that have not terminated,
-// and belong to a TFReplicaType.
-func filterActiveServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) []*v1.Service {
+// filterServicesForTFReplicaType returns service belong to a TFReplicaType.
+func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) []*v1.Service {
 	var result []*v1.Service
 
 	tfReplicaSelector := &metav1.LabelSelector{
