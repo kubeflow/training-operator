@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-
 package controller
 
 import (
@@ -23,7 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -55,19 +53,18 @@ const (
 )
 
 var (
-	// controllerKind contains the schema.GroupVersionKind for this controller type.
-	controllerKind = tfv1alpha2.SchemeGroupVersion.WithKind("TFJob")
-	// TODO: Fix me.
-	groupVersionKind = schema.GroupVersionKind{
-		Group:   tfv1alpha2.GroupName,
-		Version: tfv1alpha2.GroupVersion,
-		Kind:    tfv1alpha2.Kind,
-	}
+	// controllerKind is schema.GroupVersionKind for this controller type.
+	controllerKind = tfv1alpha2.SchemeGroupVersion.WithKind(tfv1alpha2.Kind)
 
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+
+	// DefaultTFJobControllerConfiguration is the suggested tf-operator configuration for production.
+	DefaultTFJobControllerConfiguration = TFJobControllerConfiguration{
+		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
+	}
 )
 
 // TFJobControllerConfiguration contains configuration of tf-operator.
@@ -82,11 +79,8 @@ type TFJobControllerConfiguration struct {
 	ReconcilerSyncLoopPeriod metav1.Duration
 }
 
-// DefaultTFJobControllerConfiguration is the suggested tf-operator configuration for production.
-var DefaultTFJobControllerConfiguration TFJobControllerConfiguration = TFJobControllerConfiguration{
-	ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-}
-
+// TFJobController is the type for TFJob Controller, which manages
+// the lifecycle of TFJobs.
 type TFJobController struct {
 	config TFJobControllerConfiguration
 
