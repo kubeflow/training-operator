@@ -251,7 +251,7 @@
 
 [[projects]]
   name = "k8s.io/code-generator"
-  packages = ["cmd/client-gen","cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types","cmd/deepcopy-gen","cmd/defaulter-gen","cmd/informer-gen","cmd/informer-gen/generators","cmd/lister-gen","cmd/lister-gen/generators"]
+  packages = ["cmd/client-gen","cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types","cmd/deepcopy-gen","cmd/defaulter-gen","cmd/informer-gen","cmd/informer-gen/generators","cmd/lister-gen","cmd/lister-gen/generators","cmd/openapi-gen"]
   revision = "961bc077103364eb5bda2c40e2b560d068c9a8c6"
 
 [[projects]]
@@ -261,10 +261,10 @@
   revision = "01a732e01d00cb9a81bb0ca050d3e6d2b947927b"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.9"
   name = "k8s.io/kube-openapi"
-  packages = ["pkg/common","pkg/util/proto"]
-  revision = "41e43949ca69d04b66104069ed3ffd619b289b3d"
+  packages = ["pkg/common","pkg/generators","pkg/util/proto"]
+  revision = "7ee50c0aa8059d610950c952a9ed7a5e33ab336a"
 
 [[projects]]
   name = "k8s.io/kubernetes"
@@ -275,6 +275,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "97a967391d657516a0b31a77812e452f13ce160b36c2f2626aa8e5631610f905"
+  inputs-digest = "44f07c8de71efe341d97e8fe444bc3a3904aaee80cf585c4e15601708acf51e1"
   solver-name = "gps-cdcl"
   solver-version = 1
