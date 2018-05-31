@@ -84,6 +84,19 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 	return nil
 }
 
+// updateTFJobStatus updates the status of the given TFJob.
+func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
+	_, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Update(tfjob)
+	return err
+}
+
+// updateTFJobConditions updates the conditions of the given tfjob.
+func (tc *TFJobController) updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
+	condition := newCondition(conditionType, reason, message)
+	setCondition(&tfjob.Status, condition)
+	return nil
+}
+
 // initializeTFReplicaStatuses initializes the TFReplicaStatuses for replica.
 func initializeTFReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) {
 	if tfjob.Status.TFReplicaStatuses == nil {
@@ -105,7 +118,63 @@ func updateTFJobReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFRepl
 	}
 }
 
-// increaseTFJobReplicaStatusesActive increases active in TFJobReplicaStatuses.
-func increaseTFJobReplicaStatusesActive(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) {
-	tfjob.Status.TFReplicaStatuses[rtype].Active++
+// newCondition creates a new tfjob condition.
+func newCondition(conditionType tfv1alpha2.TFJobConditionType, reason, message string) tfv1alpha2.TFJobCondition {
+	return tfv1alpha2.TFJobCondition{
+		Type:               conditionType,
+		Status:             v1.ConditionTrue,
+		LastUpdateTime:     metav1.Now(),
+		LastTransitionTime: metav1.Now(),
+		Reason:             reason,
+		Message:            message,
+	}
+}
+
+// getCondition returns the condition with the provided type.
+func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) *tfv1alpha2.TFJobCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
+	}
+	return nil
+}
+
+// setCondition updates the tfjob to include the provided condition.
+// If the condition that we are about to add already exists
+// and has the same status and reason then we are not going to update.
+func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
+	currentCond := getCondition(*status, condition.Type)
+
+	// Do nothing if condition doesn't change
+	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
+		return
+	}
+
+	// Do not update lastTransitionTime if the status of the condition doesn't change.
+	if currentCond != nil && currentCond.Status == condition.Status {
+		condition.LastTransitionTime = currentCond.LastTransitionTime
+	}
+
+	// Append the updated condition to the
+	newConditions := filterOutCondition(status.Conditions, condition.Type)
+	status.Conditions = append(newConditions, condition)
+}
+
+// removeCondition removes the tfjob condition with the provided type.
+func removementCondition(status *tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) {
+	status.Conditions = filterOutCondition(status.Conditions, condType)
+}
+
+// filterOutCondition returns a new slice of tfjob conditions without conditions with the provided type.
+func filterOutCondition(conditions []tfv1alpha2.TFJobCondition, condType tfv1alpha2.TFJobConditionType) []tfv1alpha2.TFJobCondition {
+	var newConditions []tfv1alpha2.TFJobCondition
+	for _, c := range conditions {
+		if c.Type == condType {
+			continue
+		}
+		newConditions = append(newConditions, c)
+	}
+	return newConditions
 }

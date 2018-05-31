@@ -18,15 +18,12 @@ package controller
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -43,6 +40,7 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
 )
 
@@ -58,11 +56,12 @@ const (
 
 var (
 	// controllerKind contains the schema.GroupVersionKind for this controller type.
-	controllerKind   = tfv1alpha2.SchemeGroupVersion.WithKind("TFJob")
+	controllerKind = tfv1alpha2.SchemeGroupVersion.WithKind("TFJob")
+	// TODO: Fix me.
 	groupVersionKind = schema.GroupVersionKind{
 		Group:   tfv1alpha2.GroupName,
 		Version: tfv1alpha2.GroupVersion,
-		Kind:    tfv1alpha2.TFJobResourceKind,
+		Kind:    tfv1alpha2.Kind,
 	}
 
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
@@ -109,6 +108,9 @@ type TFJobController struct {
 	// To allow injection of updateStatus for testing.
 	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
 
+	// tfJobInformer is a temporary field for unstructured informer support.
+	tfJobInformer cache.SharedIndexInformer
+
 	// Listers for TFJob, Pod and Service
 	// tfJobLister can list/get tfjobs from the shared informer's store.
 	tfJobLister tfjoblisters.TFJobLister
@@ -119,14 +121,14 @@ type TFJobController struct {
 	// serviceLister can list/get services from the shared informer's store.
 	serviceLister corelisters.ServiceLister
 
-	// tfJobListerSynced returns true if the tfjob store has been synced at least once.
-	tfJobListerSynced cache.InformerSynced
+	// tfJobInformerSynced returns true if the tfjob store has been synced at least once.
+	tfJobInformerSynced cache.InformerSynced
 
-	// podListerSynced returns true if the pod store has been synced at least once.
-	podListerSynced cache.InformerSynced
+	// podInformerSynced returns true if the pod store has been synced at least once.
+	podInformerSynced cache.InformerSynced
 
-	// serviceListerSynced returns true if the service store has been synced at least once.
-	serviceListerSynced cache.InformerSynced
+	// serviceInformerSynced returns true if the service store has been synced at least once.
+	serviceInformerSynced cache.InformerSynced
 
 	// A TTLCache of pod/services creates/deletes each tfjob expects to see
 	// We use TFJob namespace/name + TFReplicaType + pods/services as an expectation key,
@@ -160,9 +162,13 @@ type TFJobController struct {
 
 // NewTFJobController returns a new TFJob controller.
 func NewTFJobController(
+	// This variable is for unstructured informer.
+	tfJobInformer tfjobinformersv1alpha2.TFJobInformer,
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
+	// This field is not used now but we keep it since it will be used
+	// after we support CRD validation.
 	tfJobInformerFactory tfjobinformers.SharedInformerFactory) *TFJobController {
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
@@ -175,12 +181,12 @@ func NewTFJobController(
 
 	realPodControl := controller.RealPodControl{
 		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tfjob-controller"}),
+		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
 	}
 
 	realServiceControl := RealServiceControl{
 		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tfjob-controller"}),
+		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
 	}
 
 	// Create new TFJobController.
@@ -190,16 +196,13 @@ func NewTFJobController(
 		kubeClientSet:  kubeClientSet,
 		tfJobClientSet: tfJobClientSet,
 		expectations:   controller.NewControllerExpectations(),
-		workQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "tfjobs"),
+		workQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), tfv1alpha2.Plural),
 		recorder:       recorder,
 	}
 
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus
-
-	// Create tfjob informer.
-	tfJobInformer := tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs()
 
 	// Set up an event handler for when tfjob resources change.
 	tfJobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -210,8 +213,9 @@ func NewTFJobController(
 		DeleteFunc: tc.enqueueTFJob,
 	})
 
+	tc.tfJobInformer = tfJobInformer.Informer()
 	tc.tfJobLister = tfJobInformer.Lister()
-	tc.tfJobListerSynced = tfJobInformer.Informer().HasSynced
+	tc.tfJobInformerSynced = tfJobInformer.Informer().HasSynced
 
 	// Create pod informer.
 	podInformer := kubeInformerFactory.Core().V1().Pods()
@@ -224,7 +228,7 @@ func NewTFJobController(
 	})
 
 	tc.podLister = podInformer.Lister()
-	tc.podListerSynced = podInformer.Informer().HasSynced
+	tc.podInformerSynced = podInformer.Informer().HasSynced
 
 	// Create service informer.
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
@@ -237,7 +241,7 @@ func NewTFJobController(
 	})
 
 	tc.serviceLister = serviceInformer.Lister()
-	tc.serviceListerSynced = serviceInformer.Informer().HasSynced
+	tc.serviceInformerSynced = serviceInformer.Informer().HasSynced
 
 	return tc
 }
@@ -247,7 +251,7 @@ func NewTFJobController(
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
 func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
-	defer runtime.HandleCrash()
+	defer utilruntime.HandleCrash()
 	defer tc.workQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches.
@@ -255,15 +259,15 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	// Wait for the caches to be synced before starting workers.
 	log.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, tc.tfJobListerSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, tc.tfJobInformerSynced); !ok {
 		return fmt.Errorf("failed to wait for tfjob caches to sync")
 	}
 
-	if ok := cache.WaitForCacheSync(stopCh, tc.podListerSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, tc.podInformerSynced); !ok {
 		return fmt.Errorf("failed to wait for pod caches to sync")
 	}
 
-	if ok := cache.WaitForCacheSync(stopCh, tc.serviceListerSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, tc.serviceInformerSynced); !ok {
 		return fmt.Errorf("failed to wait for service caches to sync")
 	}
 
@@ -297,6 +301,19 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	}
 	defer tc.workQueue.Done(key)
 
+	_, err := tc.getTFJobFromKey(key.(string))
+	if err != nil {
+		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
+		// Log the failure to conditions.
+		if err == errFailedMarshal {
+			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
+			log.Warn(errMsg)
+			// TODO(gaocegege): Set the condition or publish an event to tell the users.
+		}
+		return true
+	}
+
+	// Sync TFJob to match the actual state to this desired state.
 	forget, err := tc.syncHandler(key.(string))
 	if err == nil {
 		if forget {
@@ -321,7 +338,7 @@ func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
 	tc.workQueue.Add(key)
 }
 
-// syncTFJob will sync the tfjob with the given key if it has had its expectations fulfilled, meaning
+// syncTFJob syncs the tfjob with the given key if it has had its expectations fulfilled, meaning
 // it did not expect to see any more of its pods/services created or deleted.
 // This function is not meant to be invoked concurrently with the same key.
 func (tc *TFJobController) syncTFJob(key string) (bool, error) {
@@ -335,9 +352,9 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	sharedtfjob, err := tc.tfJobLister.TFJobs(namespace).Get(name)
+	sharedTFJob, err := tc.getTFJobFromName(namespace, name)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if err == errNotExists {
 			log.Infof("TFJob has been deleted: %v", key)
 			// jm.expectations.DeleteExpectations(key)
 			return true, nil
@@ -345,7 +362,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, err
 	}
 
-	tfjob := sharedtfjob.DeepCopy()
+	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
 	var reconcileTFJobsErr error
@@ -399,11 +416,6 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	return tc.updateStatusHandler(tfjob)
 }
 
-func genGeneralName(tfjobKey, rtype, index string) string {
-	n := tfjobKey + "-" + rtype + "-" + index
-	return strings.Replace(n, "/", "-", -1)
-}
-
 // satisfiedExpectations returns true if the required adds/dels for the given tfjob have been observed.
 // Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
 // manager.
@@ -415,7 +427,7 @@ func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 		return false
 	}
 
-	for rtype, _ := range tfjob.Spec.TFReplicaSpecs {
+	for rtype := range tfjob.Spec.TFReplicaSpecs {
 		// Check the expectations of the pods.
 		expectationPodsKey := genExpectationPodsKey(tfjobKey, string(rtype))
 		satisfied = satisfied || tc.expectations.SatisfiedExpectations(expectationPodsKey)
@@ -428,48 +440,6 @@ func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 	return satisfied
 }
 
-func genLabels(tfjobKey string) map[string]string {
-	return map[string]string{
-		"group_name": tfv1alpha2.GroupName,
-		"tf_job_key": strings.Replace(tfjobKey, "/", "-", -1),
-	}
-}
-
-// When a pod is added, set the defaults and enqueue the current tfjob.
-func (tc *TFJobController) addTFJob(obj interface{}) {
-	tfjob := obj.(*tfv1alpha2.TFJob)
-	msg := fmt.Sprintf("TFJob %s is created.", tfjob.Name)
-	log.Info(msg)
-	scheme.Scheme.Default(tfjob)
-
-	// Leave a created condition.
-	err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
-	if err != nil {
-		log.Infof("Append tfjob condition error: %v", err)
-		return
-	}
-
-	tc.enqueueTFJob(obj)
-}
-
-// When a pod is updated, enqueue the current tfjob.
-func (tc *TFJobController) updateTFJob(old, cur interface{}) {
-	oldTFJob := old.(*tfv1alpha2.TFJob)
-	log.Infof("Updating tfjob: %s", oldTFJob.Name)
-	tc.enqueueTFJob(cur)
-}
-
-func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
-	_, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Update(tfjob)
-	return err
-}
-
-func (tc *TFJobController) updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
-	condition := newCondition(conditionType, reason, message)
-	setCondition(&tfjob.Status, condition)
-	return nil
-}
-
 // resolveControllerRef returns the tfjob referenced by a ControllerRef,
 // or nil if the ControllerRef could not be resolved to a matching tfjob
 // of the correct Kind.
@@ -479,7 +449,7 @@ func (tc *TFJobController) resolveControllerRef(namespace string, controllerRef 
 	if controllerRef.Kind != controllerKind.Kind {
 		return nil
 	}
-	tfjob, err := tc.tfJobLister.TFJobs(namespace).Get(controllerRef.Name)
+	tfjob, err := tc.getTFJobFromName(namespace, controllerRef.Name)
 	if err != nil {
 		return nil
 	}
@@ -489,79 +459,4 @@ func (tc *TFJobController) resolveControllerRef(namespace string, controllerRef 
 		return nil
 	}
 	return tfjob
-}
-
-func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
-	boolPtr := func(b bool) *bool { return &b }
-	controllerRef := &metav1.OwnerReference{
-		APIVersion:         groupVersionKind.GroupVersion().String(),
-		Kind:               groupVersionKind.Kind,
-		Name:               tfjob.Name,
-		UID:                tfjob.UID,
-		BlockOwnerDeletion: boolPtr(true),
-		Controller:         boolPtr(true),
-	}
-
-	return controllerRef
-}
-
-// newCondition creates a new tfjob condition.
-func newCondition(conditionType tfv1alpha2.TFJobConditionType, reason, message string) tfv1alpha2.TFJobCondition {
-	return tfv1alpha2.TFJobCondition{
-		Type:               conditionType,
-		Status:             v1.ConditionTrue,
-		LastUpdateTime:     metav1.Now(),
-		LastTransitionTime: metav1.Now(),
-		Reason:             reason,
-		Message:            message,
-	}
-}
-
-// getCondition returns the condition with the provided type.
-func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) *tfv1alpha2.TFJobCondition {
-	for i := range status.Conditions {
-		c := status.Conditions[i]
-		if c.Type == condType {
-			return &c
-		}
-	}
-	return nil
-}
-
-// setCondition updates the tfjob to include the provided condition.
-// If the condition that we are about to add already exists
-// and has the same status and reason then we are not going to update.
-func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
-	currentCond := getCondition(*status, condition.Type)
-
-	// Do nothing if condition doesn't change
-	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
-		return
-	}
-
-	// Do not update lastTransitionTime if the status of the condition doesn't change.
-	if currentCond != nil && currentCond.Status == condition.Status {
-		condition.LastTransitionTime = currentCond.LastTransitionTime
-	}
-
-	// Append the updated condition to the
-	newConditions := filterOutCondition(status.Conditions, condition.Type)
-	status.Conditions = append(newConditions, condition)
-}
-
-// removeCondition removes the tfjob condition with the provided type.
-func removementCondition(status *tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) {
-	status.Conditions = filterOutCondition(status.Conditions, condType)
-}
-
-// filterOutCondition returns a new slice of tfjob conditions without conditions with the provided type.
-func filterOutCondition(conditions []tfv1alpha2.TFJobCondition, condType tfv1alpha2.TFJobConditionType) []tfv1alpha2.TFJobCondition {
-	var newConditions []tfv1alpha2.TFJobCondition
-	for _, c := range conditions {
-		if c.Type == condType {
-			continue
-		}
-		newConditions = append(newConditions, c)
-	}
-	return newConditions
 }

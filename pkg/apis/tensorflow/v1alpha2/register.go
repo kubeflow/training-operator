@@ -31,10 +31,14 @@ var (
 const (
 	// GroupName is the group name use in this package.
 	GroupName = "kubeflow.org"
-	// TFJobResourceKind is the kind name.
-	TFJobResourceKind = "TFJob"
+	// Kind is the kind name.
+	Kind = "TFJob"
 	// GroupVersion is the version.
 	GroupVersion = "v1alpha2"
+	// Plural is the Plural for TFJob.
+	Plural = "tfjobs"
+	// Singular is the singular for TFJob.
+	Singular = "tfjob"
 )
 
 // SchemeGroupVersion is the group version used to register these objects.
