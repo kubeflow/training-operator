@@ -27,8 +27,8 @@ import (
 func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
-		APIVersion:         groupVersionKind.GroupVersion().String(),
-		Kind:               groupVersionKind.Kind,
+		APIVersion:         controllerKind.GroupVersion().String(),
+		Kind:               controllerKind.Kind,
 		Name:               tfjob.Name,
 		UID:                tfjob.UID,
 		BlockOwnerDeletion: boolPtr(true),

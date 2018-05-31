@@ -43,6 +43,7 @@ type TFConfig struct {
 // It is a map from job names to network addresses.
 type ClusterSpec map[string][]string
 
+// TaskSpec is the specification for a task (PS or worker) of the TFJob.
 type TaskSpec struct {
 	Type  string `json:"type"`
 	Index int    `json:"index"`
