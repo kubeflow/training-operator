@@ -18,6 +18,12 @@ class VolumeCreator extends React.Component {
     this.deleteVolume = this.deleteVolume.bind(this);
   }
 
+
+  styles = {
+    root: {
+      marginTop: "20px"
+    }
+  };
   render() {
     return (
       <div style={this.styles.root}>
@@ -71,15 +77,6 @@ class VolumeCreator extends React.Component {
       volumeSpecs: { ...this.state.volumeSpecs, [id]: {} }
     });
   }
-
-  styles = {
-    card: {
-      boxShadow: ""
-    },
-    root: {
-      marginTop: "20px"
-    }
-  };
 }
 
 VolumeCreator.propTypes = {
