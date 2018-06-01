@@ -24,11 +24,16 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
+const (
+	labelGroupName = "group_name"
+	labelTFJobKey  = "tf_job_key"
+)
+
 func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
-		APIVersion:         controllerKind.GroupVersion().String(),
-		Kind:               controllerKind.Kind,
+		APIVersion:         tfv1alpha2.SchemeGroupVersion.String(),
+		Kind:               tfv1alpha2.Kind,
 		Name:               tfjob.Name,
 		UID:                tfjob.UID,
 		BlockOwnerDeletion: boolPtr(true),
@@ -40,8 +45,8 @@ func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 
 func genLabels(tfjobKey string) map[string]string {
 	return map[string]string{
-		"group_name": tfv1alpha2.GroupName,
-		"tf_job_key": strings.Replace(tfjobKey, "/", "-", -1),
+		labelGroupName: tfv1alpha2.GroupName,
+		labelTFJobKey:  strings.Replace(tfjobKey, "/", "-", -1),
 	}
 }
 

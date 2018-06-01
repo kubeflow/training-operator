@@ -37,7 +37,7 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v2"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
-	"github.com/kubeflow/tf-operator/version"
+	"github.com/kubeflow/tf-operator/pkg/version"
 )
 
 const (

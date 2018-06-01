@@ -38,7 +38,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/controller"
 	"github.com/kubeflow/tf-operator/pkg/util"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
-	"github.com/kubeflow/tf-operator/version"
+	"github.com/kubeflow/tf-operator/pkg/version"
 )
 
 const (

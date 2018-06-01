@@ -41,8 +41,12 @@ const (
 	Singular = "tfjob"
 )
 
-// SchemeGroupVersion is the group version used to register these objects.
-var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
+var (
+	// SchemeGroupVersion is the group version used to register these objects.
+	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
+	// SchemeGroupVersionKind is the GroupVersionKind of the resource.
+	SchemeGroupVersionKind = SchemeGroupVersion.WithKind(Kind)
+)
 
 func init() {
 	// We only register manually written functions here. The registration of the
