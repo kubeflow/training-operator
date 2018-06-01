@@ -53,8 +53,8 @@ const (
 )
 
 var (
-	// controllerKind is schema.GroupVersionKind for this controller type.
-	controllerKind = tfv1alpha2.SchemeGroupVersion.WithKind(tfv1alpha2.Kind)
+	// controllerKind is GroupVersionKind for this controller type.
+	controllerKind = tfv1alpha2.SchemeGroupVersionKind
 
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this

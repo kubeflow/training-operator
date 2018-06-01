@@ -156,7 +156,7 @@ def build_operator_image(root_dir,
              "github.com/kubeflow/tf-operator/cmd/tf-operator.v2"]:
       util.run([
         "go", "install", "-ldflags",
-        "-X github.com/kubeflow/tf-operator/version.GitSHA={}".format(commit), t
+        "-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}".format(commit), t
       ])
     util.run(["go", "install", t])
 

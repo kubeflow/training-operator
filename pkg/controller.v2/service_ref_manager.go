@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Note(CPH): this file is copied form k8s.io/kubernetes/pkg/controller
-// We should not import the huge package k8s.io/kubernetes/pkg
 package controller
 
 import (
