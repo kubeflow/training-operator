@@ -92,6 +92,10 @@ func (r RealServiceControl) createServices(namespace string, service *v1.Service
 		return fmt.Errorf("unable to create Services, no labels")
 	}
 	serviceWithOwner, err := getServiceFromTemplate(service, object, controllerRef)
+	if err != nil {
+		r.Recorder.Eventf(object, v1.EventTypeWarning, FailedCreateServiceReason, "Error creating: %v", err)
+		return fmt.Errorf("unable to create services: %v", err)
+	}
 
 	newService, err := r.KubeClient.CoreV1().Services(namespace).Create(serviceWithOwner)
 	if err != nil {
