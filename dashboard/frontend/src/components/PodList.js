@@ -20,7 +20,7 @@ class PodList extends Component {
     super(props);
     this.state = {
       isLogModalOpened: false,
-      logs: "hola"
+      logs: ""
     };
   }
 

@@ -28,13 +28,13 @@ class Job extends Component {
     let job = this.state.tfJob;
 
     if (job) {
-      const replicaSpecs = this.renderReplicaSpecs(job);
+      const tfReplicaSpecs = this.renderTfReplicaSpecs(job);
       return (
         <div>
           <div style={this.divStyle}>
             <JobDetail tfjob={job} />
           </div>
-          {replicaSpecs}
+          {tfReplicaSpecs}
         </div>
       );
     }
@@ -76,34 +76,24 @@ class Job extends Component {
     return matches[0];
   }
 
-  renderReplicaSpecs(job) {
-    let replicaSpecs = [];
-    for (let i = 0; i < job.spec.replicaSpecs.length; i++) {
-      let spec = job.spec.replicaSpecs[i];
-      let status = {
-        state: "Unknown"
-      };
-      if (job.status.replicaStatuses) {
-        const m = job.status.replicaStatuses.filter(
-          s => s.tf_replica_type === spec.tfReplicaType
-        );
-        if (m.length > 0) {
-          status = m[0];
-        }
-      }
-
-      let pods = this.state.pods.filter(
-        p =>
-          p.metadata.labels.job_type &&
-          p.metadata.labels.job_type === spec.tfReplicaType
+  renderTfReplicaSpecs(job) {
+    let tfReplicaSpecs = [];
+    let i = 0;
+    for(let replicaType in job.spec.tfReplicaSpecs) {
+      i++;
+      let spec = job.spec.tfReplicaSpecs[replicaType];
+      let pods = this.state.pods.filter( p =>
+          p.metadata.labels["tf-replica-type"] &&
+          p.metadata.labels["tf-replica-type"] === replicaType.toLowerCase()
       );
-      replicaSpecs.push(
+      tfReplicaSpecs.push(
         <div style={this.divStyle} key={i}>
-          <ReplicaSpec spec={spec} status={status} pods={pods} />
+          <ReplicaSpec replicaType={replicaType} spec={spec} pods={pods} />
         </div>
       );
     }
-    return replicaSpecs;
+
+    return tfReplicaSpecs;
   }
 }
 
