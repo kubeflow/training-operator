@@ -17,6 +17,7 @@
       name: "simple-001",
       namespace: "kubeflow-test-infra",
       image: "",
+      apiVersion: "kubeflow.org/v1alpha1",
     },
     gpu_tfjob: {
       name: "gpu-simple-001",
