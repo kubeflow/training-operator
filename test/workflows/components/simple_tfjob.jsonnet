@@ -1,6 +1,6 @@
 local params = std.extVar("__ksonnet/params").components.simple_tfjob;
 
-local k = import 'k.libsonnet';
+local k = import "k.libsonnet";
 
 local defaultTestImage = "gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff";
 local parts(namespace, name, image) = {
@@ -8,7 +8,7 @@ local parts(namespace, name, image) = {
     image
   else defaultTestImage,
   job:: {
-    apiVersion: "kubeflow.org/v1alpha1",
+    apiVersion: params.apiVersion,
     kind: "TFJob",
     metadata: {
       name: name,
