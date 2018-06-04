@@ -91,8 +91,13 @@ func (r RealServiceControl) createServices(namespace string, service *v1.Service
 	if labels.Set(service.Labels).AsSelectorPreValidated().Empty() {
 		return fmt.Errorf("unable to create Services, no labels")
 	}
+	serviceWithOwner, err := getServiceFromTemplate(service, object, controllerRef)
+	if err != nil {
+		r.Recorder.Eventf(object, v1.EventTypeWarning, FailedCreateServiceReason, "Error creating: %v", err)
+		return fmt.Errorf("unable to create services: %v", err)
+	}
 
-	newService, err := r.KubeClient.CoreV1().Services(namespace).Create(service)
+	newService, err := r.KubeClient.CoreV1().Services(namespace).Create(serviceWithOwner)
 	if err != nil {
 		r.Recorder.Eventf(object, v1.EventTypeWarning, FailedCreateServiceReason, "Error creating: %v", err)
 		return fmt.Errorf("unable to create services: %v", err)
@@ -159,4 +164,12 @@ func (f *FakeServiceControl) CreateServicesWithControllerRef(namespace string, s
 		return f.Err
 	}
 	return nil
+}
+
+func getServiceFromTemplate(template *v1.Service, parentObject runtime.Object, controllerRef *metav1.OwnerReference) (*v1.Service, error) {
+	service := template.DeepCopy()
+	if controllerRef != nil {
+		service.OwnerReferences = append(service.OwnerReferences, *controllerRef)
+	}
+	return service, nil
 }

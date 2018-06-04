@@ -57,6 +57,7 @@ func TestCreateService(t *testing.T) {
 
 	testName := "service-name"
 	service := newBaseService(testName, tfJob, t)
+	service.SetOwnerReferences([]metav1.OwnerReference{})
 
 	// Make sure createReplica sends a POST to the apiserver with a pod from the controllers pod template
 	err := serviceControl.CreateServices(ns, service, tfJob)
@@ -64,10 +65,58 @@ func TestCreateService(t *testing.T) {
 
 	expectedService := v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
+			Labels:    genLabels(getKey(tfJob, t)),
+			Name:      testName,
+			Namespace: ns,
+		},
+	}
+	fakeHandler.ValidateRequest(t, testapi.Default.ResourcePath("services", metav1.NamespaceDefault, ""), "POST", nil)
+	var actualService = &v1.Service{}
+	err = json.Unmarshal([]byte(fakeHandler.RequestBody), actualService)
+	assert.NoError(t, err, "unexpected error: %v", err)
+	assert.True(t, apiequality.Semantic.DeepDerivative(&expectedService, actualService),
+		"Body: %s", fakeHandler.RequestBody)
+}
+
+func TestCreateServicesWithControllerRef(t *testing.T) {
+	ns := metav1.NamespaceDefault
+	body := runtime.EncodeOrDie(testapi.Default.Codec(), &v1.Service{ObjectMeta: metav1.ObjectMeta{Name: "empty_service"}})
+	fakeHandler := utiltesting.FakeHandler{
+		StatusCode:   200,
+		ResponseBody: string(body),
+	}
+	testServer := httptest.NewServer(&fakeHandler)
+	defer testServer.Close()
+	clientset := clientset.NewForConfigOrDie(&restclient.Config{
+		Host: testServer.URL,
+		ContentConfig: restclient.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	})
+
+	serviceControl := RealServiceControl{
+		KubeClient: clientset,
+		Recorder:   &record.FakeRecorder{},
+	}
+
+	tfJob := newTFJob(1, 0)
+
+	testName := "service-name"
+	service := newBaseService(testName, tfJob, t)
+	service.SetOwnerReferences([]metav1.OwnerReference{})
+
+	ownerRef := genOwnerReference(tfJob)
+
+	// Make sure createReplica sends a POST to the apiserver with a pod from the controllers pod template
+	err := serviceControl.CreateServicesWithControllerRef(ns, service, tfJob, ownerRef)
+	assert.NoError(t, err, "unexpected error: %v", err)
+
+	expectedService := v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
 			Labels:          genLabels(getKey(tfJob, t)),
 			Name:            testName,
 			Namespace:       ns,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
+			OwnerReferences: []metav1.OwnerReference{*ownerRef},
 		},
 	}
 	fakeHandler.ValidateRequest(t, testapi.Default.ResourcePath("services", metav1.NamespaceDefault, ""), "POST", nil)
