@@ -38,11 +38,12 @@ func expectedTFJob() *TFJob {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
 								v1.Container{
+									Name:  DefaultContainerName,
 									Image: testImage,
 									Ports: []v1.ContainerPort{
 										v1.ContainerPort{
-											Name:          defaultPortName,
-											ContainerPort: defaultPort,
+											Name:          DefaultPortName,
+											ContainerPort: DefaultPort,
 										},
 									},
 								},
@@ -70,11 +71,12 @@ func TestSetDefaultTFJob(t *testing.T) {
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										v1.Container{
+											Name:  DefaultContainerName,
 											Image: testImage,
 											Ports: []v1.ContainerPort{
 												v1.ContainerPort{
-													Name:          defaultPortName,
-													ContainerPort: defaultPort,
+													Name:          DefaultPortName,
+													ContainerPort: DefaultPort,
 												},
 											},
 										},
@@ -98,6 +100,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
 										v1.Container{
+											Name:  DefaultContainerName,
 											Image: testImage,
 										},
 									},
