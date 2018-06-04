@@ -115,7 +115,8 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rt, index s
 
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
-			Selector: labels,
+			ClusterIP: "None",
+			Selector:  labels,
 			Ports: []v1.ServicePort{
 				{
 					Name: genGeneralName(tfjobKey, rt, index),

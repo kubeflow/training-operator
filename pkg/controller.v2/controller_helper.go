@@ -16,6 +16,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +54,10 @@ func genLabels(tfjobKey string) map[string]string {
 func genGeneralName(tfjobKey, rtype, index string) string {
 	n := tfjobKey + "-" + rtype + "-" + index
 	return strings.Replace(n, "/", "-", -1)
+}
+
+func genDNSRecord(tfjobKey, rtype, index, namespace string) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", genGeneralName(tfjobKey, rtype, index), namespace)
 }
 
 // convertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
