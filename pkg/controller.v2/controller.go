@@ -48,8 +48,6 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
-
-	defaultPortStr = "2222"
 )
 
 var (

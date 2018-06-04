@@ -140,6 +140,7 @@ func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				v1.Container{
+					Name:  tfv1alpha2.DefaultContainerName,
 					Image: testImageName,
 					Args:  []string{"Fake", "Fake"},
 				},

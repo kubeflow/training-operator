@@ -30,10 +30,6 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
-const (
-	defaultServicePort = 2222
-)
-
 // reconcileServices checks and updates services for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting services.
 func (tc *TFJobController) reconcileServices(
