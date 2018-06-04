@@ -123,7 +123,10 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	}
 
 	// Generate TF_CONFIG JSON string.
-	tfConfigStr := genTFConfigJSONStr(tfjob, rt, index)
+	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
+	if err != nil {
+		return err
+	}
 
 	if tfConfigStr == "" {
 		return nil

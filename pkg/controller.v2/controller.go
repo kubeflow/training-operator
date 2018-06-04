@@ -359,6 +359,9 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
+	// Set default for the new tfjob.
+	scheme.Scheme.Default(tfjob)
+
 	var reconcileTFJobsErr error
 	if tfjobNeedsSync && tfjob.DeletionTimestamp == nil {
 		reconcileTFJobsErr = tc.reconcileTFJobs(tfjob)
