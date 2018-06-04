@@ -295,14 +295,14 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	}
 	defer tc.workQueue.Done(key)
 
-	_, err := tc.getTFJobFromKey(key.(string))
+	tfJob, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
-			log.Warn(errMsg)
-			// TODO(gaocegege): Set the condition or publish an event to tell the users.
+			loggerForTFJob(tfJob).Warn(errMsg)
+			tc.recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 		return true
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -12,28 +13,28 @@ import (
 // When a pod is added, set the defaults and enqueue the current tfjob.
 func (tc *TFJobController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
-	tfjob, err := tfJobFromUnstructured(obj)
+	tfJob, err := tfJobFromUnstructured(obj)
 	if err != nil {
 		log.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			log.Warn(errMsg)
-			// TODO(gaocegege): Set the condition or publish an event to tell the users.
+			tc.recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 		return
 	}
 
 	// Set default for the new tfjob.
-	scheme.Scheme.Default(tfjob)
+	scheme.Scheme.Default(tfJob)
 
-	msg := fmt.Sprintf("TFJob %s is created.", tfjob.Name)
+	msg := fmt.Sprintf("TFJob %s is created.", tfJob.Name)
 	log.Info(msg)
 
 	// Add a created condition.
-	err = tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
+	err = tc.updateTFJobConditions(tfJob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
 	if err != nil {
-		log.Infof("Append tfjob condition error: %v", err)
+		log.Infof("Append tfJob condition error: %v", err)
 		return
 	}
 
