@@ -145,7 +145,10 @@ func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, repli
 
 func (tc *TFJobController) updateStatusNew(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase, wreplicas int, preplicas int) error {
 	if preplicas == 0 {
-		tc.updateStatus(tfjob, tfv1alpha2.TFReplicaTypeWorker, wreplicas)
+		err := tc.updateStatus(tfjob, tfv1alpha2.TFReplicaTypeWorker, wreplicas)
+		if err != nil {
+			return err
+		}
 	} else {
 		status := make(map[string]int)
 
