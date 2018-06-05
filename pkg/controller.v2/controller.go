@@ -392,9 +392,18 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
+	rstatus := make(map[string]v1.PodPhase)
+	psReplicas := 0
+	workerReplicas := 0
 	// Diff current active pods/services with replicas.
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
-		err = tc.reconcilePods(tfjob, pods, rtype, spec)
+		if rtype == tfv1alpha2.TFReplicaTypePS {
+			psReplicas = int(*spec.Replicas)
+		}
+		if rtype == tfv1alpha2.TFReplicaTypeWorker {
+			workerReplicas = int(*spec.Replicas)
+		}
+		err = tc.reconcilePods(tfjob, pods, rtype, spec, rstatus)
 		if err != nil {
 			log.Infof("reconcilePods error %v", err)
 			return err
@@ -406,6 +415,11 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 			log.Infof("reconcileServices error %v", err)
 			return err
 		}
+	}
+	err = tc.updateStatusNew(tfjob, rstatus, workerReplicas, psReplicas)
+	if err != nil {
+		log.Infof("updateStatusNew error %v", err)
+		return err
 	}
 
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
