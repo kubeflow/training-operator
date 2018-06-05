@@ -28,6 +28,8 @@ import (
 const (
 	labelGroupName = "group_name"
 	labelTFJobKey  = "tf_job_key"
+
+	failedMarshalTFJobReason = "FailedMarshalTFJob"
 )
 
 func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
