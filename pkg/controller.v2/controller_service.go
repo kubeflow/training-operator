@@ -30,10 +30,6 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
-const (
-	defaultServicePort = 2222
-)
-
 // reconcileServices checks and updates services for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting services.
 func (tc *TFJobController) reconcileServices(
@@ -57,7 +53,7 @@ func (tc *TFJobController) reconcileServices(
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
-			err := tc.createNewService(tfjob, rt, strconv.Itoa(index), spec)
+			err := tc.createNewService(tfjob, rtype, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
 			}
@@ -92,13 +88,15 @@ func getServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [
 }
 
 // createNewService creates a new service for the given index and type.
-func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
+func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
 
+	// Convert TFReplicaType to lower string.
+	rt := strings.ToLower(string(rtype))
 	expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
 	err = tc.expectations.ExpectCreations(expectationServicesKey, 1)
 	if err != nil {
@@ -113,6 +111,11 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rt, index s
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
+	port, err := getPortFromTFJob(tfjob, rtype)
+	if err != nil {
+		return err
+	}
+
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
 			ClusterIP: "None",
@@ -120,7 +123,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rt, index s
 			Ports: []v1.ServicePort{
 				{
 					Name: genGeneralName(tfjobKey, rt, index),
-					Port: defaultServicePort,
+					Port: port,
 				},
 			},
 		},

@@ -48,8 +48,6 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
-
-	defaultPortStr = "2222"
 )
 
 var (
@@ -358,6 +356,9 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
+
+	// Set default for the new tfjob.
+	scheme.Scheme.Default(tfjob)
 
 	var reconcileTFJobsErr error
 	if tfjobNeedsSync && tfjob.DeletionTimestamp == nil {

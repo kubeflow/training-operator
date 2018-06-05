@@ -29,14 +29,28 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
+// setDefaultPort sets the default ports for tensorflow container.
 func setDefaultPort(spec *v1.PodSpec) {
-	for i := range spec.Containers {
-		if len(spec.Containers[i].Ports) == 0 {
-			spec.Containers[i].Ports = append(spec.Containers[i].Ports, v1.ContainerPort{
-				Name:          defaultPortName,
-				ContainerPort: defaultPort,
-			})
+	index := 0
+	for i, container := range spec.Containers {
+		if container.Name == DefaultContainerName {
+			index = i
+			break
 		}
+	}
+
+	hasTFJobPort := false
+	for _, port := range spec.Containers[index].Ports {
+		if port.Name == DefaultPortName {
+			hasTFJobPort = true
+			break
+		}
+	}
+	if !hasTFJobPort {
+		spec.Containers[index].Ports = append(spec.Containers[index].Ports, v1.ContainerPort{
+			Name:          DefaultPortName,
+			ContainerPort: DefaultPort,
+		})
 	}
 }
 

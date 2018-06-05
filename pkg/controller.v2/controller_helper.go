@@ -32,6 +32,10 @@ const (
 	failedMarshalTFJobReason = "FailedMarshalTFJob"
 )
 
+var (
+	errPortNotFound = fmt.Errorf("Failed to found the port")
+)
+
 func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
@@ -74,4 +78,20 @@ func convertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstruct
 		return nil, err
 	}
 	return &unstructured, nil
+}
+
+// getPortFromTFJob gets the port of tensorflow container.
+func getPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (int32, error) {
+	containers := tfJob.Spec.TFReplicaSpecs[rtype].Template.Spec.Containers
+	for _, container := range containers {
+		if container.Name == tfv1alpha2.DefaultContainerName {
+			ports := container.Ports
+			for _, port := range ports {
+				if port.Name == tfv1alpha2.DefaultPortName {
+					return port.ContainerPort, nil
+				}
+			}
+		}
+	}
+	return -1, errPortNotFound
 }

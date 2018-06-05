@@ -10,7 +10,7 @@ spec:
       template:
         spec:
           containers:
-            - name: dist-mnist-ps
+            - name: tensorflow
               image: kubeflow/tf-dist-mnist-test:1.0
     Worker:
       replicas: 4
@@ -18,6 +18,6 @@ spec:
       template:
         spec:
           containers:
-            - name: dist-mnist-worker
+            - name: tensorflow
               image: kubeflow/tf-dist-mnist-test:1.0
               args: ["train_steps", "50000"]

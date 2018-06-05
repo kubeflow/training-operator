@@ -32,6 +32,10 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
+const (
+	tfConfig = "TF_CONFIG"
+)
+
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
 func (tc *TFJobController) reconcilePods(
@@ -123,7 +127,10 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	}
 
 	// Generate TF_CONFIG JSON string.
-	tfConfigStr := genTFConfigJSONStr(tfjob, rt, index)
+	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
+	if err != nil {
+		return err
+	}
 
 	if tfConfigStr == "" {
 		return nil
@@ -134,7 +141,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 			podTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
 		}
 		podTemplate.Spec.Containers[i].Env = append(podTemplate.Spec.Containers[i].Env, v1.EnvVar{
-			Name:  "TF_CONFIG",
+			Name:  tfConfig,
 			Value: tfConfigStr,
 		})
 	}

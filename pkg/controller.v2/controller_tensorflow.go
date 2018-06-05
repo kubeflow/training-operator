@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -61,12 +60,17 @@ type TaskSpec struct {
 //         },
 //     }
 // }
-func genTFConfigJSONStr(tfjob *tfv1alpha2.TFJob, rtype, index string) string {
+func genTFConfigJSONStr(tfjob *tfv1alpha2.TFJob, rtype, index string) (string, error) {
 	// Configure the TFCONFIG environment variable.
 	i, _ := strconv.ParseInt(index, 0, 32)
 
+	cluster, err := genClusterSpec(tfjob)
+	if err != nil {
+		return "", err
+	}
+
 	tfConfig := TFConfig{
-		Cluster: genClusterSpec(tfjob),
+		Cluster: cluster,
 		Task: TaskSpec{
 			Type:  rtype,
 			Index: int(i),
@@ -75,19 +79,18 @@ func genTFConfigJSONStr(tfjob *tfv1alpha2.TFJob, rtype, index string) string {
 
 	tfConfigJSONStr, err := json.Marshal(tfConfig)
 	if err != nil {
-		log.Errorf("TFJob: %v serializing tfConfig return error: %v", tfjob.Name, err)
-		return ""
+		return "", err
 	}
 
-	return string(tfConfigJSONStr)
+	return string(tfConfigJSONStr), nil
 }
 
 // genClusterSpec will generate ClusterSpec.
-func genClusterSpec(tfjob *tfv1alpha2.TFJob) ClusterSpec {
+func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil
+		return nil, err
 	}
 
 	clusterSpec := make(ClusterSpec)
@@ -96,13 +99,17 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) ClusterSpec {
 		rt := strings.ToLower(string(rtype))
 		replicaNames := make([]string, 0, *spec.Replicas)
 
+		port, err := getPortFromTFJob(tfjob, rtype)
+		if err != nil {
+			return nil, err
+		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := genDNSRecord(tfjobKey, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace) + ":" + defaultPortStr
+			host := fmt.Sprintf("%s:%d", genDNSRecord(tfjobKey, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
 			replicaNames = append(replicaNames, host)
 		}
 
 		clusterSpec[rt] = replicaNames
 	}
 
-	return clusterSpec
+	return clusterSpec, nil
 }
