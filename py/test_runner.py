@@ -22,6 +22,7 @@ from py import tf_job_client
 def wait_for_delete(client,
                     namespace,
                     name,
+                    version="v1alpha1",
                     timeout=datetime.timedelta(minutes=5),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
@@ -42,7 +43,7 @@ def wait_for_delete(client,
   while True:
     try:
       results = crd_api.get_namespaced_custom_object(
-        tf_job_client.TF_JOB_GROUP, tf_job_client.TF_JOB_VERSION, namespace,
+        tf_job_client.TF_JOB_GROUP, version, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
     except rest.ApiException as e:
       if e.status == httplib.NOT_FOUND:
@@ -323,7 +324,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                    namespace)
       wait_for_delete(
-        api_client, namespace, name, status_callback=tf_job_client.log_status)
+        api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -391,6 +392,12 @@ def add_common_args(parser):
     default="",
     type=str,
     help="Where to write the junit xml file with the results.")
+
+  parser.add_argument(
+    "--tfjob_version",
+    default="v1alpha1",
+    type=str,
+    help="The TFJob version to use.")
 
 
 def build_parser():
