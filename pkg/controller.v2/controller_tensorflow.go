@@ -104,7 +104,7 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := genDNSRecord(tfjobKey, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace) + ":" + port
+			host := fmt.Sprintf("%s:%d", genDNSRecord(tfjobKey, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
 			replicaNames = append(replicaNames, host)
 		}
 
