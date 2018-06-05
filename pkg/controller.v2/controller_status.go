@@ -296,11 +296,14 @@ func newCondition(conditionType tfv1alpha2.TFJobConditionType, reason, message s
 
 // getCondition returns the condition with the provided type.
 func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) *tfv1alpha2.TFJobCondition {
-	for i := range status.Conditions {
+	/*for i := range status.Conditions {
 		c := status.Conditions[i]
 		if c.Type == condType {
 			return &c
 		}
+	}*/
+	if len(status.Conditions) > 0 {
+		return &status.Conditions[len(status.Conditions)-1]
 	}
 	return nil
 }
