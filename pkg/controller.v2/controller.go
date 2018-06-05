@@ -383,8 +383,17 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	}
 
 	// Diff current active pods/services with replicas.
+	rstatus := make(map[string]v1.PodPhase)
+	psReplicas := 0
+	workerReplicas := 0
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
-		err = tc.reconcilePods(tfjob, pods, rtype, spec)
+		if rtype == tfv1alpha2.TFReplicaTypePS {
+			psReplicas = int(*spec.Replicas)
+		}
+		if rtype == tfv1alpha2.TFReplicaTypeWorker {
+			workerReplicas = int(*spec.Replicas)
+		}
+		err = tc.reconcilePods(tfjob, pods, rtype, spec, rstatus)
 		if err != nil {
 			log.Infof("reconcilePods error %v", err)
 			return err
@@ -398,6 +407,11 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
+	err = tc.updateStatusNew(tfjob, rstatus, workerReplicas, psReplicas)
+	if err != nil {
+		log.Infof("updateStatusNew error %v", err)
+		return err
+	}
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)
 }
@@ -522,12 +536,15 @@ func newCondition(conditionType tfv1alpha2.TFJobConditionType, reason, message s
 
 // getCondition returns the condition with the provided type.
 func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) *tfv1alpha2.TFJobCondition {
-	for i := range status.Conditions {
+	if len(status.Conditions) > 0 {
+		return &status.Conditions[len(status.Conditions)-1]
+	}
+	/*for i := range status.Conditions {
 		c := status.Conditions[i]
 		if c.Type == condType {
 			return &c
 		}
-	}
+	}*/
 	return nil
 }
 
