@@ -140,8 +140,14 @@ def wait_for_job(client,
         status_callback(results)
 
       # If we poll the CRD quick enough status won't have been set yet.
-      if results.get("status", {}).get("phase", {}) == "Done":
-        return results
+      if version == "v1alpha1":
+        if results.get("status", {}).get("phase", {}) == "Done":
+          return results
+      else:
+        # For v1alpha2 check for non-empty completionTime
+        if results.get("status", {}).get("completionTime", ""):
+          return results
+
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
