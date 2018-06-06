@@ -277,7 +277,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Created job %s in namespaces %s", name, namespace)
       results = tf_job_client.wait_for_job(
-        api_client, namespace, name, status_callback=tf_job_client.log_status)
+        api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
       if results.get("status", {}).get("state", {}).lower() != "succeeded":
         t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
