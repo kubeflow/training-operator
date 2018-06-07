@@ -263,7 +263,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   start = time.time()
 
-  try:
+  try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
     # This ensures that if we delete the job we can create a new job with the
     # same name.
@@ -277,13 +277,22 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Created job %s in namespaces %s", name, namespace)
       results = tf_job_client.wait_for_job(
-        api_client, namespace, name, status_callback=tf_job_client.log_status)
+        api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
-      if results.get("status", {}).get("state", {}).lower() != "succeeded":
-        t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
-          trial, name, namespace, results.get("status", {}).get("state", None))
-        logging.error(t.failure)
-        break
+      if args.tfjob_version == "v1alpha1":
+        if results.get("status", {}).get("state", {}).lower() != "succeeded":
+          t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
+            trial, name, namespace, results.get("status", {}).get("state", None))
+          logging.error(t.failure)
+          break
+      else:
+        # For v1alpha2 check for non-empty completionTime
+        last_condition = results.get("status", {}).get("conditions", [])[-1]
+        if last_condition.get("type", "").lower() != "succeeded":
+          t.failure = "Trial {0} Job {1} in namespace {2} in status {3}".format(
+            trial, name, namespace, results.get("status", {}))
+          logging.error(t.failure)
+          break
 
       runtime_id = results.get("spec", {}).get("RuntimeId")
       logging.info("Trial %s Job %s in namespace %s runtime ID %s", trial, name,
@@ -294,8 +303,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       created_pods, created_services = parse_events(events)
 
       num_expected = 0
-      for replica in results.get("spec", {}).get("replicaSpecs", []):
-        num_expected += replica.get("replicas", 0)
+      if args.tfjob_version == "v1alpha1":
+        for replica in results.get("spec", {}).get("replicaSpecs", []):
+          num_expected += replica.get("replicas", 0)
+      else:
+        for replicakey in results.get("spec", {}).get("tfReplicaSpecs", {}):
+          replica_spec = results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
+          if replica_spec:
+            num_expected += replica_spec.get("replicas", 1)
 
       creation_failures = []
       if len(created_pods) != num_expected:
@@ -320,7 +335,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
-      tf_job_client.delete_tf_job(api_client, namespace, name)
+      tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
       logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                    namespace)
