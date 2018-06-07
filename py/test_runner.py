@@ -263,7 +263,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   start = time.time()
 
-  try:
+  try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
     # This ensures that if we delete the job we can create a new job with the
     # same name.
@@ -287,7 +287,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           break
       else:
         # For v1alpha2 check for non-empty completionTime
-        if results.get("status", {}).get("conditions", [])[-1].get("type", "").lower() != "succeeded":
+        last_condition = results.get("status", {}).get("conditions", [])[-1]
+        if last_condition.get("type", "").lower() != "succeeded":
           t.failure = "Trial {0} Job {1} in namespace {2} in status {3}".format(
             trial, name, namespace, results.get("status", {}))
           logging.error(t.failure)
@@ -307,7 +308,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           num_expected += replica.get("replicas", 0)
       else:
         for replicakey in results.get("spec", {}).get("tfReplicaSpecs", {}):
-          logging.info("replicakey: %s", results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {}))
           replica_spec = results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
           if replica_spec:
             num_expected += replica_spec.get("replicas", 1)
