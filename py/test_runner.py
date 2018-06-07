@@ -308,7 +308,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       else:
         for replicakey in results.get("spec", {}).get("tfReplicaSpecs", {}):
           logging.info("replicakey: %s", results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {}))
-          num_expected += results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {}).get("replicas", 0)
+          replica_spec = results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
+          if replica_spec:
+            num_expected += replica_spec.get("replicas", 1)
 
       creation_failures = []
       if len(created_pods) != num_expected:
