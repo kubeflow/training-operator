@@ -46,6 +46,7 @@ def wait_for_delete(client,
         tf_job_client.TF_JOB_GROUP, version, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
     except rest.ApiException as e:
+      logging.exception("rest.ApiException thrown")
       if e.status == httplib.NOT_FOUND:
         return
       raise
@@ -131,13 +132,13 @@ def list_pods(client, namespace, label_selector):
         body = json.loads(e.body)
       except ValueError:
         # There was a problem parsing the body of the response as json.
-        logging.error(
+        logging.exception(
           ("Exception when calling DefaultApi->"
            "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
-    logging.error(("Exception when calling DefaultApi->"
+    logging.exception(("Exception when calling DefaultApi->"
                    "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
                   message)
     raise e
@@ -159,13 +160,13 @@ def get_events(client, namespace, uid):
         body = json.loads(e.body)
       except ValueError:
         # There was a problem parsing the body of the response as json.
-        logging.error(
+        logging.exception(
           ("Exception when calling DefaultApi->"
            "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
         raise
       message = body.get("message")
 
-    logging.error(("Exception when calling DefaultApi->"
+    logging.exception(("Exception when calling DefaultApi->"
                    "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
                   message)
     raise e
@@ -335,16 +336,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   except util.TimeoutError:
     t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
       name, namespace)
-    logging.error(t.failure)
+    logging.exception(t.failure)
   except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
     # in an effort to try to nail down this exception we print out more
     # information about the exception.
-    logging.error("There was a problem running the job; Exception %s", e)
-    logging.error("There was a problem running the job; Exception "
-                  "message: %s", e.message)
-    logging.error("Exception type: %s", e.__class__)
-    logging.error("Exception args: %s", e.args)
+    logging.exception("There was a problem running the job; Exception %s", e)
     # We want to catch all exceptions because we want the test as failed.
     t.failure = ("Exception occured; type {0} message {1}".format(
       e.__class__, e.message))
