@@ -16,13 +16,13 @@ go_import_path: github.com/kubeflow/tf-operator
 install:
   # get coveralls.io support
   - go get github.com/mattn/goveralls
-  - go get -u github.com/alecthomas/gometalinter
-  - gometalinter --install
+  # install golangci-lint
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s v1.5
 
 script:
   - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf-operator
   - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf-operator
-  - gometalinter --config=linter_config.json --vendor ./...
+  - golangci-lint run ./...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor
   # directory.
