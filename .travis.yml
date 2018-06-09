@@ -17,10 +17,9 @@ install:
   # get coveralls.io support
   - go get github.com/mattn/goveralls
   # install golangci-lint
-  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s v1.5
+  - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 script:
-  - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf-operator
   - go build -o tf-operator github.com/kubeflow/tf-operator/cmd/tf-operator
   - golangci-lint run ./...
   # We customize the build step because by default
