@@ -72,6 +72,20 @@ local parts(namespace, name, image) = {
     },
     spec: {
       tfReplicaSpecs: {
+        Master: {
+          replicas: 1,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: actualImage,
+                },
+              ],
+            },
+          },
+        },
         PS: {
           replicas: 2,
           restartPolicy: "Never",

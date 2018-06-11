@@ -1,5 +1,17 @@
 apiVersion: 0.1.0
 environments:
+  jlewi-kubeflow:
+    destination:
+      namespace: kubeflow
+      server: https://35.237.151.217
+    k8sVersion: v1.7.0
+    path: jlewi-kubeflow
+  kubeflow-test-infra:
+    destination:
+      namespace: kubeflow
+      server: https://35.237.151.217
+    k8sVersion: v1.7.0
+    path: kubeflow-test-infra
   releasing:
     destination:
       namespace: kubeflow-releasing
