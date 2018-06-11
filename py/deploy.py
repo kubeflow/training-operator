@@ -152,6 +152,7 @@ def setup(args):
       "tfJobImage": args.image,
       "name": "kubeflow-core",
       "namespace": args.namespace,
+      "tfJobVersion":  args.tf_job_version,
     }
 
     component = "core"
@@ -171,8 +172,15 @@ def setup(args):
     util.setup_cluster(api_client)
 
     # Verify that the TfJob operator is actually deployed.
-    tf_job_deployment_name = "tf-job-operator"
-    logging.info("Verifying TfJob controller started.")
+    if args.tf_job_version == "v1alpha1":
+      tf_job_deployment_name = "tf-job-operator"
+    elif args.tf_job_version == "v1alpha2":
+      tf_job_deployment_name = "tf-job-operator-v1alpha2"
+    else:
+      raise ValueError(
+        "Unrecognized value for tf_job_version %s" % args.tf_job_version)
+    logging.info("Verifying TfJob deployment %s started.",
+                 tf_job_deployment_name)
 
     # TODO(jlewi): We should verify the image of the operator is the correct.
     util.wait_for_deployment(api_client, args.namespace, tf_job_deployment_name)
@@ -246,6 +254,11 @@ def main():  # pylint: disable=too-many-locals
     dest="accelerators",
     action="append",
     help="Accelerator to add to the cluster. Should be of the form type=count.")
+
+  parser_setup.add_argument(
+    "--tf_job_version",
+    dest="tf_job_version",
+    help="Which version of the TFJobOperator to deploy.")
 
   parser_setup.set_defaults(func=setup)
   add_common_args(parser_setup)
