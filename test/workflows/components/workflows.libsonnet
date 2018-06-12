@@ -281,6 +281,7 @@
               "--project=" + project,
               "--namespace=" + deployNamespace,
               "--image=" + tfJobImage,
+              "--tfJobVersion=" + params.tfJobVersion,
               "--accelerator=nvidia-tesla-k80=1",
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
