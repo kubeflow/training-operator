@@ -7,6 +7,8 @@ import logging
 import json
 import os
 import re
+import retrying
+import subprocess
 import time
 import uuid
 
@@ -14,8 +16,8 @@ from kubernetes import client as k8s_client
 from kubernetes.client import rest
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
+from kubeflow.testing import util
 from py import test_util
-from py import util
 from py import tf_job_client
 
 
@@ -46,9 +48,9 @@ def wait_for_delete(client,
         tf_job_client.TF_JOB_GROUP, version, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
     except rest.ApiException as e:
-      logging.exception("rest.ApiException thrown")
       if e.status == httplib.NOT_FOUND:
         return
+      logging.exception("rest.ApiException thrown")
       raise
     if status_callback:
       status_callback(results)
@@ -210,7 +212,7 @@ def parse_events(events):
 
   return pods, services
 
-
+@retrying.retry
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -236,7 +238,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   # Create a new environment for this run
   env = "test-env-{0}".format(salt)
 
-  util.run(["ks", "env", "add", env], cwd=args.app_dir)
+  try:
+    util.run(["ks", "env", "add", env], cwd=args.app_dir)
+  except subprocess.CalledProcessError as e:
+    if not re.search(".*environment.*already exists.*", e.output):
+      raise
 
   name = None
   namespace = None
