@@ -315,7 +315,7 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
-              "--params=name=gpu-tfjob-"+prams.tfJobVersion + ",namespace=default",
+              "--params=name=gpu-tfjob-"+params.tfJobVersion + ",namespace=default",
               "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
