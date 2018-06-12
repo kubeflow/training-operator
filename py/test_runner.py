@@ -14,8 +14,8 @@ from kubernetes import client as k8s_client
 from kubernetes.client import rest
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
+from kubeflow.testing import util
 from py import test_util
-from py import util
 from py import tf_job_client
 
 
@@ -45,10 +45,10 @@ def wait_for_delete(client,
       results = crd_api.get_namespaced_custom_object(
         tf_job_client.TF_JOB_GROUP, version, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
-    except rest.ApiException as e:
-      logging.exception("rest.ApiException thrown")
+    except rest.ApiException as e:      
       if e.status == httplib.NOT_FOUND:
         return
+      logging.exception("rest.ApiException thrown")
       raise
     if status_callback:
       status_callback(results)

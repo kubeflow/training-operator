@@ -7,10 +7,13 @@ This binary is primarily intended for use in managing resources for our tests.
 import argparse
 import datetime
 import logging
+import re
+import retrying
 import subprocess
 import time
 import uuid
 
+from kubeflow.testing import util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
 from googleapiclient import discovery
@@ -46,6 +49,7 @@ def _setup_namespace(api_client, name):
 
 # TODO(jlewi): We should probably make this a reusable function since a
 # lot of test code code use it.
+@retrying.retry
 def ks_deploy(app_dir, component, params, env=None, account=None):
   """Deploy the specified ksonnet component.
 
@@ -76,7 +80,11 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
 
   logging.info("Using app directory: %s", app_dir)
 
-  util.run(["ks", "env", "add", env], cwd=app_dir)
+  try:
+    util.run(["ks", "env", "add", env], cwd=app_dir)
+  except subprocess.CalledProcessError as e:
+    if not re.search(".*environment.*already exists.*", msg):
+      raise
 
   for k, v in params.iteritems():
     util.run(
