@@ -73,10 +73,13 @@ func (tc *TFJobController) reconcilePods(
 			if rtype == tfv1alpha2.TFReplicaTypePS {
 				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
 			}
+			if rtype == tfv1alpha2.TFReplicaTypeChief {
+				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
+			}
 		}
 	}
 
-	return tc.updateStatus(tfjob, rtype, replicas)
+	return nil
 }
 
 // getPodSlices returns a slice, which element is the slice of pod.

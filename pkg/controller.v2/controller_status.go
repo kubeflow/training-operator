@@ -47,7 +47,7 @@ const (
 	//workerPendingReason is added in a status when it is  pending.
 	workerPendingReason = "WorkerPending"
 	//psCreatedReason is added in a status when it is  created.
-	psCreatedreason = "PSCreated"
+	psCreatedReason = "PSCreated"
 	//psSucceededReason is added in a status when it is  succeeded.
 	psSucceededReason = "PSSucceeded"
 	//psRunningReason is added in a status when it is  running.
@@ -56,10 +56,20 @@ const (
 	psFailedReason = "PSFailed"
 	//psPendingReason is added in a status when it is  pending.
 	psPendingReason = "PSPending"
+	//chiefCreateReason is added in a status when it is created.
+	chiefCreatedReason = "ChiefCreated"
+	//chiefSucceededReason is added in a status when it is succeeded.
+	chiefSucceededReason = "ChiefSucceeded"
+	//chiefRunningReason is added in a status when it is running.
+	chiefRunningReason = "ChiefRunning"
+	//chiefFailedReason is added in a status when it is failed.
+	chiefFailedReason = "ChiefFailed"
+	//chiefPendingReason is added in a status when it is pending.
+	chiefPendingReason = "ChiefPending"
 )
 
 // updateStatus updates the status of the tfjob.
-func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
+func (tc *TFJobController) updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.TFReplicaStatuses[rtype].Succeeded)
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
@@ -107,101 +117,177 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 	return nil
 }
 
-func (tc *TFJobController) updateStatusNew(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase, wreplicas int, preplicas int) error {
-	if preplicas == 0 {
-		err := tc.updateStatus(tfjob, tfv1alpha2.TFReplicaTypeWorker, wreplicas)
+//Update distributed training status
+func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]v1.PodPhase) error {
+
+	chiefReplicas, psReplicas, _ := getReplicasForTFJobType(tfjob)
+
+	status := countTFJobTypeStatus(tfjob, replicasStatus)
+
+	var realChiefRunningReason string
+	var realChiefSucceededReason string
+	var realChiefPendingReason string
+	var realChiefFailedReason string
+
+	if chiefReplicas == 0 {
+		realChiefRunningReason = workerRunningReason
+		realChiefFailedReason = workerFailedReason
+		realChiefSucceededReason = workerSucceededReason
+		realChiefPendingReason = workerPendingReason
+	} else {
+		realChiefRunningReason = chiefRunningReason
+		realChiefFailedReason = chiefFailedReason
+		realChiefSucceededReason = chiefSucceededReason
+		realChiefPendingReason = chiefPendingReason
+	}
+
+	if status[psRunningReason] == psReplicas && status[realChiefRunningReason] == 1 {
+		//Running
+		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+		if err != nil {
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+	}
+	if status[psRunningReason] == psReplicas && status[realChiefSucceededReason] == 1 {
+		//Succeeded
+		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+		if err != nil {
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+
+	}
+	if status[psFailedReason] != 0 || status[realChiefFailedReason] != 0 {
+		//Failed
+		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+		if err != nil {
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+
+	}
+	if status[psRunningReason] == psReplicas && status[realChiefPendingReason] == 1 && tfjob.Status.Conditions[len(tfjob.Status.Conditions)-1].Type == tfv1alpha2.TFJobFailed {
+		//Restarting
+		msg := fmt.Sprintf("TFJob %s is restarting ", tfjob.Name)
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
+		if err != nil {
+			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+//update Status for tfjob
+func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase) error {
+	_, psReplicas, workerReplicas := getReplicasForTFJobType(tfjob)
+
+	if psReplicas == 0 {
+		err := tc.updateStatusSingle(tfjob, tfv1alpha2.TFReplicaTypeWorker, workerReplicas)
 		if err != nil {
 			return err
 		}
 	} else {
-		status := make(map[string]int)
-
-		initReplicasStatusesNum(status)
-		workerKey := string(tfv1alpha2.TFReplicaTypeWorker) + "-0"
-		switch rstatus[workerKey] {
-		case v1.PodRunning:
-			status[workerRunningReason] = 1
-		case v1.PodSucceeded:
-			status[workerSucceededReason] = 1
-		case v1.PodPending:
-			status[workerPendingReason] = 1
-		case v1.PodFailed:
-			status[workerFailedReason] = 1
-		}
-		for i := 0; i < preplicas; i++ {
-			psKey := string(tfv1alpha2.TFReplicaTypePS) + "-" + strconv.Itoa(i)
-			switch rstatus[psKey] {
-			case v1.PodRunning:
-				status[psRunningReason]++
-			case v1.PodFailed:
-				status[psFailedReason]++
-			case v1.PodPending:
-				status[psPendingReason]++
-			}
-		}
-		if status[psRunningReason] == preplicas && status[workerRunningReason] == 1 {
-			//Running
-			msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-			now := metav1.Now()
-			tfjob.Status.CompletionTime = &now
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-		}
-		if status[psRunningReason] == preplicas && status[workerSucceededReason] == 1 {
-			//Succeeded
-			msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-			now := metav1.Now()
-			tfjob.Status.CompletionTime = &now
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-
-		}
-		if status[psFailedReason] != 0 || status[workerFailedReason] != 0 {
-			//Failed
-			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-			now := metav1.Now()
-			tfjob.Status.CompletionTime = &now
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-
-		}
-		if status[psRunningReason] == preplicas && status[workerPendingReason] == 1 && tfjob.Status.Conditions[len(tfjob.Status.Conditions)-1].Type == tfv1alpha2.TFJobFailed {
-			//Restarting
-			msg := fmt.Sprintf("TFJob %s is restarting ", tfjob.Name)
-			now := metav1.Now()
-			tfjob.Status.CompletionTime = &now
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-
+		err := tc.updateStatusDistributed(tfjob, rstatus)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// initReplicasStatusesNum initializes the PS or Worker for status.
+//count status for TFJob(worker-0/chief/ps)
+func countTFJobTypeStatus(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]v1.PodPhase) map[string]int {
+	status := make(map[string]int)
+
+	_, psReplicas, _ := getReplicasForTFJobType(tfjob)
+
+	initReplicasStatusesNum(status)
+
+	chiefKey := string(tfv1alpha2.TFReplicaTypeChief)
+	switch replicasStatus[chiefKey] {
+	case v1.PodRunning:
+		status[chiefRunningReason] = 1
+	case v1.PodFailed:
+		status[chiefFailedReason] = 1
+	case v1.PodPending:
+		status[chiefPendingReason] = 1
+	case v1.PodSucceeded:
+		status[chiefSucceededReason] = 1
+	}
+
+	workerKey := string(tfv1alpha2.TFReplicaTypeWorker) + "-0"
+	switch replicasStatus[workerKey] {
+	case v1.PodRunning:
+		status[workerRunningReason] = 1
+	case v1.PodSucceeded:
+		status[workerSucceededReason] = 1
+	case v1.PodPending:
+		status[workerPendingReason] = 1
+	case v1.PodFailed:
+		status[workerFailedReason] = 1
+	}
+	for i := 0; i < psReplicas; i++ {
+		psKey := string(tfv1alpha2.TFReplicaTypePS) + "-" + strconv.Itoa(i)
+		switch replicasStatus[psKey] {
+		case v1.PodRunning:
+			status[psRunningReason]++
+		case v1.PodFailed:
+			status[psFailedReason]++
+		case v1.PodPending:
+			status[psPendingReason]++
+		}
+	}
+	return status
+}
+
+//get Replicas for tfjob (chief/worker/ps)
+func getReplicasForTFJobType(tfjob *tfv1alpha2.TFJob) (chiefReplicas, psReplicas, workerReplicas int) {
+	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
+		if rtype == tfv1alpha2.TFReplicaTypePS {
+			psReplicas = int(*spec.Replicas)
+		}
+		if rtype == tfv1alpha2.TFReplicaTypeWorker {
+			workerReplicas = int(*spec.Replicas)
+		}
+		if rtype == tfv1alpha2.TFReplicaTypeChief {
+			chiefReplicas = int(*spec.Replicas)
+		}
+	}
+	return
+}
+
+// initReplicasStatusesNum initializes the Chief/PS/Worker for status.
 func initReplicasStatusesNum(status map[string]int) {
 	status[workerPendingReason] = 0
 	status[workerRunningReason] = 0
 	status[workerFailedReason] = 0
 	status[workerSucceededReason] = 0
 	status[workerCreatedReason] = 0
-	status[psCreatedreason] = 0
+	status[psCreatedReason] = 0
 	status[psPendingReason] = 0
 	status[psRunningReason] = 0
 	status[psFailedReason] = 0
 	status[psSucceededReason] = 0
+	status[chiefFailedReason] = 0
+	status[chiefCreatedReason] = 0
+	status[chiefPendingReason] = 0
+	status[chiefRunningReason] = 0
+	status[chiefSucceededReason] = 0
 }
 
 // updateTFJobStatus updates the status of the given TFJob.
@@ -239,7 +325,12 @@ func updateTFJobReplicaStatuses(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFRepl
 }
 
 func addTFJobReplicaStatuses(rtype tfv1alpha2.TFReplicaType, index int, pod *v1.Pod, rstatus map[string]v1.PodPhase) {
-	key := string(rtype) + "-" + strconv.Itoa(index)
+	var key string
+	if index == -1 {
+		key = string(rtype)
+	} else {
+		key = string(rtype) + "-" + strconv.Itoa(index)
+	}
 	for _, val := range pod.Status.ContainerStatuses {
 		if val.State.Waiting != nil {
 			rstatus[key] = v1.PodFailed
