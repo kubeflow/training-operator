@@ -7,6 +7,8 @@ import logging
 import json
 import os
 import re
+import retrying
+import subprocess
 import time
 import uuid
 
@@ -210,7 +212,7 @@ def parse_events(events):
 
   return pods, services
 
-
+@retrying.retry
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -236,7 +238,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   # Create a new environment for this run
   env = "test-env-{0}".format(salt)
 
-  util.run(["ks", "env", "add", env], cwd=args.app_dir)
+  try:
+    util.run(["ks", "env", "add", env], cwd=args.app_dir)
+  except subprocess.CalledProcessError as e:
+    if not re.search(".*environment.*already exists.*", e.output):
+      raise
 
   name = None
   namespace = None

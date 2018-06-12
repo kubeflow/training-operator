@@ -20,7 +20,6 @@ from googleapiclient import discovery
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
 from py import test_util
-from py import util
 
 
 def _setup_namespace(api_client, name):
@@ -83,7 +82,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   try:
     util.run(["ks", "env", "add", env], cwd=app_dir)
   except subprocess.CalledProcessError as e:
-    if not re.search(".*environment.*already exists.*", msg):
+    if not re.search(".*environment.*already exists.*", e.output):
       raise
 
   for k, v in params.iteritems():
