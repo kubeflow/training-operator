@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
 const (
@@ -58,14 +59,35 @@ func (tc *TFJobController) reconcilePods(
 			loggerForReplica(tfjob, rt).Warningf("We have to many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
-			loggerForReplica(tfjob, rt).Infof("need to create new pod: %s-%d", rt, index)
+			loggerForReplica(tfjob, rt).Infof("Need to create new pod: %s-%d", rt, index)
 			err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
 			}
 		} else {
-			// We already have one, and check the status.
+			// Check the status of the current pod.
 			pod := podSlice[0]
+			// Check if the pod is retryable.
+			if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
+				var exitCode int32
+				for _, status := range pod.Status.ContainerStatuses {
+					state := status.State
+					// Get the exit code of the tensorflow container.
+					if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
+						exitCode = state.Terminated.ExitCode
+					}
+				}
+				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
+					loggerForReplica(tfjob, rt).Infof("Need to restart the pod: %s-%d", rt, index)
+					if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, pod); err != nil {
+						return err
+					}
+					err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
+					if err != nil {
+						return err
+					}
+				}
+			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
 		}
 	}
@@ -149,10 +171,11 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		})
 	}
 
-	// TODO(gaocegege): Deal with RestartPolicyExitCode.
-	// Set restart policy
 	if spec.RestartPolicy != tfv1alpha2.RestartPolicyExitCode {
 		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+	} else {
+		// Set the policy to never and handle it from the operator side.
+		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
 	}
 
 	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
