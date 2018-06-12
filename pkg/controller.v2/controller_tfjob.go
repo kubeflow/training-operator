@@ -32,7 +32,7 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 	log.Info(msg)
 
 	// Add a created condition.
-	err = tc.updateTFJobConditions(tfJob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
+	err = updateTFJobConditions(tfJob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
 	if err != nil {
 		log.Infof("Append tfJob condition error: %v", err)
 		return
