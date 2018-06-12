@@ -200,8 +200,11 @@
                     template: "py-lint",
                   },
                 ],
-                [  // Setup cluster needs to run after build because we depend on the chart
-                  // created by the build statement.
+                [ // TODO(jlewi): We could probably run build and
+                  // setup-cluster in parallel. We just need 
+                  // be sure to wait long enough for the deployment for
+                  // the TFJob operator image to be created since
+                  // that will block the deployment from starting.
                   {
                     name: "setup-cluster",
                     template: "setup-cluster",
