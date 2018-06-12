@@ -59,7 +59,7 @@
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = if params.versionTag != null then
+      local versionTag = if  std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
         params.versionTag
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
