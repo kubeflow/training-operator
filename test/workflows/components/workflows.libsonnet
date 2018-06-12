@@ -302,7 +302,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=simple_tfjob",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
-              "--tf_job_version=" + params.tfJobVersion,
+              "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
@@ -316,7 +316,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
               "--params=name=gpu-tfjob-"+params.tfJobVersion + ",namespace=default",
-              "--tf_job_version=" + params.tfJobVersion,
+              "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
