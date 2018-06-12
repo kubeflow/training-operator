@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -79,11 +80,7 @@ func (tc *TFJobController) reconcilePods(
 				}
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
 					loggerForReplica(tfjob, rt).Infof("Need to restart the pod: %s-%d", rt, index)
-					if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, pod); err != nil {
-						return err
-					}
-					err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
-					if err != nil {
+					if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}
 				}
@@ -344,5 +341,47 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 // When a pod is deleted, enqueue the tfjob that manages the pod and update its expectations.
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (tc *TFJobController) deletePod(obj interface{}) {
-	// TODO(CPH): handle this gracefully.
+	pod, ok := obj.(*v1.Pod)
+
+	// When a delete is dropped, the relist will notice a pod in the store not
+	// in the list, leading to the insertion of a tombstone object which contains
+	// the deleted key/value. Note that this value might be stale. If the pod
+	// changed labels the new job will not be woken up till the periodic resync.
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("couldn't get object from tombstone %+v", obj))
+			return
+		}
+		pod, ok = tombstone.Obj.(*v1.Pod)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("tombstone contained object that is not a pod %+v", obj))
+			return
+		}
+	}
+
+	controllerRef := metav1.GetControllerOf(pod)
+	if controllerRef == nil {
+		// No controller should care about orphans being deleted.
+		return
+	}
+	tfJob := tc.resolveControllerRef(pod.Namespace, controllerRef)
+	if tfJob == nil {
+		return
+	}
+	tfJobKey, err := controller.KeyFunc(tfJob)
+	if err != nil {
+		return
+	}
+
+	if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
+		loggerForTFJob(tfJob).Info("This pod maybe not created by tf-operator")
+		return
+	}
+
+	rtype := pod.Labels[tfReplicaTypeLabel]
+	expectationPodsKey := genExpectationPodsKey(tfJobKey, rtype)
+
+	tc.expectations.DeletionObserved(expectationPodsKey)
+	tc.enqueueTFJob(tfJob)
 }
