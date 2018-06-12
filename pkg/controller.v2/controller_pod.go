@@ -89,7 +89,7 @@ func (tc *TFJobController) reconcilePods(
 		}
 	}
 
-	return tc.updateStatus(tfjob, rtype, replicas)
+	return updateStatus(tfjob, rtype, replicas)
 }
 
 // getPodSlices returns a slice, which element is the slice of pod.
