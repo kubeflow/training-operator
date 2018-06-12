@@ -216,6 +216,14 @@
                     template: "run-tests",
                   },
                   {
+                    name: "run-worker0",
+                    template: "run-worker0",
+                  },
+                  {
+                    name: "run-chief",
+                    template: "run-chief",
+                  },
+                  {
                     name: "run-gpu-tests",
                     template: "run-gpu-tests",
                   },
@@ -294,6 +302,38 @@
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-chief", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              if params.tfJobVersion == "v1alpha2" then
+              "--component=master_is_chief_v1alpha2"
+              else
+              "--component=master_is_chief_v1alpha1",
+              "--params=name=worker0-is-chief,namespace=default",
+              "--junit_path=" + artifactsDir + "/junit_chief.xml",
+            ]),  // run worker0
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-worker0", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              if params.tfJobVersion == "v1alpha2" then
+              "--component=worker0_is_chief_v1alpha2"
+              else
+              "--component=worker0_is_chief_v1alpha1",
+              "--params=name=worker0-is-chief,namespace=default",
+              "--junit_path=" + artifactsDir + "/junit_worker0.xml",
+            ]),  // run worker0
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",

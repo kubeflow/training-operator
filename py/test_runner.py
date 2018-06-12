@@ -253,19 +253,26 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
     if k == "namespace":
       namespace = v
+    
+  if not name:
+    raise ValueError("name must be provided as a parameter.")
+    
+  if not namespace:
+    raise ValueError("namespace must be provided as a parameter.")
+
+  util.run(["ks", "env", "add", env, "--namespace=" + namespace], 
+           cwd=args.app_dir)
+
+  namespace = None
+  for pair in args.params.split(","):
+    k, v = pair.split("=", 1)    
     util.run(
       ["ks", "param", "set", "--env=" + env, args.component, k, v],
       cwd=args.app_dir)
 
-  if not name:
-    raise ValueError("name must be provided as a parameter.")
-
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
   t.name = os.path.basename(name)
-
-  if not namespace:
-    raise ValueError("namespace must be provided as a parameter.")
 
   start = time.time()
 

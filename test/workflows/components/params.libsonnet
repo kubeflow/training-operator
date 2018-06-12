@@ -14,6 +14,18 @@
       versionTag: "",
       tfJobVersion: "v1alpha1",
     },
+    master_is_chief_v1alpha1: {
+      name: "master-is-chief-v1alpha1",      
+    },
+    master_is_chief_v1alpha2: {
+      name: "master-is-chief-v1alpha2",
+    },
+    worker0_is_chief_v1alpha1: {
+      name: "worker0-is-chief-v1alpha1",      
+    },
+    worker0_is_chief_v1alpha2: {
+      name: "worker0-is-chief-v1alpha2",
+    },
     simple_tfjob: {
       name: "simple-001",
       namespace: "kubeflow-test-infra",
