@@ -61,6 +61,8 @@ func (tc *TFJobController) reconcilePods(
 			loggerForReplica(tfjob, rt).Infof("need to create new pod: %s-%d", rt, index)
 			err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
 			if err != nil {
+				log.Infof("createNew Pod")
+				fmt.Println(err)
 				return err
 			}
 		} else {
@@ -108,12 +110,14 @@ func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
 func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
+		log.Info("get key")
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
 	expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
 	err = tc.expectations.ExpectCreations(expectationPodsKey, 1)
 	if err != nil {
+		log.Info("expectations")
 		return err
 	}
 
@@ -138,6 +142,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	// Generate TF_CONFIG JSON string.
 	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
 	if err != nil {
+		log.Info("genTFConfigJSONStr")
 		return err
 	}
 
@@ -161,6 +166,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
 
+	fmt.Printf("PodTemplate: %v", podTemplate)
 	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Pod is created but its initialization has timed out.
