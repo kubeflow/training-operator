@@ -47,7 +47,7 @@ def wait_for_delete(client,
       results = crd_api.get_namespaced_custom_object(
         tf_job_client.TF_JOB_GROUP, version, namespace,
         tf_job_client.TF_JOB_PLURAL, name)
-    except rest.ApiException as e:      
+    except rest.ApiException as e:
       if e.status == httplib.NOT_FOUND:
         return
       logging.exception("rest.ApiException thrown")
