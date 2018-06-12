@@ -122,7 +122,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 			Selector:  labels,
 			Ports: []v1.ServicePort{
 				{
-					Name: genGeneralName(tfjobKey, rt, index),
+					Name: tfv1alpha2.DefaultPortName,
 					Port: port,
 				},
 			},

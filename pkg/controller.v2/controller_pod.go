@@ -118,6 +118,9 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 
 	podTemplate := spec.Template.DeepCopy()
 
+	// Set name for the template.
+	podTemplate.Name = genGeneralName(tfjob.Name, rt, index)
+
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
 	}
