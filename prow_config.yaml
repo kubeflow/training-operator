@@ -6,3 +6,8 @@ workflows:
     name: tfjob-e2e
     params:
       tfJobVersion: v1alpha1
+  - app_dir: kubeflow/tf-operator/test/workflows
+    component: workflows
+    name: tfjob-e2e-v1alpha2
+    params:
+      tfJobVersion: v1alpha2

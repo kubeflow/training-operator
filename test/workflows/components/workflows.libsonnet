@@ -64,6 +64,11 @@
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
+      local apiVersion =  if params.tfJobVersion == "v1alpha1" then
+        "kubeflow.org/v1alpha1"
+        else
+        "kubeflow.org/v1alpha2";
+
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
       // The directory within the kubeflow_testing submodule containing
@@ -281,7 +286,7 @@
               "--project=" + project,
               "--namespace=" + deployNamespace,
               "--image=" + tfJobImage,
-              "--tfJobVersion=" + params.tfJobVersion,
+              "--tf_job_version=" + params.tfJobVersion,
               "--accelerator=nvidia-tesla-k80=1",
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
@@ -296,7 +301,8 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=simple_tfjob",
-              "--params=name=simple-tfjob,namespace=default",
+              "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
+              "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
@@ -309,7 +315,8 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
-              "--params=name=gpu-tfjob,namespace=default",
+              "--params=name=gpu-tfjob-"+prams.tfJobVersion + ",namespace=default",
+              "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
