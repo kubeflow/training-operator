@@ -168,11 +168,13 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		})
 	}
 
-	if spec.RestartPolicy != tfv1alpha2.RestartPolicyExitCode {
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
-	} else {
-		// Set the policy to never and handle it from the operator side.
+	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
 		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
+		// Set default to Never.
+		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else {
+		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
 
 	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
