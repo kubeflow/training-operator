@@ -14,3 +14,35 @@
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
 package controller
+
+import (
+	"testing"
+
+	"k8s.io/api/core/v1"
+
+	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+)
+
+func TestFailed(t *testing.T) {
+	tfJob := newTFJob(3, 0)
+	initializeTFReplicaStatuses(tfJob, tfv1alpha2.TFReplicaTypeWorker)
+	pod := newBasePod("pod", tfJob, t)
+	pod.Status.Phase = v1.PodFailed
+	updateTFJobReplicaStatuses(tfJob, tfv1alpha2.TFReplicaTypeWorker, pod)
+	if tfJob.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != 1 {
+		t.Errorf("Failed to set the failed to 1")
+	}
+	err := updateStatus(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3)
+	if err != nil {
+		t.Errorf("Expected error %v to be nil", err)
+	}
+	found := false
+	for _, condition := range tfJob.Status.Conditions {
+		if condition.Type == tfv1alpha2.TFJobFailed {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Failed condition is not found")
+	}
+}
