@@ -95,3 +95,10 @@ func getPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (
 	}
 	return -1, errPortNotFound
 }
+
+func containChiefSpec(tfJob *tfv1alpha2.TFJob) bool {
+	if _, ok := tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
+		return true
+	}
+	return false
+}

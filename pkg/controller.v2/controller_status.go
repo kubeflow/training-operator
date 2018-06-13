@@ -42,43 +42,78 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
 	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
-	if rtype == tfv1alpha2.TFReplicaTypeWorker {
-		// All workers are running, set StartTime.
-		if running == replicas {
-			now := metav1.Now()
-			tfjob.Status.StartTime = &now
-		}
-
-		// Some workers are still running, leave a running condition.
-		if running > 0 {
-			msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-		}
-
-		// All workers are succeeded, leave a succeeded condition.
-		if expected == 0 {
-			msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-			now := metav1.Now()
-			tfjob.Status.CompletionTime = &now
-			err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
-			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-		}
+	// All workers are running, set StartTime.
+	if running == replicas {
+		now := metav1.Now()
+		tfjob.Status.StartTime = &now
 	}
 
-	// Some workers or pss are failed , leave a failed condition.
-	if failed > 0 {
-		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
-		if err != nil {
-			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-			return err
+	if containChiefSpec(tfjob) {
+		if rtype == tfv1alpha2.TFReplicaTypeChief {
+			if running > 0 {
+				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+			if expected == 0 {
+				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+
+			// Some workers or pss are failed , leave a failed condition.
+			if failed > 0 {
+				msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+			return nil
+		}
+	} else {
+		if rtype == tfv1alpha2.TFReplicaTypeWorker {
+			// Some workers are still running, leave a running condition.
+			if running > 0 {
+				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+
+			// All workers are succeeded, leave a succeeded condition.
+			if expected == 0 {
+				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+
+			// Some workers or pss are failed , leave a failed condition.
+			if failed > 0 {
+				msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+				if err != nil {
+					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			}
+			return nil
 		}
 	}
 	return nil
