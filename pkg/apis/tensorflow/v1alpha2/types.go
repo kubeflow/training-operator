@@ -108,7 +108,7 @@ const (
 	TFReplicaTypeChief TFReplicaType = "Chief"
 
 	// TFReplicaTypeEval is the type for evaluation replica in TensorFlow.
-	TFReplicaTypeEval TFReplicaType = "Eval"
+	TFReplicaTypeEval TFReplicaType = "Evaluator"
 )
 
 // TFJobStatus represents the current observed state of the TFJob.
