@@ -96,8 +96,8 @@ kubectl create -f ./examples/crd/crd.yml
 Or
 
 ```bash
-# If you are using v1alpha1
-kubectl create -f ./examples/crd/crd-v1alpha2.yml
+# If you are using v1alpha2
+kubectl create -f ./examples/crd/crd-v1alpha2.yaml
 ```
 
 ### Run Operator
