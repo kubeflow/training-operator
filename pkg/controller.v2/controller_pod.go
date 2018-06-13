@@ -148,24 +148,8 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		podTemplate.Labels[key] = value
 	}
 
-	// Generate TF_CONFIG JSON string.
-	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
-	if err != nil {
+	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
 		return err
-	}
-
-	if tfConfigStr == "" {
-		return nil
-	}
-	// Add TF_CONFIG environment variable.
-	for i := range podTemplate.Spec.Containers {
-		if len(podTemplate.Spec.Containers[i].Env) == 0 {
-			podTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
-		}
-		podTemplate.Spec.Containers[i].Env = append(podTemplate.Spec.Containers[i].Env, v1.EnvVar{
-			Name:  tfConfig,
-			Value: tfConfigStr,
-		})
 	}
 
 	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
@@ -189,6 +173,29 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		return nil
 	} else if err != nil {
 		return err
+	}
+	return nil
+}
+
+func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob, rt, index string) error {
+	// Generate TF_CONFIG JSON string.
+	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
+	if err != nil {
+		return err
+	}
+
+	if tfConfigStr == "" {
+		return nil
+	}
+	// Add TF_CONFIG environment variable.
+	for i := range podTemplateSpec.Spec.Containers {
+		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
+			podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+		}
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
+			Name:  tfConfig,
+			Value: tfConfigStr,
+		})
 	}
 	return nil
 }

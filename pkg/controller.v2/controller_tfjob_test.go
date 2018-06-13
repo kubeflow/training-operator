@@ -143,6 +143,12 @@ func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
 					Name:  tfv1alpha2.DefaultContainerName,
 					Image: testImageName,
 					Args:  []string{"Fake", "Fake"},
+					Ports: []v1.ContainerPort{
+						v1.ContainerPort{
+							Name:          tfv1alpha2.DefaultPortName,
+							ContainerPort: tfv1alpha2.DefaultPort,
+						},
+					},
 				},
 			},
 		},

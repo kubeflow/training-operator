@@ -132,3 +132,39 @@ func TestAddPod(t *testing.T) {
 	}
 	close(stopCh)
 }
+
+func TestClusterSpec(t *testing.T) {
+	type tc struct {
+		tfJob               *tfv1alpha2.TFJob
+		rt                  string
+		index               string
+		expectedClusterSpec string
+	}
+	testCase := []tc{
+		tc{
+			tfJob: newTFJob(1, 0),
+			rt:    "worker",
+			index: "0",
+			expectedClusterSpec: `{"cluster":{"worker":["default-` + testTFJobName +
+				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
+		},
+		tc{
+			tfJob: newTFJob(1, 1),
+			rt:    "worker",
+			index: "0",
+			expectedClusterSpec: `{"cluster":{"ps":["default-` + testTFJobName +
+				`-ps-0.default.svc.cluster.local:2222"],"worker":["default-` + testTFJobName +
+				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
+		},
+	}
+	for _, c := range testCase {
+		demoTemplateSpec := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template
+		if err := setClusterSpec(&demoTemplateSpec, c.tfJob, c.rt, c.index); err != nil {
+			t.Errorf("Failed to set cluster spec: %v", err)
+		}
+		actual := demoTemplateSpec.Spec.Containers[0].Env[0].Value
+		if c.expectedClusterSpec != actual {
+			t.Errorf("Expected %s, got %s", c.expectedClusterSpec, actual)
+		}
+	}
+}
