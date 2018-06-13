@@ -320,6 +320,7 @@
               "--component=master_is_chief_v1alpha2"
               else
               "--component=master_is_chief_v1alpha1",
+              "--shutdown_policy=master",
               "--params=name=master-is-chief,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
@@ -336,6 +337,7 @@
               "--component=worker0_is_chief_v1alpha2"
               else
               "--component=worker0_is_chief_v1alpha1",
+              "--shutdown_policy=worker",
               "--params=name=worker0-is-chief,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0

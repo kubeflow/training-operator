@@ -355,6 +355,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           target = "{name}-{replica}-0".format(name=name, replica=replica)
         terminateReplica(masterHost, namespace, target)
 
+      logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
         api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
