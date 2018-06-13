@@ -238,12 +238,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   # Create a new environment for this run
   env = "test-env-{0}".format(salt)
 
-  try:
-    util.run(["ks", "env", "add", env], cwd=args.app_dir)
-  except subprocess.CalledProcessError as e:
-    if not re.search(".*environment.*already exists.*", e.output):
-      raise
-
   name = None
   namespace = None
   for pair in args.params.split(","):
@@ -260,10 +254,13 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   if not namespace:
     raise ValueError("namespace must be provided as a parameter.")
 
-  util.run(["ks", "env", "add", env, "--namespace=" + namespace], 
-           cwd=args.app_dir)
+  try:
+    util.run(["ks", "env", "add", env, "--namespace=" + namespace], 
+             cwd=args.app_dir)
+  except subprocess.CalledProcessError as e:
+    if not re.search(".*environment.*already exists.*", e.output):
+      raise
 
-  namespace = None
   for pair in args.params.split(","):
     k, v = pair.split("=", 1)    
     util.run(
