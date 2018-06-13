@@ -35,7 +35,12 @@ import (
 )
 
 const (
+	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
+
+	// podTemplateRestartPolicyReason is the warning reason when the restart
+	// policy is setted in pod template.
+	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -168,6 +173,13 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		})
 	}
 
+	// Submit a warning event if the user specifies restart policy for
+	// the pod template. We recommend to set it from the replica level.
+	if podTemplate.Spec.RestartPolicy != v1.RestartPolicy("") {
+		errMsg := "Restart policy in pod template may be override by restart policy in replica spec"
+		loggerForReplica(tfjob, rt).Warning(errMsg)
+		tc.recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
+	}
 	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
 		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
 	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
