@@ -1,11 +1,7 @@
 """A simple flask server to be used in tests.
 
-The purpose of this flask app is to allow us to control the behavior 
+The purpose of this flask app is to allow us to control the behavior
 of various processes so that we can test the controller semantics.
-"""
-
-"""
-Simple app that parses predictions from a trained model and displays them.
 """
 import argparse
 import logging
@@ -27,12 +23,12 @@ def index():
   return "hello world"
 
 @APP.route("/tfconfig", methods=['GET'])
-def exit():
+def tf_config():
   # Exit with the provided exit code
   return os.environ.get("TF_CONFIG", "")
 
 @APP.route("/exit", methods=['GET'])
-def exit():
+def exitHandler():
   # Exit with the provided exit code
   global exit_code
   exit_code = int(request.args.get('exitCode', 0))
@@ -44,7 +40,7 @@ def shutdown_server():
   if func is None:
     raise RuntimeError('Not running with the Werkzeug Server')
   func()
-  
+
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
   logging.basicConfig(
@@ -64,6 +60,6 @@ if __name__ == '__main__':
     help="The port to run on.")
 
   args = parser.parse_args()
-  
+
   APP.run(debug=False, host='0.0.0.0', port=args.port)
   sys.exit(exit_code)

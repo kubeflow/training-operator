@@ -3,7 +3,7 @@ local params = std.extVar("__ksonnet/params").components.master_is_chief_v1alpha
 
 local k = import "k.libsonnet";
 
-local actualImage = ""gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"";
+local actualImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 local name = params.name;
 local namespace = env.namespace;
 
@@ -12,7 +12,7 @@ local podTemplate = {
     containers: [
       {
         name: "tensorflow",
-        image: actualImage,        
+        image: actualImage,
       },
     ],
   },

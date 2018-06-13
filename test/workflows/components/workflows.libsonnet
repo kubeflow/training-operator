@@ -2,6 +2,11 @@
   // TODO(https://github.com/ksonnet/ksonnet/issues/222): Taking namespace as an argument is a work around for the fact that ksonnet
   // doesn't support automatically piping in the namespace from the environment to prototypes.
 
+  // TODO(jlewi): We should refactor the test_runner step so that we don't have to get K8s credentials
+  // on each individual step. Instead we should do what we do in our kubeflow/kubeflow tests
+  // and have a separate step that modifies .kubeconfig and then on subsequent steps
+  // just set the environment variable KUBE_CONFIG.
+
   // convert a list of two items into a map representing an environment variable
   // TODO(jlewi): Should we move this into kubeflow/core/util.libsonnet
   listToMap:: function(v)
