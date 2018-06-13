@@ -247,22 +247,22 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
     if k == "namespace":
       namespace = v
-    
+
   if not name:
     raise ValueError("name must be provided as a parameter.")
-    
+
   if not namespace:
     raise ValueError("namespace must be provided as a parameter.")
 
   try:
-    util.run(["ks", "env", "add", env, "--namespace=" + namespace], 
+    util.run(["ks", "env", "add", env, "--namespace=" + namespace],
              cwd=args.app_dir)
   except subprocess.CalledProcessError as e:
     if not re.search(".*environment.*already exists.*", e.output):
       raise
 
   for pair in args.params.split(","):
-    k, v = pair.split("=", 1)    
+    k, v = pair.split("=", 1)
     util.run(
       ["ks", "param", "set", "--env=" + env, args.component, k, v],
       cwd=args.app_dir)

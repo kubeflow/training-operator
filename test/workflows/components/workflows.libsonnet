@@ -315,7 +315,7 @@
               "--component=master_is_chief_v1alpha2"
               else
               "--component=master_is_chief_v1alpha1",
-              "--params=name=worker0-is-chief,namespace=default",
+              "--params=name=master-is-chief,namespace=default",
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-worker0", [

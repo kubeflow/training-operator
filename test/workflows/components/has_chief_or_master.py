@@ -5,7 +5,6 @@
 when there is an explicit master or chief. In this case the master/chief
 will exit but no other processes will.
 """
-import argparse
 import json
 import logging
 import os
@@ -27,6 +26,18 @@ def main():
   task_index = task["index"]
 
   if job_name in ["master", "chief"] and task_index == 0:
+    # TODO(jlewi): This is a hack to ensure the job runs long enough
+    # for all pods/services to be created. A better approach would be to
+    # actually detect the creation of the pods/services. There's a couple
+    # approaches we could take:
+    # 1. We could use the same logic as test_runner.py to detect the K8s
+    #    events and wait for the expected events.
+    # 2. We could run a server and test_runner could issue an RPC when
+    #    the test should continue.
+    # #2 Is more flexible as that approach would allow us to write more 
+    # powerful E2E tests for failure handling and restart behavior.
+    time.sleep(30)
+    
     logging.info("%s is chief; exiting.", job_name)
   else:
     logging.info("Non-chief process runs forever")
