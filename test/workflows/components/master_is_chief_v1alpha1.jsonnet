@@ -3,45 +3,16 @@ local params = std.extVar("__ksonnet/params").components.master_is_chief_v1alpha
 
 local k = import "k.libsonnet";
 
-local actualImage = "python:2.7";
+local actualImage = ""gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"";
 local name = params.name;
 local namespace = env.namespace;
-local configMap = {
-  apiVersion: "v1",
-  kind: "ConfigMap",
-  metadata: {
-    name: name,
-    namespace: namespace,
-  },
-  data: {
-    "has_chief_or_master.py": importstr "has_chief_or_master.py",
-  },
-};
 
 local podTemplate = {
   spec: {
     containers: [
       {
         name: "tensorflow",
-        image: actualImage,
-        command: [
-          "python",
-          "/var/code/has_chief_or_master.py",
-        ],
-        volumeMounts: [
-          {
-            mountPath: "/var/code",
-            name: "code",
-          },
-        ],
-      },
-    ],
-    volumes: [
-      {
-        configMap: {
-          name: name,
-        },
-        name: "code",
+        image: actualImage,        
       },
     ],
   },
@@ -75,4 +46,4 @@ local job = {
 },
 };  // job.
 
-std.prune(k.core.v1.list.new([job, configMap]))
+std.prune(k.core.v1.list.new([job]))

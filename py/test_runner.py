@@ -7,6 +7,7 @@ import logging
 import json
 import os
 import re
+import requests
 import retrying
 import subprocess
 import time
@@ -213,6 +214,27 @@ def parse_events(events):
   return pods, services
 
 @retrying.retry
+def terminateReplica(target, exitCode=0):
+  """Issue a request to terminate the requested TF replica running test_app.
+  
+  Args:
+    target: The K8s service corresponding to the pod to terminate.
+    exitCode: What exit code to terminate the pod with.
+  """
+  params = {
+    "exitCode": exitCode,
+  }
+  
+  # The port should be whatever the TFJob port for the replicas is.
+  r = requests.get("http://{0}:2222".format(target), params=params)
+
+  if r.status_code != requests.codes.OK:
+    msg = "Request to terminate pod exited with status code: {0}".format(
+          r.status_code)
+    logging.error(msg)
+    raise RuntimeError(msg)
+
+@retrying.retry
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -286,6 +308,29 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
 
       logging.info("Created job %s in namespaces %s", name, namespace)
+      
+      # Wait for the job to either be in Running state or a terminal state
+      if args.tfjob_version == "v1alpha1":
+        results = tf_job_client.wait_for_phase(
+          api_client, namespace, name, ["Running", "Done", "Failed"],
+          status_callback=tf_job_client.log_status)        
+      else:
+        raise NotImplementedError("Need to implement logic to wait for "
+                                  "v1alpha2 job to start or finish")
+
+      # The job is now either running or done.
+      if args.shutdown_policy:
+        logging.info("Enforcing shutdownPolicy %s", args.shutdown_policy)
+        if args.shutdown_policy in ["master", "chief"]:
+          target = name + "-master-0"
+        elif args.shutdown_policy in ["worker"]:
+          target = name + "-master-0"
+        else:
+          raise ValueError("Unrecognized shutdown_policy "
+                           "%s" % args.shutdown_policy)
+        
+        terminateReplica(target)
+
       results = tf_job_client.wait_for_job(
         api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
@@ -390,6 +435,14 @@ def add_common_args(parser):
     default=None,
     type=str,
     help="Directory containing the ksonnet app.")
+
+  parser.add_argument(
+    "--shutdown_policy",
+    default=None,
+    type=str,
+    help="The shutdown policy. This must be set if we need to issue "
+         "an http request to the test-app server to exit before the job will "
+         "finish.")
 
   parser.add_argument(
     "--component",

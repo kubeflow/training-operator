@@ -3,7 +3,7 @@ local params = std.extVar("__ksonnet/params").components.worker0_is_chief_v1alph
 
 local k = import "k.libsonnet";
 
-local actualImage = "python:2.7";
+local actualImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest";
 local name = params.name;
 local namespace = env.namespace;
 local configMap = {

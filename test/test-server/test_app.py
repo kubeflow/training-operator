@@ -7,13 +7,12 @@ of various processes so that we can test the controller semantics.
 """
 Simple app that parses predictions from a trained model and displays them.
 """
-
+import argparse
+import logging
 import os
 import sys
-import random
 
-import requests
-from flask import Flask, json, render_template, request, g, jsonify
+from flask import Flask, request
 
 APP = Flask(__name__)
 
@@ -26,6 +25,11 @@ def index():
   Placeholder, does nothing.
   """
   return "hello world"
+
+@APP.route("/tfconfig", methods=['GET'])
+def exit():
+  # Exit with the provided exit code
+  return os.environ.get("TF_CONFIG", "")
 
 @APP.route("/exit", methods=['GET'])
 def exit():
@@ -42,5 +46,24 @@ def shutdown_server():
   func()
   
 if __name__ == '__main__':
-  APP.run(debug=False, host='0.0.0.0', port=8080)
+  logging.getLogger().setLevel(logging.INFO)
+  logging.basicConfig(
+    level=logging.INFO,
+    format=('%(levelname)s|%(asctime)s'
+            '|%(pathname)s|%(lineno)d| %(message)s'),
+    datefmt='%Y-%m-%dT%H:%M:%S',)
+
+  parser = argparse.ArgumentParser(description="TFJob test server.")
+
+  parser.add_argument(
+    "--port",
+    # By default use the same port as TFJob uses so that we can use the
+    # TFJob services to address the test app.
+    default=2222,
+    type=int,
+    help="The port to run on.")
+
+  args = parser.parse_args()
+  
+  APP.run(debug=False, host='0.0.0.0', port=args.port)
   sys.exit(exit_code)
