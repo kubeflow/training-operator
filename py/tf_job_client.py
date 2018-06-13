@@ -144,9 +144,11 @@ def wait_for_phase(client,
         status_callback(results)
 
       # If we poll the CRD quick enough status won't have been set yet.
-      if results.get("status", {}).get("phase", {}) in phases:
-          return results
-
+      phase = results.get("status", {}).get("phase", "")
+      if phase in phases:
+        return results
+      
+      logging.info("Phase %s is not in %s", phase, phases)
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
         "Timeout waiting for job {0} in namespace {1} to enter one of the "
