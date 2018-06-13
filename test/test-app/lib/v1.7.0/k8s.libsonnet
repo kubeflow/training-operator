@@ -10,7 +10,7 @@
       // ExternalAdmissionHookConfiguration describes the configuration of initializers.
       externalAdmissionHookConfiguration:: {
         local kind = {kind: "ExternalAdmissionHookConfiguration"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // ExternalAdmissionHooks is a list of external admission webhooks and the affected resources and operations.
         withExternalAdmissionHooks(externalAdmissionHooks):: self + if std.type(externalAdmissionHooks) == "array" then {externalAdmissionHooks: externalAdmissionHooks} else {externalAdmissionHooks: [externalAdmissionHooks]},
         // ExternalAdmissionHooks is a list of external admission webhooks and the affected resources and operations.
@@ -100,7 +100,7 @@
       // ExternalAdmissionHookConfigurationList is a list of ExternalAdmissionHookConfiguration.
       externalAdmissionHookConfigurationList:: {
         local kind = {kind: "ExternalAdmissionHookConfigurationList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // List of ExternalAdmissionHookConfiguration.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of ExternalAdmissionHookConfiguration.
@@ -122,7 +122,7 @@
       // InitializerConfiguration describes the configuration of initializers.
       initializerConfiguration:: {
         local kind = {kind: "InitializerConfiguration"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Initializers is a list of resources and their default initializers Order-sensitive. When merging multiple InitializerConfigurations, we sort the initializers from different InitializerConfigurations by the name of the InitializerConfigurations; the order of the initializers from the same InitializerConfiguration is preserved.
         withInitializers(initializers):: self + if std.type(initializers) == "array" then {initializers: initializers} else {initializers: [initializers]},
         // Initializers is a list of resources and their default initializers Order-sensitive. When merging multiple InitializerConfigurations, we sort the initializers from different InitializerConfigurations by the name of the InitializerConfigurations; the order of the initializers from the same InitializerConfiguration is preserved.
@@ -212,7 +212,7 @@
       // InitializerConfigurationList is a list of InitializerConfiguration.
       initializerConfigurationList:: {
         local kind = {kind: "InitializerConfigurationList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // List of InitializerConfiguration.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of InitializerConfiguration.
@@ -239,7 +239,7 @@
       // ControllerRevision implements an immutable snapshot of state data. Clients are responsible for serializing and deserializing the objects that contain their internal state. Once a ControllerRevision has been successfully created, it can not be updated. The API Server will fail validation of all requests that attempt to mutate the Data field. ControllerRevisions may, however, be deleted. Note that, due to its use by both the DaemonSet and StatefulSet controllers for update and rollback, this object is beta. However, it may be subject to name and representation changes in future releases, and clients should not depend on its stability. It is primarily for internal use by controllers.
       controllerRevision:: {
         local kind = {kind: "ControllerRevision"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Revision indicates the revision of the state represented by Data.
         withRevision(revision):: self + {revision: revision},
         mixin:: {
@@ -326,7 +326,7 @@
       // ControllerRevisionList is a resource containing a list of ControllerRevision objects.
       controllerRevisionList:: {
         local kind = {kind: "ControllerRevisionList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is the list of ControllerRevisions
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of ControllerRevisions
@@ -348,7 +348,7 @@
       // Deployment enables declarative updates for Pods and ReplicaSets.
       deployment:: {
         local kind = {kind: "Deployment"},
-        new(name, replicas, containers, podLabels={app: name}):: apiVersion + kind + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.template.metadata.withLabels(podLabels),
+        new(name, replicas, containers, podLabels={app: name}):: kind + apiVersion + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.template.metadata.withLabels(podLabels),
         mixin:: {
           // Standard object metadata.
           metadata:: {
@@ -736,7 +736,7 @@
       // DeploymentList is a list of Deployments.
       deploymentList:: {
         local kind = {kind: "DeploymentList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is the list of Deployments.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of Deployments.
@@ -748,7 +748,7 @@
       // DeploymentRollback stores the information required to rollback a deployment.
       deploymentRollback:: {
         local kind = {kind: "DeploymentRollback"},
-        new(name):: apiVersion + kind + self.withName(name),
+        new(name):: kind + apiVersion + self.withName(name),
         // Required: This must match the Name of a deployment.
         withName(name):: self + {name: name},
         // The annotations to be updated to a deployment
@@ -769,7 +769,7 @@
       // Scale represents a scaling request for a resource.
       scale:: {
         local kind = {kind: "Scale"},
-        new(replicas):: apiVersion + kind + self.mixin.spec.withReplicas(replicas),
+        new(replicas):: kind + apiVersion + self.mixin.spec.withReplicas(replicas),
         mixin:: {
           // Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata.
           metadata:: {
@@ -865,7 +865,7 @@
       // The StatefulSet guarantees that a given network identity will always map to the same storage identity.
       statefulSet:: {
         local kind = {kind: "StatefulSet"},
-        new(name, replicas, containers, volumeClaims, podLabels={app: name}):: apiVersion + kind + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.withVolumeClaimTemplates(volumeClaims) + self.mixin.spec.template.metadata.withLabels(podLabels),
+        new(name, replicas, containers, volumeClaims, podLabels={app: name}):: kind + apiVersion + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.withVolumeClaimTemplates(volumeClaims) + self.mixin.spec.template.metadata.withLabels(podLabels),
         mixin:: {
           //
           metadata:: {
@@ -1246,7 +1246,7 @@
       // StatefulSetList is a collection of StatefulSets.
       statefulSetList:: {
         local kind = {kind: "StatefulSetList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         //
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         //
@@ -1263,7 +1263,7 @@
       // TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.
       tokenReview:: {
         local kind = {kind: "TokenReview"},
-        new(token):: apiVersion + kind + self.mixin.spec.withToken(token),
+        new(token):: kind + apiVersion + self.mixin.spec.withToken(token),
         mixin:: {
           //
           metadata:: {
@@ -1359,7 +1359,7 @@
       // TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.
       tokenReview:: {
         local kind = {kind: "TokenReview"},
-        new(token):: apiVersion + kind + self.mixin.spec.withToken(token),
+        new(token):: kind + apiVersion + self.mixin.spec.withToken(token),
         mixin:: {
           //
           metadata:: {
@@ -1457,7 +1457,7 @@
       // LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace. Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions checking.
       localSubjectAccessReview:: {
         local kind = {kind: "LocalSubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -1588,7 +1588,7 @@
       // SelfSubjectAccessReview checks whether or the current user can perform an action.  Not filling in a spec.namespace means "in all namespaces".  Self is a special case, because users should always be able to check whether they can perform an action
       selfSubjectAccessReview:: {
         local kind = {kind: "SelfSubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -1709,7 +1709,7 @@
       // SubjectAccessReview checks whether or not a user or group can perform an action.
       subjectAccessReview:: {
         local kind = {kind: "SubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -1843,7 +1843,7 @@
       // LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace. Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions checking.
       localSubjectAccessReview:: {
         local kind = {kind: "LocalSubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -1974,7 +1974,7 @@
       // SelfSubjectAccessReview checks whether or the current user can perform an action.  Not filling in a spec.namespace means "in all namespaces".  Self is a special case, because users should always be able to check whether they can perform an action
       selfSubjectAccessReview:: {
         local kind = {kind: "SelfSubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -2095,7 +2095,7 @@
       // SubjectAccessReview checks whether or not a user or group can perform an action.
       subjectAccessReview:: {
         local kind = {kind: "SubjectAccessReview"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -2231,7 +2231,7 @@
       // configuration of a horizontal pod autoscaler.
       horizontalPodAutoscaler:: {
         local kind = {kind: "HorizontalPodAutoscaler"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -2336,7 +2336,7 @@
       // list of horizontal pod autoscaler objects.
       horizontalPodAutoscalerList:: {
         local kind = {kind: "HorizontalPodAutoscalerList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // list of horizontal pod autoscaler objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // list of horizontal pod autoscaler objects.
@@ -2348,7 +2348,7 @@
       // Scale represents a scaling request for a resource.
       scale:: {
         local kind = {kind: "Scale"},
-        new(replicas):: apiVersion + kind + self.mixin.spec.withReplicas(replicas),
+        new(replicas):: kind + apiVersion + self.mixin.spec.withReplicas(replicas),
         mixin:: {
           // Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata.
           metadata:: {
@@ -2444,7 +2444,7 @@
       // HorizontalPodAutoscaler is the configuration for a horizontal pod autoscaler, which automatically manages the replica count of any resource implementing the scale subresource based on the metrics specified.
       horizontalPodAutoscaler:: {
         local kind = {kind: "HorizontalPodAutoscaler"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // metadata is the standard object metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -2552,7 +2552,7 @@
       // HorizontalPodAutoscaler is a list of horizontal pod autoscaler objects.
       horizontalPodAutoscalerList:: {
         local kind = {kind: "HorizontalPodAutoscalerList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // items is the list of horizontal pod autoscaler objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // items is the list of horizontal pod autoscaler objects.
@@ -2569,7 +2569,7 @@
       // Job represents the configuration of a single job.
       job:: {
         local kind = {kind: "Job"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -2929,7 +2929,7 @@
       // JobList is a collection of jobs.
       jobList:: {
         local kind = {kind: "JobList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // items is the list of Jobs.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // items is the list of Jobs.
@@ -2944,7 +2944,7 @@
       // CronJob represents the configuration of a single cron job.
       cronJob:: {
         local kind = {kind: "CronJob"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -3406,7 +3406,7 @@
       // CronJobList is a collection of cron jobs.
       cronJobList:: {
         local kind = {kind: "CronJobList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // items is the list of CronJobs.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // items is the list of CronJobs.
@@ -3423,7 +3423,7 @@
       // Describes a certificate signing request
       certificateSigningRequest:: {
         local kind = {kind: "CertificateSigningRequest"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -3534,7 +3534,7 @@
       //
       certificateSigningRequestList:: {
         local kind = {kind: "CertificateSigningRequestList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         //
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         //
@@ -3551,7 +3551,7 @@
       // Binding ties one object to another; for example, a pod is bound to a node by a scheduler. Deprecated in 1.7, please use the bindings subresource of pods instead.
       binding:: {
         local kind = {kind: "Binding"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -3652,7 +3652,7 @@
       // ComponentStatus (and ComponentStatusList) holds the cluster validation info.
       componentStatus:: {
         local kind = {kind: "ComponentStatus"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // List of component conditions observed
         withConditions(conditions):: self + if std.type(conditions) == "array" then {conditions: conditions} else {conditions: [conditions]},
         // List of component conditions observed
@@ -3742,7 +3742,7 @@
       // Status of all the conditions for the component as a list of ComponentStatus objects.
       componentStatusList:: {
         local kind = {kind: "ComponentStatusList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // List of ComponentStatus objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of ComponentStatus objects.
@@ -3754,7 +3754,7 @@
       // ConfigMap holds configuration data for pods to consume.
       configMap:: {
         local kind = {kind: "ConfigMap"},
-        new(name, data):: apiVersion + kind + self.mixin.metadata.withName(name) + self.withData(data),
+        new(name, data):: kind + apiVersion + self.mixin.metadata.withName(name) + self.withData(data),
         // Data contains the configuration data. Each key must consist of alphanumeric characters, '-', '_' or '.'.
         withData(data):: self + {data: data},
         // Data contains the configuration data. Each key must consist of alphanumeric characters, '-', '_' or '.'.
@@ -3843,7 +3843,7 @@
       // ConfigMapList is a resource containing a list of ConfigMap objects.
       configMapList:: {
         local kind = {kind: "ConfigMapList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is the list of ConfigMaps.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of ConfigMaps.
@@ -3866,7 +3866,7 @@
       //  ]
       endpoints:: {
         local kind = {kind: "Endpoints"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // The set of all endpoints is the union of all subsets. Addresses are placed into subsets according to the IPs they share. A single address with multiple ports, some of which are ready and some of which are not (because they come from different containers) will result in the address being displayed in different subsets for the different ports. No address will appear in both Addresses and NotReadyAddresses in the same subset. Sets of addresses and ports that comprise a service.
         withSubsets(subsets):: self + if std.type(subsets) == "array" then {subsets: subsets} else {subsets: [subsets]},
         // The set of all endpoints is the union of all subsets. Addresses are placed into subsets according to the IPs they share. A single address with multiple ports, some of which are ready and some of which are not (because they come from different containers) will result in the address being displayed in different subsets for the different ports. No address will appear in both Addresses and NotReadyAddresses in the same subset. Sets of addresses and ports that comprise a service.
@@ -3956,7 +3956,7 @@
       // EndpointsList is a list of endpoints.
       endpointsList:: {
         local kind = {kind: "EndpointsList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of endpoints.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of endpoints.
@@ -3968,7 +3968,7 @@
       // Event is a report of an event somewhere in the cluster.
       event:: {
         local kind = {kind: "Event"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // The number of times this event has occurred.
         withCount(count):: self + {count: count},
         // A human-readable description of the status of this operation.
@@ -4099,7 +4099,7 @@
       // EventList is a list of events.
       eventList:: {
         local kind = {kind: "EventList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of events
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of events
@@ -4111,7 +4111,7 @@
       // LimitRange sets resource usage limits for each kind of resource in a Namespace.
       limitRange:: {
         local kind = {kind: "LimitRange"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -4207,7 +4207,7 @@
       // LimitRangeList is a list of LimitRange items.
       limitRangeList:: {
         local kind = {kind: "LimitRangeList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is a list of LimitRange objects. More info: https://git.k8s.io/community/contributors/design-proposals/admission_control_limit_range.md
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of LimitRange objects. More info: https://git.k8s.io/community/contributors/design-proposals/admission_control_limit_range.md
@@ -4219,7 +4219,7 @@
       // Namespace provides a scope for Names. Use of multiple namespaces is optional.
       namespace:: {
         local kind = {kind: "Namespace"},
-        new(name):: apiVersion + kind + self.mixin.metadata.withName(name),
+        new(name):: kind + apiVersion + self.mixin.metadata.withName(name),
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -4314,7 +4314,7 @@
       // NamespaceList is a list of Namespaces.
       namespaceList:: {
         local kind = {kind: "NamespaceList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is the list of Namespace objects in the list. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of Namespace objects in the list. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
@@ -4326,7 +4326,7 @@
       // Node is a worker node in Kubernetes. Each node will have a unique identifier in the cache (i.e. in etcd).
       node:: {
         local kind = {kind: "Node"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -4430,7 +4430,7 @@
       // NodeList is the whole list of all Nodes which have been registered with master.
       nodeList:: {
         local kind = {kind: "NodeList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of nodes
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of nodes
@@ -4442,7 +4442,7 @@
       // PersistentVolume (PV) is a storage resource provisioned by an administrator. It is analogous to a node. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
       persistentVolume:: {
         local kind = {kind: "PersistentVolume"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -4923,7 +4923,7 @@
       // PersistentVolumeClaim is a user's request for and claim to a persistent volume
       persistentVolumeClaim:: {
         local kind = {kind: "PersistentVolumeClaim"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -5051,7 +5051,7 @@
       // PersistentVolumeClaimList is a list of PersistentVolumeClaim items.
       persistentVolumeClaimList:: {
         local kind = {kind: "PersistentVolumeClaimList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // A list of persistent volume claims. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // A list of persistent volume claims. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
@@ -5063,7 +5063,7 @@
       // PersistentVolumeList is a list of PersistentVolume items.
       persistentVolumeList:: {
         local kind = {kind: "PersistentVolumeList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of persistent volumes. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of persistent volumes. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
@@ -5075,7 +5075,7 @@
       // Pod is a collection of containers that can run on a host. This resource is created by clients and scheduled onto hosts.
       pod:: {
         local kind = {kind: "Pod"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -5322,7 +5322,7 @@
       // PodList is a list of Pods.
       podList:: {
         local kind = {kind: "PodList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of pods. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of pods. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md
@@ -5334,7 +5334,7 @@
       // PodTemplate describes a template for creating copies of a predefined pod.
       podTemplate:: {
         local kind = {kind: "PodTemplate"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -5665,7 +5665,7 @@
       // PodTemplateList is a list of PodTemplates.
       podTemplateList:: {
         local kind = {kind: "PodTemplateList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of pod templates
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of pod templates
@@ -5677,7 +5677,7 @@
       // ReplicationController represents the configuration of a replication controller.
       replicationController:: {
         local kind = {kind: "ReplicationController"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // If the Labels of a ReplicationController are empty, they are defaulted to be the same as the Pod(s) that the replication controller manages. Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -6022,7 +6022,7 @@
       // ReplicationControllerList is a collection of replication controllers.
       replicationControllerList:: {
         local kind = {kind: "ReplicationControllerList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of replication controllers. More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of replication controllers. More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller
@@ -6034,7 +6034,7 @@
       // ResourceQuota sets aggregate quota restrictions enforced per namespace
       resourceQuota:: {
         local kind = {kind: "ResourceQuota"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -6133,7 +6133,7 @@
       // ResourceQuotaList is a list of ResourceQuota items.
       resourceQuotaList:: {
         local kind = {kind: "ResourceQuotaList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is a list of ResourceQuota objects. More info: https://git.k8s.io/community/contributors/design-proposals/admission_control_resource_quota.md
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of ResourceQuota objects. More info: https://git.k8s.io/community/contributors/design-proposals/admission_control_resource_quota.md
@@ -6145,8 +6145,8 @@
       // Secret holds secret data of a certain type. The total bytes of the values in the Data field must be less than MaxSecretSize bytes.
       secret:: {
         local kind = {kind: "Secret"},
-        new(name, data, type="Opaque"):: apiVersion + kind + self.mixin.metadata.withName(name) + self.withData(data) + self.withType(type),
-        fromString(name, stringData, type="Opaque"):: apiVersion + kind + self.mixin.metadata.withName(name) + self.withStringData(stringData) + self.withType(type),
+        new(name, data, type="Opaque"):: kind + apiVersion + self.mixin.metadata.withName(name) + self.withData(data) + self.withType(type),
+        fromString(name, stringData, type="Opaque"):: kind + apiVersion + self.mixin.metadata.withName(name) + self.withStringData(stringData) + self.withType(type),
         // Data contains the secret data. Each key must consist of alphanumeric characters, '-', '_' or '.'. The serialized form of the secret data is a base64 encoded string, representing the arbitrary (possibly non-string) data value here. Described in https://tools.ietf.org/html/rfc4648#section-4
         withData(data):: self + {data: data},
         // Data contains the secret data. Each key must consist of alphanumeric characters, '-', '_' or '.'. The serialized form of the secret data is a base64 encoded string, representing the arbitrary (possibly non-string) data value here. Described in https://tools.ietf.org/html/rfc4648#section-4
@@ -6241,7 +6241,7 @@
       // SecretList is a list of Secret.
       secretList:: {
         local kind = {kind: "SecretList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is a list of secret objects. More info: https://kubernetes.io/docs/concepts/configuration/secret
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of secret objects. More info: https://kubernetes.io/docs/concepts/configuration/secret
@@ -6253,7 +6253,7 @@
       // Service is a named abstraction of software service (for example, mysql) consisting of local port (for example 3306) that the proxy listens on, and the selector that determines which pods will answer requests sent through the proxy.
       service:: {
         local kind = {kind: "Service"},
-        new(name, selector, ports):: apiVersion + kind + self.mixin.metadata.withName(name) + self.mixin.spec.withSelector(selector) + self.mixin.spec.withPorts(ports),
+        new(name, selector, ports):: kind + apiVersion + self.mixin.metadata.withName(name) + self.mixin.spec.withSelector(selector) + self.mixin.spec.withPorts(ports),
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -6375,7 +6375,7 @@
       // ServiceAccount binds together: * a name, understood by users, and perhaps by peripheral systems, for an identity * a principal that can be authenticated and authorized * a set of secrets
       serviceAccount:: {
         local kind = {kind: "ServiceAccount"},
-        new(name):: apiVersion + kind + self.mixin.metadata.withName(name),
+        new(name):: kind + apiVersion + self.mixin.metadata.withName(name),
         // AutomountServiceAccountToken indicates whether pods running as this service account should have an API token automatically mounted. Can be overridden at the pod level.
         withAutomountServiceAccountToken(automountServiceAccountToken):: self + {automountServiceAccountToken: automountServiceAccountToken},
         // ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -6472,7 +6472,7 @@
       // ServiceAccountList is a list of ServiceAccount objects
       serviceAccountList:: {
         local kind = {kind: "ServiceAccountList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of ServiceAccounts. More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of ServiceAccounts. More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
@@ -6484,7 +6484,7 @@
       // ServiceList holds a list of services.
       serviceList:: {
         local kind = {kind: "ServiceList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // List of services
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of services
@@ -6501,7 +6501,7 @@
       // DaemonSet represents the configuration of a daemon set.
       daemonSet:: {
         local kind = {kind: "DaemonSet"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -6873,7 +6873,7 @@
       // DaemonSetList is a collection of daemon sets.
       daemonSetList:: {
         local kind = {kind: "DaemonSetList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // A list of daemon sets.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // A list of daemon sets.
@@ -6885,7 +6885,7 @@
       // Deployment enables declarative updates for Pods and ReplicaSets.
       deployment:: {
         local kind = {kind: "Deployment"},
-        new(name, replicas, containers, podLabels={app: name}):: apiVersion + kind + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.template.metadata.withLabels(podLabels),
+        new(name, replicas, containers, podLabels={app: name}):: kind + apiVersion + self.mixin.metadata.withName(name) + self.mixin.spec.withReplicas(replicas) + self.mixin.spec.template.spec.withContainers(containers) + self.mixin.spec.template.metadata.withLabels(podLabels),
         mixin:: {
           // Standard object metadata.
           metadata:: {
@@ -7273,7 +7273,7 @@
       // DeploymentList is a list of Deployments.
       deploymentList:: {
         local kind = {kind: "DeploymentList"},
-        new(items):: apiVersion + kind + self.withItems(items),
+        new(items):: kind + apiVersion + self.withItems(items),
         // Items is the list of Deployments.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of Deployments.
@@ -7285,7 +7285,7 @@
       // DeploymentRollback stores the information required to rollback a deployment.
       deploymentRollback:: {
         local kind = {kind: "DeploymentRollback"},
-        new(name):: apiVersion + kind + self.withName(name),
+        new(name):: kind + apiVersion + self.withName(name),
         // Required: This must match the Name of a deployment.
         withName(name):: self + {name: name},
         // The annotations to be updated to a deployment
@@ -7306,7 +7306,7 @@
       // Ingress is a collection of rules that allow inbound connections to reach the endpoints defined by a backend. An Ingress can be configured to give services externally-reachable urls, load balance traffic, terminate SSL, offer name based virtual hosting etc.
       ingress:: {
         local kind = {kind: "Ingress"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -7417,7 +7417,7 @@
       // IngressList is a collection of Ingress.
       ingressList:: {
         local kind = {kind: "IngressList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is the list of Ingress.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of Ingress.
@@ -7429,7 +7429,7 @@
       // NetworkPolicy describes what network traffic is allowed for a set of Pods
       networkPolicy:: {
         local kind = {kind: "NetworkPolicy"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -7540,7 +7540,7 @@
       // Network Policy List is a list of NetworkPolicy objects.
       networkPolicyList:: {
         local kind = {kind: "NetworkPolicyList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of schema objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of schema objects.
@@ -7552,7 +7552,7 @@
       // Pod Security Policy governs the ability to make requests that affect the Security Context that will be applied to a pod and container.
       podSecurityPolicy:: {
         local kind = {kind: "PodSecurityPolicy"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -7735,7 +7735,7 @@
       // Pod Security Policy List is a list of PodSecurityPolicy objects.
       podSecurityPolicyList:: {
         local kind = {kind: "PodSecurityPolicyList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of schema objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of schema objects.
@@ -7747,7 +7747,7 @@
       // ReplicaSet represents the configuration of a ReplicaSet.
       replicaSet:: {
         local kind = {kind: "ReplicaSet"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // If the Labels of a ReplicaSet are empty, they are defaulted to be the same as the Pod(s) that the ReplicaSet manages. Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -8103,7 +8103,7 @@
       // ReplicaSetList is a collection of ReplicaSets.
       replicaSetList:: {
         local kind = {kind: "ReplicaSetList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // List of ReplicaSets. More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // List of ReplicaSets. More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller
@@ -8115,7 +8115,7 @@
       // represents a scaling request for a resource.
       scale:: {
         local kind = {kind: "Scale"},
-        new(replicas):: apiVersion + kind + self.mixin.spec.withReplicas(replicas),
+        new(replicas):: kind + apiVersion + self.mixin.spec.withReplicas(replicas),
         mixin:: {
           // Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata.
           metadata:: {
@@ -8208,7 +8208,7 @@
       // A ThirdPartyResource is a generic representation of a resource, it is used by add-ons and plugins to add new resource types to the API.  It consists of one or more Versions of the api.
       thirdPartyResource:: {
         local kind = {kind: "ThirdPartyResource"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Description is the description of this object.
         withDescription(description):: self + {description: description},
         // Versions are versions for this third party object
@@ -8300,7 +8300,7 @@
       // ThirdPartyResourceList is a list of ThirdPartyResources.
       thirdPartyResourceList:: {
         local kind = {kind: "ThirdPartyResourceList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is the list of ThirdPartyResources.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of ThirdPartyResources.
@@ -8317,7 +8317,7 @@
       // NetworkPolicy describes what network traffic is allowed for a set of Pods
       networkPolicy:: {
         local kind = {kind: "NetworkPolicy"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
           metadata:: {
@@ -8428,7 +8428,7 @@
       // NetworkPolicyList is a list of NetworkPolicy objects.
       networkPolicyList:: {
         local kind = {kind: "NetworkPolicyList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of schema objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of schema objects.
@@ -8455,7 +8455,7 @@
       // Eviction evicts a pod from its node subject to certain policies and safety constraints. This is a subresource of Pod.  A request to cause such an eviction is created by POSTing to .../pods/<pod name>/evictions.
       eviction:: {
         local kind = {kind: "Eviction"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           // DeleteOptions may be provided
           deleteOptions:: {
@@ -8560,7 +8560,7 @@
       // PodDisruptionBudget is an object to define the max disruption that can be caused to a collection of pods
       podDisruptionBudget:: {
         local kind = {kind: "PodDisruptionBudget"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -8670,7 +8670,7 @@
       // PodDisruptionBudgetList is a collection of PodDisruptionBudgets.
       podDisruptionBudgetList:: {
         local kind = {kind: "PodDisruptionBudgetList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         //
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         //
@@ -8687,7 +8687,7 @@
       // ClusterRole is a cluster level, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding or ClusterRoleBinding.
       clusterRole:: {
         local kind = {kind: "ClusterRole"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Rules holds all the PolicyRules for this ClusterRole
         withRules(rules):: self + if std.type(rules) == "array" then {rules: rules} else {rules: [rules]},
         // Rules holds all the PolicyRules for this ClusterRole
@@ -8777,7 +8777,7 @@
       // ClusterRoleBinding references a ClusterRole, but not contain it.  It can reference a ClusterRole in the global namespace, and adds who information via Subject.
       clusterRoleBinding:: {
         local kind = {kind: "ClusterRoleBinding"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Subjects holds references to the objects the role applies to.
         withSubjects(subjects):: self + if std.type(subjects) == "array" then {subjects: subjects} else {subjects: [subjects]},
         // Subjects holds references to the objects the role applies to.
@@ -8877,7 +8877,7 @@
       // ClusterRoleBindingList is a collection of ClusterRoleBindings
       clusterRoleBindingList:: {
         local kind = {kind: "ClusterRoleBindingList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of ClusterRoleBindings
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of ClusterRoleBindings
@@ -8889,7 +8889,7 @@
       // ClusterRoleList is a collection of ClusterRoles
       clusterRoleList:: {
         local kind = {kind: "ClusterRoleList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of ClusterRoles
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of ClusterRoles
@@ -8901,7 +8901,7 @@
       // Role is a namespaced, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding.
       role:: {
         local kind = {kind: "Role"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Rules holds all the PolicyRules for this Role
         withRules(rules):: self + if std.type(rules) == "array" then {rules: rules} else {rules: [rules]},
         // Rules holds all the PolicyRules for this Role
@@ -8991,7 +8991,7 @@
       // RoleBinding references a role, but does not contain it.  It can reference a Role in the same namespace or a ClusterRole in the global namespace. It adds who information via Subjects and namespace information by which namespace it exists in.  RoleBindings in a given namespace only have effect in that namespace.
       roleBinding:: {
         local kind = {kind: "RoleBinding"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Subjects holds references to the objects the role applies to.
         withSubjects(subjects):: self + if std.type(subjects) == "array" then {subjects: subjects} else {subjects: [subjects]},
         // Subjects holds references to the objects the role applies to.
@@ -9091,7 +9091,7 @@
       // RoleBindingList is a collection of RoleBindings
       roleBindingList:: {
         local kind = {kind: "RoleBindingList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of RoleBindings
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of RoleBindings
@@ -9103,7 +9103,7 @@
       // RoleList is a collection of Roles
       roleList:: {
         local kind = {kind: "RoleList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of Roles
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of Roles
@@ -9118,7 +9118,7 @@
       // ClusterRole is a cluster level, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding or ClusterRoleBinding.
       clusterRole:: {
         local kind = {kind: "ClusterRole"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Rules holds all the PolicyRules for this ClusterRole
         withRules(rules):: self + if std.type(rules) == "array" then {rules: rules} else {rules: [rules]},
         // Rules holds all the PolicyRules for this ClusterRole
@@ -9208,7 +9208,7 @@
       // ClusterRoleBinding references a ClusterRole, but not contain it.  It can reference a ClusterRole in the global namespace, and adds who information via Subject.
       clusterRoleBinding:: {
         local kind = {kind: "ClusterRoleBinding"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Subjects holds references to the objects the role applies to.
         withSubjects(subjects):: self + if std.type(subjects) == "array" then {subjects: subjects} else {subjects: [subjects]},
         // Subjects holds references to the objects the role applies to.
@@ -9308,7 +9308,7 @@
       // ClusterRoleBindingList is a collection of ClusterRoleBindings
       clusterRoleBindingList:: {
         local kind = {kind: "ClusterRoleBindingList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of ClusterRoleBindings
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of ClusterRoleBindings
@@ -9320,7 +9320,7 @@
       // ClusterRoleList is a collection of ClusterRoles
       clusterRoleList:: {
         local kind = {kind: "ClusterRoleList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of ClusterRoles
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of ClusterRoles
@@ -9332,7 +9332,7 @@
       // Role is a namespaced, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding.
       role:: {
         local kind = {kind: "Role"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Rules holds all the PolicyRules for this Role
         withRules(rules):: self + if std.type(rules) == "array" then {rules: rules} else {rules: [rules]},
         // Rules holds all the PolicyRules for this Role
@@ -9422,7 +9422,7 @@
       // RoleBinding references a role, but does not contain it.  It can reference a Role in the same namespace or a ClusterRole in the global namespace. It adds who information via Subjects and namespace information by which namespace it exists in.  RoleBindings in a given namespace only have effect in that namespace.
       roleBinding:: {
         local kind = {kind: "RoleBinding"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Subjects holds references to the objects the role applies to.
         withSubjects(subjects):: self + if std.type(subjects) == "array" then {subjects: subjects} else {subjects: [subjects]},
         // Subjects holds references to the objects the role applies to.
@@ -9522,7 +9522,7 @@
       // RoleBindingList is a collection of RoleBindings
       roleBindingList:: {
         local kind = {kind: "RoleBindingList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of RoleBindings
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of RoleBindings
@@ -9534,7 +9534,7 @@
       // RoleList is a collection of Roles
       roleList:: {
         local kind = {kind: "RoleList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of Roles
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of Roles
@@ -9551,7 +9551,7 @@
       // PodPreset is a policy resource that defines additional runtime requirements for a Pod.
       podPreset:: {
         local kind = {kind: "PodPreset"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         mixin:: {
           //
           metadata:: {
@@ -9677,7 +9677,7 @@
       // PodPresetList is a list of PodPreset objects.
       podPresetList:: {
         local kind = {kind: "PodPresetList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is a list of schema objects.
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is a list of schema objects.
@@ -9696,7 +9696,7 @@
       // StorageClasses are non-namespaced; the name of the storage class according to etcd is in ObjectMeta.Name.
       storageClass:: {
         local kind = {kind: "StorageClass"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Parameters holds the parameters for the provisioner that should create volumes of this storage class.
         withParameters(parameters):: self + {parameters: parameters},
         // Parameters holds the parameters for the provisioner that should create volumes of this storage class.
@@ -9787,7 +9787,7 @@
       // StorageClassList is a collection of storage classes.
       storageClassList:: {
         local kind = {kind: "StorageClassList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is the list of StorageClasses
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of StorageClasses
@@ -9804,7 +9804,7 @@
       // StorageClasses are non-namespaced; the name of the storage class according to etcd is in ObjectMeta.Name.
       storageClass:: {
         local kind = {kind: "StorageClass"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Parameters holds the parameters for the provisioner that should create volumes of this storage class.
         withParameters(parameters):: self + {parameters: parameters},
         // Parameters holds the parameters for the provisioner that should create volumes of this storage class.
@@ -9895,7 +9895,7 @@
       // StorageClassList is a collection of storage classes.
       storageClassList:: {
         local kind = {kind: "StorageClassList"},
-        new():: apiVersion + kind,
+        new():: kind + apiVersion,
         // Items is the list of StorageClasses
         withItems(items):: self + if std.type(items) == "array" then {items: items} else {items: [items]},
         // Items is the list of StorageClasses

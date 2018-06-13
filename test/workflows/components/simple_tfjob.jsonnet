@@ -72,6 +72,20 @@ local parts(namespace, name, image) = {
     },
     spec: {
       tfReplicaSpecs: {
+        Master: {
+          replicas: 1,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: actualImage,
+                },
+              ],
+            },
+          },
+        },
         PS: {
           replicas: 2,
           restartPolicy: "Never",
@@ -95,7 +109,6 @@ local parts(namespace, name, image) = {
                 {
                   name: "tensorflow",
                   image: actualImage,
-                  command: ["python", "/var/tf_dist_mnist/dist_mnist.py", "--train_steps=100"],
                 },
               ],
             },

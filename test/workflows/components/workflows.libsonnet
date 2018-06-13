@@ -59,10 +59,15 @@
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = if params.versionTag != null then
+      local versionTag = if  std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
         params.versionTag
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
+
+      local apiVersion =  if params.tfJobVersion == "v1alpha1" then
+        "kubeflow.org/v1alpha1"
+        else
+        "kubeflow.org/v1alpha2";
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
@@ -195,8 +200,11 @@
                     template: "py-lint",
                   },
                 ],
-                [  // Setup cluster needs to run after build because we depend on the chart
-                  // created by the build statement.
+                [ // TODO(jlewi): We could probably run build and
+                  // setup-cluster in parallel. We just need 
+                  // be sure to wait long enough for the deployment for
+                  // the TFJob operator image to be created since
+                  // that will block the deployment from starting.
                   {
                     name: "setup-cluster",
                     template: "setup-cluster",
@@ -281,6 +289,7 @@
               "--project=" + project,
               "--namespace=" + deployNamespace,
               "--image=" + tfJobImage,
+              "--tf_job_version=" + params.tfJobVersion,
               "--accelerator=nvidia-tesla-k80=1",
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
@@ -295,7 +304,8 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=simple_tfjob",
-              "--params=name=simple-tfjob,namespace=default",
+              "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
@@ -308,7 +318,8 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
-              "--params=name=gpu-tfjob,namespace=default",
+              "--params=name=gpu-tfjob-"+params.tfJobVersion + ",namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [

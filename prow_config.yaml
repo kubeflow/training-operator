@@ -4,3 +4,13 @@ workflows:
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: tfjob-e2e
+    params:
+      tfJobVersion: v1alpha1
+  # TODO*https://github.com/kubeflow/tf-operator/issues/634)
+  # Enable the v1alpha2 once the job successfully completes
+  # when master completes.
+  #- app_dir: kubeflow/tf-operator/test/workflows
+  #  component: workflows
+  #  name: tfjob-e2e-v1alpha2
+  #  params:
+  #    tfJobVersion: v1alpha2
