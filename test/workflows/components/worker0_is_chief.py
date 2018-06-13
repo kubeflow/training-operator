@@ -34,7 +34,7 @@ def main():
     #    events and wait for the expected events.
     # 2. We could run a server and test_runner could issue an RPC when
     #    the test should continue.
-    # #2 Is more flexible as that approach would allow us to write more 
+    # #2 Is more flexible as that approach would allow us to write more
     # powerful E2E tests for failure handling and restart behavior.
     time.sleep(30)
     logging.info("Worker 0 is chief; exiting.")
