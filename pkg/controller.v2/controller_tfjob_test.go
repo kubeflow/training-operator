@@ -83,6 +83,14 @@ func TestAddTFJob(t *testing.T) {
 	close(stopCh)
 }
 
+func newTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
+	tfJob := newTFJob(worker, ps)
+	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief] = &tfv1alpha2.TFReplicaSpec{
+		Template: newTFReplicaSpecTemplate(),
+	}
+	return tfJob
+}
+
 func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := &tfv1alpha2.TFJob{
 		TypeMeta: metav1.TypeMeta{

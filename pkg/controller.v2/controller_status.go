@@ -36,7 +36,7 @@ const (
 )
 
 // updateStatus updates the status of the tfjob.
-func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
+func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.TFReplicaStatuses[rtype].Succeeded)
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
@@ -52,7 +52,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 		if rtype == tfv1alpha2.TFReplicaTypeChief {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -62,7 +62,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 				now := metav1.Now()
 				tfjob.Status.CompletionTime = &now
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -72,7 +72,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 			// Some workers or pss are failed , leave a failed condition.
 			if failed > 0 {
 				msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -85,7 +85,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 			// Some workers are still running, leave a running condition.
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -97,7 +97,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 				now := metav1.Now()
 				tfjob.Status.CompletionTime = &now
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -107,7 +107,7 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha
 			// Some workers or pss are failed , leave a failed condition.
 			if failed > 0 {
 				msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-				err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
@@ -126,7 +126,7 @@ func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
 }
 
 // updateTFJobConditions updates the conditions of the given tfjob.
-func (tc *TFJobController) updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
+func updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
 	return nil
