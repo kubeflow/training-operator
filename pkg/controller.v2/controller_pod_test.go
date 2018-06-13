@@ -168,3 +168,71 @@ func TestClusterSpec(t *testing.T) {
 		}
 	}
 }
+
+func TestRestartPolicy(t *testing.T) {
+	type tc struct {
+		tfJob                 *tfv1alpha2.TFJob
+		expectedRestartPolicy v1.RestartPolicy
+		expectedType          tfv1alpha2.TFReplicaType
+	}
+	testCase := []tc{
+		func() tc {
+			tfJob := newTFJob(1, 0)
+			specRestartPolicy := tfv1alpha2.RestartPolicyExitCode
+			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			return tc{
+				tfJob: tfJob,
+				expectedRestartPolicy: v1.RestartPolicyNever,
+				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
+			}
+		}(),
+		func() tc {
+			tfJob := newTFJob(1, 0)
+			specRestartPolicy := tfv1alpha2.RestartPolicyNever
+			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			return tc{
+				tfJob: tfJob,
+				expectedRestartPolicy: v1.RestartPolicyNever,
+				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
+			}
+		}(),
+		func() tc {
+			tfJob := newTFJob(1, 0)
+			specRestartPolicy := tfv1alpha2.RestartPolicyAlways
+			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			return tc{
+				tfJob: tfJob,
+				expectedRestartPolicy: v1.RestartPolicyAlways,
+				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
+			}
+		}(),
+		func() tc {
+			tfJob := newTFJob(1, 0)
+			specRestartPolicy := tfv1alpha2.RestartPolicyOnFailure
+			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			return tc{
+				tfJob: tfJob,
+				expectedRestartPolicy: v1.RestartPolicyOnFailure,
+				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
+			}
+		}(),
+		func() tc {
+			tfJob := newTFJob(1, 0)
+			specRestartPolicy := tfv1alpha2.RestartPolicy("")
+			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			return tc{
+				tfJob: tfJob,
+				expectedRestartPolicy: v1.RestartPolicyNever,
+				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
+			}
+		}(),
+	}
+	for _, c := range testCase {
+		spec := c.tfJob.Spec.TFReplicaSpecs[c.expectedType]
+		podTemplate := spec.Template
+		setRestartPolicy(&podTemplate, spec)
+		if podTemplate.Spec.RestartPolicy != c.expectedRestartPolicy {
+			t.Errorf("Expected %s, got %s", c.expectedRestartPolicy, podTemplate.Spec.RestartPolicy)
+		}
+	}
+}

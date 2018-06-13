@@ -164,14 +164,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		loggerForReplica(tfjob, rt).Warning(errMsg)
 		tc.recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
 	}
-	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
-		// Set default to Never.
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else {
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
-	}
+	setRestartPolicy(podTemplate, spec)
 
 	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
@@ -210,6 +203,17 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob
 		})
 	}
 	return nil
+}
+
+func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFReplicaSpec) {
+	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
+		// Set default to Never.
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else {
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+	}
 }
 
 // getPodsForTFJob returns the set of pods that this tfjob should manage.
