@@ -114,7 +114,7 @@ def wait_for_pods_to_be_in_phases(client,
                               phases)
     time.sleep(polling_interval.seconds)
 
-    return None
+  return None
 
 def wait_for_pods_to_be_deleted(client,
                                 namespace,
@@ -451,7 +451,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       uid = results.get("metadata", {}).get("uid")
       events = get_events(api_client, namespace, uid)
       for e in events:
-        logging.info("K8s event: %s", e.get("message"))
+        logging.info("K8s event: %s", e.message)
 
       # Print out the K8s events because it can be useful for debugging.
       for e in events:
