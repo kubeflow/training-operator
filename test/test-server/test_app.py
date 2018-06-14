@@ -30,7 +30,7 @@ def tf_config():
 @APP.route("/exit", methods=['GET'])
 def exitHandler():
   # Exit with the provided exit code
-  global exit_code
+  global exit_code # pylint: disable=global-statement
   exit_code = int(request.args.get('exitCode', 0))
   shutdown_server()
   return "Shutting down with exitCode {0}".format(exit_code)

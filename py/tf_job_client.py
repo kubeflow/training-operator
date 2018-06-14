@@ -109,7 +109,7 @@ def wait_for_phase(client,
                    polling_interval=datetime.timedelta(seconds=30),
                    status_callback=None):
   """Wait until the job enters one of the allowed phases.
-  
+
   This function only works with v1alpha1 jobs because phase isn't defined
   for v1alpha2 jobs.
 
