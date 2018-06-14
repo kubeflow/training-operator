@@ -83,6 +83,86 @@ func TestAddTFJob(t *testing.T) {
 	close(stopCh)
 }
 
+func TestCopyLabelsAndAnnotation(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	fakePodControl := &controller.FakePodControl{}
+	ctr.podControl = fakePodControl
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		ctr.Run(threadCount, stopCh)
+	}
+	go run(stopCh)
+
+	ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
+		return nil
+	}
+
+	tfJob := newTFJob(1, 0)
+	annotations := map[string]string{
+		"annotation1": "1",
+	}
+	labels := map[string]string{
+		"label1": "1",
+	}
+	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Labels = labels
+	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Annotations = annotations
+	unstructured, err := convertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+
+	_, err = ctr.syncTFJob(getKey(tfJob, t))
+	if err != nil {
+		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	}
+
+	if len(fakePodControl.Templates) != 1 {
+		t.Errorf("Expected to create 1 pod while got %d", len(fakePodControl.Templates))
+	}
+	actual := fakePodControl.Templates[0]
+	v, exist := actual.Labels["label1"]
+	if !exist {
+		t.Errorf("Labels does not exist")
+	}
+	if v != "1" {
+		t.Errorf("Labels value do not equal")
+	}
+
+	v, exist = actual.Annotations["annotation1"]
+	if !exist {
+		t.Errorf("Annotations does not exist")
+	}
+	if v != "1" {
+		t.Errorf("Annotations value does not equal")
+	}
+
+	close(stopCh)
+}
+
 func newTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := newTFJob(worker, ps)
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief] = &tfv1alpha2.TFReplicaSpec{
