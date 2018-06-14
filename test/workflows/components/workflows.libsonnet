@@ -2,6 +2,11 @@
   // TODO(https://github.com/ksonnet/ksonnet/issues/222): Taking namespace as an argument is a work around for the fact that ksonnet
   // doesn't support automatically piping in the namespace from the environment to prototypes.
 
+  // TODO(jlewi): We should refactor the test_runner step so that we don't have to get K8s credentials
+  // on each individual step. Instead we should do what we do in our kubeflow/kubeflow tests
+  // and have a separate step that modifies .kubeconfig and then on subsequent steps
+  // just set the environment variable KUBE_CONFIG.
+
   // convert a list of two items into a map representing an environment variable
   // TODO(jlewi): Should we move this into kubeflow/core/util.libsonnet
   listToMap:: function(v)
@@ -59,15 +64,18 @@
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = if  std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
+      local versionTag = if std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
         params.versionTag
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
-      local apiVersion =  if params.tfJobVersion == "v1alpha1" then
+      local apiVersion = if params.tfJobVersion == "v1alpha1" then
         "kubeflow.org/v1alpha1"
-        else
+      else
         "kubeflow.org/v1alpha2";
+
+      // The test server image to use.
+      local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
@@ -200,8 +208,8 @@
                     template: "py-lint",
                   },
                 ],
-                [ // TODO(jlewi): We could probably run build and
-                  // setup-cluster in parallel. We just need 
+                [  // TODO(jlewi): We could probably run build and
+                  // setup-cluster in parallel. We just need
                   // be sure to wait long enough for the deployment for
                   // the TFJob operator image to be created since
                   // that will block the deployment from starting.
@@ -214,6 +222,14 @@
                   {
                     name: "run-tests",
                     template: "run-tests",
+                  },
+                  {
+                    name: "run-worker0",
+                    template: "run-worker0",
+                  },
+                  {
+                    name: "run-chief",
+                    template: "run-chief",
                   },
                   {
                     name: "run-gpu-tests",
@@ -294,6 +310,40 @@
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-chief", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=master_is_chief_v1alpha2"
+              else
+                "--component=master_is_chief_v1alpha1",
+              "--shutdown_policy=master",
+              "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
+              "--junit_path=" + artifactsDir + "/junit_chief.xml",
+            ]),  // run worker0
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-worker0", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=worker0_is_chief_v1alpha2"
+              else
+                "--component=worker0_is_chief_v1alpha1",
+              "--shutdown_policy=worker",
+              "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
+              "--junit_path=" + artifactsDir + "/junit_worker0.xml",
+            ]),  // run worker0
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",
@@ -318,7 +368,7 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
-              "--params=name=gpu-tfjob-"+params.tfJobVersion + ",namespace=default",
+              "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
