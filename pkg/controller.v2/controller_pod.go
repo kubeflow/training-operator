@@ -35,7 +35,12 @@ import (
 )
 
 const (
+	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
+
+	// podTemplateRestartPolicyReason is the warning reason when the restart
+	// policy is setted in pod template.
+	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -152,14 +157,14 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		return err
 	}
 
-	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
-		// Set default to Never.
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else {
-		podTemplate.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+	// Submit a warning event if the user specifies restart policy for
+	// the pod template. We recommend to set it from the replica level.
+	if podTemplate.Spec.RestartPolicy != v1.RestartPolicy("") {
+		errMsg := "Restart policy in pod template will be overwritten by restart policy in replica spec"
+		loggerForReplica(tfjob, rt).Warning(errMsg)
+		tc.recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
 	}
+	setRestartPolicy(podTemplate, spec)
 
 	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
@@ -198,6 +203,17 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob
 		})
 	}
 	return nil
+}
+
+func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFReplicaSpec) {
+	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
+		// Set default to Never.
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else {
+		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
+	}
 }
 
 // getPodsForTFJob returns the set of pods that this tfjob should manage.
