@@ -3,7 +3,11 @@ local params = std.extVar("__ksonnet/params").components.worker0_is_chief_v1alph
 
 local k = import "k.libsonnet";
 
-local actualImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest";
+local actualImage = if std.objectHas(params, "image") && std.length(params.image) > 0 then
+  params.image
+else
+  "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest";
+
 local name = params.name;
 local namespace = env.namespace;
 

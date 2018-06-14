@@ -64,15 +64,18 @@
       local nfsVolumeClaim = "nfs-external";
       // The name to use for the volume to use to contain test data.
       local dataVolume = "kubeflow-test-volume";
-      local versionTag = if  std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
+      local versionTag = if std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
         params.versionTag
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
-      local apiVersion =  if params.tfJobVersion == "v1alpha1" then
+      local apiVersion = if params.tfJobVersion == "v1alpha1" then
         "kubeflow.org/v1alpha1"
-        else
+      else
         "kubeflow.org/v1alpha2";
+
+      // The test server image to use.
+      local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
@@ -205,8 +208,8 @@
                     template: "py-lint",
                   },
                 ],
-                [ // TODO(jlewi): We could probably run build and
-                  // setup-cluster in parallel. We just need 
+                [  // TODO(jlewi): We could probably run build and
+                  // setup-cluster in parallel. We just need
                   // be sure to wait long enough for the deployment for
                   // the TFJob operator image to be created since
                   // that will block the deployment from starting.
@@ -317,11 +320,11 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               if params.tfJobVersion == "v1alpha2" then
-              "--component=master_is_chief_v1alpha2"
+                "--component=master_is_chief_v1alpha2"
               else
-              "--component=master_is_chief_v1alpha1",
+                "--component=master_is_chief_v1alpha1",
               "--shutdown_policy=master",
-              "--params=name=master-is-chief,namespace=default",
+              "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-worker0", [
@@ -334,11 +337,11 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               if params.tfJobVersion == "v1alpha2" then
-              "--component=worker0_is_chief_v1alpha2"
+                "--component=worker0_is_chief_v1alpha2"
               else
-              "--component=worker0_is_chief_v1alpha1",
+                "--component=worker0_is_chief_v1alpha1",
               "--shutdown_policy=worker",
-              "--params=name=worker0-is-chief,namespace=default",
+              "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
@@ -365,7 +368,7 @@
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
               "--component=gpu_tfjob",
-              "--params=name=gpu-tfjob-"+params.tfJobVersion + ",namespace=default",
+              "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests

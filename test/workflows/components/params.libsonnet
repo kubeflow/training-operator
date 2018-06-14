@@ -19,6 +19,7 @@
       name: 'master-is-chief-v1alpha2',
     },
     worker0_is_chief_v1alpha1: {
+      image: 'gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291',
       name: 'worker0-is-chief-v1alpha1',
     },
     worker0_is_chief_v1alpha2: {

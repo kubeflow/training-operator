@@ -135,9 +135,7 @@ def wait_for_phase(client,
     # Try to get the result but timeout.
     results = None
     try:
-      logging.info("DO NOT SUBMIT issuing request to get status")
       results = thread.get(TIMEOUT)
-      logging.info("DO NOT SUBMIT got results %s", results)
     except multiprocessing.TimeoutError:
       logging.error("Timeout trying to get TFJob.")
 
@@ -149,8 +147,7 @@ def wait_for_phase(client,
       phase = results.get("status", {}).get("phase", "")
       if phase in phases:
         return results
-      
-      logging.info("Phase %s is not in %s", phase, phases)
+
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
         "Timeout waiting for job {0} in namespace {1} to enter one of the "

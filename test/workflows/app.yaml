@@ -36,6 +36,24 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-0dd9
+  test-env-2aa2:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-2aa2
+  test-env-3cdb:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-3cdb
+  test-env-403b:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-403b
   test-env-4e03:
     destination:
       namespace: kubeflow
@@ -60,12 +78,24 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-6b05
+  test-env-37df:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-37df
   test-env-74a9:
     destination:
       namespace: kubeflow
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-74a9
+  test-env-77ab:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-77ab
   test-env-7f4c:
     destination:
       namespace: kubeflow
@@ -90,6 +120,12 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-0480
+  test-env-8101:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-8101
   test-env-8709:
     destination:
       namespace: kubeflow
@@ -126,6 +162,18 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-b721
+  test-env-bd33:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-bd33
+  test-env-c807:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-c807
   test-env-caaf:
     destination:
       namespace: kubeflow
@@ -144,6 +192,18 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-d378
+  test-env-dc48:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-dc48
+  test-env-fb3f:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-fb3f
 kind: ksonnet.io/app
 name: worfklows-app
 registries:

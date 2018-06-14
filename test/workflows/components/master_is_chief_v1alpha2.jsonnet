@@ -6,12 +6,17 @@ local k = import "k.libsonnet";
 local name = params.name;
 local namespace = env.namespace;
 
+local actualImage = if std.objectHas(params, "image") && std.length(params.image) > 0 then
+  params.image
+else
+  "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest";
+
 local podTemplate = {
   spec: {
     containers: [
       {
         name: "tensorflow",
-        image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest",
+        image: actualImage,
       },
     ],
   },

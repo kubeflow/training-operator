@@ -213,7 +213,7 @@ def parse_events(events):
 
   return pods, services
 
-@retrying.retry
+@retrying.retry(stop_max_attempt_number=3)
 def terminateReplica(masterHost, namespace, target, exitCode=0):
   """Issue a request to terminate the requested TF replica running test_app.
 
@@ -242,7 +242,7 @@ def terminateReplica(masterHost, namespace, target, exitCode=0):
     logging.info("Request to %s returned 404", url)
     return
   if r.status_code != requests.codes.OK:
-    msg = "Request to terminate pod exited with status code: {0}".format(
+    msg = "Request to {0} exited with status code: {1}".format(url,
           r.status_code)
     logging.error(msg)
     raise RuntimeError(msg)
@@ -333,6 +333,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         raise NotImplementedError("Need to implement logic to wait for "
                                   "v1alpha2 job to start or finish")
 
+      logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
+
       # The job is now either running or done.
       if args.shutdown_policy:
         logging.info("Enforcing shutdownPolicy %s", args.shutdown_policy)
@@ -380,6 +382,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       uid = results.get("metadata", {}).get("uid")
       events = get_events(api_client, namespace, uid)
+      logging.info("Recieved the following K8s events for job %s", name)
+
+      # Print out the K8s events because it can be useful for debugging.
+      for e in events:
+        logging.info("Recieved K8s Event:\n%s", e)
       created_pods, created_services = parse_events(events)
 
       num_expected = 0
