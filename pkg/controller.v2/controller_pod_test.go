@@ -25,6 +25,7 @@ import (
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
@@ -65,7 +66,7 @@ func TestAddPod(t *testing.T) {
 	}
 
 	tfJob := testutil.NewTFJob(1, 0)
-	unstructured, err := convertTFJobToUnstructured(tfJob)
+	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -224,7 +225,7 @@ func TestExitCode(t *testing.T) {
 
 	tfJob := testutil.NewTFJob(1, 0)
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = tfv1alpha2.RestartPolicyExitCode
-	unstructured, err := convertTFJobToUnstructured(tfJob)
+	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}

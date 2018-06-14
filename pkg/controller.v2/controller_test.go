@@ -28,6 +28,7 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
@@ -226,7 +227,7 @@ func TestNormalPath(t *testing.T) {
 
 		// Run the test logic.
 		tfJob := testutil.NewTFJob(tc.worker, tc.ps)
-		unstructured, err := convertTFJobToUnstructured(tfJob)
+		unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}

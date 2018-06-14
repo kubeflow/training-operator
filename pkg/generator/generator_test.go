@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 func TestGenOwnerReference(t *testing.T) {
@@ -55,8 +56,8 @@ func TestGenLabels(t *testing.T) {
 	if labels[labelTFJobKey] != expctedKey {
 		t.Errorf("Expected %s %s, got %s", labelTFJobKey, expctedKey, labels[labelTFJobKey])
 	}
-	if labels[labelGroupName] != tfv1alpha2.GroupName {
-		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1alpha2.GroupName, labels[labelGroupName])
+	if labels[LabelGroupName] != tfv1alpha2.GroupName {
+		t.Errorf("Expected %s %s, got %s", LabelGroupName, tfv1alpha2.GroupName, labels[LabelGroupName])
 	}
 }
 

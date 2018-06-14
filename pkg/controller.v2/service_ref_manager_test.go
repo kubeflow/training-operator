@@ -47,7 +47,7 @@ func TestClaimServices(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 			}
 			testService := testutil.NewBaseService("service2", tfJob, nil)
-			testService.Labels[labelGroupName] = "testing"
+			testService.Labels[generator.LabelGroupName] = "testing"
 
 			return test{
 				name: "Claim services with correct label",
@@ -142,7 +142,7 @@ func TestClaimServices(t *testing.T) {
 			}
 			controller.UID = types.UID(controllerUID)
 			testService2 := testutil.NewBaseService("service2", controller, t)
-			testService2.Labels[labelGroupName] = "testing"
+			testService2.Labels[generator.LabelGroupName] = "testing"
 			return test{
 				name: "Controller releases claimed services when selector doesn't match",
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
@@ -165,7 +165,7 @@ func TestClaimServices(t *testing.T) {
 			controller.UID = types.UID(controllerUID)
 			testService1 := testutil.NewBaseService("service1", controller, t)
 			testService2 := testutil.NewBaseService("service2", controller, t)
-			testService2.Labels[labelGroupName] = "testing"
+			testService2.Labels[generator.LabelGroupName] = "testing"
 			now := metav1.Now()
 			testService1.DeletionTimestamp = &now
 			testService2.DeletionTimestamp = &now
