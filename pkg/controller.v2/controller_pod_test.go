@@ -236,3 +236,78 @@ func TestRestartPolicy(t *testing.T) {
 		}
 	}
 }
+
+func TestExitCode(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	fakePodControl := &controller.FakePodControl{}
+	ctr.podControl = fakePodControl
+	ctr.tfJobInformerSynced = alwaysReady
+	ctr.podInformerSynced = alwaysReady
+	ctr.serviceInformerSynced = alwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		ctr.Run(threadCount, stopCh)
+	}
+	go run(stopCh)
+
+	ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
+		return nil
+	}
+
+	tfJob := newTFJob(1, 0)
+	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = tfv1alpha2.RestartPolicyExitCode
+	unstructured, err := convertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+	pod := newPod(tfJob, labelWorker, 0, t)
+	pod.Status.Phase = v1.PodFailed
+	pod.Spec.Containers = append(pod.Spec.Containers, v1.Container{})
+	pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, v1.ContainerStatus{
+		Name: tfv1alpha2.DefaultContainerName,
+		State: v1.ContainerState{
+			Terminated: &v1.ContainerStateTerminated{
+				ExitCode: 130,
+			},
+		},
+	})
+
+	podIndexer.Add(pod)
+	_, err = ctr.syncTFJob(getKey(tfJob, t))
+	if err != nil {
+		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	}
+
+	found := false
+	for _, deletedPodName := range fakePodControl.DeletePodName {
+		if deletedPodName == pod.Name {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Failed to delete pod %s", pod.Name)
+	}
+	close(stopCh)
+}
