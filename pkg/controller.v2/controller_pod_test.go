@@ -145,15 +145,15 @@ func TestClusterSpec(t *testing.T) {
 			tfJob: newTFJob(1, 0),
 			rt:    "worker",
 			index: "0",
-			expectedClusterSpec: `{"cluster":{"worker":["default-` + testTFJobName +
+			expectedClusterSpec: `{"cluster":{"worker":["` + testTFJobName +
 				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
 		},
 		tc{
 			tfJob: newTFJob(1, 1),
 			rt:    "worker",
 			index: "0",
-			expectedClusterSpec: `{"cluster":{"ps":["default-` + testTFJobName +
-				`-ps-0.default.svc.cluster.local:2222"],"worker":["default-` + testTFJobName +
+			expectedClusterSpec: `{"cluster":{"ps":["` + testTFJobName +
+				`-ps-0.default.svc.cluster.local:2222"],"worker":["` + testTFJobName +
 				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
 		},
 	}

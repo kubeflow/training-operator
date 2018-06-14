@@ -129,7 +129,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 		},
 	}
 
-	service.Name = genGeneralName(tfjobKey, rt, index)
+	service.Name = genGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
 	err = tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
