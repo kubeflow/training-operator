@@ -57,13 +57,13 @@ func genLabels(tfjobKey string) map[string]string {
 	}
 }
 
-func genGeneralName(tfjobKey, rtype, index string) string {
-	n := tfjobKey + "-" + rtype + "-" + index
+func genGeneralName(tfJobName, rtype, index string) string {
+	n := tfJobName + "-" + rtype + "-" + index
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func genDNSRecord(tfjobKey, rtype, index, namespace string) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", genGeneralName(tfjobKey, rtype, index), namespace)
+func genDNSRecord(tfJobName, rtype, index, namespace string) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", genGeneralName(tfJobName, rtype, index), namespace)
 }
 
 // convertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
