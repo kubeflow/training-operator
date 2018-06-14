@@ -1,16 +1,17 @@
 # This file configures the workflows to trigger in our Prow jobs.
 # see kubeflow/testing/py/run_e2e_workflow.py
+#
+# The testWorkerImage should be the same for all workflows.
 workflows:
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
-    name: tfjob-e2e
+    name: v1
     params:
       tfJobVersion: v1alpha1
-  # TODO*https://github.com/kubeflow/tf-operator/issues/634)
-  # Enable the v1alpha2 once the job successfully completes
-  # when master completes.
-  #- app_dir: kubeflow/tf-operator/test/workflows
-  #  component: workflows
-  #  name: tfjob-e2e-v1alpha2
-  #  params:
-  #    tfJobVersion: v1alpha2
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4
+  - app_dir: kubeflow/tf-operator/test/workflows
+    component: workflows
+    name: v2
+    params:
+      tfJobVersion: v1alpha2
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4

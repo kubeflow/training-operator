@@ -58,7 +58,13 @@
       local srcRootDir = testDir + "/src";
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
-      local image = "gcr.io/kubeflow-ci/test-worker";
+      // The image should generally be overwritten in the prow_config.yaml file. This makes it easier
+      // to ensure a consistent image is used for all workflows.
+      local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
+        params.testWorkerImage
+        else
+        "gcr.io/kubeflow-ci/test-worker";
+
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
@@ -79,6 +85,7 @@
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
+
       // The directory within the kubeflow_testing submodule containing
       // py scripts to use.
       local k8sPy = srcDir;
@@ -185,58 +192,68 @@
           templates: [
             {
               name: "e2e",
-              steps: [
-                [{
-                  name: "checkout",
-                  template: "checkout",
-                }],
-                [
+              dag: {
+                tasks: [
+                  {
+                    name: "checkout",
+                    template: "checkout",
+                  },
+
                   {
                     name: "build",
                     template: "build",
+                    dependencies: ["checkout"],
                   },
                   {
                     name: "create-pr-symlink",
                     template: "create-pr-symlink",
+                    dependencies: ["checkout"],
                   },
                   {
                     name: "py-test",
                     template: "py-test",
+                    dependencies: ["checkout"],
                   },
                   {
                     name: "py-lint",
                     template: "py-lint",
+                    dependencies: ["checkout"],
                   },
-                ],
-                [  // TODO(jlewi): We could probably run build and
-                  // setup-cluster in parallel. We just need
-                  // be sure to wait long enough for the deployment for
-                  // the TFJob operator image to be created since
-                  // that will block the deployment from starting.
+
                   {
                     name: "setup-cluster",
                     template: "setup-cluster",
+                    dependencies: ["checkout"],
                   },
-                ],
-                [
+
+
+                  {
+                    name: "setup-kubeflow",
+                    template: "setup-kubeflow",
+                    dependencies: ["setup-cluster", "build"],
+                  },
                   {
                     name: "run-tests",
                     template: "run-tests",
+                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "run-worker0",
                     template: "run-worker0",
+                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "run-chief",
                     template: "run-chief",
+                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "run-gpu-tests",
                     template: "run-gpu-tests",
+                    dependencies: ["setup-kubeflow"],
                   },
-                ],
-              ],
+                ],  //tasks
+              },
             },
             {
               name: "exit-handler",
@@ -299,16 +316,27 @@
               "python",
               "-m",
               "py.deploy",
-              "setup",
+              "setup_cluster",
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
               "--namespace=" + deployNamespace,
+              "--accelerator=nvidia-tesla-k80=1",
+              "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
+            ]),  // setup cluster
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-kubeflow", [
+              "python",
+              "-m",
+              "py.deploy",
+              "setup_kubeflow",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--namespace=" + deployNamespace,
+              "--test_app_dir=" + srcDir + "/test/test-app",
               "--image=" + tfJobImage,
               "--tf_job_version=" + params.tfJobVersion,
-              "--accelerator=nvidia-tesla-k80=1",
-              "--test_app_dir=" + srcDir + "/test/test-app",
-              "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
+              "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
             ]),  // setup cluster
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-chief", [
               "python",

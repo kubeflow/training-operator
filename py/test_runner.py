@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import filelock
 import httplib
 import logging
 import json
@@ -164,6 +165,20 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
     labels["task_index"] = replica_index
   return labels
 
+def get_labels_v1alpha2(namespace, name, replica_type=None,
+                        replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "group_name": "kubeflow.org",
+    "tf_job_key": "{0}-{1}".format(namespace, name),
+  }
+  if replica_type:
+    labels["tf-replica-type"] = replica_type
+
+  if replica_index:
+    labels["tf-replica-index"] = replica_index
+  return labels
 
 def to_selector(labels):
   parts = []
@@ -302,7 +317,59 @@ def terminateReplica(masterHost, namespace, target, exitCode=0):
 
   logging.info("URL %s returned; %s", url, r.content)
 
-@retrying.retry
+def _setup_ks_app(args):
+  """Setup the ksonnet app"""
+  salt = uuid.uuid4().hex[0:4]
+
+  lock_file = os.path.join(args.app_dir, "app.lock")
+  logging.info("Acquiring lock on file: %s", lock_file)
+  lock = filelock.FileLock(lock_file, timeout=60)
+  with lock:
+    # Create a new environment for this run
+    if args.environment:
+      env = args.environment
+    else:
+      env = "test-env-{0}".format(salt)
+
+    name = None
+    namespace = None
+    for pair in args.params.split(","):
+      k, v = pair.split("=", 1)
+      if k == "name":
+        name = v
+
+      if k == "namespace":
+        namespace = v
+
+    if not name:
+      raise ValueError("name must be provided as a parameter.")
+
+    if not namespace:
+      raise ValueError("namespace must be provided as a parameter.")
+
+    try:
+      util.run(["ks", "env", "add", env, "--namespace=" + namespace],
+                cwd=args.app_dir)
+    except subprocess.CalledProcessError as e:
+      if not re.search(".*environment.*already exists.*", e.output):
+        raise
+
+    for pair in args.params.split(","):
+      k, v = pair.split("=", 1)
+      util.run(
+        ["ks", "param", "set", "--env=" + env, args.component, k, v],
+        cwd=args.app_dir)
+
+    return namespace, name, env
+
+  return "", "", ""
+
+# One of the reasons we set so many retries and a random amount of wait
+# between retries is because we have multiple tests running in parallel
+# that are all modifying the same ksonnet app via ks. I think this can
+# lead to failures.
+@retrying.retry(stop_max_attempt_number=10, wait_random_min=1000,
+                wait_random_max=10000)
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -323,45 +390,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   api_client = k8s_client.ApiClient()
   masterHost = api_client.configuration.host
-  salt = uuid.uuid4().hex[0:4]
-
-  # Create a new environment for this run
-  env = "test-env-{0}".format(salt)
-
-  name = None
-  namespace = None
-  for pair in args.params.split(","):
-    k, v = pair.split("=", 1)
-    if k == "name":
-      name = v
-
-    if k == "namespace":
-      namespace = v
-
-  if not name:
-    raise ValueError("name must be provided as a parameter.")
-
-  if not namespace:
-    raise ValueError("namespace must be provided as a parameter.")
-
-  try:
-    util.run(["ks", "env", "add", env, "--namespace=" + namespace],
-             cwd=args.app_dir)
-  except subprocess.CalledProcessError as e:
-    if not re.search(".*environment.*already exists.*", e.output):
-      raise
-
-  for pair in args.params.split(","):
-    k, v = pair.split("=", 1)
-    util.run(
-      ["ks", "param", "set", "--env=" + env, args.component, k, v],
-      cwd=args.app_dir)
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
+  namespace, name, env = _setup_ks_app(args)
   t.name = os.path.basename(name)
 
   start = time.time()
+
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
@@ -383,8 +419,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           api_client, namespace, name, ["Running", "Done", "Failed"],
           status_callback=tf_job_client.log_status)
       else:
-        raise NotImplementedError("Need to implement logic to wait for "
-                                  "v1alpha2 job to start or finish")
+        results = tf_job_client.wait_for_condition(
+          api_client, namespace, name, ["Running", "Succeeded", "Failed"],
+          status_callback=tf_job_client.log_status)
 
       logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
@@ -410,7 +447,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           pod_selector = to_selector(pod_labels)
         else:
           target = "{name}-{replica}-0".format(name=name, replica=replica)
-          raise NotImplementedError("Need to set pod selector for v1alpha2.")
+          pod_labels = get_labels(namespace, name)
+          pod_selector = to_selector(pod_labels)
 
         # Wait for the pods to be ready before we shutdown
         # TODO(jlewi): We are get pods using a label selector so there is
@@ -427,7 +465,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
-        api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
+        api_client, namespace, name, args.tfjob_version,
+        status_callback=tf_job_client.log_status)
 
       if args.tfjob_version == "v1alpha1":
         if results.get("status", {}).get("state", {}).lower() != "succeeded":
@@ -577,6 +616,12 @@ def add_common_args(parser):
     type=str,
     help="The TFJob version to use.")
 
+  parser.add_argument(
+    "--environment",
+    default=None,
+    type=str,
+    help="(Optional) the name for the ksonnet environment; if not specified "
+         "a random one is created.")
 
 def build_parser():
   # create the top-level parser
