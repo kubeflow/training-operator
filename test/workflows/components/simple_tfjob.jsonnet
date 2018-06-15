@@ -7,8 +7,8 @@ local parts(namespace, name, image) = {
   local actualImage = if image != "" then
     image
   else defaultTestImage,
-  job:: {
-    apiVersion: params.apiVersion,
+  job:: if params.apiVersion == "kubeflow.org/v1alpha1" then {
+    apiVersion: "kubeflow.org/v1alpha1",
     kind: "TFJob",
     metadata: {
       name: name,
@@ -62,6 +62,59 @@ local parts(namespace, name, image) = {
           tfReplicaType: "PS",
         },
       ],
+    },
+  } else {
+    apiVersion: "kubeflow.org/v1alpha2",
+    kind: "TFJob",
+    metadata: {
+      name: name,
+      namespace: namespace,
+    },
+    spec: {
+      tfReplicaSpecs: {
+        Master: {
+          replicas: 1,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: actualImage,
+                },
+              ],
+            },
+          },
+        },
+        PS: {
+          replicas: 2,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: actualImage,
+                },
+              ],
+            },
+          },
+        },
+        Worker: {
+          replicas: 4,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: actualImage,
+                },
+              ],
+            },
+          },
+        },
+      },
     },
   },
 };

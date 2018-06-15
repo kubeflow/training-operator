@@ -68,7 +68,7 @@ type TFReplicaSpec struct {
 
 	// Restart policy for all TFReplicas within the TFJob.
 	// One of Always, OnFailure, Never and ExitCode.
-	// Default to Always.
+	// Default to Never.
 	RestartPolicy RestartPolicy `json:"restartPolicy,omitempty"`
 }
 
@@ -108,7 +108,7 @@ const (
 	TFReplicaTypeChief TFReplicaType = "Chief"
 
 	// TFReplicaTypeEval is the type for evaluation replica in TensorFlow.
-	TFReplicaTypeEval TFReplicaType = "Eval"
+	TFReplicaTypeEval TFReplicaType = "Evaluator"
 )
 
 // TFJobStatus represents the current observed state of the TFJob.

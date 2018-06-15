@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
@@ -87,15 +85,14 @@ func genTFConfigJSONStr(tfjob *tfv1alpha2.TFJob, rtype, index string) (string, e
 
 // genClusterSpec will generate ClusterSpec.
 func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil, err
-	}
-
 	clusterSpec := make(ClusterSpec)
 
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
+		if rtype == tfv1alpha2.TFReplicaTypeEval {
+			// https://www.tensorflow.org/api_docs/python/tf/estimator/RunConfig
+			// evaluator is not part of training cluster
+			continue
+		}
 		rt := strings.ToLower(string(rtype))
 		replicaNames := make([]string, 0, *spec.Replicas)
 
@@ -104,7 +101,7 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := fmt.Sprintf("%s:%d", genDNSRecord(tfjobKey, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
+			host := fmt.Sprintf("%s:%d", genDNSRecord(tfjob.Name, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
 			replicaNames = append(replicaNames, host)
 		}
 

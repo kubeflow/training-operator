@@ -12,14 +12,13 @@ from kubernetes.client.rest import ApiException
 from py import util
 
 TF_JOB_GROUP = "kubeflow.org"
-TF_JOB_VERSION = "v1alpha1"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
 
-def create_tf_job(client, spec):
+def create_tf_job(client, spec, version="v1alpha1"):
   """Create a TFJob.
 
   Args:
@@ -31,7 +30,7 @@ def create_tf_job(client, spec):
     # Create a Resource
     namespace = spec["metadata"].get("namespace", "default")
     thread = crd_api.create_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, spec, async=True)
+      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, spec, async=True)
     api_response = thread.get(TIMEOUT)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
@@ -56,7 +55,7 @@ def create_tf_job(client, spec):
     raise e
 
 
-def delete_tf_job(client, namespace, name):
+def delete_tf_job(client, namespace, name, version="v1alpha1"):
   crd_api = k8s_client.CustomObjectsApi(client)
   try:
     body = {
@@ -66,7 +65,7 @@ def delete_tf_job(client, namespace, name):
     }
     logging.info("Deleting job %s.%s", namespace, name)
     thread = crd_api.delete_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, body,
+      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, body,
       async=True)
     api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
@@ -102,9 +101,69 @@ def log_status(tf_job):
                tf_job.get("status", {}).get("state"))
 
 
+def wait_for_phase(client,
+                   namespace,
+                   name,
+                   phases,
+                   timeout=datetime.timedelta(minutes=10),
+                   polling_interval=datetime.timedelta(seconds=30),
+                   status_callback=None):
+  """Wait until the job enters one of the allowed phases.
+
+  This function only works with v1alpha1 jobs because phase isn't defined
+  for v1alpha2 jobs.
+
+  Args:
+    client: K8s api client.
+    namespace: namespace for the job.
+    name: Name of the job.
+    timeout: How long to wait for the job.
+    polling_interval: How often to poll for the status of the job.
+    status_callback: (Optional): Callable. If supplied this callable is
+      invoked after we poll the job. Callable takes a single argument which
+      is the job.
+  """
+  crd_api = k8s_client.CustomObjectsApi(client)
+  end_time = datetime.datetime.now() + timeout
+  version = "v1alpha1"
+  while True:
+    # By setting async=True ApiClient returns multiprocessing.pool.AsyncResult
+    # If we don't set async=True then it could potentially block forever.
+    thread = crd_api.get_namespaced_custom_object(
+      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async=True)
+
+    # Try to get the result but timeout.
+    results = None
+    try:
+      results = thread.get(TIMEOUT)
+    except multiprocessing.TimeoutError:
+      logging.error("Timeout trying to get TFJob.")
+
+    if results:
+      if status_callback:
+        status_callback(results)
+
+      # If we poll the CRD quick enough status won't have been set yet.
+      phase = results.get("status", {}).get("phase", "")
+      if phase in phases:
+        return results
+
+    if datetime.datetime.now() + polling_interval > end_time:
+      raise util.TimeoutError(
+        "Timeout waiting for job {0} in namespace {1} to enter one of the "
+        "phases {2}.".format(
+          name, namespace, phases))
+
+    time.sleep(polling_interval.seconds)
+
+  # Linter complains if we don't have a return statement even though
+  # this code is unreachable.
+  return None
+
 def wait_for_job(client,
                  namespace,
                  name,
+                 version="v1alpha1",
                  timeout=datetime.timedelta(minutes=10),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
@@ -126,7 +185,7 @@ def wait_for_job(client,
     # By setting async=True ApiClient returns multiprocessing.pool.AsyncResult
     # If we don't set async=True then it could potentially block forever.
     thread = crd_api.get_namespaced_custom_object(
-      TF_JOB_GROUP, TF_JOB_VERSION, namespace, TF_JOB_PLURAL, name, async=True)
+      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async=True)
 
     # Try to get the result but timeout.
     results = None
@@ -140,8 +199,13 @@ def wait_for_job(client,
         status_callback(results)
 
       # If we poll the CRD quick enough status won't have been set yet.
-      if results.get("status", {}).get("phase", {}) == "Done":
-        return results
+      if version == "v1alpha1":
+        if results.get("status", {}).get("phase", {}) == "Done":
+          return results
+      else:
+        # For v1alpha2 check for non-empty completionTime
+        if results.get("status", {}).get("completionTime", ""):
+          return results
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(

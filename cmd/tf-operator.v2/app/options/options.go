@@ -39,7 +39,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 		`The url of the Kubernetes API server,
 		 will overrides any value in kubeconfig, only required if out-of-cluster.`)
 
-	fs.IntVar(&s.Threadiness, "threadiness", 2,
+	fs.IntVar(&s.Threadiness, "threadiness", 1,
 		`How many threads to process the main logic`)
 
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")

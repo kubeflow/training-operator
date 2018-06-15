@@ -1,6 +1,7 @@
 # pkg and bin directories currently contain build artifacts
 # only so we exclude them.
 bin/
+/tf-operator
 
 node_modules/
 dashboard/frontend/build

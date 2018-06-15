@@ -22,6 +22,9 @@ import (
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator/app"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator/app/options"
+
+	_ "k8s.io/kubernetes/pkg/util/reflector/prometheus" // for reflector metric registration
+	_ "k8s.io/kubernetes/pkg/util/workqueue/prometheus" // for workqueue metric registration
 )
 
 func init() {

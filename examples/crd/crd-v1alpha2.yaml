@@ -5,6 +5,7 @@ metadata:
 spec:
   group: kubeflow.org
   version: v1alpha2
+  scope: Namespaced
   names:
     kind: TFJob
     singular: tfjob

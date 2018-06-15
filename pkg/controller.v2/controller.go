@@ -171,7 +171,7 @@ func NewTFJobController(
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClientSet.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
-	realPodControl := controller.RealPodControl{
+	realPodControl := RealPodControl{
 		KubeClient: kubeClientSet,
 		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
 	}
