@@ -28,6 +28,7 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
@@ -53,7 +54,7 @@ func newTFJobController(
 
 	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
 	ctr.podControl = &controller.FakePodControl{}
-	ctr.serviceControl = &FakeServiceControl{}
+	ctr.serviceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
 }
 
@@ -260,7 +261,7 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		fakePodControl := ctr.podControl.(*controller.FakePodControl)
-		fakeServiceControl := ctr.serviceControl.(*FakeServiceControl)
+		fakeServiceControl := ctr.serviceControl.(*control.FakeServiceControl)
 		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
 			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
 		}
