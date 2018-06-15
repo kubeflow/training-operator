@@ -148,8 +148,6 @@ def setup_cluster(args):
   try:
     start = time.time()
 
-    component = "core"
-
     account = util.run_and_output(
       ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
     logging.info("Using GCP account %s", account)
@@ -185,8 +183,6 @@ def setup_kubeflow(args):
   Args:
     args: Command line arguments that control the setup process.
   """
-  gke = discovery.build("container", "v1")
-
   project = args.project
   cluster_name = args.cluster
   zone = args.zone
@@ -283,6 +279,8 @@ def main():  # pylint: disable=too-many-locals
 
   util.maybe_activate_service_account()
 
+  now = datetime.datetime.now()
+
   # create the top-level parser
   parser = argparse.ArgumentParser(description="Setup clusters for testing.")
   subparsers = parser.add_subparsers()
@@ -334,8 +332,6 @@ def main():  # pylint: disable=too-many-locals
     "--test_app_dir",
     help="The directory containing the ksonnet app used for testing.",
   )
-
-  now = datetime.datetime.now()
 
   #############################################################################
   # teardown
