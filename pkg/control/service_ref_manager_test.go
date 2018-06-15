@@ -42,7 +42,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			tfJob := testutil.NewTFJob(1, 0)
 			tfJobLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(tfJob, t)),
+				MatchLabels: generator.GenLabels(tfJob.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -64,7 +64,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -90,7 +90,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -114,7 +114,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -136,7 +136,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -158,7 +158,7 @@ func TestClaimServices(t *testing.T) {
 		func() test {
 			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: generator.GenLabels(testutil.GetKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
