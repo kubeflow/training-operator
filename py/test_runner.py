@@ -164,6 +164,20 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
     labels["task_index"] = replica_index
   return labels
 
+def get_labels_v1alpha2(namespace, name, replica_type=None,
+                        replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "group_name": "kubeflow.org",
+    "tf_job_key": "{0}-{1}".format(namepspace,name),
+  }
+  if replica_type:
+    labels["tf-replica-type"] = replica_type
+
+  if replica_index:
+    labels["tf-replica-index"] = replica_index
+  return labels
 
 def to_selector(labels):
   parts = []
@@ -386,8 +400,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           api_client, namespace, name, ["Running", "Done", "Failed"],
           status_callback=tf_job_client.log_status)
       else:
-        raise NotImplementedError("Need to implement logic to wait for "
-                                  "v1alpha2 job to start or finish")
+        results = tf_job_client.wait_for_condition(
+          api_client, namespace, name, ["Running", "Succeeded", "Failed"],
+          status_callback=tf_job_client.log_status)
 
       logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
@@ -413,7 +428,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           pod_selector = to_selector(pod_labels)
         else:
           target = "{name}-{replica}-0".format(name=name, replica=replica)
-          raise NotImplementedError("Need to set pod selector for v1alpha2.")
+          pod_labels = get_labels(namespace, name)
+          pod_selector = to_selector(pod_labels)
 
         # Wait for the pods to be ready before we shutdown
         # TODO(jlewi): We are get pods using a label selector so there is
@@ -430,7 +446,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
-        api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
+        api_client, namespace, name, args.tfjob_version,
+        status_callback=tf_job_client.log_status)
 
       if args.tfjob_version == "v1alpha1":
         if results.get("status", {}).get("state", {}).lower() != "succeeded":

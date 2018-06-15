@@ -93,12 +93,21 @@ def delete_tf_job(client, namespace, name, version="v1alpha1"):
 
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
-  logging.info("Job %s in namespace %s; uid=%s; phase=%s, state=%s,",
-               tf_job.get("metadata", {}).get("name"),
-               tf_job.get("metadata", {}).get("namespace"),
-               tf_job.get("metadata", {}).get("uid"),
-               tf_job.get("status", {}).get("phase"),
-               tf_job.get("status", {}).get("state"))
+  if tf_job.get("apiVersion", "") == "kubeflow.org/v1alpha2":
+    all_conditions = tf_job.get("status", {}).get("conditions", [])
+    conditions = [c.get("type", "") for c in all_conditions]
+    logging.info("Job %s in namespace %s; uid=%s; conditions=%s",
+                 tf_job.get("metadata", {}).get("name"),
+                 tf_job.get("metadata", {}).get("namespace"),
+                 tf_job.get("metadata", {}).get("uid"),
+                 conditions)
+  else:
+    logging.info("Job %s in namespace %s; uid=%s; phase=%s, state=%s,",
+                 tf_job.get("metadata", {}).get("name"),
+                 tf_job.get("metadata", {}).get("namespace"),
+                 tf_job.get("metadata", {}).get("uid"),
+                 tf_job.get("status", {}).get("phase"),
+                 tf_job.get("status", {}).get("state"))
 
 
 def wait_for_phase(client,
@@ -160,6 +169,68 @@ def wait_for_phase(client,
   # this code is unreachable.
   return None
 
+
+def wait_for_condition(client,
+                        namespace,
+                        name,
+                        expected_condition,
+                        timeout=datetime.timedelta(minutes=10),
+                        polling_interval=datetime.timedelta(seconds=30),
+                        status_callback=None):
+  """Waits until any of the specified conditions occur.
+
+  This function only works with v1alpha2 jobs.
+
+  Args:
+    client: K8s api client.
+    namespace: namespace for the job.
+    name: Name of the job.
+    expected_condition: A list of conditions. Function waits until any of the
+      supplied conditions is reached.
+    timeout: How long to wait for the job.
+    polling_interval: How often to poll for the status of the job.
+    status_callback: (Optional): Callable. If supplied this callable is
+      invoked after we poll the job. Callable takes a single argument which
+      is the job.
+  """
+  crd_api = k8s_client.CustomObjectsApi(client)
+  end_time = datetime.datetime.now() + timeout
+  version = "v1alpha2"
+  while True:
+    # By setting async=True ApiClient returns multiprocessing.pool.AsyncResult
+    # If we don't set async=True then it could potentially block forever.
+    thread = crd_api.get_namespaced_custom_object(
+      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async=True)
+
+    # Try to get the result but timeout.
+    results = None
+    try:
+      results = thread.get(TIMEOUT)
+    except multiprocessing.TimeoutError:
+      logging.error("Timeout trying to get TFJob.")
+
+    if results:
+      if status_callback:
+        status_callback(results)
+
+      # If we poll the CRD quick enough status won't have been set yet.
+      conditions = results.get("status", {}).get("conditions", [])
+      for c in conditions:
+        if c.get("type", "") in expected_condition:
+          return results
+
+    if datetime.datetime.now() + polling_interval > end_time:
+      raise util.TimeoutError(
+        "Timeout waiting for job {0} in namespace {1} to enter one of the "
+        "conditions {2}.".format(
+          name, namespace, conditions))
+
+    time.sleep(polling_interval.seconds)
+
+  # Linter complains if we don't have a return statement even though
+  # this code is unreachable.
+  return None
+
 def wait_for_job(client,
                  namespace,
                  name,
@@ -204,6 +275,8 @@ def wait_for_job(client,
           return results
       else:
         # For v1alpha2 check for non-empty completionTime
+        # TODO(jlewi): https://github.com/kubeflow/tf-operator/issues/673
+        # Once that issue is fixed we should be able to look at the condition.
         if results.get("status", {}).get("completionTime", ""):
           return results
 
