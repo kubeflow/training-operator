@@ -40,7 +40,7 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/controller.v2/control"
+	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
 const (
