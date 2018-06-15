@@ -245,7 +245,9 @@ func TestExitCode(t *testing.T) {
 		},
 	})
 
-	podIndexer.Add(pod)
+	if err := podIndexer.Add(pod); err != nil {
+		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+	}
 	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
 	if err != nil {
 		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)

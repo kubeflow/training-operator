@@ -70,18 +70,26 @@ func NewPodList(count int32, status v1.PodPhase, tfJob *tfv1alpha2.TFJob, typ st
 func SetPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
 	var index int32
 	for _, pod := range NewPodList(pendingPods, v1.PodPending, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
+		if err := podIndexer.Add(pod); err != nil {
+			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+		}
 	}
 	index += pendingPods
 	for _, pod := range NewPodList(activePods, v1.PodRunning, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
+		if err := podIndexer.Add(pod); err != nil {
+			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+		}
 	}
 	index += activePods
 	for _, pod := range NewPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
+		if err := podIndexer.Add(pod); err != nil {
+			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+		}
 	}
 	index += succeededPods
 	for _, pod := range NewPodList(failedPods, v1.PodFailed, tfJob, typ, index, t) {
-		podIndexer.Add(pod)
+		if err := podIndexer.Add(pod); err != nil {
+			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+		}
 	}
 }
