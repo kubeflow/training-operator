@@ -363,7 +363,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   try:
     util.run(["ks", "env", "add", env, "--namespace=" + namespace],
-             cwd=args.app_dir)
+              cwd=args.app_dir)
   except subprocess.CalledProcessError as e:
     if not re.search(".*environment.*already exists.*", e.output):
       raise

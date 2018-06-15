@@ -95,7 +95,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   util.run(apply_command, cwd=app_dir)
 
 
-def setup(args):
+def setup_cluster(args):
   """Setup a GKE cluster for TensorFlow jobs.
 
   Args:
@@ -148,6 +148,59 @@ def setup(args):
   try:
     start = time.time()
 
+    component = "core"
+
+    account = util.run_and_output(
+      ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
+    logging.info("Using GCP account %s", account)
+    util.run([
+      "kubectl", "create", "clusterrolebinding", "default-admin",
+      "--clusterrole=cluster-admin", "--user=" + account
+    ])
+
+    _setup_namespace(api_client, args.namespace)
+
+    # Setup GPUs.
+    util.setup_cluster(api_client)
+
+  # Reraise the exception so that the step fails because there's no point
+  # continuing the test.
+  except subprocess.CalledProcessError as e:
+    t.failure = "setup-cluster failed;\n" + (e.output or "")
+    raise
+  except util.TimeoutError as e:
+    t.failure = e.message
+    raise
+  finally:
+    t.time = time.time() - start
+    t.name = "setup-cluster"
+    t.class_name = "GKE"
+    gcs_client = storage.Client(project=args.project)
+    test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
+
+
+def setup_kubeflow(args):
+  """Setup Kubeflow.
+
+  Args:
+    args: Command line arguments that control the setup process.
+  """
+  gke = discovery.build("container", "v1")
+
+  project = args.project
+  cluster_name = args.cluster
+  zone = args.zone
+
+  util.configure_kubectl(project, zone, cluster_name)
+
+  util.load_kube_config()
+  # Create an API client object to talk to the K8s master.
+  api_client = k8s_client.ApiClient()
+
+  t = test_util.TestCase()
+  try:
+    start = time.time()
+
     params = {
       "tfJobImage": args.image,
       "name": "kubeflow-core",
@@ -160,16 +213,8 @@ def setup(args):
     account = util.run_and_output(
       ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
     logging.info("Using GCP account %s", account)
-    util.run([
-      "kubectl", "create", "clusterrolebinding", "default-admin",
-      "--clusterrole=cluster-admin", "--user=" + account
-    ])
 
-    _setup_namespace(api_client, args.namespace)
     ks_deploy(args.test_app_dir, component, params, account=account)
-
-    # Setup GPUs.
-    util.setup_cluster(api_client)
 
     # Verify that the TfJob operator is actually deployed.
     if args.tf_job_version == "v1alpha1":
@@ -199,7 +244,6 @@ def setup(args):
     t.class_name = "GKE"
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
-
 
 def teardown(args):
   """Teardown the resources."""
@@ -247,7 +291,7 @@ def main():  # pylint: disable=too-many-locals
   # setup
   #
   parser_setup = subparsers.add_parser(
-    "setup", help="Setup a cluster for testing.")
+    "setup_cluster", help="Setup a cluster for testing.")
 
   parser_setup.add_argument(
     "--accelerator",
@@ -256,29 +300,42 @@ def main():  # pylint: disable=too-many-locals
     help="Accelerator to add to the cluster. Should be of the form type=count.")
 
   parser_setup.add_argument(
+    "--namespace",
+    default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
+    help="The directory containing the ksonnet app used for testing.",
+  )
+  parser_setup.set_defaults(func=setup_cluster)
+  add_common_args(parser_setup)
+
+  parser_kubeflow = subparsers.add_parser(
+    "setup_kubeflow", help="Deploy Kubeflow for testing.")
+
+  parser_kubeflow.add_argument(
     "--tf_job_version",
     dest="tf_job_version",
     help="Which version of the TFJobOperator to deploy.")
 
-  parser_setup.set_defaults(func=setup)
-  add_common_args(parser_setup)
+  parser_kubeflow.set_defaults(func=setup_kubeflow)
 
-  parser_setup.add_argument(
-    "--test_app_dir",
-    help="The directory containing the ksonnet app used for testing.",
-  )
-
-  now = datetime.datetime.now()
-  parser_setup.add_argument(
+  parser_kubeflow.add_argument(
     "--namespace",
     default="kubeflow-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4],
     help="The directory containing the ksonnet app used for testing.",
   )
 
-  parser_setup.add_argument(
+  parser_kubeflow.add_argument(
     "--image",
     help="The image to use",
   )
+
+  add_common_args(parser_kubeflow)
+
+  parser_kubeflow.add_argument(
+    "--test_app_dir",
+    help="The directory containing the ksonnet app used for testing.",
+  )
+
+  now = datetime.datetime.now()
 
   #############################################################################
   # teardown
