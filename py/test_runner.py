@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import filelock
 import httplib
 import logging
 import json
@@ -170,7 +171,7 @@ def get_labels_v1alpha2(namespace, name, replica_type=None,
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_key": "{0}-{1}".format(namepspace,name),
+    "tf_job_key": "{0}-{1}".format(namepspace, name),
   }
   if replica_type:
     labels["tf-replica-type"] = replica_type
@@ -316,7 +317,55 @@ def terminateReplica(masterHost, namespace, target, exitCode=0):
 
   logging.info("URL %s returned; %s", url, r.content)
 
-@retrying.retry(stop_max_attempt_number=3)
+def _setup_ks_app(args):
+  """Setup the ksonnet app"""
+  salt = uuid.uuid4().hex[0:4]
+
+  lock_file = os.path.join(args.app_dir, "app.lock")
+  logging.info("Acquiring lock on file: %s", lock_file)
+  lock = filelock.FileLock(lock_file, timeout=60)
+  with lock:
+    # Create a new environment for this run
+    if args.environment:
+      env = args.environment
+    else:
+      env = "test-env-{0}".format(salt)
+
+    name = None
+    namespace = None
+    for pair in args.params.split(","):
+      k, v = pair.split("=", 1)
+      if k == "name":
+        name = v
+
+      if k == "namespace":
+        namespace = v
+
+    if not name:
+      raise ValueError("name must be provided as a parameter.")
+
+    if not namespace:
+      raise ValueError("namespace must be provided as a parameter.")
+
+    try:
+      util.run(["ks", "env", "add", env, "--namespace=" + namespace],
+                cwd=args.app_dir)
+    except subprocess.CalledProcessError as e:
+      if not re.search(".*environment.*already exists.*", e.output):
+        raise
+
+    for pair in args.params.split(","):
+      k, v = pair.split("=", 1)
+      util.run(
+        ["ks", "param", "set", "--env=" + env, args.component, k, v],
+        cwd=args.app_dir)
+
+# One of the reasons we set so many retries and a random amount of wait
+# between retries is because we have multiple tests running in parallel
+# that are all modifying the same ksonnet app via ks. I think this can
+# lead to failures.
+@retrying.retry(stop_max_attempt_number=10, wait_random_min=1000,
+                wait_random_max=10000)
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -337,48 +386,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   api_client = k8s_client.ApiClient()
   masterHost = api_client.configuration.host
-  salt = uuid.uuid4().hex[0:4]
-
-  # Create a new environment for this run
-  if args.environment:
-    env = args.environment
-  else:
-    env = "test-env-{0}".format(salt)
-
-  name = None
-  namespace = None
-  for pair in args.params.split(","):
-    k, v = pair.split("=", 1)
-    if k == "name":
-      name = v
-
-    if k == "namespace":
-      namespace = v
-
-  if not name:
-    raise ValueError("name must be provided as a parameter.")
-
-  if not namespace:
-    raise ValueError("namespace must be provided as a parameter.")
-
-  try:
-    util.run(["ks", "env", "add", env, "--namespace=" + namespace],
-              cwd=args.app_dir)
-  except subprocess.CalledProcessError as e:
-    if not re.search(".*environment.*already exists.*", e.output):
-      raise
-
-  for pair in args.params.split(","):
-    k, v = pair.split("=", 1)
-    util.run(
-      ["ks", "param", "set", "--env=" + env, args.component, k, v],
-      cwd=args.app_dir)
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
   t.name = os.path.basename(name)
 
   start = time.time()
+
+  _setup_ks_app(args)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.

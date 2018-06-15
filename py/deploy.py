@@ -233,6 +233,8 @@ def setup_kubeflow(args):
       # This will help troubleshoot any errors.
       util.run(["kubectl", "-n", args.namespace, "describe", "deploy",
                 tf_job_deployment_name])
+      util.run(["kubectl", "-n", args.namespace, "describe", "pods", "-l",
+                "name=tf-job-operator"])
 
   # Reraise the exception so that the step fails because there's no point
   # continuing the test.

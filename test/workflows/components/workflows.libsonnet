@@ -58,7 +58,13 @@
       local srcRootDir = testDir + "/src";
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
-      local image = "gcr.io/kubeflow-ci/test-worker";
+      // The image should generally be overwritten in the prow_config.yaml file. This makes it easier
+      // to ensure a consistent image is used for all workflows.
+      local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
+        params.testWorkerImage
+        else
+        "gcr.io/kubeflow-ci/test-worker";
+
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
