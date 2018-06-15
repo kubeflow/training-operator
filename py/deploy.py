@@ -223,8 +223,16 @@ def setup_kubeflow(args):
     logging.info("Verifying TfJob deployment %s started.",
                  tf_job_deployment_name)
 
-    # TODO(jlewi): We should verify the image of the operator is the correct.
-    util.wait_for_deployment(api_client, args.namespace, tf_job_deployment_name)
+    # TODO(jlewi): We should verify the image of the operator is the correct
+    # one.
+    try:
+      util.wait_for_deployment(api_client, args.namespace,
+                               tf_job_deployment_name)
+    finally:
+      # Run kubectl describe to get useful information about the deployment.
+      # This will help troubleshoot any errors.
+      util.run(["kubectl", "-n", args.namespace, "describe", "deploy",
+                tf_job_deployment_name])
 
   # Reraise the exception so that the step fails because there's no point
   # continuing the test.
