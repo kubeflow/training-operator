@@ -40,7 +40,7 @@ func NewBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Labels:          generator.GenLabels(GetKey(tfJob, t)),
+			Labels:          generator.GenLabels(tfJob.Name),
 			Namespace:       tfJob.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
 		},

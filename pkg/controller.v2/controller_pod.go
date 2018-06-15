@@ -137,7 +137,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Set type and index for the worker.
-	labels := generator.GenLabels(tfjobKey)
+	labels := generator.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
@@ -221,15 +221,9 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFRe
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned Pods are pointers into the cache.
 func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, error) {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil, err
-	}
-
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjob.Name),
 	})
 
 	if err != nil {

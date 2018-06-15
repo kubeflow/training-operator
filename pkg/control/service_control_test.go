@@ -67,7 +67,7 @@ func TestCreateService(t *testing.T) {
 
 	expectedService := v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:    generator.GenLabels(testutil.GetKey(tfJob, t)),
+			Labels:    generator.GenLabels(tfJob.Name),
 			Name:      testName,
 			Namespace: ns,
 		},
@@ -115,7 +115,7 @@ func TestCreateServicesWithControllerRef(t *testing.T) {
 
 	expectedService := v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:          generator.GenLabels(testutil.GetKey(tfJob, t)),
+			Labels:          generator.GenLabels(tfJob.Name),
 			Name:            testName,
 			Namespace:       ns,
 			OwnerReferences: []metav1.OwnerReference{*ownerRef},

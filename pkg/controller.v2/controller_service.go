@@ -109,7 +109,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-	labels := generator.GenLabels(tfjobKey)
+	labels := generator.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
@@ -154,15 +154,9 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned services are pointers into the cache.
 func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Service, error) {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil, err
-	}
-
 	// Create selector
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjob.Name),
 	})
 
 	if err != nil {
