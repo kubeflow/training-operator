@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package control
 
 import (
 	"fmt"
@@ -157,21 +157,4 @@ func (m *ServiceControllerRefManager) ReleaseService(service *v1.Service) error 
 		}
 	}
 	return err
-}
-
-// RecheckDeletionTimestamp returns a CanAdopt() function to recheck deletion.
-//
-// The CanAdopt() function calls getObject() to fetch the latest value,
-// and denies adoption attempts if that object has a non-nil DeletionTimestamp.
-func RecheckDeletionTimestamp(getObject func() (metav1.Object, error)) func() error {
-	return func() error {
-		obj, err := getObject()
-		if err != nil {
-			return fmt.Errorf("can't recheck DeletionTimestamp: %v", err)
-		}
-		if obj.GetDeletionTimestamp() != nil {
-			return fmt.Errorf("%v/%v has just been deleted at %v", obj.GetNamespace(), obj.GetName(), obj.GetDeletionTimestamp())
-		}
-		return nil
-	}
 }

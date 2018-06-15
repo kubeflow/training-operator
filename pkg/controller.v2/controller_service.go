@@ -28,6 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
@@ -186,7 +187,7 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 		}
 		return fresh, nil
 	})
-	cm := NewServiceControllerRefManager(tc.serviceControl, tfjob, selector, controllerKind, canAdoptFunc)
+	cm := control.NewServiceControllerRefManager(tc.serviceControl, tfjob, selector, controllerKind, canAdoptFunc)
 	return cm.ClaimServices(services)
 }
 

@@ -282,6 +282,23 @@ func genExpectationPodsKey(tfjobKey, replicaType string) string {
 	return tfjobKey + "/" + strings.ToLower(replicaType) + "/pods"
 }
 
+// RecheckDeletionTimestamp returns a CanAdopt() function to recheck deletion.
+//
+// The CanAdopt() function calls getObject() to fetch the latest value,
+// and denies adoption attempts if that object has a non-nil DeletionTimestamp.
+func RecheckDeletionTimestamp(getObject func() (metav1.Object, error)) func() error {
+	return func() error {
+		obj, err := getObject()
+		if err != nil {
+			return fmt.Errorf("can't recheck DeletionTimestamp: %v", err)
+		}
+		if obj.GetDeletionTimestamp() != nil {
+			return fmt.Errorf("%v/%v has just been deleted at %v", obj.GetNamespace(), obj.GetName(), obj.GetDeletionTimestamp())
+		}
+		return nil
+	}
+}
+
 // When a pod is created, enqueue the tfjob that manages it and update its expectations.
 func (tc *TFJobController) addPod(obj interface{}) {
 	pod := obj.(*v1.Pod)
