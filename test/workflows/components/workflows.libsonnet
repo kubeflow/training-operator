@@ -230,7 +230,7 @@
                   {
                     name: "setup-kubeflow",
                     template: "setup-kubeflow",
-                    dependencies: ["setup-cluster"],
+                    dependencies: ["setup-cluster", "build"],
                   },
                   {
                     name: "run-tests",
