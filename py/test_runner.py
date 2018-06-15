@@ -302,7 +302,7 @@ def terminateReplica(masterHost, namespace, target, exitCode=0):
 
   logging.info("URL %s returned; %s", url, r.content)
 
-@retrying.retry
+@retrying.retry(stop_max_attempt_number=3)
 def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -326,7 +326,10 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   salt = uuid.uuid4().hex[0:4]
 
   # Create a new environment for this run
-  env = "test-env-{0}".format(salt)
+  if args.environment:
+    env = args.environment
+  else:
+    env = "test-env-{0}".format(salt)
 
   name = None
   namespace = None
@@ -577,6 +580,12 @@ def add_common_args(parser):
     type=str,
     help="The TFJob version to use.")
 
+  parser.add_argument(
+    "--environment",
+    default=None,
+    type=str,
+    help="(Optional) the name for the ksonnet environment; if not specified "
+         "a random one is created.")
 
 def build_parser():
   # create the top-level parser
