@@ -28,7 +28,8 @@ import (
 // TFConfig is a struct representing the distributed TensorFlow config.
 // This struct is turned into an environment variable TF_CONFIG
 // which is used by TensorFlow processes to configure themselves.
-// https://cloud.google.com/ml-engine/docs/trainer-considerations#use_tf_config
+// https://www.tensorflow.org/api_docs/python/tf/estimator/RunConfig#methods
+// https://cloud.google.com/ml-engine/docs/tensorflow/distributed-training-details
 type TFConfig struct {
 	// Cluster represents a TensorFlow ClusterSpec.
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
