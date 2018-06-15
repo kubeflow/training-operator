@@ -63,7 +63,7 @@ func (tc *TFJobController) reconcilePods(
 	podSlices := getPodSlices(pods, replicas, loggerForReplica(tfjob, rt))
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have to many pods for %s %d", rt, index)
+			loggerForReplica(tfjob, rt).Warningf("We have too many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("Need to create new pod: %s-%d", rt, index)

@@ -51,7 +51,7 @@ func (tc *TFJobController) reconcileServices(
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have to many services for %s %d", rt, index)
+			loggerForReplica(tfjob, rt).Warningf("We have too many services for %s %d", rt, index)
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
