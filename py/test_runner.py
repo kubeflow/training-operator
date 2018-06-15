@@ -171,7 +171,7 @@ def get_labels_v1alpha2(namespace, name, replica_type=None,
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_key": "{0}-{1}".format(namepspace, name),
+    "tf_job_key": "{0}-{1}".format(namespace, name),
   }
   if replica_type:
     labels["tf-replica-type"] = replica_type
@@ -360,6 +360,10 @@ def _setup_ks_app(args):
         ["ks", "param", "set", "--env=" + env, args.component, k, v],
         cwd=args.app_dir)
 
+    return namespace, name, env
+
+  return "", "", ""
+
 # One of the reasons we set so many retries and a random amount of wait
 # between retries is because we have multiple tests running in parallel
 # that are all modifying the same ksonnet app via ks. I think this can
@@ -389,11 +393,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
+  namespace, name, env = _setup_ks_app(args)
   t.name = os.path.basename(name)
 
   start = time.time()
 
-  _setup_ks_app(args)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
