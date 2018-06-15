@@ -167,16 +167,6 @@ func TestRestartPolicy(t *testing.T) {
 				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
 			}
 		}(),
-		func() tc {
-			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := tfv1alpha2.RestartPolicy("")
-			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
-			return tc{
-				tfJob: tfJob,
-				expectedRestartPolicy: v1.RestartPolicyNever,
-				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
-			}
-		}(),
 	}
 	for _, c := range testCase {
 		spec := c.tfJob.Spec.TFReplicaSpecs[c.expectedType]

@@ -209,9 +209,6 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob
 func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFReplicaSpec) {
 	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
-		// Set default to Never.
-		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}

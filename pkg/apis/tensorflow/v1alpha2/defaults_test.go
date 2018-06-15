@@ -27,25 +27,42 @@ const (
 	testImage = "test-image:latest"
 )
 
-func expectedTFJob() *TFJob {
+func expectedTFJob(restartPolicy RestartPolicy, portName string, port int32) *TFJob {
+	ports := []v1.ContainerPort{}
+
+	// port not set
+	if portName != "" {
+		ports = append(ports,
+			v1.ContainerPort{
+				Name:          portName,
+				ContainerPort: port,
+			},
+		)
+	}
+
+	// port set with custom name
+	if portName != DefaultPortName {
+		ports = append(ports,
+			v1.ContainerPort{
+				Name:          DefaultPortName,
+				ContainerPort: DefaultPort,
+			},
+		)
+	}
+
 	return &TFJob{
 		Spec: TFJobSpec{
 			TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
 				TFReplicaTypeWorker: &TFReplicaSpec{
 					Replicas:      Int32(1),
-					RestartPolicy: RestartPolicyAlways,
+					RestartPolicy: restartPolicy,
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
 								v1.Container{
 									Name:  DefaultContainerName,
 									Image: testImage,
-									Ports: []v1.ContainerPort{
-										v1.ContainerPort{
-											Name:          DefaultPortName,
-											ContainerPort: DefaultPort,
-										},
-									},
+									Ports: ports,
 								},
 							},
 						},
@@ -55,7 +72,6 @@ func expectedTFJob() *TFJob {
 		},
 	}
 }
-
 func TestSetTypeNames(t *testing.T) {
 	spec := &TFReplicaSpec{
 		RestartPolicy: RestartPolicyAlways,
@@ -96,6 +112,10 @@ func TestSetTypeNames(t *testing.T) {
 }
 
 func TestSetDefaultTFJob(t *testing.T) {
+	customPortName := "customPort"
+	var customPort int32 = 1234
+	customRestartPolicy := RestartPolicyAlways
+
 	testCases := map[string]struct {
 		original *TFJob
 		expected *TFJob
@@ -105,7 +125,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
 						TFReplicaTypeWorker: &TFReplicaSpec{
-							RestartPolicy: RestartPolicyAlways,
+							RestartPolicy: customRestartPolicy,
 							Template: v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -126,15 +146,42 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(),
+			expected: expectedTFJob(customRestartPolicy, DefaultPortName, DefaultPort),
 		},
-		"set default port": {
+		"set replicas with default restartpolicy": {
+			original: &TFJob{
+				Spec: TFJobSpec{
+					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
+						TFReplicaTypeWorker: &TFReplicaSpec{
+							Template: v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										v1.Container{
+											Name:  DefaultContainerName,
+											Image: testImage,
+											Ports: []v1.ContainerPort{
+												v1.ContainerPort{
+													Name:          DefaultPortName,
+													ContainerPort: DefaultPort,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: expectedTFJob(DefaultRestartPolicy, DefaultPortName, DefaultPort),
+		},
+		"set replicas with default port": {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
 						TFReplicaTypeWorker: &TFReplicaSpec{
 							Replicas:      Int32(1),
-							RestartPolicy: RestartPolicyAlways,
+							RestartPolicy: customRestartPolicy,
 							Template: v1.PodTemplateSpec{
 								Spec: v1.PodSpec{
 									Containers: []v1.Container{
@@ -149,7 +196,36 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(),
+			expected: expectedTFJob(customRestartPolicy, "", 0),
+		},
+		"set replicas adding default port": {
+			original: &TFJob{
+				Spec: TFJobSpec{
+					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
+						TFReplicaTypeWorker: &TFReplicaSpec{
+							Replicas:      Int32(1),
+							RestartPolicy: customRestartPolicy,
+							Template: v1.PodTemplateSpec{
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										v1.Container{
+											Name:  DefaultContainerName,
+											Image: testImage,
+											Ports: []v1.ContainerPort{
+												v1.ContainerPort{
+													Name:          customPortName,
+													ContainerPort: customPort,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: expectedTFJob(customRestartPolicy, customPortName, customPort),
 		},
 	}
 
