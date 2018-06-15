@@ -15,6 +15,8 @@
 package v1alpha2
 
 import (
+	"strings"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -60,8 +62,30 @@ func setDefaultReplicas(spec *TFReplicaSpec) {
 	}
 }
 
+// setTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
+func setTypeNamesToCamelCase(tfJob *TFJob) {
+	setTypeNameToCamelCase(tfJob, TFReplicaTypePS)
+	setTypeNameToCamelCase(tfJob, TFReplicaTypeWorker)
+	setTypeNameToCamelCase(tfJob, TFReplicaTypeChief)
+	setTypeNameToCamelCase(tfJob, TFReplicaTypeEval)
+}
+
+// setTypeNameToCamelCase sets the name of the replica type from any case to correct case.
+// E.g. from ps to PS; from WORKER to Worker.
+func setTypeNameToCamelCase(tfJob *TFJob, typ TFReplicaType) {
+	for t := range tfJob.Spec.TFReplicaSpecs {
+		if strings.ToLower(string(t)) == strings.ToLower(string(typ)) && t != typ {
+			spec := tfJob.Spec.TFReplicaSpecs[t]
+			delete(tfJob.Spec.TFReplicaSpecs, t)
+			tfJob.Spec.TFReplicaSpecs[typ] = spec
+			return
+		}
+	}
+}
+
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfjob *TFJob) {
+	setTypeNamesToCamelCase(tfjob)
 	for _, spec := range tfjob.Spec.TFReplicaSpecs {
 		setDefaultReplicas(spec)
 		setDefaultPort(&spec.Template.Spec)

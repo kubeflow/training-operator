@@ -56,6 +56,45 @@ func expectedTFJob() *TFJob {
 	}
 }
 
+func TestSetTypeNames(t *testing.T) {
+	spec := &TFReplicaSpec{
+		RestartPolicy: RestartPolicyAlways,
+		Template: v1.PodTemplateSpec{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					v1.Container{
+						Name:  DefaultContainerName,
+						Image: testImage,
+						Ports: []v1.ContainerPort{
+							v1.ContainerPort{
+								Name:          DefaultPortName,
+								ContainerPort: DefaultPort,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	workerUpperCase := TFReplicaType("WORKER")
+	original := &TFJob{
+		Spec: TFJobSpec{
+			TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
+				workerUpperCase: spec,
+			},
+		},
+	}
+
+	setTypeNamesToCamelCase(original)
+	if _, ok := original.Spec.TFReplicaSpecs[workerUpperCase]; ok {
+		t.Errorf("Failed to delete key %s", workerUpperCase)
+	}
+	if _, ok := original.Spec.TFReplicaSpecs[TFReplicaTypeWorker]; !ok {
+		t.Errorf("Failed to set key %s", TFReplicaTypeWorker)
+	}
+}
+
 func TestSetDefaultTFJob(t *testing.T) {
 	testCases := map[string]struct {
 		original *TFJob
