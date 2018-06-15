@@ -87,10 +87,10 @@ func TestSetTypeNames(t *testing.T) {
 	}
 
 	setTypeNamesToCamelCase(original)
-	if original.Spec.TFReplicaSpecs[workerUpperCase] != nil {
+	if _, ok := original.Spec.TFReplicaSpecs[workerUpperCase]; ok {
 		t.Errorf("Failed to delete key %s", workerUpperCase)
 	}
-	if original.Spec.TFReplicaSpecs[TFReplicaTypeWorker] == nil {
+	if _, ok := original.Spec.TFReplicaSpecs[TFReplicaTypeWorker]; !ok {
 		t.Errorf("Failed to set key %s", TFReplicaTypeWorker)
 	}
 }

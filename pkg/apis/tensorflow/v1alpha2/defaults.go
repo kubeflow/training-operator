@@ -76,7 +76,7 @@ func setTypeNameToCamelCase(tfJob *TFJob, typ TFReplicaType) {
 	for t := range tfJob.Spec.TFReplicaSpecs {
 		if strings.ToLower(string(t)) == strings.ToLower(string(typ)) && t != typ {
 			spec := tfJob.Spec.TFReplicaSpecs[t]
-			tfJob.Spec.TFReplicaSpecs[t] = nil
+			delete(tfJob.Spec.TFReplicaSpecs, t)
 			tfJob.Spec.TFReplicaSpecs[typ] = spec
 			return
 		}
