@@ -56,6 +56,8 @@ func NewServiceList(count int32, tfJob *tfv1alpha2.TFJob, typ string, t *testing
 
 func SetServices(serviceIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, activeWorkerServices int32, t *testing.T) {
 	for _, service := range NewServiceList(activeWorkerServices, tfJob, typ, t) {
-		serviceIndexer.Add(service)
+		if err := serviceIndexer.Add(service); err != nil {
+			t.Errorf("unexpected error when adding service %v", err)
+		}
 	}
 }

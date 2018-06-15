@@ -27,8 +27,6 @@ import (
 )
 
 const (
-	controllerName = "tf-operator"
-
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
