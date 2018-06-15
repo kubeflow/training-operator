@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 const (
@@ -48,7 +49,7 @@ func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, repli
 		tfjob.Status.StartTime = &now
 	}
 
-	if containChiefSpec(tfjob) {
+	if generator.ContainChiefSpec(tfjob) {
 		if rtype == tfv1alpha2.TFReplicaTypeChief {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)

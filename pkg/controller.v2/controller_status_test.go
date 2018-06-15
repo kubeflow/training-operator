@@ -21,12 +21,13 @@ import (
 	"k8s.io/api/core/v1"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 func TestFailed(t *testing.T) {
-	tfJob := newTFJob(3, 0)
+	tfJob := testutil.NewTFJob(3, 0)
 	initializeTFReplicaStatuses(tfJob, tfv1alpha2.TFReplicaTypeWorker)
-	pod := newBasePod("pod", tfJob, t)
+	pod := testutil.NewBasePod("pod", tfJob, t)
 	pod.Status.Phase = v1.PodFailed
 	updateTFJobReplicaStatuses(tfJob, tfv1alpha2.TFReplicaTypeWorker, pod)
 	if tfJob.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != 1 {
@@ -70,7 +71,7 @@ func TestStatus(t *testing.T) {
 	testCases := []testCase{
 		testCase{
 			description:             "Chief worker is succeeded",
-			tfJob:                   newTFJobWithChief(1, 0),
+			tfJob:                   testutil.NewTFJobWithChief(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -84,7 +85,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief worker is running",
-			tfJob:                   newTFJobWithChief(1, 0),
+			tfJob:                   testutil.NewTFJobWithChief(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -98,7 +99,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief worker is failed",
-			tfJob:                   newTFJobWithChief(1, 0),
+			tfJob:                   testutil.NewTFJobWithChief(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -112,7 +113,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) Worker is failed",
-			tfJob:                   newTFJob(1, 0),
+			tfJob:                   testutil.NewTFJob(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -126,7 +127,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) Worker is succeeded",
-			tfJob:                   newTFJob(1, 0),
+			tfJob:                   testutil.NewTFJob(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -140,7 +141,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) Worker is running",
-			tfJob:                   newTFJob(1, 0),
+			tfJob:                   testutil.NewTFJob(1, 0),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -154,7 +155,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are succeeded, 2 workers are active",
-			tfJob:                   newTFJob(4, 2),
+			tfJob:                   testutil.NewTFJob(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -168,7 +169,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are running, 2 workers are failed",
-			tfJob:                   newTFJob(4, 2),
+			tfJob:                   testutil.NewTFJob(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -182,7 +183,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are succeeded, 2 workers are failed",
-			tfJob:                   newTFJob(4, 2),
+			tfJob:                   testutil.NewTFJob(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -196,7 +197,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief is running, workers are failed",
-			tfJob:                   newTFJobWithChief(4, 2),
+			tfJob:                   testutil.NewTFJobWithChief(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -210,7 +211,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief is running, workers are succeeded",
-			tfJob:                   newTFJobWithChief(4, 2),
+			tfJob:                   testutil.NewTFJobWithChief(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -224,7 +225,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief is failed, workers are succeeded",
-			tfJob:                   newTFJobWithChief(4, 2),
+			tfJob:                   testutil.NewTFJobWithChief(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -238,7 +239,7 @@ func TestStatus(t *testing.T) {
 		},
 		testCase{
 			description:             "Chief is succeeded, workers are failed",
-			tfJob:                   newTFJobWithChief(4, 2),
+			tfJob:                   testutil.NewTFJobWithChief(4, 2),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        2,
@@ -286,7 +287,7 @@ func TestStatus(t *testing.T) {
 }
 
 func setStatusForTest(tfJob *tfv1alpha2.TFJob, typ tfv1alpha2.TFReplicaType, failed, succeeded, active int32, t *testing.T) {
-	pod := newBasePod("pod", tfJob, t)
+	pod := testutil.NewBasePod("pod", tfJob, t)
 	var i int32
 	for i = 0; i < failed; i++ {
 		pod.Status.Phase = v1.PodFailed

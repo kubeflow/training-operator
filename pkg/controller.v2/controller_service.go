@@ -28,6 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 // reconcileServices checks and updates services for each given TFReplicaSpec.
@@ -104,14 +105,14 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	}
 
 	// Create OwnerReference.
-	controllerRef := genOwnerReference(tfjob)
+	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-	labels := genLabels(tfjobKey)
+	labels := generator.GenLabels(tfjobKey)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
-	port, err := getPortFromTFJob(tfjob, rtype)
+	port, err := generator.GetPortFromTFJob(tfjob, rtype)
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 		},
 	}
 
-	service.Name = genGeneralName(tfjob.Name, rt, index)
+	service.Name = generator.GenGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
 	err = tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
@@ -160,7 +161,7 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 
 	// Create selector
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: genLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjobKey),
 	})
 
 	if err != nil {

@@ -28,21 +28,11 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-)
-
-const (
-	testImageName = "test-image-for-kubeflow-tf-operator:latest"
-	testTFJobName = "test-tfjob"
-	labelWorker   = "worker"
-	labelPS       = "ps"
-
-	sleepInterval = 500 * time.Millisecond
-	threadCount   = 1
+	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 var (
-	alwaysReady = func() bool { return true }
-
 	tfJobRunning   = tfv1alpha2.TFJobRunning
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
 )
@@ -224,9 +214,9 @@ func TestNormalPath(t *testing.T) {
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-		ctr.tfJobInformerSynced = alwaysReady
-		ctr.podInformerSynced = alwaysReady
-		ctr.serviceInformerSynced = alwaysReady
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.podInformerSynced = testutil.AlwaysReady
+		ctr.serviceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 		var actual *tfv1alpha2.TFJob
@@ -236,8 +226,8 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		// Run the test logic.
-		tfJob := newTFJob(tc.worker, tc.ps)
-		unstructured, err := convertTFJobToUnstructured(tfJob)
+		tfJob := testutil.NewTFJob(tc.worker, tc.ps)
+		unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}
@@ -247,14 +237,14 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		setPodsStatuses(podIndexer, tfJob, labelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
-		setPodsStatuses(podIndexer, tfJob, labelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+		testutil.SetPodsStatuses(podIndexer, tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
-		setServices(serviceIndexer, tfJob, labelWorker, tc.activeWorkerServices, t)
-		setServices(serviceIndexer, tfJob, labelPS, tc.activePSServices, t)
+		testutil.SetServices(serviceIndexer, tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tfJob, testutil.LabelPS, tc.activePSServices, t)
 
-		forget, err := ctr.syncTFJob(getKey(tfJob, t))
+		forget, err := ctr.syncTFJob(testutil.GetKey(tfJob, t))
 		// We need requeue syncJob task if podController error
 		if tc.ControllerError != nil {
 			if err == nil {
@@ -331,7 +321,7 @@ func TestNormalPath(t *testing.T) {
 			t.Errorf("%s: StartTime was not set", name)
 		}
 		// Validate conditions.
-		if tc.expectedCondition != nil && !checkCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
+		if tc.expectedCondition != nil && !testutil.CheckCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
 			t.Errorf("%s: expected condition %#v, got %#v", name, *tc.expectedCondition, actual.Status.Conditions)
 		}
 	}
@@ -354,19 +344,19 @@ func TestRun(t *testing.T) {
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobInformerSynced = alwaysReady
-	ctr.podInformerSynced = alwaysReady
-	ctr.serviceInformerSynced = alwaysReady
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.podInformerSynced = testutil.AlwaysReady
+	ctr.serviceInformerSynced = testutil.AlwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
 		// It is a hack to let the controller stop to run without errors.
 		// We can not just send a struct to stopCh because there are multiple
 		// receivers in controller.Run.
-		time.Sleep(sleepInterval)
+		time.Sleep(testutil.SleepInterval)
 		stopCh <- struct{}{}
 	}()
-	err := ctr.Run(threadCount, stopCh)
+	err := ctr.Run(testutil.ThreadCount, stopCh)
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
 	}

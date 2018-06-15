@@ -31,6 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
@@ -133,17 +134,17 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	}
 
 	// Create OwnerReference.
-	controllerRef := genOwnerReference(tfjob)
+	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Set type and index for the worker.
-	labels := genLabels(tfjobKey)
+	labels := generator.GenLabels(tfjobKey)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
 	podTemplate := spec.Template.DeepCopy()
 
 	// Set name for the template.
-	podTemplate.Name = genGeneralName(tfjob.Name, rt, index)
+	podTemplate.Name = generator.GenGeneralName(tfjob.Name, rt, index)
 
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
@@ -228,7 +229,7 @@ func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, 
 
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: genLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjobKey),
 	})
 
 	if err != nil {
