@@ -181,7 +181,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
+		err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
@@ -192,7 +192,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+		err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
@@ -204,7 +204,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+		err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
@@ -216,7 +216,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		msg := fmt.Sprintf("TFJob %s is restarting ", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
-		err := tc.updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
+		err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
 		if err != nil {
 			loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err

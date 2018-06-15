@@ -166,10 +166,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		podTemplate.Labels[key] = value
 	}
 
-	// Generate TF_CONFIG JSON string.
-	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
-	if err != nil {
-		log.Info("genTFConfigJSONStr")
+	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
 		return err
 	}
 
