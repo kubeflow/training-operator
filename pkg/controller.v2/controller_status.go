@@ -44,7 +44,7 @@ func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, repli
 	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
 	// All workers are running, set StartTime.
-	if running == replicas {
+	if running == replicas && tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 	}
@@ -61,8 +61,6 @@ func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, repli
 			}
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -96,8 +94,6 @@ func updateStatus(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, repli
 			// All workers are succeeded, leave a succeeded condition.
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -180,6 +176,7 @@ func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobCondit
 // setCondition updates the tfjob to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
+// If condition is TFJobSucceeded, set CompletionTime.
 func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
 	currentCond := getCondition(*status, condition.Type)
 
@@ -191,6 +188,12 @@ func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCond
 	// Do not update lastTransitionTime if the status of the condition doesn't change.
 	if currentCond != nil && currentCond.Status == condition.Status {
 		condition.LastTransitionTime = currentCond.LastTransitionTime
+	}
+
+	// if success, update with complete time
+	if condition.Type == tfv1alpha2.TFJobSucceeded && status.CompletionTime == nil {
+		now := metav1.Now()
+		status.CompletionTime = &now
 	}
 
 	// Append the updated condition to the
