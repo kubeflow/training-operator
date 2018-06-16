@@ -70,7 +70,7 @@ const (
 )
 
 // updateStatus updates the status of the tfjob.
-func (tc *TFJobController) updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
+func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int) error {
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.TFReplicaStatuses[rtype].Succeeded)
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
@@ -154,7 +154,7 @@ func (tc *TFJobController) updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv
 }
 
 //Update distributed training status
-func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]v1.PodPhase) error {
+func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]v1.PodPhase) error {
 
 	chiefReplicas, psReplicas, _ := getReplicasForTFJobType(tfjob)
 
@@ -233,16 +233,16 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 }
 
 //update Status for tfjob
-func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase) error {
+func updateStatus(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase) error {
 	_, psReplicas, workerReplicas := getReplicasForTFJobType(tfjob)
 
 	if psReplicas == 0 {
-		err := tc.updateStatusSingle(tfjob, tfv1alpha2.TFReplicaTypeWorker, workerReplicas)
+		err := updateStatusSingle(tfjob, tfv1alpha2.TFReplicaTypeWorker, workerReplicas)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := tc.updateStatusDistributed(tfjob, rstatus)
+		err := updateStatusDistributed(tfjob, rstatus)
 		if err != nil {
 			return err
 		}

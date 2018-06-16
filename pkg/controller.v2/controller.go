@@ -412,7 +412,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
-	err = tc.updateStatus(tfjob, replicasStatus)
+	err = updateStatus(tfjob, replicasStatus)
 	if err != nil {
 		log.Infof("updateStatusNew error %v", err)
 		return err
