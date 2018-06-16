@@ -60,6 +60,9 @@ func setDefaultReplicas(spec *TFReplicaSpec) {
 	if spec.Replicas == nil {
 		spec.Replicas = Int32(1)
 	}
+	if spec.RestartPolicy == "" {
+		spec.RestartPolicy = DefaultRestartPolicy
+	}
 }
 
 // setTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
