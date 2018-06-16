@@ -32,17 +32,17 @@ local job = {
   spec: {
     // When a chief is provided TFJob will use it.
     tfReplicaSpecs: {
-      CHIEF: {
+      Chief: {
         replicas: 1,
         restartPolicy: "Never",
         template: podTemplate,
       },
-      PS: {
+      Ps: {
         replicas: 2,
         restartPolicy: "Never",
         template: podTemplate,
       },
-      WORKER: {
+      Worker: {
         replicas: 4,
         restartPolicy: "Never",
         template: podTemplate,

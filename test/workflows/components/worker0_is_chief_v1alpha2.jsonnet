@@ -32,7 +32,7 @@ local job = {
   spec: {
     // When no chief is provided TFJob will use worker 0 as the chief.
     tfReplicaSpecs: {
-      PS: {
+      Ps: {
         replicas: 2,
         restartPolicy: "Never",
         template: podTemplate,
