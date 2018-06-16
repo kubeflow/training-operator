@@ -41,7 +41,6 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 		log.Infof("Append tfJob condition error: %v", err)
 		return
 	}
-
 	tc.enqueueTFJob(obj)
 }
 

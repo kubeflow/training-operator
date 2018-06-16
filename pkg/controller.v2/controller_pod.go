@@ -99,7 +99,7 @@ func (tc *TFJobController) reconcilePods(
 				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
 			}
 			if rtype == tfv1alpha2.TFReplicaTypeChief {
-				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
+				addTFJobReplicaStatuses(rtype, -1, pod, rstatus)
 			}
 		}
 	}
@@ -375,7 +375,7 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 		if job == nil {
 			return
 		}
-		log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
+		//log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
 		tc.enqueueTFJob(job)
 		return
 	}

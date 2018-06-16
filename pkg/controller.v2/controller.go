@@ -346,6 +346,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	}
 
 	sharedTFJob, err := tc.getTFJobFromName(namespace, name)
+
 	if err != nil {
 		if err == errNotExists {
 			log.Infof("TFJob has been deleted: %v", key)
@@ -416,6 +417,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		log.Infof("updateStatusNew error %v", err)
 		return err
 	}
+	// TODO(yph152): if tfjob status is succeeded,and delete pod and service
 
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)
