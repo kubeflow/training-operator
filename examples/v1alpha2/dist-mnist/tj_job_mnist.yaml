@@ -20,4 +20,3 @@ spec:
           containers:
             - name: tensorflow
               image: kubeflow/tf-dist-mnist-test:1.0
-              args: ["train_steps", "50000"]

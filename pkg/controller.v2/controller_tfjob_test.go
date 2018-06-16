@@ -18,13 +18,14 @@ import (
 	"testing"
 
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 func TestAddTFJob(t *testing.T) {
@@ -44,14 +45,14 @@ func TestAddTFJob(t *testing.T) {
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobInformerSynced = alwaysReady
-	ctr.podInformerSynced = alwaysReady
-	ctr.serviceInformerSynced = alwaysReady
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.podInformerSynced = testutil.AlwaysReady
+	ctr.serviceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(threadCount, stopCh)
+		ctr.Run(testutil.ThreadCount, stopCh)
 	}
 	go run(stopCh)
 
@@ -66,8 +67,8 @@ func TestAddTFJob(t *testing.T) {
 		return nil
 	}
 
-	tfJob := newTFJob(1, 0)
-	unstructured, err := convertTFJobToUnstructured(tfJob)
+	tfJob := testutil.NewTFJob(1, 0)
+	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -77,8 +78,8 @@ func TestAddTFJob(t *testing.T) {
 	ctr.addTFJob(unstructured)
 
 	syncChan <- "sync"
-	if key != getKey(tfJob, t) {
-		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
+	if key != testutil.GetKey(tfJob, t) {
+		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, testutil.GetKey(tfJob, t), key)
 	}
 	close(stopCh)
 }
@@ -102,14 +103,14 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
 	fakePodControl := &controller.FakePodControl{}
 	ctr.podControl = fakePodControl
-	ctr.tfJobInformerSynced = alwaysReady
-	ctr.podInformerSynced = alwaysReady
-	ctr.serviceInformerSynced = alwaysReady
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.podInformerSynced = testutil.AlwaysReady
+	ctr.serviceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(threadCount, stopCh)
+		ctr.Run(testutil.ThreadCount, stopCh)
 	}
 	go run(stopCh)
 
@@ -117,7 +118,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		return nil
 	}
 
-	tfJob := newTFJob(1, 0)
+	tfJob := testutil.NewTFJob(1, 0)
 	annotations := map[string]string{
 		"annotation1": "1",
 	}
@@ -126,7 +127,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	}
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Labels = labels
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Annotations = annotations
-	unstructured, err := convertTFJobToUnstructured(tfJob)
+	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
 
-	_, err = ctr.syncTFJob(getKey(tfJob, t))
+	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
 	if err != nil {
 		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
 	}
@@ -161,84 +162,4 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	}
 
 	close(stopCh)
-}
-
-func newTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
-	tfJob := newTFJob(worker, ps)
-	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief] = &tfv1alpha2.TFReplicaSpec{
-		Template: newTFReplicaSpecTemplate(),
-	}
-	return tfJob
-}
-
-func newTFJob(worker, ps int) *tfv1alpha2.TFJob {
-	tfJob := &tfv1alpha2.TFJob{
-		TypeMeta: metav1.TypeMeta{
-			Kind: tfv1alpha2.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testTFJobName,
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: tfv1alpha2.TFJobSpec{
-			TFReplicaSpecs: make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec),
-		},
-	}
-
-	if worker > 0 {
-		worker := int32(worker)
-		workerReplicaSpec := &tfv1alpha2.TFReplicaSpec{
-			Replicas: &worker,
-			Template: newTFReplicaSpecTemplate(),
-		}
-		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] = workerReplicaSpec
-	}
-
-	if ps > 0 {
-		ps := int32(ps)
-		psReplicaSpec := &tfv1alpha2.TFReplicaSpec{
-			Replicas: &ps,
-			Template: newTFReplicaSpecTemplate(),
-		}
-		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] = psReplicaSpec
-	}
-	return tfJob
-}
-
-func getKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
-	key, err := KeyFunc(tfJob)
-	if err != nil {
-		t.Errorf("Unexpected error getting key for job %v: %v", tfJob.Name, err)
-		return ""
-	}
-	return key
-}
-
-func checkCondition(tfJob *tfv1alpha2.TFJob, condition tfv1alpha2.TFJobConditionType, reason string) bool {
-	for _, v := range tfJob.Status.Conditions {
-		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
-			return true
-		}
-	}
-	return false
-}
-
-func newTFReplicaSpecTemplate() v1.PodTemplateSpec {
-	return v1.PodTemplateSpec{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				v1.Container{
-					Name:  tfv1alpha2.DefaultContainerName,
-					Image: testImageName,
-					Args:  []string{"Fake", "Fake"},
-					Ports: []v1.ContainerPort{
-						v1.ContainerPort{
-							Name:          tfv1alpha2.DefaultPortName,
-							ContainerPort: tfv1alpha2.DefaultPort,
-						},
-					},
-				},
-			},
-		},
-	}
 }

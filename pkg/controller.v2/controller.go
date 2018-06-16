@@ -40,6 +40,7 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
 const (
@@ -86,7 +87,7 @@ type TFJobController struct {
 	podControl controller.PodControlInterface
 
 	// serviceControl is used to add or delete services.
-	serviceControl ServiceControlInterface
+	serviceControl control.ServiceControlInterface
 
 	// kubeClientSet is a standard kubernetes clientset.
 	kubeClientSet kubeclientset.Interface
@@ -171,12 +172,12 @@ func NewTFJobController(
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClientSet.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
-	realPodControl := RealPodControl{
+	realPodControl := control.RealPodControl{
 		KubeClient: kubeClientSet,
 		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
 	}
 
-	realServiceControl := RealServiceControl{
+	realServiceControl := control.RealServiceControl{
 		KubeClient: kubeClientSet,
 		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
 	}
@@ -345,6 +346,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	}
 
 	sharedTFJob, err := tc.getTFJobFromName(namespace, name)
+
 	if err != nil {
 		if err == errNotExists {
 			log.Infof("TFJob has been deleted: %v", key)
@@ -415,6 +417,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		log.Infof("updateStatusNew error %v", err)
 		return err
 	}
+	// TODO(yph152): if tfjob status is succeeded,and delete pod and service
 
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)

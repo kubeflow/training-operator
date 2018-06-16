@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package generator
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func TestGenOwnerReference(t *testing.T) {
 		},
 	}
 
-	ref := genOwnerReference(tfJob)
+	ref := GenOwnerReference(tfJob)
 	if ref.UID != testUID {
 		t.Errorf("Expected UID %s, got %s", testUID, ref.UID)
 	}
@@ -50,13 +50,13 @@ func TestGenLabels(t *testing.T) {
 	testKey := "test/key"
 	expctedKey := "test-key"
 
-	labels := genLabels(testKey)
+	labels := GenLabels(testKey)
 
 	if labels[labelTFJobKey] != expctedKey {
 		t.Errorf("Expected %s %s, got %s", labelTFJobKey, expctedKey, labels[labelTFJobKey])
 	}
-	if labels[labelGroupName] != tfv1alpha2.GroupName {
-		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1alpha2.GroupName, labels[labelGroupName])
+	if labels[LabelGroupName] != tfv1alpha2.GroupName {
+		t.Errorf("Expected %s %s, got %s", LabelGroupName, tfv1alpha2.GroupName, labels[LabelGroupName])
 	}
 }
 
@@ -66,7 +66,7 @@ func TestGenGeneralName(t *testing.T) {
 	testKey := "1/2/3/4/5"
 	expectedName := fmt.Sprintf("1-2-3-4-5-%s-%s", testRType, testIndex)
 
-	name := genGeneralName(testKey, testRType, testIndex)
+	name := GenGeneralName(testKey, testRType, testIndex)
 	if name != expectedName {
 		t.Errorf("Expected name %s, got %s", expectedName, name)
 	}
@@ -85,7 +85,7 @@ func TestConvertTFJobToUnstructured(t *testing.T) {
 		},
 	}
 
-	_, err := convertTFJobToUnstructured(tfJob)
+	_, err := ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Expected error to be nil while got %v", err)
 	}

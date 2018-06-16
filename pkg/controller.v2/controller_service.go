@@ -28,6 +28,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/control"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 // reconcileServices checks and updates services for each given TFReplicaSpec.
@@ -49,7 +51,7 @@ func (tc *TFJobController) reconcileServices(
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have to many services for %s %d", rt, index)
+			loggerForReplica(tfjob, rt).Warningf("We have too many services for %s %d", rt, index)
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
@@ -104,14 +106,14 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	}
 
 	// Create OwnerReference.
-	controllerRef := genOwnerReference(tfjob)
+	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-	labels := genLabels(tfjobKey)
+	labels := generator.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
-	port, err := getPortFromTFJob(tfjob, rtype)
+	port, err := generator.GetPortFromTFJob(tfjob, rtype)
 	if err != nil {
 		return err
 	}
@@ -129,7 +131,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 		},
 	}
 
-	service.Name = genGeneralName(tfjob.Name, rt, index)
+	service.Name = generator.GenGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
 	err = tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
@@ -152,15 +154,9 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned services are pointers into the cache.
 func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Service, error) {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil, err
-	}
-
 	// Create selector
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: genLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjob.Name),
 	})
 
 	if err != nil {
@@ -185,7 +181,7 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 		}
 		return fresh, nil
 	})
-	cm := NewServiceControllerRefManager(tc.serviceControl, tfjob, selector, controllerKind, canAdoptFunc)
+	cm := control.NewServiceControllerRefManager(tc.serviceControl, tfjob, selector, controllerKind, canAdoptFunc)
 	return cm.ClaimServices(services)
 }
 

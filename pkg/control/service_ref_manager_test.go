@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package control
 
 import (
 	"reflect"
@@ -21,6 +21,10 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 func TestClaimServices(t *testing.T) {
@@ -36,31 +40,31 @@ func TestClaimServices(t *testing.T) {
 	}
 	var tests = []test{
 		func() test {
-			tfJob := newTFJob(1, 0)
+			tfJob := testutil.NewTFJob(1, 0)
 			tfJobLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(tfJob, t)),
+				MatchLabels: generator.GenLabels(tfJob.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			testService := newBaseService("service2", tfJob, nil)
-			testService.Labels[labelGroupName] = "testing"
+			testService := testutil.NewBaseService("service2", tfJob, nil)
+			testService.Labels[generator.LabelGroupName] = "testing"
 
 			return test{
 				name: "Claim services with correct label",
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					tfJob,
 					tfJobLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
-				services: []*v1.Service{newBaseService("service1", tfJob, t), testService},
-				claimed:  []*v1.Service{newBaseService("service1", tfJob, t)},
+				services: []*v1.Service{testutil.NewBaseService("service1", tfJob, t), testService},
+				claimed:  []*v1.Service{testutil.NewBaseService("service1", tfJob, t)},
 			}
 		}(),
 		func() test {
-			controller := newTFJob(1, 0)
+			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -68,25 +72,25 @@ func TestClaimServices(t *testing.T) {
 			controller.UID = types.UID(controllerUID)
 			now := metav1.Now()
 			controller.DeletionTimestamp = &now
-			testService1 := newBaseService("service1", controller, t)
+			testService1 := testutil.NewBaseService("service1", controller, t)
 			testService1.SetOwnerReferences([]metav1.OwnerReference{})
-			testService2 := newBaseService("service2", controller, t)
+			testService2 := testutil.NewBaseService("service2", controller, t)
 			testService2.SetOwnerReferences([]metav1.OwnerReference{})
 			return test{
 				name: "Controller marked for deletion can not claim services",
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testService1, testService2},
 				claimed:  nil,
 			}
 		}(),
 		func() test {
-			controller := newTFJob(1, 0)
+			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -94,28 +98,28 @@ func TestClaimServices(t *testing.T) {
 			controller.UID = types.UID(controllerUID)
 			now := metav1.Now()
 			controller.DeletionTimestamp = &now
-			testService2 := newBaseService("service2", controller, t)
+			testService2 := testutil.NewBaseService("service2", controller, t)
 			testService2.SetOwnerReferences([]metav1.OwnerReference{})
 			return test{
 				name: "Controller marked for deletion can not claim new services",
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
-				services: []*v1.Service{newBaseService("service1", controller, t), testService2},
-				claimed:  []*v1.Service{newBaseService("service1", controller, t)},
+				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testService2},
+				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
 			}
 		}(),
 		func() test {
-			controller := newTFJob(1, 0)
+			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
-			controller2 := newTFJob(1, 0)
+			controller2 := testutil.NewTFJob(1, 0)
 			controller.UID = types.UID(controllerUID)
 			controller2.UID = types.UID("AAAAA")
 			return test{
@@ -123,46 +127,46 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
-				services: []*v1.Service{newBaseService("service1", controller, t), newBaseService("service2", controller2, t)},
-				claimed:  []*v1.Service{newBaseService("service1", controller, t)},
+				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testutil.NewBaseService("service2", controller2, t)},
+				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
 			}
 		}(),
 		func() test {
-			controller := newTFJob(1, 0)
+			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
 			controller.UID = types.UID(controllerUID)
-			testService2 := newBaseService("service2", controller, t)
-			testService2.Labels[labelGroupName] = "testing"
+			testService2 := testutil.NewBaseService("service2", controller, t)
+			testService2.Labels[generator.LabelGroupName] = "testing"
 			return test{
 				name: "Controller releases claimed services when selector doesn't match",
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
-				services: []*v1.Service{newBaseService("service1", controller, t), testService2},
-				claimed:  []*v1.Service{newBaseService("service1", controller, t)},
+				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testService2},
+				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
 			}
 		}(),
 		func() test {
-			controller := newTFJob(1, 0)
+			controller := testutil.NewTFJob(1, 0)
 			controllerLabelSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-				MatchLabels: genLabels(getKey(controller, t)),
+				MatchLabels: generator.GenLabels(controller.Name),
 			})
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
 			controller.UID = types.UID(controllerUID)
-			testService1 := newBaseService("service1", controller, t)
-			testService2 := newBaseService("service2", controller, t)
-			testService2.Labels[labelGroupName] = "testing"
+			testService1 := testutil.NewBaseService("service1", controller, t)
+			testService2 := testutil.NewBaseService("service2", controller, t)
+			testService2.Labels[generator.LabelGroupName] = "testing"
 			now := metav1.Now()
 			testService1.DeletionTimestamp = &now
 			testService2.DeletionTimestamp = &now
@@ -172,7 +176,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					controllerKind,
+					tfv1alpha2.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testService1, testService2},
 				claimed:  []*v1.Service{testService1},

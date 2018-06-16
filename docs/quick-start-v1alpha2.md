@@ -4,35 +4,7 @@ v1alpha2 is not ready yet but if you still want to try it out you can run it loc
 
 ## Create a TFJob
 
-You create a job by defining a TFJob and then creating it with:
-
-```yaml
-apiVersion: "kubeflow.org/v1alpha2"
-kind: "TFJob"
-metadata:
-  name: "dist-mnist-for-e2e-test"
-spec:
-  tfReplicaSpecs:
-    PS:
-      replicas: 2
-      restartPolicy: Never
-      template:
-        spec:
-          containers:
-            - name: dist-mnist-ps
-              # See https://github.com/kubeflow/tf-operator/tree/master/test/e2e/dist-mnist to build it.
-              image: kubeflow/tf-dist-mnist-test:1.0
-    Worker:
-      replicas: 4
-      restartPolicy: Never
-      template:
-        spec:
-          containers:
-            - name: dist-mnist-worker
-              # See https://github.com/kubeflow/tf-operator/tree/master/test/e2e/dist-mnist to build it.
-              image: kubeflow/tf-dist-mnist-test:1.0
-              args: ["train_steps", "50000"]
-```
+Please see the [example](../examples/v1alpha2/dist-mnist/README.md) to create a TFJob.
 
 ## Monitor your job
 

@@ -16,53 +16,18 @@
 package controller
 
 import (
-	"fmt"
 	"testing"
 
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
-
-func newBaseService(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Service {
-	return &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Labels:          genLabels(getKey(tfJob, t)),
-			Namespace:       tfJob.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
-		},
-	}
-}
-
-func newService(tfJob *tfv1alpha2.TFJob, typ string, index int, t *testing.T) *v1.Service {
-	service := newBaseService(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
-	service.Labels[tfReplicaTypeLabel] = typ
-	service.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
-	return service
-}
-
-// create count pods with the given phase for the given tfJob
-func newServiceList(count int32, tfJob *tfv1alpha2.TFJob, typ string, t *testing.T) []*v1.Service {
-	services := []*v1.Service{}
-	for i := int32(0); i < count; i++ {
-		newService := newService(tfJob, typ, int(i), t)
-		services = append(services, newService)
-	}
-	return services
-}
-
-func setServices(serviceIndexer cache.Indexer, tfJob *tfv1alpha2.TFJob, typ string, activeWorkerServices int32, t *testing.T) {
-	for _, service := range newServiceList(activeWorkerServices, tfJob, typ, t) {
-		serviceIndexer.Add(service)
-	}
-}
 
 func TestAddService(t *testing.T) {
 	// Prepare the clientset and controller for the test.
@@ -81,14 +46,14 @@ func TestAddService(t *testing.T) {
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
-	ctr.tfJobInformerSynced = alwaysReady
-	ctr.podInformerSynced = alwaysReady
-	ctr.serviceInformerSynced = alwaysReady
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.podInformerSynced = testutil.AlwaysReady
+	ctr.serviceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(threadCount, stopCh)
+		ctr.Run(testutil.ThreadCount, stopCh)
 	}
 	go run(stopCh)
 
@@ -100,8 +65,8 @@ func TestAddService(t *testing.T) {
 		return true, nil
 	}
 
-	tfJob := newTFJob(1, 0)
-	unstructured, err := convertTFJobToUnstructured(tfJob)
+	tfJob := testutil.NewTFJob(1, 0)
+	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -109,12 +74,12 @@ func TestAddService(t *testing.T) {
 	if err := tfJobIndexer.Add(unstructured); err != nil {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
-	service := newService(tfJob, labelWorker, 0, t)
+	service := testutil.NewService(tfJob, testutil.LabelWorker, 0, t)
 	ctr.addService(service)
 
 	syncChan <- "sync"
-	if key != getKey(tfJob, t) {
-		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, getKey(tfJob, t), key)
+	if key != testutil.GetKey(tfJob, t) {
+		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, testutil.GetKey(tfJob, t), key)
 	}
 	close(stopCh)
 }

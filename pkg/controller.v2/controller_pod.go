@@ -31,6 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
@@ -62,7 +63,7 @@ func (tc *TFJobController) reconcilePods(
 	podSlices := getPodSlices(pods, replicas, loggerForReplica(tfjob, rt))
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have to many pods for %s %d", rt, index)
+			loggerForReplica(tfjob, rt).Warningf("We have too many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("Need to create new pod: %s-%d", rt, index)
@@ -100,7 +101,7 @@ func (tc *TFJobController) reconcilePods(
 				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
 			}
 			if rtype == tfv1alpha2.TFReplicaTypeChief {
-				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
+				addTFJobReplicaStatuses(rtype, -1, pod, rstatus)
 			}
 		}
 	}
@@ -146,17 +147,17 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	}
 
 	// Create OwnerReference.
-	controllerRef := genOwnerReference(tfjob)
+	controllerRef := generator.GenOwnerReference(tfjob)
 
 	// Set type and index for the worker.
-	labels := genLabels(tfjobKey)
+	labels := generator.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
 	podTemplate := spec.Template.DeepCopy()
 
 	// Set name for the template.
-	podTemplate.Name = genGeneralName(tfjob.Name, rt, index)
+	podTemplate.Name = generator.GenGeneralName(tfjob.Name, rt, index)
 
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
@@ -222,9 +223,6 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob
 func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFReplicaSpec) {
 	if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else if spec.RestartPolicy == tfv1alpha2.RestartPolicy("") {
-		// Set default to Never.
-		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
@@ -234,15 +232,9 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFRe
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned Pods are pointers into the cache.
 func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, error) {
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return nil, err
-	}
-
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: genLabels(tfjobKey),
+		MatchLabels: generator.GenLabels(tfjob.Name),
 	})
 
 	if err != nil {
@@ -293,6 +285,23 @@ func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v1.Pod 
 
 func genExpectationPodsKey(tfjobKey, replicaType string) string {
 	return tfjobKey + "/" + strings.ToLower(replicaType) + "/pods"
+}
+
+// RecheckDeletionTimestamp returns a CanAdopt() function to recheck deletion.
+//
+// The CanAdopt() function calls getObject() to fetch the latest value,
+// and denies adoption attempts if that object has a non-nil DeletionTimestamp.
+func RecheckDeletionTimestamp(getObject func() (metav1.Object, error)) func() error {
+	return func() error {
+		obj, err := getObject()
+		if err != nil {
+			return fmt.Errorf("can't recheck DeletionTimestamp: %v", err)
+		}
+		if obj.GetDeletionTimestamp() != nil {
+			return fmt.Errorf("%v/%v has just been deleted at %v", obj.GetNamespace(), obj.GetName(), obj.GetDeletionTimestamp())
+		}
+		return nil
+	}
 }
 
 // When a pod is created, enqueue the tfjob that manages it and update its expectations.
@@ -371,7 +380,7 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 		if job == nil {
 			return
 		}
-		log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
+		//log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
 		tc.enqueueTFJob(job)
 		return
 	}

@@ -22,12 +22,14 @@ import (
 	"strings"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 // TFConfig is a struct representing the distributed TensorFlow config.
 // This struct is turned into an environment variable TF_CONFIG
 // which is used by TensorFlow processes to configure themselves.
-// https://cloud.google.com/ml-engine/docs/trainer-considerations#use_tf_config
+// https://www.tensorflow.org/api_docs/python/tf/estimator/RunConfig#methods
+// https://cloud.google.com/ml-engine/docs/tensorflow/distributed-training-details
 type TFConfig struct {
 	// Cluster represents a TensorFlow ClusterSpec.
 	// See: https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
@@ -96,12 +98,12 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 		rt := strings.ToLower(string(rtype))
 		replicaNames := make([]string, 0, *spec.Replicas)
 
-		port, err := getPortFromTFJob(tfjob, rtype)
+		port, err := generator.GetPortFromTFJob(tfjob, rtype)
 		if err != nil {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := fmt.Sprintf("%s:%d", genDNSRecord(tfjob.Name, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
+			host := fmt.Sprintf("%s:%d", generator.GenDNSRecord(tfjob.Name, rt, fmt.Sprintf("%d", i), tfjob.ObjectMeta.Namespace), port)
 			replicaNames = append(replicaNames, host)
 		}
 

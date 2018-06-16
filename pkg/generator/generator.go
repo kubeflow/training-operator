@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package generator
 
 import (
 	"encoding/json"
@@ -26,17 +26,15 @@ import (
 )
 
 const (
-	labelGroupName = "group_name"
+	LabelGroupName = "group_name"
 	labelTFJobKey  = "tf_job_key"
-
-	failedMarshalTFJobReason = "FailedMarshalTFJob"
 )
 
 var (
 	errPortNotFound = fmt.Errorf("Failed to found the port")
 )
 
-func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
+func GenOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
 		APIVersion:         tfv1alpha2.SchemeGroupVersion.String(),
@@ -50,24 +48,24 @@ func genOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	return controllerRef
 }
 
-func genLabels(tfjobKey string) map[string]string {
+func GenLabels(tfjobKey string) map[string]string {
 	return map[string]string{
-		labelGroupName: tfv1alpha2.GroupName,
+		LabelGroupName: tfv1alpha2.GroupName,
 		labelTFJobKey:  strings.Replace(tfjobKey, "/", "-", -1),
 	}
 }
 
-func genGeneralName(tfJobName, rtype, index string) string {
+func GenGeneralName(tfJobName, rtype, index string) string {
 	n := tfJobName + "-" + rtype + "-" + index
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func genDNSRecord(tfJobName, rtype, index, namespace string) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", genGeneralName(tfJobName, rtype, index), namespace)
+func GenDNSRecord(tfJobName, rtype, index, namespace string) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", GenGeneralName(tfJobName, rtype, index), namespace)
 }
 
-// convertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
-func convertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstructured, error) {
+// ConvertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
+func ConvertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstructured, error) {
 	var unstructured unstructured.Unstructured
 	b, err := json.Marshal(tfJob)
 	if err != nil {
@@ -80,8 +78,8 @@ func convertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstruct
 	return &unstructured, nil
 }
 
-// getPortFromTFJob gets the port of tensorflow container.
-func getPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (int32, error) {
+// GetPortFromTFJob gets the port of tensorflow container.
+func GetPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (int32, error) {
 	containers := tfJob.Spec.TFReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == tfv1alpha2.DefaultContainerName {
@@ -96,7 +94,7 @@ func getPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (
 	return -1, errPortNotFound
 }
 
-func containChiefSpec(tfJob *tfv1alpha2.TFJob) bool {
+func ContainChiefSpec(tfJob *tfv1alpha2.TFJob) bool {
 	if _, ok := tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
 		return true
 	}

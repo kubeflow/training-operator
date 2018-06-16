@@ -10,6 +10,10 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
+const (
+	failedMarshalTFJobReason = "FailedMarshalTFJob"
+)
+
 // When a pod is added, set the defaults and enqueue the current tfjob.
 func (tc *TFJobController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
@@ -37,7 +41,6 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 		log.Infof("Append tfJob condition error: %v", err)
 		return
 	}
-
 	tc.enqueueTFJob(obj)
 }
 

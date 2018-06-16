@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 const (
@@ -81,7 +82,7 @@ func (tc *TFJobController) updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv
 		tfjob.Status.StartTime = &now
 	}
 
-	if containChiefSpec(tfjob) {
+	if generator.ContainChiefSpec(tfjob) {
 		if rtype == tfv1alpha2.TFReplicaTypeChief {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
@@ -164,6 +165,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 	var realChiefPendingReason string
 	var realChiefFailedReason string
 
+	//get real chief for TFJob
 	if chiefReplicas == 0 {
 		realChiefRunningReason = workerRunningReason
 		realChiefFailedReason = workerFailedReason
@@ -176,6 +178,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		realChiefPendingReason = chiefPendingReason
 	}
 
+	restartPolicy := getRestartPolicy(tfjob)
 	if status[psRunningReason] == psReplicas && status[realChiefRunningReason] == 1 {
 		//Running
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
@@ -199,7 +202,9 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		}
 
 	}
-	if status[psFailedReason] != 0 || status[realChiefFailedReason] != 0 {
+	if (restartPolicy[tfv1alpha2.TFReplicaTypeChief] == tfv1alpha2.RestartPolicyNever ||
+		restartPolicy[tfv1alpha2.TFReplicaTypePS] == tfv1alpha2.RestartPolicyNever) &&
+		(status[psFailedReason] != 0 || status[realChiefFailedReason] != 0) {
 		//Failed
 		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 		now := metav1.Now()
@@ -211,7 +216,7 @@ func (tc *TFJobController) updateStatusDistributed(tfjob *tfv1alpha2.TFJob, repl
 		}
 
 	}
-	if status[psRunningReason] == psReplicas && status[realChiefPendingReason] == 1 && tfjob.Status.Conditions[len(tfjob.Status.Conditions)-1].Type == tfv1alpha2.TFJobFailed {
+	if status[psRunningReason] == psReplicas && status[realChiefPendingReason] == 1 {
 		//Restarting
 		msg := fmt.Sprintf("TFJob %s is restarting ", tfjob.Name)
 		now := metav1.Now()
@@ -243,6 +248,16 @@ func (tc *TFJobController) updateStatus(tfjob *tfv1alpha2.TFJob, rstatus map[str
 		}
 	}
 	return nil
+}
+
+// get restartPolicy for tfjob
+func getRestartPolicy(tfjob *tfv1alpha2.TFJob) map[tfv1alpha2.TFReplicaType]tfv1alpha2.RestartPolicy {
+	restartPolicy := make(map[tfv1alpha2.TFReplicaType]tfv1alpha2.RestartPolicy)
+	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
+		restartPolicy[rtype] = spec.RestartPolicy
+	}
+
+	return restartPolicy
 }
 
 //count status for TFJob(worker-0/chief/ps)
@@ -333,6 +348,7 @@ func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
 
 // updateTFJobConditions updates the conditions of the given tfjob.
 func updateTFJobConditions(tfjob *tfv1alpha2.TFJob, conditionType tfv1alpha2.TFJobConditionType, reason, message string) error {
+	fmt.Printf("Start update Type: %v", conditionType)
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
 	return nil
@@ -366,12 +382,6 @@ func addTFJobReplicaStatuses(rtype tfv1alpha2.TFReplicaType, index int, pod *v1.
 	} else {
 		key = string(rtype) + "-" + strconv.Itoa(index)
 	}
-	for _, val := range pod.Status.ContainerStatuses {
-		if val.State.Waiting != nil {
-			rstatus[key] = v1.PodFailed
-			return
-		}
-	}
 	rstatus[key] = pod.Status.Phase
 }
 
@@ -389,12 +399,6 @@ func newCondition(conditionType tfv1alpha2.TFJobConditionType, reason, message s
 
 // getCondition returns the condition with the provided type.
 func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) *tfv1alpha2.TFJobCondition {
-	/*for i := range status.Conditions {
-		c := status.Conditions[i]
-		if c.Type == condType {
-			return &c
-		}
-	}*/
 	if len(status.Conditions) > 0 {
 		return &status.Conditions[len(status.Conditions)-1]
 	}
@@ -431,6 +435,12 @@ func removementCondition(status *tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJ
 func filterOutCondition(conditions []tfv1alpha2.TFJobCondition, condType tfv1alpha2.TFJobConditionType) []tfv1alpha2.TFJobCondition {
 	var newConditions []tfv1alpha2.TFJobCondition
 	for _, c := range conditions {
+		if condType == tfv1alpha2.TFJobRestarting && c.Type == tfv1alpha2.TFJobRunning {
+			continue
+		}
+		if condType == tfv1alpha2.TFJobRunning && c.Type == tfv1alpha2.TFJobRestarting {
+			continue
+		}
 		if c.Type == condType {
 			continue
 		}

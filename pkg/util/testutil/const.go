@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha2
+package testutil
+
+import (
+	"time"
+)
 
 const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
+	TestImageName = "test-image-for-kubeflow-tf-operator:latest"
+	TestTFJobName = "test-tfjob"
+	LabelWorker   = "worker"
+	LabelPS       = "ps"
 
-	// DefaultPortName is name of the port used to communicate between PS and
-	// workers.
-	DefaultPortName = "tfjob-port"
-	// DefaultContainerName is the name of the TFJob container.
-	DefaultContainerName = "tensorflow"
-	// DefaultPort is default value of the port.
-	DefaultPort = 2222
-	// DefaultRestartPolicy is default RestartPolicy for TFReplicaSpec.
-	DefaultRestartPolicy = RestartPolicyNever
+	SleepInterval = 500 * time.Millisecond
+	ThreadCount   = 1
+)
+
+var (
+	AlwaysReady = func() bool { return true }
 )
