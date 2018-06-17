@@ -139,6 +139,19 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
+// cleanResourcesByCleanPolicy deletes the replicas by following the policy CleanAll, CleanNone, CleanRunning, the default is CleanAll
+func (j *TrainingJob) deleteResourcesByCleanPolicy() error {
+	log.Infof("deleteResourcesByCleanPolicy for %s, %v", j.job.ObjectMeta.Name, j.Replicas)
+	for _, r := range j.Replicas {
+		log.Infof("deleteResourcesByCleanPolicy for %s, %v", j.job.ObjectMeta.Name, r)
+		if err := r.DeleteResourcesByCleanPolicy(j.job.Spec.CleanPodPolicy); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // deleteResources deletes the replicas it it was created
 func (j *TrainingJob) deleteResources() error {
 	for _, r := range j.Replicas {
@@ -386,11 +399,11 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 		// TODO(jlewi): We should update the Phase if we detect the job is done.
 		if state == tfv1alpha1.StateFailed {
 			j.contextLogger.Errorf("Master failed Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
+			j.status.Phase = tfv1alpha1.TFJobPhaseDone
 			j.status.State = tfv1alpha1.StateFailed
 		} else if state == tfv1alpha1.StateSucceeded {
 			j.contextLogger.Infof("Master succeeded Job: %v.", j.job.ObjectMeta.Name)
-			j.status.Phase = tfv1alpha1.TFJobPhaseCleanUp
+			j.status.Phase = tfv1alpha1.TFJobPhaseDone
 			j.status.State = tfv1alpha1.StateSucceeded
 		} else if state == tfv1alpha1.StateRunning {
 			j.contextLogger.Infof("Master running Job: %v.", j.job.ObjectMeta.Name)
@@ -407,13 +420,24 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 		}
 	}
 
+	// When the job is done or failed, we need to determine if we need clean up the resource
+	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseDone {
+		j.contextLogger.Infof("Handle clean up policy when the tfjob %s is done.", j.job.ObjectMeta.Name)
+		if cErr := j.deleteResourcesByCleanPolicy(); cErr != nil {
+			j.contextLogger.Errorf("Job %v trainingJob.deleteResourcesByCleanPolicy() error; %v", j.job.ObjectMeta.Name, cErr)
+			return cErr
+		}
+		return nil
+	}
+
 	if j.job.Status.Phase == tfv1alpha1.TFJobPhaseCleanUp {
 		if cErr := j.deleteResources(); cErr != nil {
 			j.contextLogger.Errorf("Job %v trainingJob.Delete() error; %v", j.job.ObjectMeta.Name, cErr)
 			// Return an error so that we stay in phase cleanup and retry.
-			return cErr
+			// return cErr
 		}
-		j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		// j.status.Phase = tfv1alpha1.TFJobPhaseDone
+		return nil
 	}
 
 	// updateCRDStatus will update the status of the CRD with c.Status if c.Status

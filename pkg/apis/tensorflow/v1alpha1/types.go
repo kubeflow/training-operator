@@ -58,9 +58,22 @@ type TFJobSpec struct {
 	// TerminationPolicy specifies the condition that the tfjob should be considered finished.
 	TerminationPolicy *TerminationPolicySpec `json:"terminationPolicy,omitempty"`
 
+	// CleanPodPolicy specifies the operation when tfjob is finished or failed.
+	CleanPodPolicy CleanPodPolicyType `json:"cleanPodPolicy,omitempty"`
+
 	// SchedulerName specifies the name of scheduler which should handle the TFJob
 	SchedulerName string `json:"schedulerName,omitempty"`
 }
+
+// CleanPodPolicyType defines all kinds of types of cleanPodPolicy.
+type CleanPodPolicyType string
+
+const (
+	CleanUndefined CleanPodPolicyType = ""
+	CleanAll       CleanPodPolicyType = "CleanAll"
+	CleanRunning   CleanPodPolicyType = "CleanRunning"
+	CleanNone      CleanPodPolicyType = "CleanNone"
+)
 
 // TerminationPolicySpec structure for storing specifications for process termination
 type TerminationPolicySpec struct {
