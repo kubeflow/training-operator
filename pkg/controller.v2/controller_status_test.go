@@ -33,7 +33,7 @@ func TestFailed(t *testing.T) {
 	if tfJob.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := updateStatus(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3)
+	err := updateStatusSingle(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -263,13 +263,13 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.tfJob, tfv1alpha2.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, t)
 
 		if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
-			err := updateStatus(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1)
+			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 		} else {
 			replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
-			err := updateStatus(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas))
+			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas))
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
