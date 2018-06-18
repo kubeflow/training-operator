@@ -89,6 +89,9 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	}
 	var tfjob tfv1alpha2.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
+	// This is a simple validation for TFJob to close
+	// https://github.com/kubeflow/tf-operator/issues/641
+	// TODO(gaocegege): Add more validation here.
 	if err != nil || tfjob.Spec.TFReplicaSpecs == nil {
 		return &tfjob, errFailedMarshal
 	}
