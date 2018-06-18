@@ -240,24 +240,23 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 }
 
 // Delete the replicas by clean policy when the tfjob is complete or failed: CleanAll, CleanNone, CleanRunning, the default is CleanAll
-func (s *TFReplicaSet) DeleteResourcesByCleanPolicy(cleanPolicy tfv1alpha1.CleanPodPolicyType) error {
+func (s *TFReplicaSet) DeleteResourcesByCleanPolicy(cleanPolicy tfv1alpha1.CleanPodPolicyType) (err error) {
 	log.Infof("DeleteResourcesByCleanPolicy for %s with CleanPodPolicyType %v", s.Job.job.ObjectMeta.Name, cleanPolicy)
 	switch cleanPolicy {
 	case tfv1alpha1.CleanUndefined, tfv1alpha1.CleanAll:
 		s.contextLogger.Infof("Apply Clean All Policy for %s", s.Job.job.ObjectMeta.Name)
-		return s.Delete()
+		err = s.Delete()
 	case tfv1alpha1.CleanNone:
 		s.contextLogger.Infof("Apply Clean None Policy for %s", s.Job.job.ObjectMeta.Name)
-		return nil
 	case tfv1alpha1.CleanRunning:
 		s.contextLogger.Infof("Apply Clean Running Pod Policy for %s", s.Job.job.ObjectMeta.Name)
-		return s.DeleteRunningPods()
+		err = s.DeleteRunningPods()
 	default:
 		s.contextLogger.Errorf("Unknown cleanPolicy %v", cleanPolicy)
-		return fmt.Errorf("Unknown cleanPolicy %v", cleanPolicy)
+		err = fmt.Errorf("Unknown cleanPolicy %v", cleanPolicy)
 	}
 
-	return nil
+	return err
 }
 
 // Deletes the running pods
