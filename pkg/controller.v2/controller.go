@@ -401,7 +401,10 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		if err := tc.deletePodsAndServices(tfjob, pods, services); err != nil {
 			return err
 		}
-		tfjob.Status.TFReplicaStatuses = make(map[tfv1alpha2.TFReplicaType]tfv1alpha2.TFJobStatus)
+		// Initialize the status.
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
 		return tc.updateStatusHandler(tfjob)
 	}
 
