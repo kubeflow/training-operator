@@ -396,6 +396,13 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
+	// If the TFJob is terminated, delete all pods and services.
+	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
+		tc.recorder.Event(tfjob, v1.EventTypeNormal, terminatedTFJobReason,
+			"TFJob is terminated, deleting pods and services")
+		return tc.deletePodsAndServices(tfjob, pods, services)
+	}
+
 	// Save the current state of the replicas
 	replicasStatus := make(map[string]v1.PodPhase)
 

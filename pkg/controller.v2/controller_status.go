@@ -192,8 +192,8 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 			return err
 		}
 	}
+	// The chief is succeeded, thus we consider the TFJob is succeeded.
 	if status[realChiefSucceededReason] == 1 {
-		//Succeeded
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
@@ -204,10 +204,10 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 		}
 
 	}
+	// PS or chief is failed and will not be restarted, thus we consider the TFJob is failed.
 	if (restartPolicy[tfv1alpha2.TFReplicaTypeChief] == tfv1alpha2.RestartPolicyNever &&
 		restartPolicy[tfv1alpha2.TFReplicaTypePS] == tfv1alpha2.RestartPolicyNever) &&
 		(status[psFailedReason] != 0 || status[realChiefFailedReason] != 0) {
-		//Failed
 		msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 		now := metav1.Now()
 		tfjob.Status.CompletionTime = &now
@@ -218,6 +218,8 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 		}
 
 	}
+	// We do not set the status to restarting if the worker is failed, because the TFJob
+	// could be running even if there is only one worker.
 	if status[psRunningReason] == psReplicas && status[realChiefPendingReason] == 1 {
 		//Restarting
 		msg := fmt.Sprintf("TFJob %s is restarting ", tfjob.Name)
@@ -406,6 +408,28 @@ func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobCondit
 		return &status.Conditions[len(status.Conditions)-1]
 	}
 	return nil
+}
+
+func isSucceeded(status tfv1alpha2.TFJobStatus) bool {
+	condition := getCondition(status, tfv1alpha2.TFJobSucceeded)
+	if condition == nil {
+		return false
+	}
+	if condition.Status == v1.ConditionTrue {
+		return true
+	}
+	return false
+}
+
+func isFailed(status tfv1alpha2.TFJobStatus) bool {
+	condition := getCondition(status, tfv1alpha2.TFJobFailed)
+	if condition == nil {
+		return false
+	}
+	if condition.Status == v1.ConditionTrue {
+		return true
+	}
+	return false
 }
 
 // setCondition updates the tfjob to include the provided condition.
