@@ -50,7 +50,7 @@ func (tc *TFJobController) reconcilePods(
 	tfjob *tfv1alpha2.TFJob,
 	pods []*v1.Pod,
 	rtype tfv1alpha2.TFReplicaType,
-	spec *tfv1alpha2.TFReplicaSpec) error {
+	spec *tfv1alpha2.TFReplicaSpec, rstatus map[string]v1.PodPhase) error {
 
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
@@ -92,10 +92,19 @@ func (tc *TFJobController) reconcilePods(
 				}
 			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
+			if rtype == tfv1alpha2.TFReplicaTypeWorker && index == 0 {
+				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
+			}
+			if rtype == tfv1alpha2.TFReplicaTypePS {
+				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
+			}
+			if rtype == tfv1alpha2.TFReplicaTypeChief {
+				addTFJobReplicaStatuses(rtype, -1, pod, rstatus)
+			}
 		}
 	}
 
-	return updateStatus(tfjob, rtype, replicas)
+	return nil
 }
 
 // getPodSlices returns a slice, which element is the slice of pod.

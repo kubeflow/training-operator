@@ -16,6 +16,7 @@
 package controller
 
 import (
+	"strconv"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -33,7 +34,7 @@ func TestFailed(t *testing.T) {
 	if tfJob.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := updateStatus(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3)
+	err := updateStatusSingle(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -263,13 +264,13 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.tfJob, tfv1alpha2.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, t)
 
 		if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
-			err := updateStatus(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1)
+			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 		} else {
 			replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
-			err := updateStatus(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas))
+			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas))
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
@@ -300,5 +301,224 @@ func setStatusForTest(tfJob *tfv1alpha2.TFJob, typ tfv1alpha2.TFReplicaType, fai
 	for i = 0; i < active; i++ {
 		pod.Status.Phase = v1.PodRunning
 		updateTFJobReplicaStatuses(tfJob, typ, pod)
+	}
+}
+
+func TestStatuses(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1alpha2.TFJob
+
+		failedPS        int32
+		succeededPS     int32
+		runningPS       int32
+		restartPolicyPS tfv1alpha2.RestartPolicy
+
+		failedWorker        int32
+		succeededWorker     int32
+		runningWorker       int32
+		restartPolicyWorker tfv1alpha2.RestartPolicy
+
+		failedChief        int32
+		succeededChief     int32
+		runningChief       int32
+		restartPolicyChief tfv1alpha2.RestartPolicy
+
+		expectedType tfv1alpha2.TFJobConditionType
+	}
+
+	testCases := []testCase{
+		testCase{
+			description:     "Chief worker is failed 0",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        1,
+			succeededPS:     0,
+			runningPS:       0,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        0,
+			succeededWorker:     1,
+			runningWorker:       0,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     0,
+			runningChief:       1,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobFailed,
+		},
+		testCase{
+			description:     "Chief worker is running 1",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        0,
+			succeededPS:     0,
+			runningPS:       1,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        1,
+			succeededWorker:     0,
+			runningWorker:       0,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     0,
+			runningChief:       1,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobRunning,
+		},
+		testCase{
+			description:     "Chief worker is failed 2",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        1,
+			succeededPS:     0,
+			runningPS:       0,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        0,
+			succeededWorker:     1,
+			runningWorker:       0,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     0,
+			runningChief:       1,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobFailed,
+		},
+		testCase{
+			description:     "Chief worker is running 3",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        1,
+			succeededPS:     0,
+			runningPS:       0,
+			restartPolicyPS: tfv1alpha2.RestartPolicyAlways,
+
+			failedWorker:        0,
+			succeededWorker:     0,
+			runningWorker:       1,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     0,
+			runningChief:       1,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobRunning,
+		},
+		testCase{
+			description:     "Chief worker is succeeded 4",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        1,
+			succeededPS:     0,
+			runningPS:       0,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        1,
+			succeededWorker:     0,
+			runningWorker:       0,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     1,
+			runningChief:       0,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobSucceeded,
+		},
+		testCase{
+			description:     "Chief worker is failed 5",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        0,
+			succeededPS:     0,
+			runningPS:       1,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        0,
+			succeededWorker:     1,
+			runningWorker:       0,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        1,
+			succeededChief:     0,
+			runningChief:       0,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobFailed,
+		},
+		testCase{
+			description:     "Chief worker is failed 6",
+			tfJob:           testutil.NewTFJobWithChief(1, 1),
+			failedPS:        1,
+			succeededPS:     0,
+			runningPS:       0,
+			restartPolicyPS: tfv1alpha2.RestartPolicyNever,
+
+			failedWorker:        0,
+			succeededWorker:     0,
+			runningWorker:       1,
+			restartPolicyWorker: tfv1alpha2.RestartPolicyOnFailure,
+
+			failedChief:        0,
+			succeededChief:     0,
+			runningChief:       1,
+			restartPolicyChief: tfv1alpha2.RestartPolicyNever,
+			expectedType:       tfv1alpha2.TFJobFailed,
+		},
+	}
+
+	for _, val := range testCases {
+		replicasStatus := make(map[string]v1.PodPhase)
+		for rtype, spec := range val.tfJob.Spec.TFReplicaSpecs {
+			if rtype == tfv1alpha2.TFReplicaTypePS {
+				spec.RestartPolicy = val.restartPolicyPS
+				if val.failedPS > 0 {
+					for i := 0; i < int(*spec.Replicas); i++ {
+						keyPS := string(rtype) + "-" + strconv.Itoa(i)
+						replicasStatus[keyPS] = v1.PodFailed
+					}
+				}
+				if val.succeededPS > 0 {
+					for i := 0; i < int(*spec.Replicas); i++ {
+						keyPS := string(rtype) + "-" + strconv.Itoa(i)
+						replicasStatus[keyPS] = v1.PodSucceeded
+					}
+				}
+				if val.runningPS > 0 {
+					for i := 0; i < int(*spec.Replicas); i++ {
+						keyPS := string(rtype) + "-" + strconv.Itoa(i)
+						replicasStatus[keyPS] = v1.PodRunning
+					}
+				}
+			}
+			if rtype == tfv1alpha2.TFReplicaTypeWorker {
+				spec.RestartPolicy = val.restartPolicyWorker
+				keyWorker := string(rtype) + "-" + "0"
+				if val.failedWorker > 0 {
+					replicasStatus[keyWorker] = v1.PodFailed
+				}
+				if val.succeededWorker > 0 {
+					replicasStatus[keyWorker] = v1.PodSucceeded
+				}
+				if val.runningWorker > 0 {
+					replicasStatus[keyWorker] = v1.PodRunning
+				}
+			}
+			if rtype == tfv1alpha2.TFReplicaTypeChief {
+				spec.RestartPolicy = val.restartPolicyChief
+				var key int32 = 1
+				spec.Replicas = &key
+				keyChief := string(rtype)
+				if val.failedChief > 0 {
+					replicasStatus[keyChief] = v1.PodFailed
+				}
+				if val.succeededChief > 0 {
+					replicasStatus[keyChief] = v1.PodSucceeded
+				}
+				if val.runningChief > 0 {
+					replicasStatus[keyChief] = v1.PodRunning
+				}
+			}
+		}
+		updateStatus(val.tfJob, replicasStatus)
+		if val.expectedType != val.tfJob.Status.Conditions[0].Type {
+			t.Errorf("testCase is failed for %v", val.description)
+		}
 	}
 }

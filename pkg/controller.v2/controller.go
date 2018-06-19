@@ -392,9 +392,12 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
+	// Save the current state of the replicas
+	replicasStatus := make(map[string]v1.PodPhase)
+
 	// Diff current active pods/services with replicas.
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
-		err = tc.reconcilePods(tfjob, pods, rtype, spec)
+		err = tc.reconcilePods(tfjob, pods, rtype, spec, replicasStatus)
 		if err != nil {
 			log.Infof("reconcilePods error %v", err)
 			return err
@@ -408,6 +411,12 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
+	err = updateStatus(tfjob, replicasStatus)
+	if err != nil {
+		log.Infof("updateStatus error %v", err)
+		return err
+	}
+	// TODO(yph152): if tfjob status is succeeded ,and delete pod and service.
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)
 }
