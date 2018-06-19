@@ -155,6 +155,10 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 
 //Update distributed training status
 func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]v1.PodPhase) error {
+	if tfjob.Status.StartTime == nil {
+		now := metav1.Now()
+		tfjob.Status.StartTime = &now
+	}
 
 	chiefReplicas, psReplicas, _ := getReplicasForTFJobType(tfjob)
 
