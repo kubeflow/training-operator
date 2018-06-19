@@ -179,7 +179,9 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 	}
 
 	restartPolicy := getRestartPolicy(tfjob)
-	if status[psRunningReason] == psReplicas && status[realChiefRunningReason] == 1 {
+	if (status[psRunningReason] == psReplicas && status[realChiefRunningReason] == 1) ||
+		(restartPolicy[tfv1alpha2.TFReplicaTypePS] != tfv1alpha2.RestartPolicyNever ||
+			restartPolicy[tfv1alpha2.TFReplicaTypeChief] != tfv1alpha2.RestartPolicyNever) {
 		//Running
 		msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 		now := metav1.Now()
@@ -190,7 +192,7 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 			return err
 		}
 	}
-	if status[psRunningReason] == psReplicas && status[realChiefSucceededReason] == 1 {
+	if status[realChiefSucceededReason] == 1 {
 		//Succeeded
 		msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 		now := metav1.Now()
@@ -202,7 +204,7 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 		}
 
 	}
-	if (restartPolicy[tfv1alpha2.TFReplicaTypeChief] == tfv1alpha2.RestartPolicyNever ||
+	if (restartPolicy[tfv1alpha2.TFReplicaTypeChief] == tfv1alpha2.RestartPolicyNever &&
 		restartPolicy[tfv1alpha2.TFReplicaTypePS] == tfv1alpha2.RestartPolicyNever) &&
 		(status[psFailedReason] != 0 || status[realChiefFailedReason] != 0) {
 		//Failed
@@ -234,12 +236,14 @@ func updateStatusDistributed(tfjob *tfv1alpha2.TFJob, replicasStatus map[string]
 
 //updateStatus updates the  tfjob status according to the replica status map.
 func updateStatus(tfjob *tfv1alpha2.TFJob, rstatus map[string]v1.PodPhase) error {
-	_, psReplicas, workerReplicas := getReplicasForTFJobType(tfjob)
+	chiefReplicas, psReplicas, workerReplicas := getReplicasForTFJobType(tfjob)
 
 	if psReplicas == 0 {
-		err := updateStatusSingle(tfjob, tfv1alpha2.TFReplicaTypeWorker, workerReplicas)
-		if err != nil {
-			return err
+		if (chiefReplicas == 1 && workerReplicas == 0) || (chiefReplicas == 0 && workerReplicas == 1) {
+			err := updateStatusSingle(tfjob, tfv1alpha2.TFReplicaTypeWorker, workerReplicas)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		err := updateStatusDistributed(tfjob, rstatus)
