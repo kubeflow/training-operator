@@ -459,6 +459,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                                       ["Running"],
                                       timeout=datetime.timedelta(
                                         minutes=2))
+        pods = list_pods(api_client, namespace, pod_selector)
+        logging.info(pods)
+        logging.info("================zzzzzzzz \n\n")
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
         terminateReplica(masterHost, namespace, target)
