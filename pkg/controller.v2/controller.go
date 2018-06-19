@@ -328,6 +328,7 @@ func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
 		return
 	}
 
+	// TODO: we may need add backoff here
 	tc.workQueue.Add(key)
 }
 
@@ -343,6 +344,9 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return false, err
+	}
+	if len(namespace) == 0 || len(name) == 0 {
+		return false, fmt.Errorf("invalid tfjob key %q: either namespace or name is missing", key)
 	}
 
 	sharedTFJob, err := tc.getTFJobFromName(namespace, name)
