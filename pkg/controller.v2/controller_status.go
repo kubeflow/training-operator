@@ -77,7 +77,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
 	// All workers are running, set StartTime.
-	if running == replicas && tfjob.Status.StartTime == nil {
+	if running == replicas {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 	}
@@ -94,6 +94,8 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			}
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -127,6 +129,8 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			// All workers are succeeded, leave a succeeded condition.
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -410,32 +414,26 @@ func getCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobCondit
 	return nil
 }
 
-func isSucceeded(status tfv1alpha2.TFJobStatus) bool {
-	condition := getCondition(status, tfv1alpha2.TFJobSucceeded)
-	if condition == nil {
-		return false
-	}
-	if condition.Status == v1.ConditionTrue {
-		return true
+func hasCondition(status tfv1alpha2.TFJobStatus, condType tfv1alpha2.TFJobConditionType) bool {
+	for _, condition := range status.Conditions {
+		if condition.Type == condType && condition.Status == v1.ConditionTrue {
+			return true
+		}
 	}
 	return false
 }
 
+func isSucceeded(status tfv1alpha2.TFJobStatus) bool {
+	return hasCondition(status, tfv1alpha2.TFJobSucceeded)
+}
+
 func isFailed(status tfv1alpha2.TFJobStatus) bool {
-	condition := getCondition(status, tfv1alpha2.TFJobFailed)
-	if condition == nil {
-		return false
-	}
-	if condition.Status == v1.ConditionTrue {
-		return true
-	}
-	return false
+	return hasCondition(status, tfv1alpha2.TFJobFailed)
 }
 
 // setCondition updates the tfjob to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
-// If condition is TFJobSucceeded, set CompletionTime.
 func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
 	currentCond := getCondition(*status, condition.Type)
 
@@ -447,12 +445,6 @@ func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCond
 	// Do not update lastTransitionTime if the status of the condition doesn't change.
 	if currentCond != nil && currentCond.Status == condition.Status {
 		condition.LastTransitionTime = currentCond.LastTransitionTime
-	}
-
-	// if success, update with complete time
-	if condition.Type == tfv1alpha2.TFJobSucceeded && status.CompletionTime == nil {
-		now := metav1.Now()
-		status.CompletionTime = &now
 	}
 
 	// Append the updated condition to the

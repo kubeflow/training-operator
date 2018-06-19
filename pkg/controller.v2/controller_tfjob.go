@@ -57,6 +57,11 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 }
 
 func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod, services []*v1.Service) error {
+	if len(pods) == 0 && len(services) == 0 {
+		return nil
+	}
+	tc.recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
+		"TFJob is terminated, deleting pods and services")
 	for _, pod := range pods {
 		if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
 			return err

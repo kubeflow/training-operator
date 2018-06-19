@@ -199,7 +199,7 @@ func (f *FakeServiceControl) Clear() {
 	f.Lock()
 	defer f.Unlock()
 	f.DeleteServiceName = []string{}
-	f.Templates = []v1.PodTemplateSpec{}
+	f.Templates = []v1.Service{}
 	f.ControllerRefs = []metav1.OwnerReference{}
 	f.Patches = [][]byte{}
 	f.CreateLimit = 0
