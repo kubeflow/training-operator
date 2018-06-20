@@ -427,12 +427,6 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
-	err = updateStatus(tfjob, replicasStatus)
-	if err != nil {
-		log.Infof("updateStatus error %v", err)
-		return err
-	}
-	// TODO(yph152): if tfjob status is succeeded ,and delete pod and service.
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)
 }

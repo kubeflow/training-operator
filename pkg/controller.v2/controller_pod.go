@@ -57,6 +57,7 @@ func (tc *TFJobController) reconcilePods(
 	// Get all pods for the type rt.
 	pods = filterPodsForTFReplicaType(pods, rt)
 	replicas := int(*spec.Replicas)
+	restart := false
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
@@ -89,22 +90,14 @@ func (tc *TFJobController) reconcilePods(
 					if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}
+					restart = true
 				}
 			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
-			if rtype == tfv1alpha2.TFReplicaTypeWorker && index == 0 {
-				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
-			}
-			if rtype == tfv1alpha2.TFReplicaTypePS {
-				addTFJobReplicaStatuses(rtype, index, pod, rstatus)
-			}
-			if rtype == tfv1alpha2.TFReplicaTypeChief {
-				addTFJobReplicaStatuses(rtype, -1, pod, rstatus)
-			}
 		}
 	}
 
-	return nil
+	return updateStatusSingle(tfjob, rtype, replicas, restart)
 }
 
 // getPodSlices returns a slice, which element is the slice of pod.
