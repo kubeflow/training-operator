@@ -165,13 +165,13 @@ def get_labels(name, runtime_id, replica_type=None, replica_index=None):
     labels["task_index"] = replica_index
   return labels
 
-def get_labels_v1alpha2(namespace, name, replica_type=None,
+def get_labels_v1alpha2(name, replica_type=None,
                         replica_index=None):
   """Return labels.
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_key": "{0}-{1}".format(namespace, name),
+    "tf_job_key": name,
   }
   if replica_type:
     labels["tf-replica-type"] = replica_type
@@ -447,7 +447,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           pod_selector = to_selector(pod_labels)
         else:
           target = "{name}-{replica}-0".format(name=name, replica=replica)
-          pod_labels = get_labels(namespace, name)
+          pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
 
         # Wait for the pods to be ready before we shutdown
@@ -527,8 +527,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         # are being combined? For now we just log a warning rather than an
         # error.
         logging.warning(creation_failures)
-      pod_labels = get_labels(name, runtime_id)
-      pod_selector = to_selector(pod_labels)
+      if args.tfjob_version == "v1alpha1":
+        pod_labels = get_labels(name, runtime_id)
+        pod_selector = to_selector(pod_labels)
+      else:
+        pod_labels = get_labels_v1alpha2(name)
+        pod_selector = to_selector(pod_labels)
 
       wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 

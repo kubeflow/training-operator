@@ -396,6 +396,18 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
+	// If the TFJob is terminated, delete all pods and services.
+	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
+		if err := tc.deletePodsAndServices(tfjob, pods, services); err != nil {
+			return err
+		}
+		// Initialize the status.
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+		return tc.updateStatusHandler(tfjob)
+	}
+
 	// Save the current state of the replicas
 	replicasStatus := make(map[string]v1.PodPhase)
 
@@ -415,12 +427,6 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		}
 	}
 
-	err = updateStatus(tfjob, replicasStatus)
-	if err != nil {
-		log.Infof("updateStatus error %v", err)
-		return err
-	}
-	// TODO(yph152): if tfjob status is succeeded ,and delete pod and service.
 	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(tfjob)
 }
