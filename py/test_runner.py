@@ -93,6 +93,10 @@ def wait_for_pods_to_be_in_phases(client,
   end_time = datetime.datetime.now() + timeout
   while True:
     pods = list_pods(client, namespace, pod_selector)
+    if len(pods) == 0:
+      msg = "len(pods) == 0"
+      logging.error(msg)
+      raise RuntimeError(msg)
 
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
 
