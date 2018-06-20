@@ -93,10 +93,6 @@ def wait_for_pods_to_be_in_phases(client,
   end_time = datetime.datetime.now() + timeout
   while True:
     pods = list_pods(client, namespace, pod_selector)
-    if len(pods) == 0:
-      msg = "len(pods) == 0"
-      logging.error(msg)
-      raise RuntimeError(msg)
 
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
 
@@ -451,7 +447,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           pod_selector = to_selector(pod_labels)
         else:
           target = "{name}-{replica}-0".format(name=name, replica=replica)
-          pod_labels = get_labels_v1alpha2(name)
+          pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
 
         # Wait for the pods to be ready before we shutdown
@@ -531,6 +527,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         # are being combined? For now we just log a warning rather than an
         # error.
         logging.warning(creation_failures)
+      if args.tfjob_version == "v1alpha1":
+        pod_labels = get_labels(name, runtime_id)
+        pod_selector = to_selector(pod_labels)
+      else:
+        pod_labels = get_labels_v1alpha2(name)
+        pod_selector = to_selector(pod_labels)
 
       wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
