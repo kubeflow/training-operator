@@ -425,6 +425,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
+      pods = list_pods(api_client, namespace, pod_selector).items
+      for pod in pods:
+        logging.info(pod)
+        logging.info("yyyyyyyyyy")
+      logging.info("================zzzzzzzz \n\n")
+
       # The job is now either running or done.
       if args.shutdown_policy:
         logging.info("Enforcing shutdownPolicy %s", args.shutdown_policy)
@@ -459,11 +465,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                                       ["Running"],
                                       timeout=datetime.timedelta(
                                         minutes=2))
-        pods = list_pods(api_client, namespace, pod_selector).items
-        for pod in pods:
-          logging.info(pod)
-          logging.info("yyyyyyyyyy")
-        logging.info("================zzzzzzzz \n\n")
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
         terminateReplica(masterHost, namespace, target)
