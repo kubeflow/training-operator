@@ -88,9 +88,7 @@ func (in *ControllerConfig) DeepCopyInto(out *ControllerConfig) {
 		in, out := &in.Accelerators, &out.Accelerators
 		*out = make(map[string]AcceleratorConfig, len(*in))
 		for key, val := range *in {
-			newVal := new(AcceleratorConfig)
-			val.DeepCopyInto(newVal)
-			(*out)[key] = *newVal
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	return
@@ -193,19 +191,16 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 			if (*in)[i] == nil {
 				(*out)[i] = nil
 			} else {
-				(*out)[i] = new(TFReplicaSpec)
-				(*in)[i].DeepCopyInto((*out)[i])
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(TFReplicaSpec)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
 	if in.TerminationPolicy != nil {
 		in, out := &in.TerminationPolicy, &out.TerminationPolicy
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(TerminationPolicySpec)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(TerminationPolicySpec)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
@@ -230,8 +225,9 @@ func (in *TFJobStatus) DeepCopyInto(out *TFJobStatus) {
 			if (*in)[i] == nil {
 				(*out)[i] = nil
 			} else {
-				(*out)[i] = new(TFReplicaStatus)
-				(*in)[i].DeepCopyInto((*out)[i])
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(TFReplicaStatus)
+				(*in).DeepCopyInto(*out)
 			}
 		}
 	}
@@ -253,30 +249,18 @@ func (in *TFReplicaSpec) DeepCopyInto(out *TFReplicaSpec) {
 	*out = *in
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(int32)
-			**out = **in
-		}
+		*out = new(int32)
+		**out = **in
 	}
 	if in.Template != nil {
 		in, out := &in.Template, &out.Template
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(v1.PodTemplateSpec)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(v1.PodTemplateSpec)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.TFPort != nil {
 		in, out := &in.TFPort, &out.TFPort
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(int32)
-			**out = **in
-		}
+		*out = new(int32)
+		**out = **in
 	}
 	return
 }
@@ -319,12 +303,8 @@ func (in *TerminationPolicySpec) DeepCopyInto(out *TerminationPolicySpec) {
 	*out = *in
 	if in.Chief != nil {
 		in, out := &in.Chief, &out.Chief
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ChiefSpec)
-			**out = **in
-		}
+		*out = new(ChiefSpec)
+		**out = **in
 	}
 	return
 }

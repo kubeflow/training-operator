@@ -20,10 +20,12 @@ import (
 	"k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
@@ -162,4 +164,173 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	}
 
 	close(stopCh)
+}
+
+func TestDeletePodsAndServices(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1alpha2.TFJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
+
+		activeWorkerServices int32
+		activePSServices     int32
+
+		expectedPodDeletions int
+	}
+
+	testCases := []testCase{
+		testCase{
+			description: "4 workers and 2 ps is running, policy is all",
+			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyAll),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 6,
+		},
+		testCase{
+			description: "4 workers and 2 ps is running, policy is running",
+			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyRunning),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 6,
+		},
+		testCase{
+			description: "4 workers and 2 ps is succeeded, policy is running",
+			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyRunning),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    0,
+			succeededWorkerPods: 4,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    0,
+			succeededPSPods: 2,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 0,
+		},
+		testCase{
+			description: "4 workers and 2 ps is succeeded, policy is None",
+			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyNone),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    0,
+			succeededWorkerPods: 4,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    0,
+			succeededPSPods: 2,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 0,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		fakePodControl := &controller.FakePodControl{}
+		ctr.podControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.serviceControl = fakeServiceControl
+		ctr.recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.podInformerSynced = testutil.AlwaysReady
+		ctr.serviceInformerSynced = testutil.AlwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
+			return nil
+		}
+
+		// Set succeeded to run the logic about deleting.
+		err := updateTFJobConditions(tc.tfJob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, "")
+		if err != nil {
+			t.Errorf("Append tfjob condition error: %v", err)
+		}
+
+		unstructured, err := generator.ConvertTFJobToUnstructured(tc.tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
+
+		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+		if !forget {
+			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
+		}
+
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
+		}
+	}
 }

@@ -85,3 +85,8 @@ required = [
 [prune]
   go-tests = true
   unused-packages = true
+  non-go = true
+  [[prune.project]]
+    name = "k8s.io/code-generator"
+    unused-packages = false
+    non-go = false

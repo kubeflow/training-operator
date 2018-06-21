@@ -21,6 +21,17 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 )
 
+func NewTFJobWithCleanPolicy(chief, worker, ps int, policy tfv1alpha2.CleanPodPolicy) *tfv1alpha2.TFJob {
+	if chief == 1 {
+		tfJob := NewTFJobWithChief(worker, ps)
+		tfJob.Spec.CleanPodPolicy = &policy
+		return tfJob
+	}
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.CleanPodPolicy = &policy
+	return tfJob
+}
+
 func NewTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief] = &tfv1alpha2.TFReplicaSpec{
