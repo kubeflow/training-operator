@@ -171,7 +171,7 @@ def get_labels_v1alpha2(name, replica_type=None,
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_key": name,
+    "tf_job_name": name,
   }
   if replica_type:
     labels["tf-replica-type"] = replica_type
