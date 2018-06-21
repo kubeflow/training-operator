@@ -309,7 +309,6 @@ func TestDeletePodsAndServices(t *testing.T) {
 		if err := tfJobIndexer.Add(unstructured); err != nil {
 			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 		}
-		obj, exists, err := tfJobIndexer.GetByKey(testutil.GetKey(tc.tfJob, t))
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
