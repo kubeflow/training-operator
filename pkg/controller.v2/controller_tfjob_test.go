@@ -322,7 +322,7 @@ func TestDeletePodsAndServices(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
 		}
-		if forget != true {
+		if !forget {
 			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
 		}
 
