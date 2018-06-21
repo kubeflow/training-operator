@@ -77,7 +77,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
 	// All workers are running, set StartTime.
-	if running == replicas {
+	if running == replicas && tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 	}
@@ -102,25 +102,6 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 					return err
 				}
 			}
-
-			if failed > 0 {
-				if restart {
-					msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
-					err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
-					if err != nil {
-						loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-				} else {
-					msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-					err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
-					if err != nil {
-						loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-				}
-			}
-			return nil
 		}
 	} else {
 		if rtype == tfv1alpha2.TFReplicaTypeWorker {
@@ -145,26 +126,24 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 					return err
 				}
 			}
+		}
+	}
 
-			// Some workers or pss are failed , leave a failed condition.
-			if failed > 0 {
-				if restart {
-					msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
-					err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
-					if err != nil {
-						loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-				} else {
-					msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
-					err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
-					if err != nil {
-						loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-				}
+	if failed > 0 {
+		if restart {
+			msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
+			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
+			if err != nil {
+				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
 			}
-			return nil
+		} else {
+			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
+			if err != nil {
+				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
+			}
 		}
 	}
 	return nil

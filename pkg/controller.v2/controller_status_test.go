@@ -238,6 +238,21 @@ func TestStatus(t *testing.T) {
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
+			description:             "Chief is running, a PS is failed",
+			tfJob:                   testutil.NewTFJobWithChief(4, 2),
+			expectedFailedPS:        1,
+			expectedSucceededPS:     0,
+			expectedActivePS:        1,
+			expectedFailedWorker:    0,
+			expectedSucceededWorker: 4,
+			expectedActiveWorker:    0,
+			expectedFailedChief:     0,
+			expectedSucceededChief:  0,
+			expectedActiveChief:     1,
+			restart:                 false,
+			expectedType:            tfv1alpha2.TFJobFailed,
+		},
+		testCase{
 			description:             "Chief is failed, workers are succeeded",
 			tfJob:                   testutil.NewTFJobWithChief(4, 2),
 			expectedFailedPS:        0,
@@ -298,11 +313,34 @@ func TestStatus(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
+			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] != nil {
+				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart)
+				if err != nil {
+					t.Errorf("%s: Expected error %v to be nil", c.description, err)
+				}
+			}
+			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] != nil {
+				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS].Replicas
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart)
+				if err != nil {
+					t.Errorf("%s: Expected error %v to be nil", c.description, err)
+				}
+			}
 		} else {
-			replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
-			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart)
-			if err != nil {
-				t.Errorf("%s: Expected error %v to be nil", c.description, err)
+			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] != nil {
+				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart)
+				if err != nil {
+					t.Errorf("%s: Expected error %v to be nil", c.description, err)
+				}
+			}
+			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] != nil {
+				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS].Replicas
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart)
+				if err != nil {
+					t.Errorf("%s: Expected error %v to be nil", c.description, err)
+				}
 			}
 		}
 		found := false
