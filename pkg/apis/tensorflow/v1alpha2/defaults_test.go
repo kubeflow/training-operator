@@ -52,7 +52,7 @@ func expectedTFJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, p
 
 	return &TFJob{
 		Spec: TFJobSpec{
-			CleanPodPolicy: cleanPodPolicy,
+			CleanPodPolicy: &cleanPodPolicy,
 			TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
 				TFReplicaTypeWorker: &TFReplicaSpec{
 					Replicas:      Int32(1),
@@ -231,7 +231,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 		"set custom cleanpod policy": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					CleanPodPolicy: CleanPodPolicyRunning,
+					CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyRunning),
 					TFReplicaSpecs: map[TFReplicaType]*TFReplicaSpec{
 						TFReplicaTypeWorker: &TFReplicaSpec{
 							Replicas:      Int32(1),
@@ -266,4 +266,9 @@ func TestSetDefaultTFJob(t *testing.T) {
 			t.Errorf("%s: Want\n%v; Got\n %v", name, util.Pformat(tc.expected), util.Pformat(tc.original))
 		}
 	}
+}
+
+func cleanPodPolicyPointer(cleanPodPolicy CleanPodPolicy) *CleanPodPolicy {
+	c := cleanPodPolicy
+	return &c
 }
