@@ -398,7 +398,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 
 	// If the TFJob is terminated, delete all pods and services.
 	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
-		if err := tc.deletePodsAndServices(tfjob, pods, services); err != nil {
+		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
 		}
 		// Initialize the status.

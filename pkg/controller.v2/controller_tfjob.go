@@ -56,19 +56,27 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 	tc.enqueueTFJob(cur)
 }
 
-func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod, services []*v1.Service) error {
-	if len(pods) == 0 && len(services) == 0 {
+func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {
+	if len(pods) == 0 {
 		return nil
 	}
 	tc.recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
 		"TFJob is terminated, deleting pods and services")
+
+	// Delete nothing when the cleanPodPolicy is None.
+	if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyNone {
+		return nil
+	}
+
 	for _, pod := range pods {
+		if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
+			continue
+		}
 		if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
 			return err
 		}
-	}
-	for _, service := range services {
-		if err := tc.serviceControl.DeleteService(service.Namespace, service.Name, tfJob); err != nil {
+		// Pod and service have the same name, thus the service could be deleted using pod's name.
+		if err := tc.serviceControl.DeleteService(pod.Namespace, pod.Name, tfJob); err != nil {
 			return err
 		}
 	}

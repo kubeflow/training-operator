@@ -88,9 +88,19 @@ func setTypeNameToCamelCase(tfJob *TFJob, typ TFReplicaType) {
 
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfjob *TFJob) {
+	// Set default cleanpod policy to All.
+	if tfjob.Spec.CleanPodPolicy == nil {
+		all := CleanPodPolicyAll
+		tfjob.Spec.CleanPodPolicy = &all
+	}
+
+	// Update the key of TFReplicaSpecs to camel case.
 	setTypeNamesToCamelCase(tfjob)
+
 	for _, spec := range tfjob.Spec.TFReplicaSpecs {
+		// Set default replicas to 1.
 		setDefaultReplicas(spec)
+		// Set default port to tensorFlow container.
 		setDefaultPort(&spec.Template.Spec)
 	}
 }
