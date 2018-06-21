@@ -239,21 +239,21 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 	return s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Create(pod)
 }
 
-// Delete the replicas by clean policy when the tfjob is complete or failed: CleanAll, CleanNone, CleanRunning, the default is CleanAll
-func (s *TFReplicaSet) DeleteResourcesByCleanPolicy(cleanPolicy tfv1alpha1.CleanPodPolicyType) (err error) {
-	log.Infof("DeleteResourcesByCleanPolicy for %s with CleanPodPolicyType %v", s.Job.job.ObjectMeta.Name, cleanPolicy)
-	switch cleanPolicy {
-	case tfv1alpha1.CleanUndefined, tfv1alpha1.CleanAll:
+// Delete the replicas by cleanup pod policy when the tfjob is complete or failed: CleanupPodAll, CleanupPodNone, CleanupPodRunning, the default is CleanupPodAll
+func (s *TFReplicaSet) DeleteResourcesByCleanPolicy(cleanupPodPolicy tfv1alpha1.CleanupPodPolicy) (err error) {
+	log.Infof("DeleteResourcesByCleanPolicy for %s with CleanupPodPolicy %v", s.Job.job.ObjectMeta.Name, cleanupPodPolicy)
+	switch cleanupPodPolicy {
+	case tfv1alpha1.CleanupPodUndefined, tfv1alpha1.CleanupPodAll:
 		s.contextLogger.Infof("Apply Clean All Policy for %s", s.Job.job.ObjectMeta.Name)
 		err = s.Delete()
-	case tfv1alpha1.CleanNone:
+	case tfv1alpha1.CleanupPodNone:
 		s.contextLogger.Infof("Apply Clean None Policy for %s", s.Job.job.ObjectMeta.Name)
-	case tfv1alpha1.CleanRunning:
+	case tfv1alpha1.CleanupPodRunning:
 		s.contextLogger.Infof("Apply Clean Running Pod Policy for %s", s.Job.job.ObjectMeta.Name)
 		err = s.DeleteRunningPods()
 	default:
-		s.contextLogger.Errorf("Unknown cleanPolicy %v", cleanPolicy)
-		err = fmt.Errorf("Unknown cleanPolicy %v", cleanPolicy)
+		s.contextLogger.Errorf("Unknown cleanupPodPolicy %v", cleanupPodPolicy)
+		err = fmt.Errorf("Unknown cleanupPodPolicy %v", cleanupPodPolicy)
 	}
 
 	return err

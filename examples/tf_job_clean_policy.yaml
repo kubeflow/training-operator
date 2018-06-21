@@ -3,10 +3,10 @@ kind: "TFJob"
 metadata:
   name: "example-job"
 spec:
-  # The default behavior is CleanAll, which is the same as current behavior, but the user can set CleanRunning for reserving
+  # The default behavior is `All`, which is the same as current behavior, but the user can set `Running` for reserving
   # succeed/failed pod for checking logs, and non-running pod will not consume any GPU/CPU/Memory resource.
-  # And for further investigation, the user can set CleanNone for keeping all the components.
-  cleanPodPolicy: CleanRunning
+  # And for further investigation, the user can set `None` for keeping all the components.
+  cleanupPodPolicy: Running
   replicaSpecs:
     - replicas: 1
       tfReplicaType: MASTER

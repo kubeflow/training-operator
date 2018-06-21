@@ -139,12 +139,12 @@ func (j *TrainingJob) ClusterSpec() ClusterSpec {
 	return clusterSpec
 }
 
-// cleanResourcesByCleanPolicy deletes the replicas by following the policy CleanAll, CleanNone, CleanRunning, the default is CleanAll
+// cleanResourcesByCleanPolicy deletes the replicas by following the policy CleanupAll, CleanupNone, CleanupRunning, the default is CleanupAll
 func (j *TrainingJob) deleteResourcesByCleanPolicy() error {
 	log.Infof("deleteResourcesByCleanPolicy for %s, %v", j.job.ObjectMeta.Name, j.Replicas)
 	for _, r := range j.Replicas {
 		log.Infof("deleteResourcesByCleanPolicy for %s, %v", j.job.ObjectMeta.Name, r)
-		if err := r.DeleteResourcesByCleanPolicy(j.job.Spec.CleanPodPolicy); err != nil {
+		if err := r.DeleteResourcesByCleanPolicy(j.job.Spec.CleanupPodPolicy); err != nil {
 			return err
 		}
 	}
