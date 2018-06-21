@@ -52,8 +52,8 @@ func TestGenLabels(t *testing.T) {
 
 	labels := GenLabels(testKey)
 
-	if labels[labelTFJobKey] != expctedKey {
-		t.Errorf("Expected %s %s, got %s", labelTFJobKey, expctedKey, labels[labelTFJobKey])
+	if labels[labelTFJobName] != expctedKey {
+		t.Errorf("Expected %s %s, got %s", labelTFJobName, expctedKey, labels[labelTFJobName])
 	}
 	if labels[LabelGroupName] != tfv1alpha2.GroupName {
 		t.Errorf("Expected %s %s, got %s", LabelGroupName, tfv1alpha2.GroupName, labels[LabelGroupName])

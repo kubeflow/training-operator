@@ -171,7 +171,7 @@ def get_labels_v1alpha2(name, replica_type=None,
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_key": name,
+    "tf_job_name": name,
   }
   if replica_type:
     labels["tf-replica-type"] = replica_type
@@ -458,7 +458,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                                       pod_selector,
                                       ["Running"],
                                       timeout=datetime.timedelta(
-                                        minutes=2))
+                                        minutes=4))
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
         terminateReplica(masterHost, namespace, target)
