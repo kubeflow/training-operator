@@ -27,7 +27,7 @@ import (
 
 const (
 	LabelGroupName = "group_name"
-	labelTFJobName  = "tf_job_name"
+	labelTFJobName = "tf_job_name"
 )
 
 var (
@@ -51,7 +51,7 @@ func GenOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 func GenLabels(tfJobName string) map[string]string {
 	return map[string]string{
 		LabelGroupName: tfv1alpha2.GroupName,
-		labelTFJobName:  strings.Replace(tfJobName, "/", "-", -1),
+		labelTFJobName: strings.Replace(tfJobName, "/", "-", -1),
 	}
 }
 
