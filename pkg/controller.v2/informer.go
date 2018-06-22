@@ -108,6 +108,7 @@ func unstructuredFromTFJob(obj interface{}, tfJob *tfv1alpha2.TFJob) error {
 	var err error
 	un.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
 	if err != nil {
+		log.Error("The TFJob connvert failed")
 		return err
 	}
 	return nil
