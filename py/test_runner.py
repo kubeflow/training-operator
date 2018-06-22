@@ -425,12 +425,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-      pods = list_pods(api_client, namespace, pod_selector).items
-      for pod in pods:
-        logging.info(pod)
-        logging.info("yyyyyyyyyy")
-      logging.info("================zzzzzzzz \n\n")
-
       # The job is now either running or done.
       if args.shutdown_policy:
         logging.info("Enforcing shutdownPolicy %s", args.shutdown_policy)
@@ -455,6 +449,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           target = "{name}-{replica}-0".format(name=name, replica=replica)
           pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
+
+        if args.tfjob_version == "v1alpha2":
+          pods = list_pods(api_client, namespace, pod_selector).items
+          for pod in pods:
+            logging.info("===zzz" + str(pod))
 
         # Wait for the pods to be ready before we shutdown
         # TODO(jlewi): We are get pods using a label selector so there is
