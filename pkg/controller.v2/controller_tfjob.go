@@ -43,6 +43,12 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 		return
 	}
 
+	// Convert from tfjob object
+	err = unstructuredFromTFJob(obj, tfJob)
+	if err != nil {
+		log.Error("Failed to convert the obj: %v", err)
+		return
+	}
 	tc.enqueueTFJob(obj)
 }
 
