@@ -97,3 +97,20 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	}
 	return &tfjob, nil
 }
+
+func unstructuredFromTFJob(obj interface{}, tfJob *tfv1alpha2.TFJob) error {
+	un, ok := obj.(*metav1unstructured.Unstructured)
+	if !ok {
+		log.Warn("The objetc in index is not an unstructured")
+		return errGetFromKey
+	}
+
+	var err error
+	un.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
+	if err != nil {
+		log.Error("The TFJob connvert failed")
+		return err
+	}
+	return nil
+
+}
