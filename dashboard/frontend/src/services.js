@@ -3,19 +3,13 @@ import { getHost } from "./utils";
 const host = getHost();
 
 export function getTFJobListService(namespace) {
-  /*
+  //  return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());
   return fetch(`${host}/api/tfjob/${namespace}`, {
-      method: "GET",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      redirect: "follow",
-  }).then(r => r.json());
-*/
-  return fetch(`${host}/api/tfjob/${namespace}`, {
-    mode: "nocors",
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
     credentials: "include",
     redirect: "follow"
   }).then(r => r.json());
