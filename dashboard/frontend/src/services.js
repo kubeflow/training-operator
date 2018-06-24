@@ -18,9 +18,9 @@ export function getTFJobListService(namespace) {
 export function createTFJobService(spec) {
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
-  myHeaders.append(("mode": "cors"));
-  myHeaders.append(("credentials": "include"));
-  myHeaders.append(("redirect": "follow"));
+  myHeaders.append("mode", "cors");
+  myHeaders.append("credentials", "include");
+  myHeaders.append("redirect", "follow");
   const options = {
     method: "POST",
     headers: myHeaders,
