@@ -239,6 +239,60 @@ func (s *TFReplicaSet) CreatePodWithIndex(index int32) (*v1.Pod, error) {
 	return s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).Create(pod)
 }
 
+// Delete the replicas by cleanup pod policy when the tfjob is complete or failed: CleanupPodAll, CleanupPodNone, CleanupPodRunning, the default is CleanupPodAll
+func (s *TFReplicaSet) DeleteResourcesByCleanPolicy(cleanupPodPolicy tfv1alpha1.CleanupPodPolicy) (err error) {
+	log.Infof("DeleteResourcesByCleanPolicy for %s with CleanupPodPolicy %v", s.Job.job.ObjectMeta.Name, cleanupPodPolicy)
+	switch cleanupPodPolicy {
+	case tfv1alpha1.CleanupPodUndefined, tfv1alpha1.CleanupPodAll:
+		s.contextLogger.Infof("Apply Clean All Policy for %s", s.Job.job.ObjectMeta.Name)
+		err = s.Delete()
+	case tfv1alpha1.CleanupPodNone:
+		s.contextLogger.Infof("Apply Clean None Policy for %s", s.Job.job.ObjectMeta.Name)
+	case tfv1alpha1.CleanupPodRunning:
+		s.contextLogger.Infof("Apply Clean Running Pod Policy for %s", s.Job.job.ObjectMeta.Name)
+		err = s.DeleteRunningPods()
+	default:
+		s.contextLogger.Errorf("Unknown cleanupPodPolicy %v", cleanupPodPolicy)
+		err = fmt.Errorf("Unknown cleanupPodPolicy %v", cleanupPodPolicy)
+	}
+
+	return err
+}
+
+// Deletes the running pods
+func (s *TFReplicaSet) DeleteRunningPods() error {
+	selector, err := s.Labels().ToSelector()
+	if err != nil {
+		return err
+	}
+
+	failures := false
+	fieldSelector := fmt.Sprintf("status.phase!=" + string(v1.PodSucceeded) + ",status.phase!=" + string(v1.PodFailed))
+
+	options := meta_v1.ListOptions{
+		LabelSelector: selector,
+		FieldSelector: fieldSelector,
+	}
+
+	s.contextLogger.Infof("Deleting Pods namespace=%v selector=%v fieldSelector=%v",
+		s.Job.job.ObjectMeta.Namespace,
+		selector,
+		fieldSelector)
+	err = s.ClientSet.CoreV1().Pods(s.Job.job.ObjectMeta.Namespace).DeleteCollection(&meta_v1.DeleteOptions{}, options)
+
+	if err != nil {
+		s.contextLogger.Errorf("There was a problem deleting the pods; %v", err)
+		failures = true
+	}
+
+	if failures {
+		return errors.New("Some of the replicas resources could not be deleted")
+	}
+
+	return nil
+
+}
+
 // Delete deletes the replicas
 func (s *TFReplicaSet) Delete() error {
 	selector, err := s.Labels().ToSelector()

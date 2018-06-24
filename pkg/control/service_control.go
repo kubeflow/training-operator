@@ -32,6 +32,8 @@ import (
 const (
 	FailedCreateServiceReason     = "FailedCreateService"
 	SuccessfulCreateServiceReason = "SuccessfulCreateService"
+	FailedDeleteServiceReason     = "FailedDeleteService"
+	SuccessfulDeleteServiceReason = "SuccessfulDeleteService"
 )
 
 // ServiceControlInterface is an interface that knows how to add or delete Services
@@ -43,6 +45,8 @@ type ServiceControlInterface interface {
 	CreateServicesWithControllerRef(namespace string, service *v1.Service, object runtime.Object, controllerRef *metav1.OwnerReference) error
 	// PatchService patches the service.
 	PatchService(namespace, name string, data []byte) error
+	// DeleteService deletes the service identified by serviceID.
+	DeleteService(namespace, serviceID string, object runtime.Object) error
 }
 
 func validateControllerRef(controllerRef *metav1.OwnerReference) error {
@@ -113,15 +117,31 @@ func (r RealServiceControl) createServices(namespace string, service *v1.Service
 	return nil
 }
 
+// DeleteService deletes the service identified by serviceID.
+func (r RealServiceControl) DeleteService(namespace, serviceID string, object runtime.Object) error {
+	accessor, err := meta.Accessor(object)
+	if err != nil {
+		return fmt.Errorf("object does not have ObjectMeta, %v", err)
+	}
+	glog.V(2).Infof("Controller %v deleting service %v/%v", accessor.GetName(), namespace, serviceID)
+	if err := r.KubeClient.CoreV1().Services(namespace).Delete(serviceID, nil); err != nil {
+		r.Recorder.Eventf(object, v1.EventTypeWarning, FailedDeleteServiceReason, "Error deleting: %v", err)
+		return fmt.Errorf("unable to delete service: %v", err)
+	} else {
+		r.Recorder.Eventf(object, v1.EventTypeNormal, SuccessfulDeleteServiceReason, "Deleted service: %v", serviceID)
+	}
+	return nil
+}
+
 type FakeServiceControl struct {
 	sync.Mutex
-	Templates       []v1.Service
-	ControllerRefs  []metav1.OwnerReference
-	DeletePodName   []string
-	Patches         [][]byte
-	Err             error
-	CreateLimit     int
-	CreateCallCount int
+	Templates         []v1.Service
+	ControllerRefs    []metav1.OwnerReference
+	DeleteServiceName []string
+	Patches           [][]byte
+	Err               error
+	CreateLimit       int
+	CreateCallCount   int
 }
 
 var _ ServiceControlInterface = &FakeServiceControl{}
@@ -163,6 +183,27 @@ func (f *FakeServiceControl) CreateServicesWithControllerRef(namespace string, s
 		return f.Err
 	}
 	return nil
+}
+
+func (f *FakeServiceControl) DeleteService(namespace string, serviceID string, object runtime.Object) error {
+	f.Lock()
+	defer f.Unlock()
+	f.DeleteServiceName = append(f.DeleteServiceName, serviceID)
+	if f.Err != nil {
+		return f.Err
+	}
+	return nil
+}
+
+func (f *FakeServiceControl) Clear() {
+	f.Lock()
+	defer f.Unlock()
+	f.DeleteServiceName = []string{}
+	f.Templates = []v1.Service{}
+	f.ControllerRefs = []metav1.OwnerReference{}
+	f.Patches = [][]byte{}
+	f.CreateLimit = 0
+	f.CreateCallCount = 0
 }
 
 func getServiceFromTemplate(template *v1.Service, parentObject runtime.Object, controllerRef *metav1.OwnerReference) (*v1.Service, error) {
