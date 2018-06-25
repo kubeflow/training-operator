@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,10 +108,10 @@ func (r RealServiceControl) createServices(namespace string, service *v1.Service
 
 	accessor, err := meta.Accessor(object)
 	if err != nil {
-		glog.Errorf("parentObject does not have ObjectMeta, %v", err)
+		log.Errorf("parentObject does not have ObjectMeta, %v", err)
 		return nil
 	}
-	glog.V(4).Infof("Controller %v created service %v", accessor.GetName(), newService.Name)
+	log.Infof("Controller %v created service %v", accessor.GetName(), newService.Name)
 	r.Recorder.Eventf(object, v1.EventTypeNormal, SuccessfulCreateServiceReason, "Created service: %v", newService.Name)
 
 	return nil
@@ -123,7 +123,7 @@ func (r RealServiceControl) DeleteService(namespace, serviceID string, object ru
 	if err != nil {
 		return fmt.Errorf("object does not have ObjectMeta, %v", err)
 	}
-	glog.V(2).Infof("Controller %v deleting service %v/%v", accessor.GetName(), namespace, serviceID)
+	log.Infof("Controller %v deleting service %v/%v", accessor.GetName(), namespace, serviceID)
 	if err := r.KubeClient.CoreV1().Services(namespace).Delete(serviceID, nil); err != nil {
 		r.Recorder.Eventf(object, v1.EventTypeWarning, FailedDeleteServiceReason, "Error deleting: %v", err)
 		return fmt.Errorf("unable to delete service: %v", err)
