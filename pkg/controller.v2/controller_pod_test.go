@@ -140,7 +140,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := tfv1alpha2.RestartPolicyExitCode
 			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob:                 tfJob,
+				tfJob: tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
 			}
@@ -150,7 +150,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := tfv1alpha2.RestartPolicyNever
 			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob:                 tfJob,
+				tfJob: tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
 			}
@@ -160,7 +160,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := tfv1alpha2.RestartPolicyAlways
 			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob:                 tfJob,
+				tfJob: tfJob,
 				expectedRestartPolicy: v1.RestartPolicyAlways,
 				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
 			}
@@ -170,7 +170,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := tfv1alpha2.RestartPolicyOnFailure
 			tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob:                 tfJob,
+				tfJob: tfJob,
 				expectedRestartPolicy: v1.RestartPolicyOnFailure,
 				expectedType:          tfv1alpha2.TFReplicaTypeWorker,
 			}
