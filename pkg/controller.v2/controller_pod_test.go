@@ -107,6 +107,14 @@ func TestClusterSpec(t *testing.T) {
 				`-ps-0.default.svc.cluster.local:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
 		},
+		tc{
+			tfJob: testutil.NewTFJobWithEvaluator(1, 1, 1),
+			rt:    "worker",
+			index: "0",
+			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+				`-ps-0.default.svc.cluster.local:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.default.svc.cluster.local:2222"]},"task":{"type":"worker","index":0}}`,
+		},
 	}
 	for _, c := range testCase {
 		demoTemplateSpec := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template
