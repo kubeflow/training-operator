@@ -45,7 +45,7 @@ type TFJob struct {
 type TFJobSpec struct {
 	// CleanPodPolicy defines the policy to kill pods after TFJob is
 	// succeeded.
-	// Default to All.
+	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
