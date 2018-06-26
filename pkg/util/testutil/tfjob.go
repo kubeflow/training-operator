@@ -31,7 +31,7 @@ func NewTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
 
 func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1alpha2.TFJob {
 	tfJob := NewTFJob(worker, ps)
-	if (evaluator > 0) {
+	if evaluator > 0 {
 		evaluator := int32(evaluator)
 		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeEval] = &tfv1alpha2.TFReplicaSpec{
 			Replicas: &evaluator,
