@@ -60,10 +60,6 @@ func GenGeneralName(tfJobName, rtype, index string) string {
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func GenDNSRecord(tfJobName, rtype, index, namespace string) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", GenGeneralName(tfJobName, rtype, index), namespace)
-}
-
 // ConvertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
 func ConvertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstructured, error) {
 	var unstructured unstructured.Unstructured
