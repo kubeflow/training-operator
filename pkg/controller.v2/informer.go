@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/util/unstructured"
@@ -92,7 +93,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	// This is a simple validation for TFJob to close
 	// https://github.com/kubeflow/tf-operator/issues/641
 	// TODO(gaocegege): Add more validation here.
-	if err != nil || tfjob.Spec.TFReplicaSpecs == nil {
+	if err != nil || validation.ValidateAlphaTwoTFJobSpec(&tfjob.Spec) != nil {
 		return &tfjob, errFailedMarshal
 	}
 	return &tfjob, nil
