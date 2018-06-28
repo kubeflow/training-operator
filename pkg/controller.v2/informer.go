@@ -13,10 +13,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/util/unstructured"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 )
 
 const (
