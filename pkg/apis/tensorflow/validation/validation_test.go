@@ -18,10 +18,36 @@ import (
 	"testing"
 
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/api/core/v1"
 )
+
+func TestValidateAlphaTwoTFJobSpec(t *testing.T) {
+	testCases := []tfv2.TFJobSpec{
+		{
+			TFReplicaSpecs: nil,
+		},
+		{
+			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
+				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, c := range testCases {
+		err := ValidateAlphaTwoTFJobSpec(&c)
+		if err.Error() != "TFJobSpec is not valid" {
+			t.Error("Failed validate the alpha2.TFJobSpec")
+		}
+	}
+}
 
 func TestValidate(t *testing.T) {
 	type testCase struct {
