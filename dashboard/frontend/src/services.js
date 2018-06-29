@@ -3,7 +3,6 @@ import { getHost } from "./utils";
 const host = getHost();
 
 export function getTFJobListService(namespace) {
-  //  return fetch(`${host}/api/tfjob/${namespace}`).then(r => r.json());
   return fetch(`${host}/api/tfjob/${namespace}`, {
     method: "GET",
     mode: "cors",
@@ -31,12 +30,23 @@ export function createTFJobService(spec) {
 }
 
 export function getTFJobService(namespace, name) {
-  return fetch(`${host}/api/tfjob/${namespace}/${name}`).then(r => r.json());
+  return fetch(`${host}/api/tfjob/${namespace}/${name}`, {
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    redirect: "follow"
+  }).then(r => r.json());
 }
 
 export function deleteTFJob(namespace, name) {
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
+  myHeaders.set("mode", "cors");
+  myHeaders.set("credentials", "include");
+  myHeaders.set("redirect", "follow");
   const options = {
     method: "DELETE",
     headers: myHeaders
@@ -48,9 +58,25 @@ export function deleteTFJob(namespace, name) {
 }
 
 export function getPodLogs(namespace, name) {
-  return fetch(`${host}/api/logs/${namespace}/${name}`).then(r => r.json());
+  return fetch(`${host}/api/logs/${namespace}/${name}`, {
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    redirect: "follow"
+  }).then(r => r.json());
 }
 
 export function getNamespaces() {
-  return fetch(`${host}/api/namespace`).then(r => r.json());
+  return fetch(`${host}/api/namespace`, {
+    method: "GET",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    redirect: "follow"
+  }).then(r => r.json());
 }
