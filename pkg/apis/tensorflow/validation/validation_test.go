@@ -40,6 +40,37 @@ func TestValidateAlphaTwoTFJobSpec(t *testing.T) {
 				},
 			},
 		},
+		{
+			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
+				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Image: "",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
+				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Name:  "",
+									Image: "kubeflow/tf-dist-mnist-test:1.0",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, c := range testCases {
 		err := ValidateAlphaTwoTFJobSpec(&c)
