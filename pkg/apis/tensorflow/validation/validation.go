@@ -21,6 +21,7 @@ import (
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // ValidateAlphaTwoTFJobSpec checks that the v1alpha2.TFJobSpec is valid.
@@ -31,6 +32,12 @@ func ValidateAlphaTwoTFJobSpec(c *tfv2.TFJobSpec) error {
 	for _, value := range c.TFReplicaSpecs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("TFJobSpec is not valid")
+		}
+		for _, container := range value.Template.Spec.Containers {
+			if container.Image == "" {
+				log.Warn("Container was missing image")
+				return fmt.Errorf("TFJobSpec is not valid")
+			}
 		}
 	}
 	return nil
