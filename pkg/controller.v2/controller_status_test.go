@@ -342,6 +342,10 @@ func TestStatus(t *testing.T) {
 				}
 			}
 		}
+
+		// Test filterOutCondition
+		filterOutConditionTest(c.tfJob.Status, t)
+
 		found := false
 		for _, condition := range c.tfJob.Status.Conditions {
 			if condition.Type == c.expectedType {
@@ -368,5 +372,14 @@ func setStatusForTest(tfJob *tfv1alpha2.TFJob, typ tfv1alpha2.TFReplicaType, fai
 	for i = 0; i < active; i++ {
 		pod.Status.Phase = v1.PodRunning
 		updateTFJobReplicaStatuses(tfJob, typ, pod)
+	}
+}
+
+func filterOutConditionTest(status tfv1alpha2.TFJobStatus, t *testing.T) {
+	flag := isFailed(status) || isSucceeded(status)
+	for _, condition := range status.Conditions {
+		if flag && condition.Type == tfv1alpha2.TFJobRunning && condition.Status == v1.ConditionTrue {
+			t.Error("Error condition status when succeeded or failed")
+		}
 	}
 }

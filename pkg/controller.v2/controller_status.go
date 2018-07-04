@@ -193,6 +193,11 @@ func isFailed(status tfv1alpha2.TFJobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
+	// Do nothing if TFJobStatus have failed condition
+	if isFailed(*status) {
+		return
+	}
+
 	currentCond := getCondition(*status, condition.Type)
 
 	// Do nothing if condition doesn't change
@@ -224,6 +229,12 @@ func filterOutCondition(conditions []tfv1alpha2.TFJobCondition, condType tfv1alp
 		if c.Type == condType {
 			continue
 		}
+
+		// Set the running condition status to be false when current condition failed or succeeded
+		if (condType == tfv1alpha2.TFJobFailed || condType == tfv1alpha2.TFJobSucceeded) && c.Type == tfv1alpha2.TFJobRunning {
+			c.Status = v1.ConditionFalse
+		}
+
 		newConditions = append(newConditions, c)
 	}
 	return newConditions
