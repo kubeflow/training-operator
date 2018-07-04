@@ -193,6 +193,11 @@ func isFailed(status tfv1alpha2.TFJobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *tfv1alpha2.TFJobStatus, condition tfv1alpha2.TFJobCondition) {
+	//Do nothing if condition Failed
+	if isFailed(*status) {
+		return
+	}
+
 	currentCond := getCondition(*status, condition.Type)
 
 	// Do nothing if condition doesn't change
