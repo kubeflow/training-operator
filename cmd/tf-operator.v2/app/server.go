@@ -98,7 +98,7 @@ func Run(opt *options.ServerOption) error {
 	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg)
 
 	// Create tf controller.
-	tc := controller.NewTFJobController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	tc := controller.NewTFJobController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)

@@ -20,11 +20,12 @@ import (
 
 // ServerOption is the main context object for the controller manager.
 type ServerOption struct {
-	Kubeconfig    string
-	MasterURL     string
-	Threadiness   int
-	PrintVersion  bool
-	JSONLogFormat bool
+	Kubeconfig           string
+	MasterURL            string
+	Threadiness          int
+	PrintVersion         bool
+	JSONLogFormat        bool
+	EnableGangScheduling bool
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -46,4 +47,5 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.BoolVar(&s.JSONLogFormat, "json-log-format", false,
 		"Set true to use json style log format. Set false to use plaintext style log format")
+	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-arbitrator.")
 }
