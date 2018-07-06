@@ -16,6 +16,7 @@
 package controller
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -25,12 +26,18 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+	"k8s.io/api/policy/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 var (
@@ -43,6 +50,7 @@ func newTFJobController(
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
+	option options.ServerOption,
 ) (
 	*TFJobController,
 	kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory,
@@ -52,7 +60,7 @@ func newTFJobController(
 
 	tfJobInformer := NewUnstructuredTFJobInformer(config)
 
-	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory)
+	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
 	ctr.podControl = &controller.FakePodControl{}
 	ctr.serviceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
@@ -213,8 +221,9 @@ func TestNormalPath(t *testing.T) {
 				GroupVersion: &tfv1alpha2.SchemeGroupVersion,
 			},
 		}
+		option := options.ServerOption{}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.podInformerSynced = testutil.AlwaysReady
 		ctr.serviceInformerSynced = testutil.AlwaysReady
@@ -344,7 +353,7 @@ func TestRun(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc)
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.podInformerSynced = testutil.AlwaysReady
 	ctr.serviceInformerSynced = testutil.AlwaysReady
@@ -360,5 +369,78 @@ func TestRun(t *testing.T) {
 	err := ctr.Run(testutil.ThreadCount, stopCh)
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
+	}
+}
+
+func TestSyncPdb(t *testing.T) {
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1alpha2.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	kubeClientSet := fake.NewSimpleClientset()
+	option := options.ServerOption{
+		EnableGangScheduling: true,
+	}
+	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+
+	type testCase struct {
+		tfJob     *tfv1alpha2.TFJob
+		expectPdb *v1beta1.PodDisruptionBudget
+	}
+
+	minAvailable2 := intstr.FromInt(2)
+	testCases := []testCase{
+		{
+			tfJob: &tfv1alpha2.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-sync-pdb",
+				},
+				Spec: tfv1alpha2.TFJobSpec{
+					TFReplicaSpecs: map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec{
+						tfv1alpha2.TFReplicaTypeWorker: &tfv1alpha2.TFReplicaSpec{
+							Replicas: proto.Int32(1),
+						},
+					},
+				},
+			},
+			expectPdb: nil,
+		},
+		{
+			tfJob: &tfv1alpha2.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-sync-pdb",
+				},
+				Spec: tfv1alpha2.TFJobSpec{
+					TFReplicaSpecs: map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec{
+						tfv1alpha2.TFReplicaTypeWorker: &tfv1alpha2.TFReplicaSpec{
+							Replicas: proto.Int32(2),
+						},
+					},
+				},
+			},
+			expectPdb: &v1beta1.PodDisruptionBudget{
+				Spec: v1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &minAvailable2,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"tf_job_name": "test-sync-pdb",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, c := range testCases {
+		pdb, _ := ctr.syncPdb(c.tfJob)
+		if pdb == nil && c.expectPdb != nil {
+			t.Errorf("Got nil, want %v", c.expectPdb.Spec)
+		}
+
+		if pdb != nil && !reflect.DeepEqual(c.expectPdb.Spec, pdb.Spec) {
+			t.Errorf("Got %+v, want %+v", pdb.Spec, c.expectPdb.Spec)
+		}
 	}
 }
