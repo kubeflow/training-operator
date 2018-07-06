@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/controller"
 
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -151,6 +152,9 @@ type TFJobController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// Enable gang scheduling by kube-arbitrator
+	enableGangScheduling bool
 }
 
 // NewTFJobController returns a new TFJob controller.
@@ -162,7 +166,8 @@ func NewTFJobController(
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
 	// after we support CRD validation.
-	tfJobInformerFactory tfjobinformers.SharedInformerFactory) *TFJobController {
+	tfJobInformerFactory tfjobinformers.SharedInformerFactory,
+	option options.ServerOption) *TFJobController {
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
@@ -184,13 +189,14 @@ func NewTFJobController(
 
 	// Create new TFJobController.
 	tc := &TFJobController{
-		podControl:     realPodControl,
-		serviceControl: realServiceControl,
-		kubeClientSet:  kubeClientSet,
-		tfJobClientSet: tfJobClientSet,
-		expectations:   controller.NewControllerExpectations(),
-		workQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), tfv1alpha2.Plural),
-		recorder:       recorder,
+		podControl:           realPodControl,
+		serviceControl:       realServiceControl,
+		kubeClientSet:        kubeClientSet,
+		tfJobClientSet:       tfJobClientSet,
+		expectations:         controller.NewControllerExpectations(),
+		workQueue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), tfv1alpha2.Plural),
+		recorder:             recorder,
+		enableGangScheduling: option.EnableGangScheduling,
 	}
 
 	// Set sync handler.
