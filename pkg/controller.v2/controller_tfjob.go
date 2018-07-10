@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	failedMarshalTFJobReason  = "FailedMarshalTFJob"
-	terminatedTFJobReason     = "TFJobTerminated"
+	failedMarshalTFJobReason = "FailedMarshalTFJob"
+	terminatedTFJobReason    = "TFJobTerminated"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -65,7 +65,7 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 }
 
 func (tc *TFJobController) deletePdb(tfJob *tfv1alpha2.TFJob) error {
-	
+
 	// Check the pdb exist or not
 	_, err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfJob.Namespace).Get(tfJob.Name, metav1.GetOptions{})
 	if err != nil && k8serrors.IsNotFound(err) {

@@ -472,7 +472,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 				return err
 			}
 		}
-		
+
 		// Initialize the status.
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
