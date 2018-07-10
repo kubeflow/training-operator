@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	failedMarshalTFJobReason = "FailedMarshalTFJob"
-	terminatedTFJobReason    = "TFJobTerminated"
+	failedMarshalTFJobReason  = "FailedMarshalTFJob"
+	terminatedTFJobReason     = "TFJobTerminated"
+	FailedDeletePdbReason     = "FailedDeletePdb"
+	SuccessfulDeletePdbReason = "SuccessfulDeletePdb"
 )
-
 // When a pod is added, set the defaults and enqueue the current tfjob.
 func (tc *TFJobController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
@@ -60,6 +61,30 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 	}
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
 	tc.enqueueTFJob(cur)
+}
+
+func (tc *TFJobController) deletePdb(tfJob *tfv1alpha2.TFJob) error {
+	
+	// Check the pdb exist or not
+	_, err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfjob.Namespace).Get(tfjob.Name, metav1.GetOptions{})
+	if err != nil && k8serrors.IsNotFound(err) {
+		return nil
+	}
+
+	tc.recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
+		"TFJob is terminated, deleting pdb")
+
+	msg := fmt.Sprintf("Deleting pdb %s", tfJob.Name)
+	log.Info(msg)
+
+	if err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfjob.Namespace).Delete(tfjob.Name, metav1.GetOptions{}); err != nil {
+		tc.recorder.Event(tfJob, v1.EventTypeWarning, FailedDeletePdbReason, "Error deleting: %v", err)
+		return fmt.Errorf("unable to delete pdb: %v", err)
+	} else {
+		tc.recorder.Event(tfJob, v1.EventTypeNormal, SuccessfulDeletePdbReason, "Deleted pdb: %v", tfjob.Name)
+	}
+
+	return nil
 }
 
 func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {

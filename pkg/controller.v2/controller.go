@@ -466,6 +466,13 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
 		}
+
+		if tc.config.enableGangScheduling {
+			if err := tc.deletePdb(tfjob); err != nil {
+				return err
+			}
+		}
+		
 		// Initialize the status.
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
