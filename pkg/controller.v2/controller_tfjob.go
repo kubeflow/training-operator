@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
