@@ -5,6 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -60,6 +62,30 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 	}
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
 	tc.enqueueTFJob(cur)
+}
+
+func (tc *TFJobController) deletePdb(tfJob *tfv1alpha2.TFJob) error {
+
+	// Check the pdb exist or not
+	_, err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfJob.Namespace).Get(tfJob.Name, metav1.GetOptions{})
+	if err != nil && k8serrors.IsNotFound(err) {
+		return nil
+	}
+
+	tc.recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
+		"TFJob is terminated, deleting pdb")
+
+	msg := fmt.Sprintf("Deleting pdb %s", tfJob.Name)
+	log.Info(msg)
+
+	if err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{}); err != nil {
+		tc.recorder.Eventf(tfJob, v1.EventTypeWarning, "FailedDeletePdb", "Error deleting: %v", err)
+		return fmt.Errorf("unable to delete pdb: %v", err)
+	} else {
+		tc.recorder.Eventf(tfJob, v1.EventTypeNormal, "SuccessfulDeletePdb", "Deleted pdb: %v", tfJob.Name)
+	}
+
+	return nil
 }
 
 func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {
