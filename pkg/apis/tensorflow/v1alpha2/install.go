@@ -9,7 +9,7 @@ import (
 
 // Install registers the API group and adds type to a schema
 func Install(groupFactoryRegister announced.APIGroupFactoryRegistry, registry *registered.APIRegistrationManager, schema *runtime.Scheme) error {
-	if err := announced.NewGroupMetaFactory(
+	return announced.NewGroupMetaFactory(
 		&announced.GroupMetaFactoryArgs{
 			GroupName:              GroupName,
 			RootScopedKinds:        sets.NewString(),
@@ -18,8 +18,5 @@ func Install(groupFactoryRegister announced.APIGroupFactoryRegistry, registry *r
 		announced.VersionToSchemeFunc{
 			SchemeGroupVersion.Version: AddToScheme,
 		},
-	).Announce(groupFactoryRegister).RegisterAndEnable(registry, schema); err != nil {
-		return err
-	}
-	return nil
+	).Announce(groupFactoryRegister).RegisterAndEnable(registry, schema)
 }

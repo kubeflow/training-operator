@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"encoding/json"
 	"github.com/go-openapi/spec"
 	"github.com/golang/glog"
 	"github.com/kubeflow/tf-operator/hack/genspec/lib"
@@ -118,6 +118,10 @@ func generateSwaggerJson() (string, error) {
 			},
 			OpenAPIDefinition: v1alpha2.GetOpenAPIDefinitions,
 		})
+	if err != nil {
+		return "", fmt.Errorf("failed to create server config: %v", err)
+	}
+
 	genericServer, err := serverConfig.Complete().New("openapi-server", genericapiserver.EmptyDelegate)
 	if err != nil {
 		return "", fmt.Errorf("failed to create server: %v", err)
@@ -150,21 +154,21 @@ func generateSwaggerJson() (string, error) {
 }
 
 func main() {
-	filename := flag.String("f", "api/openapi-spec/swagger.json", "Path to write OpenAPI spec file")
+	filename := flag.String("f", "pkg/apis/tensorflow/v1alpha2/openapi-spec/swagger.json", "Path to write OpenAPI spec file")
 
 	flag.Parse()
 
-	err := os.MkdirAll(filepath.Dir(*filename), 0755)
+	err := os.MkdirAll(filepath.Dir(*filename), 0644)
 	if err != nil {
 		glog.Fatalf("failed to create directory %s: %v", filepath.Dir(*filename), err)
 	}
 
-	spec, err := generateSwaggerJson()
+	apiSpec, err := generateSwaggerJson()
 	if err != nil {
 		glog.Fatalf("failed to generate spec: %v", err)
 	}
 
-	err = ioutil.WriteFile(*filename, []byte(spec), 0644)
+	err = ioutil.WriteFile(*filename, []byte(apiSpec), 0644)
 	if err != nil {
 		glog.Fatalf("failed to write spec: %v", err)
 	}
