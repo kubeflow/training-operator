@@ -43,5 +43,7 @@ ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/ap
 cd - > /dev/null
 
 echo "Generating OpenAPI specification for v1alpha2"
-${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2,k8s.io/api/core/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+go run ./hack/genspec/genspec.go -f pkg/apis/tensorflow/v1alpha2/openapi-spec/swagger.json
 cd - > /dev/null
+
