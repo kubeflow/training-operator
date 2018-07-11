@@ -16,6 +16,7 @@ dashboard/frontend/build
 
 # Other temporary files
 .DS_Store
+apiserver.local.config
 
 # Files created by Gogland IDE
 .idea/
