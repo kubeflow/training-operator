@@ -17,7 +17,9 @@ package controller
 
 import (
 	"fmt"
+	"time"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -238,4 +240,21 @@ func filterOutCondition(conditions []tfv1alpha2.TFJobCondition, condType tfv1alp
 		newConditions = append(newConditions, c)
 	}
 	return newConditions
+}
+
+func isAfterCleanDelay(tfJob *tfv1alpha2.TFJob) bool {
+	currentTime := time.Now()
+	durationStr := "0"
+	if tfJob.Spec.CleanDelay != nil {
+		durationStr = string(*tfJob.Spec.CleanDelay)
+	}
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		log.Warnf("Parse CleanDelay duration error: %v, use 0 as default.", err)
+		return true
+	}
+	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
+		return true
+	}
+	return false
 }

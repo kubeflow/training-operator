@@ -46,7 +46,15 @@ type TFJobSpec struct {
 	// CleanPodPolicy defines the policy to kill pods after TFJob is
 	// succeeded.
 	// Default to Running.
+	// TODO: CleanPodPolicy is deprecated. It should be deleted later.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
+
+	// CleanPolicy defines the policy type of cleaning up tf-jobs.
+	// Default to RunningPods.
+	CleanPolicy *CleanPolicy `json:"cleanPolicy,omitempty"`
+	// CleanDelay defines the delay of executing CleanPolicy.
+	// Default to 0.
+	CleanDelay *CleanDelay `json:"cleanDelay,omitempty"`
 
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
@@ -76,6 +84,8 @@ type TFReplicaSpec struct {
 }
 
 // CleanPodPolicy describes how to deal with pods when the TFJob is finished.
+// TODO: CleanPodPolicy is deprecated. It should be deleted later, as well as
+// the following const.
 type CleanPodPolicy string
 
 const (
@@ -84,6 +94,20 @@ const (
 	CleanPodPolicyRunning   CleanPodPolicy = "Running"
 	CleanPodPolicyNone      CleanPodPolicy = "None"
 )
+
+// CleanPolicy defines the policy type of cleaning up tf-jobs.
+type CleanPolicy string
+
+const (
+	CleanPolicyUndefined   CleanPolicy = ""
+	CleanPolicyAllPods     CleanPolicy = "AllPods"
+	CleanPolicyRunningPods CleanPolicy = "RunningPods"
+	CleanPolicyJob         CleanPolicy = "Job"
+	CleanPolicyNone        CleanPolicy = "None"
+)
+
+// CleanDelay defines the delay of executing CleanPolicy.
+type CleanDelay string
 
 // RestartPolicy describes how the TFReplicas should be restarted.
 // Only one of the following restart policies may be specified.

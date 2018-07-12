@@ -88,6 +88,7 @@ func (tc *TFJobController) deletePdb(tfJob *tfv1alpha2.TFJob) error {
 	return nil
 }
 
+// TODO: deprecated with CleanPodPolicy.
 func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {
 	if len(pods) == 0 {
 		return nil
@@ -102,6 +103,52 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 
 	for _, pod := range pods {
 		if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
+			continue
+		}
+		if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
+			return err
+		}
+		// Pod and service have the same name, thus the service could be deleted using pod's name.
+		if err := tc.serviceControl.DeleteService(pod.Namespace, pod.Name, tfJob); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (tc *TFJobController) deleteJob(tfJob *tfv1alpha2.TFJob) error {
+	// By default, the cleanPolicy is RunningPods.
+	cleanPolicy := tfv1alpha2.CleanPolicyRunningPods
+	if tfJob.Spec.CleanPolicy != nil {
+		cleanPolicy = *tfJob.Spec.CleanPolicy
+
+	}
+	// Delete nothing when the cleanPolicy is None.
+	if cleanPolicy == tfv1alpha2.CleanPolicyNone {
+		return nil
+	}
+	// Delete the job directly when the cleanPolicy is Job.
+	if cleanPolicy == tfv1alpha2.CleanPolicyJob {
+		if err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{}); err != nil {
+			log.Warningf("failed to delete TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
+			return err
+		}
+		return nil
+	}
+	// Delete relevant pods and services when cleanPolicy is RunningPods or AllPods
+	pods, err := tc.getPodsForTFJob(tfJob)
+	if err != nil {
+		log.Infof("getPodsForTFJob error %v", err)
+		return err
+	}
+	if len(pods) == 0 {
+		return nil
+	}
+	tc.recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
+		"TFJob is terminated, deleting pods and services")
+
+	for _, pod := range pods {
+		if cleanPolicy == tfv1alpha2.CleanPolicyRunningPods && pod.Status.Phase != v1.PodRunning {
 			continue
 		}
 		if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {

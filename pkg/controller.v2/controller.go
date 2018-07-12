@@ -461,23 +461,43 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
-	// If the TFJob is terminated, delete all pods and services.
+	// If the TFJob is terminated, delete all pods and services, with configured delays.
 	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
-		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
-			return err
-		}
-
-		if tc.config.enableGangScheduling {
-			if err := tc.deletePdb(tfjob); err != nil {
+		deleted := false
+		// When CleanPolicy is set, we ignore CleanPodPolicy. When
+		// neither CleanPolicy or CleanPodPolicy is set, we use
+		// CleanPolicy = "RunningPods" instead of CleanPodPolicy =
+		// "Running" as default. This is correct and
+		// backward-compatible as both have the same behavior.
+		if (tfjob.Spec.CleanPolicy != nil && *tfjob.Spec.CleanPolicy != tfv1alpha2.CleanPolicy("")) || tfjob.Spec.CleanPodPolicy == nil || *tfjob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicy("") {
+			if isAfterCleanDelay(tfjob) {
+				// Clean the job by CleanPolicy and CleanDelay.
+				if err := tc.deleteJob(tfjob); err != nil {
+					return err
+				}
+				deleted = true
+			}
+		} else {
+			// TODO: deprecated with CleanPodPolicy.
+			if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 				return err
 			}
+			deleted = true
 		}
 
-		// Initialize the status.
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
-		return tc.updateStatusHandler(tfjob)
+		if deleted {
+			if tc.config.enableGangScheduling {
+				if err := tc.deletePdb(tfjob); err != nil {
+					return err
+				}
+			}
+
+			// Initialize the status.
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+			return tc.updateStatusHandler(tfjob)
+		}
 	}
 
 	// Save the current state of the replicas
