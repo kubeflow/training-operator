@@ -461,23 +461,25 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
-	// If the TFJob is terminated, delete all pods and services.
+	// If the TFJob is terminated, delete all pods and services, with configured delays.
 	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
-		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
-			return err
-		}
-
-		if tc.config.enableGangScheduling {
-			if err := tc.deletePdb(tfjob); err != nil {
+		if isAfterCleanDelay(tfjob) {
+			if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 				return err
 			}
-		}
 
-		// Initialize the status.
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
-		return tc.updateStatusHandler(tfjob)
+			if tc.config.enableGangScheduling {
+				if err := tc.deletePdb(tfjob); err != nil {
+					return err
+				}
+			}
+
+			// Initialize the status.
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+			return tc.updateStatusHandler(tfjob)
+		}
 	}
 
 	// Save the current state of the replicas
