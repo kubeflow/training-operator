@@ -88,6 +88,11 @@ type TFJobControllerConfiguration struct {
 	enableGangScheduling bool
 }
 
+type cleanupInfo struct {
+	timeout time.Duration
+	tfJob   *tfv1alpha2.TFJob
+}
+
 // TFJobController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.
 type TFJobController struct {
@@ -161,6 +166,10 @@ type TFJobController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// cleanupInfoCh is used to pass cleanup requests to the goroutin
+	// dedicated for the task.
+	cleanupInfoCh chan cleanupInfo
 }
 
 // NewTFJobController returns a new TFJob controller.
@@ -251,6 +260,8 @@ func NewTFJobController(
 	tc.serviceLister = serviceInformer.Lister()
 	tc.serviceInformerSynced = serviceInformer.Informer().HasSynced
 
+	tc.cleanupInfoCh = make(chan cleanupInfo, 100)
+
 	return tc
 }
 
@@ -278,6 +289,9 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 	if ok := cache.WaitForCacheSync(stopCh, tc.serviceInformerSynced); !ok {
 		return fmt.Errorf("failed to wait for service caches to sync")
 	}
+
+	log.Infof("Starting cleanup bot")
+	go tc.cleanupBot(stopCh)
 
 	log.Infof("Starting %v workers", threadiness)
 	// Launch workers to process TFJob resources.
@@ -396,7 +410,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, reconcileTFJobsErr
 	}
 
-	return true, err
+	return true, nil
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.

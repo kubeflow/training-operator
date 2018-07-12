@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -97,6 +98,15 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 
 	// Delete nothing when the cleanPodPolicy is None.
 	if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyNone {
+		// If CleanupTimeoutAfterFinished is specified, delete after that timeout.
+		if tfJob.Spec.CleanupTimeoutAfterFinished != nil {
+			duration, err := time.ParseDuration(string(*tfJob.Spec.CleanupTimeoutAfterFinished))
+			if err != nil {
+				log.Infof("Parse CleanupTimeoutAfterFinished duration error: %v", err)
+			} else {
+				tc.cleanupInfoCh <- cleanupInfo{duration, tfJob}
+			}
+		}
 		return nil
 	}
 

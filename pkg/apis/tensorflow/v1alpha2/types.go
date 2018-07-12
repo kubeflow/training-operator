@@ -48,6 +48,10 @@ type TFJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
+	// CleanupTimeoutAfterFinished defines the timeout before cleaning finished jobs.
+	// Default to 0: doesn't clean up.
+	CleanupTimeoutAfterFinished *CleanupTimeoutAfterFinished `json:"cleanupTimeoutAfterFinished,omitempty"`
+
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
 	// For example,
@@ -77,6 +81,9 @@ type TFReplicaSpec struct {
 
 // CleanPodPolicy describes how to deal with pods when the TFJob is finished.
 type CleanPodPolicy string
+
+// CleanupTimeoutAfterFinished the timeout before cleanup finished jobs.
+type CleanupTimeoutAfterFinished string
 
 const (
 	CleanPodPolicyUndefined CleanPodPolicy = ""
