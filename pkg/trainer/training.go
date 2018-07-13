@@ -113,7 +113,7 @@ func NewJob(kubeCli kubernetes.Interface, tfJobClient tfjobclient.Interface, rec
 // For example, if the user issues a delete request. This will update the metadata on the object
 // so we need to replace the spec.
 func (j *TrainingJob) Update(newJob *tfv1alpha1.TFJob) {
-	j.contextLogger.Info("Updating job to %+v", *newJob)
+	j.contextLogger.Infof("Updating job to %+v", *newJob)
 	j.job = newJob
 }
 
