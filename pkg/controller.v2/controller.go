@@ -396,7 +396,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, reconcileTFJobsErr
 	}
 
-	return true, err
+	return true, nil
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
