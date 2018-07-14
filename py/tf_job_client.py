@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import multiprocessing
+import retrying
 import time
 
 from kubernetes import client as k8s_client
@@ -91,6 +92,7 @@ def delete_tf_job(client, namespace, name, version="v1alpha1"):
     raise e
 
 
+@retrying.retry(wait_fixed=10000, stop_max_attempt_number=20)
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
   if tf_job.get("apiVersion", "") == "kubeflow.org/v1alpha2":
