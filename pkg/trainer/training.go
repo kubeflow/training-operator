@@ -524,7 +524,6 @@ func (j *TrainingJob) syncPdb() error {
         j.contextLogger.Errorf("syncPdb error when check pbd %v exist:%v", j.genPdbName(),err)
         return err
 	}
-    }
 
 	j.pdb = createdPdb
 	return nil
