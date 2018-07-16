@@ -521,8 +521,8 @@ func (j *TrainingJob) syncPdb() error {
 
 		j.recorder.Eventf(j.job, v1.EventTypeNormal, SuccessfulCreateReason, "Created PDB: %v", createdPdb.Name)
 	} else if err != nil {
-        j.contextLogger.Errorf("syncPdb error when check pbd %v exist:%v", j.genPdbName(),err)
-        return err
+        	j.contextLogger.Errorf("syncPdb error when check pbd %v exist:%v", j.genPdbName(),err)
+        	return err
 	}
 
 	j.pdb = createdPdb
