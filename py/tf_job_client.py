@@ -97,7 +97,7 @@ def log_status(tf_job):
   """A callback to use with wait_for_job."""
   if tf_job.get("apiVersion", "") == "kubeflow.org/v1alpha2":
     all_conditions = tf_job.get("status", {}).get("conditions", [])
-    conditions = [c.get("type", "") for c in all_conditions]
+    conditions = [] if all_conditions is None else [c.get("type", "") for c in all_conditions]
     logging.info("Job %s in namespace %s; uid=%s; conditions=%s",
                  tf_job.get("metadata", {}).get("name"),
                  tf_job.get("metadata", {}).get("namespace"),
