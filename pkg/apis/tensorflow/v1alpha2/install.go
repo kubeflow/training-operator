@@ -1,10 +1,10 @@
 package v1alpha2
 
 import (
-"k8s.io/apimachinery/pkg/apimachinery/announced"
-"k8s.io/apimachinery/pkg/apimachinery/registered"
-"k8s.io/apimachinery/pkg/runtime"
-"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/apimachinery/announced"
+	"k8s.io/apimachinery/pkg/apimachinery/registered"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // Install registers the API group and adds type to a schema
