@@ -311,13 +311,19 @@ func (tc *TFJobController) processNextWorkItem() bool {
 
 	tfJob, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
+		if err == errNotExists {
+			log.Infof("TFJob has been deleted: %v", key)
+			return true
+		}
+
 		// Log the failure to conditions.
+		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			loggerForTFJob(tfJob).Warn(errMsg)
 			tc.recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
+
 		return true
 	}
 
