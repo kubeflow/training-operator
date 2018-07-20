@@ -217,6 +217,8 @@ def wait_for_condition(client,
 
       # If we poll the CRD quick enough status won't have been set yet.
       conditions = results.get("status", {}).get("conditions", [])
+      # Conditions might have a value of None in status.
+      conditions = conditions or []
       for c in conditions:
         if c.get("type", "") in expected_condition:
           return results
