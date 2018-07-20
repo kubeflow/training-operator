@@ -48,10 +48,10 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	wsContainer.EnableContentEncoding(true)
 
 	cors := restful.CrossOriginResourceSharing{
-		ExposeHeaders:  []string{"X-My-Header"},
+		ExposeHeaders:  []string{"x-goog-authenticated-user-email"},
 		AllowedHeaders: []string{"Content-Type", "Accept"},
 		AllowedMethods: []string{"GET", "POST", "DELETE"},
-		CookiesAllowed: false,
+		CookiesAllowed: true,
 		Container:      wsContainer,
 	}
 	wsContainer.Filter(cors.Filter)
