@@ -16,12 +16,16 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -34,6 +38,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/controller"
 
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -41,6 +46,7 @@ import (
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/control"
+	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 const (
@@ -63,6 +69,7 @@ var (
 	// DefaultTFJobControllerConfiguration is the suggested tf-operator configuration for production.
 	DefaultTFJobControllerConfiguration = TFJobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
+		enableGangScheduling:     false,
 	}
 )
 
@@ -76,6 +83,9 @@ type TFJobControllerConfiguration struct {
 	// and up to 5 minutes to reduce idle loop.
 	// e.g. 15s, 30s, 60s, 120s...
 	ReconcilerSyncLoopPeriod metav1.Duration
+
+	// Enable gang scheduling by kube-arbitrator
+	enableGangScheduling bool
 }
 
 // TFJobController is the type for TFJob Controller, which manages
@@ -162,7 +172,8 @@ func NewTFJobController(
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
 	// after we support CRD validation.
-	tfJobInformerFactory tfjobinformers.SharedInformerFactory) *TFJobController {
+	tfJobInformerFactory tfjobinformers.SharedInformerFactory,
+	option options.ServerOption) *TFJobController {
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
@@ -184,6 +195,10 @@ func NewTFJobController(
 
 	// Create new TFJobController.
 	tc := &TFJobController{
+		config: TFJobControllerConfiguration{
+			ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
+			enableGangScheduling:     option.EnableGangScheduling,
+		},
 		podControl:     realPodControl,
 		serviceControl: realServiceControl,
 		kubeClientSet:  kubeClientSet,
@@ -296,13 +311,19 @@ func (tc *TFJobController) processNextWorkItem() bool {
 
 	tfJob, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
+		if err == errNotExists {
+			log.Infof("TFJob has been deleted: %v", key)
+			return true
+		}
+
 		// Log the failure to conditions.
+		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			loggerForTFJob(tfJob).Warn(errMsg)
 			tc.recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
+
 		return true
 	}
 
@@ -362,6 +383,13 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
+	if tc.config.enableGangScheduling {
+		_, err := tc.syncPdb(tfjob)
+		if err != nil {
+			log.Warnf("Sync pdb %v: %v", tfjob.Name, err)
+		}
+	}
+
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
 
@@ -374,7 +402,50 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, reconcileTFJobsErr
 	}
 
-	return true, err
+	return true, nil
+}
+
+// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+func (tc *TFJobController) syncPdb(tfjob *tfv1alpha2.TFJob) (*v1beta1.PodDisruptionBudget, error) {
+	// Sum of tfjob's replicas
+	tfjobReplicas := int32(0)
+	for _, r := range tfjob.Spec.TFReplicaSpecs {
+		tfjobReplicas += *r.Replicas
+	}
+
+	// Non-distributed training is not required gang scheduling
+	if tfjobReplicas < 2 {
+		return nil, nil
+	}
+
+	// Check the pdb exist or not
+	pdb, err := tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfjob.Namespace).Get(tfjob.Name, metav1.GetOptions{})
+	if err == nil || !k8serrors.IsNotFound(err) {
+		if err == nil {
+			err = errors.New(string(metav1.StatusReasonAlreadyExists))
+		}
+		return pdb, err
+	}
+
+	// Create pdb for gang scheduling by kube-arbitrator
+	minAvailable := intstr.FromInt(int(tfjobReplicas))
+	createPdb := &v1beta1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tfjob.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				*generator.GenOwnerReference(tfjob),
+			},
+		},
+		Spec: v1beta1.PodDisruptionBudgetSpec{
+			MinAvailable: &minAvailable,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"tf_job_name": tfjob.Name,
+				},
+			},
+		},
+	}
+	return tc.kubeClientSet.PolicyV1beta1().PodDisruptionBudgets(tfjob.Namespace).Create(createPdb)
 }
 
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
@@ -396,16 +467,25 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
-	// If the TFJob is terminated, delete all pods and services.
+	// If the TFJob is terminated, delete all pods and services, with configured delays.
 	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
-		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
-			return err
+		if isAfterCleanDelay(tfjob) {
+			if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+				return err
+			}
+
+			if tc.config.enableGangScheduling {
+				if err := tc.deletePdb(tfjob); err != nil {
+					return err
+				}
+			}
+
+			// Initialize the status.
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+			return tc.updateStatusHandler(tfjob)
 		}
-		// Initialize the status.
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
-		return tc.updateStatusHandler(tfjob)
 	}
 
 	// Save the current state of the replicas

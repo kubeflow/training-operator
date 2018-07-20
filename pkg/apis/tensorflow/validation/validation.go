@@ -18,11 +18,43 @@ import (
 	"errors"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
+	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
-// ValidateTFJobSpec checks that the TFJobSpec is valid.
+// ValidateAlphaTwoTFJobSpec checks that the v1alpha2.TFJobSpec is valid.
+func ValidateAlphaTwoTFJobSpec(c *tfv2.TFJobSpec) error {
+	if c.TFReplicaSpecs == nil {
+		return fmt.Errorf("TFJobSpec is not valid")
+	}
+	for rType, value := range c.TFReplicaSpecs {
+		if value == nil || len(value.Template.Spec.Containers) == 0 {
+			return fmt.Errorf("TFJobSpec is not valid")
+		}
+		//Make sure the image is defined in the container
+		numNamedTensorflow := 0
+		for _, container := range value.Template.Spec.Containers {
+			if container.Image == "" {
+				log.Warn("Image is undefined in the container")
+				return fmt.Errorf("TFJobSpec is not valid")
+			}
+			if container.Name == tfv2.DefaultContainerName {
+				numNamedTensorflow++
+			}
+		}
+		//Make sure there has at least one container named "tensorflow"
+		if numNamedTensorflow == 0 {
+			log.Warnf("There is no container named tensorflow in %v", rType)
+			return fmt.Errorf("TFJobSpec is not valid")
+		}
+	}
+	return nil
+}
+
+// ValidateTFJobSpec checks that the v1alpha1.TFJobSpec is valid.
 func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
 	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
 		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)

@@ -119,7 +119,7 @@ Or
 
 ```bash
 # If you are using v1alpha2
-cd ./test/e2e/dist-mnist
+cd ./examples/v1alpha2/dist-mnist
 docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
 kubectl create -f ./tf-job-mnist.yaml
 ```

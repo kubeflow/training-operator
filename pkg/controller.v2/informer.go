@@ -13,13 +13,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/util/unstructured"
 )
 
 const (
-	resyncPeriod = 30 * time.Second
+	resyncPeriod     = 30 * time.Second
+	failedMarshalMsg = "Failed to marshal the object to TFJob: %v"
 )
 
 var (
@@ -89,11 +91,17 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	}
 	var tfjob tfv1alpha2.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
+	if err != nil {
+		log.Errorf(failedMarshalMsg, err)
+		return nil, errFailedMarshal
+	}
 	// This is a simple validation for TFJob to close
 	// https://github.com/kubeflow/tf-operator/issues/641
 	// TODO(gaocegege): Add more validation here.
-	if err != nil || tfjob.Spec.TFReplicaSpecs == nil {
-		return &tfjob, errFailedMarshal
+	err = validation.ValidateAlphaTwoTFJobSpec(&tfjob.Spec)
+	if err != nil {
+		log.Errorf(failedMarshalMsg, err)
+		return nil, errFailedMarshal
 	}
 	return &tfjob, nil
 }

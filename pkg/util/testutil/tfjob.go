@@ -40,6 +40,18 @@ func NewTFJobWithChief(worker, ps int) *tfv1alpha2.TFJob {
 	return tfJob
 }
 
+func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1alpha2.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	if evaluator > 0 {
+		evaluator := int32(evaluator)
+		tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeEval] = &tfv1alpha2.TFReplicaSpec{
+			Replicas: &evaluator,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+	}
+	return tfJob
+}
+
 func NewTFJob(worker, ps int) *tfv1alpha2.TFJob {
 	tfJob := &tfv1alpha2.TFJob{
 		TypeMeta: metav1.TypeMeta{

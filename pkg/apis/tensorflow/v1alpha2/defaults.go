@@ -88,7 +88,7 @@ func setTypeNameToCamelCase(tfJob *TFJob, typ TFReplicaType) {
 
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfjob *TFJob) {
-	// Set default cleanpod policy to All.
+	// Set default cleanpod policy to Running.
 	if tfjob.Spec.CleanPodPolicy == nil {
 		running := CleanPodPolicyRunning
 		tfjob.Spec.CleanPodPolicy = &running
