@@ -105,7 +105,6 @@
         else
           name;
       local zone = params.zone;
-      local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
         // Build an Argo template to execute a particular command.
         // step_name: Name for the template
@@ -277,7 +276,9 @@
                 ],
                 env: prow_env + [{
                   name: "EXTRA_REPOS",
-                  value: "kubeflow/testing@HEAD",
+                  // DO NOT SUBMIT. Allow testing with the changes in the pending PR
+                  // value: "kubeflow/testing@HEAD",
+                  value: "kubeflow/testing@HEAD:183",
                 }],
                 image: image,
                 volumeMounts: [
@@ -425,6 +426,10 @@
               "--artifacts_dir=" + outputDir,
               "copy_artifacts",
               "--bucket=" + bucket,
+              // Suffix will be used to give a unique file name to all XML files.
+              // This will prevent different versions of the workflow from clobbering each other
+              // when uploading the results to gubernator.
+              "--suffix=" + params.tfJobVersion,
             ]),  // copy-artifacts
           ],  // templates
         },
