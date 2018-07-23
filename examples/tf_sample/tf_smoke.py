@@ -130,8 +130,8 @@ def main():
     logging.info("Running Worker code.")
     # The worker just blocks because we let the master assign all ops.
     server.join()
-  elif job_type == "master" or not job_type:
-    logging.info("Running master.")
+  elif job_type in ["master", "chief"] or not job_type:
+    logging.info("Running master/chief.")
     with tf.device(device_func):
       run(server=server, cluster_spec=cluster_spec)
   else:

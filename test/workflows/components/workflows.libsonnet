@@ -62,7 +62,7 @@
       // to ensure a consistent image is used for all workflows.
       local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
         params.testWorkerImage
-        else
+      else
         "gcr.io/kubeflow-ci/test-worker";
 
       // The name of the NFS volume claim to use for test files.
@@ -105,7 +105,6 @@
         else
           name;
       local zone = params.zone;
-      local chart = srcDir + "/bin/tf-job-operator-chart-0.2.1-" + versionTag + ".tgz";
       {
         // Build an Argo template to execute a particular command.
         // step_name: Name for the template
@@ -277,7 +276,9 @@
                 ],
                 env: prow_env + [{
                   name: "EXTRA_REPOS",
-                  value: "kubeflow/testing@HEAD",
+                  // DO NOT SUBMIT. Allow testing with the changes in the pending PR
+                  // value: "kubeflow/testing@HEAD",
+                  value: "kubeflow/testing@HEAD:183",
                 }],
                 image: image,
                 volumeMounts: [
@@ -352,6 +353,7 @@
               else
                 "--component=master_is_chief_v1alpha1",
               "--shutdown_policy=master",
+              "--tfjob_version=" + params.tfJobVersion,
               "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
@@ -368,7 +370,13 @@
                 "--component=worker0_is_chief_v1alpha2"
               else
                 "--component=worker0_is_chief_v1alpha1",
-              "--shutdown_policy=worker",
+              if params.tfJobVersion == "v1alpha2" then
+                // TODO(jlewi): Looks like there is a regression in v1alpha2 and require all workers to exit.
+                // see https://github.com/kubeflow/tf-operator/issues/751
+                "--shutdown_policy=all_workers"
+              else
+                "--shutdown_policy=worker",
+              "--tfjob_version=" + params.tfJobVersion,
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0
@@ -381,7 +389,10 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=simple_tfjob",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=simple_tfjob_v1alpha2"
+              else
+                "--component=simple_tfjob_v1alpha1",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
@@ -395,7 +406,10 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=gpu_tfjob",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=gpu_tfjob_v1alpha2"
+              else
+                "--component=gpu_tfjob_v1alpha1",
               "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
@@ -425,6 +439,10 @@
               "--artifacts_dir=" + outputDir,
               "copy_artifacts",
               "--bucket=" + bucket,
+              // Suffix will be used to give a unique file name to all XML files.
+              // This will prevent different versions of the workflow from clobbering each other
+              // when uploading the results to gubernator.
+              "--suffix=" + params.tfJobVersion,
             ]),  // copy-artifacts
           ],  // templates
         },

@@ -412,13 +412,15 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
 
       logging.info("Created job %s in namespaces %s", name, namespace)
-
+      logging.info("tfjob_version=%s", args.tfjob_version)
       # Wait for the job to either be in Running state or a terminal state
       if args.tfjob_version == "v1alpha1":
+        logging.info("Wait for Phase Running, Done, or Failed")
         results = tf_job_client.wait_for_phase(
           api_client, namespace, name, ["Running", "Done", "Failed"],
           status_callback=tf_job_client.log_status)
       else:
+        logging.info("Wait for conditions Running, Succeeded, or Failed")
         results = tf_job_client.wait_for_condition(
           api_client, namespace, name, ["Running", "Succeeded", "Failed"],
           status_callback=tf_job_client.log_status)
@@ -433,20 +435,29 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
             replica = "master"
           else:
             replica = "chief"
-        elif args.shutdown_policy in ["worker"]:
+        elif args.shutdown_policy in ["worker", "all_workers"]:
           replica = "worker"
         else:
           raise ValueError("Unrecognized shutdown_policy "
                            "%s" % args.shutdown_policy)
 
+        # Number of targets.
+        num_targets = 1
+        if args.shutdown_policy in ["all_workers"]:
+          # Assume v1alpha2
+          num_targets = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+            "Worker", {}).get("replicas", 0)
+          logging.info("There are %s worker replicas", num_targets)
+
+
         if args.tfjob_version == "v1alpha1":
           runtime_id = results.get("spec", {}).get("RuntimeId")
-          target = "{name}-{replica}-{runtime}-0".format(
+          target = "{name}-{replica}-{runtime}".format(
             name=name, replica=replica, runtime=runtime_id)
           pod_labels = get_labels(name, runtime_id)
           pod_selector = to_selector(pod_labels)
         else:
-          target = "{name}-{replica}-0".format(name=name, replica=replica)
+          target = "{name}-{replica}".format(name=name, replica=replica)
           pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
 
@@ -461,7 +472,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                                         minutes=4))
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
-        terminateReplica(masterHost, namespace, target)
+        for num in range(num_targets):
+          full_target = target + "-{0}".format(num)
+          terminateReplica(masterHost, namespace, full_target)
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
@@ -534,7 +547,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         pod_labels = get_labels_v1alpha2(name)
         pod_selector = to_selector(pod_labels)
 
-      wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+      # We don't wait for pods to be deleted in v1alpha2 because CleanPodPolicy
+      # means completed pods won't be deleted.
+      # TODO(jlewi): We should add a test to deal with deleted pods.
+      if args.tfjob_version == "v1alpha1":
+        wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
