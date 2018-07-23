@@ -402,7 +402,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 		return false, reconcileTFJobsErr
 	}
 
-	return true, nil
+	return true, err
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
@@ -467,25 +467,23 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		return err
 	}
 
-	// If the TFJob is terminated, delete all pods and services, with configured delays.
+	// If the TFJob is terminated, delete all pods and services.
 	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
-		if isAfterCleanDelay(tfjob) {
-			if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+			return err
+		}
+
+		if tc.config.enableGangScheduling {
+			if err := tc.deletePdb(tfjob); err != nil {
 				return err
 			}
-
-			if tc.config.enableGangScheduling {
-				if err := tc.deletePdb(tfjob); err != nil {
-					return err
-				}
-			}
-
-			// Initialize the status.
-			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
-			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
-			initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
-			return tc.updateStatusHandler(tfjob)
 		}
+
+		// Initialize the status.
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+		return tc.updateStatusHandler(tfjob)
 	}
 
 	// Save the current state of the replicas

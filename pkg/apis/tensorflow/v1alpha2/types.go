@@ -48,10 +48,6 @@ type TFJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
-	// CleanPodDelay defines the delay of executing CleanPodPolicy.
-	// Default to 0.
-	CleanPodDelay *CleanPodDelay `json:"cleanPodDelay,omitempty"`
-
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
 	// For example,
@@ -88,13 +84,6 @@ const (
 	CleanPodPolicyRunning   CleanPodPolicy = "Running"
 	CleanPodPolicyNone      CleanPodPolicy = "None"
 )
-
-// CleanPodDelay defines the delay of executing CleanPodPolicy using duration string.
-// A duration string is a possibly signed sequence of
-// decimal numbers, each with optional fraction and a unit suffix,
-// such as "300ms", "-1.5h" or "2h45m".
-// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-type CleanPodDelay string
 
 // RestartPolicy describes how the TFReplicas should be restarted.
 // Only one of the following restart policies may be specified.
