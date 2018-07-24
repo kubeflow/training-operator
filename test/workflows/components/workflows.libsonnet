@@ -370,7 +370,11 @@
                 "--component=worker0_is_chief_v1alpha2"
               else
                 "--component=worker0_is_chief_v1alpha1",
-              "--shutdown_policy=worker",
+              if params.tfJobVersion == "v1alpha2" then
+                // TODO(jlewi): Looks like there is a regression in v1alpha2 and require all workers to exit.
+                "--shutdown_policy=all_workers",
+              else
+                "--shutdown_policy=worker",
               "--tfjob_version=" + params.tfJobVersion,
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",

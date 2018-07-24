@@ -435,20 +435,29 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
             replica = "master"
           else:
             replica = "chief"
-        elif args.shutdown_policy in ["worker"]:
+        elif args.shutdown_policy in ["worker", "all_workers"]:
           replica = "worker"
         else:
           raise ValueError("Unrecognized shutdown_policy "
                            "%s" % args.shutdown_policy)
 
+        # Number of targets.
+        num_targets = 1
+        if args.shutdown_policy in ["all_workers"]:
+          # Assume v1alpha2
+          num_targets = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+            "Worker", {}).get("replicas", 0)
+          logging.info("There are %s worker replicas", num_targets)
+
+
         if args.tfjob_version == "v1alpha1":
           runtime_id = results.get("spec", {}).get("RuntimeId")
-          target = "{name}-{replica}-{runtime}-0".format(
+          target = "{name}-{replica}-{runtime}".format(
             name=name, replica=replica, runtime=runtime_id)
           pod_labels = get_labels(name, runtime_id)
           pod_selector = to_selector(pod_labels)
         else:
-          target = "{name}-{replica}-0".format(name=name, replica=replica)
+          target = "{name}-{replica}".format(name=name, replica=replica)
           pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
 
@@ -463,7 +472,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                                         minutes=4))
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
-        terminateReplica(masterHost, namespace, target)
+        for num in range(num_targets):
+          full_target = target + "-{0}".format(num)
+          terminateReplica(masterHost, namespace, full_target)
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
