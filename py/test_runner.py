@@ -415,10 +415,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       # Wait for the job to either be in Running state or a terminal state
       if args.tfjob_version == "v1alpha1":
+        logging.info("Wait for Phase Running, Done, or Failed")
         results = tf_job_client.wait_for_phase(
           api_client, namespace, name, ["Running", "Done", "Failed"],
           status_callback=tf_job_client.log_status)
       else:
+        logging.info("Wait for conditions Running, Succeeded, or Failed")
         results = tf_job_client.wait_for_condition(
           api_client, namespace, name, ["Running", "Succeeded", "Failed"],
           status_callback=tf_job_client.log_status)
