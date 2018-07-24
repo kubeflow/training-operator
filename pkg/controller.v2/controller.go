@@ -473,6 +473,10 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 			return err
 		}
 
+		if err := tc.cleanupTFJob(tfjob); err != nil {
+			return err
+		}
+
 		if tc.config.enableGangScheduling {
 			if err := tc.deletePdb(tfjob); err != nil {
 				return err

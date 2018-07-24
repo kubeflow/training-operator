@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -112,5 +113,36 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 			return err
 		}
 	}
+	return nil
+}
+
+func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
+	currentTime := time.Now()
+	if tfJob.Spec.TTLAfterFinished == nil {
+		// do nothing if the cleanup delay is not set
+		return nil
+	}
+	duration, err := time.ParseDuration(string(*tfJob.Spec.TTLAfterFinished))
+	if err != nil {
+		// do nothing if the duration string is not parsable
+		log.Warnf("Parse CleanDelay duration error: %v.", err)
+		return nil
+	}
+	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
+		err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Warnf("Cleanup TFJob error: %v.", err)
+			return err
+		}
+		return nil
+	}
+	go func() {
+		time.Sleep(duration)
+		err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Warnf("Cleanup TFJob error: %v.", err)
+		}
+
+	}()
 	return nil
 }
