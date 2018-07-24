@@ -1,3 +1,3 @@
 {
-  namespace: 'e2etests',
+  namespace: "e2etests",
 }

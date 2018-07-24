@@ -372,7 +372,8 @@
                 "--component=worker0_is_chief_v1alpha1",
               if params.tfJobVersion == "v1alpha2" then
                 // TODO(jlewi): Looks like there is a regression in v1alpha2 and require all workers to exit.
-                "--shutdown_policy=all_workers",
+                // see https://github.com/kubeflow/tf-operator/issues/751
+                "--shutdown_policy=all_workers"
               else
                 "--shutdown_policy=worker",
               "--tfjob_version=" + params.tfJobVersion,
