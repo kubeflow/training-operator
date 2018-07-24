@@ -62,8 +62,8 @@ local parts(namespace, name, image) = {
           tfReplicaType: "PS",
         },
       ],
-    }, // spec
-  }, // job
+    },  // spec
+  },  // job
 };
 
 std.prune(k.core.v1.list.new([parts(params.namespace, params.name, params.image).job]))

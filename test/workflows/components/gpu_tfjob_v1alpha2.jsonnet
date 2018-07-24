@@ -1,6 +1,6 @@
 local params = std.extVar("__ksonnet/params").components.gpu_tfjob_v1alpha2;
 
-local k = import 'k.libsonnet';
+local k = import "k.libsonnet";
 
 local defaultTestImage = "gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:dc944ff";
 local parts(namespace, name, image) = {
@@ -36,7 +36,7 @@ local parts(namespace, name, image) = {
             },
           },
         },
-      },      
+      },
     },
   },  // job
 };

@@ -62,7 +62,7 @@
       // to ensure a consistent image is used for all workflows.
       local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
         params.testWorkerImage
-        else
+      else
         "gcr.io/kubeflow-ci/test-worker";
 
       // The name of the NFS volume claim to use for test files.
@@ -386,7 +386,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               if params.tfJobVersion == "v1alpha2" then
                 "--component=simple_tfjob_v1alpha2"
-              else 
+              else
                 "--component=simple_tfjob_v1alpha1",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
@@ -403,7 +403,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               if params.tfJobVersion == "v1alpha2" then
                 "--component=gpu_tfjob_v1alpha2"
-              else 
+              else
                 "--component=gpu_tfjob_v1alpha1",
               "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
