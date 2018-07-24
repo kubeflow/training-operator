@@ -70,7 +70,7 @@ if __name__ == "__main__":
   # List of paths to copy relative to root.
   sources = [
       # TODO(jlewi): Should we build a pip package?
-      "examples/tf_sample/tf_sample/tf_smoke.py",
+      "examples/tf_sample/tf_smoke.py",
   ]
 
   for s in sources:

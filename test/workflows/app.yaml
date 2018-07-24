@@ -6,6 +6,12 @@ environments:
       server: https://35.237.151.217
     k8sVersion: v1.9.6
     path: jlewi-kubeflow
+  jlewi-test:
+    destination:
+      namespace: e2etests
+      server: https://35.227.87.113
+    k8sVersion: v1.9.6
+    path: jlewi-test
   jlewi-test-env:
     destination:
       namespace: kubeflow
@@ -48,18 +54,6 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-2aa2
-  test-env-30e7:
-    destination:
-      namespace: kubeflow
-      server: https://35.188.73.10
-    k8sVersion: v1.9.6
-    path: test-env-30e7
-  test-env-37df:
-    destination:
-      namespace: kubeflow
-      server: https://35.188.73.10
-    k8sVersion: v1.9.6
-    path: test-env-37df
   test-env-3cdb:
     destination:
       namespace: kubeflow
@@ -96,18 +90,30 @@ environments:
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-74a9
-  test-env-77ab:
-    destination:
-      namespace: kubeflow
-      server: https://35.188.73.10
-    k8sVersion: v1.9.6
-    path: test-env-77ab
   test-env-7f4c:
     destination:
       namespace: kubeflow
       server: https://35.188.73.10
     k8sVersion: v1.9.6
     path: test-env-7f4c
+  test-env-30e7:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-30e7
+  test-env-37df:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-37df
+  test-env-77ab:
+    destination:
+      namespace: kubeflow
+      server: https://35.188.73.10
+    k8sVersion: v1.9.6
+    path: test-env-77ab
   test-env-96e7:
     destination:
       namespace: kubeflow

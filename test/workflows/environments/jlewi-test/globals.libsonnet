@@ -1,0 +1,3 @@
+{
+  namespace: 'e2etests',
+}
