@@ -276,9 +276,7 @@
                 ],
                 env: prow_env + [{
                   name: "EXTRA_REPOS",
-                  // DO NOT SUBMIT. Allow testing with the changes in the pending PR
-                  // value: "kubeflow/testing@HEAD",
-                  value: "kubeflow/testing@HEAD:183",
+                  value: "kubeflow/testing@HEAD",
                 }],
                 image: image,
                 volumeMounts: [
