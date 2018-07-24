@@ -353,6 +353,7 @@
               else
                 "--component=master_is_chief_v1alpha1",
               "--shutdown_policy=master",
+              "--tfjob_version=" + params.tfJobVersion,
               "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
@@ -370,6 +371,7 @@
               else
                 "--component=worker0_is_chief_v1alpha1",
               "--shutdown_policy=worker",
+              "--tfjob_version=" + params.tfJobVersion,
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0

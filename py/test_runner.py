@@ -412,7 +412,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
 
       logging.info("Created job %s in namespaces %s", name, namespace)
-
+      logging.info("tfjob_version=%s", args.tfjob_version)
       # Wait for the job to either be in Running state or a terminal state
       if args.tfjob_version == "v1alpha1":
         logging.info("Wait for Phase Running, Done, or Failed")
