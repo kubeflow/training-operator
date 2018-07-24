@@ -25,13 +25,22 @@
     worker0_is_chief_v1alpha2: {
       name: 'worker0-is-chief-v1alpha2',
     },
-    simple_tfjob: {
+    simple_tfjob_v1alpha1: {
       name: 'simple-001',
       namespace: 'kubeflow-test-infra',
-      image: '',
-      apiVersion: 'kubeflow.org/v1alpha1',
+      image: '',      
     },
-    gpu_tfjob: {
+    simple_tfjob_v1alpha2: {
+      name: 'simple-001',
+      namespace: 'kubeflow-test-infra',
+      image: '',      
+    },
+    gpu_tfjob_v1alpha1: {
+      name: 'gpu-simple-001',
+      namespace: 'kubeflow-test-infra',
+      image: '',
+    },
+    gpu_tfjob_v1alpha2: {
       name: 'gpu-simple-001',
       namespace: 'kubeflow-test-infra',
       image: '',

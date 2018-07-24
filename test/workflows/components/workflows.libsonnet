@@ -384,7 +384,10 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=simple_tfjob",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=simple_tfjob_v1alpha2"
+              else 
+                "--component=simple_tfjob_v1alpha1",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
@@ -398,7 +401,10 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=gpu_tfjob",
+              if params.tfJobVersion == "v1alpha2" then
+                "--component=gpu_tfjob_v1alpha2"
+              else 
+                "--component=gpu_tfjob_v1alpha1",
               "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",

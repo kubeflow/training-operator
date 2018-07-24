@@ -1,4 +1,4 @@
-local params = std.extVar("__ksonnet/params").components.gpu_tfjob;
+local params = std.extVar("__ksonnet/params").components.gpu_tfjob_v1alpha1;
 
 local k = import 'k.libsonnet';
 
