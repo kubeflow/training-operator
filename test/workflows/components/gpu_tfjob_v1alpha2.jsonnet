@@ -1,22 +1,24 @@
-local params = std.extVar("__ksonnet/params").components.gpu_tfjob;
+local params = std.extVar("__ksonnet/params").components.gpu_tfjob_v1alpha2;
 
-local k = import 'k.libsonnet';
+local k = import "k.libsonnet";
 
-local defaultTestImage = "gcr.io/tf-on-k8s-dogfood/tf_sample_gpu:dc944ff";
+local defaultTestImage = "gcr.io/kubeflow-examples/tf_smoke:v20180723-65c28134";
 local parts(namespace, name, image) = {
   local actualImage = if image != "" then
     image
   else defaultTestImage,
   job:: {
-    apiVersion: "kubeflow.org/v1alpha1",
+    apiVersion: "kubeflow.org/v1alpha2",
     kind: "TFJob",
     metadata: {
       name: name,
       namespace: namespace,
     },
     spec: {
-      replicaSpecs: [
-        {
+      tfReplicaSpecs: {
+        Chief: {
+          replicas: 1,
+          restartPolicy: "Never",
           template: {
             spec: {
               containers: [
@@ -33,9 +35,8 @@ local parts(namespace, name, image) = {
               restartPolicy: "OnFailure",
             },
           },
-          tfReplicaType: "MASTER",
         },
-      ],
+      },
     },
   },  // job
 };

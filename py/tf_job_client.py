@@ -210,6 +210,10 @@ def wait_for_condition(client,
       results = thread.get(TIMEOUT)
     except multiprocessing.TimeoutError:
       logging.error("Timeout trying to get TFJob.")
+    except Exception as e:
+      logging.error("There was a problem waiting for Job %s.%s; Exception; %s",
+                    name, name, e)
+      raise
 
     if results:
       if status_callback:
