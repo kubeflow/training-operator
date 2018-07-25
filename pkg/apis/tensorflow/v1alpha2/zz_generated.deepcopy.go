@@ -111,7 +111,7 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	}
 	if in.TTLAfterFinished != nil {
 		in, out := &in.TTLAfterFinished, &out.TTLAfterFinished
-		*out = new(TFJobTTLAfterFinished)
+		*out = new(TTLAfterFinished)
 		**out = **in
 	}
 	if in.TFReplicaSpecs != nil {

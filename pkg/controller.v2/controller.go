@@ -111,6 +111,9 @@ type TFJobController struct {
 	// To allow injection of updateStatus for testing.
 	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
 
+	// To allow injection of deleteTFJob for testing.
+	deleteTFJobHandler func(tfjob *tfv1alpha2.TFJob) error
+
 	// tfJobInformer is a temporary field for unstructured informer support.
 	tfJobInformer cache.SharedIndexInformer
 
@@ -211,6 +214,8 @@ func NewTFJobController(
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus
+	// set delete handler.
+	tc.deleteTFJobHandler = tc.deleteTFJob
 
 	// Set up an event handler for when tfjob resources change.
 	tfJobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{

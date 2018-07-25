@@ -129,7 +129,7 @@ func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 		return nil
 	}
 	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
-		err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
+		err := tc.deleteTFJobHandler(tfJob)
 		if err != nil {
 			log.Warnf("Cleanup TFJob error: %v.", err)
 			return err
@@ -138,11 +138,15 @@ func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 	}
 	go func() {
 		time.Sleep(duration)
-		err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
+		err := tc.deleteTFJobHandler(tfJob)
 		if err != nil {
 			log.Warnf("Cleanup TFJob error: %v.", err)
 		}
-
 	}()
 	return nil
+}
+
+// deleteTFJob delets the given TFJob.
+func (tc *TFJobController) deleteTFJob(tfJob *tfv1alpha2.TFJob) error {
+	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
 }

@@ -15,6 +15,8 @@
 package testutil
 
 import (
+	"time"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -28,6 +30,21 @@ func NewTFJobWithCleanPolicy(chief, worker, ps int, policy tfv1alpha2.CleanPodPo
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.CleanPodPolicy = &policy
+	return tfJob
+}
+
+func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *tfv1alpha2.TTLAfterFinished) *tfv1alpha2.TFJob {
+	if chief == 1 {
+		tfJob := NewTFJobWithChief(worker, ps)
+		tfJob.Spec.TTLAfterFinished = ttl
+		policy := tfv1alpha2.CleanPodPolicyNone
+		tfJob.Spec.CleanPodPolicy = &policy
+		return tfJob
+	}
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.TTLAfterFinished = ttl
+	policy := tfv1alpha2.CleanPodPolicyNone
 	tfJob.Spec.CleanPodPolicy = &policy
 	return tfJob
 }
@@ -104,4 +121,9 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 			},
 		},
 	}
+}
+
+func SetTFJobCompletionTime(tfJob *tfv1alpha2.TFJob) {
+	now := metav1.Time{Time: time.Now()}
+	tfJob.Status.CompletionTime = &now
 }
