@@ -55,7 +55,10 @@ func (tc *TFJobController) reconcilePods(
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
 	// Get all pods for the type rt.
-	pods = filterPodsForTFReplicaType(pods, rt)
+	pods, err := filterPodsForTFReplicaType(pods, rt)
+	if err != nil {
+		return err
+	}
 	replicas := int(*spec.Replicas)
 	restart := false
 
@@ -68,7 +71,7 @@ func (tc *TFJobController) reconcilePods(
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("Need to create new pod: %s-%d", rt, index)
-			err := tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
+			err = tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
 			}
@@ -252,7 +255,7 @@ func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, 
 }
 
 // filterPodsForTFReplicaType returns pods belong to a TFReplicaType.
-func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v1.Pod {
+func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) ([]*v1.Pod, error) {
 	var result []*v1.Pod
 
 	tfReplicaSelector := &metav1.LabelSelector{
@@ -262,13 +265,16 @@ func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) []*v1.Pod 
 	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
 
 	for _, pod := range pods {
-		selector, _ := metav1.LabelSelectorAsSelector(tfReplicaSelector)
+		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
+		if err != nil {
+			return nil, err
+		}
 		if !selector.Matches(labels.Set(pod.Labels)) {
 			continue
 		}
 		result = append(result, pod)
 	}
-	return result
+	return result, nil
 }
 
 func genExpectationPodsKey(tfjobKey, replicaType string) string {
