@@ -85,6 +85,12 @@ spec:
           restartPolicy: OnFailure
     - replicas: 2
       tfReplicaType: PS
+      template:
+        spec:
+          containers:
+            - image: gcr.io/tf-on-k8s-dogfood/tf_sample:dc944ff
+              name: tensorflow
+          restartPolicy: OnFailure      
 ```
 
 Each replicaSpec defines a set of TensorFlow processes.
