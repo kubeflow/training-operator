@@ -461,6 +461,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           pod_labels = get_labels_v1alpha2(namespace, name)
           pod_selector = to_selector(pod_labels)
 
+        if args.tfjob_version == "v1alpha2":
+          pods = list_pods(api_client, namespace, pod_selector).items
+          for pod in pods:
+            logging.info("===zzz" + str(pod))
+
         # Wait for the pods to be ready before we shutdown
         # TODO(jlewi): We are get pods using a label selector so there is
         # a risk that the pod we actual care about isn't present.
