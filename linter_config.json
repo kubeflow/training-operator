@@ -8,7 +8,7 @@
     "goconst",
     "goimports",
     "varcheck",
-    "gas",
+    "gosec",
     "staticcheck",
     "gosimple",
     "lll",

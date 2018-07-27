@@ -139,7 +139,7 @@ func readControllerConfig(controllerConfigFile string) *v1alpha1.ControllerConfi
 	controllerConfig := &v1alpha1.ControllerConfig{}
 	if controllerConfigFile != "" {
 		log.Infof("Loading controller config from %v.", controllerConfigFile)
-		data, err := ioutil.ReadFile(controllerConfigFile)
+		data, err := ioutil.ReadFile(controllerConfigFile) // nolint
 		if err != nil {
 			log.Fatalf("Could not read file: %v. Error: %v", controllerConfigFile, err)
 			return controllerConfig

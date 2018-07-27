@@ -62,7 +62,10 @@ type TaskSpec struct {
 // }
 func genTFConfigJSONStr(tfjob *tfv1alpha2.TFJob, rtype, index string) (string, error) {
 	// Configure the TFCONFIG environment variable.
-	i, _ := strconv.ParseInt(index, 0, 32)
+	i, err := strconv.ParseInt(index, 0, 32)
+	if err != nil {
+		return "", err
+	}
 
 	cluster, err := genClusterSpec(tfjob)
 	if err != nil {

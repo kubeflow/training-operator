@@ -45,7 +45,10 @@ func (tc *TFJobController) reconcileServices(
 
 	replicas := int(*spec.Replicas)
 	// Get all services for the type rt.
-	services = filterServicesForTFReplicaType(services, rt)
+	services, err := filterServicesForTFReplicaType(services, rt)
+	if err != nil {
+		return err
+	}
 
 	serviceSlices := getServiceSlices(services, replicas, loggerForReplica(tfjob, rt))
 
@@ -55,7 +58,7 @@ func (tc *TFJobController) reconcileServices(
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
 			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
-			err := tc.createNewService(tfjob, rtype, strconv.Itoa(index), spec)
+			err = tc.createNewService(tfjob, rtype, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
 			}
@@ -186,7 +189,7 @@ func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.S
 }
 
 // filterServicesForTFReplicaType returns service belong to a TFReplicaType.
-func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) []*v1.Service {
+func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) ([]*v1.Service, error) {
 	var result []*v1.Service
 
 	tfReplicaSelector := &metav1.LabelSelector{
@@ -196,13 +199,16 @@ func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string
 	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
 
 	for _, service := range services {
-		selector, _ := metav1.LabelSelectorAsSelector(tfReplicaSelector)
+		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
+		if err != nil {
+			return nil, err
+		}
 		if !selector.Matches(labels.Set(service.Labels)) {
 			continue
 		}
 		result = append(result, service)
 	}
-	return result
+	return result, nil
 }
 
 func genExpectationServicesKey(tfjobKey, replicaType string) string {
