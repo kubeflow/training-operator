@@ -361,13 +361,13 @@ func TestCleanupTFJob(t *testing.T) {
 		expectedDeleteFinished bool
 	}
 
-	ttlaf0 := tfv1alpha2.TTLAfterFinished("0")
+	ttlaf0 := int32(0)
 	ttl0 := &ttlaf0
-	ttlaf2s := tfv1alpha2.TTLAfterFinished("2s")
+	ttlaf2s := int32(2)
 	ttl2s := &ttlaf2s
 	testCases := []testCase{
 		testCase{
-			description: "4 workers and 2 ps is running, TTLAfterFinished unset",
+			description: "4 workers and 2 ps is running, TTLSecondsAfterFinishing unset",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, nil),
 
 			pendingWorkerPods:   0,
@@ -386,7 +386,7 @@ func TestCleanupTFJob(t *testing.T) {
 			expectedDeleteFinished: false,
 		},
 		testCase{
-			description: "4 workers and 2 ps is running, TTLAfterFinished is 0",
+			description: "4 workers and 2 ps is running, TTLSecondsAfterFinishing is 0",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl0),
 
 			pendingWorkerPods:   0,
@@ -405,7 +405,7 @@ func TestCleanupTFJob(t *testing.T) {
 			expectedDeleteFinished: true,
 		},
 		testCase{
-			description: "4 workers and 2 ps is succeeded, TTLAfterFinished is 2 second",
+			description: "4 workers and 2 ps is succeeded, TTLSecondsAfterFinishing is 2",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl2s),
 
 			pendingWorkerPods:   0,
@@ -484,9 +484,9 @@ func TestCleanupTFJob(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
-		ttl := tc.tfJob.Spec.TTLAfterFinished
+		ttl := tc.tfJob.Spec.TTLSecondsAfterFinishing
 		if ttl != nil {
-			dur, _ := time.ParseDuration(string(*ttl))
+			dur := time.Second * time.Duration(*ttl)
 			time.Sleep(dur)
 		}
 

@@ -48,10 +48,10 @@ type TFJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
-	// TTL to clean up tf-jobs (temporary before kubernetes adds the
-	// cleanup controller).
+	// TTLSecondsAfterFinishing is the TTL to clean up tf-jobs (temporary
+	// before kubernetes adds the cleanup controller).
 	// Default to infinite.
-	TTLAfterFinished *TTLAfterFinished `json:"ttlAfterFinished,omitempty"`
+	TTLSecondsAfterFinishing *int32 `json:"ttlSecondsAfterFinishing,omitempty"`
 
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
@@ -82,13 +82,6 @@ type TFReplicaSpec struct {
 
 // CleanPodPolicy describes how to deal with pods when the TFJob is finished.
 type CleanPodPolicy string
-
-// TTLAfterFinished uses a duration string to describe the timeout of
-// cleanup tf-jobs.  A duration string is a possibly signed sequence of
-// decimal numbers, each with optional fraction and a unit suffix,
-// such as "300ms", "-1.5h" or "2h45m".
-// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-type TTLAfterFinished string
 
 const (
 	CleanPodPolicyUndefined CleanPodPolicy = ""

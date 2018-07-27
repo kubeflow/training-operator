@@ -118,16 +118,12 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 
 func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 	currentTime := time.Now()
-	if tfJob.Spec.TTLAfterFinished == nil {
+	ttl := tfJob.Spec.TTLSecondsAfterFinishing
+	if ttl == nil {
 		// do nothing if the cleanup delay is not set
 		return nil
 	}
-	duration, err := time.ParseDuration(string(*tfJob.Spec.TTLAfterFinished))
-	if err != nil {
-		// do nothing if the duration string is not parsable
-		log.Warnf("Parse CleanDelay duration error: %v.", err)
-		return nil
-	}
+	duration := time.Second * time.Duration(*ttl)
 	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
 		err := tc.deleteTFJobHandler(tfJob)
 		if err != nil {
@@ -136,13 +132,12 @@ func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 		}
 		return nil
 	}
-	go func() {
-		time.Sleep(duration)
-		err := tc.deleteTFJobHandler(tfJob)
-		if err != nil {
-			log.Warnf("Cleanup TFJob error: %v.", err)
-		}
-	}()
+	key, err := KeyFunc(tfJob)
+	if err != nil {
+		log.Warnf("Couldn't get key for tfjob object %#v: %v", tfJob, err)
+		return err
+	}
+	tc.workQueue.AddRateLimited(key)
 	return nil
 }
 
