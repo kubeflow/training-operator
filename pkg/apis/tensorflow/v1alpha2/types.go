@@ -50,6 +50,8 @@ type TFJobSpec struct {
 
 	// TTLSecondsAfterFinishing is the TTL to clean up tf-jobs (temporary
 	// before kubernetes adds the cleanup controller).
+	// It may take extra ReconcilePeriod seconds for the cleanup, since
+	// reconcile gets called periodically.
 	// Default to infinite.
 	TTLSecondsAfterFinishing *int32 `json:"ttlSecondsAfterFinishing,omitempty"`
 
