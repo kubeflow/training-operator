@@ -17,11 +17,12 @@ package controller
 import (
 	log "github.com/sirupsen/logrus"
 
+	"strings"
+
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strings"
 )
 
 func loggerForReplica(tfjob *tfv1alpha2.TFJob, rtype string) *log.Entry {
@@ -67,7 +68,7 @@ func loggerForKey(key string) *log.Entry {
 	})
 }
 
-func loggerForUnstructured(obj *metav1unstructured.Unstructured) *log.Entry{
+func loggerForUnstructured(obj *metav1unstructured.Unstructured) *log.Entry {
 	job := ""
 	if obj.GetKind() == tfv1alpha2.Kind {
 		job = obj.GetNamespace() + "." + obj.GetName()
