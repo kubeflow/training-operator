@@ -98,7 +98,7 @@ func TestClusterSpec(t *testing.T) {
 			rt:    "worker",
 			index: "0",
 			expectedClusterSpec: `{"cluster":{"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0}}`,
+				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 		tc{
 			tfJob: testutil.NewTFJob(1, 1),
@@ -106,7 +106,7 @@ func TestClusterSpec(t *testing.T) {
 			index: "0",
 			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
 				`-ps-0:2222"],"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0}}`,
+				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 		tc{
 			tfJob: testutil.NewTFJobWithEvaluator(1, 1, 1),
@@ -114,7 +114,7 @@ func TestClusterSpec(t *testing.T) {
 			index: "0",
 			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
 				`-ps-0:2222"],"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0}}`,
+				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 	}
 	for _, c := range testCase {
