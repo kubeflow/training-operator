@@ -309,15 +309,17 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	}
 	defer tc.workQueue.Done(key)
 
+	logger := loggerForKey(key.(string))
+
 	tfJob, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
 		if err == errNotExists {
-			log.Infof("TFJob has been deleted: %v", key)
+			logger.Infof("TFJob has been deleted: %v", key)
 			return true
 		}
 
 		// Log the failure to conditions.
-		log.Errorf("Failed to get TFJob from key %s: %v", key, err)
+		logger.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			loggerForTFJob(tfJob).Warn(errMsg)
@@ -358,8 +360,9 @@ func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
 // This function is not meant to be invoked concurrently with the same key.
 func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
+	logger := loggerForKey(key)
 	defer func() {
-		log.Infof("Finished syncing tfjob %q (%v)", key, time.Since(startTime))
+		logger.Infof("Finished syncing tfjob %q (%v)", key, time.Since(startTime))
 	}()
 
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
@@ -373,7 +376,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	sharedTFJob, err := tc.getTFJobFromName(namespace, name)
 	if err != nil {
 		if err == errNotExists {
-			log.Infof("TFJob has been deleted: %v", key)
+			logger.Infof("TFJob has been deleted: %v", key)
 			// jm.expectations.DeleteExpectations(key)
 			return true, nil
 		}
@@ -386,7 +389,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	if tc.config.enableGangScheduling {
 		_, err := tc.syncPdb(tfjob)
 		if err != nil {
-			log.Warnf("Sync pdb %v: %v", tfjob.Name, err)
+			logger.Warnf("Sync pdb %v: %v", tfjob.Name, err)
 		}
 	}
 
@@ -451,19 +454,20 @@ func (tc *TFJobController) syncPdb(tfjob *tfv1alpha2.TFJob) (*v1beta1.PodDisrupt
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
 func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
-	log.Infof("Reconcile TFJobs %s", tfjob.Name)
+	logger := loggerForTFJob(tfjob)
+	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
 	pods, err := tc.getPodsForTFJob(tfjob)
 
 	if err != nil {
-		log.Infof("getPodsForTFJob error %v", err)
+		logger.Warnf("getPodsForTFJob error %v", err)
 		return err
 	}
 
 	services, err := tc.getServicesForTFJob(tfjob)
 
 	if err != nil {
-		log.Infof("getServicesForTFJob error %v", err)
+		logger.Warnf("getServicesForTFJob error %v", err)
 		return err
 	}
 
@@ -493,14 +497,14 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
 		err = tc.reconcilePods(tfjob, pods, rtype, spec, replicasStatus)
 		if err != nil {
-			log.Infof("reconcilePods error %v", err)
+			logger.Warnf("reconcilePods error %v", err)
 			return err
 		}
 
 		err = tc.reconcileServices(tfjob, services, rtype, spec)
 
 		if err != nil {
-			log.Infof("reconcileServices error %v", err)
+			logger.Warnf("reconcileServices error %v", err)
 			return err
 		}
 	}

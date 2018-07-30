@@ -66,8 +66,9 @@ func (tc *TFJobController) getTFJobFromName(namespace, name string) (*tfv1alpha2
 func (tc *TFJobController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
 	// Check if the key exists.
 	obj, exists, err := tc.tfJobInformer.GetIndexer().GetByKey(key)
+	logger := loggerForKey(key)
 	if err != nil {
-		log.Errorf("Failed to get TFJob '%s' from informer index: %+v", key, err)
+		logger.Errorf("Failed to get TFJob '%s' from informer index: %+v", key, err)
 		return nil, errGetFromKey
 	}
 	if !exists {
@@ -86,13 +87,14 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	// Check if the spec is valid.
 	un, ok := obj.(*metav1unstructured.Unstructured)
 	if !ok {
-		log.Warn("The object in index is not an unstructured")
+		log.Errorf("The object in index is not an unstructured; %+v", obj)
 		return nil, errGetFromKey
 	}
 	var tfjob tfv1alpha2.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
+	logger := loggerForUnstructured(un)
 	if err != nil {
-		log.Errorf(failedMarshalMsg, err)
+		logger.Errorf(failedMarshalMsg, err)
 		return nil, errFailedMarshal
 	}
 	// This is a simple validation for TFJob to close
@@ -100,7 +102,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	// TODO(gaocegege): Add more validation here.
 	err = validation.ValidateAlphaTwoTFJobSpec(&tfjob.Spec)
 	if err != nil {
-		log.Errorf(failedMarshalMsg, err)
+		logger.Errorf(failedMarshalMsg, err)
 		return nil, errFailedMarshal
 	}
 	return &tfjob, nil
@@ -108,15 +110,16 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 
 func unstructuredFromTFJob(obj interface{}, tfJob *tfv1alpha2.TFJob) error {
 	un, ok := obj.(*metav1unstructured.Unstructured)
+	logger := loggerForTFJob(tfJob)
 	if !ok {
-		log.Warn("The objetc in index is not an unstructured")
+		logger.Warn("The object in index isn't type Unstructured")
 		return errGetFromKey
 	}
 
 	var err error
 	un.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
 	if err != nil {
-		log.Error("The TFJob connvert failed")
+		logger.Error("The TFJob convert failed")
 		return err
 	}
 	return nil
