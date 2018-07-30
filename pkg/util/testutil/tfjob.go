@@ -37,13 +37,13 @@ func NewTFJobWithCleanPolicy(chief, worker, ps int, policy tfv1alpha2.CleanPodPo
 func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *tfv1alpha2.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
-		tfJob.Spec.TTLSecondsAfterFinishing = ttl
+		tfJob.Spec.TTLSecondsAfterFinished = ttl
 		policy := tfv1alpha2.CleanPodPolicyNone
 		tfJob.Spec.CleanPodPolicy = &policy
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
-	tfJob.Spec.TTLSecondsAfterFinishing = ttl
+	tfJob.Spec.TTLSecondsAfterFinished = ttl
 	policy := tfv1alpha2.CleanPodPolicyNone
 	tfJob.Spec.CleanPodPolicy = &policy
 	return tfJob

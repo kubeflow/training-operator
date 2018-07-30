@@ -367,7 +367,7 @@ func TestCleanupTFJob(t *testing.T) {
 	ttl2s := &ttlaf2s
 	testCases := []testCase{
 		testCase{
-			description: "4 workers and 2 ps is running, TTLSecondsAfterFinishing unset",
+			description: "4 workers and 2 ps is running, TTLSecondsAfterFinished unset",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, nil),
 
 			pendingWorkerPods:   0,
@@ -386,7 +386,7 @@ func TestCleanupTFJob(t *testing.T) {
 			expectedDeleteFinished: false,
 		},
 		testCase{
-			description: "4 workers and 2 ps is running, TTLSecondsAfterFinishing is 0",
+			description: "4 workers and 2 ps is running, TTLSecondsAfterFinished is 0",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl0),
 
 			pendingWorkerPods:   0,
@@ -405,7 +405,7 @@ func TestCleanupTFJob(t *testing.T) {
 			expectedDeleteFinished: true,
 		},
 		testCase{
-			description: "4 workers and 2 ps is succeeded, TTLSecondsAfterFinishing is 2",
+			description: "4 workers and 2 ps is succeeded, TTLSecondsAfterFinished is 2",
 			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl2s),
 
 			pendingWorkerPods:   0,
@@ -484,7 +484,7 @@ func TestCleanupTFJob(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
-		ttl := tc.tfJob.Spec.TTLSecondsAfterFinishing
+		ttl := tc.tfJob.Spec.TTLSecondsAfterFinished
 		if ttl != nil {
 			dur := time.Second * time.Duration(*ttl)
 			time.Sleep(dur)
