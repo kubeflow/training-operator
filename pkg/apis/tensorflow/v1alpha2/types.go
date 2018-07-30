@@ -48,6 +48,13 @@ type TFJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
+	// TTLSecondsAfterFinished is the TTL to clean up tf-jobs (temporary
+	// before kubernetes adds the cleanup controller).
+	// It may take extra ReconcilePeriod seconds for the cleanup, since
+	// reconcile gets called periodically.
+	// Default to infinite.
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinishing,omitempty"`
+
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
 	// For example,

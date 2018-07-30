@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -113,4 +114,34 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 		}
 	}
 	return nil
+}
+
+func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
+	currentTime := time.Now()
+	ttl := tfJob.Spec.TTLSecondsAfterFinished
+	if ttl == nil {
+		// do nothing if the cleanup delay is not set
+		return nil
+	}
+	duration := time.Second * time.Duration(*ttl)
+	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
+		err := tc.deleteTFJobHandler(tfJob)
+		if err != nil {
+			loggerForTFJob(tfJob).Warnf("Cleanup TFJob error: %v.", err)
+			return err
+		}
+		return nil
+	}
+	key, err := KeyFunc(tfJob)
+	if err != nil {
+		loggerForTFJob(tfJob).Warnf("Couldn't get key for tfjob object: %v", err)
+		return err
+	}
+	tc.workQueue.AddRateLimited(key)
+	return nil
+}
+
+// deleteTFJob delets the given TFJob.
+func (tc *TFJobController) deleteTFJob(tfJob *tfv1alpha2.TFJob) error {
+	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
 }
