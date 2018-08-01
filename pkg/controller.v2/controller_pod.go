@@ -311,19 +311,22 @@ func (tc *TFJobController) addPod(obj interface{}) {
 	// If it has a ControllerRef, that's all that matters.
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
+
+		logger := loggerForPod(pod)
+
 		if tfjob == nil {
-			log.Info("This pod's tfjob does not exists")
+			logger.Info("This pod's tfjob does not exists")
 			return
 		}
 
 		tfjobKey, err := KeyFunc(tfjob)
 		if err != nil {
-			loggerForTFJob(tfjob).Infof("Failed to get the key of the tfjob: %v", err)
+			logger.Infof("Failed to get the key of the tfjob: %v", err)
 			return
 		}
 
 		if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-			loggerForTFJob(tfjob).Info("This pod maybe not created by tf-operator")
+			logger.Info("This pod maybe not created by tf-operator")
 			return
 		}
 
@@ -357,13 +360,14 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 		return
 	}
 
+	logger := loggerForPod(curPod)
 	curControllerRef := metav1.GetControllerOf(curPod)
 	oldControllerRef := metav1.GetControllerOf(oldPod)
 	controllerRefChanged := !reflect.DeepEqual(curControllerRef, oldControllerRef)
 	if controllerRefChanged && oldControllerRef != nil {
 		// The ControllerRef was changed. Sync the old controller, if any.
 		if job := tc.resolveControllerRef(oldPod.Namespace, oldControllerRef); job != nil {
-			log.Infof("pod ControllerRef updated: %v, %v", curPod, oldPod)
+			logger.Infof("pod ControllerRef updated: %v, %v", curPod, oldPod)
 			tc.enqueueTFJob(job)
 		}
 	}
@@ -374,7 +378,7 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 		if job == nil {
 			return
 		}
-		log.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
+		logger.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
 		tc.enqueueTFJob(job)
 		return
 	}
@@ -384,6 +388,8 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (tc *TFJobController) deletePod(obj interface{}) {
 	pod, ok := obj.(*v1.Pod)
+
+	logger := loggerForPod(pod)
 
 	// When a delete is dropped, the relist will notice a pod in the store not
 	// in the list, leading to the insertion of a tombstone object which contains
@@ -417,7 +423,7 @@ func (tc *TFJobController) deletePod(obj interface{}) {
 	}
 
 	if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-		loggerForTFJob(tfJob).Info("This pod maybe not created by tf-operator")
+		logger.Info("This pod maybe not created by tf-operator")
 		return
 	}
 

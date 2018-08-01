@@ -8,6 +8,7 @@ import (
 	"k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -23,11 +24,16 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
 	tfJob, err := tfJobFromUnstructured(obj)
 	if err != nil {
-		log.Errorf("Failed to convert the TFJob: %v", err)
+		un, ok := obj.(*metav1unstructured.Unstructured)
+		logger := &log.Entry{}
+		if ok {
+			logger = loggerForUnstructured(un)
+		}
+		logger.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
-			log.Warn(errMsg)
+			logger.Warn(errMsg)
 			tc.recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 		return
@@ -37,19 +43,20 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 	scheme.Scheme.Default(tfJob)
 
 	msg := fmt.Sprintf("TFJob %s is created.", tfJob.Name)
-	log.Info(msg)
+	logger := loggerForTFJob(tfJob)
+	logger.Info(msg)
 
 	// Add a created condition.
 	err = updateTFJobConditions(tfJob, tfv1alpha2.TFJobCreated, tfJobCreatedReason, msg)
 	if err != nil {
-		log.Infof("Append tfJob condition error: %v", err)
+		logger.Errorf("Append tfJob condition error: %v", err)
 		return
 	}
 
 	// Convert from tfjob object
 	err = unstructuredFromTFJob(obj, tfJob)
 	if err != nil {
-		log.Error("Failed to convert the obj: %v", err)
+		logger.Error("Failed to convert the obj: %v", err)
 		return
 	}
 	tc.enqueueTFJob(obj)

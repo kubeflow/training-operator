@@ -45,7 +45,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
 
-	fs.BoolVar(&s.JSONLogFormat, "json-log-format", false,
+	fs.BoolVar(&s.JSONLogFormat, "json-log-format", true,
 		"Set true to use json style log format. Set false to use plaintext style log format")
 	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-arbitrator.")
 }
