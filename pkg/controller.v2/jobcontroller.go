@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+
 	"github.com/kubeflow/tf-operator/pkg/control"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
