@@ -15,32 +15,30 @@
 package controller
 
 import (
-	log "github.com/sirupsen/logrus"
-
-	"strings"
-
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"strings"
 )
 
-func loggerForReplica(tfjob *tfv1alpha2.TFJob, rtype string) *log.Entry {
+func loggerForReplica(job metav1.Object, rtype string) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
-		"job":          tfjob.ObjectMeta.Namespace + "." + tfjob.ObjectMeta.Name,
-		"uid":          tfjob.ObjectMeta.UID,
+		"job":          job.GetNamespace() + "/" + job.GetName(),
+		"uid":          job.GetUID(),
 		"replica-type": rtype,
 	})
 }
 
-func loggerForTFJob(tfjob *tfv1alpha2.TFJob) *log.Entry {
+func loggerForJob(job metav1.Object) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
-		"job": tfjob.ObjectMeta.Namespace + "." + tfjob.ObjectMeta.Name,
-		"uid": tfjob.ObjectMeta.UID,
+		"job": job.GetNamespace() + "/" + job.GetName(),
+		"uid": job.GetUID(),
 	})
 }
 

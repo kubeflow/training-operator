@@ -28,7 +28,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
@@ -103,7 +102,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
 	expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
-	err = tc.expectations.ExpectCreations(expectationServicesKey, 1)
+	err = tc.Expectations.ExpectCreations(expectationServicesKey, 1)
 	if err != nil {
 		return err
 	}
@@ -137,7 +136,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	service.Name = generator.GenGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
-	err = tc.serviceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
+	err = tc.ServiceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Service is created but its initialization has timed out.
 		// If the initialization is successful eventually, the
@@ -151,41 +150,6 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 		return err
 	}
 	return nil
-}
-
-// getServicesForTFJob returns the set of services that this tfjob should manage.
-// It also reconciles ControllerRef by adopting/orphaning.
-// Note that the returned services are pointers into the cache.
-func (tc *TFJobController) getServicesForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Service, error) {
-	// Create selector
-	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(tfjob.Name),
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't convert Job selector: %v", err)
-	}
-	// List all services to include those that don't match the selector anymore
-	// but have a ControllerRef pointing to this controller.
-	services, err := tc.serviceLister.Services(tfjob.Namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	// If any adoptions are attempted, we should first recheck for deletion
-	// with an uncached quorum read sometime after listing services (see #42639).
-	canAdoptFunc := RecheckDeletionTimestamp(func() (metav1.Object, error) {
-		fresh, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Get(tfjob.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		if fresh.UID != tfjob.UID {
-			return nil, fmt.Errorf("original TFJob %v/%v is gone: got uid %v, wanted %v", tfjob.Namespace, tfjob.Name, fresh.UID, tfjob.UID)
-		}
-		return fresh, nil
-	})
-	cm := control.NewServiceControllerRefManager(tc.serviceControl, tfjob, selector, controllerKind, canAdoptFunc)
-	return cm.ClaimServices(services)
 }
 
 // filterServicesForTFReplicaType returns service belong to a TFReplicaType.
@@ -245,7 +209,7 @@ func (tc *TFJobController) addService(obj interface{}) {
 		rtype := service.Labels[tfReplicaTypeLabel]
 		expectationServicesKey := genExpectationServicesKey(tfjobKey, rtype)
 
-		tc.expectations.CreationObserved(expectationServicesKey)
+		tc.Expectations.CreationObserved(expectationServicesKey)
 		tc.enqueueTFJob(tfjob)
 
 		return

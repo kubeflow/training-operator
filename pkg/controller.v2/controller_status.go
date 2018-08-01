@@ -57,7 +57,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
-					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -67,7 +67,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
-					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -79,7 +79,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
-					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -91,7 +91,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
-					loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -103,14 +103,14 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
 			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
 			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
 		} else {
 			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 			if err != nil {
-				loggerForTFJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
 		}

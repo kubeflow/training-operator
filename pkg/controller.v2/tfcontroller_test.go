@@ -61,8 +61,8 @@ func newTFJobController(
 	tfJobInformer := NewUnstructuredTFJobInformer(config)
 
 	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
-	ctr.podControl = &controller.FakePodControl{}
-	ctr.serviceControl = &control.FakeServiceControl{}
+	ctr.PodControl = &controller.FakePodControl{}
+	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
 }
 
@@ -225,8 +225,8 @@ func TestNormalPath(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 		var actual *tfv1alpha2.TFJob
@@ -269,8 +269,8 @@ func TestNormalPath(t *testing.T) {
 			t.Errorf("%s: unexpected forget value. Expected %v, saw %v\n", name, tc.jobKeyForget, forget)
 		}
 
-		fakePodControl := ctr.podControl.(*controller.FakePodControl)
-		fakeServiceControl := ctr.serviceControl.(*control.FakeServiceControl)
+		fakePodControl := ctr.PodControl.(*controller.FakePodControl)
+		fakeServiceControl := ctr.ServiceControl.(*control.FakeServiceControl)
 		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
 			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
 		}
@@ -355,8 +355,8 @@ func TestRun(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
@@ -434,7 +434,7 @@ func TestSyncPdb(t *testing.T) {
 		},
 	}
 	for _, c := range testCases {
-		pdb, _ := ctr.syncPdb(c.tfJob)
+		pdb, _ := ctr.SyncPdb(c.tfJob)
 		if pdb == nil && c.expectPdb != nil {
 			t.Errorf("Got nil, want %v", c.expectPdb.Spec)
 		}

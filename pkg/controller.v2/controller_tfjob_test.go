@@ -50,8 +50,8 @@ func TestAddTFJob(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -62,7 +62,7 @@ func TestAddTFJob(t *testing.T) {
 
 	var key string
 	syncChan := make(chan string)
-	ctr.syncHandler = func(tfJobKey string) (bool, error) {
+	ctr.SyncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
 		<-syncChan
 		return true, nil
@@ -109,10 +109,10 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
-	ctr.podControl = fakePodControl
+	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -288,13 +288,13 @@ func TestDeletePodsAndServices(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
-		ctr.podControl = fakePodControl
+		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
-		ctr.serviceControl = fakeServiceControl
-		ctr.recorder = &record.FakeRecorder{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			return nil
@@ -442,13 +442,13 @@ func TestCleanupTFJob(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
-		ctr.podControl = fakePodControl
+		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
-		ctr.serviceControl = fakeServiceControl
-		ctr.recorder = &record.FakeRecorder{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			return nil

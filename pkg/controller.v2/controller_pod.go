@@ -90,7 +90,7 @@ func (tc *TFJobController) reconcilePods(
 				}
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
 					loggerForReplica(tfjob, rt).Infof("Need to restart the pod: %s-%d", rt, index)
-					if err := tc.podControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
+					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}
 					restart = true
@@ -133,7 +133,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		return err
 	}
 	expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
-	err = tc.expectations.ExpectCreations(expectationPodsKey, 1)
+	err = tc.Expectations.ExpectCreations(expectationPodsKey, 1)
 	if err != nil {
 		return err
 	}
@@ -168,11 +168,11 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	if podTemplate.Spec.RestartPolicy != v1.RestartPolicy("") {
 		errMsg := "Restart policy in pod template will be overwritten by restart policy in replica spec"
 		loggerForReplica(tfjob, rt).Warning(errMsg)
-		tc.recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
+		tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
 	}
 	setRestartPolicy(podTemplate, spec)
 
-	err = tc.podControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
+	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Pod is created but its initialization has timed out.
 		// If the initialization is successful eventually, the
@@ -217,41 +217,6 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFRe
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
-}
-
-// getPodsForTFJob returns the set of pods that this tfjob should manage.
-// It also reconciles ControllerRef by adopting/orphaning.
-// Note that the returned Pods are pointers into the cache.
-func (tc *TFJobController) getPodsForTFJob(tfjob *tfv1alpha2.TFJob) ([]*v1.Pod, error) {
-	// Create selector.
-	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(tfjob.Name),
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't convert Job selector: %v", err)
-	}
-	// List all pods to include those that don't match the selector anymore
-	// but have a ControllerRef pointing to this controller.
-	pods, err := tc.podLister.Pods(tfjob.Namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	// If any adoptions are attempted, we should first recheck for deletion
-	// with an uncached quorum read sometime after listing Pods (see #42639).
-	canAdoptFunc := RecheckDeletionTimestamp(func() (metav1.Object, error) {
-		fresh, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Get(tfjob.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		if fresh.UID != tfjob.UID {
-			return nil, fmt.Errorf("original TFJob %v/%v is gone: got uid %v, wanted %v", tfjob.Namespace, tfjob.Name, fresh.UID, tfjob.UID)
-		}
-		return fresh, nil
-	})
-	cm := controller.NewPodControllerRefManager(tc.podControl, tfjob, selector, controllerKind, canAdoptFunc)
-	return cm.ClaimPods(pods)
 }
 
 // filterPodsForTFReplicaType returns pods belong to a TFReplicaType.
@@ -333,7 +298,7 @@ func (tc *TFJobController) addPod(obj interface{}) {
 		rtype := pod.Labels[tfReplicaTypeLabel]
 		expectationPodsKey := genExpectationPodsKey(tfjobKey, rtype)
 
-		tc.expectations.CreationObserved(expectationPodsKey)
+		tc.Expectations.CreationObserved(expectationPodsKey)
 		tc.enqueueTFJob(tfjob)
 
 		return
@@ -430,6 +395,6 @@ func (tc *TFJobController) deletePod(obj interface{}) {
 	rtype := pod.Labels[tfReplicaTypeLabel]
 	expectationPodsKey := genExpectationPodsKey(tfJobKey, rtype)
 
-	tc.expectations.DeletionObserved(expectationPodsKey)
+	tc.Expectations.DeletionObserved(expectationPodsKey)
 	tc.enqueueTFJob(tfJob)
 }

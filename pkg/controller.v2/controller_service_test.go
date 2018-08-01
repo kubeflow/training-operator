@@ -48,8 +48,8 @@ func TestAddService(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -60,7 +60,7 @@ func TestAddService(t *testing.T) {
 
 	var key string
 	syncChan := make(chan string)
-	ctr.syncHandler = func(tfJobKey string) (bool, error) {
+	ctr.SyncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
 		<-syncChan
 		return true, nil
