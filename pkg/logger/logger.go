@@ -21,6 +21,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"strings"
 )
 
 func LoggerForReplica(job metav1.Object, rtype string) *log.Entry {

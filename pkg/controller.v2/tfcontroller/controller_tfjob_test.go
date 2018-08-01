@@ -61,7 +61,7 @@ func TestAddTFJob(t *testing.T) {
 
 	var key string
 	syncChan := make(chan string)
-	ctr.syncHandler = func(tfJobKey string) (bool, error) {
+	ctr.SyncHandler = func(tfJobKey string) (bool, error) {
 		key = tfJobKey
 		<-syncChan
 		return true, nil
