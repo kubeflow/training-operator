@@ -15,12 +15,13 @@
 package controller
 
 import (
+	"strings"
+
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strings"
 )
 
 func loggerForReplica(job metav1.Object, rtype string) *log.Entry {
