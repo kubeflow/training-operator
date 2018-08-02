@@ -39,13 +39,20 @@ var (
 	GroupName = tfv1alpha2.GroupName
 )
 
-func GenOwnerReference(obj metav1.Object) *metav1.OwnerReference {
+func GenLabels(jobName string) map[string]string {
+	return map[string]string{
+		LabelGroupName: GroupName,
+		LabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+	}
+}
+
+func GenOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
 		APIVersion:         tfv1alpha2.SchemeGroupVersion.String(),
 		Kind:               tfv1alpha2.Kind,
-		Name:               obj.GetName(),
-		UID:                obj.GetUID(),
+		Name:               tfjob.Name,
+		UID:                tfjob.UID,
 		BlockOwnerDeletion: boolPtr(true),
 		Controller:         boolPtr(true),
 	}

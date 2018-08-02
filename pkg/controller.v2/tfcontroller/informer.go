@@ -111,7 +111,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 
 func unstructuredFromTFJob(obj interface{}, tfJob *tfv1alpha2.TFJob) error {
 	un, ok := obj.(*metav1unstructured.Unstructured)
-	logger := loggerForJob(tfJob)
+	logger := tflogger.LoggerForJob(tfJob)
 	if !ok {
 		logger.Warn("The object in index isn't type Unstructured")
 		return errGetFromKey

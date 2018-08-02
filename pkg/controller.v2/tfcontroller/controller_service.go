@@ -28,12 +28,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-<<<<<<< HEAD:pkg/controller.v2/tfcontroller/controller_service.go
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
-=======
-	"github.com/kubeflow/tf-operator/pkg/generator"
->>>>>>> Refactoring TF operator code:pkg/controller.v2/controller_service.go
 )
 
 // reconcileServices checks and updates services for each given TFReplicaSpec.
