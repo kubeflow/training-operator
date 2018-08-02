@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"testing"

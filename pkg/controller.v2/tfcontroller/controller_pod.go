@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -31,7 +31,8 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
@@ -54,6 +55,7 @@ func (tc *TFJobController) reconcilePods(
 
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
+	logger := tflogger.LoggerForReplica(tfjob, rt)
 	// Get all pods for the type rt.
 	pods, err := filterPodsForTFReplicaType(pods, rt)
 	if err != nil {
@@ -64,13 +66,13 @@ func (tc *TFJobController) reconcilePods(
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
-	podSlices := getPodSlices(pods, replicas, loggerForReplica(tfjob, rt))
+	podSlices := getPodSlices(pods, replicas, logger)
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have too many pods for %s %d", rt, index)
+			logger.Warningf("We have too many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
-			loggerForReplica(tfjob, rt).Infof("Need to create new pod: %s-%d", rt, index)
+			logger.Infof("Need to create new pod: %s-%d", rt, index)
 			err = tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
@@ -89,7 +91,7 @@ func (tc *TFJobController) reconcilePods(
 					}
 				}
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
-					loggerForReplica(tfjob, rt).Infof("Need to restart the pod: %s-%d", rt, index)
+					logger.Infof("Need to restart the pod: %s-%d", rt, index)
 					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}
@@ -137,19 +139,19 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	if err != nil {
 		return err
 	}
-
+	logger := tflogger.LoggerForReplica(tfjob, rt)
 	// Create OwnerReference.
-	controllerRef := generator.GenOwnerReference(tfjob)
+	controllerRef := tc.GenOwnerReference(tfjob)
 
 	// Set type and index for the worker.
-	labels := generator.GenLabels(tfjob.Name)
+	labels := tc.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
 	podTemplate := spec.Template.DeepCopy()
 
 	// Set name for the template.
-	podTemplate.Name = generator.GenGeneralName(tfjob.Name, rt, index)
+	podTemplate.Name = jobcontroller.GenGeneralName(tfjob.Name, rt, index)
 
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
@@ -167,7 +169,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	// the pod template. We recommend to set it from the replica level.
 	if podTemplate.Spec.RestartPolicy != v1.RestartPolicy("") {
 		errMsg := "Restart policy in pod template will be overwritten by restart policy in replica spec"
-		loggerForReplica(tfjob, rt).Warning(errMsg)
+		logger.Warning(errMsg)
 		tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
 	}
 	setRestartPolicy(podTemplate, spec)
@@ -246,23 +248,6 @@ func genExpectationPodsKey(tfjobKey, replicaType string) string {
 	return tfjobKey + "/" + strings.ToLower(replicaType) + "/pods"
 }
 
-// RecheckDeletionTimestamp returns a CanAdopt() function to recheck deletion.
-//
-// The CanAdopt() function calls getObject() to fetch the latest value,
-// and denies adoption attempts if that object has a non-nil DeletionTimestamp.
-func RecheckDeletionTimestamp(getObject func() (metav1.Object, error)) func() error {
-	return func() error {
-		obj, err := getObject()
-		if err != nil {
-			return fmt.Errorf("can't recheck DeletionTimestamp: %v", err)
-		}
-		if obj.GetDeletionTimestamp() != nil {
-			return fmt.Errorf("%v/%v has just been deleted at %v", obj.GetNamespace(), obj.GetName(), obj.GetDeletionTimestamp())
-		}
-		return nil
-	}
-}
-
 // When a pod is created, enqueue the tfjob that manages it and update its expectations.
 func (tc *TFJobController) addPod(obj interface{}) {
 	pod := obj.(*v1.Pod)
@@ -277,7 +262,7 @@ func (tc *TFJobController) addPod(obj interface{}) {
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
 
-		logger := loggerForPod(pod)
+		logger := tflogger.LoggerForPod(pod, tfv1alpha2.Kind)
 
 		if tfjob == nil {
 			logger.Info("This pod's tfjob does not exists")
@@ -325,7 +310,7 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 		return
 	}
 
-	logger := loggerForPod(curPod)
+	logger := tflogger.LoggerForPod(curPod, tfv1alpha2.Kind)
 	curControllerRef := metav1.GetControllerOf(curPod)
 	oldControllerRef := metav1.GetControllerOf(oldPod)
 	controllerRefChanged := !reflect.DeepEqual(curControllerRef, oldControllerRef)
@@ -354,7 +339,7 @@ func (tc *TFJobController) updatePod(old, cur interface{}) {
 func (tc *TFJobController) deletePod(obj interface{}) {
 	pod, ok := obj.(*v1.Pod)
 
-	logger := loggerForPod(pod)
+	logger := tflogger.LoggerForPod(pod, tfv1alpha2.Kind)
 
 	// When a delete is dropped, the relist will notice a pod in the store not
 	// in the list, leading to the insertion of a tombstone object which contains

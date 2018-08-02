@@ -30,7 +30,6 @@ import (
 	utiltesting "k8s.io/client-go/util/testing"
 	"k8s.io/kubernetes/pkg/api/testapi"
 
-	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
@@ -67,7 +66,7 @@ func TestCreateService(t *testing.T) {
 
 	expectedService := v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:    generator.GenLabels(tfJob.Name),
+			Labels:    testutil.GenLabels(tfJob.Name),
 			Name:      testName,
 			Namespace: ns,
 		},
@@ -107,7 +106,7 @@ func TestCreateServicesWithControllerRef(t *testing.T) {
 	service := testutil.NewBaseService(testName, tfJob, t)
 	service.SetOwnerReferences([]metav1.OwnerReference{})
 
-	ownerRef := generator.GenOwnerReference(tfJob)
+	ownerRef := testutil.GenOwnerReference(tfJob)
 
 	// Make sure createReplica sends a POST to the apiserver with a pod from the controllers pod template
 	err := serviceControl.CreateServicesWithControllerRef(ns, service, tfJob, ownerRef)
@@ -115,7 +114,7 @@ func TestCreateServicesWithControllerRef(t *testing.T) {
 
 	expectedService := v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:          generator.GenLabels(tfJob.Name),
+			Labels:          testutil.GenLabels(tfJob.Name),
 			Name:            testName,
 			Namespace:       ns,
 			OwnerReferences: []metav1.OwnerReference{*ownerRef},

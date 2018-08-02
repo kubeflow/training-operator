@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"reflect"
@@ -32,7 +32,6 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -237,7 +236,7 @@ func TestNormalPath(t *testing.T) {
 
 		// Run the test logic.
 		tfJob := testutil.NewTFJob(tc.worker, tc.ps)
-		unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}

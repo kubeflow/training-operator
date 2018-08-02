@@ -1,4 +1,4 @@
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/unstructured"
 )
 
@@ -66,7 +67,7 @@ func (tc *TFJobController) getTFJobFromName(namespace, name string) (*tfv1alpha2
 func (tc *TFJobController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
 	// Check if the key exists.
 	obj, exists, err := tc.tfJobInformer.GetIndexer().GetByKey(key)
-	logger := loggerForKey(key)
+	logger := tflogger.LoggerForKey(key)
 	if err != nil {
 		logger.Errorf("Failed to get TFJob '%s' from informer index: %+v", key, err)
 		return nil, errGetFromKey
@@ -92,7 +93,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 	}
 	var tfjob tfv1alpha2.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
-	logger := loggerForUnstructured(un)
+	logger := tflogger.LoggerForUnstructured(un, tfv1alpha2.Kind)
 	if err != nil {
 		logger.Errorf(failedMarshalMsg, err)
 		return nil, errFailedMarshal
@@ -110,7 +111,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
 
 func unstructuredFromTFJob(obj interface{}, tfJob *tfv1alpha2.TFJob) error {
 	un, ok := obj.(*metav1unstructured.Unstructured)
-	logger := loggerForJob(tfJob)
+	logger := tflogger.LoggerForJob(tfJob)
 	if !ok {
 		logger.Warn("The object in index isn't type Unstructured")
 		return errGetFromKey

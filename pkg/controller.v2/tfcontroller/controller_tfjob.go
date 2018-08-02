@@ -1,4 +1,4 @@
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (
@@ -26,7 +27,7 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 		un, ok := obj.(*metav1unstructured.Unstructured)
 		logger := &log.Entry{}
 		if ok {
-			logger = loggerForUnstructured(un)
+			logger = tflogger.LoggerForUnstructured(un, tfv1alpha2.Kind)
 		}
 		logger.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.
@@ -42,7 +43,7 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 	scheme.Scheme.Default(tfJob)
 
 	msg := fmt.Sprintf("TFJob %s is created.", tfJob.Name)
-	logger := loggerForJob(tfJob)
+	logger := tflogger.LoggerForJob(tfJob)
 	logger.Info(msg)
 
 	// Add a created condition.
@@ -109,14 +110,14 @@ func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
 		err := tc.deleteTFJobHandler(tfJob)
 		if err != nil {
-			loggerForJob(tfJob).Warnf("Cleanup TFJob error: %v.", err)
+			tflogger.LoggerForJob(tfJob).Warnf("Cleanup TFJob error: %v.", err)
 			return err
 		}
 		return nil
 	}
 	key, err := KeyFunc(tfJob)
 	if err != nil {
-		loggerForJob(tfJob).Warnf("Couldn't get key for tfjob object: %v", err)
+		tflogger.LoggerForJob(tfJob).Warnf("Couldn't get key for tfjob object: %v", err)
 		return err
 	}
 	tc.WorkQueue.AddRateLimited(key)

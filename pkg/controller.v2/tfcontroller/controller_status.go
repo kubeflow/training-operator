@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/generator"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (
@@ -51,13 +51,13 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 		tfjob.Status.StartTime = &now
 	}
 
-	if generator.ContainChiefSpec(tfjob) {
+	if ContainChiefSpec(tfjob) {
 		if rtype == tfv1alpha2.TFReplicaTypeChief {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
-					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -67,7 +67,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
-					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -79,7 +79,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
-					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -91,7 +91,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 				tfjob.Status.CompletionTime = &now
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
-					loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
 			}
@@ -103,14 +103,14 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
 			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRestarting, tfJobRestartingReason, msg)
 			if err != nil {
-				loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
 		} else {
 			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
 			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 			if err != nil {
-				loggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
 		}

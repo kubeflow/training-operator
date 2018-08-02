@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+package tfcontroller
 
 import (
-	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 func TestGenOwnerReference(t *testing.T) {
@@ -34,7 +34,7 @@ func TestGenOwnerReference(t *testing.T) {
 		},
 	}
 
-	ref := GenOwnerReference(tfJob)
+	ref := testutil.GenOwnerReference(tfJob)
 	if ref.UID != testUID {
 		t.Errorf("Expected UID %s, got %s", testUID, ref.UID)
 	}
@@ -50,25 +50,13 @@ func TestGenLabels(t *testing.T) {
 	testKey := "test/key"
 	expctedKey := "test-key"
 
-	labels := GenLabels(testKey)
+	labels := testutil.GenLabels(testKey)
 
 	if labels[labelTFJobName] != expctedKey {
 		t.Errorf("Expected %s %s, got %s", labelTFJobName, expctedKey, labels[labelTFJobName])
 	}
-	if labels[LabelGroupName] != tfv1alpha2.GroupName {
-		t.Errorf("Expected %s %s, got %s", LabelGroupName, tfv1alpha2.GroupName, labels[LabelGroupName])
-	}
-}
-
-func TestGenGeneralName(t *testing.T) {
-	testRType := "worker"
-	testIndex := "1"
-	testKey := "1/2/3/4/5"
-	expectedName := fmt.Sprintf("1-2-3-4-5-%s-%s", testRType, testIndex)
-
-	name := GenGeneralName(testKey, testRType, testIndex)
-	if name != expectedName {
-		t.Errorf("Expected name %s, got %s", expectedName, name)
+	if labels[labelGroupName] != tfv1alpha2.GroupName {
+		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1alpha2.GroupName, labels[labelGroupName])
 	}
 }
 
@@ -85,7 +73,7 @@ func TestConvertTFJobToUnstructured(t *testing.T) {
 		},
 	}
 
-	_, err := ConvertTFJobToUnstructured(tfJob)
+	_, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Expected error to be nil while got %v", err)
 	}

@@ -1,29 +1,47 @@
-package controller
+package jobcontroller
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/kubeflow/tf-operator/pkg/control"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeclientset "k8s.io/client-go/kubernetes"
-	"k8s.io/kubernetes/pkg/controller"
-
-	"github.com/kubeflow/tf-operator/pkg/generator"
-	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/kubernetes/pkg/controller"
+
+	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
+// Common Interaface to be implemented by all operators
 type ControllerInterface interface {
+
+	// AdoptFunc used byControlRefManager to get the latest object if UID matches
 	AdoptFunc(job metav1.Object) func() (metav1.Object, error)
+
+	// Returns total replicas for a job. This is used for gang scheduling
+	GetTotalReplicas(obj metav1.Object) int32
+
+	// Returns the GrouoVersionKinf of the API
+	GetAPIGroupVersionKind() schema.GroupVersionKind
+
+	GetAPIGroupVersion() schema.GroupVersion
+
+	GetGroupNameLabel() string
+
+	GetJobNameLabel() string
+
+	GetJobGroupName() string
 }
 
 // JobControllerConfiguration contains configuration of operator.
@@ -54,9 +72,6 @@ type JobController struct {
 
 	// kubeClientSet is a standard kubernetes clientset.
 	KubeClientSet kubeclientset.Interface
-
-	// To allow injection of sync functions for testing.
-	SyncHandler func(string) (bool, error)
 
 	// podLister can list/get pods from the shared informer's store.
 	PodLister corelisters.PodLister
@@ -100,13 +115,37 @@ type JobController struct {
 	Recorder record.EventRecorder
 }
 
+func (jc *JobController) GenOwnerReference(obj metav1.Object) *metav1.OwnerReference {
+	boolPtr := func(b bool) *bool { return &b }
+	controllerRef := &metav1.OwnerReference{
+		APIVersion:         jc.Controller.GetAPIGroupVersion().String(),
+		Kind:               jc.Controller.GetAPIGroupVersionKind().Kind,
+		Name:               obj.GetName(),
+		UID:                obj.GetUID(),
+		BlockOwnerDeletion: boolPtr(true),
+		Controller:         boolPtr(true),
+	}
+
+	return controllerRef
+}
+
+func (jc *JobController) GenLabels(jobName string) map[string]string {
+	labelGroupName := jc.Controller.GetGroupNameLabel()
+	labelJobName := jc.Controller.GetJobNameLabel()
+	groupName := jc.Controller.GetJobGroupName()
+	return map[string]string{
+		labelGroupName: groupName,
+		labelJobName:   strings.Replace(jobName, "/", "-", -1),
+	}
+}
+
 // getPodsForJob returns the set of pods that this job should manage.
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned Pods are pointers into the cache.
 func (jc *JobController) GetPodsForJob(job metav1.Object) ([]*v1.Pod, error) {
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(job.GetName()),
+		MatchLabels: jc.GenLabels(job.GetName()),
 	})
 
 	if err != nil {
@@ -123,7 +162,7 @@ func (jc *JobController) GetPodsForJob(job metav1.Object) ([]*v1.Pod, error) {
 	// with an uncached quorum read sometime after listing Pods (see #42639).
 
 	canAdoptFunc := RecheckDeletionTimestamp(jc.Controller.AdoptFunc(job))
-	cm := controller.NewPodControllerRefManager(jc.PodControl, job, selector, controllerKind, canAdoptFunc)
+	cm := controller.NewPodControllerRefManager(jc.PodControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimPods(pods)
 }
 
@@ -133,7 +172,7 @@ func (jc *JobController) GetPodsForJob(job metav1.Object) ([]*v1.Pod, error) {
 func (jc *JobController) GetServicesForJob(job metav1.Object) ([]*v1.Service, error) {
 	// Create selector
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: generator.GenLabels(job.GetName()),
+		MatchLabels: jc.GenLabels(job.GetName()),
 	})
 
 	if err != nil {
@@ -149,14 +188,14 @@ func (jc *JobController) GetServicesForJob(job metav1.Object) ([]*v1.Service, er
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing services (see #42639).
 	canAdoptFunc := RecheckDeletionTimestamp(jc.Controller.AdoptFunc(job))
-	cm := control.NewServiceControllerRefManager(jc.ServiceControl, job, selector, controllerKind, canAdoptFunc)
+	cm := control.NewServiceControllerRefManager(jc.ServiceControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimServices(services)
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
 func (jc *JobController) SyncPdb(job metav1.Object) (*v1beta1.PodDisruptionBudget, error) {
-
-	totalJobReplicas := GetTotalReplicas(job)
+	labelJobName := jc.Controller.GetJobNameLabel()
+	totalJobReplicas := jc.Controller.GetTotalReplicas(job)
 	// Non-distributed training is not required gang scheduling
 	if totalJobReplicas < 2 {
 		return nil, nil
@@ -177,14 +216,14 @@ func (jc *JobController) SyncPdb(job metav1.Object) (*v1beta1.PodDisruptionBudge
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.GetName(),
 			OwnerReferences: []metav1.OwnerReference{
-				*generator.GenOwnerReference(job),
+				*jc.GenOwnerReference(job),
 			},
 		},
 		Spec: v1beta1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"tf_job_name": job.GetName(),
+					labelJobName: job.GetName(),
 				},
 			},
 		},
@@ -192,7 +231,7 @@ func (jc *JobController) SyncPdb(job metav1.Object) (*v1beta1.PodDisruptionBudge
 	return jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(createPdb)
 }
 
-func (jc *JobController) deletePdb(job metav1.Object) error {
+func (jc *JobController) DeletePdb(job metav1.Object) error {
 
 	// Check the pdb exist or not
 	_, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -41,6 +41,9 @@ import (
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/control"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -49,6 +52,8 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
+	labelGroupName      = "group_name"
+	labelTFJobName      = "tf_job_name"
 )
 
 var (
@@ -61,7 +66,7 @@ var (
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 	// DefaultTFJobControllerConfiguration is the suggested tf-operator configuration for production.
-	DefaultTFJobControllerConfiguration = JobControllerConfiguration{
+	DefaultTFJobControllerConfiguration = jobcontroller.JobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 		EnableGangScheduling:     false,
 	}
@@ -70,10 +75,13 @@ var (
 // TFJobController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.
 type TFJobController struct {
-	JobController
+	jobcontroller.JobController
 
 	// tfJobClientSet is a clientset for CRD TFJob.
 	tfJobClientSet tfjobclientset.Interface
+
+	// To allow injection of sync functions for testing.
+	syncHandler func(string) (bool, error)
 
 	// To allow injection of updateStatus for testing.
 	updateStatusHandler func(tfjob *tfv1alpha2.TFJob) error
@@ -124,8 +132,8 @@ func NewTFJobController(
 
 	// Create new TFJobController.
 	tc := &TFJobController{
-		JobController: JobController{
-			Config: JobControllerConfiguration{
+		JobController: jobcontroller.JobController{
+			Config: jobcontroller.JobControllerConfiguration{
 				ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 				EnableGangScheduling:     option.EnableGangScheduling,
 			},
@@ -140,7 +148,7 @@ func NewTFJobController(
 	}
 	tc.Controller = tc
 	// Set sync handler.
-	tc.SyncHandler = tc.syncTFJob
+	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus
 	// set delete handler.
 	tc.deleteTFJobHandler = tc.deleteTFJob
@@ -196,7 +204,7 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer tc.WorkQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches.
-	log.Info("Starting TFJob controller: version 3")
+	log.Info("Starting TFJob controller: version 6")
 
 	// Wait for the caches to be synced before starting workers.
 	log.Info("Waiting for informer caches to sync")
@@ -242,7 +250,7 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	}
 	defer tc.WorkQueue.Done(key)
 
-	logger := loggerForKey(key.(string))
+	logger := tflogger.LoggerForKey(key.(string))
 
 	tfJob, err := tc.getTFJobFromKey(key.(string))
 	if err != nil {
@@ -255,7 +263,7 @@ func (tc *TFJobController) processNextWorkItem() bool {
 		logger.Errorf("Failed to get TFJob from key %s: %v", key, err)
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
-			loggerForJob(tfJob).Warn(errMsg)
+			tflogger.LoggerForJob(tfJob).Warn(errMsg)
 			tc.Recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 
@@ -263,7 +271,7 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	}
 
 	// Sync TFJob to match the actual state to this desired state.
-	forget, err := tc.SyncHandler(key.(string))
+	forget, err := tc.syncHandler(key.(string))
 	if err == nil {
 		if forget {
 			tc.WorkQueue.Forget(key)
@@ -293,7 +301,7 @@ func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
 // This function is not meant to be invoked concurrently with the same key.
 func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
-	logger := loggerForKey(key)
+	logger := tflogger.LoggerForKey(key)
 	defer func() {
 		logger.Infof("Finished syncing tfjob %q (%v)", key, time.Since(startTime))
 	}()
@@ -341,7 +349,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	return true, err
 }
 
-func GetTotalReplicas(obj metav1.Object) int32 {
+func (tc *TFJobController) GetTotalReplicas(obj metav1.Object) int32 {
 	tfjob := obj.(*tfv1alpha2.TFJob)
 	tfjobReplicas := int32(0)
 	for _, r := range tfjob.Spec.TFReplicaSpecs {
@@ -353,7 +361,7 @@ func GetTotalReplicas(obj metav1.Object) int32 {
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
 func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
-	logger := loggerForJob(tfjob)
+	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
 	pods, err := tc.GetPodsForJob(tfjob)
@@ -382,7 +390,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 
 		if tc.Config.EnableGangScheduling {
 			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting pdb")
-			if err := tc.deletePdb(tfjob); err != nil {
+			if err := tc.DeletePdb(tfjob); err != nil {
 				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePdb", "Error deleting: %v", err)
 				return err
 			} else {
@@ -448,7 +456,7 @@ func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 // resolveControllerRef returns the tfjob referenced by a ControllerRef,
 // or nil if the ControllerRef could not be resolved to a matching tfjob
 // of the correct Kind.
-func (tc *TFJobController) resolveControllerRef(namespace string, controllerRef *metav1.OwnerReference) metav1.Object {
+func (tc *TFJobController) resolveControllerRef(namespace string, controllerRef *metav1.OwnerReference) *tfv1alpha2.TFJob {
 	// We can't look up by UID, so look up by Name and then verify UID.
 	// Don't even try to look up by Name if it's the wrong Kind.
 	if controllerRef.Kind != controllerKind.Kind {
@@ -477,4 +485,24 @@ func (tc *TFJobController) AdoptFunc(job metav1.Object) func() (metav1.Object, e
 		}
 		return fresh, nil
 	}
+}
+
+func (tc *TFJobController) GetAPIGroupVersionKind() schema.GroupVersionKind {
+	return tfv1alpha2.SchemeGroupVersionKind
+}
+
+func (tc *TFJobController) GetAPIGroupVersion() schema.GroupVersion {
+	return tfv1alpha2.SchemeGroupVersion
+}
+
+func (tc *TFJobController) GetGroupNameLabel() string {
+	return labelGroupName
+}
+
+func (tc *TFJobController) GetJobNameLabel() string {
+	return labelTFJobName
+}
+
+func (tc *TFJobController) GetJobGroupName() string {
+	return tfv1alpha2.GroupName
 }

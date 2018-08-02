@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"fmt"
@@ -28,7 +28,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 // reconcileServices checks and updates services for each given TFReplicaSpec.
@@ -49,14 +50,14 @@ func (tc *TFJobController) reconcileServices(
 		return err
 	}
 
-	serviceSlices := getServiceSlices(services, replicas, loggerForReplica(tfjob, rt))
+	serviceSlices := getServiceSlices(services, replicas, tflogger.LoggerForReplica(tfjob, rt))
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {
-			loggerForReplica(tfjob, rt).Warningf("We have too many services for %s %d", rt, index)
+			tflogger.LoggerForReplica(tfjob, rt).Warningf("We have too many services for %s %d", rt, index)
 			// TODO(gaocegege): Kill some services.
 		} else if len(serviceSlice) == 0 {
-			loggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
+			tflogger.LoggerForReplica(tfjob, rt).Infof("need to create new service: %s-%d", rt, index)
 			err = tc.createNewService(tfjob, rtype, strconv.Itoa(index), spec)
 			if err != nil {
 				return err
@@ -108,14 +109,14 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	}
 
 	// Create OwnerReference.
-	controllerRef := generator.GenOwnerReference(tfjob)
+	controllerRef := tc.GenOwnerReference(tfjob)
 
 	// Append tfReplicaTypeLabel and tfReplicaIndexLabel labels.
-	labels := generator.GenLabels(tfjob.Name)
+	labels := tc.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
 
-	port, err := generator.GetPortFromTFJob(tfjob, rtype)
+	port, err := GetPortFromTFJob(tfjob, rtype)
 	if err != nil {
 		return err
 	}
@@ -133,7 +134,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 		},
 	}
 
-	service.Name = generator.GenGeneralName(tfjob.Name, rt, index)
+	service.Name = jobcontroller.GenGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
 	err = tc.ServiceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)

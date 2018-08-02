@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/generator"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 )
 
 // TFConfig is a struct representing the distributed TensorFlow config.
@@ -108,12 +108,12 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 		rt := strings.ToLower(string(rtype))
 		replicaNames := make([]string, 0, *spec.Replicas)
 
-		port, err := generator.GetPortFromTFJob(tfjob, rtype)
+		port, err := GetPortFromTFJob(tfjob, rtype)
 		if err != nil {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := fmt.Sprintf("%s:%d", generator.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i)), port)
+			host := fmt.Sprintf("%s:%d", jobcontroller.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i)), port)
 			replicaNames = append(replicaNames, host)
 		}
 

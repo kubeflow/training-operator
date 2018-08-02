@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package logger
 
 import (
 	"strings"
 
-	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func loggerForReplica(job metav1.Object, rtype string) *log.Entry {
+func LoggerForReplica(job metav1.Object, rtype string) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
@@ -34,7 +33,7 @@ func loggerForReplica(job metav1.Object, rtype string) *log.Entry {
 	})
 }
 
-func loggerForJob(job metav1.Object) *log.Entry {
+func LoggerForJob(job metav1.Object) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
@@ -43,10 +42,10 @@ func loggerForJob(job metav1.Object) *log.Entry {
 	})
 }
 
-func loggerForPod(pod *v1.Pod) *log.Entry {
+func LoggerForPod(pod *v1.Pod, kind string) *log.Entry {
 	job := ""
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
-		if controllerRef.Kind == controllerKind.Kind {
+		if controllerRef.Kind == kind {
 			job = pod.Namespace + "." + controllerRef.Name
 		}
 	}
@@ -59,7 +58,7 @@ func loggerForPod(pod *v1.Pod) *log.Entry {
 	})
 }
 
-func loggerForKey(key string) *log.Entry {
+func LoggerForKey(key string) *log.Entry {
 	return log.WithFields(log.Fields{
 		// The key used by the workQueue should be namespace + "/" + name.
 		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
@@ -67,9 +66,9 @@ func loggerForKey(key string) *log.Entry {
 	})
 }
 
-func loggerForUnstructured(obj *metav1unstructured.Unstructured) *log.Entry {
+func LoggerForUnstructured(obj *metav1unstructured.Unstructured, kind string) *log.Entry {
 	job := ""
-	if obj.GetKind() == tfv1alpha2.Kind {
+	if obj.GetKind() == kind {
 		job = obj.GetNamespace() + "." + obj.GetName()
 	}
 	return log.WithFields(log.Fields{
