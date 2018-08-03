@@ -428,6 +428,13 @@ func schema_pkg_apis_tensorflow_v1alpha2_TFJobSpec(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"ttlSecondsAfterFinishing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TTLSecondsAfterFinished is the TTL to clean up tf-jobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"tfReplicaSpecs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec specifies the TF replicas to run. For example,\n  {\n    \"PS\": TFReplicaSpec,\n    \"Worker\": TFReplicaSpec,\n  }",
