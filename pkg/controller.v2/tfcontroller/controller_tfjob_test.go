@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package tfcontroller
 
 import (
 	"testing"
@@ -28,7 +28,6 @@ import (
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
@@ -50,8 +49,8 @@ func TestAddTFJob(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -75,7 +74,7 @@ func TestAddTFJob(t *testing.T) {
 	}
 
 	tfJob := testutil.NewTFJob(1, 0)
-	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -109,10 +108,10 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
-	ctr.podControl = fakePodControl
+	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -134,7 +133,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	}
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Labels = labels
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template.Annotations = annotations
-	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -288,13 +287,13 @@ func TestDeletePodsAndServices(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
-		ctr.podControl = fakePodControl
+		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
-		ctr.serviceControl = fakeServiceControl
-		ctr.recorder = &record.FakeRecorder{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			return nil
@@ -306,7 +305,7 @@ func TestDeletePodsAndServices(t *testing.T) {
 			t.Errorf("Append tfjob condition error: %v", err)
 		}
 
-		unstructured, err := generator.ConvertTFJobToUnstructured(tc.tfJob)
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}
@@ -442,13 +441,13 @@ func TestCleanupTFJob(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
-		ctr.podControl = fakePodControl
+		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
-		ctr.serviceControl = fakeServiceControl
-		ctr.recorder = &record.FakeRecorder{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 		ctr.updateStatusHandler = func(tfJob *tfv1alpha2.TFJob) error {
 			return nil
@@ -467,7 +466,7 @@ func TestCleanupTFJob(t *testing.T) {
 			t.Errorf("Append tfjob condition error: %v", err)
 		}
 
-		unstructured, err := generator.ConvertTFJobToUnstructured(tc.tfJob)
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}

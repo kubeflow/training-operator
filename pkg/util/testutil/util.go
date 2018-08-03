@@ -15,20 +15,64 @@
 package testutil
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/cache"
-
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/tools/cache"
+)
+
+const (
+	LabelGroupName = "group_name"
+	LabelTFJobName = "tf_job_name"
 )
 
 var (
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
-	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+	KeyFunc   = cache.DeletionHandlingMetaNamespaceKeyFunc
+	GroupName = tfv1alpha2.GroupName
 )
+
+func GenLabels(jobName string) map[string]string {
+	return map[string]string{
+		LabelGroupName: GroupName,
+		LabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+	}
+}
+
+func GenOwnerReference(tfjob *tfv1alpha2.TFJob) *metav1.OwnerReference {
+	boolPtr := func(b bool) *bool { return &b }
+	controllerRef := &metav1.OwnerReference{
+		APIVersion:         tfv1alpha2.SchemeGroupVersion.String(),
+		Kind:               tfv1alpha2.Kind,
+		Name:               tfjob.Name,
+		UID:                tfjob.UID,
+		BlockOwnerDeletion: boolPtr(true),
+		Controller:         boolPtr(true),
+	}
+
+	return controllerRef
+}
+
+// ConvertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
+func ConvertTFJobToUnstructured(tfJob *tfv1alpha2.TFJob) (*unstructured.Unstructured, error) {
+	var unstructured unstructured.Unstructured
+	b, err := json.Marshal(tfJob)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, &unstructured); err != nil {
+		return nil, err
+	}
+	return &unstructured, nil
+}
 
 func GetKey(tfJob *tfv1alpha2.TFJob, t *testing.T) string {
 	key, err := KeyFunc(tfJob)

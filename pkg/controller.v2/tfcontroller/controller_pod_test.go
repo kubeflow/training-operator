@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"testing"
@@ -26,7 +26,6 @@ import (
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
@@ -48,8 +47,8 @@ func TestAddPod(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
@@ -67,7 +66,7 @@ func TestAddPod(t *testing.T) {
 	}
 
 	tfJob := testutil.NewTFJob(1, 0)
-	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}
@@ -205,10 +204,10 @@ func TestExitCode(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
-	ctr.podControl = fakePodControl
+	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
@@ -224,7 +223,7 @@ func TestExitCode(t *testing.T) {
 
 	tfJob := testutil.NewTFJob(1, 0)
 	tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].RestartPolicy = tfv1alpha2.RestartPolicyExitCode
-	unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 	}

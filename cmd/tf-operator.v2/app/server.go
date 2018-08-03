@@ -35,7 +35,7 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	controller "github.com/kubeflow/tf-operator/pkg/controller.v2"
+	controller "github.com/kubeflow/tf-operator/pkg/controller.v2/tfcontroller"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
 )

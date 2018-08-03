@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package controller
+package tfcontroller
 
 import (
 	"reflect"
@@ -32,7 +32,6 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	"github.com/kubeflow/tf-operator/pkg/generator"
 	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,8 +60,8 @@ func newTFJobController(
 	tfJobInformer := NewUnstructuredTFJobInformer(config)
 
 	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
-	ctr.podControl = &controller.FakePodControl{}
-	ctr.serviceControl = &control.FakeServiceControl{}
+	ctr.PodControl = &controller.FakePodControl{}
+	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
 }
 
@@ -225,8 +224,8 @@ func TestNormalPath(t *testing.T) {
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
-		ctr.podInformerSynced = testutil.AlwaysReady
-		ctr.serviceInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
 		var actual *tfv1alpha2.TFJob
@@ -237,7 +236,7 @@ func TestNormalPath(t *testing.T) {
 
 		// Run the test logic.
 		tfJob := testutil.NewTFJob(tc.worker, tc.ps)
-		unstructured, err := generator.ConvertTFJobToUnstructured(tfJob)
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
 		}
@@ -269,8 +268,8 @@ func TestNormalPath(t *testing.T) {
 			t.Errorf("%s: unexpected forget value. Expected %v, saw %v\n", name, tc.jobKeyForget, forget)
 		}
 
-		fakePodControl := ctr.podControl.(*controller.FakePodControl)
-		fakeServiceControl := ctr.serviceControl.(*control.FakeServiceControl)
+		fakePodControl := ctr.PodControl.(*controller.FakePodControl)
+		fakeServiceControl := ctr.ServiceControl.(*control.FakeServiceControl)
 		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
 			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
 		}
@@ -355,8 +354,8 @@ func TestRun(t *testing.T) {
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
 	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
-	ctr.podInformerSynced = testutil.AlwaysReady
-	ctr.serviceInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
 
 	stopCh := make(chan struct{})
 	go func() {
@@ -434,7 +433,7 @@ func TestSyncPdb(t *testing.T) {
 		},
 	}
 	for _, c := range testCases {
-		pdb, _ := ctr.syncPdb(c.tfJob)
+		pdb, _ := ctr.SyncPdb(c.tfJob)
 		if pdb == nil && c.expectPdb != nil {
 			t.Errorf("Got nil, want %v", c.expectPdb.Spec)
 		}

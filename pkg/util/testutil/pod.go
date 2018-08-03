@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/generator"
 )
 
 const (
@@ -40,7 +39,7 @@ func NewBasePod(name string, tfJob *tfv1alpha2.TFJob, t *testing.T) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Labels:          generator.GenLabels(tfJob.Name),
+			Labels:          GenLabels(tfJob.Name),
 			Namespace:       tfJob.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
 		},
