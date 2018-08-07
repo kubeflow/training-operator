@@ -426,6 +426,15 @@ def setup_cluster(api_client):
 class TimeoutError(Exception):  # pylint: disable=redefined-builtin
   """An error indicating an operation timed out."""
 
+class JobTimeError(TimeoutError):
+  """An error indicating the job timed out.
+
+  The job spec/status can be found in .job.
+  """
+
+  def __init__(self, message, job):
+    super(JobTimeError, self).__init__(message)
+    self.job = job
 
 GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")
 

@@ -228,10 +228,10 @@ def wait_for_condition(client,
           return results
 
     if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError(
+      raise util.JobTimeoutError(
         "Timeout waiting for job {0} in namespace {1} to enter one of the "
         "conditions {2}.".format(
-          name, namespace, conditions))
+          name, namespace, conditions), results)
 
     time.sleep(polling_interval.seconds)
 
@@ -258,6 +258,13 @@ def wait_for_job(client,
       invoked after we poll the job. Callable takes a single argument which
       is the job.
   """
+  if version != "v1alpha1":
+    return wait_for_condition(
+              client, namespace, name, ["Succeeded", "Failed"],
+              timeout=timeout,
+              polling_interval=polling_interval,
+              status_callback=status_callback)
+
   crd_api = k8s_client.CustomObjectsApi(client)
   end_time = datetime.datetime.now() + timeout
   while True:
@@ -278,15 +285,8 @@ def wait_for_job(client,
         status_callback(results)
 
       # If we poll the CRD quick enough status won't have been set yet.
-      if version == "v1alpha1":
-        if results.get("status", {}).get("phase", {}) == "Done":
-          return results
-      else:
-        # For v1alpha2 check for non-empty completionTime
-        # TODO(jlewi): https://github.com/kubeflow/tf-operator/issues/673
-        # Once that issue is fixed we should be able to look at the condition.
-        if results.get("status", {}).get("completionTime", ""):
-          return results
+      if results.get("status", {}).get("phase", {}) == "Done":
+        return results
 
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.TimeoutError(
