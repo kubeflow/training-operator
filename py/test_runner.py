@@ -481,6 +481,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         api_client, namespace, name, args.tfjob_version,
         status_callback=tf_job_client.log_status)
 
+      logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
+
       if args.tfjob_version == "v1alpha1":
         if results.get("status", {}).get("state", {}).lower() != "succeeded":
           t.failure = "Trial {0} Job {1} in namespace {2} in state {3}".format(
@@ -566,9 +568,13 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     # TODO(jlewi): Add an option to add chaos and randomly kill various resources?
     # TODO(jlewi): Are there other generic validation checks we should
     # run.
-  except util.TimeoutError:
-    t.failure = "Timeout waiting for {0} in namespace {1} to finish.".format(
-      name, namespace)
+  except util.JobTimeoutError as e:
+    if e.job:
+      spec = "Job:\n" + json.dumps(e.job, indent=2)
+    else:
+      spec = "JobTimeoutError did not contain job"
+    t.failure = ("Timeout waiting for {0} in namespace {1} to finish; ").format(
+                  name, namespace) + spec
     logging.exception(t.failure)
   except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
