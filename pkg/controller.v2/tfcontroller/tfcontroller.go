@@ -106,14 +106,14 @@ func NewTFJobController(
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
-	jc := jobcontroller.NewJobController(controllerName, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, tfv1alpha2.Plural)
 	// Create new TFJobController.
 	tc := &TFJobController{
-		JobController:  jc,
 		tfJobClientSet: tfJobClientSet,
 	}
-	tc.Controller = tc
+	// Create base controller
+	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
+		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, tfv1alpha2.Plural)
+	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus

@@ -134,7 +134,7 @@ type JobController struct {
 }
 
 func NewJobController(
-	controllerName string,
+	controllerImpl ControllerInterface,
 	reconcilerSyncPeriod metav1.Duration,
 	enableGangScheduling bool,
 	kubeClientSet kubeclientset.Interface,
@@ -145,16 +145,16 @@ func NewJobController(
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClientSet.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerImpl.ControllerName()})
 
 	realPodControl := control.RealPodControl{
 		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
+		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerImpl.ControllerName()}),
 	}
 
 	realServiceControl := control.RealServiceControl{
 		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
+		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerImpl.ControllerName()}),
 	}
 
 	jobControllerConfig := JobControllerConfiguration{
@@ -163,6 +163,7 @@ func NewJobController(
 	}
 
 	jc := JobController{
+		Controller:     controllerImpl,
 		Config:         jobControllerConfig,
 		PodControl:     realPodControl,
 		ServiceControl: realServiceControl,
