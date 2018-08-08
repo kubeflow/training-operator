@@ -75,7 +75,7 @@ func TestAddPod(t *testing.T) {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
 	pod := testutil.NewPod(tfJob, testutil.LabelWorker, 0, t)
-	ctr.addPod(pod)
+	ctr.AddPod(pod)
 
 	syncChan <- "sync"
 	if key != testutil.GetKey(tfJob, t) {

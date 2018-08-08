@@ -75,7 +75,7 @@ func TestAddService(t *testing.T) {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
 	service := testutil.NewService(tfJob, testutil.LabelWorker, 0, t)
-	ctr.addService(service)
+	ctr.AddService(service)
 
 	syncChan <- "sync"
 	if key != testutil.GetKey(tfJob, t) {

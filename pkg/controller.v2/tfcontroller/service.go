@@ -102,7 +102,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 
 	// Convert TFReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
-	expectationServicesKey := genExpectationServicesKey(tfjobKey, rt)
+	expectationServicesKey := jobcontroller.GenExpectationServicesKey(tfjobKey, rt)
 	err = tc.Expectations.ExpectCreations(expectationServicesKey, 1)
 	if err != nil {
 		return err
@@ -174,59 +174,4 @@ func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string
 		result = append(result, service)
 	}
 	return result, nil
-}
-
-func genExpectationServicesKey(tfjobKey, replicaType string) string {
-	return tfjobKey + "/" + strings.ToLower(replicaType) + "/services"
-}
-
-// When a service is created, enqueue the controller that manages it and update its expectations.
-func (tc *TFJobController) addService(obj interface{}) {
-	service := obj.(*v1.Service)
-	if service.DeletionTimestamp != nil {
-		// on a restart of the controller controller, it's possible a new service shows up in a state that
-		// is already pending deletion. Prevent the service from being a creation observation.
-		// tc.deleteService(service)
-		return
-	}
-
-	// If it has a ControllerRef, that's all that matters.
-	if controllerRef := metav1.GetControllerOf(service); controllerRef != nil {
-		tfjob := tc.resolveControllerRef(service.Namespace, controllerRef)
-		if tfjob == nil {
-			return
-		}
-
-		tfjobKey, err := KeyFunc(tfjob)
-		if err != nil {
-			return
-		}
-
-		if _, ok := service.Labels[tfReplicaTypeLabel]; !ok {
-			log.Infof("This service maybe not created by tf-operator")
-			return
-		}
-
-		rtype := service.Labels[tfReplicaTypeLabel]
-		expectationServicesKey := genExpectationServicesKey(tfjobKey, rtype)
-
-		tc.Expectations.CreationObserved(expectationServicesKey)
-		tc.enqueueTFJob(tfjob)
-
-		return
-	}
-
-}
-
-// When a service is updated, figure out what tfjob/s manage it and wake them up.
-// If the labels of the service have changed we need to awaken both the old
-// and new replica set. old and cur must be *v1.Service types.
-func (tc *TFJobController) updateService(old, cur interface{}) {
-	// TODO(CPH): handle this gracefully.
-}
-
-// When a service is deleted, enqueue the tfjob that manages the service and update its expectations.
-// obj could be an *v1.Service, or a DeletionFinalStateUnknown marker item.
-func (tc *TFJobController) deleteService(obj interface{}) {
-	// TODO(CPH): handle this gracefully.
 }
