@@ -421,14 +421,14 @@ func (tc *TFJobController) GetGroupNameLabelValue() string {
 	return tfv1alpha2.GroupName
 }
 
-func (tc *TFJobController) GetReplicaTypeLabel() string {
+func (tc *TFJobController) GetReplicaTypeLabelKey() string {
 	return tfReplicaTypeLabel
 }
 
-func (tc *TFJobController) GetReplicaIndexLabel() string {
+func (tc *TFJobController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
 }
 
-func (tc *TFJobController) GetControllerName() string {
+func (tc *TFJobController) ControllerName() string {
 	return controllerName
 }

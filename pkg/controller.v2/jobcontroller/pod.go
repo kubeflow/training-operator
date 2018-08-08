@@ -41,12 +41,12 @@ func (jc *JobController) AddPod(obj interface{}) {
 			return
 		}
 
-		if _, ok := pod.Labels[jc.Controller.GetReplicaTypeLabel()]; !ok {
-			logger.Infof("This pod maybe not created by %v", jc.Controller.GetControllerName())
+		if _, ok := pod.Labels[jc.Controller.GetReplicaTypeLabelKey()]; !ok {
+			logger.Infof("This pod maybe not created by %v", jc.Controller.ControllerName())
 			return
 		}
 
-		rtype := pod.Labels[jc.Controller.GetReplicaTypeLabel()]
+		rtype := pod.Labels[jc.Controller.GetReplicaTypeLabelKey()]
 		expectationPodsKey := GenExpectationPodsKey(jobKey, rtype)
 
 		jc.Expectations.CreationObserved(expectationPodsKey)
@@ -56,13 +56,6 @@ func (jc *JobController) AddPod(obj interface{}) {
 		return
 	}
 
-	// Otherwise, it's an orphan. Get a list of all matching controllers and sync
-	// them to see if anyone wants to adopt it.
-	// DO NOT observe creation because no controller should be waiting for an
-	// orphan.
-	// for _, tfjob := range tc.getPodJobs(pod) {
-	// 	tc.enqueueTFJob(tfjob)
-	// }
 }
 
 // When a pod is updated, figure out what tfjob/s manage it and wake them up.
@@ -149,12 +142,12 @@ func (jc *JobController) DeletePod(obj interface{}) {
 		return
 	}
 
-	if _, ok := pod.Labels[jc.Controller.GetReplicaTypeLabel()]; !ok {
-		logger.Infof("This pod maybe not created by %v", jc.Controller.GetControllerName())
+	if _, ok := pod.Labels[jc.Controller.GetReplicaTypeLabelKey()]; !ok {
+		logger.Infof("This pod maybe not created by %v", jc.Controller.ControllerName())
 		return
 	}
 
-	rtype := pod.Labels[jc.Controller.GetReplicaTypeLabel()]
+	rtype := pod.Labels[jc.Controller.GetReplicaTypeLabelKey()]
 	expectationPodsKey := GenExpectationPodsKey(jobKey, rtype)
 
 	jc.Expectations.DeletionObserved(expectationPodsKey)

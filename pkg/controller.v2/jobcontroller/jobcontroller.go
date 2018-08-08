@@ -29,7 +29,7 @@ import (
 type ControllerInterface interface {
 
 	// Returns the Controller name
-	GetControllerName() string
+	ControllerName() string
 
 	// Returns the GroupVersionKind of the API
 	GetAPIGroupVersionKind() schema.GroupVersionKind
@@ -47,10 +47,10 @@ type ControllerInterface interface {
 	GetGroupNameLabelValue() string
 
 	// Returns the Replica Type(key) in the labels of the job
-	GetReplicaTypeLabel() string
+	GetReplicaTypeLabelKey() string
 
 	// Returns the Replica Index(value) in the labels of the job
-	GetReplicaIndexLabel() string
+	GetReplicaIndexLabelKey() string
 
 	// Returns total replicas for a job. This is used for gang scheduling
 	GetTotalReplicas(obj metav1.Object) int32

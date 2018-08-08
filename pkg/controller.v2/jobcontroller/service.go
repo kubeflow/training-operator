@@ -34,12 +34,12 @@ func (jc *JobController) AddService(obj interface{}) {
 			return
 		}
 
-		if _, ok := service.Labels[jc.Controller.GetReplicaTypeLabel()]; !ok {
-			log.Infof("This service maybe not created by %v", jc.Controller.GetControllerName())
+		if _, ok := service.Labels[jc.Controller.GetReplicaTypeLabelKey()]; !ok {
+			log.Infof("This service maybe not created by %v", jc.Controller.ControllerName())
 			return
 		}
 
-		rtype := service.Labels[jc.Controller.GetReplicaTypeLabel()]
+		rtype := service.Labels[jc.Controller.GetReplicaTypeLabelKey()]
 		expectationServicesKey := GenExpectationServicesKey(jobKey, rtype)
 
 		jc.Expectations.CreationObserved(expectationServicesKey)
