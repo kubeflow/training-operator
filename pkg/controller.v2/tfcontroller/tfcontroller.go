@@ -67,7 +67,7 @@ var (
 // TFJobController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.
 type TFJobController struct {
-	*jobcontroller.JobController
+	jobcontroller.JobController
 
 	// tfJobClientSet is a clientset for CRD TFJob.
 	tfJobClientSet tfjobclientset.Interface

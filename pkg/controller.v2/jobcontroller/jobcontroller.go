@@ -139,7 +139,7 @@ func NewJobController(
 	enableGangScheduling bool,
 	kubeClientSet kubeclientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
-	workQueueName string) *JobController {
+	workQueueName string) JobController {
 
 	log.Debug("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
@@ -198,7 +198,7 @@ func NewJobController(
 	jc.ServiceLister = serviceInformer.Lister()
 	jc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
 
-	return &jc
+	return jc
 
 }
 
