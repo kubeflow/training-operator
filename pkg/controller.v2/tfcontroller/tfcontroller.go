@@ -106,11 +106,14 @@ func NewTFJobController(
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
+	log.Info("Creating TFJob controller")
 	// Create new TFJobController.
 	tc := &TFJobController{
 		tfJobClientSet: tfJobClientSet,
 	}
+
 	// Create base controller
+	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
 		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, tfv1alpha2.Plural)
 	tc.JobController = jc
@@ -131,6 +134,32 @@ func NewTFJobController(
 	tc.tfJobInformer = tfJobInformer.Informer()
 	tc.tfJobLister = tfJobInformer.Lister()
 	tc.tfJobInformerSynced = tfJobInformer.Informer().HasSynced
+
+	// Create pod informer.
+	podInformer := kubeInformerFactory.Core().V1().Pods()
+
+	// Set up an event handler for when pod resources change
+	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    jc.AddPod,
+		UpdateFunc: jc.UpdatePod,
+		DeleteFunc: jc.DeletePod,
+	})
+
+	tc.PodLister = podInformer.Lister()
+	tc.PodInformerSynced = podInformer.Informer().HasSynced
+
+	// Create service informer.
+	serviceInformer := kubeInformerFactory.Core().V1().Services()
+
+	// Set up an event handler for when service resources change.
+	serviceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    jc.AddService,
+		UpdateFunc: jc.UpdateService,
+		DeleteFunc: jc.DeleteService,
+	})
+
+	tc.ServiceLister = serviceInformer.Lister()
+	tc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
 
 	return tc
 }
