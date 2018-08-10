@@ -17,7 +17,6 @@ package tfcontroller
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -27,8 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/kubernetes/pkg/controller"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
@@ -134,7 +131,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
-	expectationPodsKey := genExpectationPodsKey(tfjobKey, rt)
+	expectationPodsKey := jobcontroller.GenExpectationPodsKey(tfjobKey, rt)
 	err = tc.Expectations.ExpectCreations(expectationPodsKey, 1)
 	if err != nil {
 		return err
@@ -242,144 +239,4 @@ func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) ([]*v1.Pod
 		result = append(result, pod)
 	}
 	return result, nil
-}
-
-func genExpectationPodsKey(tfjobKey, replicaType string) string {
-	return tfjobKey + "/" + strings.ToLower(replicaType) + "/pods"
-}
-
-// When a pod is created, enqueue the tfjob that manages it and update its expectations.
-func (tc *TFJobController) addPod(obj interface{}) {
-	pod := obj.(*v1.Pod)
-	if pod.DeletionTimestamp != nil {
-		// on a restart of the controller controller, it's possible a new pod shows up in a state that
-		// is already pending deletion. Prevent the pod from being a creation observation.
-		// tc.deletePod(pod)
-		return
-	}
-
-	// If it has a ControllerRef, that's all that matters.
-	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
-		tfjob := tc.resolveControllerRef(pod.Namespace, controllerRef)
-
-		logger := tflogger.LoggerForPod(pod, tfv1alpha2.Kind)
-
-		if tfjob == nil {
-			logger.Info("This pod's tfjob does not exists")
-			return
-		}
-
-		tfjobKey, err := KeyFunc(tfjob)
-		if err != nil {
-			logger.Infof("Failed to get the key of the tfjob: %v", err)
-			return
-		}
-
-		if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-			logger.Info("This pod maybe not created by tf-operator")
-			return
-		}
-
-		rtype := pod.Labels[tfReplicaTypeLabel]
-		expectationPodsKey := genExpectationPodsKey(tfjobKey, rtype)
-
-		tc.Expectations.CreationObserved(expectationPodsKey)
-		tc.enqueueTFJob(tfjob)
-
-		return
-	}
-
-	// Otherwise, it's an orphan. Get a list of all matching controllers and sync
-	// them to see if anyone wants to adopt it.
-	// DO NOT observe creation because no controller should be waiting for an
-	// orphan.
-	// for _, tfjob := range tc.getPodJobs(pod) {
-	// 	tc.enqueueTFJob(tfjob)
-	// }
-}
-
-// When a pod is updated, figure out what tfjob/s manage it and wake them up.
-// If the labels of the pod have changed we need to awaken both the old
-// and new replica set. old and cur must be *v1.Pod types.
-func (tc *TFJobController) updatePod(old, cur interface{}) {
-	curPod := cur.(*v1.Pod)
-	oldPod := old.(*v1.Pod)
-	if curPod.ResourceVersion == oldPod.ResourceVersion {
-		// Periodic resync will send update events for all known pods.
-		// Two different versions of the same pod will always have different RVs.
-		return
-	}
-
-	logger := tflogger.LoggerForPod(curPod, tfv1alpha2.Kind)
-	curControllerRef := metav1.GetControllerOf(curPod)
-	oldControllerRef := metav1.GetControllerOf(oldPod)
-	controllerRefChanged := !reflect.DeepEqual(curControllerRef, oldControllerRef)
-	if controllerRefChanged && oldControllerRef != nil {
-		// The ControllerRef was changed. Sync the old controller, if any.
-		if job := tc.resolveControllerRef(oldPod.Namespace, oldControllerRef); job != nil {
-			logger.Infof("pod ControllerRef updated: %v, %v", curPod, oldPod)
-			tc.enqueueTFJob(job)
-		}
-	}
-
-	// If it has a ControllerRef, that's all that matters.
-	if curControllerRef != nil {
-		job := tc.resolveControllerRef(curPod.Namespace, curControllerRef)
-		if job == nil {
-			return
-		}
-		logger.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
-		tc.enqueueTFJob(job)
-		return
-	}
-}
-
-// When a pod is deleted, enqueue the tfjob that manages the pod and update its expectations.
-// obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
-func (tc *TFJobController) deletePod(obj interface{}) {
-	pod, ok := obj.(*v1.Pod)
-
-	logger := tflogger.LoggerForPod(pod, tfv1alpha2.Kind)
-
-	// When a delete is dropped, the relist will notice a pod in the store not
-	// in the list, leading to the insertion of a tombstone object which contains
-	// the deleted key/value. Note that this value might be stale. If the pod
-	// changed labels the new job will not be woken up till the periodic resync.
-	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			utilruntime.HandleError(fmt.Errorf("couldn't get object from tombstone %+v", obj))
-			return
-		}
-		pod, ok = tombstone.Obj.(*v1.Pod)
-		if !ok {
-			utilruntime.HandleError(fmt.Errorf("tombstone contained object that is not a pod %+v", obj))
-			return
-		}
-	}
-
-	controllerRef := metav1.GetControllerOf(pod)
-	if controllerRef == nil {
-		// No controller should care about orphans being deleted.
-		return
-	}
-	tfJob := tc.resolveControllerRef(pod.Namespace, controllerRef)
-	if tfJob == nil {
-		return
-	}
-	tfJobKey, err := controller.KeyFunc(tfJob)
-	if err != nil {
-		return
-	}
-
-	if _, ok := pod.Labels[tfReplicaTypeLabel]; !ok {
-		logger.Info("This pod maybe not created by tf-operator")
-		return
-	}
-
-	rtype := pod.Labels[tfReplicaTypeLabel]
-	expectationPodsKey := genExpectationPodsKey(tfJobKey, rtype)
-
-	tc.Expectations.DeletionObserved(expectationPodsKey)
-	tc.enqueueTFJob(tfJob)
 }

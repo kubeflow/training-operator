@@ -27,11 +27,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
-	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -40,7 +36,6 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/control"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -57,9 +52,6 @@ const (
 )
 
 var (
-	// controllerKind is GroupVersionKind for this controller type.
-	controllerKind = tfv1alpha2.SchemeGroupVersionKind
-
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
@@ -114,45 +106,22 @@ func NewTFJobController(
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
-	log.Debug("Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClientSet.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
-
-	realPodControl := control.RealPodControl{
-		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
-	}
-
-	realServiceControl := control.RealServiceControl{
-		KubeClient: kubeClientSet,
-		Recorder:   eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName}),
-	}
-
+	log.Info("Creating TFJob controller")
 	// Create new TFJobController.
 	tc := &TFJobController{
-		JobController: jobcontroller.JobController{
-			Config: jobcontroller.JobControllerConfiguration{
-				ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-				EnableGangScheduling:     option.EnableGangScheduling,
-			},
-			PodControl:     realPodControl,
-			ServiceControl: realServiceControl,
-			KubeClientSet:  kubeClientSet,
-			Expectations:   controller.NewControllerExpectations(),
-			WorkQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), tfv1alpha2.Plural),
-			Recorder:       recorder,
-		},
 		tfJobClientSet: tfJobClientSet,
 	}
-	tc.Controller = tc
+
+	// Create base controller
+	log.Info("Creating Job controller")
+	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
+		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, tfv1alpha2.Plural)
+	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
 	tc.updateStatusHandler = tc.updateTFJobStatus
 	// set delete handler.
 	tc.deleteTFJobHandler = tc.deleteTFJob
-
 	// Set up an event handler for when tfjob resources change.
 	tfJobInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    tc.addTFJob,
@@ -171,9 +140,9 @@ func NewTFJobController(
 
 	// Set up an event handler for when pod resources change
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    tc.addPod,
-		UpdateFunc: tc.updatePod,
-		DeleteFunc: tc.deletePod,
+		AddFunc:    jc.AddPod,
+		UpdateFunc: jc.UpdatePod,
+		DeleteFunc: jc.DeletePod,
 	})
 
 	tc.PodLister = podInformer.Lister()
@@ -184,9 +153,9 @@ func NewTFJobController(
 
 	// Set up an event handler for when service resources change.
 	serviceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    tc.addService,
-		UpdateFunc: tc.updateService,
-		DeleteFunc: tc.deleteService,
+		AddFunc:    jc.AddService,
+		UpdateFunc: jc.UpdateService,
+		DeleteFunc: jc.DeleteService,
 	})
 
 	tc.ServiceLister = serviceInformer.Lister()
@@ -204,7 +173,7 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer tc.WorkQueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches.
-	log.Info("Starting TFJob controller: version 6")
+	log.Info("Starting TFJob controller")
 
 	// Wait for the caches to be synced before starting workers.
 	log.Info("Waiting for informer caches to sync")
@@ -442,49 +411,23 @@ func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 
 	for rtype := range tfjob.Spec.TFReplicaSpecs {
 		// Check the expectations of the pods.
-		expectationPodsKey := genExpectationPodsKey(tfjobKey, string(rtype))
+		expectationPodsKey := jobcontroller.GenExpectationPodsKey(tfjobKey, string(rtype))
 		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationPodsKey)
 
 		// Check the expectations of the services.
-		expectationServicesKey := genExpectationServicesKey(tfjobKey, string(rtype))
+		expectationServicesKey := jobcontroller.GenExpectationServicesKey(tfjobKey, string(rtype))
 		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationServicesKey)
 	}
 
 	return satisfied
 }
 
-// resolveControllerRef returns the tfjob referenced by a ControllerRef,
-// or nil if the ControllerRef could not be resolved to a matching tfjob
-// of the correct Kind.
-func (tc *TFJobController) resolveControllerRef(namespace string, controllerRef *metav1.OwnerReference) *tfv1alpha2.TFJob {
-	// We can't look up by UID, so look up by Name and then verify UID.
-	// Don't even try to look up by Name if it's the wrong Kind.
-	if controllerRef.Kind != controllerKind.Kind {
-		return nil
-	}
-	tfjob, err := tc.getTFJobFromName(namespace, controllerRef.Name)
-	if err != nil {
-		return nil
-	}
-	if tfjob.UID != controllerRef.UID {
-		// The controller we found with this Name is not the same one that the
-		// ControllerRef points to.
-		return nil
-	}
-	return tfjob
+func (tc *TFJobController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
+	return tc.getTFJobFromName(namespace, name)
 }
 
-func (tc *TFJobController) AdoptFunc(job metav1.Object) func() (metav1.Object, error) {
-	return func() (metav1.Object, error) {
-		fresh, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		if fresh.UID != job.GetUID() {
-			return nil, fmt.Errorf("original Job %v/%v is gone: got uid %v, wanted %v", job.GetNamespace(), job.GetName(), fresh.UID, job.GetUID())
-		}
-		return fresh, nil
-	}
+func (tc *TFJobController) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
+	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(namespace).Get(name, metav1.GetOptions{})
 }
 
 func (tc *TFJobController) GetAPIGroupVersionKind() schema.GroupVersionKind {
@@ -495,14 +438,26 @@ func (tc *TFJobController) GetAPIGroupVersion() schema.GroupVersion {
 	return tfv1alpha2.SchemeGroupVersion
 }
 
-func (tc *TFJobController) GetGroupNameLabel() string {
+func (tc *TFJobController) GetGroupNameLabelKey() string {
 	return labelGroupName
 }
 
-func (tc *TFJobController) GetJobNameLabel() string {
+func (tc *TFJobController) GetJobNameLabelKey() string {
 	return labelTFJobName
 }
 
-func (tc *TFJobController) GetJobGroupName() string {
+func (tc *TFJobController) GetGroupNameLabelValue() string {
 	return tfv1alpha2.GroupName
+}
+
+func (tc *TFJobController) GetReplicaTypeLabelKey() string {
+	return tfReplicaTypeLabel
+}
+
+func (tc *TFJobController) GetReplicaIndexLabelKey() string {
+	return tfReplicaIndexLabel
+}
+
+func (tc *TFJobController) ControllerName() string {
+	return controllerName
 }

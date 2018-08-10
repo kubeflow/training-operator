@@ -33,7 +33,7 @@ var (
 
 func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinformersv1alpha2.TFJobInformer {
 	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
-	dclient, err := dynClientPool.ClientForGroupVersionKind(controllerKind)
+	dclient, err := dynClientPool.ClientForGroupVersionKind(tfv1alpha2.SchemeGroupVersionKind)
 	if err != nil {
 		panic(err)
 	}

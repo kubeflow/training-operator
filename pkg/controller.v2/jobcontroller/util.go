@@ -42,3 +42,11 @@ func RecheckDeletionTimestamp(getObject func() (metav1.Object, error)) func() er
 		return nil
 	}
 }
+
+func GenExpectationPodsKey(jobKey, replicaType string) string {
+	return jobKey + "/" + strings.ToLower(replicaType) + "/pods"
+}
+
+func GenExpectationServicesKey(jobKey, replicaType string) string {
+	return jobKey + "/" + strings.ToLower(replicaType) + "/services"
+}
