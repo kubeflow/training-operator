@@ -137,7 +137,7 @@ func (tc *TFJobController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1a
 	service.Name = jobcontroller.GenGeneralName(tfjob.Name, rt, index)
 	service.Labels = labels
 
-	err = tc.ServiceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
+	err = tc.JobController.ServiceControl.CreateServicesWithControllerRef(tfjob.Namespace, service, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Service is created but its initialization has timed out.
 		// If the initialization is successful eventually, the
