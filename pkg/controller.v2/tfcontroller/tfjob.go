@@ -88,11 +88,11 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 		if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
 			continue
 		}
-		if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
+		if err := tc.JobController.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
 			return err
 		}
 		// Pod and service have the same name, thus the service could be deleted using pod's name.
-		if err := tc.ServiceControl.DeleteService(pod.Namespace, pod.Name, tfJob); err != nil {
+		if err := tc.JobController.ServiceControl.DeleteService(pod.Namespace, pod.Name, tfJob); err != nil {
 			return err
 		}
 	}

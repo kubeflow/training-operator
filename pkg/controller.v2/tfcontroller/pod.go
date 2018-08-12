@@ -89,7 +89,7 @@ func (tc *TFJobController) reconcilePods(
 				}
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
 					logger.Infof("Need to restart the pod: %s-%d", rt, index)
-					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
+					if err := tc.JobController.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}
 					restart = true
@@ -171,7 +171,7 @@ func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index strin
 	}
 	setRestartPolicy(podTemplate, spec)
 
-	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
+	err = tc.JobController.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Pod is created but its initialization has timed out.
 		// If the initialization is successful eventually, the

@@ -297,7 +297,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
 	if tc.Config.EnableGangScheduling {
-		_, err := tc.SyncPdb(tfjob)
+		_, err := tc.JobController.SyncPdb(tfjob)
 		if err != nil {
 			logger.Warnf("Sync pdb %v: %v", tfjob.Name, err)
 		}
@@ -333,14 +333,14 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
-	pods, err := tc.GetPodsForJob(tfjob)
+	pods, err := tc.JobController.GetPodsForJob(tfjob)
 
 	if err != nil {
 		logger.Warnf("getPodsForTFJob error %v", err)
 		return err
 	}
 
-	services, err := tc.GetServicesForJob(tfjob)
+	services, err := tc.JobController.GetServicesForJob(tfjob)
 
 	if err != nil {
 		logger.Warnf("getServicesForTFJob error %v", err)
@@ -359,7 +359,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 
 		if tc.Config.EnableGangScheduling {
 			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting pdb")
-			if err := tc.DeletePdb(tfjob); err != nil {
+			if err := tc.JobController.DeletePdb(tfjob); err != nil {
 				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePdb", "Error deleting: %v", err)
 				return err
 			} else {
