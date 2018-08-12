@@ -333,14 +333,14 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
-	pods, err := tc.GetPodsForJob(tfjob)
+	pods, err := tc.JobController.GetPodsForJob(tfjob)
 
 	if err != nil {
 		logger.Warnf("getPodsForTFJob error %v", err)
 		return err
 	}
 
-	services, err := tc.GetServicesForJob(tfjob)
+	services, err := tc.JobController.GetServicesForJob(tfjob)
 
 	if err != nil {
 		logger.Warnf("getServicesForTFJob error %v", err)
