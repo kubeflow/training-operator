@@ -55,16 +55,16 @@ func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinforme
 }
 
 // NewTFJobInformer returns TFJobInformer from the given factory.
-func (tc *TFJobController) NewTFJobInformer(tfJobInformerFactory tfjobinformers.SharedInformerFactory) tfjobinformersv1alpha2.TFJobInformer {
+func (tc *TFController) NewTFJobInformer(tfJobInformerFactory tfjobinformers.SharedInformerFactory) tfjobinformersv1alpha2.TFJobInformer {
 	return tfJobInformerFactory.Kubeflow().V1alpha2().TFJobs()
 }
 
-func (tc *TFJobController) getTFJobFromName(namespace, name string) (*tfv1alpha2.TFJob, error) {
+func (tc *TFController) getTFJobFromName(namespace, name string) (*tfv1alpha2.TFJob, error) {
 	key := fmt.Sprintf("%s/%s", namespace, name)
 	return tc.getTFJobFromKey(key)
 }
 
-func (tc *TFJobController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
+func (tc *TFController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
 	// Check if the key exists.
 	obj, exists, err := tc.tfJobInformer.GetIndexer().GetByKey(key)
 	logger := tflogger.LoggerForKey(key)

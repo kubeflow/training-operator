@@ -119,7 +119,7 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 }
 
 // updateTFJobStatus updates the status of the given TFJob.
-func (tc *TFJobController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
+func (tc *TFController) updateTFJobStatus(tfjob *tfv1alpha2.TFJob) error {
 	_, err := tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfjob.Namespace).Update(tfjob)
 	return err
 }
