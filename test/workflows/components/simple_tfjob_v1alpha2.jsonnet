@@ -2,7 +2,7 @@ local params = std.extVar("__ksonnet/params").components.simple_tfjob_v1alpha2;
 
 local k = import "k.libsonnet";
 
-local defaultTestImage = "gcr.io/kubeflow-examples/tf_smoke:v20180723-65c28134";
+local defaultTestImage = "gcr.io/kubeflow-examples/tf_smoke:v20180814-77851b68";
 local parts(namespace, name, image) = {
   local actualImage = if image != "" then
     image
