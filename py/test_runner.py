@@ -21,7 +21,7 @@ from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
 from py import test_util
 from py import tf_job_client
-
+from py import util as tf_operator_util
 
 def wait_for_delete(client,
                     namespace,
@@ -568,7 +568,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     # TODO(jlewi): Add an option to add chaos and randomly kill various resources?
     # TODO(jlewi): Are there other generic validation checks we should
     # run.
-  except util.JobTimeoutError as e:
+  except tf_operator_util.JobTimeoutError as e:
     if e.job:
       spec = "Job:\n" + json.dumps(e.job, indent=2)
     else:

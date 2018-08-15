@@ -11,6 +11,7 @@ import argparse
 import json
 import logging
 import os
+import retrying
 
 import tensorflow as tf
 
@@ -30,7 +31,10 @@ def parse_args():
   args, _ = parser.parse_known_args()
   return args
 
-
+# Add retries to deal with things like gRPC errors that result in
+# UnavailableError.
+@retrying.retry(wait_exponential_multiplier=1000, wait_exponential_max=10000,
+                stop_max_delay=60*3*1000)
 def run(server, cluster_spec):  # pylint: disable=too-many-statements, too-many-locals
   """Build the graph and run the example.
 
