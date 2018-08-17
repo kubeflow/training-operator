@@ -44,14 +44,14 @@ var (
 	tfJobSucceeded = tfv1alpha2.TFJobSucceeded
 )
 
-func newTFJobController(
+func newTFController(
 	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
 	option options.ServerOption,
 ) (
-	*TFJobController,
+	*TFController,
 	kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory,
 ) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
@@ -59,7 +59,7 @@ func newTFJobController(
 
 	tfJobInformer := NewUnstructuredTFJobInformer(config)
 
-	ctr := NewTFJobController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
+	ctr := NewTFController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}
 	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
@@ -222,7 +222,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		option := options.ServerOption{}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -352,7 +352,7 @@ func TestRun(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -383,7 +383,7 @@ func TestSyncPdb(t *testing.T) {
 	option := options.ServerOption{
 		EnableGangScheduling: true,
 	}
-	ctr, _, _ := newTFJobController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 
 	type testCase struct {
 		tfJob     *tfv1alpha2.TFJob

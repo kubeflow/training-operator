@@ -44,7 +44,7 @@ const (
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
-func (tc *TFJobController) reconcilePods(
+func (tc *TFController) reconcilePods(
 	tfjob *tfv1alpha2.TFJob,
 	pods []*v1.Pod,
 	rtype tfv1alpha2.TFReplicaType,
@@ -125,7 +125,7 @@ func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
 }
 
 // createNewPod creates a new pod for the given index and type.
-func (tc *TFJobController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
+func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))

@@ -57,16 +57,16 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	// DefaultTFJobControllerConfiguration is the suggested tf-operator configuration for production.
-	DefaultTFJobControllerConfiguration = jobcontroller.JobControllerConfiguration{
+	// DefaultTFControllerConfiguration is the suggested tf-operator configuration for production.
+	DefaultTFControllerConfiguration = jobcontroller.JobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 		EnableGangScheduling:     false,
 	}
 )
 
-// TFJobController is the type for TFJob Controller, which manages
+// TFController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.
-type TFJobController struct {
+type TFController struct {
 	jobcontroller.JobController
 
 	// tfJobClientSet is a clientset for CRD TFJob.
@@ -92,8 +92,8 @@ type TFJobController struct {
 	tfJobInformerSynced cache.InformerSynced
 }
 
-// NewTFJobController returns a new TFJob controller.
-func NewTFJobController(
+// NewTFController returns a new TFJob controller.
+func NewTFController(
 	// This variable is for unstructured informer.
 	tfJobInformer tfjobinformersv1alpha2.TFJobInformer,
 	kubeClientSet kubeclientset.Interface,
@@ -102,13 +102,13 @@ func NewTFJobController(
 	// This field is not used now but we keep it since it will be used
 	// after we support CRD validation.
 	tfJobInformerFactory tfjobinformers.SharedInformerFactory,
-	option options.ServerOption) *TFJobController {
+	option options.ServerOption) *TFController {
 
 	tfjobscheme.AddToScheme(scheme.Scheme)
 
 	log.Info("Creating TFJob controller")
-	// Create new TFJobController.
-	tc := &TFJobController{
+	// Create new TFController.
+	tc := &TFController{
 		tfJobClientSet: tfJobClientSet,
 	}
 
@@ -168,7 +168,7 @@ func NewTFJobController(
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
-func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
+func (tc *TFController) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer utilruntime.HandleCrash()
 	defer tc.WorkQueue.ShutDown()
 
@@ -205,14 +205,14 @@ func (tc *TFJobController) Run(threadiness int, stopCh <-chan struct{}) error {
 // runWorker is a long-running function that will continually call the
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
-func (tc *TFJobController) runWorker() {
+func (tc *TFController) runWorker() {
 	for tc.processNextWorkItem() {
 	}
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
-func (tc *TFJobController) processNextWorkItem() bool {
+func (tc *TFController) processNextWorkItem() bool {
 	key, quit := tc.WorkQueue.Get()
 	if quit {
 		return false
@@ -254,7 +254,7 @@ func (tc *TFJobController) processNextWorkItem() bool {
 	return true
 }
 
-func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
+func (tc *TFController) enqueueTFJob(tfjob interface{}) {
 	key, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
@@ -268,7 +268,7 @@ func (tc *TFJobController) enqueueTFJob(tfjob interface{}) {
 // syncTFJob syncs the tfjob with the given key if it has had its expectations fulfilled, meaning
 // it did not expect to see any more of its pods/services created or deleted.
 // This function is not meant to be invoked concurrently with the same key.
-func (tc *TFJobController) syncTFJob(key string) (bool, error) {
+func (tc *TFController) syncTFJob(key string) (bool, error) {
 	startTime := time.Now()
 	logger := tflogger.LoggerForKey(key)
 	defer func() {
@@ -318,7 +318,7 @@ func (tc *TFJobController) syncTFJob(key string) (bool, error) {
 	return true, err
 }
 
-func (tc *TFJobController) GetTotalReplicas(obj metav1.Object) int32 {
+func (tc *TFController) GetTotalReplicas(obj metav1.Object) int32 {
 	tfjob := obj.(*tfv1alpha2.TFJob)
 	tfjobReplicas := int32(0)
 	for _, r := range tfjob.Spec.TFReplicaSpecs {
@@ -329,7 +329,7 @@ func (tc *TFJobController) GetTotalReplicas(obj metav1.Object) int32 {
 
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
-func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
+func (tc *TFController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
@@ -401,7 +401,7 @@ func (tc *TFJobController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 // satisfiedExpectations returns true if the required adds/dels for the given tfjob have been observed.
 // Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
 // manager.
-func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
+func (tc *TFController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 	satisfied := false
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
@@ -422,42 +422,42 @@ func (tc *TFJobController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 	return satisfied
 }
 
-func (tc *TFJobController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
+func (tc *TFController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
 	return tc.getTFJobFromName(namespace, name)
 }
 
-func (tc *TFJobController) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
+func (tc *TFController) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(namespace).Get(name, metav1.GetOptions{})
 }
 
-func (tc *TFJobController) GetAPIGroupVersionKind() schema.GroupVersionKind {
+func (tc *TFController) GetAPIGroupVersionKind() schema.GroupVersionKind {
 	return tfv1alpha2.SchemeGroupVersionKind
 }
 
-func (tc *TFJobController) GetAPIGroupVersion() schema.GroupVersion {
+func (tc *TFController) GetAPIGroupVersion() schema.GroupVersion {
 	return tfv1alpha2.SchemeGroupVersion
 }
 
-func (tc *TFJobController) GetGroupNameLabelKey() string {
+func (tc *TFController) GetGroupNameLabelKey() string {
 	return labelGroupName
 }
 
-func (tc *TFJobController) GetJobNameLabelKey() string {
+func (tc *TFController) GetJobNameLabelKey() string {
 	return labelTFJobName
 }
 
-func (tc *TFJobController) GetGroupNameLabelValue() string {
+func (tc *TFController) GetGroupNameLabelValue() string {
 	return tfv1alpha2.GroupName
 }
 
-func (tc *TFJobController) GetReplicaTypeLabelKey() string {
+func (tc *TFController) GetReplicaTypeLabelKey() string {
 	return tfReplicaTypeLabel
 }
 
-func (tc *TFJobController) GetReplicaIndexLabelKey() string {
+func (tc *TFController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
 }
 
-func (tc *TFJobController) ControllerName() string {
+func (tc *TFController) ControllerName() string {
 	return controllerName
 }

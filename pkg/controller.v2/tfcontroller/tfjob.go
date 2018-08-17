@@ -20,7 +20,7 @@ const (
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
-func (tc *TFJobController) addTFJob(obj interface{}) {
+func (tc *TFController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
 	tfJob, err := tfJobFromUnstructured(obj)
 	if err != nil {
@@ -63,7 +63,7 @@ func (tc *TFJobController) addTFJob(obj interface{}) {
 }
 
 // When a pod is updated, enqueue the current tfjob.
-func (tc *TFJobController) updateTFJob(old, cur interface{}) {
+func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
 	if err != nil {
 		return
@@ -72,7 +72,7 @@ func (tc *TFJobController) updateTFJob(old, cur interface{}) {
 	tc.enqueueTFJob(cur)
 }
 
-func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {
+func (tc *TFController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v1.Pod) error {
 	if len(pods) == 0 {
 		return nil
 	}
@@ -99,7 +99,7 @@ func (tc *TFJobController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods [
 	return nil
 }
 
-func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
+func (tc *TFController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 	currentTime := time.Now()
 	ttl := tfJob.Spec.TTLSecondsAfterFinished
 	if ttl == nil {
@@ -125,6 +125,6 @@ func (tc *TFJobController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 }
 
 // deleteTFJob delets the given TFJob.
-func (tc *TFJobController) deleteTFJob(tfJob *tfv1alpha2.TFJob) error {
+func (tc *TFController) deleteTFJob(tfJob *tfv1alpha2.TFJob) error {
 	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
 }
