@@ -157,7 +157,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, 
 	for key, value := range labels {
 		podTemplate.Labels[key] = value
 	}
-	setSchedulerName(podTemplateSpec, tfjob)
+	setSchedulerName(podTemplate, tfjob)
 	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
 		return err
 	}
