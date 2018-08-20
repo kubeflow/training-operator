@@ -30,12 +30,12 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
+	"github.com/kubeflow/tf-operator/cmd/pytorch-operator/app/options"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	jobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
-	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	controller "github.com/kubeflow/tf-operator/pkg/controller.v2/tensorflow"
+	jobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	controller "github.com/kubeflow/tf-operator/pkg/controller.v2/pytorch"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
 )
@@ -86,26 +86,23 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, tfJobClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet, pytorchJobClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
 
 	// Create informer factory.
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod)
-	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
+	pytorchJobInformerFactory := jobinformers.NewSharedInformerFactory(pytorchJobClientSet, resyncPeriod)
 
-	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg)
+	unstructuredInformer := controller.NewUnstructuredPyTorchJobInformer(kcfg)
 
-	// Create tf controller.
-	tc := controller.NewTFController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)
+	// Create pytorch controller.
+	tc := controller.NewPyTorchController(unstructuredInformer, kubeClientSet, pytorchJobClientSet, kubeInformerFactory, pytorchJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
 
-	// We do not use the generated informer because of
-	// https://github.com/kubeflow/tf-operator/issues/561
-	// go tfJobInformerFactory.Start(stopCh)
 	go unstructuredInformer.Informer().Run(stopCh)
 
 	// Set leader election start function.
@@ -122,12 +119,12 @@ func Run(opt *options.ServerOption) error {
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tf-operator"})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "pytorch-operator"})
 
 	rl := &resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      "tf-operator",
+			Name:      "pytorch-operator",
 		},
 		Client: leaderElectionClientSet.CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
@@ -153,8 +150,8 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, error) {
-	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
+func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, jobclientset.Interface, error) {
+	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "pytorch-operator"))
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -164,10 +161,10 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 		return nil, nil, nil, err
 	}
 
-	tfJobClientSet, err := tfjobclientset.NewForConfig(config)
+	jobClientSet, err := jobclientset.NewForConfig(config)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, nil
+	return kubeClientSet, leaderElectionClientSet, jobClientSet, nil
 }

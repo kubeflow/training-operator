@@ -22,6 +22,8 @@ import (
 	fakekubeflowv1alpha1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1/fake"
 	kubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2"
 	fakekubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2/fake"
+	pytorchv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/pytorch/v1alpha2"
+	fakepytorchv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/pytorch/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -61,6 +63,16 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// PytorchV1alpha2 retrieves the PytorchV1alpha2Client
+func (c *Clientset) PytorchV1alpha2() pytorchv1alpha2.PytorchV1alpha2Interface {
+	return &fakepytorchv1alpha2.FakePytorchV1alpha2{Fake: &c.Fake}
+}
+
+// Pytorch retrieves the PytorchV1alpha2Client
+func (c *Clientset) Pytorch() pytorchv1alpha2.PytorchV1alpha2Interface {
+	return &fakepytorchv1alpha2.FakePytorchV1alpha2{Fake: &c.Fake}
+}
 
 // KubeflowV1alpha1 retrieves the KubeflowV1alpha1Client
 func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface {

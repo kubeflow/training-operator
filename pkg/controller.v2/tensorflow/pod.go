@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -23,8 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -54,7 +52,7 @@ func (tc *TFController) reconcilePods(
 	rt := strings.ToLower(string(rtype))
 	logger := tflogger.LoggerForReplica(tfjob, rt)
 	// Get all pods for the type rt.
-	pods, err := filterPodsForTFReplicaType(pods, rt)
+	pods, err := tc.FilterPodsForReplicaType(pods, rt)
 	if err != nil {
 		return err
 	}
@@ -216,27 +214,4 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFRe
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
-}
-
-// filterPodsForTFReplicaType returns pods belong to a TFReplicaType.
-func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) ([]*v1.Pod, error) {
-	var result []*v1.Pod
-
-	tfReplicaSelector := &metav1.LabelSelector{
-		MatchLabels: make(map[string]string),
-	}
-
-	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
-
-	for _, pod := range pods {
-		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
-		if err != nil {
-			return nil, err
-		}
-		if !selector.Matches(labels.Set(pod.Labels)) {
-			continue
-		}
-		result = append(result, pod)
-	}
-	return result, nil
 }

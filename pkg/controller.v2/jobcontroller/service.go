@@ -98,3 +98,26 @@ func (jc *JobController) GetServicesForJob(job metav1.Object) ([]*v1.Service, er
 	cm := control.NewServiceControllerRefManager(jc.ServiceControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimServices(services)
 }
+
+// FilterServicesForReplicaType returns service belong to a replicaType.
+func (jc *JobController) FilterServicesForReplicaType(services []*v1.Service, replicaType string) ([]*v1.Service, error) {
+	var result []*v1.Service
+
+	replicaSelector := &metav1.LabelSelector{
+		MatchLabels: make(map[string]string),
+	}
+
+	replicaSelector.MatchLabels[jc.Controller.GetReplicaTypeLabelKey()] = replicaType
+
+	for _, service := range services {
+		selector, err := metav1.LabelSelectorAsSelector(replicaSelector)
+		if err != nil {
+			return nil, err
+		}
+		if !selector.Matches(labels.Set(service.Labels)) {
+			continue
+		}
+		result = append(result, service)
+	}
+	return result, nil
+}

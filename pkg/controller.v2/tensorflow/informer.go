@@ -1,4 +1,4 @@
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
+	lister "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1alpha2"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/unstructured"
 )
@@ -31,6 +32,18 @@ var (
 	errFailedMarshal = fmt.Errorf("Failed to marshal the object to TFJob")
 )
 
+type UnstructuredTFInformer struct {
+	informer cache.SharedIndexInformer
+}
+
+func (f *UnstructuredTFInformer) Informer() cache.SharedIndexInformer {
+	return f.informer
+}
+
+func (f *UnstructuredTFInformer) Lister() lister.TFJobLister {
+	return lister.NewTFJobLister(f.Informer().GetIndexer())
+}
+
 func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinformersv1alpha2.TFJobInformer {
 	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
 	dclient, err := dynClientPool.ClientForGroupVersionKind(tfv1alpha2.SchemeGroupVersionKind)
@@ -44,13 +57,15 @@ func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinforme
 		Group:        tfv1alpha2.GroupName,
 		Version:      tfv1alpha2.GroupVersion,
 	}
-	informer := unstructured.NewTFJobInformer(
-		resource,
-		dclient,
-		metav1.NamespaceAll,
-		resyncPeriod,
-		cache.Indexers{},
-	)
+	informer := &UnstructuredTFInformer{
+		informer: unstructured.NewUnstructuredInformer(
+			resource,
+			dclient,
+			metav1.NamespaceAll,
+			resyncPeriod,
+			cache.Indexers{},
+		),
+	}
 	return informer
 }
 

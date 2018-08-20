@@ -21,6 +21,7 @@ package externalversions
 import (
 	"fmt"
 
+	pytorch_v1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1alpha2"
 	v1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	v1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -60,6 +61,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=Kubeflow, Version=V1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("tfjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1alpha2().TFJobs().Informer()}, nil
+
+		// Group=Pytorch, Version=V1alpha2
+	case pytorch_v1alpha2.SchemeGroupVersion.WithResource("pytorchjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Pytorch().V1alpha2().PyTorchJobs().Informer()}, nil
 
 	}
 

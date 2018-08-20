@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -23,8 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -45,7 +43,7 @@ func (tc *TFController) reconcileServices(
 
 	replicas := int(*spec.Replicas)
 	// Get all services for the type rt.
-	services, err := filterServicesForTFReplicaType(services, rt)
+	services, err := tc.FilterServicesForReplicaType(services, rt)
 	if err != nil {
 		return err
 	}
@@ -151,27 +149,4 @@ func (tc *TFController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1alph
 		return err
 	}
 	return nil
-}
-
-// filterServicesForTFReplicaType returns service belong to a TFReplicaType.
-func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) ([]*v1.Service, error) {
-	var result []*v1.Service
-
-	tfReplicaSelector := &metav1.LabelSelector{
-		MatchLabels: make(map[string]string),
-	}
-
-	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
-
-	for _, service := range services {
-		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
-		if err != nil {
-			return nil, err
-		}
-		if !selector.Matches(labels.Set(service.Labels)) {
-			continue
-		}
-		result = append(result, service)
-	}
-	return result, nil
 }
