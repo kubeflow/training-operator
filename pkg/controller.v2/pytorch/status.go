@@ -120,7 +120,7 @@ func updateStatusSingle(job *v1alpha2.PyTorchJob, rtype v1alpha2.PyTorchReplicaT
 
 // updatePyTorchJobStatus updates the status of the given PyTorchJob.
 func (pc *PyTorchController) updatePyTorchJobStatus(job *v1alpha2.PyTorchJob) error {
-	_, err := pc.jobClientSet.Pytorch().PyTorchJobs(job.Namespace).Update(job)
+	_, err := pc.jobClientSet.PytorchV1alpha2().PyTorchJobs(job.Namespace).Update(job)
 	return err
 }
 

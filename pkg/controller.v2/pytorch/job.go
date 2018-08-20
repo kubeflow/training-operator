@@ -125,5 +125,5 @@ func (pc *PyTorchController) cleanupPyTorchJob(job *v1alpha2.PyTorchJob) error {
 
 // deletePyTorchJob delets the given PyTorchJob.
 func (pc *PyTorchController) deletePyTorchJob(job *v1alpha2.PyTorchJob) error {
-	return pc.jobClientSet.Pytorch().PyTorchJobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{})
+	return pc.jobClientSet.PytorchV1alpha2().PyTorchJobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{})
 }

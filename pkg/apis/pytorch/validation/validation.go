@@ -43,7 +43,7 @@ func ValidateAlphaTwoPyTorchJobSpec(c *v1alpha2.PyTorchJobSpec) error {
 			}
 		}
 		//Make sure there has at least one container named "pytorch"
-		if defaultContainerPresent == false {
+		if !defaultContainerPresent {
 			log.Warnf("There is no container named pytorch in %v", rType)
 			return fmt.Errorf("PyTorchJobSpec is not valid")
 		}

@@ -426,7 +426,7 @@ func (pc *PyTorchController) GetJobFromInformerCache(namespace, name string) (me
 }
 
 func (pc *PyTorchController) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	return pc.jobClientSet.Pytorch().PyTorchJobs(namespace).Get(name, metav1.GetOptions{})
+	return pc.jobClientSet.PytorchV1alpha2().PyTorchJobs(namespace).Get(name, metav1.GetOptions{})
 }
 
 func (pc *PyTorchController) GetAPIGroupVersionKind() schema.GroupVersionKind {
