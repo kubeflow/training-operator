@@ -57,7 +57,7 @@ func newTFController(
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
 
-	tfJobInformer := NewUnstructuredTFJobInformer(config)
+	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll)
 
 	ctr := NewTFController(tfJobInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}
