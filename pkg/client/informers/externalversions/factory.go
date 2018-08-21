@@ -26,6 +26,7 @@ import (
 	versioned "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
 	kubeflow "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow"
+	pytorch "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/pytorch"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -112,8 +113,13 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Kubeflow() kubeflow.Interface
+	Pytorch() pytorch.Interface
 }
 
 func (f *sharedInformerFactory) Kubeflow() kubeflow.Interface {
 	return kubeflow.New(f)
+}
+
+func (f *sharedInformerFactory) Pytorch() pytorch.Interface {
+	return pytorch.New(f)
 }

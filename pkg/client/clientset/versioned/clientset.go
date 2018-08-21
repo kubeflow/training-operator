@@ -20,6 +20,7 @@ import (
 	glog "github.com/golang/glog"
 	kubeflowv1alpha1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1"
 	kubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2"
+	pytorchv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/pytorch/v1alpha2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,6 +28,9 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	PytorchV1alpha2() pytorchv1alpha2.PytorchV1alpha2Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Pytorch() pytorchv1alpha2.PytorchV1alpha2Interface
 	KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface
@@ -37,8 +41,20 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	pytorchV1alpha2  *pytorchv1alpha2.PytorchV1alpha2Client
 	kubeflowV1alpha1 *kubeflowv1alpha1.KubeflowV1alpha1Client
 	kubeflowV1alpha2 *kubeflowv1alpha2.KubeflowV1alpha2Client
+}
+
+// PytorchV1alpha2 retrieves the PytorchV1alpha2Client
+func (c *Clientset) PytorchV1alpha2() pytorchv1alpha2.PytorchV1alpha2Interface {
+	return c.pytorchV1alpha2
+}
+
+// Deprecated: Pytorch retrieves the default version of PytorchClient.
+// Please explicitly pick a version.
+func (c *Clientset) Pytorch() pytorchv1alpha2.PytorchV1alpha2Interface {
+	return c.pytorchV1alpha2
 }
 
 // KubeflowV1alpha1 retrieves the KubeflowV1alpha1Client
@@ -73,6 +89,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.pytorchV1alpha2, err = pytorchv1alpha2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.kubeflowV1alpha1, err = kubeflowv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -94,6 +114,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.pytorchV1alpha2 = pytorchv1alpha2.NewForConfigOrDie(c)
 	cs.kubeflowV1alpha1 = kubeflowv1alpha1.NewForConfigOrDie(c)
 	cs.kubeflowV1alpha2 = kubeflowv1alpha2.NewForConfigOrDie(c)
 
@@ -104,6 +125,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.pytorchV1alpha2 = pytorchv1alpha2.New(c)
 	cs.kubeflowV1alpha1 = kubeflowv1alpha1.New(c)
 	cs.kubeflowV1alpha2 = kubeflowv1alpha2.New(c)
 

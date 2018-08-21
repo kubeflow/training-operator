@@ -31,15 +31,18 @@ CODEGEN_PKG=${SCRIPT_ROOT}/vendor/k8s.io/code-generator
 cd ${SCRIPT_ROOT}
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha1,v1alpha2 \
+ "tensorflow:v1alpha1,v1alpha2 pytorch:v1alpha2" \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
-echo "Generating defaulters for v1alpha1"
+echo "Generating defaulters for tensorflow v1alpha1"
 ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 
-echo "Generating defaulters for v1alpha2"
+echo "Generating defaulters for tensorflow v1alpha2"
 ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating defaulters for pytorch v1alpha2"
+${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1alpha2 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 cd - > /dev/null
 
 echo "Generating OpenAPI specification for v1alpha2"

@@ -1,4 +1,4 @@
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
