@@ -26,6 +26,7 @@ type ServerOption struct {
 	PrintVersion         bool
 	JSONLogFormat        bool
 	EnableGangScheduling bool
+	Namespace            string
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -39,6 +40,10 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.MasterURL, "master", "",
 		`The url of the Kubernetes API server,
 		 will overrides any value in kubeconfig, only required if out-of-cluster.`)
+
+	fs.StringVar(&s.Namespace, "namespace", "",
+		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide. 
+                If set, it only monitors tfjobs in the given namespace.`)
 
 	fs.IntVar(&s.Threadiness, "threadiness", 1,
 		`How many threads to process the main logic`)
