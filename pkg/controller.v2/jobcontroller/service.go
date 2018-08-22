@@ -2,6 +2,7 @@ package jobcontroller
 
 import (
 	"fmt"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -97,4 +98,51 @@ func (jc *JobController) GetServicesForJob(job metav1.Object) ([]*v1.Service, er
 	})
 	cm := control.NewServiceControllerRefManager(jc.ServiceControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimServices(services)
+}
+
+// FilterServicesForReplicaType returns service belong to a replicaType.
+func (jc *JobController) FilterServicesForReplicaType(services []*v1.Service, replicaType string) ([]*v1.Service, error) {
+	var result []*v1.Service
+
+	replicaSelector := &metav1.LabelSelector{
+		MatchLabels: make(map[string]string),
+	}
+
+	replicaSelector.MatchLabels[jc.Controller.GetReplicaTypeLabelKey()] = replicaType
+
+	for _, service := range services {
+		selector, err := metav1.LabelSelectorAsSelector(replicaSelector)
+		if err != nil {
+			return nil, err
+		}
+		if !selector.Matches(labels.Set(service.Labels)) {
+			continue
+		}
+		result = append(result, service)
+	}
+	return result, nil
+}
+
+// getServiceSlices returns a slice, which element is the slice of service.
+// Assume the return object is serviceSlices, then serviceSlices[i] is an
+// array of pointers to services corresponding to Services for replica i.
+func (jc *JobController) GetServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [][]*v1.Service {
+	serviceSlices := make([][]*v1.Service, replicas)
+	for _, service := range services {
+		if _, ok := service.Labels[jc.Controller.GetReplicaIndexLabelKey()]; !ok {
+			logger.Warning("The service do not have the index label.")
+			continue
+		}
+		index, err := strconv.Atoi(service.Labels[jc.Controller.GetReplicaIndexLabelKey()])
+		if err != nil {
+			logger.Warningf("Error when strconv.Atoi: %v", err)
+			continue
+		}
+		if index < 0 || index >= replicas {
+			logger.Warningf("The label index is not expected: %d", index)
+		} else {
+			serviceSlices[index] = append(serviceSlices[index], service)
+		}
+	}
+	return serviceSlices
 }
