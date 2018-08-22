@@ -65,6 +65,11 @@ func Run(opt *options.ServerOption) error {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace")
 		namespace = metav1.NamespaceDefault
 	}
+	if opt.Namespace == v1.NamespaceAll {
+		log.Info("Using cluster scoped operator")
+	} else {
+		log.Infof("Scoping operator to namespace %s", opt.Namespace)
+	}
 
 	// To help debugging, immediately log version.
 	log.Infof("%+v", version.Info(apiVersion))
@@ -92,10 +97,10 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create informer factory.
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod)
+	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, resyncPeriod, opt.Namespace, nil)
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
 
-	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg)
+	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg, opt.Namespace)
 
 	// Create tf controller.
 	tc := controller.NewTFController(unstructuredInformer, kubeClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)

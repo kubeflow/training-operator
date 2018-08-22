@@ -31,7 +31,7 @@ var (
 	errFailedMarshal = fmt.Errorf("Failed to marshal the object to TFJob")
 )
 
-func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinformersv1alpha2.TFJobInformer {
+func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string) tfjobinformersv1alpha2.TFJobInformer {
 	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
 	dclient, err := dynClientPool.ClientForGroupVersionKind(tfv1alpha2.SchemeGroupVersionKind)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewUnstructuredTFJobInformer(restConfig *restclientset.Config) tfjobinforme
 	informer := unstructured.NewTFJobInformer(
 		resource,
 		dclient,
-		metav1.NamespaceAll,
+		namespace,
 		resyncPeriod,
 		cache.Indexers{},
 	)
