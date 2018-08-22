@@ -65,8 +65,7 @@ func Run(opt *options.ServerOption) error {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace")
 		namespace = metav1.NamespaceDefault
 	}
-	if len(opt.Namespace) == 0 {
-		opt.Namespace = v1.NamespaceAll
+	if opt.Namespace == v1.NamespaceAll {
 		log.Info("Using cluster scoped operator")
 	} else {
 		log.Infof("Scoping operator to namespace %s", opt.Namespace)

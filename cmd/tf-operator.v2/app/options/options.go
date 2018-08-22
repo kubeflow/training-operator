@@ -16,6 +16,7 @@ package options
 
 import (
 	"flag"
+	"k8s.io/api/core/v1"
 )
 
 // ServerOption is the main context object for the controller manager.
@@ -41,7 +42,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 		`The url of the Kubernetes API server,
 		 will overrides any value in kubeconfig, only required if out-of-cluster.`)
 
-	fs.StringVar(&s.Namespace, "namespace", "",
+	fs.StringVar(&s.Namespace, "namespace", v1.NamespaceAll,
 		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide. 
                 If set, it only monitors tfjobs in the given namespace.`)
 
