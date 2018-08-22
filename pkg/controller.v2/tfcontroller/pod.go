@@ -57,6 +57,7 @@ func (tc *TFController) reconcilePods(
 	}
 	replicas := int(*spec.Replicas)
 	restart := false
+	worker0Completed := false
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
@@ -74,16 +75,16 @@ func (tc *TFController) reconcilePods(
 		} else {
 			// Check the status of the current pod.
 			pod := podSlice[0]
+			// Get the exit code of the tensorflow container.
+			var exitCode int32 = 0xbeef // magic number
+			for _, status := range pod.Status.ContainerStatuses {
+				state := status.State
+				if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
+					exitCode = state.Terminated.ExitCode
+				}
+			}
 			// Check if the pod is retryable.
 			if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
-				var exitCode int32
-				for _, status := range pod.Status.ContainerStatuses {
-					state := status.State
-					// Get the exit code of the tensorflow container.
-					if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
-						exitCode = state.Terminated.ExitCode
-					}
-				}
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
 					logger.Infof("Need to restart the pod: %s-%d", rt, index)
 					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
@@ -92,11 +93,16 @@ func (tc *TFController) reconcilePods(
 					restart = true
 				}
 			}
+
+			// Check whether worker 0 is exited without error.
+			if rtype == tfv1alpha2.TFReplicaTypeWorker && index == 0 && exitCode == 0 {
+				worker0Completed = true
+			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
 		}
 	}
 
-	return updateStatusSingle(tfjob, rtype, replicas, restart)
+	return updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
 }
 
 // createNewPod creates a new pod for the given index and type.

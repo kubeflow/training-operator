@@ -33,7 +33,7 @@ func TestFailed(t *testing.T) {
 	if tfJob.Status.TFReplicaStatuses[tfv1alpha2.TFReplicaTypeWorker].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := updateStatusSingle(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3, false)
+	err := updateStatusSingle(tfJob, tfv1alpha2.TFReplicaTypeWorker, 3, false, false)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -65,7 +65,8 @@ func TestStatus(t *testing.T) {
 		expectedSucceededChief int32
 		expectedActiveChief    int32
 
-		restart bool
+		restart          bool
+		worker0Completed bool
 
 		expectedType tfv1alpha2.TFJobConditionType
 	}
@@ -84,6 +85,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  1,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobSucceeded,
 		},
 		testCase{
@@ -99,6 +101,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     1,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
@@ -114,6 +117,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
 		},
 		testCase{
@@ -129,6 +133,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
 		},
 		testCase{
@@ -144,6 +149,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobSucceeded,
 		},
 		testCase{
@@ -159,6 +165,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
@@ -174,6 +181,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
@@ -189,6 +197,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
 		},
 		testCase{
@@ -204,7 +213,24 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
+		},
+		testCase{
+			description:             "(No chief worker) worker-0 are succeeded, 3 workers are active",
+			tfJob:                   testutil.NewTFJob(4, 2),
+			expectedFailedPS:        0,
+			expectedSucceededPS:     0,
+			expectedActivePS:        2,
+			expectedFailedWorker:    0,
+			expectedSucceededWorker: 1,
+			expectedActiveWorker:    3,
+			expectedFailedChief:     0,
+			expectedSucceededChief:  0,
+			expectedActiveChief:     0,
+			restart:                 false,
+			worker0Completed:        true,
+			expectedType:            tfv1alpha2.TFJobSucceeded,
 		},
 		testCase{
 			description:             "Chief is running, workers are failed",
@@ -219,6 +245,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     1,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
@@ -234,6 +261,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     1,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRunning,
 		},
 		testCase{
@@ -249,6 +277,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     1,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
 		},
 		testCase{
@@ -264,6 +293,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobFailed,
 		},
 		testCase{
@@ -279,6 +309,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  1,
 			expectedActiveChief:     0,
 			restart:                 false,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobSucceeded,
 		},
 		testCase{
@@ -294,11 +325,12 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 true,
+			worker0Completed:        false,
 			expectedType:            tfv1alpha2.TFJobRestarting,
 		},
 	}
 
-	for _, c := range testCases {
+	for i, c := range testCases {
 		initializeTFReplicaStatuses(c.tfJob, tfv1alpha2.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(c.tfJob, tfv1alpha2.TFReplicaTypeChief)
 		initializeTFReplicaStatuses(c.tfJob, tfv1alpha2.TFReplicaTypePS)
@@ -308,20 +340,20 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.tfJob, tfv1alpha2.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, t)
 
 		if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
-			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1, c.restart)
+			err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeChief, 1, c.restart, c.worker0Completed)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart)
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart)
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
@@ -329,14 +361,14 @@ func TestStatus(t *testing.T) {
 		} else {
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart)
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypePS].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart)
+				err := updateStatusSingle(c.tfJob, tfv1alpha2.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
@@ -353,7 +385,7 @@ func TestStatus(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("%s: Condition %s is not found", c.description, c.expectedType)
+			t.Errorf("Case[%d]%s: Condition %s is not found", i, c.description, c.expectedType)
 		}
 	}
 }
