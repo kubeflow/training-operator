@@ -45,6 +45,8 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
 	failed := int(tfjob.Status.TFReplicaStatuses[rtype].Failed)
 
+	tflogger.LoggerForJob(tfjob).Infof("TFJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
+		tfjob.Name, rtype, expected, running, failed)
 	// All workers are running, set StartTime.
 	if running == replicas && tfjob.Status.StartTime == nil {
 		now := metav1.Now()
@@ -63,8 +65,10 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			}
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
+				if tfjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					tfjob.Status.CompletionTime = &now
+				}
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -87,8 +91,10 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			// All workers are succeeded, leave a succeeded condition.
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
+				if tfjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					tfjob.Status.CompletionTime = &now
+				}
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
 				if err != nil {
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
@@ -108,6 +114,10 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 			}
 		} else {
 			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+			if tfjob.Status.CompletionTime == nil {
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
+			}
 			err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobFailed, tfJobFailedReason, msg)
 			if err != nil {
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
