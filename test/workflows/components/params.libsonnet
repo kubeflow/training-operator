@@ -46,5 +46,10 @@
       namespace: "kubeflow-test-infra",
       image: "",
     },
+    clean_pod_all: {
+      name: "clean_pod_all",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
   },
 }
