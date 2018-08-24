@@ -31,7 +31,10 @@ func (jc *JobController) AddPod(obj interface{}) {
 		logger := jclogger.LoggerForPod(pod, jc.Controller.GetAPIGroupVersionKind().Kind)
 
 		if job == nil {
-			logger.Info("This pod's job does not exist")
+			// If this is a TFJob pod
+			if pod.Labels[jc.Controller.GetGroupNameLabelKey()] == jc.Controller.GetGroupNameLabelValue() {
+				logger.Info("This pod's job does not exist")
+			}
 			return
 		}
 
