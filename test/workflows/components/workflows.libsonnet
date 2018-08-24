@@ -429,7 +429,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=clean-pod-all"
+              "--component=clean-pod-all",
               "--params=name=clean-pod-all,namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
