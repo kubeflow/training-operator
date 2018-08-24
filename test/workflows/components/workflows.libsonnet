@@ -251,6 +251,14 @@
                     template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "run-clean-pod-all",
+                      template: "run-clean-pod-all",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
                 ],  //tasks
               },
             },
@@ -412,6 +420,21 @@
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=clean-pod-all"
+              "--params=name=clean-pod-all,namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
+            ]),  // run clean_pod_all
+
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
