@@ -429,10 +429,10 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=clean-pod-all",
+              "--component=clean_pod_all",
               "--params=name=clean-pod-all,namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
-              "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
+              "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
             ]),  // run clean_pod_all
 
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
