@@ -20,11 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -54,7 +51,7 @@ func (tc *TFController) reconcilePods(
 	rt := strings.ToLower(string(rtype))
 	logger := tflogger.LoggerForReplica(tfjob, rt)
 	// Get all pods for the type rt.
-	pods, err := filterPodsForTFReplicaType(pods, rt)
+	pods, err := tc.FilterPodsForReplicaType(pods, rt)
 	if err != nil {
 		return err
 	}
@@ -63,7 +60,7 @@ func (tc *TFController) reconcilePods(
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
-	podSlices := getPodSlices(pods, replicas, logger)
+	podSlices := tc.GetPodSlices(pods, replicas, logger)
 	for index, podSlice := range podSlices {
 		if len(podSlice) > 1 {
 			logger.Warningf("We have too many pods for %s %d", rt, index)
@@ -100,28 +97,6 @@ func (tc *TFController) reconcilePods(
 	}
 
 	return updateStatusSingle(tfjob, rtype, replicas, restart)
-}
-
-// getPodSlices returns a slice, which element is the slice of pod.
-func getPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
-	podSlices := make([][]*v1.Pod, replicas)
-	for _, pod := range pods {
-		if _, ok := pod.Labels[tfReplicaIndexLabel]; !ok {
-			logger.Warning("The pod do not have the index label.")
-			continue
-		}
-		index, err := strconv.Atoi(pod.Labels[tfReplicaIndexLabel])
-		if err != nil {
-			logger.Warningf("Error when strconv.Atoi: %v", err)
-			continue
-		}
-		if index < 0 || index >= replicas {
-			logger.Warningf("The label index is not expected: %d", index)
-		} else {
-			podSlices[index] = append(podSlices[index], pod)
-		}
-	}
-	return podSlices
 }
 
 // createNewPod creates a new pod for the given index and type.
@@ -220,27 +195,4 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *tfv1alpha2.TFRe
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
-}
-
-// filterPodsForTFReplicaType returns pods belong to a TFReplicaType.
-func filterPodsForTFReplicaType(pods []*v1.Pod, tfReplicaType string) ([]*v1.Pod, error) {
-	var result []*v1.Pod
-
-	tfReplicaSelector := &metav1.LabelSelector{
-		MatchLabels: make(map[string]string),
-	}
-
-	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
-
-	for _, pod := range pods {
-		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
-		if err != nil {
-			return nil, err
-		}
-		if !selector.Matches(labels.Set(pod.Labels)) {
-			continue
-		}
-		result = append(result, pod)
-	}
-	return result, nil
 }

@@ -3,7 +3,9 @@ package jobcontroller
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -189,4 +191,49 @@ func (jc *JobController) GetPodsForJob(job metav1.Object) ([]*v1.Pod, error) {
 	})
 	cm := controller.NewPodControllerRefManager(jc.PodControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimPods(pods)
+}
+
+// FilterPodsForReplicaType returns pods belong to a replicaType.
+func (jc *JobController) FilterPodsForReplicaType(pods []*v1.Pod, replicaType string) ([]*v1.Pod, error) {
+	var result []*v1.Pod
+
+	replicaSelector := &metav1.LabelSelector{
+		MatchLabels: make(map[string]string),
+	}
+
+	replicaSelector.MatchLabels[jc.Controller.GetReplicaTypeLabelKey()] = replicaType
+
+	for _, pod := range pods {
+		selector, err := metav1.LabelSelectorAsSelector(replicaSelector)
+		if err != nil {
+			return nil, err
+		}
+		if !selector.Matches(labels.Set(pod.Labels)) {
+			continue
+		}
+		result = append(result, pod)
+	}
+	return result, nil
+}
+
+// getPodSlices returns a slice, which element is the slice of pod.
+func (jc *JobController) GetPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
+	podSlices := make([][]*v1.Pod, replicas)
+	for _, pod := range pods {
+		if _, ok := pod.Labels[jc.Controller.GetReplicaIndexLabelKey()]; !ok {
+			logger.Warning("The pod do not have the index label.")
+			continue
+		}
+		index, err := strconv.Atoi(pod.Labels[jc.Controller.GetReplicaIndexLabelKey()])
+		if err != nil {
+			logger.Warningf("Error when strconv.Atoi: %v", err)
+			continue
+		}
+		if index < 0 || index >= replicas {
+			logger.Warningf("The label index is not expected: %d", index)
+		} else {
+			podSlices[index] = append(podSlices[index], pod)
+		}
+	}
+	return podSlices
 }

@@ -20,11 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
@@ -45,12 +42,12 @@ func (tc *TFController) reconcileServices(
 
 	replicas := int(*spec.Replicas)
 	// Get all services for the type rt.
-	services, err := filterServicesForTFReplicaType(services, rt)
+	services, err := tc.FilterServicesForReplicaType(services, rt)
 	if err != nil {
 		return err
 	}
 
-	serviceSlices := getServiceSlices(services, replicas, tflogger.LoggerForReplica(tfjob, rt))
+	serviceSlices := tc.GetServiceSlices(services, replicas, tflogger.LoggerForReplica(tfjob, rt))
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {
@@ -66,30 +63,6 @@ func (tc *TFController) reconcileServices(
 	}
 
 	return nil
-}
-
-// getServiceSlices returns a slice, which element is the slice of service.
-// Assume the return object is serviceSlices, then serviceSlices[i] is an
-// array of pointers to services corresponding to Services for replica i.
-func getServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [][]*v1.Service {
-	serviceSlices := make([][]*v1.Service, replicas)
-	for _, service := range services {
-		if _, ok := service.Labels[tfReplicaIndexLabel]; !ok {
-			logger.Warning("The service do not have the index label.")
-			continue
-		}
-		index, err := strconv.Atoi(service.Labels[tfReplicaIndexLabel])
-		if err != nil {
-			logger.Warningf("Error when strconv.Atoi: %v", err)
-			continue
-		}
-		if index < 0 || index >= replicas {
-			logger.Warningf("The label index is not expected: %d", index)
-		} else {
-			serviceSlices[index] = append(serviceSlices[index], service)
-		}
-	}
-	return serviceSlices
 }
 
 // createNewService creates a new service for the given index and type.
@@ -151,27 +124,4 @@ func (tc *TFController) createNewService(tfjob *tfv1alpha2.TFJob, rtype tfv1alph
 		return err
 	}
 	return nil
-}
-
-// filterServicesForTFReplicaType returns service belong to a TFReplicaType.
-func filterServicesForTFReplicaType(services []*v1.Service, tfReplicaType string) ([]*v1.Service, error) {
-	var result []*v1.Service
-
-	tfReplicaSelector := &metav1.LabelSelector{
-		MatchLabels: make(map[string]string),
-	}
-
-	tfReplicaSelector.MatchLabels[tfReplicaTypeLabel] = tfReplicaType
-
-	for _, service := range services {
-		selector, err := metav1.LabelSelectorAsSelector(tfReplicaSelector)
-		if err != nil {
-			return nil, err
-		}
-		if !selector.Matches(labels.Set(service.Labels)) {
-			continue
-		}
-		result = append(result, service)
-	}
-	return result, nil
 }
