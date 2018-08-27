@@ -39,7 +39,7 @@ const (
 )
 
 // updateStatus updates the status of the tfjob.
-func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int, restart bool) error {
+func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType, replicas int, restart, worker0Completed bool) error {
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.TFReplicaStatuses[rtype].Succeeded)
 	running := int(tfjob.Status.TFReplicaStatuses[rtype].Active)
@@ -78,24 +78,22 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 		}
 	} else {
 		if rtype == tfv1alpha2.TFReplicaTypeWorker {
-			// Some workers are still running, leave a running condition.
-			if running > 0 {
-				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
-				if err != nil {
-					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
-					return err
-				}
-			}
-
-			// All workers are succeeded, leave a succeeded condition.
-			if expected == 0 {
+			// All workers are succeeded or worker 0 completed, leave a succeeded condition.
+			if expected == 0 || worker0Completed {
 				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
 				if tfjob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					tfjob.Status.CompletionTime = &now
 				}
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobSucceeded, tfJobSucceededReason, msg)
+				if err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+			} else if running > 0 {
+				// Some workers are still running, leave a running condition.
+				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
+				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)
 				if err != nil {
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
