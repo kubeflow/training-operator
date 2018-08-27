@@ -56,7 +56,7 @@ type TFJobSpec struct {
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
 	// reconcile gets called periodically.
 	// Default to infinite.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinishing,omitempty"`
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 
 	// TFReplicaSpecs is map of TFReplicaType and TFReplicaSpec
 	// specifies the TF replicas to run.
