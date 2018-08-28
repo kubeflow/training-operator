@@ -21,6 +21,10 @@ Please refer to the [user guide](https://www.kubeflow.org/docs/guides/components
 
 Please refer to the [developer_guide](developer_guide.md)
 
+## Change Log
+
+Please refer to [CHANGELOG](CHANGELOG.md)
+
 ## Community
 
 This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
