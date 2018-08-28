@@ -432,6 +432,7 @@
               "--component=clean_pod_all",
               "--params=name=clean-pod-all,namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
+              "--clean_pod_policy=All",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
             ]),  // run clean_pod_all
 

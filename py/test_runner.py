@@ -549,10 +549,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         pod_labels = get_labels_v1alpha2(name)
         pod_selector = to_selector(pod_labels)
 
+      logging.info(">>>>>>>>>>>>>>>DEBUG<<<<<<<<<<<<<<<<<")
+
       # We don't wait for pods to be deleted in v1alpha2 because CleanPodPolicy
       # means completed pods won't be deleted.
       # TODO(jlewi): We should add a test to deal with deleted pods.
-      if args.tfjob_version == "v1alpha1":
+      if args.tfjob_version == "v1alpha1" or args.clean_pod_policy == "All":
         wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
@@ -649,6 +651,13 @@ def add_common_args(parser):
     type=str,
     help="(Optional) the name for the ksonnet environment; if not specified "
          "a random one is created.")
+
+  parser.add_argument(
+    "--clean_pod_policy",
+    default=None,
+    type=str,
+    help="(Optional) the clean pod policy (None, Running, or All).")
+
 
 def build_parser():
   # create the top-level parser
