@@ -549,11 +549,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         pod_labels = get_labels_v1alpha2(name)
         pod_selector = to_selector(pod_labels)
 
-      logging.info(">>>>>>>>>>>>>>>DEBUG<<<<<<<<<<<<<<<<<")
-
       # We don't wait for pods to be deleted in v1alpha2 because CleanPodPolicy
-      # means completed pods won't be deleted.
-      # TODO(jlewi): We should add a test to deal with deleted pods.
+      # means completed pods won't be deleted, unless CleanPodPolicy is set to All.
       if args.tfjob_version == "v1alpha1" or args.clean_pod_policy == "All":
         wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
 
