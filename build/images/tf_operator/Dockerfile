@@ -23,4 +23,4 @@ RUN chmod a+x /opt/mlkube/tf-operator
 RUN chmod a+x /opt/mlkube/test/e2e
 RUN chmod a+x /opt/tensorflow_k8s/dashboard/backend
 
-ENTRYPOINT ["/opt/mlkube/tf-operator.v2"]
+ENTRYPOINT ["/opt/kubeflow/tf-operator.v2"]
