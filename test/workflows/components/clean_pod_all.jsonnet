@@ -2,11 +2,7 @@ local params = std.extVar("__ksonnet/params").components.clean_pod_all;
 
 local k = import "k.libsonnet";
 
-local defaultTestImage = "gcr.io/kubeflow-examples/tf_smoke:v20180814-c6e55b4d";
 local parts(namespace, name, image) = {
-  local actualImage = if image != "" then
-    image
-  else defaultTestImage,
   job:: {
     apiVersion: "kubeflow.org/v1alpha2",
     kind: "TFJob",
@@ -25,7 +21,11 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: actualImage,
+                  image: "ubuntu",
+                  command: [
+                    "echo",
+                    "Hello",
+                  ],
                 },
               ],
             },
@@ -39,7 +39,12 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: actualImage,
+                  image: "ubuntu",
+                  command: [
+                    "tail",
+                    "-f",
+                    "/dev/null",
+                  ],
                 },
               ],
             },
@@ -53,7 +58,11 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: actualImage,
+                  image: "ubuntu",
+                  command: [
+                    "echo",
+                    "Hello",
+                  ],
                 },
               ],
             },
