@@ -213,8 +213,8 @@ def list_pods(client, namespace, label_selector):
                   message)
     raise e
 
-def wait_for_replica_type_in_phases(api_client, namespace, replica_type, phases):
-  pod_labels = get_labels_v1alpha2(name, replica_type)
+def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
+  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
   pod_selector = to_selector(pod_labels)
   wait_for_pods_to_be_in_phases(api_client, namespace,
                                 pod_selector,
@@ -567,16 +567,16 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
         # Only running pods (PS) are deleted, completed pods are not.
         elif args.verify_clean_pod_policy == "Running":
-          wait_for_replica_type_in_phases(api_client, namespace, "Chief", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, "Worker", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
           ps_pod_labels = get_labels_v1alpha2(name, "PS")
           ps_pod_selector = to_selector(ps_pod_labels)
           wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
         # No pods are deleted.
         elif args.verify_clean_pod_policy == "None":
-          wait_for_replica_type_in_phases(api_client, namespace, "Chief", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, "Worker", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, "PS", ["Running"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
