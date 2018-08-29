@@ -1,4 +1,4 @@
-local params = std.extVar("__ksonnet/params").components.clean_pod_all;
+local params = std.extVar("__ksonnet/params").components.clean_pod_running;
 
 local k = import "k.libsonnet";
 

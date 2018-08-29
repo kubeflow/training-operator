@@ -213,6 +213,14 @@ def list_pods(client, namespace, label_selector):
                   message)
     raise e
 
+def wait_for_replica_type_in_phases(api_client, namespace, replica_type, phases):
+  pod_labels = get_labels_v1alpha2(name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  wait_for_pods_to_be_in_phases(api_client, namespace,
+                                pod_selector,
+                                phases,
+                                timeout=datetime.timedelta(
+                                  minutes=4))
 
 def get_events(client, namespace, uid):
   """Get the events for the provided object."""
@@ -559,47 +567,16 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
         # Only running pods (PS) are deleted, completed pods are not.
         elif args.verify_clean_pod_policy == "Running":
+          wait_for_replica_type_in_phases(api_client, namespace, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, "Worker", ["Completed"])
           ps_pod_labels = get_labels_v1alpha2(name, "PS")
           ps_pod_selector = to_selector(ps_pod_labels)
           wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
-          chief_pod_labels = get_labels_v1alpha2(name, "Chief")
-          chief_pod_selector = to_selector(chief_pod_labels)
-          wait_for_pods_to_be_in_phases(api_client, namespace,
-                                        chief_pod_selector,
-                                        ["Completed"],
-                                        timeout=datetime.timedelta(
-                                          minutes=4))
-          worker_pod_labels = get_labels_v1alpha2(name, "Worker")
-          worker_pod_selector = to_selector(worker_pod_labels)
-          wait_for_pods_to_be_in_phases(api_client, namespace,
-                                        worker_pod_selector,
-                                        ["Completed"],
-                                        timeout=datetime.timedelta(
-                                          minutes=4))
         # No pods are deleted.
         elif args.verify_clean_pod_policy == "None":
-          ps_pod_labels = get_labels_v1alpha2(name, "PS")
-          ps_pod_selector = to_selector(ps_pod_labels)
-          wait_for_pods_to_be_in_phases(api_client, namespace,
-                                        ps_pod_selector,
-                                        ["Running"],
-                                        timeout=datetime.timedelta(
-                                          minutes=4))
-          chief_pod_labels = get_labels_v1alpha2(name, "Chief")
-          chief_pod_selector = to_selector(chief_pod_labels)
-          wait_for_pods_to_be_in_phases(api_client, namespace,
-                                        chief_pod_selector,
-                                        ["Completed"],
-                                        timeout=datetime.timedelta(
-                                          minutes=4))
-          worker_pod_labels = get_labels_v1alpha2(name, "Worker")
-          worker_pod_selector = to_selector(worker_pod_labels)
-          wait_for_pods_to_be_in_phases(api_client, namespace,
-                                        worker_pod_selector,
-                                        ["Completed"],
-                                        timeout=datetime.timedelta(
-                                          minutes=4))
-
+          wait_for_replica_type_in_phases(api_client, namespace, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, "Worker", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, "PS", ["Running"])
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 

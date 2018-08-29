@@ -480,7 +480,7 @@
               "--params=name=clean-pod-none,namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--verify_clean_pod_policy=None",
-              "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
+              "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
