@@ -549,10 +549,57 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         pod_labels = get_labels_v1alpha2(name)
         pod_selector = to_selector(pod_labels)
 
-      # We don't wait for pods to be deleted in v1alpha2 because CleanPodPolicy
-      # means completed pods won't be deleted, unless CleanPodPolicy is set to All.
-      if args.tfjob_version == "v1alpha1" or args.clean_pod_policy == "All":
+      # In v1alpha1 all pods are deleted. In v1alpha2, this depends on the pod
+      # cleanup policy.
+      if args.tfjob_version == "v1alpha1":
         wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+      else:
+        # All pods are deleted.
+        if args.verify_clean_pod_policy == "All":
+          wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+        # Only running pods (PS) are deleted, completed pods are not.
+        elif args.verify_clean_pod_policy == "Running":
+          ps_pod_labels = get_labels_v1alpha2(name, "PS")
+          ps_pod_selector = to_selector(ps_pod_labels)
+          wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
+          chief_pod_labels = get_labels_v1alpha2(name, "Chief")
+          chief_pod_selector = to_selector(chief_pod_labels)
+          wait_for_pods_to_be_in_phases(api_client, namespace,
+                                        chief_pod_selector,
+                                        ["Completed"],
+                                        timeout=datetime.timedelta(
+                                          minutes=4))
+          worker_pod_labels = get_labels_v1alpha2(name, "Worker")
+          worker_pod_selector = to_selector(worker_pod_labels)
+          wait_for_pods_to_be_in_phases(api_client, namespace,
+                                        worker_pod_selector,
+                                        ["Completed"],
+                                        timeout=datetime.timedelta(
+                                          minutes=4))
+        # No pods are deleted.
+        elif args.verify_clean_pod_policy == "None":
+          ps_pod_labels = get_labels_v1alpha2(name, "PS")
+          ps_pod_selector = to_selector(ps_pod_labels)
+          wait_for_pods_to_be_in_phases(api_client, namespace,
+                                        ps_pod_selector,
+                                        ["Running"],
+                                        timeout=datetime.timedelta(
+                                          minutes=4))
+          chief_pod_labels = get_labels_v1alpha2(name, "Chief")
+          chief_pod_selector = to_selector(chief_pod_labels)
+          wait_for_pods_to_be_in_phases(api_client, namespace,
+                                        chief_pod_selector,
+                                        ["Completed"],
+                                        timeout=datetime.timedelta(
+                                          minutes=4))
+          worker_pod_labels = get_labels_v1alpha2(name, "Worker")
+          worker_pod_selector = to_selector(worker_pod_labels)
+          wait_for_pods_to_be_in_phases(api_client, namespace,
+                                        worker_pod_selector,
+                                        ["Completed"],
+                                        timeout=datetime.timedelta(
+                                          minutes=4))
+
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
@@ -650,7 +697,7 @@ def add_common_args(parser):
          "a random one is created.")
 
   parser.add_argument(
-    "--clean_pod_policy",
+    "--verify_clean_pod_policy",
     default=None,
     type=str,
     help="(Optional) the clean pod policy (None, Running, or All).")

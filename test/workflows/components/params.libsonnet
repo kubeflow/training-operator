@@ -51,5 +51,15 @@
       namespace: "kubeflow-test-infra",
       image: "",
     },
+    clean_pod_running: {
+      name: "clean_pod_running",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
+    clean_pod_none: {
+      name: "clean_pod_none",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
   },
 }
