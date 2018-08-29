@@ -251,6 +251,7 @@
                     template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  // TODO(richardsliu): Clean up the v1alph1 e2etests.
                   if params.tfJobVersion == "v1alpha2" then
                     {
                       name: "run-clean-pod-all",
@@ -271,6 +272,14 @@
                     {
                       name: "run-clean-pod-none",
                       template: "run-clean-pod-none",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "estimator-runconfig",
+                      template: "estimator-runconfig",
                       dependencies: ["setup-kubeflow"],
                     }
                   else
@@ -477,6 +486,21 @@
               "--verify_clean_pod_policy=None",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("estimator-runconfig", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=estimator_runconfig",
+              "--params=name=estimator-runconfig,namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--verify_runconfig",
+              "--junit_path=" + artifactsDir + "/junit_estimator-runconfig-tests.xml",
+            ]),  // run estimator_runconfig
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
