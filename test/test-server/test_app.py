@@ -9,6 +9,7 @@ import os
 import sys
 
 from flask import Flask, request
+from tensorflow.python.estimator import run_config as run_config_lib
 
 APP = Flask(__name__)
 
@@ -26,6 +27,24 @@ def index():
 def tf_config():
   # Exit with the provided exit code
   return os.environ.get("TF_CONFIG", "")
+
+@APP.route("/runconfig", methods=['GET'])
+def run_config():
+  # Exit with the provided exit code
+  config = run_config_lib.RunConfig()
+  if config:
+    config_dict = {
+      'master': config.master,
+      'task_id': config.task_id,
+      'num_ps_replicas': config.num_ps_replicas,
+      'num_worker_replicas': config.num_worker_replicas,
+      'cluster_spec': str(config.cluster_spec),
+      'task_type': config.task_type,
+      'is_chief': config.is_chief,
+    }
+    return str(config_dict)
+  else:
+    return ""
 
 @APP.route("/exit", methods=['GET'])
 def exitHandler():
