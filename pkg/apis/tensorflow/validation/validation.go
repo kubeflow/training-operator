@@ -27,10 +27,7 @@ import (
 
 // ValidateAlphaTwoTFJobSpec checks that the v1alpha2.TFJobSpec is valid.
 func ValidateAlphaTwoTFJobSpec(c *tfv2.TFJobSpec) error {
-	if err := validateAlphaTwoReplicaSpecs(c.TFReplicaSpecs); err != nil {
-		return err
-	}
-	return nil
+	return validateAlphaTwoReplicaSpecs(c.TFReplicaSpecs)
 }
 
 func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec) error {
