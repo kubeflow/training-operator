@@ -16,7 +16,6 @@ import (
 
 const (
 	failedMarshalTFJobReason = "FailedMarshalTFJob"
-	terminatedTFJobReason    = "TFJobTerminated"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
