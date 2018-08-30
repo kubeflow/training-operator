@@ -130,6 +130,10 @@ const (
 	// Else, worker:0 is the chief worker.
 	TFReplicaTypeChief TFReplicaType = "Chief"
 
+	// TFReplicaTypeMaster is the type for master worker of distributed TensorFlow.
+	// This is similar to chief, and kept just for backwards compatibility.
+	TFReplicaTypeMaster TFReplicaType = "Master"
+
 	// TFReplicaTypeEval is the type for evaluation replica in TensorFlow.
 	TFReplicaTypeEval TFReplicaType = "Evaluator"
 )
