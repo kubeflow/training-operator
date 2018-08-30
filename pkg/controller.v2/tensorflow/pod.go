@@ -81,12 +81,14 @@ func (tc *TFController) reconcilePods(
 				state := status.State
 				if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
 					exitCode = state.Terminated.ExitCode
+					logger.Infof("Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
+					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
 				}
 			}
 			// Check if the pod is retryable.
 			if spec.RestartPolicy == tfv1alpha2.RestartPolicyExitCode {
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
-					logger.Infof("Need to restart the pod: %s-%d", rt, index)
+					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
 					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
 						return err
 					}

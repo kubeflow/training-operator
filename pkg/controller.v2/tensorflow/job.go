@@ -16,7 +16,6 @@ import (
 
 const (
 	failedMarshalTFJobReason = "FailedMarshalTFJob"
-	terminatedTFJobReason    = "TFJobTerminated"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -34,7 +33,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			logger.Warn(errMsg)
-			tc.Recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
+			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 		return
 	}
@@ -66,17 +65,6 @@ func (tc *TFController) addTFJob(obj interface{}) {
 func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
 	if err != nil {
-		log.Errorf("failed to convert old tfjob from unstructured %v, %v", old, err)
-		return
-	}
-	curTFJob, err := tfJobFromUnstructured(cur)
-	if err != nil {
-		log.Errorf("failed to convert cur tfjob from unstructured %v, %v", cur, err)
-		return
-	}
-	if curTFJob.ResourceVersion == oldTFJob.ResourceVersion {
-		// Periodic resync will send update events for all known TFJobs.
-		// Two different versions of the same TFJob will always have different RVs
 		return
 	}
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
@@ -87,8 +75,6 @@ func (tc *TFController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v
 	if len(pods) == 0 {
 		return nil
 	}
-	tc.Recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
-		"TFJob is terminated, deleting pods and services")
 
 	// Delete nothing when the cleanPodPolicy is None.
 	if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyNone {

@@ -40,8 +40,11 @@ func GetPortFromTFJob(tfJob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType) (
 	return -1, errPortNotFound
 }
 
-func ContainChiefSpec(tfJob *tfv1alpha2.TFJob) bool {
+// ContainChieforMasterSpec returns true if the tfjob contains chief or master spec.
+func ContainChieforMasterSpec(tfJob *tfv1alpha2.TFJob) bool {
 	if _, ok := tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeChief]; ok {
+		return true
+	} else if _, ok := tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeMaster]; ok {
 		return true
 	}
 	return false

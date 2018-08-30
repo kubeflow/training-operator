@@ -372,6 +372,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
+		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeMaster)
 		return tc.updateStatusHandler(tfjob)
 	}
 
