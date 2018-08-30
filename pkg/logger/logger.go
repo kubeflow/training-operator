@@ -26,8 +26,8 @@ import (
 func LoggerForReplica(job metav1.Object, rtype string) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
-		// In controller.go we log the key used with the workqueue.
-		"job":          job.GetNamespace() + "/" + job.GetName(),
+		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
+		"job":          job.GetNamespace() + "." + job.GetName(),
 		"uid":          job.GetUID(),
 		"replica-type": rtype,
 	})
@@ -36,8 +36,8 @@ func LoggerForReplica(job metav1.Object, rtype string) *log.Entry {
 func LoggerForJob(job metav1.Object) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
-		// In controller.go we log the key used with the workqueue.
-		"job": job.GetNamespace() + "/" + job.GetName(),
+		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
+		"job": job.GetNamespace() + "." + job.GetName(),
 		"uid": job.GetUID(),
 	})
 }
