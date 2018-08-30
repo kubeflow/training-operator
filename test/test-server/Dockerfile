@@ -8,7 +8,4 @@ RUN mkdir /opt/kubeflow
 COPY test_app.py  /opt/kubeflow
 RUN chmod a+x /opt/kubeflow
 
-# Just for testing - remove
-ENV TF_CONFIG="{\"cluster\":{\"chief\":[\"mytfjob-chief-0:2222\"],\"ps\":[\"mytfjob-ps-0:2222\"],\"worker\":[\"mytfjob-worker-0:2222\"]},\"task\":{\"type\":\"chief\",\"index\":0},\"environment\":\"cloud\"}"
-
 ENTRYPOINT ["python", "/opt/kubeflow/test_app.py"]
