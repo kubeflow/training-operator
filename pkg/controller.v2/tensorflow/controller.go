@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -297,7 +297,8 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
 	if tc.Config.EnableGangScheduling {
-		_, err := tc.SyncPdb(tfjob)
+		minAvailableReplicas := getTotalReplicas(tfjob)
+		_, err := tc.SyncPdb(tfjob, minAvailableReplicas)
 		if err != nil {
 			logger.Warnf("Sync pdb %v: %v", tfjob.Name, err)
 		}
@@ -318,8 +319,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	return true, err
 }
 
-func (tc *TFController) GetTotalReplicas(obj metav1.Object) int32 {
-	tfjob := obj.(*tfv1alpha2.TFJob)
+func getTotalReplicas(tfjob *tfv1alpha2.TFJob) int32 {
 	tfjobReplicas := int32(0)
 	for _, r := range tfjob.Spec.TFReplicaSpecs {
 		tfjobReplicas += *r.Replicas
@@ -372,7 +372,6 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1alpha2.TFJob) error {
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypePS)
 		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeChief)
-		initializeTFReplicaStatuses(tfjob, tfv1alpha2.TFReplicaTypeMaster)
 		return tc.updateStatusHandler(tfjob)
 	}
 
