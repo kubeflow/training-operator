@@ -66,17 +66,6 @@ func (tc *TFController) addTFJob(obj interface{}) {
 func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
 	if err != nil {
-		log.Errorf("failed to convert old tfjob from unstructured %v, %v", old, err)
-		return
-	}
-	curTFJob, err := tfJobFromUnstructured(cur)
-	if err != nil {
-		log.Errorf("failed to convert cur tfjob from unstructured %v, %v", cur, err)
-		return
-	}
-	if curTFJob.ResourceVersion == oldTFJob.ResourceVersion {
-		// Periodic resync will send update events for all known TFJobs.
-		// Two different versions of the same TFJob will always have different RVs
 		return
 	}
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
