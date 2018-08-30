@@ -16,7 +16,6 @@ import (
 
 const (
 	failedMarshalTFJobReason = "FailedMarshalTFJob"
-	terminatedTFJobReason    = "TFJobTerminated"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -76,8 +75,6 @@ func (tc *TFController) deletePodsAndServices(tfJob *tfv1alpha2.TFJob, pods []*v
 	if len(pods) == 0 {
 		return nil
 	}
-	tc.Recorder.Event(tfJob, v1.EventTypeNormal, terminatedTFJobReason,
-		"TFJob is terminated, deleting pods and services")
 
 	// Delete nothing when the cleanPodPolicy is None.
 	if *tfJob.Spec.CleanPodPolicy == tfv1alpha2.CleanPodPolicyNone {
