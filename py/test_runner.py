@@ -213,6 +213,14 @@ def list_pods(client, namespace, label_selector):
                   message)
     raise e
 
+def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
+  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  wait_for_pods_to_be_in_phases(api_client, namespace,
+                                pod_selector,
+                                phases,
+                                timeout=datetime.timedelta(
+                                  minutes=4))
 
 def get_events(client, namespace, uid):
   """Get the events for the provided object."""
@@ -549,11 +557,26 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         pod_labels = get_labels_v1alpha2(name)
         pod_selector = to_selector(pod_labels)
 
-      # We don't wait for pods to be deleted in v1alpha2 because CleanPodPolicy
-      # means completed pods won't be deleted.
-      # TODO(jlewi): We should add a test to deal with deleted pods.
+      # In v1alpha1 all pods are deleted. In v1alpha2, this depends on the pod
+      # cleanup policy.
       if args.tfjob_version == "v1alpha1":
         wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+      else:
+        # All pods are deleted.
+        if args.verify_clean_pod_policy == "All":
+          wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+        # Only running pods (PS) are deleted, completed pods are not.
+        elif args.verify_clean_pod_policy == "Running":
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          ps_pod_labels = get_labels_v1alpha2(name, "PS")
+          ps_pod_selector = to_selector(ps_pod_labels)
+          wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
+        # No pods are deleted.
+        elif args.verify_clean_pod_policy == "None":
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
@@ -649,6 +672,13 @@ def add_common_args(parser):
     type=str,
     help="(Optional) the name for the ksonnet environment; if not specified "
          "a random one is created.")
+
+  parser.add_argument(
+    "--verify_clean_pod_policy",
+    default=None,
+    type=str,
+    help="(Optional) the clean pod policy (None, Running, or All).")
+
 
 def build_parser():
   # create the top-level parser

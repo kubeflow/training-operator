@@ -251,6 +251,31 @@
                     template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "run-clean-pod-all",
+                      template: "run-clean-pod-all",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "run-clean-pod-running",
+                      template: "run-clean-pod-running",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "run-clean-pod-none",
+                      template: "run-clean-pod-none",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
+
                 ],  //tasks
               },
             },
@@ -407,6 +432,51 @@
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=clean_pod_all",
+              "--params=name=clean-pod-all,namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--verify_clean_pod_policy=All",
+              "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
+            ]),  // run clean_pod_all
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-running", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=clean_pod_running",
+              "--params=name=clean-pod-running,namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--verify_clean_pod_policy=Running",
+              "--junit_path=" + artifactsDir + "/junit_clean-pod-running-tests.xml",
+            ]),  // run clean_pod_running
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-none", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=clean_pod_none",
+              "--params=name=clean-pod-none,namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--verify_clean_pod_policy=None",
+              "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
+            ]),  // run clean_pod_none
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
