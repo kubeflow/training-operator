@@ -34,7 +34,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		if err == errFailedMarshal {
 			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
 			logger.Warn(errMsg)
-			tc.Recorder.Event(tfJob, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
+			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 		}
 		return
 	}
