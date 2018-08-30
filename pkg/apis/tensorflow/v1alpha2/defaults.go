@@ -70,6 +70,7 @@ func setTypeNamesToCamelCase(tfJob *TFJob) {
 	setTypeNameToCamelCase(tfJob, TFReplicaTypePS)
 	setTypeNameToCamelCase(tfJob, TFReplicaTypeWorker)
 	setTypeNameToCamelCase(tfJob, TFReplicaTypeChief)
+	setTypeNameToCamelCase(tfJob, TFReplicaTypeMaster)
 	setTypeNameToCamelCase(tfJob, TFReplicaTypeEval)
 }
 

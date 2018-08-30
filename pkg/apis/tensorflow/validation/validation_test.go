@@ -71,11 +71,29 @@ func TestValidateAlphaTwoTFJobSpec(t *testing.T) {
 				},
 			},
 		},
+		{
+			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
+				tfv2.TFReplicaTypeChief: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
+						},
+					},
+				},
+				tfv2.TFReplicaTypeMaster: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, c := range testCases {
 		err := ValidateAlphaTwoTFJobSpec(&c)
-		if err.Error() != "TFJobSpec is not valid" {
-			t.Error("Failed validate the alpha2.TFJobSpec")
+		if err == nil {
+			t.Error("Expected error got nil")
 		}
 	}
 }

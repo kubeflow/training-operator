@@ -53,8 +53,10 @@ func updateStatusSingle(tfjob *tfv1alpha2.TFJob, rtype tfv1alpha2.TFReplicaType,
 		tfjob.Status.StartTime = &now
 	}
 
-	if ContainChiefSpec(tfjob) {
-		if rtype == tfv1alpha2.TFReplicaTypeChief {
+	// If the TFJob contains Chief or Master spec, then we will update the status
+	// according to the Chief/Master spec.
+	if ContainChieforMasterSpec(tfjob) {
+		if tfv1alpha2.IsChieforMaster(rtype) {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, tfv1alpha2.TFJobRunning, tfJobRunningReason, msg)

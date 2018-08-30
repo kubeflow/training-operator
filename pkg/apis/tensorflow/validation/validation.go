@@ -27,14 +27,22 @@ import (
 
 // ValidateAlphaTwoTFJobSpec checks that the v1alpha2.TFJobSpec is valid.
 func ValidateAlphaTwoTFJobSpec(c *tfv2.TFJobSpec) error {
-	if c.TFReplicaSpecs == nil {
+	return validateAlphaTwoReplicaSpecs(c.TFReplicaSpecs)
+}
+
+func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec) error {
+	if specs == nil {
 		return fmt.Errorf("TFJobSpec is not valid")
 	}
-	for rType, value := range c.TFReplicaSpecs {
+	foundChief := 0
+	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
-		//Make sure the image is defined in the container
+		if tfv2.IsChieforMaster(rType) {
+			foundChief++
+		}
+		// Make sure the image is defined in the container.
 		numNamedTensorflow := 0
 		for _, container := range value.Template.Spec.Containers {
 			if container.Image == "" {
@@ -45,11 +53,14 @@ func ValidateAlphaTwoTFJobSpec(c *tfv2.TFJobSpec) error {
 				numNamedTensorflow++
 			}
 		}
-		//Make sure there has at least one container named "tensorflow"
+		// Make sure there has at least one container named "tensorflow".
 		if numNamedTensorflow == 0 {
 			log.Warnf("There is no container named tensorflow in %v", rType)
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
+	}
+	if foundChief > 1 {
+		return fmt.Errorf("More than 1 chief/master found")
 	}
 	return nil
 }
