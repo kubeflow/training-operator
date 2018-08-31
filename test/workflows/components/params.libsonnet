@@ -1,5 +1,8 @@
 {
   global: {},
+  // TODO(jlewi): Having the component name not match the TFJob name is confusing.
+  // Job names can't have hyphens in the name. Moving forward we should use hyphens
+  // not underscores in component names.
   components: {
     // Component-level parameters, defined initially from 'ks prototype use ...'
     // Each object below should correspond to a component in the components/ directory
@@ -60,6 +63,9 @@
       name: "clean_pod_none",
       namespace: "kubeflow-test-infra",
       image: "",
+    },
+    "invalid-tfjob": {
+      name: "invalid-tfjob",
     },
   },
 }

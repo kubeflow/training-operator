@@ -65,6 +65,10 @@
       else
         "gcr.io/kubeflow-ci/test-worker";
 
+
+      // value of KUBECONFIG environment variable. This should be  a full path.
+      local kubeConfig = testDir + "/.kube/kubeconfig";
+
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
@@ -138,6 +142,12 @@
                     key: "github_token",
                   },
                 },
+              },
+              {
+                // We use a directory in our NFS share to store our kube config.
+                // This way we can configure it on a single step and reuse it on subsequent steps.
+                name: "KUBECONFIG",
+                value: kubeConfig,
               },
             ] + prow_env,
             volumeMounts: [
@@ -275,7 +285,14 @@
                     }
                   else
                     {},
-
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "invalid-tfjob",
+                      template: "invalid-tfjob",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
                 ],  //tasks
               },
             },
@@ -477,6 +494,15 @@
               "--verify_clean_pod_policy=None",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
+              "python",
+              "-m",
+              "py.test_invalid_job",
+              "test",
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--params=name=invalid-tfjob,namespace=default",
+              "--junit_path=" + artifactsDir + "/junit_test-invalid-tfjob.xml",
+            ]),  // invalid-tfjob
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
