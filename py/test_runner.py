@@ -679,6 +679,12 @@ def add_common_args(parser):
     type=str,
     help="(Optional) the clean pod policy (None, Running, or All).")
 
+  parser.add_argument(
+    "--verify_runconfig",
+    default=None,
+    type=bool,
+    help="(Optional) verify runconfig in each replica.")
+
 
 def build_parser():
   # create the top-level parser

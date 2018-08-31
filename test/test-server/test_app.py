@@ -4,6 +4,7 @@ The purpose of this flask app is to allow us to control the behavior
 of various processes so that we can test the controller semantics.
 """
 import argparse
+import json
 import logging
 import os
 import sys
@@ -42,9 +43,8 @@ def run_config():
       'task_type': config.task_type,
       'is_chief': config.is_chief,
     }
-    return str(config_dict)
-  else:
-    return ""
+    return json.dumps(config_dict)
+  return ""
 
 @APP.route("/exit", methods=['GET'])
 def exitHandler():

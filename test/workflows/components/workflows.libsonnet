@@ -497,6 +497,7 @@
               "--component=estimator_runconfig",
               "--params=name=estimator-runconfig,namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
+              "--verify_runconfig",
               "--junit_path=" + artifactsDir + "/junit_estimator-runconfig-tests.xml",
             ]),  // run estimator_runconfig
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
