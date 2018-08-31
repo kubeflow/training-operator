@@ -52,9 +52,6 @@ type ControllerInterface interface {
 	// Returns the Replica Index(value) in the labels of the job
 	GetReplicaIndexLabelKey() string
 
-	// Returns total replicas for a job. This is used for gang scheduling
-	GetTotalReplicas(obj metav1.Object) int32
-
 	// Returns the Job from Infomer Cache
 	GetJobFromInformerCache(namespace, name string) (metav1.Object, error)
 
@@ -201,11 +198,10 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
-func (jc *JobController) SyncPdb(job metav1.Object) (*v1beta1.PodDisruptionBudget, error) {
+func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
 	labelJobName := jc.Controller.GetJobNameLabelKey()
-	totalJobReplicas := jc.Controller.GetTotalReplicas(job)
 	// Non-distributed training is not required gang scheduling
-	if totalJobReplicas < 2 {
+	if minAvailableReplicas < 2 {
 		return nil, nil
 	}
 
@@ -219,7 +215,7 @@ func (jc *JobController) SyncPdb(job metav1.Object) (*v1beta1.PodDisruptionBudge
 	}
 
 	// Create pdb for gang scheduling by kube-arbitrator
-	minAvailable := intstr.FromInt(int(totalJobReplicas))
+	minAvailable := intstr.FromInt(int(minAvailableReplicas))
 	createPdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.GetName(),
