@@ -61,5 +61,10 @@
       namespace: "kubeflow-test-infra",
       image: "",
     },
+    estimator_runconfig: {
+      name: "estimator_runconfig",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
   },
 }
