@@ -18,6 +18,24 @@ environments:
       server: https://35.196.213.148
     k8sVersion: v1.7.0
     path: test
+  test-env-5e2e:
+    destination:
+      namespace: kubeflow
+      server: https://35.237.162.71
+    k8sVersion: v1.10.6
+    path: test-env-5e2e
+  test-env-c5f5:
+    destination:
+      namespace: kubeflow
+      server: https://35.237.162.71
+    k8sVersion: v1.10.6
+    path: test-env-c5f5
+  test-env-e249:
+    destination:
+      namespace: kubeflow
+      server: https://35.237.162.71
+    k8sVersion: v1.10.6
+    path: test-env-e249
 kind: ksonnet.io/app
 name: worfklows-app
 registries:

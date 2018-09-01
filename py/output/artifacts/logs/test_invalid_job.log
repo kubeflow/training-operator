@@ -1,0 +1,282 @@
+INFO|2018-08-31T18:23:14|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:23:14|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+WARNING|2018-08-31T18:23:16|_default.py:280| No project ID could be determined. Consider running `gcloud config set project` or setting the GOOGLE_CLOUD_PROJECT environment variable
+INFO|2018-08-31T18:23:19|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:25|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:32|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:37|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:47|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:52|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:23:55|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:24:00|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:24:08|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+ERROR|2018-08-31T18:24:09|test_helper.py:105| Test failed; 'tuple' object has no attribute 'app_dir'
+Traceback (most recent call last):
+  File "/home/jlewi/git_kubeflow-testing/py/kubeflow/testing/test_helper.py", line 99, in wrap_test
+    test_case.test_func(test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 117, in test_invalid_job
+    run_test(args, test_case)
+  File "/usr/local/lib/python2.7/dist-packages/retrying.py", line 49, in wrapped_f
+    return Retrying(*dargs, **dkw).call(f, *args, **kw)
+  File "/usr/local/lib/python2.7/dist-packages/retrying.py", line 212, in call
+    raise attempt.get()
+  File "/usr/local/lib/python2.7/dist-packages/retrying.py", line 247, in get
+    six.reraise(self.value[0], self.value[1], self.value[2])
+  File "/usr/local/lib/python2.7/dist-packages/retrying.py", line 200, in call
+    attempt = Attempt(fn(*args, **kwargs), attempt_number, False)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 37, in run_test
+    namespace, name, env = test_runner.setup_ks_app(args)
+  File "/home/jlewi/git_tf-operator/py/test_runner.py", line 332, in setup_ks_app
+    lock_file = os.path.join(args.app_dir, "app.lock")
+AttributeError: 'tuple' object has no attribute 'app_dir'
+INFO|2018-08-31T18:24:54|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:24:54|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:24:55|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:24:55|filelock.py:254| Lock 140112043658064 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:24:55|filelock.py:317| Lock 140112043658064 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:04|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:25:05|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:05|filelock.py:254| Lock 140112041529232 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:05|filelock.py:317| Lock 140112041529232 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:12|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:25:13|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:13|filelock.py:254| Lock 140112042981264 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:13|filelock.py:317| Lock 140112042981264 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:16|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:25:17|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:17|filelock.py:254| Lock 140112042983248 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:17|filelock.py:317| Lock 140112042983248 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:38|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:25:38|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:25:39|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:39|filelock.py:254| Lock 140161960048848 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:25:39|filelock.py:317| Lock 140161960048848 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+ERROR|2018-08-31T18:25:39|test_helper.py:105| Test failed; 'Namespace' object has no attribute 'environment'
+Traceback (most recent call last):
+  File "/home/jlewi/git_kubeflow-testing/py/kubeflow/testing/test_helper.py", line 99, in wrap_test
+    test_case.test_func(test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 117, in test_invalid_job
+    run_test(args, test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 38, in run_test
+    namespace, name, env = test_runner.setup_ks_app(args)
+  File "/home/jlewi/git_tf-operator/py/test_runner.py", line 337, in setup_ks_app
+    if args.environment:
+AttributeError: 'Namespace' object has no attribute 'environment'
+INFO|2018-08-31T18:26:04|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:26:04|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:26:05|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:26:05|filelock.py:254| Lock 140536510126480 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:26:05|filelock.py:317| Lock 140536510126480 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+ERROR|2018-08-31T18:26:05|test_helper.py:105| Test failed; 'NoneType' object has no attribute 'split'
+Traceback (most recent call last):
+  File "/home/jlewi/git_kubeflow-testing/py/kubeflow/testing/test_helper.py", line 99, in wrap_test
+    test_case.test_func(test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 117, in test_invalid_job
+    run_test(args, test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 38, in run_test
+    namespace, name, env = test_runner.setup_ks_app(args)
+  File "/home/jlewi/git_tf-operator/py/test_runner.py", line 341, in setup_ks_app
+    for pair in args.params.split(","):
+AttributeError: 'NoneType' object has no attribute 'split'
+INFO|2018-08-31T18:27:34|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:27:34|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:27:35|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:27:35|filelock.py:254| Lock 140197321188816 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:27:35|filelock.py:317| Lock 140197321188816 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+ERROR|2018-08-31T18:27:35|test_helper.py:105| Test failed; 'Namespace' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/home/jlewi/git_kubeflow-testing/py/kubeflow/testing/test_helper.py", line 99, in wrap_test
+    test_case.test_func(test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 117, in test_invalid_job
+    run_test(args, test_case)
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 38, in run_test
+    namespace, name, env = test_runner.setup_ks_app(args)
+  File "/home/jlewi/git_tf-operator/py/test_runner.py", line 337, in setup_ks_app
+    if args.get("environment"):
+AttributeError: 'Namespace' object has no attribute 'get'
+INFO|2018-08-31T18:29:03|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:29:03|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:29:04|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:29:04|filelock.py:254| Lock 139716222565520 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:29:04|util.py:41| Running: ks env add test-env-c5f5 --namespace=kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:29:04|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:29:04|util.py:62| level=info msg="Using context \"jlewi-0825\" from kubeconfig file \"/home/jlewi/.kube/config\""
+INFO|2018-08-31T18:29:05|util.py:62| level=info msg="Creating environment \"test-env-c5f5\" with namespace \"kubeflow\", pointing to cluster at address \"https://35.237.162.71\""
+INFO|2018-08-31T18:29:08|util.py:41| Running: ks param set --env=test-env-c5f5 invalid-job name testjob 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:29:08|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:29:08|util.py:62| level=info msg="setting environment component" component-name=invalid-job
+INFO|2018-08-31T18:29:09|util.py:41| Running: ks param set --env=test-env-c5f5 invalid-job namespace kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:29:09|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:29:09|util.py:62| level=info msg="setting environment component" component-name=invalid-job
+INFO|2018-08-31T18:29:10|filelock.py:317| Lock 139716222565520 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:29:10|util.py:41| Running: ks apply test-env-c5f5 -c invalid-job 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:29:10|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:29:17|test_invalid_job.py:44| Created job testjob in namespaces kubeflow
+INFO|2018-08-31T18:29:17|test_invalid_job.py:46| Wait for conditions Failed
+ERROR|2018-08-31T18:29:17|test_invalid_job.py:83| There was a problem running the job; Exception Got an unexpected keyword argument 'async_req' to method get_namespaced_custom_object
+Traceback (most recent call last):
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 49, in run_test
+    status_callback=tf_job_client.log_status)
+  File "/home/jlewi/git_tf-operator/py/tf_job_client.py", line 205, in wait_for_condition
+    TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async_req=True)
+  File "/usr/local/lib/python2.7/dist-packages/kubernetes/client/apis/custom_objects_api.py", line 697, in get_namespaced_custom_object
+    (data) = self.get_namespaced_custom_object_with_http_info(group, version, namespace, plural, name, **kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/kubernetes/client/apis/custom_objects_api.py", line 730, in get_namespaced_custom_object_with_http_info
+    " to method get_namespaced_custom_object" % key
+TypeError: Got an unexpected keyword argument 'async_req' to method get_namespaced_custom_object
+INFO|2018-08-31T18:30:46|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:30:46|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:30:47|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:30:47|filelock.py:254| Lock 139684181990992 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:30:47|util.py:41| Running: ks env add test-env-e249 --namespace=kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:30:47|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:30:47|util.py:62| level=info msg="Using context \"jlewi-0825\" from kubeconfig file \"/home/jlewi/.kube/config\""
+INFO|2018-08-31T18:30:48|util.py:62| level=info msg="Creating environment \"test-env-e249\" with namespace \"kubeflow\", pointing to cluster at address \"https://35.237.162.71\""
+INFO|2018-08-31T18:30:51|util.py:41| Running: ks param set --env=test-env-e249 invalid-job name testjob 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:30:52|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:30:52|util.py:62| level=info msg="setting environment component" component-name=invalid-job
+INFO|2018-08-31T18:30:53|util.py:41| Running: ks param set --env=test-env-e249 invalid-job namespace kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:30:53|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:30:53|util.py:62| level=info msg="setting environment component" component-name=invalid-job
+INFO|2018-08-31T18:30:54|filelock.py:317| Lock 139684181990992 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:30:54|util.py:41| Running: ks apply test-env-e249 -c invalid-job 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:30:54|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:31:01|test_invalid_job.py:44| Created job testjob in namespaces kubeflow
+INFO|2018-08-31T18:31:01|test_invalid_job.py:46| Wait for conditions Failed
+ERROR|2018-08-31T18:31:51|tf_job_client.py:215| There was a problem waiting for Job testjob.testjob; Exception; (404)
+Reason: Not Found
+HTTP response headers: HTTPHeaderDict({'Date': 'Sat, 01 Sep 2018 01:31:01 GMT', 'Audit-Id': '8c6129e8-8b65-422a-b6c6-c14e8c7ed8e2', 'Content-Length': '222', 'Content-Type': 'application/json'})
+HTTP response body: {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"tfjobs.kubeflow.org \"testjob\" not found","reason":"NotFound","details":{"name":"testjob","group":"kubeflow.org","kind":"tfjobs"},"code":404}
+
+
+ERROR|2018-08-31T18:31:51|test_invalid_job.py:83| There was a problem running the job; Exception (404)
+Reason: Not Found
+HTTP response headers: HTTPHeaderDict({'Date': 'Sat, 01 Sep 2018 01:31:01 GMT', 'Audit-Id': '8c6129e8-8b65-422a-b6c6-c14e8c7ed8e2', 'Content-Length': '222', 'Content-Type': 'application/json'})
+HTTP response body: {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"tfjobs.kubeflow.org \"testjob\" not found","reason":"NotFound","details":{"name":"testjob","group":"kubeflow.org","kind":"tfjobs"},"code":404}
+
+Traceback (most recent call last):
+  File "/home/jlewi/git_tf-operator/py/test_invalid_job.py", line 49, in run_test
+    status_callback=tf_job_client.log_status)
+  File "/home/jlewi/git_tf-operator/py/tf_job_client.py", line 210, in wait_for_condition
+    results = thread.get(TIMEOUT)
+  File "/usr/lib/python2.7/multiprocessing/pool.py", line 567, in get
+    raise self._value
+ApiException: (404)
+Reason: Not Found
+HTTP response headers: HTTPHeaderDict({'Date': 'Sat, 01 Sep 2018 01:31:01 GMT', 'Audit-Id': '8c6129e8-8b65-422a-b6c6-c14e8c7ed8e2', 'Content-Length': '222', 'Content-Type': 'application/json'})
+HTTP response body: {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"tfjobs.kubeflow.org \"testjob\" not found","reason":"NotFound","details":{"name":"testjob","group":"kubeflow.org","kind":"tfjobs"},"code":404}
+
+
+INFO|2018-08-31T18:35:15|util.py:511| GOOGLE_APPLICATION_CREDENTIALS is not set.
+INFO|2018-08-31T18:35:15|util.py:476| Using Kubernetes config file: /home/jlewi/.kube/config
+INFO|2018-08-31T18:35:16|test_runner.py:333| Acquiring lock on file: /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:35:16|filelock.py:254| Lock 140359757964752 acquired on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:35:16|util.py:41| Running: ks env add test-env-5e2e --namespace=kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:35:16|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:35:16|util.py:62| level=info msg="Using context \"jlewi-0825\" from kubeconfig file \"/home/jlewi/.kube/config\""
+INFO|2018-08-31T18:35:17|util.py:62| level=info msg="Creating environment \"test-env-5e2e\" with namespace \"kubeflow\", pointing to cluster at address \"https://35.237.162.71\""
+INFO|2018-08-31T18:35:19|util.py:41| Running: ks param set --env=test-env-5e2e invalid-tfjob name testjob 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:35:19|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:35:19|util.py:62| level=info msg="setting environment component" component-name=invalid-tfjob
+INFO|2018-08-31T18:35:20|util.py:41| Running: ks param set --env=test-env-5e2e invalid-tfjob namespace kubeflow 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:35:20|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:35:20|util.py:62| level=info msg="setting environment component" component-name=invalid-tfjob
+INFO|2018-08-31T18:35:21|filelock.py:317| Lock 140359757964752 released on /home/jlewi/git_tf-operator/test/workflows/app.lock
+INFO|2018-08-31T18:35:21|util.py:41| Running: ks apply test-env-5e2e -c invalid-tfjob 
+cwd=/home/jlewi/git_tf-operator/test/workflows
+INFO|2018-08-31T18:35:22|util.py:56| Subprocess output:
+
+INFO|2018-08-31T18:35:27|util.py:62| level=info msg="Updating tfjobs kubeflow.testjob"
+INFO|2018-08-31T18:35:27|util.py:62| level=info msg=" Creating non-existent tfjobs kubeflow.testjob"
+INFO|2018-08-31T18:35:29|test_invalid_job.py:44| Created job testjob in namespaces kubeflow
+INFO|2018-08-31T18:35:29|test_invalid_job.py:46| Wait for conditions Failed
+INFO|2018-08-31T18:35:29|tf_job_client.py:105| Job testjob in namespace kubeflow; uid=4e44277b-ad87-11e8-be57-42010a8e0084; conditions=[u'Failed']
+INFO|2018-08-31T18:35:29|test_invalid_job.py:51| Final TFJob:
+ {
+  "status": {
+    "conditions": [
+      {
+        "status": "True", 
+        "lastUpdateTime": "2018-09-01T01:35:28Z", 
+        "lastTransitionTime": "2018-09-01T01:35:28Z", 
+        "reason": "FailedInvalidTFJobSpec", 
+        "message": "Failed to marshal the object to TFJob; the spec is invalid: Failed to marshal the object to TFJob", 
+        "type": "Failed"
+      }
+    ], 
+    "tfReplicaStatuses": null
+  }, 
+  "kind": "TFJob", 
+  "spec": {
+    "notTheActualField": {
+      "Ps": {
+        "restartPolicy": "Never", 
+        "template": {
+          "spec": {
+            "containers": [
+              {
+                "image": "busybox", 
+                "name": "tensorflow"
+              }
+            ]
+          }
+        }, 
+        "replicas": 2
+      }, 
+      "Worker": {
+        "restartPolicy": "Never", 
+        "template": {
+          "spec": {
+            "containers": [
+              {
+                "image": "busybox", 
+                "name": "tensorflow"
+              }
+            ]
+          }
+        }, 
+        "replicas": 4
+      }
+    }
+  }, 
+  "apiVersion": "kubeflow.org/v1alpha2", 
+  "metadata": {
+    "name": "testjob", 
+    "clusterName": "", 
+    "labels": {
+      "app.kubernetes.io/deploy-manager": "ksonnet"
+    }, 
+    "namespace": "kubeflow", 
+    "generation": 1, 
+    "resourceVersion": "1852465", 
+    "creationTimestamp": "2018-09-01T01:35:28Z", 
+    "annotations": {
+      "ksonnet.io/managed": "{\"pristine\":\"H4sIAAAAAAAA/7yOsU4DMRBEez5jagtEROWOJgUFShFBgSj2fEtizmdbu3uB6OR/R3eABD+QZotZzbw3g2p8YtFYMjyGqeO3VD6uixxuTreU6pE2cBhi7uGx3z6UDg4jG/VkBD8j08jwMFZ7X59LoJUC/9lDc9DKYS0U2x/5PthEaRs59Uu40+UK1xQDKfzGQViNxHYlxXCGxyOfWOBgPNZExkvhdzOUbBQzi8K/zIgjHRZ8N+m5K58/Uqtl1iLfRq+tNYfnIgPLf/jdZeCttasvAAAA//8BAAD//y50HMaAAQAA\"}"
+    }, 
+    "selfLink": "/apis/kubeflow.org/v1alpha2/namespaces/kubeflow/tfjobs/testjob", 
+    "uid": "4e44277b-ad87-11e8-be57-42010a8e0084"
+  }
+}
+INFO|2018-08-31T18:35:29|test_helper.py:62| Writing file: /home/jlewi/git_tf-operator/py/output/artifacts/junit_test-invalid-job.xml
