@@ -501,6 +501,7 @@
               "test",
               "--app_dir=" + srcDir + "/test/workflows",
               "--params=name=invalid-tfjob,namespace=default",
+              "--junit_path=" + artifactsDir + "/junit_test-invalid-tfjob.xml",
             ]),  // invalid-tfjob
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
