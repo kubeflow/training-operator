@@ -147,7 +147,7 @@
                 // We use a directory in our NFS share to store our kube config.
                 // This way we can configure it on a single step and reuse it on subsequent steps.
                 name: "KUBECONFIG",
-                value: kubeConfig,
+                value: tests.kubeConfig,
               },
             ] + prow_env,
             volumeMounts: [
