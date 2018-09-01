@@ -13,16 +13,16 @@
 package k8sutil
 
 import (
-"fmt"
-"net/http"
+	"fmt"
+	"net/http"
 
-tflogger "github.com/kubeflow/tf-operator/pkg/logger"
-"k8s.io/apimachinery/pkg/runtime"
-"k8s.io/apimachinery/pkg/runtime/schema"
-"k8s.io/apimachinery/pkg/runtime/serializer"
-"k8s.io/client-go/rest"
-"k8s.io/client-go/kubernetes/scheme"
-metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 )
 
 // CRDRestClient defines an interface for working with CRDs using the REST client.
@@ -31,7 +31,7 @@ metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 // go struct.
 type CRDClient interface {
 	// Update a TfJob.
-	Update(obj *metav1unstructured.Unstructured) (error)
+	Update(obj *metav1unstructured.Unstructured) error
 }
 
 // CRDRestClient uses the Kubernetes rest interface to talk to the CRD.
@@ -65,7 +65,7 @@ func (c *CRDRestClient) Client() *http.Client {
 	return c.restcli.Client
 }
 
-func (c *CRDRestClient) Update(obj *metav1unstructured.Unstructured, plural string) (error) {
+func (c *CRDRestClient) Update(obj *metav1unstructured.Unstructured, plural string) error {
 	logger := tflogger.LoggerForUnstructured(obj, obj.GetKind())
 	// TODO(jlewi): Can we just call obj.GetKind() to get the kind? I think that will return the singular
 	// not plural will that work?

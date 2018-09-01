@@ -38,14 +38,14 @@ func (tc *TFController) addTFJob(obj interface{}) {
 			// TODO(jlewi): v1 doesn't appear to define an error type.
 			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 
-			status:= tfv1alpha2.TFJobStatus{
+			status := tfv1alpha2.TFJobStatus{
 				Conditions: []tfv1alpha2.TFJobCondition{
 					tfv1alpha2.TFJobCondition{
 						Type:               tfv1alpha2.TFJobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),
 						LastTransitionTime: metav1.Now(),
-						Reason:            failedMarshalTFJobReason,
+						Reason:             failedMarshalTFJobReason,
 						Message:            errMsg,
 					},
 				},
