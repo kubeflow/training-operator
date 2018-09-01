@@ -65,6 +65,10 @@
       else
         "gcr.io/kubeflow-ci/test-worker";
 
+
+      // value of KUBECONFIG environment variable. This should be  a full path.
+      local kubeConfig = testDir + "/.kube/kubeconfig";
+
       // The name of the NFS volume claim to use for test files.
       // local nfsVolumeClaim = "kubeflow-testing";
       local nfsVolumeClaim = "nfs-external";
@@ -138,6 +142,12 @@
                     key: "github_token",
                   },
                 },
+              },
+              {
+                // We use a directory in our NFS share to store our kube config.
+                // This way we can configure it on a single step and reuse it on subsequent steps.
+                name: "KUBECONFIG",
+                value: tests.kubeConfig,
               },
             ] + prow_env,
             volumeMounts: [
