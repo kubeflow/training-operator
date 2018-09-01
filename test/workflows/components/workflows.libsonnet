@@ -275,7 +275,14 @@
                     }
                   else
                     {},
-
+                  if params.tfJobVersion == "v1alpha2" then
+                    {
+                      name: "invalid-tfjob",
+                      template: "invalid-tfjob",
+                      dependencies: ["setup-kubeflow"],
+                    }
+                  else
+                    {},
                 ],  //tasks
               },
             },
@@ -477,6 +484,14 @@
               "--verify_clean_pod_policy=None",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
+            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
+              "python",
+              "-m",
+              "py.test_invalid_job",
+              "test",
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--params=name=invalid-tfjob,namespace=default",
+            ]),  // invalid-tfjob
             $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
