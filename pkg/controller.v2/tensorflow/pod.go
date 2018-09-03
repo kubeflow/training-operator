@@ -37,6 +37,8 @@ const (
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is setted in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
+	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
+	exitedWithCodeReason = "ExitedWithCode"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -82,7 +84,7 @@ func (tc *TFController) reconcilePods(
 				if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
 					exitCode = state.Terminated.ExitCode
 					logger.Infof("Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
-					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
+					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
 				}
 			}
 			// Check if the pod is retryable.
