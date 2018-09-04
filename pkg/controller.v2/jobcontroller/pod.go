@@ -98,7 +98,7 @@ func (jc *JobController) UpdatePod(old, cur interface{}) {
 		if job == nil {
 			return
 		}
-		logger.Infof("pod has a ControllerRef: %v, %v", curPod, oldPod)
+		logger.Debugf("pod has a ControllerRef: %v, %v", curPod, oldPod)
 		jobKey, err := controller.KeyFunc(job)
 		if err != nil {
 			return

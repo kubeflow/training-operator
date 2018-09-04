@@ -127,6 +127,7 @@ func Run(opt *options.ServerOption) error {
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
+	v1.AddToScheme(scheme.Scheme)
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tf-operator"})
 
 	rl := &resourcelock.EndpointsLock{
