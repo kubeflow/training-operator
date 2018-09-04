@@ -38,10 +38,12 @@ import (
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v2/tensorflow"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
+	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 )
 
 const (
 	apiVersion = "v1alpha2"
+	TFCRD = "tfjobs.kubeflow.org"
 )
 
 var (
@@ -159,6 +161,23 @@ func Run(opt *options.ServerOption) error {
 }
 
 func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, error) {
+
+	crdClient,err := crdclient.NewForConfig(config)
+	crdList, err := crdClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{})
+
+	var crdIsExist = false
+	for _, element := range crdList.Items{
+		if element.Name == TFCRD{
+			crdIsExist = true
+			break
+		}
+	}
+
+	if !crdIsExist{
+		log.Error("tfjobs.kubeflow.org crd is not found.")
+		os.Exit(1)
+	}
+
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
 		return nil, nil, nil, err
