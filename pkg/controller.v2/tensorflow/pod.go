@@ -142,7 +142,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, 
 	for key, value := range labels {
 		podTemplate.Labels[key] = value
 	}
-	setSchedulerName(podTemplate, tfjob)
+
 	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
 		return err
 	}
@@ -170,10 +170,6 @@ func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, 
 		return err
 	}
 	return nil
-}
-
-func setSchedulerName(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob) {
-	podTemplateSpec.Spec.SchedulerName = tfjob.Spec.SchedulerName
 }
 
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob, rt, index string) error {
