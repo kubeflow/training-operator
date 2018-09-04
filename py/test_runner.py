@@ -317,11 +317,11 @@ def get_run_config(masterHost, namespace, target):
   return json.loads(response)
 
 
-def verify_runconfig(masterHost, namespace, tfjob, replica):
+def verify_runconfig(masterHost, namespace, tfjob, job_name, replica):
   num_targets = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(
     replica, {}).get("replicas", 0)
   for i in range(num_targets):
-    full_target = "{name}-{replica}-{index}".format(name=name, replica=replica.lower(), index=i)
+    full_target = "{name}-{replica}-{index}".format(name=job_name, replica=replica.lower(), index=i)
     config = get_runconfig(masterHost, namespace, full_target)
     logging.info(">>>>RUNCONFIG: %s", str(config))
 
@@ -582,9 +582,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       # TODO(richardsliu):
       # There are lots of verifications in this file, consider refactoring them.
       if args.verify_runconfig:
-        verify_runconfig(masterHost, namespace, results, "Chief")
-        verify_runconfig(masterHost, namespace, results, "PS")
-        verify_runconfig(masterHost, namespace, results, "Worker")
+        verify_runconfig(masterHost, namespace, results, name, "Chief")
+        verify_runconfig(masterHost, namespace, results, name, "PS")
+        verify_runconfig(masterHost, namespace, results, name, "Worker")
         # Terminate the chief worker to complete the job.
         terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
