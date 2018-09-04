@@ -290,7 +290,7 @@ def parse_events(events):
 
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
-def terminateReplica(masterHost, namespace, target, exitCode=0):
+def terminate_replica(masterHost, namespace, target, exitCode=0):
   """Issue a request to terminate the requested TF replica running test_app.
 
   Args:
@@ -302,28 +302,20 @@ def terminateReplica(masterHost, namespace, target, exitCode=0):
   params = {
     "exitCode": exitCode,
   }
+  util.send_request(masterHost, namespace, target, "exit", params)
 
-  token = subprocess.check_output(["gcloud", "auth", "print-access-token"])
-  headers = {
-    "Authorization": "Bearer " + token.strip(),
-  }
-  url = ("{master}/api/v1/namespaces/{namespace}/services/{service}:2222"
-         "/proxy/exit").format(
-          master=masterHost, namespace=namespace, service=target)
-  r = requests.get(url,
-                   headers=headers, params=params,
-                   verify=False)
 
-  if r.status_code == requests.codes.NOT_FOUND:
-    logging.info("Request to %s returned 404", url)
-    return
-  if r.status_code != requests.codes.OK:
-    msg = "Request to {0} exited with status code: {1}".format(url,
-          r.status_code)
-    logging.error(msg)
-    raise RuntimeError(msg)
+def get_run_config(masterHost, namespace, target):
+  """Issue a request to get the runconfig of the specified replica running test_server.
 
-  logging.info("URL %s returned; %s", url, r.content)
+    Args:
+    masterHost: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    target: The K8s service corresponding to the pod to call.
+  """
+  response = util.send_request(masterHost, namespace, target, "runconfig", {})
+  return json.loads(response)
+
 
 def _setup_ks_app(args):
   """Setup the ksonnet app"""
@@ -482,7 +474,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         logging.info("Issuing the terminate request")
         for num in range(num_targets):
           full_target = target + "-{0}".format(num)
-          terminateReplica(masterHost, namespace, full_target)
+          terminate_replica(masterHost, namespace, full_target)
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
@@ -577,6 +569,20 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
           wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
           wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
+
+      # TODO(richardsliu):
+      # There are lots of verifications in this file, consider refactoring them.
+      if verify_runconfig:
+        # Verify worker
+        replica = "worker"
+        num_targets = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+          "Worker", {}).get("replicas", 0)
+        for i in range(num_targets):
+          full_target = "{name}-{replica}-{index}".format(name=name, replica=replica, index=i)
+          #full_target = target + "-{0}".format(num)
+          #terminate_replica(masterHost, namespace, full_target)
+          config = get_runconfig(masterHost, namespace, full_target)
+          logging.info(">>>>RUNCONFIG: %s", str(config))
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
