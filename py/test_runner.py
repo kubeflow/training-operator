@@ -485,6 +485,15 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           full_target = target + "-{0}".format(num)
           terminate_replica(masterHost, namespace, full_target)
 
+      # TODO(richardsliu):
+      # There are lots of verifications in this file, consider refactoring them.
+      if args.verify_runconfig:
+        verify_runconfig(masterHost, namespace, results, name, "Chief")
+        verify_runconfig(masterHost, namespace, results, name, "PS")
+        verify_runconfig(masterHost, namespace, results, name, "Worker")
+        # Terminate the chief worker to complete the job.
+        terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
+
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
         api_client, namespace, name, args.tfjob_version,
@@ -578,15 +587,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
           wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
           wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
-
-      # TODO(richardsliu):
-      # There are lots of verifications in this file, consider refactoring them.
-      if args.verify_runconfig:
-        verify_runconfig(masterHost, namespace, results, name, "Chief")
-        verify_runconfig(masterHost, namespace, results, name, "PS")
-        verify_runconfig(masterHost, namespace, results, name, "Worker")
-        # Terminate the chief worker to complete the job.
-        terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
