@@ -322,8 +322,6 @@ def verify_runconfig(masterHost, namespace, tfjob, replica):
     replica, {}).get("replicas", 0)
   for i in range(num_targets):
     full_target = "{name}-{replica}-{index}".format(name=name, replica=replica.lower(), index=i)
-    #full_target = target + "-{0}".format(num)
-    #terminate_replica(masterHost, namespace, full_target)
     config = get_runconfig(masterHost, namespace, full_target)
     logging.info(">>>>RUNCONFIG: %s", str(config))
 
@@ -584,16 +582,11 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       # TODO(richardsliu):
       # There are lots of verifications in this file, consider refactoring them.
       if args.verify_runconfig:
-        # Verify worker
-        replica = "worker"
-        num_targets = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
-          "Worker", {}).get("replicas", 0)
-        for i in range(num_targets):
-          full_target = "{name}-{replica}-{index}".format(name=name, replica=replica, index=i)
-          #full_target = target + "-{0}".format(num)
-          #terminate_replica(masterHost, namespace, full_target)
-          config = get_runconfig(masterHost, namespace, full_target)
-          logging.info(">>>>RUNCONFIG: %s", str(config))
+        verify_runconfig(masterHost, namespace, results, "Chief")
+        verify_runconfig(masterHost, namespace, results, "PS")
+        verify_runconfig(masterHost, namespace, results, "Worker")
+        # Terminate the chief worker to complete the job.
+        terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
@@ -698,8 +691,8 @@ def add_common_args(parser):
 
   parser.add_argument(
     "--verify_runconfig",
-    default=None,
-    type=bool,
+    dest="verify_runconfig",
+    action="store_true",
     help="(Optional) verify runconfig in each replica.")
 
 
