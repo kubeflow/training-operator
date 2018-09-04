@@ -39,6 +39,7 @@ const (
 	Plural = "tfjobs"
 	// Singular is the singular for TFJob.
 	Singular = "tfjob"
+	TFCRD    = "tfjobs.kubeflow.org"
 )
 
 var (

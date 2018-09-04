@@ -19,17 +19,6 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeinformers "k8s.io/client-go/informers"
-	kubeclientset "k8s.io/client-go/kubernetes"
-	restclientset "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	election "k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/client-go/tools/record"
-
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -38,6 +27,17 @@ import (
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v2/tensorflow"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
+	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeinformers "k8s.io/client-go/informers"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	restclientset "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	election "k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/client-go/tools/record"
 )
 
 const (
@@ -162,6 +162,15 @@ func Run(opt *options.ServerOption) error {
 }
 
 func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, error) {
+
+	crdClient, err := crdclient.NewForConfig(config)
+
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	checkCRDExists(crdClient, v1alpha2.TFCRD)
+
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
 		return nil, nil, nil, err
@@ -178,4 +187,12 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 	}
 
 	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, nil
+}
+
+func checkCRDExists(clientset crdclient.Interface, crdName string) {
+	_, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crdName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
 }
