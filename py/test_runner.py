@@ -302,7 +302,7 @@ def terminate_replica(masterHost, namespace, target, exitCode=0):
   params = {
     "exitCode": exitCode,
   }
-  util.send_request(masterHost, namespace, target, "exit", params)
+  tf_operator_util.send_request(masterHost, namespace, target, "exit", params)
 
 
 def get_run_config(masterHost, namespace, target):
@@ -313,8 +313,19 @@ def get_run_config(masterHost, namespace, target):
     namespace: The namespace
     target: The K8s service corresponding to the pod to call.
   """
-  response = util.send_request(masterHost, namespace, target, "runconfig", {})
+  response = tf_operator_util.send_request(masterHost, namespace, target, "runconfig", {})
   return json.loads(response)
+
+
+def verify_runconfig(masterHost, namespace, tfjob, replica):
+  num_targets = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(
+    replica, {}).get("replicas", 0)
+  for i in range(num_targets):
+    full_target = "{name}-{replica}-{index}".format(name=name, replica=replica.lower(), index=i)
+    #full_target = target + "-{0}".format(num)
+    #terminate_replica(masterHost, namespace, full_target)
+    config = get_runconfig(masterHost, namespace, full_target)
+    logging.info(">>>>RUNCONFIG: %s", str(config))
 
 
 def _setup_ks_app(args):
@@ -572,7 +583,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       # TODO(richardsliu):
       # There are lots of verifications in this file, consider refactoring them.
-      if verify_runconfig:
+      if args.verify_runconfig:
         # Verify worker
         replica = "worker"
         num_targets = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
