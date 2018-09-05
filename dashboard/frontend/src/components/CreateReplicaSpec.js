@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import PropTypes from "prop-types";
 import TextField from "material-ui/TextField";
 import Divider from "material-ui/Divider";
 import SelectField from "material-ui/SelectField";
@@ -9,10 +10,10 @@ import VolumeCreator from "./VolumeCreator";
 import EnvVarCreator from "./EnvVarCreator";
 
 const replicaTypes = {
-  "Chief": 0,
-  "Worker": 1,
-  "PS": 2,
-  "Eval": 3
+  Chief: 0,
+  Worker: 1,
+  PS: 2,
+  Eval: 3
 };
 
 class CreateReplicaSpec extends Component {
@@ -22,7 +23,11 @@ class CreateReplicaSpec extends Component {
       image: "",
       command: "",
       args: "",
-      gpus: 0,
+      cpuLimit: "",
+      memoryLimit: "",
+      cpuRequests: "",
+      memoryRequests: "",
+      gpuLimits: 0,
       volumeSpec: {},
       envVars: [],
       replicaType: 1,
@@ -51,6 +56,15 @@ class CreateReplicaSpec extends Component {
     },
     field: {
       width: "80%"
+    },
+    rowDirection: {
+      flexDirection: "row"
+    },
+    element: {
+      marginRight: "36px"
+    },
+    root: {
+      marginTop: "20px"
     }
   };
 
@@ -64,7 +78,8 @@ class CreateReplicaSpec extends Component {
           onChange={(o, v) => {
             this.setState({ replicaType: v });
             this.bubbleSpec({ ...this.state, replicaType: v });
-          }}>
+          }}
+        >
           {Object.keys(replicaTypes).map((i, k) => (
             <MenuItem value={k} primaryText={i} key={i} />
           ))}
@@ -99,15 +114,51 @@ class CreateReplicaSpec extends Component {
           value={this.state.replicas}
           onChange={this.handleInputChange}
         />
-        <TextField
-          style={this.styles.field}
-          floatingLabelText="GPU(s) per replica"
-          type="number"
-          min="0"
-          name="gpuCount"
-          value={this.state.gpuCount}
-          onChange={this.handleInputChange}
-        />
+        <div style={this.styles.root}>
+          <h4>Resources</h4>
+          <div style={this.styles.rowDirection}>
+            <TextField
+              style={this.styles.element}
+              floatingLabelText="limits/cpu"
+              name="cpuLimits"
+              value={this.state.cpuLimits}
+              onChange={this.handleInputChange}
+            />
+            <TextField
+              style={this.styles.element}
+              floatingLabelText="limits/memory"
+              name="memoryLimits"
+              value={this.state.memoryLimits}
+              onChange={this.handleInputChange}
+            />
+            <TextField
+              style={this.styles.element}
+              floatingLabelText="limit/nvidia.com/gpu"
+              type="number"
+              min="0"
+              name="gpuLimits"
+              value={this.state.gpuLimits}
+              onChange={this.handleInputChange}
+            />
+          </div>
+          <div style={this.styles.rowDirection}>
+            <TextField
+              style={this.styles.element}
+              floatingLabelText="requests/cpu"
+              name="cpuRequests"
+              value={this.state.cpuRequests}
+              onChange={this.handleInputChange}
+            />
+            <TextField
+              style={this.styles.element}
+              floatingLabelText="requests/memory"
+              name="memoryRequests"
+              value={this.state.memoryRequests}
+              onChange={this.handleInputChange}
+            />
+          </div>
+        </div>
+
         <EnvVarCreator setEnvVars={this.setEnvVars} />
         <VolumeCreator setVolumesSpec={this.setVolumesSpec} />
       </div>
@@ -120,7 +171,9 @@ class CreateReplicaSpec extends Component {
 
   buildReplicaSpec(state) {
     const args = state.args ? state.args.split(",").map(s => s.trim()) : [];
-    const command = state.command ? state.command.split(",").map(s => s.trim()) : [];
+    const command = state.command
+      ? state.command.split(",").map(s => s.trim())
+      : [];
     return {
       [Object.keys(replicaTypes)[state.replicaType]]: {
         replicas: parseInt(state.replicas, 10),
@@ -134,7 +187,18 @@ class CreateReplicaSpec extends Component {
                 command: command,
                 args: args,
                 env: state.envVars,
-                volumeMounts: state.volumeSpec.volumeMounts
+                volumeMounts: state.volumeSpec.volumeMounts,
+                resources: {
+                  limits: {
+                    cpu: state.cpuLimits,
+                    memory: state.memoryLimits,
+                    "nvidia.com/gpu": state.gpuLimits
+                  },
+                  requests: {
+                    cpu: state.cpuRequests,
+                    memory: state.memoryRequests
+                  }
+                }
               }
             ],
             restartPolicy: "OnFailure"
@@ -153,7 +217,11 @@ class CreateReplicaSpec extends Component {
     this.setState({ volumeSpec: spec });
     this.bubbleSpec({ ...this.state, volumeSpec: spec });
   }
-
 }
+
+CreateReplicaSpec.propTypes = {
+  id: PropTypes.string.isRequired,
+  setReplicaSpec: PropTypes.func.isRequired
+};
 
 export default CreateReplicaSpec;
