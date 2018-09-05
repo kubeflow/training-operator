@@ -1,0 +1,32 @@
+Arguments: 
+  /Users/chanyilin/.nvm/versions/node/v8.9.4/bin/node /Users/chanyilin/.yarn/bin/yarn.js start
+
+PATH: 
+  /Users/chanyilin/Library/Python/3.6/bin:/Library/Frameworks/Python.framework/Versions/3.6/bin:/Users/chanyilin/.yarn/bin:/Users/chanyilin/.config/yarn/global/node_modules/.bin:/Users/chanyilin/.nvm/versions/node/v8.9.4/bin:/Users/chanyilin/google-cloud-sdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/go/bin:/opt/ImageMagick/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/usr/local/Cellar/go/1.10.3/libexec/bin:/bin:/Users/chanyilin/Documents/My-Go/bin
+
+Yarn version: 
+  1.5.1
+
+Node version: 
+  8.9.4
+
+Platform: 
+  darwin x64
+
+npm manifest: 
+  No manifest
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
+
+Trace: 
+  Error: Couldn't find a package.json file in "/Users/chanyilin/Documents/My-Go/src/tf-operator"
+      at new MessageError (/Users/chanyilin/.yarn/lib/cli.js:186:110)
+      at /Users/chanyilin/.yarn/lib/cli.js:40048:15
+      at Generator.next (<anonymous>)
+      at step (/Users/chanyilin/.yarn/lib/cli.js:98:30)
+      at /Users/chanyilin/.yarn/lib/cli.js:109:13
+      at <anonymous>
