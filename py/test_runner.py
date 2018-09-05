@@ -289,42 +289,85 @@ def parse_events(events):
 
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
-def terminate_replica(masterHost, namespace, target, exitCode=0):
+def terminate_replica(master_host, namespace, target, exit_code=0):
   """Issue a request to terminate the requested TF replica running test_app.
 
   Args:
-    masterHost: The IP address of the master e.g. https://35.188.37.10
+    master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
     target: The K8s service corresponding to the pod to terminate.
-    exitCode: What exit code to terminate the pod with.
+    exit_code: What exit code to terminate the pod with.
   """
   params = {
-    "exitCode": exitCode,
+    "exitCode": exit_code,
   }
-  tf_operator_util.send_request(masterHost, namespace, target, "exit", params)
+  tf_operator_util.send_request(master_host, namespace, target, "exit", params)
 
 
-def get_runconfig(masterHost, namespace, target):
+def get_runconfig(master_host, namespace, target):
   """Issue a request to get the runconfig of the specified replica running test_server.
 
     Args:
-    masterHost: The IP address of the master e.g. https://35.188.37.10
+    master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
     target: The K8s service corresponding to the pod to call.
   """
-  response = tf_operator_util.send_request(masterHost, namespace, target, "runconfig", {})
+  response = tf_operator_util.send_request(master_host, namespace, target, "runconfig", {})
   return json.loads(response)
 
 
-def verify_runconfig(masterHost, namespace, tfjob, job_name, replica):
-  logging.info(">>>>TFJob: %s", str(tfjob))
-  num_targets = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(
-    replica, {}).get("replicas", 0)
-  for i in range(num_targets):
+def verify_runconfig(master_host, namespace, tfjob, job_name, replica, num_ps, num_workers):
+  """Verifies that the TF RunConfig on the specified replica is the same as expected.
+
+    Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    tfjob: The K8s description of the TF Job
+    job_name: The name of the TF job
+    replica: The replica type (chief, ps, or worker)
+    num_ps: The number of PS replicas
+    num_workers: The number of worker replicas
+  """
+  is_chief = True
+  num_replicas = 1
+  if replica == "ps":
+    is_chief = False
+    num_replicas = num_ps
+  elif replica == "worker":
+    is_chief = False
+    num_replicas = num_workers
+
+  # Construct the expected cluster spec
+  chief_list = ["{name}-chief-0:2222".format(name=job_name)]
+  ps_list = []
+  for i in range(num_ps):
+    ps_list.append("{name}-ps-{index}:2222".format(name=job_name, index=i))
+  worker_list = []
+  for i in range(num_workers):
+    worker_list.append("{name}-worker-{index}:2222".format(name=job_name, index=i))
+  cluster_spec = {
+    "chief": chief_list,
+    "ps": ps_list,
+    "worker": worker_list,
+  }
+
+  for i in range(num_replicas):
     full_target = "{name}-{replica}-{index}".format(name=job_name, replica=replica.lower(), index=i)
-    logging.info(">>>>FULL TARGET: %s", full_target)
-    config = get_runconfig(masterHost, namespace, full_target)
-    logging.info(">>>>RUNCONFIG: %s", str(config))
+    actual_config = get_runconfig(master_host, namespace, full_target)
+    expected_config = {
+      "task_type": replica,
+      "task_id": i,
+      "cluster_spec": cluster_spec,
+      "is_chief": is_chief,
+      "master": "grpc://{target}:2222".format(target=full_target),
+      "num_worker_replicas": num_workers + 1, # Chief is also a worker
+      "num_ps_replicas": num_ps,
+    }
+    # Compare expected and actual configs
+    if actual_config != expected_config:
+      logging.expection("Actual runconfig differs from expected. Expected: %s Actual: %s",
+        str(expected_config), str(actual_config))
+      raise
 
 
 def _setup_ks_app(args):
@@ -489,9 +532,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       # TODO(richardsliu):
       # There are lots of verifications in this file, consider refactoring them.
       if args.verify_runconfig:
-        verify_runconfig(masterHost, namespace, results, name, "Chief")
-        verify_runconfig(masterHost, namespace, results, name, "PS")
-        verify_runconfig(masterHost, namespace, results, name, "Worker")
+        num_ps = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+          "PS", {}).get("replicas", 0)
+        num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+          "Worker", {}).get("replicas", 0)
+        verify_runconfig(masterHost, namespace, results, name, "chief", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, results, name, "worker", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, results, name, "ps", num_ps, num_workers)
+
         # Terminate the chief worker to complete the job.
         terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
