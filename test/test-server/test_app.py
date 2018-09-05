@@ -39,7 +39,7 @@ def run_config():
       'task_id': config.task_id,
       'num_ps_replicas': config.num_ps_replicas,
       'num_worker_replicas': config.num_worker_replicas,
-      'cluster_spec': str(config.cluster_spec),
+      'cluster_spec': config.cluster_spec.as_dict(),
       'task_type': config.task_type,
       'is_chief': config.is_chief,
     }
