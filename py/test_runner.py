@@ -316,13 +316,12 @@ def get_runconfig(master_host, namespace, target):
   return json.loads(response)
 
 
-def verify_runconfig(master_host, namespace, tfjob, job_name, replica, num_ps, num_workers):
+def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_workers):
   """Verifies that the TF RunConfig on the specified replica is the same as expected.
 
     Args:
     master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
-    tfjob: The K8s description of the TF Job
     job_name: The name of the TF job
     replica: The replica type (chief, ps, or worker)
     num_ps: The number of PS replicas
@@ -536,9 +535,9 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           "PS", {}).get("replicas", 0)
         num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
           "Worker", {}).get("replicas", 0)
-        verify_runconfig(masterHost, namespace, results, name, "chief", num_ps, num_workers)
-        verify_runconfig(masterHost, namespace, results, name, "worker", num_ps, num_workers)
-        verify_runconfig(masterHost, namespace, results, name, "ps", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, name, "chief", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, name, "worker", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, name, "ps", num_ps, num_workers)
 
         # Terminate the chief worker to complete the job.
         terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
