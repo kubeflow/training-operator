@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import re
+import requests
 import subprocess
 import tempfile
 import time
@@ -98,6 +99,39 @@ def run_and_output(command, cwd=None, env=None):
     logging.info("Subprocess output:\n%s", e.output)
     raise
   return output
+
+
+def send_request(master_host, namespace, target, rpc, params):
+  """Issue a request to the Kubernetes master.
+  Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    target: The K8s service corresponding to the pod.
+    rpc: Which rpc to call.
+    params: What parameters to send in the request.
+  """
+  token = subprocess.check_output(["gcloud", "auth", "print-access-token"])
+  headers = {
+    "Authorization": "Bearer " + token.strip(),
+  }
+  url = ("{master}/api/v1/namespaces/{namespace}/services/{service}:2222"
+         "/proxy/{rpc}").format(
+          master=master_host, namespace=namespace, service=target, rpc=rpc)
+  r = requests.get(url,
+                   headers=headers, params=params,
+                   verify=False)
+
+  if r.status_code == requests.codes.NOT_FOUND:
+    logging.info("Request to %s returned 404", url)
+    return ""
+  if r.status_code != requests.codes.OK:
+    msg = "Request to {0} exited with status code: {1}".format(url,
+          r.status_code)
+    logging.error(msg)
+    raise RuntimeError(msg)
+
+  logging.info("URL %s returned; %s", url, r.content)
+  return r.content
 
 
 def clone_repo(dest,

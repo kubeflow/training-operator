@@ -3,7 +3,7 @@
 FROM python:3.6.5-slim
 MAINTAINER kubeflow-team
 
-RUN pip install flask requests
+RUN pip install flask requests tensorflow
 RUN mkdir /opt/kubeflow
 COPY test_app.py  /opt/kubeflow
 RUN chmod a+x /opt/kubeflow

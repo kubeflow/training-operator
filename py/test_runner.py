@@ -8,11 +8,11 @@ import logging
 import json
 import os
 import re
-import requests
 import retrying
 import subprocess
 import time
 import uuid
+import yaml
 
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
@@ -290,40 +290,86 @@ def parse_events(events):
 
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
-def terminateReplica(masterHost, namespace, target, exitCode=0):
+def terminate_replica(master_host, namespace, target, exit_code=0):
   """Issue a request to terminate the requested TF replica running test_app.
 
   Args:
-    masterHost: The IP address of the master e.g. https://35.188.37.10
+    master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
     target: The K8s service corresponding to the pod to terminate.
-    exitCode: What exit code to terminate the pod with.
+    exit_code: What exit code to terminate the pod with.
   """
   params = {
-    "exitCode": exitCode,
+    "exitCode": exit_code,
+  }
+  tf_operator_util.send_request(master_host, namespace, target, "exit", params)
+
+
+def get_runconfig(master_host, namespace, target):
+  """Issue a request to get the runconfig of the specified replica running test_server.
+
+    Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    target: The K8s service corresponding to the pod to call.
+  """
+  response = tf_operator_util.send_request(master_host, namespace, target, "runconfig", {})
+  return yaml.load(response)
+
+
+def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_workers):
+  """Verifies that the TF RunConfig on the specified replica is the same as expected.
+
+    Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    job_name: The name of the TF job
+    replica: The replica type (chief, ps, or worker)
+    num_ps: The number of PS replicas
+    num_workers: The number of worker replicas
+  """
+  is_chief = True
+  num_replicas = 1
+  if replica == "ps":
+    is_chief = False
+    num_replicas = num_ps
+  elif replica == "worker":
+    is_chief = False
+    num_replicas = num_workers
+
+  # Construct the expected cluster spec
+  chief_list = ["{name}-chief-0:2222".format(name=job_name)]
+  ps_list = []
+  for i in range(num_ps):
+    ps_list.append("{name}-ps-{index}:2222".format(name=job_name, index=i))
+  worker_list = []
+  for i in range(num_workers):
+    worker_list.append("{name}-worker-{index}:2222".format(name=job_name, index=i))
+  cluster_spec = {
+    "chief": chief_list,
+    "ps": ps_list,
+    "worker": worker_list,
   }
 
-  token = subprocess.check_output(["gcloud", "auth", "print-access-token"])
-  headers = {
-    "Authorization": "Bearer " + token.strip(),
-  }
-  url = ("{master}/api/v1/namespaces/{namespace}/services/{service}:2222"
-         "/proxy/exit").format(
-          master=masterHost, namespace=namespace, service=target)
-  r = requests.get(url,
-                   headers=headers, params=params,
-                   verify=False)
+  for i in range(num_replicas):
+    full_target = "{name}-{replica}-{index}".format(name=job_name, replica=replica.lower(), index=i)
+    actual_config = get_runconfig(master_host, namespace, full_target)
+    expected_config = {
+      "task_type": replica,
+      "task_id": i,
+      "cluster_spec": cluster_spec,
+      "is_chief": is_chief,
+      "master": "grpc://{target}:2222".format(target=full_target),
+      "num_worker_replicas": num_workers + 1, # Chief is also a worker
+      "num_ps_replicas": num_ps,
+    }
+    # Compare expected and actual configs
+    if actual_config != expected_config:
+      msg = "Actual runconfig differs from expected. Expected: {0} Actual: {1}".format(
+        str(expected_config), str(actual_config))
+      logging.error(msg)
+      raise RuntimeError(msg)
 
-  if r.status_code == requests.codes.NOT_FOUND:
-    logging.info("Request to %s returned 404", url)
-    return
-  if r.status_code != requests.codes.OK:
-    msg = "Request to {0} exited with status code: {1}".format(url,
-          r.status_code)
-    logging.error(msg)
-    raise RuntimeError(msg)
-
-  logging.info("URL %s returned; %s", url, r.content)
 
 def setup_ks_app(args):
   """Setup the ksonnet app"""
@@ -482,7 +528,21 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         logging.info("Issuing the terminate request")
         for num in range(num_targets):
           full_target = target + "-{0}".format(num)
-          terminateReplica(masterHost, namespace, full_target)
+          terminate_replica(masterHost, namespace, full_target)
+
+      # TODO(richardsliu):
+      # There are lots of verifications in this file, consider refactoring them.
+      if args.verify_runconfig:
+        num_ps = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+          "PS", {}).get("replicas", 0)
+        num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+          "Worker", {}).get("replicas", 0)
+        verify_runconfig(masterHost, namespace, name, "chief", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, name, "worker", num_ps, num_workers)
+        verify_runconfig(masterHost, namespace, name, "ps", num_ps, num_workers)
+
+        # Terminate the chief worker to complete the job.
+        terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
@@ -678,6 +738,12 @@ def add_common_args(parser):
     default=None,
     type=str,
     help="(Optional) the clean pod policy (None, Running, or All).")
+
+  parser.add_argument(
+    "--verify_runconfig",
+    dest="verify_runconfig",
+    action="store_true",
+    help="(Optional) verify runconfig in each replica.")
 
 
 def build_parser():
