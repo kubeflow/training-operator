@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package tfcontroller
+package tensorflow
 
 import (
 	"reflect"
@@ -433,7 +433,7 @@ func TestSyncPdb(t *testing.T) {
 		},
 	}
 	for _, c := range testCases {
-		pdb, _ := ctr.SyncPdb(c.tfJob)
+		pdb, _ := ctr.SyncPdb(c.tfJob, getTotalReplicas(c.tfJob))
 		if pdb == nil && c.expectPdb != nil {
 			t.Errorf("Got nil, want %v", c.expectPdb.Spec)
 		}

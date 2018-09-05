@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package controller provides a Kubernetes controller for a TFJob resource.
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -37,6 +37,8 @@ const (
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is setted in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
+	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
+	exitedWithCodeReason = "ExitedWithCode"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -82,7 +84,7 @@ func (tc *TFController) reconcilePods(
 				if status.Name == tfv1alpha2.DefaultContainerName && state.Terminated != nil {
 					exitCode = state.Terminated.ExitCode
 					logger.Infof("Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
-					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
+					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
 				}
 			}
 			// Check if the pod is retryable.
@@ -140,7 +142,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, 
 	for key, value := range labels {
 		podTemplate.Labels[key] = value
 	}
-	setSchedulerName(podTemplate, tfjob)
+
 	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
 		return err
 	}
@@ -168,10 +170,6 @@ func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, 
 		return err
 	}
 	return nil
-}
-
-func setSchedulerName(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob) {
-	podTemplateSpec.Spec.SchedulerName = tfjob.Spec.SchedulerName
 }
 
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1alpha2.TFJob, rt, index string) error {

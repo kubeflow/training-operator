@@ -371,7 +371,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_work
       raise RuntimeError(msg)
 
 
-def _setup_ks_app(args):
+def setup_ks_app(args):
   """Setup the ksonnet app"""
   salt = uuid.uuid4().hex[0:4]
 
@@ -380,7 +380,7 @@ def _setup_ks_app(args):
   lock = filelock.FileLock(lock_file, timeout=60)
   with lock:
     # Create a new environment for this run
-    if args.environment:
+    if "environment" in args and args.environment:
       env = args.environment
     else:
       env = "test-env-{0}".format(salt)
@@ -447,7 +447,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  namespace, name, env = _setup_ks_app(args)
+  namespace, name, env = setup_ks_app(args)
   t.name = os.path.basename(name)
 
   start = time.time()

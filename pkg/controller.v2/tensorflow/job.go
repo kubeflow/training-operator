@@ -1,4 +1,4 @@
-package tfcontroller
+package tensorflow
 
 import (
 	"fmt"
@@ -12,10 +12,12 @@ import (
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	failedMarshalTFJobReason = "FailedMarshalTFJob"
+	failedMarshalTFJobReason = "FailedInvalidTFJobSpec"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -31,9 +33,43 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		logger.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
-			errMsg := fmt.Sprintf("Failed to unmarshal the object to TFJob object: %v", err)
+			errMsg := fmt.Sprintf("Failed to marshal the object to TFJob; the spec is invalid: %v", err)
 			logger.Warn(errMsg)
+			// TODO(jlewi): v1 doesn't appear to define an error type.
 			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
+
+			status := tfv1alpha2.TFJobStatus{
+				Conditions: []tfv1alpha2.TFJobCondition{
+					tfv1alpha2.TFJobCondition{
+						Type:               tfv1alpha2.TFJobFailed,
+						Status:             v1.ConditionTrue,
+						LastUpdateTime:     metav1.Now(),
+						LastTransitionTime: metav1.Now(),
+						Reason:             failedMarshalTFJobReason,
+						Message:            errMsg,
+					},
+				},
+			}
+
+			statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&status)
+
+			if err != nil {
+				logger.Errorf("Could not covert the TFJobStatus to unstructured; %v", err)
+				return
+			}
+
+			client, err := k8sutil.NewCRDRestClient(&tfv1alpha2.SchemeGroupVersion)
+
+			if err == nil {
+				metav1unstructured.SetNestedField(un.Object, statusMap, "status")
+				logger.Infof("Updating the job to; %+v", un.Object)
+				err = client.Update(un, tfv1alpha2.Plural)
+				if err != nil {
+					logger.Errorf("Could not update the TFJob; %v", err)
+				}
+			} else {
+				logger.Errorf("Could not create a REST client to update the TFJob")
+			}
 		}
 		return
 	}
