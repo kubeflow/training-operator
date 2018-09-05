@@ -251,6 +251,7 @@
                     template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  // TODO(richardsliu): Clean up the v1alph1 e2etests.
                   if params.tfJobVersion == "v1alpha2" then
                     {
                       name: "run-clean-pod-all",

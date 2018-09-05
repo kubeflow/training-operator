@@ -305,7 +305,7 @@ def terminate_replica(masterHost, namespace, target, exitCode=0):
   tf_operator_util.send_request(masterHost, namespace, target, "exit", params)
 
 
-def get_run_config(masterHost, namespace, target):
+def get_runconfig(masterHost, namespace, target):
   """Issue a request to get the runconfig of the specified replica running test_server.
 
     Args:
@@ -318,10 +318,12 @@ def get_run_config(masterHost, namespace, target):
 
 
 def verify_runconfig(masterHost, namespace, tfjob, job_name, replica):
+  logging.info(">>>>TFJob: %s", str(tfjob))
   num_targets = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(
     replica, {}).get("replicas", 0)
   for i in range(num_targets):
     full_target = "{name}-{replica}-{index}".format(name=job_name, replica=replica.lower(), index=i)
+    logging.info(">>>>FULL TARGET: %s", full_target)
     config = get_runconfig(masterHost, namespace, full_target)
     logging.info(">>>>RUNCONFIG: %s", str(config))
 

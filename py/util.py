@@ -100,6 +100,7 @@ def run_and_output(command, cwd=None, env=None):
     raise
   return output
 
+
 def send_request(masterHost, namespace, target, rpc, params):
   """Issue a request to the Kubernetes master.
   Args:
@@ -122,7 +123,7 @@ def send_request(masterHost, namespace, target, rpc, params):
 
   if r.status_code == requests.codes.NOT_FOUND:
     logging.info("Request to %s returned 404", url)
-    return
+    return ""
   if r.status_code != requests.codes.OK:
     msg = "Request to {0} exited with status code: {1}".format(url,
           r.status_code)
