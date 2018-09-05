@@ -8,7 +8,6 @@ import logging
 import json
 import os
 import re
-import requests
 import retrying
 import subprocess
 import time
