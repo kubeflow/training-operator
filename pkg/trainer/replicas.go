@@ -496,7 +496,7 @@ func (s *TFReplicaSet) SyncPods() error {
 			return err
 		}
 
-		// Filter the unactive pods
+		// Filter the inactive pods
 		fieldSelector := fmt.Sprintf("status.phase!=%s", string(v1.PodFailed))
 
 		options := meta_v1.ListOptions{

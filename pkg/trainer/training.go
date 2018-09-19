@@ -344,12 +344,12 @@ func (j *TrainingJob) Reconcile(config *tfv1alpha1.ControllerConfig, enableGangS
 		}
 	}
 
-	// setupreplicas initializes data structures inside TrainingJob representing the replicas.
+	// setupReplicas initializes data structures inside TrainingJob representing the replicas.
 	// These are go-lang structures which aren't preserved in the APIServer. So we always need to call setupReplicas
 	// unlike setup which only needs to be called once during the lifecycle of the job.
 	if err := j.setupReplicas(); err != nil {
 		j.contextLogger.Errorf("failed to create replicas: %v", err)
-		j.status.Reason = fmt.Sprintf("Could not create in memory datastructures; %v", err)
+		j.status.Reason = fmt.Sprintf("Could not create in memory data structures; %v", err)
 		if uErr := j.updateCRDStatus(); err != nil {
 			j.contextLogger.Warningf("Job %v; failed to update status error: %v", j.job.ObjectMeta.Name, uErr)
 		}

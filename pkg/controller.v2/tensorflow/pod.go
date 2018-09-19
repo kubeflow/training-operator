@@ -35,7 +35,7 @@ const (
 	tfConfig = "TF_CONFIG"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
-	// policy is setted in pod template.
+	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
 	exitedWithCodeReason = "ExitedWithCode"

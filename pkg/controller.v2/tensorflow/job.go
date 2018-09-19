@@ -157,7 +157,7 @@ func (tc *TFController) cleanupTFJob(tfJob *tfv1alpha2.TFJob) error {
 	return nil
 }
 
-// deleteTFJob delets the given TFJob.
+// deleteTFJob deletes the given TFJob.
 func (tc *TFController) deleteTFJob(tfJob *tfv1alpha2.TFJob) error {
 	return tc.tfJobClientSet.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
 }

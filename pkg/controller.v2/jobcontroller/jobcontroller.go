@@ -25,7 +25,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
-// Common Interaface to be implemented by all operators
+// Common Interface to be implemented by all operators.
 type ControllerInterface interface {
 
 	// Returns the Controller name
@@ -37,7 +37,7 @@ type ControllerInterface interface {
 	// Returns the GroupVersion of the API
 	GetAPIGroupVersion() schema.GroupVersion
 
-	// Returns the Group Namei(key) in the labels of the job
+	// Returns the Group Name(key) in the labels of the job
 	GetGroupNameLabelKey() string
 
 	// Returns the Job Name(key) in the labels of the job
@@ -52,7 +52,7 @@ type ControllerInterface interface {
 	// Returns the Replica Index(value) in the labels of the job
 	GetReplicaIndexLabelKey() string
 
-	// Returns the Job from Infomer Cache
+	// Returns the Job from Informer Cache
 	GetJobFromInformerCache(namespace, name string) (metav1.Object, error)
 
 	// Returns the Job from API server
