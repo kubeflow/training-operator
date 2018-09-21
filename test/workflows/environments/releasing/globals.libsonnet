@@ -1,3 +1,3 @@
 {
-  registry: 'gcr.io/kubeflow-images-public',
+  registry: "gcr.io/kubeflow-images-public",
 }
