@@ -12,6 +12,16 @@ workflows:
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v2
-    params:
+    job_types:
+      - presubmit
+      registry: "gcr.io/kubeflow-ci"
+      tfJobVersion: v1alpha2
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4
+  - app_dir: kubeflow/tf-operator/test/workflows
+    component: workflows
+    name: v2
+    job_types:
+      - postsubmit
+      registry: "gcr.io/kubeflow-public-images"
       tfJobVersion: v1alpha2
       testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4
