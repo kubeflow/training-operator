@@ -41,7 +41,7 @@
   },
 
   // overrides is a dictionary of parameters to provide in addition to defaults.
-  parts(namespace, name, overrides={}):: {
+  parts(namespace, name, overrides):: {
     // Workflow to run the e2e test.
     e2e(prow_env, bucket):
       local params = $.defaultParams + overrides;
@@ -338,7 +338,7 @@
                 ],
               },
             },  // checkout
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("build", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", [
               "python",
               "-m",
               "py.release",
@@ -348,21 +348,21 @@
               "--project=" + project,
               "--version_tag=" + versionTag,
             ]),  // build
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-test", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-test", [
               "python",
               "-m",
               "kubeflow.testing.test_py_checks",
               "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
             ]),  // py test
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("py-lint", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-lint", [
               "python",
               "-m",
               "kubeflow.testing.test_py_lint",
               "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
             ]),  // py lint
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
               "python",
               "-m",
               "py.deploy",
@@ -374,7 +374,7 @@
               "--accelerator=nvidia-tesla-k80=1",
               "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
             ]),  // setup cluster
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("setup-kubeflow", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-kubeflow", [
               "python",
               "-m",
               "py.deploy",
@@ -388,7 +388,7 @@
               "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
             ]),  // setup cluster
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-chief", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-chief", [
               "python",
               "-m",
               "py.test_runner",
@@ -406,7 +406,7 @@
               "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_chief.xml",
             ]),  // run worker0
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-worker0", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-worker0", [
               "python",
               "-m",
               "py.test_runner",
@@ -424,7 +424,7 @@
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-tests", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-tests", [
               "python",
               "-m",
               "py.test_runner",
@@ -441,7 +441,7 @@
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
             ]),  // run tests
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
               "python",
               "-m",
               "py.test_runner",
@@ -458,7 +458,7 @@
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
             ]),  // run gpu_tests
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
               "python",
               "-m",
               "py.test_runner",
@@ -473,7 +473,7 @@
               "--verify_clean_pod_policy=All",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
             ]),  // run clean_pod_all
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-running", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-running", [
               "python",
               "-m",
               "py.test_runner",
@@ -488,7 +488,7 @@
               "--verify_clean_pod_policy=Running",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-running-tests.xml",
             ]),  // run clean_pod_running
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("run-clean-pod-none", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-none", [
               "python",
               "-m",
               "py.test_runner",
@@ -503,7 +503,7 @@
               "--verify_clean_pod_policy=None",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("estimator-runconfig", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("estimator-runconfig", [
               "python",
               "-m",
               "py.test_runner",
@@ -518,7 +518,7 @@
               "--verify_runconfig",
               "--junit_path=" + artifactsDir + "/junit_estimator-runconfig-tests.xml",
             ]),  // run estimator_runconfig
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
               "python",
               "-m",
               "py.test_invalid_job",
@@ -527,7 +527,7 @@
               "--params=name=invalid-tfjob,namespace=default",
               "--artifacts_dir=" + artifactsDir,
             ]),  // invalid-tfjob
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
               "kubeflow.testing.prow_artifacts",
@@ -535,7 +535,7 @@
               "create_pr_symlink",
               "--bucket=" + bucket,
             ]),  // create-pr-symlink
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
               "python",
               "-m",
               "py.deploy",
@@ -545,7 +545,7 @@
               "--project=" + project,
               "--junit_path=" + artifactsDir + "/junit_teardown.xml",
             ]),  // setup cluster
-            $.parts(namespace, name).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
               "python",
               "-m",
               "kubeflow.testing.prow_artifacts",

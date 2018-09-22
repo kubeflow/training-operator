@@ -8,10 +8,22 @@ workflows:
     name: v1
     params:
       tfJobVersion: v1alpha1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v2
+    job_types:
+      - presubmit
     params:
+      registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1alpha2
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180615-e6b2059-e3b0c4
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
+  - app_dir: kubeflow/tf-operator/test/workflows
+    component: workflows
+    name: v2
+    job_types:
+      - postsubmit
+    params:
+      registry: "gcr.io/kubeflow-public-images"
+      tfJobVersion: v1alpha2
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
