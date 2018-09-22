@@ -24,6 +24,6 @@ workflows:
     job_types:
       - postsubmit
     params:
-      registry: "gcr.io/kubeflow-public-images"
+      registry: "gcr.io/kubeflow-images-public"
       tfJobVersion: v1alpha2
       testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
