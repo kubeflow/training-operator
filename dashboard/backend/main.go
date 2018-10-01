@@ -5,11 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	"flag"
+
 	"github.com/kubeflow/tf-operator/dashboard/backend/client"
 	"github.com/kubeflow/tf-operator/dashboard/backend/handler"
 )
 
 func main() {
+	flag.Parse()
 	log.SetOutput(os.Stdout)
 	cm, err := client.NewClientManager()
 	if err != nil {
