@@ -2,10 +2,25 @@
 
 ## [Unreleased](https://github.com/kubeflow/tf-operator/tree/HEAD)
 
-[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v0.2.0-rc1...HEAD)
+[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v0.3.0...HEAD)
+
+**Closed issues:**
+
+- Create v0.3-branch [\#838](https://github.com/kubeflow/tf-operator/issues/838)
+
+**Merged pull requests:**
+
+- travis: Fix a typo [\#835](https://github.com/kubeflow/tf-operator/pull/835) ([gaocegege](https://github.com/gaocegege))
+- fix ERROR: logging before flag.Parse issue [\#834](https://github.com/kubeflow/tf-operator/pull/834) ([lovejoy](https://github.com/lovejoy))
+- Ankush Signing Out [\#833](https://github.com/kubeflow/tf-operator/pull/833) ([ankushagarwal](https://github.com/ankushagarwal))
+
+## [v0.3.0](https://github.com/kubeflow/tf-operator/tree/v0.3.0) (2018-09-22)
+[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v0.2.0-rc1...v0.3.0)
 
 **Features and improvements:**
 
+- Add Pytorch V1alpha2 Implementation [\#785](https://github.com/kubeflow/tf-operator/issues/785)
+- \[enhancement\] Add SchedulerName in V1alpha2 [\#782](https://github.com/kubeflow/tf-operator/issues/782)
 - Pod stuck in unknown status when kubernetes node is down [\#720](https://github.com/kubeflow/tf-operator/issues/720)
 - \[proposal\] cleanup jobs after finished [\#718](https://github.com/kubeflow/tf-operator/issues/718)
 - \[v1alpha2\] Remove redundant code about status [\#713](https://github.com/kubeflow/tf-operator/issues/713)
@@ -15,9 +30,11 @@
 - \[v1alpha2\] Validate the TFJob converted from unstructured [\#682](https://github.com/kubeflow/tf-operator/issues/682)
 - \[feature\] Add Cleanup Policy to TFJob Spec [\#536](https://github.com/kubeflow/tf-operator/issues/536)
 - Enable kube-arbitrator as scheduler for tensorflow [\#349](https://github.com/kubeflow/tf-operator/issues/349)
+- Cleanup tf-job after a configured TTL [\#753](https://github.com/kubeflow/tf-operator/pull/753) ([ccding](https://github.com/ccding))
 
 **Fixed bugs:**
 
+- Invalid TFJob spec can cause the TFJob operator pod to crash repeatedly [\#813](https://github.com/kubeflow/tf-operator/issues/813)
 - Unable to check logs in TFJob ui for v1apha2 [\#723](https://github.com/kubeflow/tf-operator/issues/723)
 - Unable to check logs in TFJob ui for v1apha2 [\#723](https://github.com/kubeflow/tf-operator/issues/723)
 - Pod stuck in unknown status when kubernetes node is down [\#720](https://github.com/kubeflow/tf-operator/issues/720)
@@ -31,6 +48,12 @@
 
 **Closed issues:**
 
+- How to run in stand-alone mode  [\#826](https://github.com/kubeflow/tf-operator/issues/826)
+- Event reporting pod exited with non-zero exit code is improperly formatted [\#818](https://github.com/kubeflow/tf-operator/issues/818)
+- invalid-tfjob test results don't show up in gubernator/test grid [\#816](https://github.com/kubeflow/tf-operator/issues/816)
+- Should scheduleName be a TFJob field or is it sufficient to be a podTemplateField [\#801](https://github.com/kubeflow/tf-operator/issues/801)
+- reconcile should be triggered on update; even if no changes [\#800](https://github.com/kubeflow/tf-operator/issues/800)
+- Backwards compatibility support "Master" as chief [\#794](https://github.com/kubeflow/tf-operator/issues/794)
 - Ability to prefer using all gpus on a single node [\#781](https://github.com/kubeflow/tf-operator/issues/781)
 - test\_runner.py is using wrong util module for JobTimeoutError [\#780](https://github.com/kubeflow/tf-operator/issues/780)
 - \[Test Flake\] Intermittent test failures: tensorflow.python.framework.errors\_impl.UnavailableError: OS Error [\#778](https://github.com/kubeflow/tf-operator/issues/778)
@@ -40,11 +63,14 @@
 - TF\_CONFIG cluster spec has wrong FQDN name [\#770](https://github.com/kubeflow/tf-operator/issues/770)
 - Error syncing tfjob: Failed to found the port [\#768](https://github.com/kubeflow/tf-operator/issues/768)
 - Events don't show up in kubectl describe tfjobs  [\#763](https://github.com/kubeflow/tf-operator/issues/763)
+- E2E test for TF estimator API [\#762](https://github.com/kubeflow/tf-operator/issues/762)
 - v1alpha2 doesn't work TF.estimator for TF \<= 1.6 ; need to add environment:cloud to TF\_CONFIG [\#761](https://github.com/kubeflow/tf-operator/issues/761)
 - Update and move README.md to website [\#760](https://github.com/kubeflow/tf-operator/issues/760)
 - Scope TFJob operator to only claim jobs in a given namespace [\#759](https://github.com/kubeflow/tf-operator/issues/759)
+- Surface invalid spec errors in a more user friendly way [\#755](https://github.com/kubeflow/tf-operator/issues/755)
 - TFJobs UI returns 500s and json parse errors displaying pod information or creating job [\#754](https://github.com/kubeflow/tf-operator/issues/754)
 - \[v1alpha2\] Job should be marked completed when worker 0 exits but other workers are still running [\#751](https://github.com/kubeflow/tf-operator/issues/751)
+- \[testing\] CleanPodPolicy needs E2E test [\#750](https://github.com/kubeflow/tf-operator/issues/750)
 - v1 and v2 E2E tests appear to be stomping on each other [\#748](https://github.com/kubeflow/tf-operator/issues/748)
 - \[Test Flake\] tf\_job\_client.py needs to handle case where conditions is none [\#744](https://github.com/kubeflow/tf-operator/issues/744)
 - tf-dashboard show workers of all the tfjobs when querying a specific tfjob [\#737](https://github.com/kubeflow/tf-operator/issues/737)
@@ -56,6 +82,7 @@
 - Wrong comment when setting default CleanPodPolicy [\#698](https://github.com/kubeflow/tf-operator/issues/698)
 - file\_cache is unavailable when using oauth2client \>= 4.0.0 [\#696](https://github.com/kubeflow/tf-operator/issues/696)
 - \[v1alpha2\] CreatedCondition is not set [\#680](https://github.com/kubeflow/tf-operator/issues/680)
+- \[v1alpha2\] ks apply on existing job; "unable to find api field in struct Unstructured for the json field "metadata"" [\#674](https://github.com/kubeflow/tf-operator/issues/674)
 - Make it easier to debug/develope E2E tests [\#655](https://github.com/kubeflow/tf-operator/issues/655)
 - \[v1alpha2\]\[log\] Use logrus instead of glog in service\_control [\#635](https://github.com/kubeflow/tf-operator/issues/635)
 - \[v1alpha2\] Add PDB of TFReplicaSet for gang scheduling by kube-arbitrator [\#575](https://github.com/kubeflow/tf-operator/issues/575)
@@ -63,10 +90,30 @@
 
 **Merged pull requests:**
 
+- Fix postusbmit builds; registry is incorrect. [\#832](https://github.com/kubeflow/tf-operator/pull/832) ([jlewi](https://github.com/jlewi))
+- postsubmit should push image to gcr.io/kubeflow-images-public [\#831](https://github.com/kubeflow/tf-operator/pull/831) ([jlewi](https://github.com/jlewi))
+- Fix typos [\#828](https://github.com/kubeflow/tf-operator/pull/828) ([ScorpioCPH](https://github.com/ScorpioCPH))
+- Cleanup unused functions [\#827](https://github.com/kubeflow/tf-operator/pull/827) ([johnugeorge](https://github.com/johnugeorge))
+-  allow users to config resources while creating job in dashboard [\#825](https://github.com/kubeflow/tf-operator/pull/825) ([ChanYiLin](https://github.com/ChanYiLin))
+- remove schedulerName from tfjob spec [\#823](https://github.com/kubeflow/tf-operator/pull/823) ([ChanYiLin](https://github.com/ChanYiLin))
+- Adding corev1 scheme to Events [\#821](https://github.com/kubeflow/tf-operator/pull/821) ([johnugeorge](https://github.com/johnugeorge))
+- pod: Fix eventf [\#819](https://github.com/kubeflow/tf-operator/pull/819) ([gaocegege](https://github.com/gaocegege))
+- Set artifacts dir so that the output of invalid-job test will be picked up. [\#817](https://github.com/kubeflow/tf-operator/pull/817) ([jlewi](https://github.com/jlewi))
+- If a TFJob spec is invalid mark the job as failed with an appropriate condition [\#815](https://github.com/kubeflow/tf-operator/pull/815) ([jlewi](https://github.com/jlewi))
+- Estimator e2etest [\#814](https://github.com/kubeflow/tf-operator/pull/814) ([richardsliu](https://github.com/richardsliu))
+- Minor restructuring [\#812](https://github.com/kubeflow/tf-operator/pull/812) ([johnugeorge](https://github.com/johnugeorge))
+- Fix a bunch of issues with logging. [\#811](https://github.com/kubeflow/tf-operator/pull/811) ([jlewi](https://github.com/jlewi))
+- tensorflow: Support old versions of estimator [\#809](https://github.com/kubeflow/tf-operator/pull/809) ([gaocegege](https://github.com/gaocegege))
+- Adding to Owners [\#808](https://github.com/kubeflow/tf-operator/pull/808) ([johnugeorge](https://github.com/johnugeorge))
+- tfjob: Send event to object [\#807](https://github.com/kubeflow/tf-operator/pull/807) ([gaocegege](https://github.com/gaocegege))
+- Revert "Avoid triggering reconcileTFJobs if no TFJob update \(\#796\)" [\#805](https://github.com/kubeflow/tf-operator/pull/805) ([gaocegege](https://github.com/gaocegege))
+- Dockerfile: Fix typo [\#803](https://github.com/kubeflow/tf-operator/pull/803) ([gaocegege](https://github.com/gaocegege))
+- Dockerfile: Replace v1 with v2 [\#802](https://github.com/kubeflow/tf-operator/pull/802) ([gaocegege](https://github.com/gaocegege))
 - Typo in TTLSecondsAfterFinished json field [\#799](https://github.com/kubeflow/tf-operator/pull/799) ([jian-he](https://github.com/jian-he))
 - Avoid logging for non-TFJob pod [\#798](https://github.com/kubeflow/tf-operator/pull/798) ([jian-he](https://github.com/jian-he))
 - Job completion time is not set for job FAILED state [\#797](https://github.com/kubeflow/tf-operator/pull/797) ([jian-he](https://github.com/jian-he))
 - reconcileTFJobs is always triggered even with no update [\#796](https://github.com/kubeflow/tf-operator/pull/796) ([jian-he](https://github.com/jian-he))
+- Add an e2etest to verify clean pod policy in TF job operator [\#795](https://github.com/kubeflow/tf-operator/pull/795) ([richardsliu](https://github.com/richardsliu))
 - Restructing common utility functions [\#792](https://github.com/kubeflow/tf-operator/pull/792) ([johnugeorge](https://github.com/johnugeorge))
 - Mark TFJob succeeded if worker 0 completed. [\#791](https://github.com/kubeflow/tf-operator/pull/791) ([ScorpioCPH](https://github.com/ScorpioCPH))
 - Rename the `async` keyword argument to `async\_req` [\#790](https://github.com/kubeflow/tf-operator/pull/790) ([ojarjur](https://github.com/ojarjur))
@@ -84,7 +131,6 @@
 - Improve meta information in log messages to make it easier to debug jobs [\#765](https://github.com/kubeflow/tf-operator/pull/765) ([jlewi](https://github.com/jlewi))
 - Replace contents of README.md with a link to kubeflow.org [\#764](https://github.com/kubeflow/tf-operator/pull/764) ([jlewi](https://github.com/jlewi))
 - linter: Rename gas to gosec and fix linting errors [\#758](https://github.com/kubeflow/tf-operator/pull/758) ([gaocegege](https://github.com/gaocegege))
-- Cleanup tf-job after a configured TTL [\#753](https://github.com/kubeflow/tf-operator/pull/753) ([ccding](https://github.com/ccding))
 -  Name Error: mv tj\_job\_mnist.yaml to tf\_job\_mnist.yaml [\#752](https://github.com/kubeflow/tf-operator/pull/752) ([xieydd](https://github.com/xieydd))
 - Prevent multiple versions of an E2E test from clobbering each other. [\#749](https://github.com/kubeflow/tf-operator/pull/749) ([jlewi](https://github.com/jlewi))
 - Revert "cleanup jobs after finished \(\#725\)" [\#746](https://github.com/kubeflow/tf-operator/pull/746) ([ccding](https://github.com/ccding))
@@ -111,6 +157,7 @@
 - Wrong comment when setting default CleanPodPolicy [\#699](https://github.com/kubeflow/tf-operator/pull/699) ([jian-he](https://github.com/jian-he))
 - Use logrus instead of glog in service\_control [\#695](https://github.com/kubeflow/tf-operator/pull/695) ([codeflitting](https://github.com/codeflitting))
 - \[v1alpha2\]update tfjob condition for Created [\#694](https://github.com/kubeflow/tf-operator/pull/694) ([yph152](https://github.com/yph152))
+- CHANGELOG: Add [\#693](https://github.com/kubeflow/tf-operator/pull/693) ([gaocegege](https://github.com/gaocegege))
 - setup cors for redirects under iap [\#688](https://github.com/kubeflow/tf-operator/pull/688) ([kkasravi](https://github.com/kkasravi))
 - define cleanup policy [\#685](https://github.com/kubeflow/tf-operator/pull/685) ([cheyang](https://github.com/cheyang))
 

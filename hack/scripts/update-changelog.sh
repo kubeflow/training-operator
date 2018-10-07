@@ -15,7 +15,10 @@
 # limitations under the License.
 
 # Update CHANGELOG.md using github_changelog_generator.
-
+#
+# The script will compute changes between release tags. So make sure there is
+# a release tag corresponding to the release you want to compute the changes
+# for.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -32,6 +35,10 @@ then
     exit 1
 fi
 
-github_changelog_generator -t ${GITHUB_TOKEN} -u kubeflow -p tf-operator --exclude-labels community/discussion,cmmunity/question,duplicate,question,invalid,wontfix --bug-labels kind/bug,problems/bug --enhancement-labels improvement/optimization,kind/enhancement,improvement/enhancement,addition/feature,kind/feature --enhancement-label "**Features and improvements:**"
+github_changelog_generator -t ${GITHUB_TOKEN} -u kubeflow -p tf-operator \
+	--exclude-labels community/discussion,cmmunity/question,duplicate,question,invalid,wontfix \
+	--bug-labels kind/bug,problems/bug \
+	--enhancement-labels improvement/optimization,kind/enhancement,improvement/enhancement,addition/feature,kind/feature \
+	--enhancement-label "**Features and improvements:**"
 
 cd - > /dev/null
