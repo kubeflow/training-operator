@@ -298,3 +298,65 @@ def wait_for_job(client,
   # Linter complains if we don't have a return statement even though
   # this code is unreachable.
   return None
+
+def get_labels(name, runtime_id, replica_type=None, replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "kubeflow.org": "",
+    "tf_job_name": name,
+    "runtime_id": runtime_id,
+  }
+  if replica_type:
+    labels["job_type"] = replica_type
+
+  if replica_index:
+    labels["task_index"] = replica_index
+  return labels
+
+def get_labels_v1alpha2(name, replica_type=None,
+                        replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "group_name": "kubeflow.org",
+    "tf_job_name": name,
+  }
+  if replica_type:
+    labels["tf-replica-type"] = replica_type
+
+  if replica_index:
+    labels["tf-replica-index"] = replica_index
+  return labels
+
+def to_selector(labels):
+  parts = []
+  for k, v in labels.iteritems():
+    parts.append("{0}={1}".format(k, v))
+
+  return ",".join(parts)
+
+
+def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
+  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  wait_for_pods_to_be_in_phases(api_client, namespace,
+                                pod_selector,
+                                phases,
+                                timeout=datetime.timedelta(
+                                  minutes=4))
+
+@retrying.retry(wait_fixed=10, stop_max_delay=60)
+def terminate_replica(master_host, namespace, target, exit_code=0):
+  """Issue a request to terminate the requested TF replica running test_app.
+
+  Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    target: The K8s service corresponding to the pod to terminate.
+    exit_code: What exit code to terminate the pod with.
+  """
+  params = {
+    "exitCode": exit_code,
+  }
+  tf_operator_util.send_request(master_host, namespace, target, "exit", params)

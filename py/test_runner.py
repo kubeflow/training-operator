@@ -19,290 +19,10 @@ from kubernetes.client import rest
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
+from py import k8s_util
 from py import test_util
 from py import tf_job_client
 from py import util as tf_operator_util
-
-def wait_for_delete(client,
-                    namespace,
-                    name,
-                    version="v1alpha1",
-                    timeout=datetime.timedelta(minutes=5),
-                    polling_interval=datetime.timedelta(seconds=30),
-                    status_callback=None):
-  """Wait for the specified job to be deleted.
-
-  Args:
-    client: K8s api client.
-    namespace: namespace for the job.
-    name: Name of the job.
-    timeout: How long to wait for the job.
-    polling_interval: How often to poll for the status of the job.
-    status_callback: (Optional): Callable. If supplied this callable is
-      invoked after we poll the job. Callable takes a single argument which
-      is the job.
-  """
-  crd_api = k8s_client.CustomObjectsApi(client)
-  end_time = datetime.datetime.now() + timeout
-  while True:
-    try:
-      results = crd_api.get_namespaced_custom_object(
-        tf_job_client.TF_JOB_GROUP, version, namespace,
-        tf_job_client.TF_JOB_PLURAL, name)
-    except rest.ApiException as e:
-      if e.status == httplib.NOT_FOUND:
-        return
-      logging.exception("rest.ApiException thrown")
-      raise
-    if status_callback:
-      status_callback(results)
-
-    if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError(
-        "Timeout waiting for job {0} in namespace {1} to be deleted.".format(
-          name, namespace))
-
-    time.sleep(polling_interval.seconds)
-
-
-def log_pods(pods):
-  """Log information about pods."""
-  for p in pods.items:
-    logging.info("Pod name=%s Phase=%s", p.metadata.name, p.status.phase)
-
-def wait_for_pods_to_be_in_phases(client,
-                                  namespace,
-                                  pod_selector,
-                                  phases,
-                                  timeout=datetime.timedelta(minutes=5),
-                                  polling_interval=datetime.timedelta(
-                                  seconds=30)):
-  """Wait for the pods matching the selector to be in the specified state
-
-  Args:
-    client: K8s api client.
-    namespace: Namespace.
-    pod_selector: Selector for the pods.
-    phases: List of desired phases
-    timeout: How long to wait for the job.
-    polling_interval: How often to poll for the status of the job.
-    status_callback: (Optional): Callable. If supplied this callable is
-      invoked after we poll the job. Callable takes a single argument which
-      is the job.
-  """
-  end_time = datetime.datetime.now() + timeout
-  while True:
-    pods = list_pods(client, namespace, pod_selector)
-
-    logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
-
-    is_match = True
-    for p in pods.items:
-      if p.status.phase not in phases:
-        is_match = False
-
-    if is_match:
-      logging.info("All pods in phase %s", phases)
-      log_pods(pods)
-      return pods
-
-    if datetime.datetime.now() + polling_interval > end_time:
-      logging.info("Latest pod phases")
-      log_pods(pods)
-      logging.error("Timeout waiting for pods to be in phase: %s",
-                    phases)
-      raise util.TimeoutError("Timeout waiting for pods to be in states %s" %
-                              phases)
-    time.sleep(polling_interval.seconds)
-
-  return None
-
-def wait_for_pods_to_be_deleted(client,
-                                namespace,
-                                pod_selector,
-                                timeout=datetime.timedelta(minutes=5),
-                                polling_interval=datetime.timedelta(
-                                  seconds=30)):
-  """Wait for the specified job to be deleted.
-
-  Args:
-    client: K8s api client.
-    namespace: Namespace.
-    pod_selector: Selector for the pods.
-    timeout: How long to wait for the job.
-    polling_interval: How often to poll for the status of the job.
-    status_callback: (Optional): Callable. If supplied this callable is
-      invoked after we poll the job. Callable takes a single argument which
-      is the job.
-  """
-  end_time = datetime.datetime.now() + timeout
-  while True:
-    pods = list_pods(client, namespace, pod_selector)
-
-    logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
-
-    if not pods.items:
-      return
-
-    if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError("Timeout waiting for pods to be deleted.")
-
-    time.sleep(polling_interval.seconds)
-
-
-def get_labels(name, runtime_id, replica_type=None, replica_index=None):
-  """Return labels.
-  """
-  labels = {
-    "kubeflow.org": "",
-    "tf_job_name": name,
-    "runtime_id": runtime_id,
-  }
-  if replica_type:
-    labels["job_type"] = replica_type
-
-  if replica_index:
-    labels["task_index"] = replica_index
-  return labels
-
-def get_labels_v1alpha2(name, replica_type=None,
-                        replica_index=None):
-  """Return labels.
-  """
-  labels = {
-    "group_name": "kubeflow.org",
-    "tf_job_name": name,
-  }
-  if replica_type:
-    labels["tf-replica-type"] = replica_type
-
-  if replica_index:
-    labels["tf-replica-index"] = replica_index
-  return labels
-
-def to_selector(labels):
-  parts = []
-  for k, v in labels.iteritems():
-    parts.append("{0}={1}".format(k, v))
-
-  return ",".join(parts)
-
-
-def list_pods(client, namespace, label_selector):
-  core = k8s_client.CoreV1Api(client)
-  try:
-    pods = core.list_namespaced_pod(namespace, label_selector=label_selector)
-    return pods
-  except rest.ApiException as e:
-    message = ""
-    if e.message:
-      message = e.message
-    if e.body:
-      try:
-        body = json.loads(e.body)
-      except ValueError:
-        # There was a problem parsing the body of the response as json.
-        logging.exception(
-          ("Exception when calling DefaultApi->"
-           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
-        raise
-      message = body.get("message")
-
-    logging.exception(("Exception when calling DefaultApi->"
-                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-                  message)
-    raise e
-
-def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
-  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
-  pod_selector = to_selector(pod_labels)
-  wait_for_pods_to_be_in_phases(api_client, namespace,
-                                pod_selector,
-                                phases,
-                                timeout=datetime.timedelta(
-                                  minutes=4))
-
-def get_events(client, namespace, uid):
-  """Get the events for the provided object."""
-  core = k8s_client.CoreV1Api(client)
-  try:
-    # We can't filter by labels because events don't appear to have anyone
-    # and I didn't see an easy way to get them.
-    events = core.list_namespaced_event(namespace, limit=500)
-  except rest.ApiException as e:
-    message = ""
-    if e.message:
-      message = e.message
-    if e.body:
-      try:
-        body = json.loads(e.body)
-      except ValueError:
-        # There was a problem parsing the body of the response as json.
-        logging.exception(
-          ("Exception when calling DefaultApi->"
-           "apis_fqdn_v1_namespaces_namespace_resource_post. body: %s"), e.body)
-        raise
-      message = body.get("message")
-
-    logging.exception(("Exception when calling DefaultApi->"
-                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-                  message)
-    raise e
-
-  matching = []
-
-  for e in events.items:
-    if e.involved_object.uid != uid:
-      continue
-    matching.append(e)
-
-  return matching
-
-
-def parse_events(events):
-  """Parse events.
-
-  Args:
-    events: List of events.
-
-  Returns
-    pods_created: Set of unique pod names created.
-    services_created: Set of unique services created.
-  """
-  pattern = re.compile(".*Created.*(pod|Service).*: (.*)", re.IGNORECASE)
-
-  pods = set()
-  services = set()
-  for e in events:
-    m = re.match(pattern, e.message)
-    if not m:
-      continue
-
-    kind = m.group(1)
-    name = m.group(2)
-
-    if kind.lower() == "pod":
-      pods.add(name)
-    elif kind.lower() == "service":
-      services.add(name)
-
-  return pods, services
-
-
-@retrying.retry(wait_fixed=10, stop_max_delay=60)
-def terminate_replica(master_host, namespace, target, exit_code=0):
-  """Issue a request to terminate the requested TF replica running test_app.
-
-  Args:
-    master_host: The IP address of the master e.g. https://35.188.37.10
-    namespace: The namespace
-    target: The K8s service corresponding to the pod to terminate.
-    exit_code: What exit code to terminate the pod with.
-  """
-  params = {
-    "exitCode": exit_code,
-  }
-  tf_operator_util.send_request(master_host, namespace, target, "exit", params)
 
 
 def get_runconfig(master_host, namespace, target):
@@ -519,16 +239,16 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         # TODO(jlewi): We are get pods using a label selector so there is
         # a risk that the pod we actual care about isn't present.
         logging.info("Waiting for pods to be running before shutting down.")
-        wait_for_pods_to_be_in_phases(api_client, namespace,
-                                      pod_selector,
-                                      ["Running"],
-                                      timeout=datetime.timedelta(
-                                        minutes=4))
+        k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
+                                               pod_selector,
+                                               ["Running"],
+                                               timeout=datetime.timedelta(
+                                               minutes=4))
         logging.info("Pods are ready")
         logging.info("Issuing the terminate request")
         for num in range(num_targets):
           full_target = target + "-{0}".format(num)
-          terminate_replica(masterHost, namespace, full_target)
+          tf_job_client.terminate_replica(masterHost, namespace, full_target)
 
       # TODO(richardsliu):
       # There are lots of verifications in this file, consider refactoring them.
@@ -542,7 +262,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         verify_runconfig(masterHost, namespace, name, "ps", num_ps, num_workers)
 
         # Terminate the chief worker to complete the job.
-        terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
+        tf_job_client.terminate_replica(masterHost, namespace, "{name}-chief-0".format(name=name))
 
       logging.info("Waiting for job to finish.")
       results = tf_job_client.wait_for_job(
@@ -611,38 +331,38 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
         # error.
         logging.warning(creation_failures)
       if args.tfjob_version == "v1alpha1":
-        pod_labels = get_labels(name, runtime_id)
-        pod_selector = to_selector(pod_labels)
+        pod_labels = tf_job_client.get_labels(name, runtime_id)
+        pod_selector = tf_job_client.to_selector(pod_labels)
       else:
-        pod_labels = get_labels_v1alpha2(name)
-        pod_selector = to_selector(pod_labels)
+        pod_labels = tf_job_client.get_labels_v1alpha2(name)
+        pod_selector = tf_job_client.to_selector(pod_labels)
 
       # In v1alpha1 all pods are deleted. In v1alpha2, this depends on the pod
       # cleanup policy.
       if args.tfjob_version == "v1alpha1":
-        wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+        k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
       else:
         # All pods are deleted.
         if args.verify_clean_pod_policy == "All":
-          wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
+          k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
         # Only running pods (PS) are deleted, completed pods are not.
         elif args.verify_clean_pod_policy == "Running":
-          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
-          ps_pod_labels = get_labels_v1alpha2(name, "PS")
-          ps_pod_selector = to_selector(ps_pod_labels)
-          wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          ps_pod_labels = tf_job_client.get_labels_v1alpha2(name, "PS")
+          ps_pod_selector = tf_job_client.to_selector(ps_pod_labels)
+          k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
         # No pods are deleted.
         elif args.verify_clean_pod_policy == "None":
-          wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
-          wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 
       logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                    namespace)
-      wait_for_delete(
+      k8s_util.wait_for_delete(
         api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
     # TODO(jlewi):
