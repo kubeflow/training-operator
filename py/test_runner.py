@@ -20,6 +20,7 @@ from kubernetes.client import rest
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
 from py import k8s_util
+from py import ks_util
 from py import test_util
 from py import tf_job_client
 from py import util as tf_operator_util
@@ -91,53 +92,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_work
       raise RuntimeError(msg)
 
 
-def setup_ks_app(args):
-  """Setup the ksonnet app"""
-  salt = uuid.uuid4().hex[0:4]
-
-  lock_file = os.path.join(args.app_dir, "app.lock")
-  logging.info("Acquiring lock on file: %s", lock_file)
-  lock = filelock.FileLock(lock_file, timeout=60)
-  with lock:
-    # Create a new environment for this run
-    if "environment" in args and args.environment:
-      env = args.environment
-    else:
-      env = "test-env-{0}".format(salt)
-
-    name = None
-    namespace = None
-    for pair in args.params.split(","):
-      k, v = pair.split("=", 1)
-      if k == "name":
-        name = v
-
-      if k == "namespace":
-        namespace = v
-
-    if not name:
-      raise ValueError("name must be provided as a parameter.")
-
-    if not namespace:
-      raise ValueError("namespace must be provided as a parameter.")
-
-    try:
-      util.run(["ks", "env", "add", env, "--namespace=" + namespace],
-                cwd=args.app_dir)
-    except subprocess.CalledProcessError as e:
-      if not re.search(".*environment.*already exists.*", e.output):
-        raise
-
-    for pair in args.params.split(","):
-      k, v = pair.split("=", 1)
-      util.run(
-        ["ks", "param", "set", "--env=" + env, args.component, k, v],
-        cwd=args.app_dir)
-
-    return namespace, name, env
-
-  return "", "", ""
-
 # One of the reasons we set so many retries and a random amount of wait
 # between retries is because we have multiple tests running in parallel
 # that are all modifying the same ksonnet app via ks. I think this can
@@ -167,7 +121,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  namespace, name, env = setup_ks_app(args)
+  namespace, name, env = ks_util.setup_ks_app(args)
   t.name = os.path.basename(name)
 
   start = time.time()
@@ -228,12 +182,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           runtime_id = results.get("spec", {}).get("RuntimeId")
           target = "{name}-{replica}-{runtime}".format(
             name=name, replica=replica, runtime=runtime_id)
-          pod_labels = get_labels(name, runtime_id)
-          pod_selector = to_selector(pod_labels)
+          pod_labels = tf_job_client.get_labels(name, runtime_id)
+          pod_selector = tf_job_client.to_selector(pod_labels)
         else:
           target = "{name}-{replica}".format(name=name, replica=replica)
-          pod_labels = get_labels_v1alpha2(namespace, name)
-          pod_selector = to_selector(pod_labels)
+          pod_labels = tf_job_client.get_labels_v1alpha2(namespace, name)
+          pod_selector = tf_job_client.to_selector(pod_labels)
 
         # Wait for the pods to be ready before we shutdown
         # TODO(jlewi): We are get pods using a label selector so there is
@@ -291,7 +245,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                    namespace, runtime_id)
 
       uid = results.get("metadata", {}).get("uid")
-      events = get_events(api_client, namespace, uid)
+      events = k8s_util.get_events(api_client, namespace, uid)
       for e in events:
         logging.info("K8s event: %s", e.message)
 

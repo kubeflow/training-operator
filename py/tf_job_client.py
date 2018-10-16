@@ -11,6 +11,8 @@ from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
 from py import util
+from py import util as tf_operator_util
+
 
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
