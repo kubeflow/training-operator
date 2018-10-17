@@ -5,7 +5,6 @@ import httplib
 import logging
 import json
 import re
-import retrying
 import time
 from kubeflow.testing import util
 from kubernetes import client as k8s_client

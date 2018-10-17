@@ -2,20 +2,14 @@
 
 import argparse
 import datetime
-import filelock
-import httplib
 import logging
 import json
 import os
-import re
 import retrying
-import subprocess
 import time
-import uuid
 import yaml
 
 from kubernetes import client as k8s_client
-from kubernetes.client import rest
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
@@ -252,7 +246,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       # Print out the K8s events because it can be useful for debugging.
       for e in events:
         logging.info("Recieved K8s Event:\n%s", e)
-      created_pods, created_services = parse_events(events)
+      created_pods, created_services = k8s_util.parse_events(events)
 
       num_expected = 0
       if args.tfjob_version == "v1alpha1":
@@ -301,16 +295,21 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
           k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
         # Only running pods (PS) are deleted, completed pods are not.
         elif args.verify_clean_pod_policy == "Running":
-          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
-          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
+                                                        name, "Chief", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name,
+                                                        "Worker", ["Completed"])
           ps_pod_labels = tf_job_client.get_labels_v1alpha2(name, "PS")
           ps_pod_selector = tf_job_client.to_selector(ps_pod_labels)
           k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
         # No pods are deleted.
         elif args.verify_clean_pod_policy == "None":
-          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Chief", ["Completed"])
-          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "Worker", ["Completed"])
-          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name, "PS", ["Running"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
+                                                        name, "Chief", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
+                                                        name, "Worker", ["Completed"])
+          tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
+                                                        name, "PS", ["Running"])
 
       tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
 

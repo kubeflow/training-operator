@@ -10,8 +10,8 @@ import time
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
+from py import k8s_util
 from py import util
-from py import util as tf_operator_util
 
 
 TF_JOB_GROUP = "kubeflow.org"
@@ -338,15 +338,14 @@ def to_selector(labels):
 
   return ",".join(parts)
 
-
 def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
   pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
   pod_selector = to_selector(pod_labels)
-  wait_for_pods_to_be_in_phases(api_client, namespace,
-                                pod_selector,
-                                phases,
-                                timeout=datetime.timedelta(
-                                  minutes=4))
+  k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
+                                         pod_selector,
+                                         phases,
+                                         timeout=datetime.timedelta(
+                                         minutes=4))
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
 def terminate_replica(master_host, namespace, target, exit_code=0):
@@ -361,4 +360,4 @@ def terminate_replica(master_host, namespace, target, exit_code=0):
   params = {
     "exitCode": exit_code,
   }
-  tf_operator_util.send_request(master_host, namespace, target, "exit", params)
+  util.send_request(master_host, namespace, target, "exit", params)

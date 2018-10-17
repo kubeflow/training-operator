@@ -54,4 +54,3 @@ def setup_ks_app(args):
     return namespace, name, env
 
   return "", "", ""
-
