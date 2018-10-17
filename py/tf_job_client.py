@@ -1,6 +1,7 @@
 """Some utility functions for working with TFJobs."""
 
 import datetime
+import httplib
 import json
 import logging
 import multiprocessing
@@ -8,9 +9,11 @@ import retrying
 import time
 
 from kubernetes import client as k8s_client
-from kubernetes.client.rest import ApiException
+from kubernetes.client import rest
 
+from py import k8s_util
 from py import util
+
 
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
@@ -35,7 +38,7 @@ def create_tf_job(client, spec, version="v1alpha1"):
     api_response = thread.get(TIMEOUT)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
-  except ApiException as e:
+  except rest.ApiException as e:
     message = ""
     if e.message:
       message = e.message
@@ -71,7 +74,7 @@ def delete_tf_job(client, namespace, name, version="v1alpha1"):
     api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
     return api_response
-  except ApiException as e:
+  except rest.ApiException as e:
     message = ""
     if e.message:
       message = e.message
@@ -298,3 +301,105 @@ def wait_for_job(client,
   # Linter complains if we don't have a return statement even though
   # this code is unreachable.
   return None
+
+def wait_for_delete(client,
+                    namespace,
+                    name,
+                    version="v1alpha1",
+                    timeout=datetime.timedelta(minutes=5),
+                    polling_interval=datetime.timedelta(seconds=30),
+                    status_callback=None):
+  """Wait for the specified job to be deleted.
+
+  Args:
+    client: K8s api client.
+    namespace: namespace for the job.
+    name: Name of the job.
+    timeout: How long to wait for the job.
+    polling_interval: How often to poll for the status of the job.
+    status_callback: (Optional): Callable. If supplied this callable is
+      invoked after we poll the job. Callable takes a single argument which
+      is the job.
+  """
+  crd_api = k8s_client.CustomObjectsApi(client)
+  end_time = datetime.datetime.now() + timeout
+  while True:
+    try:
+      results = crd_api.get_namespaced_custom_object(
+        TF_JOB_GROUP, version, namespace,
+        TF_JOB_PLURAL, name)
+    except rest.ApiException as e:
+      if e.status == httplib.NOT_FOUND:
+        return
+      logging.exception("rest.ApiException thrown")
+      raise
+    if status_callback:
+      status_callback(results)
+
+    if datetime.datetime.now() + polling_interval > end_time:
+      raise util.TimeoutError(
+        "Timeout waiting for job {0} in namespace {1} to be deleted.".format(
+          name, namespace))
+
+    time.sleep(polling_interval.seconds)
+
+def get_labels(name, runtime_id, replica_type=None, replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "kubeflow.org": "",
+    "tf_job_name": name,
+    "runtime_id": runtime_id,
+  }
+  if replica_type:
+    labels["job_type"] = replica_type
+
+  if replica_index:
+    labels["task_index"] = replica_index
+  return labels
+
+def get_labels_v1alpha2(name, replica_type=None,
+                        replica_index=None):
+  """Return labels.
+  """
+  labels = {
+    "group_name": "kubeflow.org",
+    "tf_job_name": name,
+  }
+  if replica_type:
+    labels["tf-replica-type"] = replica_type
+
+  if replica_index:
+    labels["tf-replica-index"] = replica_index
+  return labels
+
+def to_selector(labels):
+  parts = []
+  for k, v in labels.iteritems():
+    parts.append("{0}={1}".format(k, v))
+
+  return ",".join(parts)
+
+def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
+  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
+                                         pod_selector,
+                                         phases,
+                                         timeout=datetime.timedelta(
+                                         minutes=4))
+
+@retrying.retry(wait_fixed=10, stop_max_delay=60)
+def terminate_replica(master_host, namespace, target, exit_code=0):
+  """Issue a request to terminate the requested TF replica running test_app.
+
+  Args:
+    master_host: The IP address of the master e.g. https://35.188.37.10
+    namespace: The namespace
+    target: The K8s service corresponding to the pod to terminate.
+    exit_code: What exit code to terminate the pod with.
+  """
+  params = {
+    "exitCode": exit_code,
+  }
+  util.send_request(master_host, namespace, target, "exit", params)

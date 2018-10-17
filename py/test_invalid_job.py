@@ -15,7 +15,7 @@ from kubernetes import client as k8s_client
 
 from kubeflow.testing import test_helper
 from kubeflow.testing import util
-from py import test_runner
+from py import ks_util
 from py import test_util
 from py import tf_job_client
 from py import util as tf_operator_util
@@ -34,7 +34,7 @@ def run_test(args, test_case):  # pylint: disable=too-many-branches,too-many-sta
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  namespace, name, env = test_runner.setup_ks_app(args)
+  namespace, name, env = ks_util.setup_ks_app(args)
   t.name = os.path.basename(name)
 
   try: # pylint: disable=too-many-nested-blocks
