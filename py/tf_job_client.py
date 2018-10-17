@@ -8,7 +8,7 @@ import retrying
 import time
 
 from kubernetes import client as k8s_client
-from kubernetes.client.rest import ApiException
+from kubernetes.client import rest
 
 from py import k8s_util
 from py import util
@@ -37,7 +37,7 @@ def create_tf_job(client, spec, version="v1alpha1"):
     api_response = thread.get(TIMEOUT)
     logging.info("Created job %s", api_response["metadata"]["name"])
     return api_response
-  except ApiException as e:
+  except rest.ApiException as e:
     message = ""
     if e.message:
       message = e.message
@@ -73,7 +73,7 @@ def delete_tf_job(client, namespace, name, version="v1alpha1"):
     api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
     return api_response
-  except ApiException as e:
+  except rest.ApiException as e:
     message = ""
     if e.message:
       message = e.message
@@ -300,6 +300,47 @@ def wait_for_job(client,
   # Linter complains if we don't have a return statement even though
   # this code is unreachable.
   return None
+
+def wait_for_delete(client,
+                    namespace,
+                    name,
+                    version="v1alpha1",
+                    timeout=datetime.timedelta(minutes=5),
+                    polling_interval=datetime.timedelta(seconds=30),
+                    status_callback=None):
+  """Wait for the specified job to be deleted.
+
+  Args:
+    client: K8s api client.
+    namespace: namespace for the job.
+    name: Name of the job.
+    timeout: How long to wait for the job.
+    polling_interval: How often to poll for the status of the job.
+    status_callback: (Optional): Callable. If supplied this callable is
+      invoked after we poll the job. Callable takes a single argument which
+      is the job.
+  """
+  crd_api = k8s_client.CustomObjectsApi(client)
+  end_time = datetime.datetime.now() + timeout
+  while True:
+    try:
+      results = crd_api.get_namespaced_custom_object(
+        TF_JOB_GROUP, version, namespace,
+        TF_JOB_PLURAL, name)
+    except rest.ApiException as e:
+      if e.status == httplib.NOT_FOUND:
+        return
+      logging.exception("rest.ApiException thrown")
+      raise
+    if status_callback:
+      status_callback(results)
+
+    if datetime.datetime.now() + polling_interval > end_time:
+      raise util.TimeoutError(
+        "Timeout waiting for job {0} in namespace {1} to be deleted.".format(
+          name, namespace))
+
+    time.sleep(polling_interval.seconds)
 
 def get_labels(name, runtime_id, replica_type=None, replica_index=None):
   """Return labels.
