@@ -377,7 +377,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=master_is_chief_v1alpha2"
+              "--component=master_is_chief_v1alpha2",
               "--shutdown_policy=master",
               "--tfjob_version=" + params.tfJobVersion,
               "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
@@ -392,7 +392,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=worker0_is_chief_v1alpha2"
+              "--component=worker0_is_chief_v1alpha2",
               "--shutdown_policy=worker",
               "--tfjob_version=" + params.tfJobVersion,
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
@@ -407,7 +407,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=simple_tfjob_v1alpha2"
+              "--component=simple_tfjob_v1alpha2",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
@@ -421,7 +421,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--component=gpu_tfjob_v1alpha2"
+              "--component=gpu_tfjob_v1alpha2",
               "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
