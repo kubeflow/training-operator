@@ -315,7 +315,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
       logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                    namespace)
-      k8s_util.wait_for_delete(
+      tf_job_client.wait_for_delete(
         api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
 
     # TODO(jlewi):

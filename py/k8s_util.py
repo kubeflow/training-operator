@@ -1,7 +1,6 @@
 """K8s util class for E2E tests."""
 
 import datetime
-import httplib
 import logging
 import json
 import re

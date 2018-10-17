@@ -1,6 +1,7 @@
 """Some utility functions for working with TFJobs."""
 
 import datetime
+import httplib
 import json
 import logging
 import multiprocessing
