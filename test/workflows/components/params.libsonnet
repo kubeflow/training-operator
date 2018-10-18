@@ -22,38 +22,5 @@
       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291",
       name: "worker0-is-chief-v1alpha2",
     },
-    simple_tfjob_v1alpha2: {
-      name: "simple-001",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    gpu_tfjob_v1alpha2: {
-      name: "gpu-simple-001",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    clean_pod_all: {
-      name: "clean_pod_all",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    clean_pod_running: {
-      name: "clean_pod_running",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    clean_pod_none: {
-      name: "clean_pod_none",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    estimator_runconfig: {
-      name: "estimator_runconfig",
-      namespace: "kubeflow-test-infra",
-      image: "",
-    },
-    "invalid-tfjob": {
-      name: "invalid-tfjob",
-    },
   },
 }
