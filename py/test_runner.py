@@ -1,7 +1,6 @@
 """Test runner runs a TFJob test."""
 
 import argparse
-import datetime
 import logging
 import json
 import os
@@ -10,13 +9,10 @@ import time
 import yaml
 
 from importlib import import_module
-from kubernetes import client as k8s_client
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
-from py import k8s_util
 from py import test_util
-from py import tf_job_client
 from py import util as tf_operator_util
 
 
@@ -115,7 +111,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  ##namespace, name, env = ks_util.setup_ks_app(args)
+  namespace, name, _ = ks_util.setup_ks_app(args)
   t.name = os.path.basename(args.test_method)
 
   start = time.time()

@@ -411,7 +411,7 @@ def job_succeeded(tfjob):
   Args:
     tfjob: The TFJob custom resource returned from K8s.
   """
-  last_condition = results.get("status", {}).get("conditions", [])[-1]
+  last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
   return last_condition.get("type", "").lower() == "succeeded"
 
 
@@ -434,7 +434,7 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
 
   num_expected = 0
   for replicakey in tfjob.get("spec", {}).get("tfReplicaSpecs", {}):
-    replica_spec = results.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
+    replica_spec = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
     if replica_spec:
       num_expected += replica_spec.get("replicas", 1)
 
