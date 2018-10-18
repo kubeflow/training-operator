@@ -116,7 +116,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   start = time.time()
 
-  module = import_module(args.test_module)
+  module = import_module("py." + args.test_module)
   test_func = getattr(module, args.test_method)
 
   try: # pylint: disable=too-many-nested-blocks
