@@ -79,10 +79,7 @@
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
-      local apiVersion = if params.tfJobVersion == "v1alpha1" then
-        "kubeflow.org/v1alpha1"
-      else
-        "kubeflow.org/v1alpha2";
+      local apiVersion = "kubeflow.org/v1alpha2";
 
       // The test server image to use.
       local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
@@ -235,7 +232,6 @@
                     dependencies: ["checkout"],
                   },
 
-
                   {
                     name: "setup-kubeflow",
                     template: "setup-kubeflow",
@@ -261,47 +257,31 @@
                     template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
-                  // TODO(richardsliu): Clean up the v1alph1 e2etests.
-                  if params.tfJobVersion == "v1alpha2" then
-                    {
-                      name: "run-clean-pod-all",
-                      template: "run-clean-pod-all",
-                      dependencies: ["setup-kubeflow"],
-                    }
-                  else
-                    {},
-                  if params.tfJobVersion == "v1alpha2" then
-                    {
-                      name: "run-clean-pod-running",
-                      template: "run-clean-pod-running",
-                      dependencies: ["setup-kubeflow"],
-                    }
-                  else
-                    {},
-                  if params.tfJobVersion == "v1alpha2" then
-                    {
-                      name: "run-clean-pod-none",
-                      template: "run-clean-pod-none",
-                      dependencies: ["setup-kubeflow"],
-                    }
-                  else
-                    {},
-                  if params.tfJobVersion == "v1alpha2" then
-                    {
-                      name: "estimator-runconfig",
-                      template: "estimator-runconfig",
-                      dependencies: ["setup-kubeflow"],
-                    }
-                  else
-                    {},
-                  if params.tfJobVersion == "v1alpha2" then
-                    {
-                      name: "invalid-tfjob",
-                      template: "invalid-tfjob",
-                      dependencies: ["setup-kubeflow"],
-                    }
-                  else
-                    {},
+                  {
+                    name: "run-clean-pod-all",
+                    template: "run-clean-pod-all",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "run-clean-pod-running",
+                    template: "run-clean-pod-running",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "run-clean-pod-none",
+                    template: "run-clean-pod-none",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "estimator-runconfig",
+                    template: "estimator-runconfig",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "invalid-tfjob",
+                    template: "invalid-tfjob",
+                    dependencies: ["setup-kubeflow"],
+                  },
                 ],  //tasks
               },
             },
@@ -397,10 +377,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              if params.tfJobVersion == "v1alpha2" then
-                "--component=master_is_chief_v1alpha2"
-              else
-                "--component=master_is_chief_v1alpha1",
+              "--component=master_is_chief_v1alpha2",
               "--shutdown_policy=master",
               "--tfjob_version=" + params.tfJobVersion,
               "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
@@ -415,10 +392,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              if params.tfJobVersion == "v1alpha2" then
-                "--component=worker0_is_chief_v1alpha2"
-              else
-                "--component=worker0_is_chief_v1alpha1",
+              "--component=worker0_is_chief_v1alpha2",
               "--shutdown_policy=worker",
               "--tfjob_version=" + params.tfJobVersion,
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
@@ -433,10 +407,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              if params.tfJobVersion == "v1alpha2" then
-                "--component=simple_tfjob_v1alpha2"
-              else
-                "--component=simple_tfjob_v1alpha1",
+              "--component=simple_tfjob_v1alpha2",
               "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_e2e.xml",
@@ -450,10 +421,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              if params.tfJobVersion == "v1alpha2" then
-                "--component=gpu_tfjob_v1alpha2"
-              else
-                "--component=gpu_tfjob_v1alpha1",
+              "--component=gpu_tfjob_v1alpha2",
               "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
