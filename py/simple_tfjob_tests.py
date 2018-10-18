@@ -1,4 +1,6 @@
+import json
 import logging
+from kubernetes import client as k8s_client
 from kubeflow.testing import util
 from py import ks_util
 from py import tf_job_client
@@ -6,7 +8,6 @@ from py import tf_job_client
 # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
 def run_simple_tfjob(test_case, args):
   api_client = k8s_client.ApiClient()
-  masterHost = api_client.configuration.host
   namespace, name, env = ks_util.setup_ks_app(args)
 
   # Create the TF job
@@ -27,7 +28,7 @@ def run_simple_tfjob(test_case, args):
     status_callback=tf_job_client.log_status)
   logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
-  if not job_succeeded:
+  if not tf_job_client.job_succeeded(results):
     test_case.failure = "Job {0} in namespace {1} in status {2}".format(
       name, namespace, results.get("status", {}))
     logging.error(test_case.failure)

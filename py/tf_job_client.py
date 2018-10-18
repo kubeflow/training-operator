@@ -412,7 +412,7 @@ def job_succeeded(tfjob):
     tfjob: The TFJob custom resource returned from K8s.
   """
   last_condition = results.get("status", {}).get("conditions", [])[-1]
-  return last_condition.get("type", "").lower() == "succeeded":
+  return last_condition.get("type", "").lower() == "succeeded"
 
 
 def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
