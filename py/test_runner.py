@@ -9,12 +9,12 @@ import retrying
 import time
 import yaml
 
+from importlib import import_module
 from kubernetes import client as k8s_client
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import util
 from py import k8s_util
-from py import ks_util
 from py import test_util
 from py import tf_job_client
 from py import util as tf_operator_util
@@ -115,11 +115,13 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  namespace, name, env = ks_util.setup_ks_app(args)
-  t.name = os.path.basename(name)
+  ##namespace, name, env = ks_util.setup_ks_app(args)
+  t.name = os.path.basename(args.test_name)
 
   start = time.time()
 
+  module = import_module(args.test_module)
+  test_func = getattr(module, args.test_name)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
@@ -128,9 +130,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
     # TODO(jlewi): We should make this an argument.
     num_trials = 2
+    logging.info("tfjob_version=%s", args.tfjob_version)
 
     for trial in range(num_trials):
       logging.info("Trial %s", trial)
+      test_result = test_func(args)
+      if not test_result:
+        break
+"""
       util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
 
       logging.info("Created job %s in namespaces %s", name, namespace)
@@ -317,6 +324,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
                    namespace)
       tf_job_client.wait_for_delete(
         api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
+"""
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -348,6 +356,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
+
+  parser.add_argument(
+    "--test_module", default=None, type=str, help=("The test module to import."))
+
+  parser.add_argument(
+    "--test_name", default=None, type=str, help=("The test method name to invoke."))
 
   parser.add_argument(
     "--project", default=None, type=str, help=("The project to use."))

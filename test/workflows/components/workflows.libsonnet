@@ -164,6 +164,26 @@
           },
         },  // buildTemplate
 
+        buildTestTemplate(test_module, test_name, component_name):: {
+          t:: $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate(
+            "run-tests", [
+              "python",
+              "-m",
+              "py.test_runner",
+              "test",
+              "--test_module" + test_module,
+              "--test_name" + test_name,
+              "--cluster=" + cluster,
+              "--zone=" + zone,
+              "--project=" + project,
+              "--app_dir=" + srcDir + "/test/workflows",
+              "--component=" + component_name,
+              "--params=name=" + component_name + ",namespace=default",
+              "--tfjob_version=" + params.tfJobVersion,
+              "--junit_path=" + artifactsDir + "/junit_" + test_name + ".xml",
+            ]),
+        }.t,  // buildTestTemplate
+
         apiVersion: "argoproj.io/v1alpha1",
         kind: "Workflow",
         metadata: {
@@ -398,34 +418,10 @@
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-tests", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=simple_tfjob_v1alpha2",
-              "--params=name=simple-tfjob-" + params.tfJobVersion + ",namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--junit_path=" + artifactsDir + "/junit_e2e.xml",
-            ]),  // run tests
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-gpu-tests", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=gpu_tfjob_v1alpha2",
-              "--params=name=gpu-tfjob-" + params.tfJobVersion + ",namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--junit_path=" + artifactsDir + "/junit_gpu-tests.xml",
-            ]),  // run gpu_tests
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "simple_tfjob_tests", "simple_tfjob", "simple_tfjob_v1alpha2"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "simple_tfjob_tests", "simple_tfjob", "gpu_tfjob_v1alpha2"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
               "python",
               "-m",
