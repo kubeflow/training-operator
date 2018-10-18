@@ -111,7 +111,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  namespace, name, _ = ks_util.setup_ks_app(args)
+  #namespace, name, _ = ks_util.setup_ks_app(args)
   t.name = os.path.basename(args.test_method)
 
   start = time.time()
@@ -145,8 +145,7 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       spec = "Job:\n" + json.dumps(e.job, indent=2)
     else:
       spec = "JobTimeoutError did not contain job"
-    t.failure = ("Timeout waiting for {0} in namespace {1} to finish; ").format(
-                  name, namespace) + spec
+    t.failure = "Timeout waiting for job to finish: " + spec
     logging.exception(t.failure)
   except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
