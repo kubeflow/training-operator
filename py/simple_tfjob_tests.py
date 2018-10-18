@@ -3,8 +3,8 @@ from kubeflow.testing import util
 from py import ks_util
 from py import tf_job_client
 
-
-def simple_tfjob(test_case, args):
+# Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+def run_simple_tfjob(test_case, args):
   api_client = k8s_client.ApiClient()
   masterHost = api_client.configuration.host
   namespace, name, env = ks_util.setup_ks_app(args)

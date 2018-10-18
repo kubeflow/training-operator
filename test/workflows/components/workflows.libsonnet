@@ -164,15 +164,15 @@
           },
         },  // buildTemplate
 
-        buildTestTemplate(test_module, test_name, component_name):: {
+        buildTestTemplate(test_name, test_module, test_method, component_name):: {
           t:: $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate(
-            "run-tests", [
+            test_name, [
               "python",
               "-m",
               "py.test_runner",
               "test",
               "--test_module" + test_module,
-              "--test_name" + test_name,
+              "--test_method" + test_method,
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
@@ -258,8 +258,13 @@
                     dependencies: ["setup-cluster", "build"],
                   },
                   {
-                    name: "run-tests",
-                    template: "run-tests",
+                    name: "simple-tfjob-cpu",
+                    template: "simple-tfjob-cpu",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "simple-tfjob-gpu",
+                    template: "simple-tfjob-gpu",
                     dependencies: ["setup-kubeflow"],
                   },
                   {
@@ -270,11 +275,6 @@
                   {
                     name: "run-chief",
                     template: "run-chief",
-                    dependencies: ["setup-kubeflow"],
-                  },
-                  {
-                    name: "run-gpu-tests",
-                    template: "run-gpu-tests",
                     dependencies: ["setup-kubeflow"],
                   },
                   {
@@ -388,6 +388,12 @@
               "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
             ]),  // setup cluster
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "simple-tfjob-cpu", "simple_tfjob_tests", "run_simple_tfjob",
+              "simple_tfjob_v1alpha2"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "simple-tfjob-gpu", "simple_tfjob_tests", "run_simple_tfjob",
+              "gpu_tfjob_v1alpha2"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-chief", [
               "python",
               "-m",
@@ -418,10 +424,6 @@
               "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
               "--junit_path=" + artifactsDir + "/junit_worker0.xml",
             ]),  // run worker0
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
-              "simple_tfjob_tests", "simple_tfjob", "simple_tfjob_v1alpha2"),
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
-              "simple_tfjob_tests", "simple_tfjob", "gpu_tfjob_v1alpha2"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
               "python",
               "-m",

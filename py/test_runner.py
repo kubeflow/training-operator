@@ -116,12 +116,12 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
   ##namespace, name, env = ks_util.setup_ks_app(args)
-  t.name = os.path.basename(args.test_name)
+  t.name = os.path.basename(args.test_method)
 
   start = time.time()
 
   module = import_module(args.test_module)
-  test_func = getattr(module, args.test_name)
+  test_func = getattr(module, args.test_method)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
@@ -361,7 +361,7 @@ def add_common_args(parser):
     "--test_module", default=None, type=str, help=("The test module to import."))
 
   parser.add_argument(
-    "--test_name", default=None, type=str, help=("The test method name to invoke."))
+    "--test_method", default=None, type=str, help=("The test method to invoke."))
 
   parser.add_argument(
     "--project", default=None, type=str, help=("The project to use."))
