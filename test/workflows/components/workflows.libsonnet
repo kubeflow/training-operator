@@ -394,36 +394,12 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "simple-tfjob-gpu", "simple_tfjob_tests", "run_simple_tfjob",
               "gpu_tfjob_v1alpha2"),
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-chief", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=master_is_chief_v1alpha2",
-              "--shutdown_policy=master",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--params=name=master-is-chief,namespace=default,image=" + testServerImage,
-              "--junit_path=" + artifactsDir + "/junit_chief.xml",
-            ]),  // run worker0
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-worker0", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=worker0_is_chief_v1alpha2",
-              "--shutdown_policy=worker",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--params=name=worker0-is-chief,namespace=default,image=" + testServerImage,
-              "--junit_path=" + artifactsDir + "/junit_worker0.xml",
-            ]),  // run worker0
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "run-chief", "shutdown_policy_tests", "test_shutdown_chief",
+              "master_is_chief_v1alpha2"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "run-worker0", "shutdown_policy_tests", "test_shutdown_worker0",
+              "worker0_is_chief_v1alpha2"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
               "python",
               "-m",

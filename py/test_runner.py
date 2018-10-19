@@ -183,14 +183,6 @@ def add_common_args(parser):
     help="Directory containing the ksonnet app.")
 
   parser.add_argument(
-    "--shutdown_policy",
-    default=None,
-    type=str,
-    help="The shutdown policy. This must be set if we need to issue "
-         "an http request to the test-app server to exit before the job will "
-         "finish.")
-
-  parser.add_argument(
     "--component",
     default=None,
     type=str,
