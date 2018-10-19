@@ -1,9 +1,12 @@
 import json
 import logging
+import yaml
 from kubernetes import client as k8s_client
 from kubeflow.testing import util
 from py import ks_util
 from py import tf_job_client
+from py import util as tf_operator_util
+
 
 def get_runconfig(master_host, namespace, target):
   """Issue a request to get the runconfig of the specified replica running test_server.
@@ -68,9 +71,10 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_work
       logging.error(msg)
       raise RuntimeError(msg)
 
-
+# Run a TFJob, verify that the TensorFlow runconfig specs are set correctly.
 def run_tfjob_and_verify_runconfig(test_case, args):
   api_client = k8s_client.ApiClient()
+  masterHost = api_client.configuration.host
   namespace, name, env = ks_util.setup_ks_app(args)
 
   # Create the TF job
