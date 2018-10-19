@@ -6,7 +6,7 @@ from py import k8s_util
 from py import ks_util
 from py import tf_job_client
 
-def run_tfjob_with_cleanpod_policy(test_case, args, cleanpod_policy):
+def run_tfjob_with_cleanpod_policy(test_case, args, clean_pod_policy):
   api_client = k8s_client.ApiClient()
   namespace, name, env = ks_util.setup_ks_app(args)
 
@@ -20,7 +20,7 @@ def run_tfjob_with_cleanpod_policy(test_case, args, cleanpod_policy):
     api_client, namespace, name, ["Running", "Succeeded", "Failed"],
     status_callback=tf_job_client.log_status)
   logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
-      
+
   # Wait for the job to complete.
   logging.info("Waiting for job to finish.")
   results = tf_job_client.wait_for_job(
@@ -36,18 +36,20 @@ def run_tfjob_with_cleanpod_policy(test_case, args, cleanpod_policy):
 
   # All pods are deleted.
   if clean_pod_policy == "All":
+    pod_labels = tf_job_client.get_labels_v1alpha2(name)
+    pod_selector = tf_job_client.to_selector(pod_labels)
     k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
   # Only running pods (PS) are deleted, completed pods are not.
-  elif args.verify_clean_pod_policy == "Running":
+  elif clean_pod_policy == "Running":
     tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
                                                   name, "Chief", ["Completed"])
     tf_job_client.wait_for_replica_type_in_phases(api_client, namespace, name,
                                                   "Worker", ["Completed"])
-    ps_pod_labels = tf_job_client.get_labels_v1alpha2(name, "PS")
-    ps_pod_selector = tf_job_client.to_selector(ps_pod_labels)
-    k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, ps_pod_selector)
+    pod_labels = tf_job_client.get_labels_v1alpha2(name, "PS")
+    pod_selector = tf_job_client.to_selector(pod_labels)
+    k8s_util.wait_for_pods_to_be_deleted(api_client, namespace, pod_selector)
   # No pods are deleted.
-  elif args.verify_clean_pod_policy == "None":
+  elif clean_pod_policy == "None":
     tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,
                                                   name, "Chief", ["Completed"])
     tf_job_client.wait_for_replica_type_in_phases(api_client, namespace,

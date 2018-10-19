@@ -24,7 +24,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest",
                 },
               ],
             },
@@ -38,7 +38,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest",
                 },
               ],
             },
@@ -52,7 +52,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest",
                 },
               ],
             },

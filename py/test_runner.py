@@ -6,7 +6,6 @@ import json
 import os
 import retrying
 import time
-import yaml
 
 from importlib import import_module
 
