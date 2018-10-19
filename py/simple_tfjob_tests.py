@@ -45,6 +45,8 @@ def run_simple_tfjob(test_case, args):
     # error.
     logging.warning(creation_failures)
 
+  # Delete the TFJob.
+  tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
   logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                namespace)
   tf_job_client.wait_for_delete(

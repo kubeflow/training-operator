@@ -24,7 +24,7 @@ def run_tfjob_with_shutdown_policy(test_case, args, shutdown_policy):
     tf_job_client.terminate_replicas(api_client, namespace, name, "worker", 1)
   else:
     tf_job_client.terminate_replicas(api_client, namespace, name, "chief", 1)
-      
+
   # Wait for the job to complete.
   logging.info("Waiting for job to finish.")
   results = tf_job_client.wait_for_job(
@@ -38,6 +38,8 @@ def run_tfjob_with_shutdown_policy(test_case, args, shutdown_policy):
     logging.error(test_case.failure)
     return False
 
+  # Delete the TFJob.
+  tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
   logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
                namespace)
   tf_job_client.wait_for_delete(

@@ -445,21 +445,9 @@
               "--verify_clean_pod_policy=None",
               "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
             ]),  // run clean_pod_none
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("estimator-runconfig", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=estimator_runconfig",
-              "--params=name=estimator-runconfig,namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--verify_runconfig",
-              "--junit_path=" + artifactsDir + "/junit_estimator-runconfig-tests.xml",
-            ]),  // run estimator_runconfig
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "estimator-runconfig", "estimator_runconfig_tests", "run_tfjob_and_verify_runconfig",
+              "estimator_runconfig"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
               "python",
               "-m",
