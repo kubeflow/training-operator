@@ -21,6 +21,9 @@ def run_simple_tfjob(test_case, args):
     status_callback=tf_job_client.log_status)
   logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
+  # Terminate the job.
+  tf_job_client.terminate_replicas(api_client, namespace, name, "chief", 1)
+
   # Wait for the job to complete.
   logging.info("Waiting for job to finish.")
   results = tf_job_client.wait_for_job(
@@ -33,9 +36,6 @@ def run_simple_tfjob(test_case, args):
       name, namespace, results.get("status", {}))
     logging.error(test_case.failure)
     return False
-
-  runtime_id = results.get("spec", {}).get("RuntimeId")
-  logging.info("Job %s in namespace %s runtime ID %s", name, namespace, runtime_id)
 
   # Check for creation failures.
   creation_failures = tf_job_client.get_creation_failures_from_tfjob(
