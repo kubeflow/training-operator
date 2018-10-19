@@ -400,51 +400,15 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "run-worker0", "shutdown_policy_tests", "test_shutdown_worker0",
               "worker0_is_chief_v1alpha2"),
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-all", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=clean_pod_all",
-              "--params=name=clean-pod-all,namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--verify_clean_pod_policy=All",
-              "--junit_path=" + artifactsDir + "/junit_clean-pod-all-tests.xml",
-            ]),  // run clean_pod_all
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-running", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=clean_pod_running",
-              "--params=name=clean-pod-running,namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--verify_clean_pod_policy=Running",
-              "--junit_path=" + artifactsDir + "/junit_clean-pod-running-tests.xml",
-            ]),  // run clean_pod_running
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("run-clean-pod-none", [
-              "python",
-              "-m",
-              "py.test_runner",
-              "test",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--component=clean_pod_none",
-              "--params=name=clean-pod-none,namespace=default",
-              "--tfjob_version=" + params.tfJobVersion,
-              "--verify_clean_pod_policy=None",
-              "--junit_path=" + artifactsDir + "/junit_clean-pod-none-tests.xml",
-            ]),  // run clean_pod_none
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "run-clean-pod-all", "cleanpod_policy_tests", "test_cleanpod_all",
+              "clean_pod_all"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "run-clean-pod-running", "cleanpod_policy_tests", "test_cleanpod_running",
+              "clean_pod_running"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "run-clean-pod-none", "cleanpod_policy_tests", "test_cleanpod_none",
+              "clean_pod_none"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "estimator-runconfig", "estimator_runconfig_tests", "run_tfjob_and_verify_runconfig",
               "estimator_runconfig"),
