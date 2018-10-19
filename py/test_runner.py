@@ -40,12 +40,8 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
 
-  #api_client = k8s_client.ApiClient()
-  #masterHost = api_client.configuration.host
-
   t = test_util.TestCase()
   t.class_name = "tfjob_test"
-  #namespace, name, _ = ks_util.setup_ks_app(args)
   t.name = os.path.basename(args.test_method)
 
   start = time.time()
@@ -97,7 +93,6 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
-
   parser.add_argument(
     "--test_module", default=None, type=str, help=("The test module to import."))
 
