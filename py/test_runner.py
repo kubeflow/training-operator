@@ -1,8 +1,9 @@
 """Test runner runs a TFJob test."""
 
 import argparse
-import logging
+import inspect
 import json
+import logging
 import retrying
 import time
 
@@ -156,12 +157,17 @@ def main(module=None):  # pylint: disable=too-many-locals
 
   args = parser.parse_args()
   test_module = import_module(module)
-  for x, y in test_module.__dict__.items():
-    logging.info(">>>> x %s", x)
-    logging.info(">>>> y %s", y)
+  #for x, y in test_module.__dict__.items():
+  #  logging.info(">>>> x %s", x)
+  #  logging.info(">>>> y %s", y)
 
-    if type(y) is test_util.TestCase: #ClassType and issubclass(y, test_util.TestCase()):
-      test_case = y()
+  types = dir(test_module):
+  for t_name in types:
+    logging.info(">>>> t_name: %s", t_name)
+    t = getattr(test_module, t_name)
+    if inspect.isclass(t) and issubclass(t, test_util.TestCase): 
+      #type(y) is test_util.TestCase: #ClassType and issubclass(y, test_util.TestCase()):
+      test_case = t()
       funcs = dir(test_case)
 
       for f in funcs:

@@ -8,11 +8,12 @@ from py import test_runner
 
 class SimpleTfJobTests(test_util.TestCase):
   def __init__(self, args):
-    super.__init__(class_name="SimpleTfJobTests")  
+    #super.__init__(class_name="SimpleTfJobTests") 
     self.namespace, self.name, self.env = ks_util.setup_ks_app(args)
     self.app_dir = args.app_dir
     self.component = args.component
     self.tfjob_version = args.tfjob.version
+    super(SimpleTfJobTests, self).__init__(class_name="SimpleTfJobTests")
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def test_simple_tfjob(self):
