@@ -276,8 +276,8 @@
                     dependencies: ["setup-kubeflow"],
                   },
                   {
-                    name: "invalid-tfjob",
-                    template: "invalid-tfjob",
+                    name: "invalid-tfjob-tests",
+                    template: "invalid-tfjob-tests",
                     dependencies: ["setup-kubeflow"],
                   },
                 ],  //tasks
@@ -374,15 +374,8 @@
               "cleanpod-policy-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "estimator-runconfig-tests"),
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("invalid-tfjob", [
-              "python",
-              "-m",
-              "py.test_invalid_job",
-              "test",
-              "--app_dir=" + srcDir + "/test/workflows",
-              "--params=name=invalid-tfjob,namespace=default",
-              "--artifacts_dir=" + artifactsDir,
-            ]),  // invalid-tfjob
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "invalid-tfjob-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",

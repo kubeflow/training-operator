@@ -89,7 +89,7 @@ class EstimatorRunconfigTests(test_util.TestCase):
     masterHost = api_client.configuration.host
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, COMPONENT_NAME, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", COMPONENT_NAME], cwd=self.app_dir)
