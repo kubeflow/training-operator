@@ -3,26 +3,27 @@ import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import test_util, util
 from py import ks_util
-from py import tf_job_client
 from py import test_runner
+from py import tf_job_client
+
+CPU_TFJOB_COMPONENT_NAME = "simple_tfjob_v1alpha2"
+GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob_v1alpha2"
 
 class SimpleTfJobTests(test_util.TestCase):
   def __init__(self, args):
-    #super.__init__(class_name="SimpleTfJobTests")
     namespace, name, env = ks_util.setup_ks_app(args)
     self.app_dir = args.app_dir
-    self.component = args.component
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     super(SimpleTfJobTests, self).__init__(class_name="SimpleTfJobTests", name=name)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
-  def test_simple_tfjob(self):
+  def run_simple_tfjob(self, component):
     api_client = k8s_client.ApiClient()
 
     # Create the TF job
-    util.run(["ks", "apply", self.env, "-c", self.component], cwd=self.app_dir)
+    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
     # Wait for the job to either be in Running state or a terminal state
@@ -63,6 +64,14 @@ class SimpleTfJobTests(test_util.TestCase):
     tf_job_client.wait_for_delete(
       api_client, self.namespace, self.name, self.tfjob_version,
       status_callback=tf_job_client.log_status)
+
+  # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+  def test_simple_tfjob_cpu(self):
+    self.run_simple_tfjob(CPU_TFJOB_COMPONENT_NAME )
+
+  # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+  def test_simple_tfjob_gpu(self):
+    self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME )
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

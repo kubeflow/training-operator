@@ -12,7 +12,6 @@ from importlib import import_module
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import test_util, util
 from py import util as tf_operator_util
-#from types import ClassType
 
 
 # One of the reasons we set so many retries and a random amount of wait
@@ -39,14 +38,7 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
     util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
 
-  #t = test_helper.TestCase(test_func)
-  #t.class_name = "tfjob_test"
-  #t.name = os.path.basename(args.test_method)
-
   start = time.time()
-
-  #module = import_module("py." + args.test_module)
-  #test_func = getattr(module, args.test_method)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
@@ -60,9 +52,6 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
     for trial in range(num_trials):
       logging.info("Trial %s", trial)
       test_func()
-      #test_result = test_func(t, args)
-      #if not test_result:
-      #  break
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -157,25 +146,19 @@ def main(module=None):  # pylint: disable=too-many-locals
 
   args = parser.parse_args()
   test_module = import_module(module)
-  #for x, y in test_module.__dict__.items():
-  #  logging.info(">>>> x %s", x)
-  #  logging.info(">>>> y %s", y)
 
   types = dir(test_module)
   for t_name in types:
-    logging.info(">>>> t_name: %s", t_name)
     t = getattr(test_module, t_name)
     if inspect.isclass(t) and issubclass(t, test_util.TestCase):
-      #type(y) is test_util.TestCase: #ClassType and issubclass(y, test_util.TestCase()):
+      logging.info("Loading test case: %s", t_name)
       test_case = t(args)
       funcs = dir(test_case)
 
       for f in funcs:
-        logging.info(">>>> func: %s", f)
         if f.startswith("test_"):
           test_func = getattr(test_case, f)
-          logging.info(">>>> tf: %s", test_func)
-          #run_test(tf, args)
+          logging.info("Invoking test method: %s", test_func)
           run_test(test_case, test_func, args)
 
 

@@ -2,11 +2,13 @@ import json
 import logging
 import yaml
 from kubernetes import client as k8s_client
-from kubeflow.testing import util
+from kubeflow.testing import test_util, util
 from py import ks_util
+from py import test_runner
 from py import tf_job_client
 from py import util as tf_operator_util
 
+COMPONENT_NAME = "estimator_runconfig"
 
 def get_runconfig(master_host, namespace, target):
   """Issue a request to get the runconfig of the specified replica running test_server.
@@ -17,7 +19,6 @@ def get_runconfig(master_host, namespace, target):
   """
   response = tf_operator_util.send_request(master_host, namespace, target, "runconfig", {})
   return yaml.load(response)
-
 
 def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_workers):
   """Verifies that the TF RunConfig on the specified replica is the same as expected.
@@ -71,51 +72,61 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_work
       logging.error(msg)
       raise RuntimeError(msg)
 
-# Run a TFJob, verify that the TensorFlow runconfig specs are set correctly.
-def run_tfjob_and_verify_runconfig(test_case, args):
-  api_client = k8s_client.ApiClient()
-  masterHost = api_client.configuration.host
-  namespace, name, env = ks_util.setup_ks_app(args)
 
-  # Create the TF job
-  util.run(["ks", "apply", env, "-c", args.component], cwd=args.app_dir)
-  logging.info("Created job %s in namespaces %s", name, namespace)
+class EstimatorRunconfigTests(test_util.TestCase):
+  def __init__(self, args):
+    namespace, name, env = ks_util.setup_ks_app(args)
+    self.app_dir = args.app_dir
+    self.env = env
+    self.namespace = namespace
+    self.tfjob_version = args.tfjob_version
+    super(EstimatorRunconfigTests, self).__init__(class_name="EstimatorRunconfigTests", name=name)
 
-  # Wait for the job to either be in Running state or a terminal state
-  logging.info("Wait for conditions Running, Succeeded, or Failed")
-  results = tf_job_client.wait_for_condition(
-    api_client, namespace, name, ["Running", "Succeeded", "Failed"],
-    status_callback=tf_job_client.log_status)
-  logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
+  # Run a TFJob, verify that the TensorFlow runconfig specs are set correctly.
+  def test_tfjob_and_verify_runconfig(self):
+    api_client = k8s_client.ApiClient()
+    masterHost = api_client.configuration.host
 
-  num_ps = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
-    "PS", {}).get("replicas", 0)
-  num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
-    "Worker", {}).get("replicas", 0)
-  verify_runconfig(masterHost, namespace, name, "chief", num_ps, num_workers)
-  verify_runconfig(masterHost, namespace, name, "worker", num_ps, num_workers)
-  verify_runconfig(masterHost, namespace, name, "ps", num_ps, num_workers)
+    # Create the TF job
+    util.run(["ks", "apply", self.env, "-c", COMPONENT_NAME], cwd=self.app_dir)
+    logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
-  tf_job_client.terminate_replicas(api_client, namespace, name, "chief", 1)
+    # Wait for the job to either be in Running state or a terminal state
+    logging.info("Wait for conditions Running, Succeeded, or Failed")
+    results = tf_job_client.wait_for_condition(
+      api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
+      status_callback=tf_job_client.log_status)
+    logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-  # Wait for the job to complete.
-  logging.info("Waiting for job to finish.")
-  results = tf_job_client.wait_for_job(
-    api_client, namespace, name, args.tfjob_version,
-    status_callback=tf_job_client.log_status)
-  logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
+    num_ps = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+      "PS", {}).get("replicas", 0)
+    num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+      "Worker", {}).get("replicas", 0)
+    verify_runconfig(masterHost, self.namespace, self.name, "chief", num_ps, num_workers)
+    verify_runconfig(masterHost, self.namespace, self.name, "worker", num_ps, num_workers)
+    verify_runconfig(masterHost, self.namespace, self.name, "ps", num_ps, num_workers)
 
-  if not tf_job_client.job_succeeded(results):
-    test_case.failure = "Job {0} in namespace {1} in status {2}".format(
-      name, namespace, results.get("status", {}))
-    logging.error(test_case.failure)
-    return False
+    tf_job_client.terminate_replicas(api_client, self.namespace, self.name, "chief", 1)
 
-  # Delete the TFJob.
-  tf_job_client.delete_tf_job(api_client, namespace, name, version=args.tfjob_version)
-  logging.info("Waiting for job %s in namespaces %s to be deleted.", name,
-               namespace)
-  tf_job_client.wait_for_delete(
-    api_client, namespace, name, args.tfjob_version, status_callback=tf_job_client.log_status)
+    # Wait for the job to complete.
+    logging.info("Waiting for job to finish.")
+    results = tf_job_client.wait_for_job(
+      api_client, self.namespace, self.name, self.tfjob_version,
+      status_callback=tf_job_client.log_status)
+    logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
-  return True
+    if not tf_job_client.job_succeeded(results):
+      self.failure = "Job {0} in namespace {1} in status {2}".format(
+        self.name, self.namespace, results.get("status", {}))
+      logging.error(self.failure)
+
+    # Delete the TFJob.
+    tf_job_client.delete_tf_job(api_client, self.namespace, self.name, version=self.tfjob_version)
+    logging.info("Waiting for job %s in namespaces %s to be deleted.", self.name,
+                 self.namespace)
+    tf_job_client.wait_for_delete(
+      api_client, self.namespace, self.name, self.tfjob_version,
+      status_callback=tf_job_client.log_status)
+
+if __name__ == "__main__":
+  test_runner.main(module=__name__)
