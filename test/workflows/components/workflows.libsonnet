@@ -176,7 +176,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               "--params=name=" + test_name + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
-              "--junit_path=" + artifactsDir + "/junit_" + test_name + ".xml",
+              "--artifacts_path=" + artifactsDir,
             ]),
         }.t,  // buildTestTemplate
 

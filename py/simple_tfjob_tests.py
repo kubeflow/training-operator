@@ -11,16 +11,20 @@ GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob_v1alpha2"
 
 class SimpleTfJobTests(test_util.TestCase):
   def __init__(self, args):
-    namespace, name, env = ks_util.setup_ks_app(args)
+    namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
+    self.params = args.params
     super(SimpleTfJobTests, self).__init__(class_name="SimpleTfJobTests", name=name)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def run_simple_tfjob(self, component):
     api_client = k8s_client.ApiClient()
+
+    # Setup the ksonnet app
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)

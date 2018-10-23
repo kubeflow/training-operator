@@ -6,6 +6,7 @@ import json
 import logging
 import retrying
 import time
+import uuid
 
 from importlib import import_module
 
@@ -76,9 +77,36 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
       e.__class__, e.message))
   finally:
     test_case.time = time.time() - start
-    if args.junit_path:
-      test_util.create_junit_xml_file([test_case], args.junit_path, gcs_client)
+    if args.artifacts_path:
+      test_util.create_junit_xml_file([test_case],
+        args.artifacts_path + "/junit_" + test_func.__name__ + ".xml",
+        gcs_client)
 
+def parse_runtime_params(args):
+  salt = uuid.uuid4().hex[0:4]
+
+  if "environment" in args and args.environment:
+    env = args.environment
+  else:
+    env = "test-env-{0}".format(salt)
+
+  name = None
+  namespace = None
+  for pair in args.params.split(","):
+    k, v = pair.split("=", 1)
+    if k == "name":
+      name = v
+
+    if k == "namespace":
+      namespace = v
+
+  if not name:
+    raise ValueError("name must be provided as a parameter.")
+
+  if not namespace:
+    raise ValueError("namespace must be provided as a parameter.")
+
+  return namespace, name, env
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
@@ -113,10 +141,10 @@ def add_common_args(parser):
     help=("The zone for the cluster."))
 
   parser.add_argument(
-    "--junit_path",
+    "--artifacts_path",
     default="",
     type=str,
-    help="Where to write the junit xml file with the results.")
+    help="Where to write the test artifacts (e.g. junit xml file).")
 
   parser.add_argument(
     "--tfjob_version",

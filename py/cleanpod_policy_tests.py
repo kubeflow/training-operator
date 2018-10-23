@@ -13,15 +13,19 @@ CLEANPOD_NONE_COMPONENT_NAME = "clean_pod_none"
 
 class CleanPodPolicyTests(test_util.TestCase):
   def __init__(self, args):
-    namespace, name, env = ks_util.setup_ks_app(args)
+    namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
+    self.params = args.params
     super(CleanPodPolicyTests, self).__init__(class_name="CleanPodPolicyTests", name=name)
 
   def run_tfjob_with_cleanpod_policy(self, component, clean_pod_policy):
     api_client = k8s_client.ApiClient()
+
+    # Setup the ksonnet app
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)

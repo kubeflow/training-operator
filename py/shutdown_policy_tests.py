@@ -11,15 +11,19 @@ WORKER0_IS_CHIEF_COMPONENT_NAME = "worker0_is_chief_v1alpha2"
 
 class ShutdownPolicyTests(test_util.TestCase):
   def __init__(self, args):
-    namespace, name, env = ks_util.setup_ks_app(args)
+    namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
+    self.params = args.params
     super(ShutdownPolicyTests, self).__init__(class_name="ShutdownPolicyTests", name=name)
 
   def run_tfjob_with_shutdown_policy(self, component, shutdown_policy):
     api_client = k8s_client.ApiClient()
+
+    # Setup the ksonnet app
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
@@ -47,8 +51,8 @@ class ShutdownPolicyTests(test_util.TestCase):
     if not tf_job_client.job_succeeded(results):
       self.failure = "Job {0} in namespace {1} in status {2}".format(
         self.name, self.namespace, results.get("status", {}))
-    logging.error(self.failure)
-    return
+      logging.error(self.failure)
+      return
 
     # Delete the TFJob.
     tf_job_client.delete_tf_job(api_client, self.namespace, self.name, version=self.tfjob_version)

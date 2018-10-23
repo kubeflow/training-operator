@@ -75,17 +75,21 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps, num_work
 
 class EstimatorRunconfigTests(test_util.TestCase):
   def __init__(self, args):
-    namespace, name, env = ks_util.setup_ks_app(args)
+    namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
+    self.params = args.params
     super(EstimatorRunconfigTests, self).__init__(class_name="EstimatorRunconfigTests", name=name)
 
   # Run a TFJob, verify that the TensorFlow runconfig specs are set correctly.
   def test_tfjob_and_verify_runconfig(self):
     api_client = k8s_client.ApiClient()
     masterHost = api_client.configuration.host
+
+    # Setup the ksonnet app
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", COMPONENT_NAME], cwd=self.app_dir)
