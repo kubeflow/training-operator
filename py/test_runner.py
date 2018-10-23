@@ -10,9 +10,9 @@ import time
 from importlib import import_module
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
-from kubeflow.testing import util
-from py import test_util
+from kubeflow.testing import test_util, util
 from py import util as tf_operator_util
+from types import ClassType
 
 
 # One of the reasons we set so many retries and a random amount of wait
@@ -21,7 +21,7 @@ from py import util as tf_operator_util
 # lead to failures.
 @retrying.retry(stop_max_attempt_number=10, wait_random_min=1000,
                 wait_random_max=10000)
-def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
+def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
   project = args.project
@@ -39,14 +39,14 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
     util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
 
-  t = test_util.TestCase()
-  t.class_name = "tfjob_test"
-  t.name = os.path.basename(args.test_method)
+  #t = test_helper.TestCase(test_func)
+  #t.class_name = "tfjob_test"
+  #t.name = os.path.basename(args.test_method)
 
   start = time.time()
 
-  module = import_module("py." + args.test_module)
-  test_func = getattr(module, args.test_method)
+  #module = import_module("py." + args.test_module)
+  #test_func = getattr(module, args.test_method)
 
   try: # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
@@ -59,9 +59,10 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
 
     for trial in range(num_trials):
       logging.info("Trial %s", trial)
-      test_result = test_func(t, args)
-      if not test_result:
-        break
+      test_func()
+      #test_result = test_func(t, args)
+      #if not test_result:
+      #  break
 
     # TODO(jlewi):
     #  Here are some validation checks to run:
@@ -74,30 +75,24 @@ def run_test(args):  # pylint: disable=too-many-branches,too-many-statements
       spec = "Job:\n" + json.dumps(e.job, indent=2)
     else:
       spec = "JobTimeoutError did not contain job"
-    t.failure = "Timeout waiting for job to finish: " + spec
-    logging.exception(t.failure)
+    test_case.failure = "Timeout waiting for job to finish: " + spec
+    logging.exception(test_case.failure)
   except Exception as e:  # pylint: disable-msg=broad-except
     # TODO(jlewi): I'm observing flakes where the exception has message "status"
     # in an effort to try to nail down this exception we print out more
     # information about the exception.
     logging.exception("There was a problem running the job; Exception %s", e)
     # We want to catch all exceptions because we want the test as failed.
-    t.failure = ("Exception occured; type {0} message {1}".format(
+    test_case.failure = ("Exception occured; type {0} message {1}".format(
       e.__class__, e.message))
   finally:
-    t.time = time.time() - start
+    test_case.time = time.time() - start
     if args.junit_path:
       test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
-  parser.add_argument(
-    "--test_module", default=None, type=str, help=("The test module to import."))
-
-  parser.add_argument(
-    "--test_method", default=None, type=str, help=("The test method to invoke."))
-
   parser.add_argument(
     "--project", default=None, type=str, help=("The project to use."))
 
@@ -147,21 +142,7 @@ def add_common_args(parser):
     help="(Optional) the name for the ksonnet environment; if not specified "
          "a random one is created.")
 
-
-def build_parser():
-  # create the top-level parser
-  parser = argparse.ArgumentParser(description="Run a TFJob test.")
-  subparsers = parser.add_subparsers()
-
-  parser_test = subparsers.add_parser("test", help="Run a tfjob test.")
-
-  add_common_args(parser_test)
-  parser_test.set_defaults(func=run_test)
-
-  return parser
-
-
-def main():  # pylint: disable=too-many-locals
+def main(module=None):  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
   logging.basicConfig(
     level=logging.INFO,
@@ -171,11 +152,26 @@ def main():  # pylint: disable=too-many-locals
 
   util.maybe_activate_service_account()
 
-  parser = build_parser()
+  parser = argparse.ArgumentParser(description="Run a TFJob test.")
+  add_common_args(parser)
 
-  # parse the args and call whatever function was selected
   args = parser.parse_args()
-  args.func(args)
+  test_module = import_module(module)
+  for x, y in test_module.__dict__.items():
+    logging.info(">>>> x %s", x)
+    logging.info(">>>> y %s", y)
+
+    if type(y) == ClassType and issubclass(y, test_util.TestCase()):
+      tc = y()
+      funcs = dir(tc)
+
+      for f in funcs:
+        logging.info(">>>> func: %s", f)
+        if f.startswith("test_"):
+          tf = getattr(tc, f)
+          logging.info(">>>> tf: %s", tf)
+          #run_test(tf, args)
+          run_test(tc, tf, args)
 
 
 if __name__ == "__main__":
