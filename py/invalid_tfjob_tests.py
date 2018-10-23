@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from kubernetes import client as k8s_client
 from kubeflow.testing import test_util, util
 from py import ks_util
