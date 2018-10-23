@@ -16,7 +16,7 @@ class InvalidTfJobTests(test_util.TestCase):
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     self.params = args.params
-    super(InvalidJobTests, self).__init__(class_name="InvalidJobTests", name=name)
+    super(InvalidTfJobTests, self).__init__(class_name="InvalidTfJobTests", name=name)
 
   def test_invalid_tfjob_spec(self):
     api_client = k8s_client.ApiClient()
