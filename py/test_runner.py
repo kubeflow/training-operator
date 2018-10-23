@@ -3,7 +3,6 @@
 import argparse
 import logging
 import json
-import os
 import retrying
 import time
 
@@ -12,7 +11,7 @@ from importlib import import_module
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import test_util, util
 from py import util as tf_operator_util
-from types import ClassType
+#from types import ClassType
 
 
 # One of the reasons we set so many retries and a random amount of wait
@@ -88,7 +87,7 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
   finally:
     test_case.time = time.time() - start
     if args.junit_path:
-      test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
+      test_util.create_junit_xml_file([test_case], args.junit_path, gcs_client)
 
 
 def add_common_args(parser):
@@ -161,17 +160,17 @@ def main(module=None):  # pylint: disable=too-many-locals
     logging.info(">>>> x %s", x)
     logging.info(">>>> y %s", y)
 
-    if type(y) == ClassType and issubclass(y, test_util.TestCase()):
-      tc = y()
-      funcs = dir(tc)
+    if type(y) is test_util.TestCase: #ClassType and issubclass(y, test_util.TestCase()):
+      test_case = y()
+      funcs = dir(test_case)
 
       for f in funcs:
         logging.info(">>>> func: %s", f)
         if f.startswith("test_"):
-          tf = getattr(tc, f)
-          logging.info(">>>> tf: %s", tf)
+          test_func = getattr(test_case, f)
+          logging.info(">>>> tf: %s", test_func)
           #run_test(tf, args)
-          run_test(tc, tf, args)
+          run_test(test_case, test_func, args)
 
 
 if __name__ == "__main__":

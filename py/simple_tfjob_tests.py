@@ -8,10 +8,11 @@ from py import test_runner
 
 class SimpleTfJobTests(test_util.TestCase):
   def __init__(self, args):
+    super.__init__(class_name="SimpleTfJobTests")  
     self.namespace, self.name, self.env = ks_util.setup_ks_app(args)
     self.app_dir = args.app_dir
     self.component = args.component
-    self.tfjob_version = args.tfjob.version  
+    self.tfjob_version = args.tfjob.version
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def test_simple_tfjob(self):
@@ -37,7 +38,7 @@ class SimpleTfJobTests(test_util.TestCase):
 
     if not tf_job_client.job_succeeded(results):
       self.failure = "Job {0} in namespace {1} in status {2}".format(
-        name, namespace, results.get("status", {}))
+        self.name, self.namespace, results.get("status", {}))
       logging.error(self.failure)
       return
 
@@ -57,7 +58,8 @@ class SimpleTfJobTests(test_util.TestCase):
     logging.info("Waiting for job %s in namespaces %s to be deleted.", self.name,
                  self.namespace)
     tf_job_client.wait_for_delete(
-      api_client, self.namespace, self.name, self.tfjob_version, status_callback=tf_job_client.log_status)
+      api_client, self.namespace, self.name, self.tfjob_version,
+      status_callback=tf_job_client.log_status)
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)
