@@ -167,7 +167,7 @@ def main(module=None):  # pylint: disable=too-many-locals
     t = getattr(test_module, t_name)
     if inspect.isclass(t) and issubclass(t, test_util.TestCase): 
       #type(y) is test_util.TestCase: #ClassType and issubclass(y, test_util.TestCase()):
-      test_case = t()
+      test_case = t(args)
       funcs = dir(test_case)
 
       for f in funcs:
