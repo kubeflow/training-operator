@@ -161,7 +161,7 @@ def main(module=None):  # pylint: disable=too-many-locals
   #  logging.info(">>>> x %s", x)
   #  logging.info(">>>> y %s", y)
 
-  types = dir(test_module):
+  types = dir(test_module)
   for t_name in types:
     logging.info(">>>> t_name: %s", t_name)
     t = getattr(test_module, t_name)
