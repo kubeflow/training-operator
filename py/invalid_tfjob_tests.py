@@ -59,6 +59,6 @@ class InvalidTfJobTests(test_util.TestCase):
     tf_job_client.wait_for_delete(
       api_client, self.namespace, self.name, self.tfjob_version,
       status_callback=tf_job_client.log_status)
-    
+
 if __name__ == "__main__":
   test_runner.main(module=__name__)
