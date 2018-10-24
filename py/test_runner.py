@@ -46,8 +46,7 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
     # This ensures that if we delete the job we can create a new job with the
     # same name.
 
-    # TODO(jlewi): We should make this an argument.
-    num_trials = 2
+    num_trials = args.num_trials
     logging.info("tfjob_version=%s", args.tfjob_version)
 
     for trial in range(num_trials):
@@ -158,6 +157,13 @@ def add_common_args(parser):
     type=str,
     help="(Optional) the name for the ksonnet environment; if not specified "
          "a random one is created.")
+
+  parser.add_argument(
+    "--num_trials",
+    default=1,
+    type=int,
+    help="Number of times to run this test.")
+
 
 def main(module=None):  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals

@@ -164,7 +164,7 @@
           },
         },  // buildTemplate
 
-        buildTestTemplate(test_name):: {
+        buildTestTemplate(test_name, num_trials=1):: {
           t:: $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate(
             test_name, [
               "python",
@@ -176,6 +176,7 @@
               "--app_dir=" + srcDir + "/test/workflows",
               "--params=name=" + test_name + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
+              "--num_trials=" + num_trials,
               "--artifacts_path=" + artifactsDir,
             ]),
         }.t,  // buildTestTemplate
@@ -367,7 +368,7 @@
               "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
             ]),  // setup cluster
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
-              "simple-tfjob-tests"),
+              "simple-tfjob-tests", 2),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "shutdown-policy-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
