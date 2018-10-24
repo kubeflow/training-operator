@@ -403,3 +403,80 @@ def terminate_replica(master_host, namespace, target, exit_code=0):
     "exitCode": exit_code,
   }
   util.send_request(master_host, namespace, target, "exit", params)
+
+def terminate_replicas(api_client, namespace, name, replica, num_targets):
+  """Terminates the specified replica(s).
+
+  Args:
+    api_client: K8s client
+    namespace: K8s namespace
+    name: TFJob name
+    replica: Replica type (chief, worker, ps)
+    num_targets: Number of replicas to terminate.
+  """
+  target = "{name}-{replica}".format(name=name, replica=replica)
+  pod_labels = get_labels_v1alpha2(namespace, name)
+  pod_selector = to_selector(pod_labels)
+  masterHost = api_client.configuration.host
+
+  # Wait for the pods to be ready before we shutdown
+  # TODO(jlewi): We are get pods using a label selector so there is
+  # a risk that the pod we actual care about isn't present.
+  logging.info("Waiting for pods to be running before shutting down.")
+  k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
+                                         pod_selector,
+                                         ["Running"],
+                                         timeout=datetime.timedelta(
+                                         minutes=4))
+  logging.info("Pods are ready")
+  logging.info("Issuing the terminate request")
+  for num in range(num_targets):
+    full_target = target + "-{0}".format(num)
+    terminate_replica(masterHost, namespace, full_target)
+
+
+def job_succeeded(tfjob):
+  """Returns true if the TFJob succeeded; false otherwise.
+
+  Args:
+    tfjob: The TFJob custom resource returned from K8s.
+  """
+  last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
+  return last_condition.get("type", "").lower() == "succeeded"
+
+
+def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
+  """Returns a list of pod/service creation failures, if any.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    tfjob: The TFJob custom resource returned from K8s.
+  """
+  uid = tfjob.get("metadata", {}).get("uid")
+  events = k8s_util.get_events(api_client, namespace, uid)
+
+  # Print out the K8s events because it can be useful for debugging.
+  for e in events:
+    logging.info("Received K8s Event:\n%s", e)
+
+  created_pods, created_services = k8s_util.parse_events(events)
+
+  num_expected = 0
+  for replicakey in tfjob.get("spec", {}).get("tfReplicaSpecs", {}):
+    replica_spec = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
+    if replica_spec:
+      num_expected += replica_spec.get("replicas", 1)
+
+  creation_failures = []
+  if len(created_pods) != num_expected:
+    message = ("Expected {0} pods to be created but only "
+               "got {1} create events.").format(num_expected, len(created_pods))
+    creation_failures.append(message)
+
+  if len(created_services) != num_expected:
+    message = ("Expected {0} services to be created but only "
+               "got {1} create events.").format(num_expected, len(created_services))
+    creation_failures.append(message)
+
+  return creation_failures
