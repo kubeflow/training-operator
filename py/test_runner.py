@@ -164,6 +164,12 @@ def add_common_args(parser):
     type=int,
     help="Number of times to run this test.")
 
+  parser.add_argument(
+    "--skip_tests",
+    default=None,
+    type=str,
+    help="A comma delimited list of tests to skip.")
+
 
 def main(module=None):  # pylint: disable=too-many-locals
   logging.getLogger().setLevel(logging.INFO)  # pylint: disable=too-many-locals
@@ -180,6 +186,9 @@ def main(module=None):  # pylint: disable=too-many-locals
 
   args = parser.parse_args()
   test_module = import_module(module)
+  skip_tests = []
+  if args.skip_tests:
+    skip_tests = args.skip_tests.split(",")
 
   types = dir(test_module)
   for t_name in types:
@@ -190,7 +199,7 @@ def main(module=None):  # pylint: disable=too-many-locals
       funcs = dir(test_case)
 
       for f in funcs:
-        if f.startswith("test_"):
+        if f.startswith("test_") and not f in skip_tests:
           test_func = getattr(test_case, f)
           logging.info("Invoking test method: %s", test_func)
           run_test(test_case, test_func, args)
