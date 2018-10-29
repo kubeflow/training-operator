@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/juju/ratelimit"
 	tfv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfjobclient "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	kubeflowscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -119,11 +118,7 @@ func New(kubeClient kubernetes.Interface, tfJobClient tfjobclient.Interface,
 	// Use a rate limiter with overall  and per-item rate limiting.
 	// The overall is a token bucket and the per-item is exponential
 	// For the per item
-	rateLimiter := workqueue.NewMaxOfRateLimiter(
-		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
-		// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
-		&workqueue.BucketRateLimiter{Bucket: ratelimit.NewBucketWithRate(float64(10), int64(100))},
-	)
+	rateLimiter := workqueue.DefaultControllerRateLimiter()
 
 	controller := &Controller{
 		KubeClient:  kubeClient,
