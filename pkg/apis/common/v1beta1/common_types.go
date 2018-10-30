@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package v1beta1
 
 import (
@@ -19,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:deepcopy-gen=true
 // JobStatus represents the current observed state of the training Job.
 type JobStatus struct {
 	// Conditions is an array of current observed job conditions.
@@ -60,6 +60,7 @@ type ReplicaStatus struct {
 	Failed int32 `json:"failed,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 // ReplicaSpec is a description of the replica
 type ReplicaSpec struct {
 	// Replicas is the desired number of replicas of the given template.
@@ -77,6 +78,7 @@ type ReplicaSpec struct {
 	RestartPolicy RestartPolicy `json:"restartPolicy,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 // JobCondition describes the state of the job at a certain point.
 type JobCondition struct {
 	// Type of job condition.
