@@ -20,6 +20,7 @@ import (
 	glog "github.com/golang/glog"
 	kubeflowv1alpha1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1"
 	kubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2"
+	kubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -28,9 +29,10 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface
 	KubeflowV1alpha2() kubeflowv1alpha2.KubeflowV1alpha2Interface
+	KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Kubeflow() kubeflowv1beta1.KubeflowV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -39,6 +41,7 @@ type Clientset struct {
 	*discovery.DiscoveryClient
 	kubeflowV1alpha1 *kubeflowv1alpha1.KubeflowV1alpha1Client
 	kubeflowV1alpha2 *kubeflowv1alpha2.KubeflowV1alpha2Client
+	kubeflowV1beta1  *kubeflowv1beta1.KubeflowV1beta1Client
 }
 
 // KubeflowV1alpha1 retrieves the KubeflowV1alpha1Client
@@ -46,15 +49,20 @@ func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interfac
 	return c.kubeflowV1alpha1
 }
 
-// Deprecated: Kubeflow retrieves the default version of KubeflowClient.
-// Please explicitly pick a version.
-func (c *Clientset) Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface {
-	return c.kubeflowV1alpha1
-}
-
 // KubeflowV1alpha2 retrieves the KubeflowV1alpha2Client
 func (c *Clientset) KubeflowV1alpha2() kubeflowv1alpha2.KubeflowV1alpha2Interface {
 	return c.kubeflowV1alpha2
+}
+
+// KubeflowV1beta1 retrieves the KubeflowV1beta1Client
+func (c *Clientset) KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface {
+	return c.kubeflowV1beta1
+}
+
+// Deprecated: Kubeflow retrieves the default version of KubeflowClient.
+// Please explicitly pick a version.
+func (c *Clientset) Kubeflow() kubeflowv1beta1.KubeflowV1beta1Interface {
+	return c.kubeflowV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -81,6 +89,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.kubeflowV1beta1, err = kubeflowv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -96,6 +108,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.kubeflowV1alpha1 = kubeflowv1alpha1.NewForConfigOrDie(c)
 	cs.kubeflowV1alpha2 = kubeflowv1alpha2.NewForConfigOrDie(c)
+	cs.kubeflowV1beta1 = kubeflowv1beta1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -106,6 +119,7 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.kubeflowV1alpha1 = kubeflowv1alpha1.New(c)
 	cs.kubeflowV1alpha2 = kubeflowv1alpha2.New(c)
+	cs.kubeflowV1beta1 = kubeflowv1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

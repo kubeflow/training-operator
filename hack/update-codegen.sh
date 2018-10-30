@@ -30,20 +30,14 @@ CODEGEN_PKG=${SCRIPT_ROOT}/vendor/k8s.io/code-generator
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
 
-# Only do deepgen for v1beta1 for now.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
  common:v1beta1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
- github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1beta1 \
- --go-header-file hack/boilerplate/boilerplate.go.txt
-
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha1,v1alpha2 \
+ tensorflow:v1alpha1,v1alpha2,v1beta1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
