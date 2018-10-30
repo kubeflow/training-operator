@@ -15,7 +15,7 @@
 package v1beta1
 
 import (
-        common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 )
 
 const (
