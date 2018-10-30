@@ -29,9 +29,15 @@ CODEGEN_PKG=${SCRIPT_ROOT}/vendor/k8s.io/code-generator
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
+
+${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
+ github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
+ common:v1beta1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt
+
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha1,v1alpha2 \
+ tensorflow:v1alpha1,v1alpha2,v1beta1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
@@ -44,4 +50,20 @@ cd - > /dev/null
 
 echo "Generating OpenAPI specification for v1alpha2"
 ${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+cd - > /dev/null
+
+echo "Generating defaulters for common/v1beta1"
+${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+cd - > /dev/null
+
+echo "Generating defaulters for tensorflow/v1beta1"
+${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+cd - > /dev/null
+
+echo "Generating OpenAPI specification for common/v1beta1"
+${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version --output-package github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+cd - > /dev/null
+
+echo "Generating OpenAPI specification for tensorflow/v1beta1"
+${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 cd - > /dev/null
