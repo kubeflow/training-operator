@@ -34,7 +34,7 @@ const (
 	// Kind is the kind name.
 	Kind = "TFJob"
 	// GroupVersion is the version.
-	GroupVersion = "v1alpha2"
+	GroupVersion = "v1beta1"
 	// Plural is the Plural for TFJob.
 	Plural = "tfjobs"
 	// Singular is the singular for TFJob.
