@@ -22,6 +22,8 @@ import (
 	fakekubeflowv1alpha1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha1/fake"
 	kubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2"
 	fakekubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1alpha2/fake"
+	kubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1beta1"
+	fakekubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -67,12 +69,17 @@ func (c *Clientset) KubeflowV1alpha1() kubeflowv1alpha1.KubeflowV1alpha1Interfac
 	return &fakekubeflowv1alpha1.FakeKubeflowV1alpha1{Fake: &c.Fake}
 }
 
-// Kubeflow retrieves the KubeflowV1alpha1Client
-func (c *Clientset) Kubeflow() kubeflowv1alpha1.KubeflowV1alpha1Interface {
-	return &fakekubeflowv1alpha1.FakeKubeflowV1alpha1{Fake: &c.Fake}
-}
-
 // KubeflowV1alpha2 retrieves the KubeflowV1alpha2Client
 func (c *Clientset) KubeflowV1alpha2() kubeflowv1alpha2.KubeflowV1alpha2Interface {
 	return &fakekubeflowv1alpha2.FakeKubeflowV1alpha2{Fake: &c.Fake}
+}
+
+// KubeflowV1beta1 retrieves the KubeflowV1beta1Client
+func (c *Clientset) KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface {
+	return &fakekubeflowv1beta1.FakeKubeflowV1beta1{Fake: &c.Fake}
+}
+
+// Kubeflow retrieves the KubeflowV1beta1Client
+func (c *Clientset) Kubeflow() kubeflowv1beta1.KubeflowV1beta1Interface {
+	return &fakekubeflowv1beta1.FakeKubeflowV1beta1{Fake: &c.Fake}
 }

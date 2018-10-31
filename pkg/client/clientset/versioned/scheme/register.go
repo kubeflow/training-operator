@@ -19,6 +19,7 @@ package scheme
 import (
 	kubeflowv1alpha1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	kubeflowv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	kubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -51,5 +52,6 @@ func init() {
 func AddToScheme(scheme *runtime.Scheme) {
 	kubeflowv1alpha1.AddToScheme(scheme)
 	kubeflowv1alpha2.AddToScheme(scheme)
+	kubeflowv1beta1.AddToScheme(scheme)
 
 }
