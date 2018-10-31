@@ -15,10 +15,11 @@
 package v1beta1
 
 import (
+	"strings"
+
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strings"
 )
 
 // Int32 is a helper routine that allocates a new int32 value
