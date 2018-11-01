@@ -488,7 +488,7 @@ func (j *TrainingJob) CreatePdb(nrReplicas int32) (*v1beta1.PodDisruptionBudget,
 	return j.KubeCli.PolicyV1beta1().PodDisruptionBudgets(j.job.ObjectMeta.Namespace).Create(pdb)
 }
 
-// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+// SyncPdb will create a PDB for gang scheduling by kube-batch.
 func (j *TrainingJob) syncPdb() error {
 
 	nrReplicas := int32(0)

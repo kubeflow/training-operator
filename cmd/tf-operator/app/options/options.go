@@ -43,5 +43,5 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.DurationVar(&s.GCInterval, "gc-interval", 10*time.Minute, "GC interval")
 	fs.StringVar(&s.ControllerConfigFile, "controller-config-file", "", "Path to file containing the controller config.")
 	fs.BoolVar(&s.JsonLogFormat, "json-log-format", true, "Set true to use json style log format. Set false to use plaintext style log format")
-	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-arbitrator.")
+	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-batch.")
 }
