@@ -24,9 +24,10 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 )
 
 func TestAddPod(t *testing.T) {
@@ -140,37 +141,37 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := common.RestartPolicyExitCode
 			tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1beta1.TFReplicaTypeWorker,
 			}
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := tfv1beta1.RestartPolicyNever
+			specRestartPolicy := common.RestartPolicyNever
 			tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1beta1.TFReplicaTypeWorker,
 			}
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := tfv1beta1.RestartPolicyAlways
+			specRestartPolicy := common.RestartPolicyAlways
 			tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyAlways,
 				expectedType:          tfv1beta1.TFReplicaTypeWorker,
 			}
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := tfv1beta1.RestartPolicyOnFailure
+			specRestartPolicy := common.RestartPolicyOnFailure
 			tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyOnFailure,
 				expectedType:          tfv1beta1.TFReplicaTypeWorker,
 			}

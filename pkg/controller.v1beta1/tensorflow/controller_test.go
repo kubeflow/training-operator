@@ -28,11 +28,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -302,27 +303,39 @@ func TestNormalPath(t *testing.T) {
 			}
 		}
 		// Validate worker status.
-		if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker] != nil {
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Active != tc.expectedActiveWorkerPods {
-				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveWorkerPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Active)
+		if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)] != nil {
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Active != tc.expectedActiveWorkerPods {
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n",
+					name, tc.expectedActiveWorkerPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Active)
 			}
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Succeeded != tc.expectedSucceededWorkerPods {
-				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededWorkerPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Succeeded)
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Succeeded != tc.expectedSucceededWorkerPods {
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n",
+					name, tc.expectedSucceededWorkerPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Succeeded)
 			}
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Failed != tc.expectedFailedWorkerPods {
-				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedWorkerPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Failed)
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Failed != tc.expectedFailedWorkerPods {
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n",
+					name, tc.expectedFailedWorkerPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Failed)
 			}
 		}
 		// Validate PS status.
-		if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS] != nil {
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Active != tc.expectedActivePSPods {
-				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActivePSPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Active)
+		if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)] != nil {
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Active != tc.expectedActivePSPods {
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n",
+					name, tc.expectedActivePSPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Active)
 			}
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Succeeded != tc.expectedSucceededPSPods {
-				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededPSPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Succeeded)
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Succeeded != tc.expectedSucceededPSPods {
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n",
+					name, tc.expectedSucceededPSPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Succeeded)
 			}
-			if actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Failed != tc.expectedFailedPSPods {
-				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedPSPods, actual.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypePS].Failed)
+			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Failed != tc.expectedFailedPSPods {
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n",
+					name, tc.expectedFailedPSPods,
+					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypePS)].Failed)
 			}
 		}
 		// Validate StartTime.

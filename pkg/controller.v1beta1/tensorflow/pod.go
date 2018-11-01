@@ -62,7 +62,7 @@ func (tc *TFController) reconcilePods(
 	restart := false
 	worker0Completed := false
 
-	initializeReplicaStatuses(tfjob, rtype)
+	initializeTFReplicaStatuses(tfjob, rtype)
 
 	podSlices := tc.GetPodSlices(pods, replicas, logger)
 	for index, podSlice := range podSlices {

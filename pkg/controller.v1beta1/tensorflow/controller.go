@@ -369,10 +369,10 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 		}
 
 		// Initialize the status.
-		initializeReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeWorker)
-		initializeReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypePS)
-		initializeReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeChief)
-		initializeReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeMaster)
+		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeWorker)
+		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypePS)
+		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeChief)
+		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeMaster)
 		return tc.updateStatusHandler(tfjob)
 	}
 

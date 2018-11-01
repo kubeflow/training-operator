@@ -143,8 +143,8 @@ func updateTFJobConditions(tfjob *tfv1beta1.TFJob, conditionType common.JobCondi
 	return nil
 }
 
-// initializeReplicaStatuses initializes the ReplicaStatuses for replica.
-func initializeReplicaStatuses(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType) {
+// initializeTFReplicaStatuses initializes the ReplicaStatuses for replica.
+func initializeTFReplicaStatuses(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType) {
 	commonType := common.ReplicaType(rtype)
 	if tfjob.Status.ReplicaStatuses == nil {
 		tfjob.Status.ReplicaStatuses = make(map[common.ReplicaType]*common.ReplicaStatus)
@@ -155,7 +155,7 @@ func initializeReplicaStatuses(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplica
 
 // updateTFJobReplicaStatuses updates the TFJobReplicaStatuses according to the pod.
 func updateTFJobReplicaStatuses(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, pod *v1.Pod) {
-        commonType := common.ReplicaType(rtype)
+	commonType := common.ReplicaType(rtype)
 	switch pod.Status.Phase {
 	case v1.PodRunning:
 		tfjob.Status.ReplicaStatuses[commonType].Active++

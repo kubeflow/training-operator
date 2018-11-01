@@ -25,10 +25,11 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v2/app/options"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
 )
 
 func TestAddTFJob(t *testing.T) {
@@ -194,7 +195,7 @@ func TestDeletePodsAndServices(t *testing.T) {
 	testCases := []testCase{
 		testCase{
 			description: "4 workers and 2 ps is running, policy is all",
-			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1beta1.CleanPodPolicyAll),
+			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, common.CleanPodPolicyAll),
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,

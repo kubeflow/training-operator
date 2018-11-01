@@ -16,8 +16,8 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
-	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/common/util/unstructured"
+	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (

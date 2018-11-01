@@ -20,17 +20,18 @@ import (
 
 	"k8s.io/api/core/v1"
 
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 )
 
 func TestFailed(t *testing.T) {
 	tfJob := testutil.NewTFJob(3, 0)
-	initializeReplicaStatuses(tfJob, tfv1beta1.TFReplicaTypeWorker)
+	initializeTFReplicaStatuses(tfJob, tfv1beta1.TFReplicaTypeWorker)
 	pod := testutil.NewBasePod("pod", tfJob, t)
 	pod.Status.Phase = v1.PodFailed
 	updateTFJobReplicaStatuses(tfJob, tfv1beta1.TFReplicaTypeWorker, pod)
-	if tfJob.Status.ReplicaStatuses[tfv1beta1.TFReplicaTypeWorker].Failed != 1 {
+	if tfJob.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
 	err := updateStatusSingle(tfJob, tfv1beta1.TFReplicaTypeWorker, 3, false, false)
@@ -331,9 +332,9 @@ func TestStatus(t *testing.T) {
 	}
 
 	for i, c := range testCases {
-		initializeReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeWorker)
-		initializeReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeChief)
-		initializeReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypePS)
+		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeWorker)
+		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeChief)
+		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypePS)
 
 		setStatusForTest(c.tfJob, tfv1beta1.TFReplicaTypePS, c.expectedFailedPS, c.expectedSucceededPS, c.expectedActivePS, t)
 		setStatusForTest(c.tfJob, tfv1beta1.TFReplicaTypeWorker, c.expectedFailedWorker, c.expectedSucceededWorker, c.expectedActiveWorker, t)
