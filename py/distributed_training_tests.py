@@ -54,11 +54,6 @@ class DistributedTrainingJobTests(test_util.TestCase):
     creation_failures = tf_job_client.get_creation_failures_from_tfjob(
       api_client, self.namespace, results)
     if creation_failures:
-      # TODO(jlewi): Starting with
-      # https://github.com/kubeflow/tf-operator/pull/646 the number of events
-      # no longer seems to match the expected; it looks like maybe events
-      # are being combined? For now we just log a warning rather than an
-      # error.
       logging.warning(creation_failures)
 
     # Delete the TFJob.
