@@ -277,7 +277,7 @@
                     dependencies: ["setup-kubeflow"],
                   },
                   {
-                    name: "",
+                    name: "estimator-runconfig-tests",
                     template: "estimator-runconfig-tests",
                     dependencies: ["setup-kubeflow"],
                   },
