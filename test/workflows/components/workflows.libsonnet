@@ -272,7 +272,12 @@
                     dependencies: ["setup-kubeflow"],
                   },
                   {
-                    name: "estimator-runconfig-tests",
+                    name: "distributed-training-tests",
+                    template: "distributed-training-tests",
+                    dependencies: ["setup-kubeflow"],
+                  },
+                  {
+                    name: "",
                     template: "estimator-runconfig-tests",
                     dependencies: ["setup-kubeflow"],
                   },
@@ -375,6 +380,8 @@
               "cleanpod-policy-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "estimator-runconfig-tests"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "distributed-training-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "invalid-tfjob-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [

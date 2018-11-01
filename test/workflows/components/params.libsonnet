@@ -52,6 +52,11 @@
       namespace: "kubeflow-test-infra",
       image: "",
     },
+    distributed_training_v1alpha2: {
+      name: "distributed_training",
+      namespace: "kubeflow-test-infra",
+      image: "gcr.io/kubeflow-examples/distributed_worker:v20181031-513e107c"
+    },
     "invalid-tfjob": {
       name: "invalid-tfjob",
     },
