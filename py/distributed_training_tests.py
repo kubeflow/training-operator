@@ -19,7 +19,8 @@ class DistributedTrainingJobTests(test_util.TestCase):
     super(DistributedTrainingJobTests, self).__init__(
       class_name="DistributedTrainingJobTests", name=name)
 
-  # Run a distributed training TFJob, wait for it to complete, and check for pod/service creation errors.
+  # Run a distributed training TFJob, wait for it to complete, and check for pod/service
+  # creation errors.
   def run_distributed_training_job(self, component):
     api_client = k8s_client.ApiClient()
 
@@ -64,7 +65,8 @@ class DistributedTrainingJobTests(test_util.TestCase):
       api_client, self.namespace, self.name, self.tfjob_version,
       status_callback=tf_job_client.log_status)
 
-  # Run a distributed training TFJob, wait for it to complete, and check for pod/service creation errors.
+  # Run a distributed training TFJob, wait for it to complete, and check for pod/service
+  # creation errors.
   def test_distributed_training_independent_worker(self):
     self.run_distributed_training_job(TFJOB_COMPONENT_NAME)
 
