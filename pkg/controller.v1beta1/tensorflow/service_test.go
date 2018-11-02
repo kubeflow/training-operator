@@ -1,0 +1,85 @@
+// Copyright 2018 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package controller provides a Kubernetes controller for a TFJob resource.
+package tensorflow
+
+import (
+	"testing"
+
+	"k8s.io/api/core/v1"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/kubernetes/pkg/controller"
+
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1/app/options"
+	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
+	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+)
+
+func TestAddService(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1beta1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		ctr.Run(testutil.ThreadCount, stopCh)
+	}
+	go run(stopCh)
+
+	var key string
+	syncChan := make(chan string)
+	ctr.syncHandler = func(tfJobKey string) (bool, error) {
+		key = tfJobKey
+		<-syncChan
+		return true, nil
+	}
+
+	tfJob := testutil.NewTFJob(1, 0)
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+	service := testutil.NewService(tfJob, testutil.LabelWorker, 0, t)
+	ctr.AddService(service)
+
+	syncChan <- "sync"
+	if key != testutil.GetKey(tfJob, t) {
+		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, testutil.GetKey(tfJob, t), key)
+	}
+	close(stopCh)
+}
