@@ -15,7 +15,7 @@ params + {
       project: 'kubeflow-releasing',
       prow_env: 'JOB_NAME=tf-operator-release,JOB_TYPE=tf-operator-release,REPO_NAME=tf-operator,REPO_OWNER=kubeflow,BUILD_NUMBER=b2a8,PULL_BASE_SHA=6214e560',
       registry: 'gcr.io/kubeflow-images-public',
-      versionTag: 'v20180611-6214e560',
+      versionTag: 'kubeflow-tf-operator-postsubmit-v2-70cafb1-271-1911',
       zone: 'us-central1-a',
     },
   },
