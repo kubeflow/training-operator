@@ -24,8 +24,7 @@ class SimpleTfJobTests(test_util.TestCase):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace,
-      component + "_" + self.tfjob_version, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
@@ -72,11 +71,11 @@ class SimpleTfJobTests(test_util.TestCase):
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def test_simple_tfjob_cpu(self):
-    self.run_simple_tfjob(CPU_TFJOB_COMPONENT_NAME)
+    self.run_simple_tfjob(CPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def test_simple_tfjob_gpu(self):
-    self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME)
+    self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)
