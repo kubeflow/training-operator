@@ -6,8 +6,8 @@ from py import ks_util
 from py import test_runner
 from py import tf_job_client
 
-CPU_TFJOB_COMPONENT_NAME = "simple_tfjob_v1alpha2"
-GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob_v1alpha2"
+CPU_TFJOB_COMPONENT_NAME = "simple_tfjob"
+GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob"
 
 class SimpleTfJobTests(test_util.TestCase):
   def __init__(self, args):
@@ -24,7 +24,8 @@ class SimpleTfJobTests(test_util.TestCase):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace,
+      component + "_" + self.tfjob_version, self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
