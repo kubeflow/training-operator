@@ -217,6 +217,8 @@ def setup_kubeflow(args):
       tf_job_deployment_name = "tf-job-operator"
     elif args.tf_job_version == "v1alpha2":
       tf_job_deployment_name = "tf-job-operator-v1alpha2"
+    elif args.tf_job_version == "v1beta1":
+      tf_job_deployment_name = "tf-job-operator-v1beta1"
     else:
       raise ValueError(
         "Unrecognized value for tf_job_version %s" % args.tf_job_version)
