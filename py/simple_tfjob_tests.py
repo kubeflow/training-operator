@@ -34,7 +34,7 @@ class SimpleTfJobTests(test_util.TestCase):
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     # Wait for the job to complete.

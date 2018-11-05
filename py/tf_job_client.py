@@ -22,7 +22,7 @@ TF_JOB_KIND = "TFJob"
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
 
-def create_tf_job(client, spec, version="v1alpha1"):
+def create_tf_job(client, spec, version="v1beta1"):
   """Create a TFJob.
 
   Args:
@@ -59,7 +59,7 @@ def create_tf_job(client, spec, version="v1alpha1"):
     raise e
 
 
-def delete_tf_job(client, namespace, name, version="v1alpha1"):
+def delete_tf_job(client, namespace, name, version="v1beta1"):
   crd_api = k8s_client.CustomObjectsApi(client)
   try:
     body = {
@@ -98,93 +98,23 @@ def delete_tf_job(client, namespace, name, version="v1alpha1"):
 @retrying.retry(wait_fixed=10000, stop_max_attempt_number=20)
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
-  if tf_job.get("apiVersion", "") == "kubeflow.org/v1alpha2":
-    all_conditions = tf_job.get("status", {}).get("conditions", [])
-    conditions = [] if all_conditions is None else [c.get("type", "") for c in all_conditions]
-    logging.info("Job %s in namespace %s; uid=%s; conditions=%s",
-                 tf_job.get("metadata", {}).get("name"),
-                 tf_job.get("metadata", {}).get("namespace"),
-                 tf_job.get("metadata", {}).get("uid"),
-                 conditions)
-  else:
-    logging.info("Job %s in namespace %s; uid=%s; phase=%s, state=%s,",
-                 tf_job.get("metadata", {}).get("name"),
-                 tf_job.get("metadata", {}).get("namespace"),
-                 tf_job.get("metadata", {}).get("uid"),
-                 tf_job.get("status", {}).get("phase"),
-                 tf_job.get("status", {}).get("state"))
-
-
-def wait_for_phase(client,
-                   namespace,
-                   name,
-                   phases,
-                   timeout=datetime.timedelta(minutes=10),
-                   polling_interval=datetime.timedelta(seconds=30),
-                   status_callback=None):
-  """Wait until the job enters one of the allowed phases.
-
-  This function only works with v1alpha1 jobs because phase isn't defined
-  for v1alpha2 jobs.
-
-  Args:
-    client: K8s api client.
-    namespace: namespace for the job.
-    name: Name of the job.
-    timeout: How long to wait for the job.
-    polling_interval: How often to poll for the status of the job.
-    status_callback: (Optional): Callable. If supplied this callable is
-      invoked after we poll the job. Callable takes a single argument which
-      is the job.
-  """
-  crd_api = k8s_client.CustomObjectsApi(client)
-  end_time = datetime.datetime.now() + timeout
-  version = "v1alpha1"
-  while True:
-    # By setting async_req=True ApiClient returns multiprocessing.pool.AsyncResult
-    # If we don't set async_req=True then it could potentially block forever.
-    thread = crd_api.get_namespaced_custom_object(
-      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async_req=True)
-
-    # Try to get the result but timeout.
-    results = None
-    try:
-      results = thread.get(TIMEOUT)
-    except multiprocessing.TimeoutError:
-      logging.error("Timeout trying to get TFJob.")
-
-    if results:
-      if status_callback:
-        status_callback(results)
-
-      # If we poll the CRD quick enough status won't have been set yet.
-      phase = results.get("status", {}).get("phase", "")
-      if phase in phases:
-        return results
-
-    if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError(
-        "Timeout waiting for job {0} in namespace {1} to enter one of the "
-        "phases {2}.".format(
-          name, namespace, phases))
-
-    time.sleep(polling_interval.seconds)
-
-  # Linter complains if we don't have a return statement even though
-  # this code is unreachable.
-  return None
-
+  all_conditions = tf_job.get("status", {}).get("conditions", [])
+  conditions = [] if all_conditions is None else [c.get("type", "") for c in all_conditions]
+  logging.info("Job %s in namespace %s; uid=%s; conditions=%s",
+               tf_job.get("metadata", {}).get("name"),
+               tf_job.get("metadata", {}).get("namespace"),
+               tf_job.get("metadata", {}).get("uid"),
+               conditions)
 
 def wait_for_condition(client,
                         namespace,
                         name,
                         expected_condition,
+                        version="v1beta1",
                         timeout=datetime.timedelta(minutes=10),
                         polling_interval=datetime.timedelta(seconds=30),
                         status_callback=None):
   """Waits until any of the specified conditions occur.
-
-  This function only works with v1alpha2 jobs.
 
   Args:
     client: K8s api client.
@@ -200,7 +130,6 @@ def wait_for_condition(client,
   """
   crd_api = k8s_client.CustomObjectsApi(client)
   end_time = datetime.datetime.now() + timeout
-  version = "v1alpha2"
   while True:
     # By setting async_req=True ApiClient returns multiprocessing.pool.AsyncResult
     # If we don't set async_req=True then it could potentially block forever.
@@ -245,7 +174,7 @@ def wait_for_condition(client,
 def wait_for_job(client,
                  namespace,
                  name,
-                 version="v1alpha1",
+                 version="v1beta1",
                  timeout=datetime.timedelta(minutes=10),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
@@ -261,51 +190,18 @@ def wait_for_job(client,
       invoked after we poll the job. Callable takes a single argument which
       is the job.
   """
-  if version != "v1alpha1":
-    return wait_for_condition(
-              client, namespace, name, ["Succeeded", "Failed"],
-              timeout=timeout,
-              polling_interval=polling_interval,
-              status_callback=status_callback)
+  return wait_for_condition(
+            client, namespace, name, ["Succeeded", "Failed"],
+            version=version,
+            timeout=timeout,
+            polling_interval=polling_interval,
+            status_callback=status_callback)
 
-  crd_api = k8s_client.CustomObjectsApi(client)
-  end_time = datetime.datetime.now() + timeout
-  while True:
-    # By setting async_req=True ApiClient returns multiprocessing.pool.AsyncResult
-    # If we don't set async_req=True then it could potentially block forever.
-    thread = crd_api.get_namespaced_custom_object(
-      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, async_req=True)
-
-    # Try to get the result but timeout.
-    results = None
-    try:
-      results = thread.get(TIMEOUT)
-    except multiprocessing.TimeoutError:
-      logging.error("Timeout trying to get TFJob.")
-
-    if results:
-      if status_callback:
-        status_callback(results)
-
-      # If we poll the CRD quick enough status won't have been set yet.
-      if results.get("status", {}).get("phase", {}) == "Done":
-        return results
-
-    if datetime.datetime.now() + polling_interval > end_time:
-      raise util.TimeoutError(
-        "Timeout waiting for job {0} in namespace {1} to finish.".format(
-          name, namespace))
-
-    time.sleep(polling_interval.seconds)
-
-  # Linter complains if we don't have a return statement even though
-  # this code is unreachable.
-  return None
 
 def wait_for_delete(client,
                     namespace,
                     name,
-                    version="v1alpha1",
+                    version="v1beta1",
                     timeout=datetime.timedelta(minutes=5),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
@@ -343,23 +239,7 @@ def wait_for_delete(client,
 
     time.sleep(polling_interval.seconds)
 
-def get_labels(name, runtime_id, replica_type=None, replica_index=None):
-  """Return labels.
-  """
-  labels = {
-    "kubeflow.org": "",
-    "tf_job_name": name,
-    "runtime_id": runtime_id,
-  }
-  if replica_type:
-    labels["job_type"] = replica_type
-
-  if replica_index:
-    labels["task_index"] = replica_index
-  return labels
-
-def get_labels_v1alpha2(name, replica_type=None,
-                        replica_index=None):
+def get_labels(name, replica_type=None, replica_index=None):
   """Return labels.
   """
   labels = {
@@ -381,7 +261,7 @@ def to_selector(labels):
   return ",".join(parts)
 
 def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
-  pod_labels = get_labels_v1alpha2(tfjob_name, replica_type)
+  pod_labels = get_labels(tfjob_name, replica_type)
   pod_selector = to_selector(pod_labels)
   k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
                                          pod_selector,
@@ -415,7 +295,7 @@ def terminate_replicas(api_client, namespace, name, replica, num_targets):
     num_targets: Number of replicas to terminate.
   """
   target = "{name}-{replica}".format(name=name, replica=replica)
-  pod_labels = get_labels_v1alpha2(namespace, name)
+  pod_labels = get_labels(namespace, name)
   pod_selector = to_selector(pod_labels)
   masterHost = api_client.configuration.host
 
