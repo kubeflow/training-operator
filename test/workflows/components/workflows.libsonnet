@@ -172,7 +172,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--params=name=" + test_name + ",namespace=default",
+              "--params=name=" + test_name + "-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--num_trials=" + num_trials,
               "--artifacts_path=" + artifactsDir,
