@@ -14,6 +14,7 @@
       versionTag: "",
       tfJobVersion: "v1alpha2",
     },
+    // v1alpha2 components
     master_is_chief_v1alpha2: {
       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest",
       name: "master-is-chief-v1alpha2",
@@ -59,6 +60,17 @@
     },
     "invalid-tfjob": {
       name: "invalid-tfjob",
+    },
+    // v1beta1 components
+    simple_tfjob_v1beta1: {
+      name: "simple-001",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
+    gpu_tfjob_v1beta1: {
+      name: "gpu-simple-001",
+      namespace: "kubeflow-test-infra",
+      image: "",
     },
   },
 }
