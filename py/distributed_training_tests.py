@@ -6,7 +6,7 @@ from py import ks_util
 from py import test_runner
 from py import tf_job_client
 
-TFJOB_COMPONENT_NAME = "distributed_training_v1alpha2"
+TFJOB_COMPONENT_NAME = "distributed_training"
 
 class DistributedTrainingJobTests(test_util.TestCase):
   def __init__(self, args):
@@ -35,7 +35,7 @@ class DistributedTrainingJobTests(test_util.TestCase):
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     # Wait for the job to complete.
@@ -68,7 +68,7 @@ class DistributedTrainingJobTests(test_util.TestCase):
   # Run a distributed training TFJob, wait for it to complete, and check for pod/service
   # creation errors.
   def test_distributed_training_independent_worker(self):
-    self.run_distributed_training_job(TFJOB_COMPONENT_NAME)
+    self.run_distributed_training_job(TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

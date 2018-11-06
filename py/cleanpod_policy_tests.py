@@ -35,7 +35,7 @@ class CleanPodPolicyTests(test_util.TestCase):
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     # Wait for the job to complete.
@@ -84,15 +84,18 @@ class CleanPodPolicyTests(test_util.TestCase):
 
   # Verify that all pods are deleted when the job completes.
   def test_cleanpod_all(self):
-    return self.run_tfjob_with_cleanpod_policy(CLEANPOD_ALL_COMPONENT_NAME, "All")
+    return self.run_tfjob_with_cleanpod_policy(
+      CLEANPOD_ALL_COMPONENT_NAME + "_" + self.tfjob_version, "All")
 
   # Verify that running pods are deleted when the job completes.
   def test_cleanpod_running(self):
-    return self.run_tfjob_with_cleanpod_policy(CLEANPOD_RUNNING_COMPONENT_NAME, "Running")
+    return self.run_tfjob_with_cleanpod_policy(
+      CLEANPOD_RUNNING_COMPONENT_NAME + "_" + self.tfjob_version, "Running")
 
   # Verify that none of the pods are deleted when the job completes.
   def test_cleanpod_none(self):
-    return self.run_tfjob_with_cleanpod_policy(CLEANPOD_NONE_COMPONENT_NAME, "None")
+    return self.run_tfjob_with_cleanpod_policy(
+      CLEANPOD_NONE_COMPONENT_NAME + "_" + self.tfjob_version, "None")
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

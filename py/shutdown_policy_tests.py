@@ -6,8 +6,8 @@ from py import ks_util
 from py import test_runner
 from py import tf_job_client
 
-MASTER_IS_CHIEF_COMPONENT_NAME = "master_is_chief_v1alpha2"
-WORKER0_IS_CHIEF_COMPONENT_NAME = "worker0_is_chief_v1alpha2"
+MASTER_IS_CHIEF_COMPONENT_NAME = "master_is_chief"
+WORKER0_IS_CHIEF_COMPONENT_NAME = "worker0_is_chief"
 
 class ShutdownPolicyTests(test_util.TestCase):
   def __init__(self, args):
@@ -33,7 +33,7 @@ class ShutdownPolicyTests(test_util.TestCase):
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     if shutdown_policy == "worker":
@@ -65,12 +65,14 @@ class ShutdownPolicyTests(test_util.TestCase):
   # Tests launching a TFJob with a Chief replica. Terminate the chief replica, and
   # verifies that the TFJob completes.
   def test_shutdown_chief(self):
-    return self.run_tfjob_with_shutdown_policy(MASTER_IS_CHIEF_COMPONENT_NAME, "chief")
+    return self.run_tfjob_with_shutdown_policy(
+      MASTER_IS_CHIEF_COMPONENT_NAME + "_" + self.tfjob_version, "chief")
 
   # Tests launching a TFJob with no Chief replicas. Terminate worker 0 (which becomes chief), and
   # verifies that the TFJob completes.
   def test_shutdown_worker0(self):
-    return self.run_tfjob_with_shutdown_policy(WORKER0_IS_CHIEF_COMPONENT_NAME, "worker")
+    return self.run_tfjob_with_shutdown_policy(
+      WORKER0_IS_CHIEF_COMPONENT_NAME + "_" + self.tfjob_version, "worker")
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

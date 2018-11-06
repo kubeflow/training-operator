@@ -1,12 +1,13 @@
-// Tests that when cleanPodPolicy is set to "All", all of the pods are deleted
-// when the TFJob completes.
-local params = std.extVar("__ksonnet/params").components.clean_pod_all;
+// Tests that each replica has a correctly configured TF RunConfig object.
+// Each replica runs a tf-operator-test-server, so a manual exit on the chief
+// worker is required for the job to end successfully.
+local params = std.extVar("__ksonnet/params").components.estimator_runconfig_v1beta1;
 
 local k = import "k.libsonnet";
 
 local parts(namespace, name, image) = {
   job:: {
-    apiVersion: "kubeflow.org/v1alpha2",
+    apiVersion: "kubeflow.org/v1beta1",
     kind: "TFJob",
     metadata: {
       name: name,
@@ -23,11 +24,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "echo",
-                    "Hello",
-                  ],
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
                 },
               ],
             },
@@ -41,30 +38,21 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "tail",
-                    "-f",
-                    "/dev/null",
-                  ],
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
                 },
               ],
             },
           },
         },
         Worker: {
-          replicas: 4,
+          replicas: 2,
           restartPolicy: "Never",
           template: {
             spec: {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "echo",
-                    "Hello",
-                  ],
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
                 },
               ],
             },

@@ -7,7 +7,7 @@ from py import ks_util
 from py import test_runner
 from py import tf_job_client
 
-INVALID_TFJOB_COMPONENT_NAME = "invalid-tfjob"
+INVALID_TFJOB_COMPONENT_NAME = "invalid_tfjob"
 
 class InvalidTfJobTests(test_util.TestCase):
   def __init__(self, args):
@@ -21,19 +21,20 @@ class InvalidTfJobTests(test_util.TestCase):
 
   def test_invalid_tfjob_spec(self):
     api_client = k8s_client.ApiClient()
+    component = INVALID_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, INVALID_TFJOB_COMPONENT_NAME,
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
       self.params)
 
     # Create the TF job
-    util.run(["ks", "apply", self.env, "-c", INVALID_TFJOB_COMPONENT_NAME], cwd=self.app_dir)
+    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
     logging.info("Wait for conditions Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
 
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
