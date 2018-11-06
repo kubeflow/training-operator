@@ -106,6 +106,7 @@ def log_status(tf_job):
                tf_job.get("metadata", {}).get("uid"),
                conditions)
 
+# pylint: disable=too-many-arguments
 def wait_for_condition(client,
                         namespace,
                         name,

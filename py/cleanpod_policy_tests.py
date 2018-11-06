@@ -53,7 +53,7 @@ class CleanPodPolicyTests(test_util.TestCase):
 
     # All pods are deleted.
     if clean_pod_policy == "All":
-      pod_labels = tf_job_client.get_labels_v1alpha2(self.name)
+      pod_labels = tf_job_client.get_labels(self.name)
       pod_selector = tf_job_client.to_selector(pod_labels)
       k8s_util.wait_for_pods_to_be_deleted(api_client, self.namespace, pod_selector)
     # Only running pods (PS) are deleted, completed pods are not.
@@ -62,7 +62,7 @@ class CleanPodPolicyTests(test_util.TestCase):
                                                     self.name, "Chief", ["Completed"])
       tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
                                                     self.name, "Worker", ["Completed"])
-      pod_labels = tf_job_client.get_labels_v1alpha2(self.name, "PS")
+      pod_labels = tf_job_client.get_labels(self.name, "PS")
       pod_selector = tf_job_client.to_selector(pod_labels)
       k8s_util.wait_for_pods_to_be_deleted(api_client, self.namespace, pod_selector)
     # No pods are deleted.
