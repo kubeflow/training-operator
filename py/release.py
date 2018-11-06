@@ -148,12 +148,14 @@ def build_operator_image(root_dir,
   targets = [
     "github.com/kubeflow/tf-operator/cmd/tf-operator",
     "github.com/kubeflow/tf-operator/cmd/tf-operator.v2",
+    "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1",
     "github.com/kubeflow/tf-operator/test/e2e",
     "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     if t in ["github.com/kubeflow/tf-operator/cmd/tf-operator",
-             "github.com/kubeflow/tf-operator/cmd/tf-operator.v2"]:
+             "github.com/kubeflow/tf-operator/cmd/tf-operator.v2",
+             "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1"]:
       util.run([
         "go", "install", "-ldflags",
         "-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}".format(commit), t
@@ -179,6 +181,7 @@ def build_operator_image(root_dir,
     "examples/tf_sample/tf_smoke.py",
     os.path.join(go_path, bin_path, "tf-operator"),
     os.path.join(go_path, bin_path, "tf-operator.v2"),
+    os.path.join(go_path, bin_path, "tf-operator.v1beta1"),
     os.path.join(go_path, bin_path, "e2e"),
     os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build"
   ]

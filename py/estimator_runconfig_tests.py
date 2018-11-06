@@ -87,19 +87,20 @@ class EstimatorRunconfigTests(test_util.TestCase):
   def test_tfjob_and_verify_runconfig(self):
     api_client = k8s_client.ApiClient()
     masterHost = api_client.configuration.host
+    component = COMPONENT_NAME + "_" + self.tfjob_version
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, COMPONENT_NAME, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
 
     # Create the TF job
-    util.run(["ks", "apply", self.env, "-c", COMPONENT_NAME], cwd=self.app_dir)
+    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
     # Wait for the job to either be in Running state or a terminal state
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
       api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      status_callback=tf_job_client.log_status)
+      version=self.tfjob_version, status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     num_ps = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
