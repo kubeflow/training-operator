@@ -79,8 +79,6 @@
       else name;
       local tfJobImage = params.registry + "/tf_operator:" + versionTag;
 
-      local apiVersion = "kubeflow.org/v1alpha2";
-
       // The test server image to use.
       local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 
@@ -174,7 +172,7 @@
               "--zone=" + zone,
               "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--params=name=" + test_name + ",namespace=default",
+              "--params=name=" + test_name + "-" + params.tfJobVersion + ",namespace=default",
               "--tfjob_version=" + params.tfJobVersion,
               "--num_trials=" + num_trials,
               "--artifacts_path=" + artifactsDir,

@@ -1,7 +1,7 @@
 // Tests that each replica has a correctly configured TF RunConfig object.
 // Each replica runs a tf-operator-test-server, so a manual exit on the chief
 // worker is required for the job to end successfully.
-local params = std.extVar("__ksonnet/params").components.estimator_runconfig;
+local params = std.extVar("__ksonnet/params").components.estimator_runconfig_v1alpha2;
 
 local k = import "k.libsonnet";
 

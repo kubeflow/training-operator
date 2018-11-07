@@ -1,6 +1,6 @@
 // Tests that when cleanPodPolicy is set to "All", all of the pods are deleted
 // when the TFJob completes.
-local params = std.extVar("__ksonnet/params").components.clean_pod_all;
+local params = std.extVar("__ksonnet/params").components.clean_pod_all_v1alpha2;
 
 local k = import "k.libsonnet";
 

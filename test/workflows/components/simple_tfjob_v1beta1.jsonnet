@@ -1,20 +1,20 @@
-// Tests that when cleanPodPolicy is set to "None", none of the pods are deleted
-// when the TFJob completes.
-
-local params = std.extVar("__ksonnet/params").components.clean_pod_none;
+local params = std.extVar("__ksonnet/params").components.simple_tfjob_v1beta1;
 
 local k = import "k.libsonnet";
 
+local defaultTestImage = "gcr.io/kubeflow-examples/tf_smoke:v20180814-c6e55b4d";
 local parts(namespace, name, image) = {
+  local actualImage = if image != "" then
+    image
+  else defaultTestImage,
   job:: {
-    apiVersion: "kubeflow.org/v1alpha2",
+    apiVersion: "kubeflow.org/v1beta1",
     kind: "TFJob",
     metadata: {
       name: name,
       namespace: namespace,
     },
     spec: {
-      cleanPodPolicy: "None",
       tfReplicaSpecs: {
         Chief: {
           replicas: 1,
@@ -24,11 +24,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "echo",
-                    "Hello",
-                  ],
+                  image: actualImage,
                 },
               ],
             },
@@ -42,12 +38,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "tail",
-                    "-f",
-                    "/dev/null",
-                  ],
+                  image: actualImage,
                 },
               ],
             },
@@ -61,11 +52,7 @@ local parts(namespace, name, image) = {
               containers: [
                 {
                   name: "tensorflow",
-                  image: "ubuntu",
-                  command: [
-                    "echo",
-                    "Hello",
-                  ],
+                  image: actualImage,
                 },
               ],
             },

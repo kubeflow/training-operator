@@ -3,7 +3,7 @@
 // In this case we want to check that the TFJob status is updated correctly to reflect this.
 //
 local env = std.extVar("__ksonnet/environments");
-local params = std.extVar("__ksonnet/params").components["invalid-tfjob"];
+local params = std.extVar("__ksonnet/params").components["invalid_tfjob_v1beta1"];
 
 local k = import "k.libsonnet";
 
@@ -24,7 +24,7 @@ local podTemplate = {
 };
 
 local job = {
-  apiVersion: "kubeflow.org/v1alpha2",
+  apiVersion: "kubeflow.org/v1beta1",
   kind: "TFJob",
   metadata: {
     name: name,

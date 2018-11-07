@@ -1,6 +1,6 @@
 // Tests that when cleanPodPolicy is set to "Running", only the Running pods are deleted
 // when the TFJob completes. The completed pods will not be deleted.
-local params = std.extVar("__ksonnet/params").components.clean_pod_running;
+local params = std.extVar("__ksonnet/params").components.clean_pod_running_v1alpha2;
 
 local k = import "k.libsonnet";
 
