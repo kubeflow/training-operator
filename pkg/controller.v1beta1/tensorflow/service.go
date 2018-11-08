@@ -26,7 +26,7 @@ import (
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 

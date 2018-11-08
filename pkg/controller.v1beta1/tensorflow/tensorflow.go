@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 )
 
 // TFConfig is a struct representing the distributed TensorFlow config.
