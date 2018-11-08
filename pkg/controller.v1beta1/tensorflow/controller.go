@@ -36,7 +36,7 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
