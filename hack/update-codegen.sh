@@ -37,13 +37,10 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
 
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha1,v1alpha2,v1beta1 \
+ tensorflow:v1alpha2,v1beta1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
-echo "Generating defaulters for v1alpha1"
-${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
 echo "Generating defaulters for v1alpha2"
 ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 cd - > /dev/null

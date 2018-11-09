@@ -15,16 +15,13 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha1"
 	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/util"
 )
 
 // ValidateBetaOneTFJobSpec checks that the v1beta1.TFJobSpec is valid.
@@ -104,61 +101,5 @@ func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSp
 	if foundChief > 1 {
 		return fmt.Errorf("More than 1 chief/master found")
 	}
-	return nil
-}
-
-// ValidateTFJobSpec checks that the v1alpha1.TFJobSpec is valid.
-func ValidateTFJobSpec(c *tfv1.TFJobSpec) error {
-	if c.TerminationPolicy == nil || c.TerminationPolicy.Chief == nil {
-		return fmt.Errorf("invalid termination policy: %v", c.TerminationPolicy)
-	}
-
-	chiefExists := false
-
-	// Check that each replica has a TensorFlow container and a chief.
-	for _, r := range c.ReplicaSpecs {
-		found := false
-		if r.Template == nil {
-			return fmt.Errorf("Replica is missing Template; %v", util.Pformat(r))
-		}
-
-		if r.TFReplicaType == tfv1.TFReplicaType(c.TerminationPolicy.Chief.ReplicaName) {
-			chiefExists = true
-		}
-
-		if r.TFPort == nil {
-			return errors.New("tfReplicaSpec.TFPort can't be nil.")
-		}
-
-		// Make sure the replica type is valid.
-		validReplicaTypes := []tfv1.TFReplicaType{tfv1.MASTER, tfv1.PS, tfv1.WORKER}
-
-		isValidReplicaType := false
-		for _, t := range validReplicaTypes {
-			if t == r.TFReplicaType {
-				isValidReplicaType = true
-				break
-			}
-		}
-
-		if !isValidReplicaType {
-			return fmt.Errorf("tfReplicaSpec.TFReplicaType is %v but must be one of %v", r.TFReplicaType, validReplicaTypes)
-		}
-
-		for _, c := range r.Template.Spec.Containers {
-			if c.Name == tfv1.DefaultTFContainer {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("Replica type %v is missing a container named %s", r.TFReplicaType, tfv1.DefaultTFContainer)
-		}
-	}
-
-	if !chiefExists {
-		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
-	}
-
 	return nil
 }
