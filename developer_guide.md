@@ -1,6 +1,6 @@
 # Developer Guide
 
-The are two versions of the TF operator: one for v1alpha2 (to be deprecated) and one for v1beta1.
+There are two versions of the TF operator: one for v1alpha2 (to be deprecated) and one for v1beta1.
 
 ## Building the operator
 
