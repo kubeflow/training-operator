@@ -1,6 +1,6 @@
 # Developer Guide
 
-There are two versions of operator: one for v1alpha1 and one for v1alpha2.
+The are two versions of the TF operator: one for v1alpha2 (to be deprecated) and one for v1beta1.
 
 ## Building the operator
 
@@ -24,7 +24,7 @@ dep ensure
 Build it
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator
+go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
 ```
 
 If you want to build the operator for v1alpha2, please use the command here:
@@ -89,8 +89,8 @@ export KUBEFLOW_NAMESPACE=$(your_namespace)
 After the cluster is up, the TFJob CRD should be created on the cluster.
 
 ```bash
-# If you are using v1alpha1
-kubectl create -f ./examples/crd/crd.yml
+# If you are using v1beta1
+kubectl create -f ./examples/crd/crd-v1beta1.yml
 ```
 
 Or
@@ -111,8 +111,10 @@ tf-operator
 To verify local operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-# If you are using v1alpha1
-kubectl create -f ./examples/tf_job.yaml
+# If you are using v1beta1
+cd ./examples/v1beta1/dist-mnist
+docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
+kubectl create -f ./tf-job-mnist.yaml
 ```
 
 Or
