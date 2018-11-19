@@ -20,12 +20,6 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/beorn7/perks"
-  packages = ["quantile"]
-  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -155,12 +149,6 @@
   version = "v1.1.5"
 
 [[projects]]
-  name = "github.com/juju/ratelimit"
-  packages = ["."]
-  revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
-  version = "1.0.1"
-
-[[projects]]
   branch = "master"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -169,12 +157,6 @@
     "jwriter"
   ]
   revision = "3fdea8d05856a0c8df22ed4bc71b3219245e4485"
-
-[[projects]]
-  name = "github.com/matttproud/golang_protobuf_extensions"
-  packages = ["pbutil"]
-  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
-  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -205,39 +187,6 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/prometheus/client_model"
-  packages = ["go"]
-  revision = "99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/prometheus/common"
-  packages = [
-    "expfmt",
-    "internal/bitbucket.org/ww/goautoneg",
-    "model"
-  ]
-  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/prometheus/procfs"
-  packages = [
-    ".",
-    "internal/util",
-    "nfs",
-    "xfs"
-  ]
-  revision = "7d6f385de8bea29190f15ba9931442a0eaef9af7"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -381,7 +330,6 @@
   version = "v2.2.1"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/api"
   packages = [
     "admission/v1beta1",
@@ -415,7 +363,8 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "12444147eb1150aa5c80d2aae532cbc5b7be73d0"
+  revision = "73d903622b7391f3312dcbac6483fed484e185f8"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   branch = "master"
@@ -431,7 +380,6 @@
   revision = "a01914bc74d2605fef74a0248d2eec998f0bb093"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -482,7 +430,8 @@
     "third_party/forked/golang/json",
     "third_party/forked/golang/reflect"
   ]
-  revision = "e386b2658ed20923da8cc9250e552f082899a1ee"
+  revision = "302974c03f7e50f16561ba237db776ab93594ef6"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   branch = "master"
@@ -707,7 +656,6 @@
   revision = "39cb288412c48cb533ba4be5d6c28620b9a0c1b4"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/kubernetes"
   packages = [
     "pkg/api/legacyscheme",
@@ -802,15 +750,14 @@
     "pkg/util/net/sets",
     "pkg/util/parsers",
     "pkg/util/pointer",
-    "pkg/util/reflector/prometheus",
-    "pkg/util/taints",
-    "pkg/util/workqueue/prometheus"
+    "pkg/util/taints"
   ]
-  revision = "8b83789a723345fccf730c698f11899ffd00bf4d"
+  revision = "be1a908c6aa47e0ae1b1dc861a1de6ccfe963aa2"
+  version = "v1.10.10"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8eb4cd20475be26d2a5056a7c31229a455835e41326717897533573e1a719f34"
+  inputs-digest = "f78a27b6cd022a6966f63a4a171a4623f1f38a85db2a8c1a9996108ab77ee32d"
   solver-name = "gps-cdcl"
   solver-version = 1
