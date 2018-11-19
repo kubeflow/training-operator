@@ -17,32 +17,8 @@ required = [
   version = "2.7.1"
 
 [[constraint]]
-  name = "github.com/ghodss/yaml"
-  version = "1.0.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/go-openapi/spec"
-
-[[constraint]]
-  name = "github.com/gogo/protobuf"
-  version = "1.0.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/golang/glog"
-
-[[constraint]]
   name = "github.com/golang/protobuf"
   version = "1.1.0"
-
-[[constraint]]
-  name = "github.com/juju/ratelimit"
-  version = "1.0.1"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/onrik/logrus"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -50,27 +26,28 @@ required = [
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "~1.0.4"
+  version = "v1.0.4"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "~7.0.0"
+  version = "v7.0.0"
 
 [[constraint]]
+  # kube-openapi does not have any version.
   name = "k8s.io/kube-openapi"
   branch = "release-1.10"
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  branch = "release-1.10"
+  version = "v1.10.0"
 
 [[constraint]]
   name = "k8s.io/api"
-  branch = "release-1.10"
+  version = "kubernetes-1.10.0"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  branch = "release-1.10"
+  version = "kubernetes-1.10.0"
 
 [[constraint]]
   name = "k8s.io/code-generator"
@@ -85,6 +62,18 @@ required = [
 [[override]]
   name = "github.com/json-iterator/go"
   version = "1.1.4"
+
+[[override]]
+  name = "github.com/ghodss/yaml"
+  version = "1.0.0"
+
+[[override]]
+  name = "github.com/gogo/protobuf"
+  version = "1.0.0"
+
+[[override]]
+  name = "github.com/juju/ratelimit"
+  version = "1.0.1"
 
 [prune]
   go-tests = true
