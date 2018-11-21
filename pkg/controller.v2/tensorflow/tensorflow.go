@@ -18,11 +18,18 @@ package tensorflow
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+)
+
+const (
+	// EnvCustomClusterDomain is the custom defined cluster domain, such as "svc.cluster.local".
+	// Ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-records
+	EnvCustomClusterDomain = "CUSTOM_CLUSTER_DOMAIN"
 )
 
 // TFConfig is a struct representing the distributed TensorFlow config.
@@ -113,8 +120,19 @@ func genClusterSpec(tfjob *tfv1alpha2.TFJob) (ClusterSpec, error) {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := fmt.Sprintf("%s:%d", jobcontroller.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i)), port)
-			replicaNames = append(replicaNames, host)
+			// As described here: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-records.
+			// Headless service assigned a DNS A record for a name of the form "my-svc.my-namespace.svc.cluster.local".
+			// And the last part "svc.cluster.local" is called cluster domain
+			// which maybe different between kubernetes clusters.
+			hostName := jobcontroller.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i))
+			svcName := hostName + "." + tfjob.Namespace + "." + "svc"
+			cluserDomain := os.Getenv(EnvCustomClusterDomain)
+			if len(cluserDomain) > 0 {
+				svcName += "." + cluserDomain
+			}
+
+			endpoint := fmt.Sprintf("%s:%d", svcName, port)
+			replicaNames = append(replicaNames, endpoint)
 		}
 
 		clusterSpec[rt] = replicaNames
