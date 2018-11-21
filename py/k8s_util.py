@@ -56,6 +56,7 @@ def wait_for_pods_to_be_in_phases(
   """
   end_time = datetime.datetime.now() + timeout
   while True:
+    time.sleep(polling_interval.seconds)
     pods = list_pods(client, namespace, pod_selector)
 
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
@@ -78,7 +79,7 @@ def wait_for_pods_to_be_in_phases(
       logging.error("Timeout waiting for pods to be in phase: %s", phases)
       raise util.TimeoutError(
         "Timeout waiting for pods to be in states %s" % phases)
-    time.sleep(polling_interval.seconds)
+
 
   return None
 

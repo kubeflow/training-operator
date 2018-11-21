@@ -51,8 +51,8 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
         api_client, self.namespace, self.name, "PS", 0)
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Succeeded"])
+      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
+      #                                              self.name, "PS", ["Succeeded"])
       tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
                                                     self.name, "PS", ["Running"])
       restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
