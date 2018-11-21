@@ -400,4 +400,4 @@ def get_start_time_by_index(api_client, namespace, tfjob_name, replica_type,
   """
   pod_labels = get_labels(tfjob_name, replica_type)
   pod_selector = to_selector(pod_labels)
-  return k8s_util.get_pod_start_time(api_client, namespace, pod_selector, index)
+  return k8s_util.get_container_start_time(api_client, namespace, pod_selector, index)

@@ -11,7 +11,9 @@ from kubernetes.client import rest
 
 
 def get_container_start_time(client, namespace, pod_selector, index):
-  """ get start time of container in the pod with pod_name, we assume there is only one container.
+  """ get start time of container in the pod with pod_name, 
+  we assume there is only one container.
+  
   Args:
     client: K8s api client.
     namespace: Namespace.
