@@ -10,22 +10,22 @@ from kubernetes import client as k8s_client
 from kubernetes.client import rest
 
 
-def get_pod_start_time(client, namespace, pod_selector, index):
-  """ get start time of pod with pod_name 
+def get_container_start_time(client, namespace, pod_selector, index):
+  """ get start time of container in the pod with pod_name, we assume there is only one container.
   Args:
     client: K8s api client.
     namespace: Namespace.
     pod_selector: Selector for the pods.
     index: Index of the pods
   Returns:
-    pod_start_time: pod start time in datetime datatype
+    container_start_time: container start time in datetime datatype
   """
   pods = list_pods(client, namespace, pod_selector)
   logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
   pod = pods.items[index]
   #for p in pods.items:
   #  return pod.status.start_time
-  return pod.status.start_time
+  return pod.status.container_statuses[0].state.running.started_at
 
 
 def log_pods(pods):
@@ -54,9 +54,10 @@ def wait_for_pods_to_be_in_phases(
       invoked after we poll the job. Callable takes a single argument which
       is the job.
   """
+  time.sleep(polling_interval.seconds)
   end_time = datetime.datetime.now() + timeout
   while True:
-    time.sleep(polling_interval.seconds)
+
     pods = list_pods(client, namespace, pod_selector)
 
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
@@ -80,6 +81,7 @@ def wait_for_pods_to_be_in_phases(
       raise util.TimeoutError(
         "Timeout waiting for pods to be in states %s" % phases)
 
+    time.sleep(polling_interval.seconds)
 
   return None
 
