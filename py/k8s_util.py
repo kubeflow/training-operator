@@ -9,6 +9,22 @@ from kubeflow.testing import util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
 
+
+def get_pod_start_time(client, namespace, pod_selector, index):
+  """ get start time of pod with pod_name 
+  Args:
+    client: K8s api client.
+    namespace: Namespace.
+    pod_selector: Selector for the pods.
+    index: Index of the pods
+  Returns:
+    pod_start_time: pod start time in datetime datatype
+  """
+  pods = list_pods(client, namespace, pod_selector)
+  pod = pods.items[index]
+  return pod.status.start_time
+
+
 def log_pods(pods):
   """Log information about pods."""
   for p in pods.items:

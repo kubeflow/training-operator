@@ -285,7 +285,7 @@ def terminate_replica(master_host, namespace, target, exit_code=0):
   }
   util.send_request(master_host, namespace, target, "exit", params)
 
-def terminate_replicas(api_client, namespace, name, replica, num_targets):
+def terminate_replicas(api_client, namespace, name, replica, num_targets, exit_code=0):
   """Terminates the specified replica(s).
 
   Args:
@@ -294,6 +294,7 @@ def terminate_replicas(api_client, namespace, name, replica, num_targets):
     name: TFJob name
     replica: Replica type (chief, worker, ps)
     num_targets: Number of replicas to terminate.
+    exit_code: What exit code to terminate the pods with.
   """
   target = "{name}-{replica}".format(name=name, replica=replica)
   pod_labels = get_labels(namespace, name)
@@ -313,7 +314,7 @@ def terminate_replicas(api_client, namespace, name, replica, num_targets):
   logging.info("Issuing the terminate request")
   for num in range(num_targets):
     full_target = target + "-{0}".format(num)
-    terminate_replica(masterHost, namespace, full_target)
+    terminate_replica(masterHost, namespace, full_target, exit_code)
 
 
 def job_succeeded(tfjob):
@@ -361,3 +362,20 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
     creation_failures.append(message)
 
   return creation_failures
+
+
+def get_start_time_by_index(api_client, namespace, tfjob_name, replica_type, index):
+  """Returns the start time of the specified pod.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    name: TFJob name.
+    replica: Replica type (chief, worker, ps).
+    index: Index of the replicas.
+  """
+  pod_labels = get_labels(tfjob_name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  return k8s_util.get_pod_start_time(api_client, namespace, 
+                                     pod_selector, 
+                                     index)

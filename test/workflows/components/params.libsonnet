@@ -61,6 +61,26 @@
     "invalid_tfjob_v1alpha2": {
       name: "invalid-tfjob",
     },
+    replica_restart_policy_always_v1alpha2: {
+       name: "replica-restart-policy-always",
+       namespace: "kubeflow-test-infra",
+       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
+    },
+    replica_restart_policy_onfailure_v1alpha2: {
+       name: "replica-restart-policy-onfailure",
+       namespace: "kubeflow-test-infra",
+       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
+    },
+    replica_restart_policy_never_v1alpha2: {
+       name: "replica-restart-policy-never",
+       namespace: "kubeflow-test-infra",
+       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
+    },
+    replica_restart_policy_exitcode_v1alpha2: {
+       name: "replica-restart-policy-exitcode",
+       namespace: "kubeflow-test-infra",
+       image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
+    },
     // v1beta1 components
     simple_tfjob_v1beta1: {
       name: "simple-001",
