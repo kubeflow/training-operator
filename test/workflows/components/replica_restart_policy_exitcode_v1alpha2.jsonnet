@@ -1,5 +1,5 @@
 local env = std.extVar("__ksonnet/environments");
-local params = std.extVar("__ksonnet/params").components.replica_restart_policy_exitcode_v1alpha2.jsonnet;
+local params = std.extVar("__ksonnet/params").components.replica_restart_policy_exitcode_v1alpha2;
 
 local k = import "k.libsonnet";
 

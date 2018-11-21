@@ -1,4 +1,4 @@
-local params = std.extVar("__ksonnet/params").components.replica_restart_policy_always_v1alpha2.jsonnet;
+local params = std.extVar("__ksonnet/params").components.replica_restart_policy_always_v1alpha2;
 
 local k = import "k.libsonnet";
 
