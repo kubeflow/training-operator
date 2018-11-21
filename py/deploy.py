@@ -86,8 +86,8 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
       raise
 
   for k, v in params.iteritems():
-    util.run(
-      ["ks", "param", "set", "--env=" + env, component, k, v], cwd=app_dir)
+    util.run(["ks", "param", "set", "--env=" + env, component, k, v],
+             cwd=app_dir)
 
   apply_command = ["ks", "apply", env, "-c", component]
   if account:
@@ -201,7 +201,7 @@ def setup_kubeflow(args):
       "tfJobImage": args.image,
       "name": "kubeflow-core",
       "namespace": args.namespace,
-      "tfJobVersion":  args.tf_job_version,
+      "tfJobVersion": args.tf_job_version,
     }
 
     component = "core"
@@ -231,10 +231,14 @@ def setup_kubeflow(args):
     finally:
       # Run kubectl describe to get useful information about the deployment.
       # This will help troubleshoot any errors.
-      util.run(["kubectl", "-n", args.namespace, "describe", "deploy",
-                tf_job_deployment_name])
-      util.run(["kubectl", "-n", args.namespace, "describe", "pods", "-l",
-                "name=tf-job-operator"])
+      util.run([
+        "kubectl", "-n", args.namespace, "describe", "deploy",
+        tf_job_deployment_name
+      ])
+      util.run([
+        "kubectl", "-n", args.namespace, "describe", "pods", "-l",
+        "name=tf-job-operator"
+      ])
 
   # Reraise the exception so that the step fails because there's no point
   # continuing the test.
@@ -250,6 +254,7 @@ def setup_kubeflow(args):
     t.class_name = "GKE"
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
+
 
 def teardown(args):
   """Teardown the resources."""

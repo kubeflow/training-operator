@@ -46,10 +46,7 @@ def run(command, cwd=None, env=None, dryrun=False):
 
   # In case the release is done from a non-linux machine
   # we enforce correct GOOS and GOARCH
-  extra_envs = {
-    "GOOS": "linux",
-    "GOARCH": "amd64"
-    }
+  extra_envs = {"GOOS": "linux", "GOARCH": "amd64"}
 
   if not env:
     env = os.environ.copy()
@@ -116,17 +113,15 @@ def send_request(master_host, namespace, target, rpc, params):
   }
   url = ("{master}/api/v1/namespaces/{namespace}/services/{service}:2222"
          "/proxy/{rpc}").format(
-          master=master_host, namespace=namespace, service=target, rpc=rpc)
-  r = requests.get(url,
-                   headers=headers, params=params,
-                   verify=False)
+           master=master_host, namespace=namespace, service=target, rpc=rpc)
+  r = requests.get(url, headers=headers, params=params, verify=False)
 
   if r.status_code == requests.codes.NOT_FOUND:
     logging.info("Request to %s returned 404", url)
     return ""
   if r.status_code != requests.codes.OK:
-    msg = "Request to {0} exited with status code: {1}".format(url,
-          r.status_code)
+    msg = "Request to {0} exited with status code: {1}".format(
+      url, r.status_code)
     logging.error(msg)
     raise RuntimeError(msg)
 
@@ -164,22 +159,20 @@ def clone_repo(dest,
 
   if branches:
     for b in branches:
-      run(
-        [
-          "git",
-          "fetch",
-          "origin",
-          b,
-        ], cwd=dest)
+      run([
+        "git",
+        "fetch",
+        "origin",
+        b,
+      ], cwd=dest)
 
     if not sha:
       b = branches[-1].split(":", 1)[-1]
-      run(
-        [
-          "git",
-          "checkout",
-          b,
-        ], cwd=dest)
+      run([
+        "git",
+        "checkout",
+        b,
+      ], cwd=dest)
 
   if sha:
     run(["git", "checkout", sha], cwd=dest)
@@ -338,8 +331,9 @@ def wait_for_deployment(api_client, namespace, name):
     logging.info("Waiting for deployment %s in namespace %s", name, namespace)
     time.sleep(10)
 
-  logging.error("Timeout waiting for deployment %s in namespace %s to be "
-                "ready", name, namespace)
+  logging.error(
+    "Timeout waiting for deployment %s in namespace %s to be "
+    "ready", name, namespace)
   raise TimeoutError(
     "Timeout waiting for deployment {0} in namespace {1}".format(
       name, namespace))
@@ -372,8 +366,9 @@ def wait_for_statefulset(api_client, namespace, name):
     logging.info("Waiting for Statefulset %s in namespace %s", name, namespace)
     time.sleep(10)
 
-  logging.error("Timeout waiting for statefulset %s in namespace %s to be "
-                "ready", name, namespace)
+  logging.error(
+    "Timeout waiting for statefulset %s in namespace %s to be "
+    "ready", name, namespace)
   raise TimeoutError(
     "Timeout waiting for statefulset {0} in namespace {1}".format(
       name, namespace))
@@ -460,6 +455,7 @@ def setup_cluster(api_client):
 class TimeoutError(Exception):  # pylint: disable=redefined-builtin
   """An error indicating an operation timed out."""
 
+
 class JobTimeoutError(TimeoutError):
   """An error indicating the job timed out.
 
@@ -469,6 +465,7 @@ class JobTimeoutError(TimeoutError):
   def __init__(self, message, job):
     super(JobTimeoutError, self).__init__(message)
     self.job = job
+
 
 GCS_REGEX = re.compile("gs://([^/]*)(/.*)?")
 

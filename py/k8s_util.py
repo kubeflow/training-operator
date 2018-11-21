@@ -22,10 +22,10 @@ def get_pod_start_time(client, namespace, pod_selector, index):
   """
   pods = list_pods(client, namespace, pod_selector)
   logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
-  #pod = pods.items[index]
-  for p in pods.items:
-    return pod.status.start_time
-  #return pod.status.start_time
+  pod = pods.items[index]
+  #for p in pods.items:
+  #  return pod.status.start_time
+  return pod.status.start_time
 
 
 def log_pods(pods):
@@ -34,13 +34,13 @@ def log_pods(pods):
     logging.info("Pod name=%s Phase=%s", p.metadata.name, p.status.phase)
 
 
-def wait_for_pods_to_be_in_phases(client,
-                                  namespace,
-                                  pod_selector,
-                                  phases,
-                                  timeout=datetime.timedelta(minutes=5),
-                                  polling_interval=datetime.timedelta(
-                                  seconds=30)):
+def wait_for_pods_to_be_in_phases(
+    client,
+    namespace,
+    pod_selector,
+    phases,
+    timeout=datetime.timedelta(minutes=5),
+    polling_interval=datetime.timedelta(seconds=30)):
   """Wait for the pods matching the selector to be in the specified state
 
   Args:
@@ -73,20 +73,20 @@ def wait_for_pods_to_be_in_phases(client,
     if datetime.datetime.now() + polling_interval > end_time:
       logging.info("Latest pod phases")
       log_pods(pods)
-      logging.error("Timeout waiting for pods to be in phase: %s",
-                    phases)
-      raise util.TimeoutError("Timeout waiting for pods to be in states %s" %
-                              phases)
+      logging.error("Timeout waiting for pods to be in phase: %s", phases)
+      raise util.TimeoutError(
+        "Timeout waiting for pods to be in states %s" % phases)
     time.sleep(polling_interval.seconds)
 
   return None
 
-def wait_for_pods_to_be_deleted(client,
-                                namespace,
-                                pod_selector,
-                                timeout=datetime.timedelta(minutes=5),
-                                polling_interval=datetime.timedelta(
-                                  seconds=30)):
+
+def wait_for_pods_to_be_deleted(
+    client,
+    namespace,
+    pod_selector,
+    timeout=datetime.timedelta(minutes=5),
+    polling_interval=datetime.timedelta(seconds=30)):
   """Wait for the specified job to be deleted.
 
   Args:
@@ -113,6 +113,7 @@ def wait_for_pods_to_be_deleted(client,
 
     time.sleep(polling_interval.seconds)
 
+
 def list_pods(client, namespace, label_selector):
   core = k8s_client.CoreV1Api(client)
   try:
@@ -134,9 +135,10 @@ def list_pods(client, namespace, label_selector):
       message = body.get("message")
 
     logging.exception(("Exception when calling DefaultApi->"
-                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-                  message)
+                       "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                      message)
     raise e
+
 
 def get_events(client, namespace, uid):
   """Get the events for the provided object."""
@@ -161,8 +163,8 @@ def get_events(client, namespace, uid):
       message = body.get("message")
 
     logging.exception(("Exception when calling DefaultApi->"
-                   "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
-                  message)
+                       "apis_fqdn_v1_namespaces_namespace_resource_post: %s"),
+                      message)
     raise e
 
   matching = []
@@ -173,6 +175,7 @@ def get_events(client, namespace, uid):
     matching.append(e)
 
   return matching
+
 
 def parse_events(events):
   """Parse events.

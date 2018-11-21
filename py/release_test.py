@@ -35,12 +35,8 @@ class ReleaseTest(unittest.TestCase):
   @mock.patch("py.release.util.install_go_deps")
   @mock.patch("py.release.util.clone_repo")
   @mock.patch("py.release.build_and_push")
-  def test_build_pr(# pylint: disable=no-self-use
-      self,
-      mock_build_and_push,
-      mock_clone,
-      _mock_install,
-      _mock_os,
+  def test_build_pr(  # pylint: disable=no-self-use
+      self, mock_build_and_push, mock_clone, _mock_install, _mock_os,
       _mock_makedirs):
     parser = release.build_parser()
     args = parser.parse_args(
@@ -78,6 +74,7 @@ rbac:
   install: false
   apiVersion: v1beta1"""
       self.assertEqual(expected, output)
+
 
 if __name__ == "__main__":
   unittest.main()
