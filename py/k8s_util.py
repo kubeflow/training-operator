@@ -21,8 +21,11 @@ def get_pod_start_time(client, namespace, pod_selector, index):
     pod_start_time: pod start time in datetime datatype
   """
   pods = list_pods(client, namespace, pod_selector)
-  pod = pods.items[index]
-  return pod.status.start_time
+  logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
+  #pod = pods.items[index]
+  for p in pods.items:
+    return pod.status.start_time
+  #return pod.status.start_time
 
 
 def log_pods(pods):
