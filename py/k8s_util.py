@@ -63,6 +63,8 @@ def wait_for_pods_to_be_in_phases(
     is_match = True
     for p in pods.items:
       if p.status.phase not in phases:
+        # for debug
+        logging.info("pod in phase %s", p.status.phase)
         is_match = False
 
     if is_match:

@@ -71,8 +71,8 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
         api_client, self.namespace, self.name, "PS", 0)
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Failed"])
+      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
+      #                                              self.name, "PS", ["Failed"])
       tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
                                                     self.name, "PS", ["Running"])
       restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
@@ -103,8 +103,8 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
         api_client, self.namespace, self.name, "PS", 0)
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Failed"])
+      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
+      #                                              self.name, "PS", ["Failed"])
       tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
                                                     self.name, "PS", ["Running"])
       restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
@@ -114,7 +114,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
                    str(first_start_time), str(restart_time))
       if restart_time <= first_start_time:
         self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
-          failed to restart the pod with exit_code 128".format(self.name, self.namespace)
+          failed to restart the pod with exit_code 130".format(self.name, self.namespace)
         logging.error(self.failure)
         return
 
