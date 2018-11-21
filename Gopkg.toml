@@ -39,15 +39,15 @@ required = [
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "v1.10.0"
+  version = "v1.10.1"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.1"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.1"
 
 [[constraint]]
   name = "k8s.io/code-generator"
