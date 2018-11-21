@@ -47,19 +47,22 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     if replica_restart_policy == "Always":
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
       first_start_time = tf_job_client.get_start_time_by_index(
         api_client, self.namespace, self.name, "PS", 0)
+
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-      #                                              self.name, "PS", ["Succeeded"])
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
-                                                           self.name, "PS", 0)
-      # for debug
+
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
+      restart_time = tf_job_client.get_start_time_by_index(
+        api_client, self.namespace, self.name, "PS", 0)
+
       logging.info("First start time: %s, restart time: %s",
                    str(first_start_time), str(restart_time))
+
       if restart_time <= first_start_time:
         self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
           self.name, self.namespace)
@@ -67,22 +70,26 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
         return
 
     elif replica_restart_policy == "OnFailure":
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
       first_start_time = tf_job_client.get_start_time_by_index(
         api_client, self.namespace, self.name, "PS", 0)
+
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-      #                                              self.name, "PS", ["Failed"])
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
-                                                           self.name, "PS", 0)
-      # for debug
+
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
+      restart_time = tf_job_client.get_start_time_by_index(
+        api_client, self.namespace, self.name, "PS", 0)
+
       logging.info("First start time: %s, restart time: %s",
                    str(first_start_time), str(restart_time))
+
       if restart_time <= first_start_time:
         self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
-          failed to restart the pod with exit_code 1".format(self.name, self.namespace)
+          failed to restart the pod with exit_code 1".format(
+          self.name, self.namespace)
         logging.error(self.failure)
         return
 
@@ -99,22 +106,26 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
                                                     self.name, "PS", ["Failed"])
 
     else:
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
       first_start_time = tf_job_client.get_start_time_by_index(
         api_client, self.namespace, self.name, "PS", 0)
+
       tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                        "ps", 1, exit_code)
-      #tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-      #                                              self.name, "PS", ["Failed"])
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(api_client, self.namespace,
-                                                           self.name, "PS", 0)
-      # for debug
+
+      tf_job_client.wait_for_replica_type_in_phases(
+        api_client, self.namespace, self.name, "PS", ["Running"])
+      restart_time = tf_job_client.get_start_time_by_index(
+        api_client, self.namespace, self.name, "PS", 0)
+
       logging.info("First start time: %s, restart time: %s",
                    str(first_start_time), str(restart_time))
+
       if restart_time <= first_start_time:
         self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
-          failed to restart the pod with exit_code 130".format(self.name, self.namespace)
+          failed to restart the pod with exit_code 130".format(
+          self.name, self.namespace)
         logging.error(self.failure)
         return
 

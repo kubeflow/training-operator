@@ -25,8 +25,7 @@ def get_container_start_time(client, namespace, pod_selector, index):
   pods = list_pods(client, namespace, pod_selector)
   logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
   pod = pods.items[index]
-  #for p in pods.items:
-  #  return pod.status.start_time
+
   return pod.status.container_statuses[0].state.running.started_at
 
 
