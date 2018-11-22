@@ -70,9 +70,9 @@ class CleanPodPolicyTests(test_util.TestCase):
     # Only running pods (PS) are deleted, completed pods are not.
     elif clean_pod_policy == "Running":
       tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "Chief", ["Completed"])
+        api_client, self.namespace, self.name, "Chief", ["Succeeded"])
       tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "Worker", ["Completed"])
+        api_client, self.namespace, self.name, "Worker", ["Succeeded"])
       pod_labels = tf_job_client.get_labels(self.name, "PS")
       pod_selector = tf_job_client.to_selector(pod_labels)
       k8s_util.wait_for_pods_to_be_deleted(api_client, self.namespace,
@@ -80,9 +80,9 @@ class CleanPodPolicyTests(test_util.TestCase):
     # No pods are deleted.
     elif clean_pod_policy == "None":
       tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "Chief", ["Completed"])
+        api_client, self.namespace, self.name, "Chief", ["Succeeded"])
       tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "Worker", ["Completed"])
+        api_client, self.namespace, self.name, "Worker", ["Succeeded"])
       tf_job_client.wait_for_replica_type_in_phases(
         api_client, self.namespace, self.name, "PS", ["Running"])
 
