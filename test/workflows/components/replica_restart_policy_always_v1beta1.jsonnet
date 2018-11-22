@@ -1,4 +1,4 @@
-local params = std.extVar("__ksonnet/params").components.replica_restart_policy_always_v1alpha2;
+local params = std.extVar("__ksonnet/params").components.replica_restart_policy_always_v1beta1;
 
 local k = import "k.libsonnet";
 
@@ -9,7 +9,7 @@ local parts(namespace, name, image) = {
     image
   else defaultTestImage,
   job:: {
-    apiVersion: "kubeflow.org/v1alpha2",
+    apiVersion: "kubeflow.org/v1beta1",
     kind: "TFJob",
     metadata: {
       name: name,
