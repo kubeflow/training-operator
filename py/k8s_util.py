@@ -27,7 +27,7 @@ def get_container_start_time(client, namespace, pod_selector, index, phase):
   logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
   pod = pods.items[index]
 
-  if phase == "running":
+  if phase == "Running":
     container_start_time = pod.status.container_statuses[
       0].state.running.started_at
   else:
