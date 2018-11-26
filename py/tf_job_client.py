@@ -403,24 +403,6 @@ def get_start_time_by_index(api_client, namespace, name, replica_type,
   return k8s_util.get_container_start_time(api_client, namespace, pod_selector,
                                            replica_index)
 
-
-def get_start_time_by_index(api_client, namespace, name, replica_type,
-                            replica_index):
-  """Returns the start time of the specified pod.
-
-  Args:
-    api_client: The K8s API client.
-    namespace: The K8s namespace.
-    name: TFJob name.
-    replica_type: Replica type (chief, worker, ps).
-    replica_index: Index of the replicas.
-  """
-  pod_labels = get_labels(name, replica_type)
-  pod_selector = to_selector(pod_labels)
-  return k8s_util.get_pod_start_time(api_client, namespace, pod_selector,
-                                     replica_index)
-
-
 def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
                                     replica_index, exit_code, expect_restart):
   """ Return True for passing the test and False for failing the test.
