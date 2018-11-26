@@ -10,7 +10,7 @@ from kubernetes import client as k8s_client
 from kubernetes.client import rest
 
 
-def get_container_start_time(client, namespace, pod_selector, index):
+def get_container_start_time(client, namespace, pod_selector, index, phase):
   """ get start time of container in the pod with pod_name,
   we assume there is only one container.
 
@@ -19,6 +19,7 @@ def get_container_start_time(client, namespace, pod_selector, index):
     namespace: Namespace.
     pod_selector: Selector for the pods.
     index: Index of the pods
+    phase: expected of the phase when getting the start time
   Returns:
     container_start_time: container start time in datetime datatype
   """
@@ -26,7 +27,14 @@ def get_container_start_time(client, namespace, pod_selector, index):
   logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
   pod = pods.items[index]
 
-  return pod.status.container_statuses[0].state.running.started_at
+  if phase == "running":
+    container_start_time = pod.status.container_statuses[
+      0].state.running.started_at
+  else:
+    container_start_time = pod.status.container_statuses[
+      0].state.terminated.started_at
+
+  return container_start_time
 
 
 def log_pods(pods):
