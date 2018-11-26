@@ -1,7 +1,9 @@
+import datetime
 import json
 import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import test_util, util
+from py import k8s_util
 from py import ks_util
 from py import test_runner
 from py import tf_job_client
@@ -49,80 +51,41 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     if replica_restart_policy == "Always" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     elif replica_restart_policy == "Always" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     elif replica_restart_policy == "OnFailure" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
-          failed to restart the pod with exit_code 1".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
+
 
     elif replica_restart_policy == "OnFailure" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
-          failed to not to restart the pod with exit_code 0".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     elif replica_restart_policy == "Never" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy Never \
-          failed to not to restart the pod with exit_code 1".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     elif replica_restart_policy == "Never" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy Never \
-          failed to not to restart the pod with exit_code 0".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     elif replica_restart_policy == "ExitCode" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
-          failed to not to restart the pod with exit_code 1".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
 
     else:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res is False:
-        self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
-          failed to restart the pod with exit_code 128".format(
-          self.name, self.namespace)
-        logging.error(self.failure)
-        return
+
+    if res is False:
+      self.failure = "Job {0} in namespace {1} with restart policy {2} failed test \
+        with exit_code {4}".format(self.name, self.namespace, replica_restart_policy, exit_code)
+      logging.error(self.failure)
+      return
 
     # Delete the TFJob.
     tf_job_client.delete_tf_job(
