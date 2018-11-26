@@ -60,7 +60,6 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
 
-
     elif replica_restart_policy == "OnFailure" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
@@ -83,7 +82,8 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
 
     if res is False:
       self.failure = "Job {0} in namespace {1} with restart policy {2} failed test \
-        with exit_code {4}".format(self.name, self.namespace, replica_restart_policy, exit_code)
+        with exit_code {3}".format(self.name, self.namespace,
+                                   replica_restart_policy, exit_code)
       logging.error(self.failure)
       return
 
