@@ -388,7 +388,7 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
 
 
 def get_start_time_by_index(api_client, namespace, name, replica_type,
-                            replica_index):
+                            replica_index, phase):
   """Returns the start time of the specified pod.
 
   Args:
@@ -397,11 +397,12 @@ def get_start_time_by_index(api_client, namespace, name, replica_type,
     name: TFJob name.
     replica_type: Replica type (chief, worker, ps).
     replica_index: Index of the replicas.
+    phase: expected of the phase when getting the start time
   """
   pod_labels = get_labels(name, replica_type)
   pod_selector = to_selector(pod_labels)
   return k8s_util.get_container_start_time(api_client, namespace, pod_selector,
-                                           replica_index)
+                                           replica_index, phase)
 
 
 def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
@@ -420,7 +421,7 @@ def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
    expect_restart: expectation of whether the pod will restart after being terminated
   """
   first_start_time = get_start_time_by_index(api_client, namespace, name,
-                                             replica_type, replica_index)
+                                             replica_type, replica_index, "Running")
   terminate_replicas(api_client, namespace, name, "ps", 1, exit_code)
 
   if expect_restart:
