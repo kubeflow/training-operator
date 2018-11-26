@@ -434,10 +434,8 @@ def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
   if expect_restart:
     if restart_time <= first_start_time:
       return False
-    else:
-      return True
   else:
     if restart_time != first_start_time:
       return False
-    else:
-      return True
+
+  return True

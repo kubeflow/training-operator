@@ -1,9 +1,7 @@
-import datetime
 import json
 import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import test_util, util
-from py import k8s_util
 from py import ks_util
 from py import test_runner
 from py import tf_job_client
@@ -51,7 +49,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     if replica_restart_policy == "Always" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
           self.name, self.namespace)
         logging.error(self.failure)
@@ -60,7 +58,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "Always" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
           self.name, self.namespace)
         logging.error(self.failure)
@@ -69,7 +67,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "OnFailure" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
           failed to restart the pod with exit_code 1".format(
           self.name, self.namespace)
@@ -79,7 +77,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "OnFailure" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
           failed to not to restart the pod with exit_code 0".format(
           self.name, self.namespace)
@@ -89,7 +87,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "Never" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy Never \
           failed to not to restart the pod with exit_code 1".format(
           self.name, self.namespace)
@@ -99,7 +97,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "Never" and exit_code == 0:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy Never \
           failed to not to restart the pod with exit_code 0".format(
           self.name, self.namespace)
@@ -109,7 +107,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     elif replica_restart_policy == "ExitCode" and exit_code == 1:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, False)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
           failed to not to restart the pod with exit_code 1".format(
           self.name, self.namespace)
@@ -119,7 +117,7 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
     else:
       res = tf_job_client.terminate_and_verify_start_time(
         api_client, self.namespace, self.name, "ps", 0, exit_code, True)
-      if res == False:
+      if res is False:
         self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
           failed to restart the pod with exit_code 128".format(
           self.name, self.namespace)
@@ -182,14 +180,14 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
 
   # Verify that the pod is not restarted after permanent error ( 1-127 ).
   # We terminate PS with exit_code=1, and verify its phase becomes Failed.
-  def test_restart_exitcode_permanent_error():
+  def test_restart_exitcode_permanent_error(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
       "ExitCode", 1)
 
   # Verify that the pod is not restarted after permanent error ( 128-255 ).
   # We terminate PS with exit_code=128, and verify it is restarted.
-  def test_restart_exitcode_retryable_error():
+  def test_restart_exitcode_retryable_error(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
       "ExitCode", 128)
