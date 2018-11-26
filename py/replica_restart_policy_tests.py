@@ -146,12 +146,12 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
       "ExitCode", 1)
 
-  # Verify that the pod is not restarted after permanent error ( 128-255 ).
-  # We terminate PS with exit_code=128, and verify it is restarted.
+  # Verify that the pod is not restarted after retryable error.
+  # We terminate PS with exit_code=130, and verify it is restarted.
   def test_restart_exitcode_retryable_error(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
-      "ExitCode", 128)
+      "ExitCode", 130)
 
 
 if __name__ == "__main__":
