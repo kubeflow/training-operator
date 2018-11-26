@@ -1,7 +1,9 @@
+import datetime
 import json
 import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import test_util, util
+from py import k8s_util
 from py import ks_util
 from py import test_runner
 from py import tf_job_client
@@ -46,85 +48,80 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-    if replica_restart_policy == "Always":
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      first_start_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
-
-      tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
-                                       "ps", 1, exit_code)
-
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
-
-      logging.info("First start time: %s, restart time: %s",
-                   str(first_start_time), str(restart_time))
-
-      if restart_time <= first_start_time:
+    if replica_restart_policy == "Always" and exit_code == 0:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, True)
+      if res == False:
         self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
           self.name, self.namespace)
         logging.error(self.failure)
         return
 
-    elif replica_restart_policy == "OnFailure":
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      first_start_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
+    elif replica_restart_policy == "Always" and exit_code == 1:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, True)
+      if res == False:
+        self.failure = "Job {0} in namespace {1} with restart policy Always failed test".format(
+          self.name, self.namespace)
+        logging.error(self.failure)
+        return
 
-      tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
-                                       "ps", 1, exit_code)
-
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
-
-      logging.info("First start time: %s, restart time: %s",
-                   str(first_start_time), str(restart_time))
-
-      if restart_time <= first_start_time:
+    elif replica_restart_policy == "OnFailure" and exit_code == 1:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, True)
+      if res == False:
         self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
           failed to restart the pod with exit_code 1".format(
           self.name, self.namespace)
         logging.error(self.failure)
         return
 
-    elif replica_restart_policy == "Never":
-      tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
-                                       "ps", 1, exit_code)
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Failed"])
+    elif replica_restart_policy == "OnFailure" and exit_code == 0:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, False)
+      if res == False:
+        self.failure = "Job {0} in namespace {1} with restart policy OnFailure \
+          failed to not to restart the pod with exit_code 0".format(
+          self.name, self.namespace)
+        logging.error(self.failure)
+        return
+
+    elif replica_restart_policy == "Never" and exit_code == 1:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, False)
+      if res == False:
+        self.failure = "Job {0} in namespace {1} with restart policy Never \
+          failed to not to restart the pod with exit_code 1".format(
+          self.name, self.namespace)
+        logging.error(self.failure)
+        return
+
+    elif replica_restart_policy == "Never" and exit_code == 0:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, False)
+      if res == False:
+        self.failure = "Job {0} in namespace {1} with restart policy Never \
+          failed to not to restart the pod with exit_code 0".format(
+          self.name, self.namespace)
+        logging.error(self.failure)
+        return
 
     elif replica_restart_policy == "ExitCode" and exit_code == 1:
-      tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
-                                       "ps", 1, exit_code)
-      tf_job_client.wait_for_replica_type_in_phases(api_client, self.namespace,
-                                                    self.name, "PS", ["Failed"])
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, False)
+      if res == False:
+        self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
+          failed to not to restart the pod with exit_code 1".format(
+          self.name, self.namespace)
+        logging.error(self.failure)
+        return
 
     else:
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      first_start_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
-
-      tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
-                                       "ps", 1, exit_code)
-
-      tf_job_client.wait_for_replica_type_in_phases(
-        api_client, self.namespace, self.name, "PS", ["Running"])
-      restart_time = tf_job_client.get_start_time_by_index(
-        api_client, self.namespace, self.name, "PS", 0)
-
-      logging.info("First start time: %s, restart time: %s",
-                   str(first_start_time), str(restart_time))
-
-      if restart_time <= first_start_time:
+      res = tf_job_client.terminate_and_verify_start_time(
+        api_client, self.namespace, self.name, "ps", 0, exit_code, True)
+      if res == False:
         self.failure = "Job {0} in namespace {1} with restart policy ExitCode \
-          failed to restart the pod with exit_code 130".format(
+          failed to restart the pod with exit_code 128".format(
           self.name, self.namespace)
         logging.error(self.failure)
         return
@@ -143,38 +140,59 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
 
   # Verify that the pod is restarted even after the container exits with success.
   # We terminate PS with exit_code=0, and verify it is restarted.
-  def test_restart_always(self):
+  def test_restart_always_exit_code_0(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_ALWAYS_COMPONENT_NAME + "_" + self.tfjob_version,
       "Always", 0)
 
+  # Verify that the pod is restarted after the container exits with 1.
+  # We terminate PS with exit_code=1, and verify it is restarted.
+  def test_restart_always_exit_code_1(self):
+    return self.run_tfjob_with_replica_restart_policy(
+      REPLICA_RESTART_POLICY_ALWAYS_COMPONENT_NAME + "_" + self.tfjob_version,
+      "Always", 1)
+
   # Verify that the pod is restarted after failure.
   # We terminate PS with exit_code=1, and verify it is restarted.
-  def test_restart_onfailure(self):
+  def test_restart_onfailure_exit_code_1(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_ONFAILURE_COMPONENT_NAME + "_" +
       self.tfjob_version, "OnFailure", 1)
 
+  # Verify that the pod is restarted after failure.
+  # We terminate PS with exit_code=0, and verify it is not restarted.
+  def test_restart_onfailure_exit_code_0(self):
+    return self.run_tfjob_with_replica_restart_policy(
+      REPLICA_RESTART_POLICY_ONFAILURE_COMPONENT_NAME + "_" +
+      self.tfjob_version, "OnFailure", 0)
+
   # Verify that the pod is never restarted.
-  # We terminate PS with exit_code=1, and verify that its phase becomes Failed.
-  def test_restart_never(self):
+  # We terminate PS with exit_code=1, and verify it is not restarted.
+  def test_restart_never_exit_code_1(self):
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_NEVER_COMPONENT_NAME + "_" + self.tfjob_version,
       "Never", 1)
 
+  # Verify that the pod is never restarted.
+  # We terminate PS with exit_code=0, and verify it is not restarted.
+  def test_restart_never_exit_code_0(self):
+    return self.run_tfjob_with_replica_restart_policy(
+      REPLICA_RESTART_POLICY_NEVER_COMPONENT_NAME + "_" + self.tfjob_version,
+      "Never", 0)
+
   # Verify that the pod is not restarted after permanent error ( 1-127 ).
   # We terminate PS with exit_code=1, and verify its phase becomes Failed.
-  def test_restart_exitcode_permanent_error(self):
+  def test_restart_exitcode_permanent_error():
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
       "ExitCode", 1)
 
   # Verify that the pod is not restarted after permanent error ( 128-255 ).
   # We terminate PS with exit_code=128, and verify it is restarted.
-  def test_restart_exitcode_retryable_error(self):
+  def test_restart_exitcode_retryable_error():
     return self.run_tfjob_with_replica_restart_policy(
       REPLICA_RESTART_POLICY_EXITCODE_COMPONENT_NAME + "_" + self.tfjob_version,
-      "ExitCode", 130)
+      "ExitCode", 128)
 
 
 if __name__ == "__main__":

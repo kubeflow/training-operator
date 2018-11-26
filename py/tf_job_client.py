@@ -387,18 +387,57 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
   return creation_failures
 
 
-def get_start_time_by_index(api_client, namespace, tfjob_name, replica_type,
-                            index):
+def get_start_time_by_index(api_client, namespace, name, replica_type,
+                            replica_index):
   """Returns the start time of the specified pod.
 
   Args:
     api_client: The K8s API client.
     namespace: The K8s namespace.
     name: TFJob name.
-    replica: Replica type (chief, worker, ps).
-    index: Index of the replicas.
+    replica_type: Replica type (chief, worker, ps).
+    replica_index: Index of the replicas.
   """
-  pod_labels = get_labels(tfjob_name, replica_type)
+  pod_labels = get_labels(name, replica_type)
   pod_selector = to_selector(pod_labels)
   return k8s_util.get_container_start_time(api_client, namespace, pod_selector,
-                                           index)
+                                           replica_index)
+
+
+def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
+                                    replica_index, exit_code, expect_restart):
+  """ Return True for passing the test and False for failing the test.
+  # if expect_restart is true, check that the second restart time is after the first.
+  # if expect_restart is false, check that the restart time has not changed.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    name: TFJob name.
+    replica_type: Replica type (chief, worker, ps).
+    replica_index: Index of the replicas.
+    exit_code: exit_code for the pod to exit with.
+    expect_restart: expectation of whether the pod will restart after being terminated
+  """
+
+  first_start_time = get_start_time_by_index(api_client, namespace, name,
+                                             replica_type, replica_index)
+  terminate_replicas(api_client, namespace, name, "ps", 1, exit_code)
+  wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                  ["Running"])
+  restart_time = get_start_time_by_index(api_client, namespace, name,
+                                         replica_type, replica_index)
+
+  logging.info("First start time: %s, restart time: %s", str(first_start_time),
+               str(restart_time))
+
+  if expect_restart:
+    if restart_time <= first_start_time:
+      return False
+    else:
+      return True
+  else:
+    if restart_time != first_start_time:
+      return False
+    else:
+      return True
