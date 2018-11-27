@@ -420,6 +420,8 @@ def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
    exit_code: exit_code for the pod to exit with.
    expect_restart: expectation of whether the pod will restart after being terminated
   """
+  wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                    ["Running"])
   first_start_time = get_start_time_by_index(api_client, namespace, name,
                                              replica_type, replica_index, "Running")
   terminate_replicas(api_client, namespace, name, "ps", 1, exit_code)
