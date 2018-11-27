@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
@@ -46,13 +47,14 @@ func newUnstructuredInformer(resource *metav1.APIResource, client dynamic.Interf
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func newFilteredUnstructuredInformer(resource *metav1.APIResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	var gvr = schema.GroupVersionResource{Group: resource.Group, Version: resource.Version, Resource: resource.Kind}
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.Resource(resource, namespace).List(options)
+				return client.Resource(gvr).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return client.Resource(resource, namespace).Watch(options)
+				return client.Resource(gvr).Watch(options)
 			},
 		},
 		&unstructured.Unstructured{},

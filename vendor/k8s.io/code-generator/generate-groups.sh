@@ -46,7 +46,13 @@ APIS_PKG="$3"
 GROUPS_WITH_VERSIONS="$4"
 shift 4
 
-go install ./$(dirname "${0}")/cmd/{defaulter-gen,client-gen,lister-gen,informer-gen,deepcopy-gen}
+(
+  # To support running this script from anywhere, we have to first cd into this directory
+  # so we can install the tools.
+  cd $(dirname "${0}")
+  go install ./cmd/{defaulter-gen,client-gen,lister-gen,informer-gen,deepcopy-gen}
+)
+
 function codegen::join() { local IFS="$1"; shift; echo "$*"; }
 
 # enumerate group versions
@@ -67,7 +73,7 @@ fi
 
 if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
   echo "Generating clientset for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/clientset"
-  ${GOPATH}/bin/client-gen --clientset-name versioned --input-base "" --input $(codegen::join , "${FQ_APIS[@]}") --clientset-path ${OUTPUT_PKG}/clientset "$@"
+  ${GOPATH}/bin/client-gen --clientset-name versioned --input-base "" --input $(codegen::join , "${FQ_APIS[@]}") --output-package ${OUTPUT_PKG}/clientset "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "lister" <<<"${GENS}"; then
