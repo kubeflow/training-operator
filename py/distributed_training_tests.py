@@ -8,7 +8,9 @@ from py import tf_job_client
 
 TFJOB_COMPONENT_NAME = "distributed_training"
 
+
 class DistributedTrainingJobTests(test_util.TestCase):
+
   def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
@@ -25,7 +27,8 @@ class DistributedTrainingJobTests(test_util.TestCase):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+                         self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
@@ -34,14 +37,20 @@ class DistributedTrainingJobTests(test_util.TestCase):
     # Wait for the job to either be in Running state or a terminal state
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
-      api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      version=self.tfjob_version, status_callback=tf_job_client.log_status)
+      api_client,
+      self.namespace,
+      self.name, ["Running", "Succeeded", "Failed"],
+      version=self.tfjob_version,
+      status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     # Wait for the job to complete.
     logging.info("Waiting for job to finish.")
     results = tf_job_client.wait_for_job(
-      api_client, self.namespace, self.name, self.tfjob_version,
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
       status_callback=tf_job_client.log_status)
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
@@ -58,17 +67,23 @@ class DistributedTrainingJobTests(test_util.TestCase):
       logging.warning(creation_failures)
 
     # Delete the TFJob.
-    tf_job_client.delete_tf_job(api_client, self.namespace, self.name, version=self.tfjob_version)
-    logging.info("Waiting for job %s in namespaces %s to be deleted.", self.name,
-                 self.namespace)
+    tf_job_client.delete_tf_job(
+      api_client, self.namespace, self.name, version=self.tfjob_version)
+    logging.info("Waiting for job %s in namespaces %s to be deleted.",
+                 self.name, self.namespace)
     tf_job_client.wait_for_delete(
-      api_client, self.namespace, self.name, self.tfjob_version,
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
       status_callback=tf_job_client.log_status)
 
   # Run a distributed training TFJob, wait for it to complete, and check for pod/service
   # creation errors.
   def test_distributed_training_independent_worker(self):
-    self.run_distributed_training_job(TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
+    self.run_distributed_training_job(TFJOB_COMPONENT_NAME + "_" +
+                                      self.tfjob_version)
+
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

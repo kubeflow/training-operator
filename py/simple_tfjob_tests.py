@@ -9,7 +9,9 @@ from py import tf_job_client
 CPU_TFJOB_COMPONENT_NAME = "simple_tfjob"
 GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob"
 
+
 class SimpleTfJobTests(test_util.TestCase):
+
   def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
@@ -17,14 +19,16 @@ class SimpleTfJobTests(test_util.TestCase):
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     self.params = args.params
-    super(SimpleTfJobTests, self).__init__(class_name="SimpleTfJobTests", name=name)
+    super(SimpleTfJobTests, self).__init__(
+      class_name="SimpleTfJobTests", name=name)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def run_simple_tfjob(self, component):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component, self.params)
+    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+                         self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
@@ -33,14 +37,20 @@ class SimpleTfJobTests(test_util.TestCase):
     # Wait for the job to either be in Running state or a terminal state
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
-      api_client, self.namespace, self.name, ["Running", "Succeeded", "Failed"],
-      version=self.tfjob_version, status_callback=tf_job_client.log_status)
+      api_client,
+      self.namespace,
+      self.name, ["Running", "Succeeded", "Failed"],
+      version=self.tfjob_version,
+      status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
     # Wait for the job to complete.
     logging.info("Waiting for job to finish.")
     results = tf_job_client.wait_for_job(
-      api_client, self.namespace, self.name, self.tfjob_version,
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
       status_callback=tf_job_client.log_status)
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
@@ -62,11 +72,15 @@ class SimpleTfJobTests(test_util.TestCase):
       logging.warning(creation_failures)
 
     # Delete the TFJob.
-    tf_job_client.delete_tf_job(api_client, self.namespace, self.name, version=self.tfjob_version)
-    logging.info("Waiting for job %s in namespaces %s to be deleted.", self.name,
-                 self.namespace)
+    tf_job_client.delete_tf_job(
+      api_client, self.namespace, self.name, version=self.tfjob_version)
+    logging.info("Waiting for job %s in namespaces %s to be deleted.",
+                 self.name, self.namespace)
     tf_job_client.wait_for_delete(
-      api_client, self.namespace, self.name, self.tfjob_version,
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
       status_callback=tf_job_client.log_status)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
@@ -76,6 +90,7 @@ class SimpleTfJobTests(test_util.TestCase):
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
   def test_simple_tfjob_gpu(self):
     self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
+
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)

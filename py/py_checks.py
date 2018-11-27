@@ -52,8 +52,8 @@ def run_lint(args):
       for f in fnmatch.filter(files, pat):
         full_path = os.path.join(root, f)
         try:
-          util.run(
-            ["pylint", "--rcfile=" + rc_file, full_path], cwd=args.src_dir)
+          util.run(["pylint", "--rcfile=" + rc_file, full_path],
+                   cwd=args.src_dir)
         except subprocess.CalledProcessError:
           failed_files.append(full_path[len(args.src_dir):])
 

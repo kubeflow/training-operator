@@ -14,13 +14,13 @@ from kubernetes.client import rest
 from py import k8s_util
 from py import util
 
-
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
+
 
 def create_tf_job(client, spec, version="v1beta1"):
   """Create a TFJob.
@@ -69,10 +69,16 @@ def delete_tf_job(client, namespace, name, version="v1beta1"):
     }
     logging.info("Deleting job %s.%s", namespace, name)
     thread = crd_api.delete_namespaced_custom_object(
-      TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name, body,
+      TF_JOB_GROUP,
+      version,
+      namespace,
+      TF_JOB_PLURAL,
+      name,
+      body,
       async_req=True)
     api_response = thread.get(TIMEOUT)
-    logging.info("Deleting job %s.%s returned: %s", namespace, name, api_response)
+    logging.info("Deleting job %s.%s returned: %s", namespace, name,
+                 api_response)
     return api_response
   except rest.ApiException as e:
     message = ""
@@ -99,22 +105,24 @@ def delete_tf_job(client, namespace, name, version="v1beta1"):
 def log_status(tf_job):
   """A callback to use with wait_for_job."""
   all_conditions = tf_job.get("status", {}).get("conditions", [])
-  conditions = [] if all_conditions is None else [c.get("type", "") for c in all_conditions]
+  conditions = [] if all_conditions is None else [
+    c.get("type", "") for c in all_conditions
+  ]
   logging.info("Job %s in namespace %s; uid=%s; conditions=%s",
                tf_job.get("metadata", {}).get("name"),
                tf_job.get("metadata", {}).get("namespace"),
-               tf_job.get("metadata", {}).get("uid"),
-               conditions)
+               tf_job.get("metadata", {}).get("uid"), conditions)
+
 
 # pylint: disable=too-many-arguments
 def wait_for_condition(client,
-                        namespace,
-                        name,
-                        expected_condition,
-                        version="v1beta1",
-                        timeout=datetime.timedelta(minutes=10),
-                        polling_interval=datetime.timedelta(seconds=30),
-                        status_callback=None):
+                       namespace,
+                       name,
+                       expected_condition,
+                       version="v1beta1",
+                       timeout=datetime.timedelta(minutes=10),
+                       polling_interval=datetime.timedelta(seconds=30),
+                       status_callback=None):
   """Waits until any of the specified conditions occur.
 
   Args:
@@ -163,14 +171,14 @@ def wait_for_condition(client,
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.JobTimeoutError(
         "Timeout waiting for job {0} in namespace {1} to enter one of the "
-        "conditions {2}.".format(
-          name, namespace, conditions), results)
+        "conditions {2}.".format(name, namespace, conditions), results)
 
     time.sleep(polling_interval.seconds)
 
   # Linter complains if we don't have a return statement even though
   # this code is unreachable.
   return None
+
 
 def wait_for_job(client,
                  namespace,
@@ -192,11 +200,13 @@ def wait_for_job(client,
       is the job.
   """
   return wait_for_condition(
-            client, namespace, name, ["Succeeded", "Failed"],
-            version=version,
-            timeout=timeout,
-            polling_interval=polling_interval,
-            status_callback=status_callback)
+    client,
+    namespace,
+    name, ["Succeeded", "Failed"],
+    version=version,
+    timeout=timeout,
+    polling_interval=polling_interval,
+    status_callback=status_callback)
 
 
 def wait_for_delete(client,
@@ -223,8 +233,7 @@ def wait_for_delete(client,
   while True:
     try:
       results = crd_api.get_namespaced_custom_object(
-        TF_JOB_GROUP, version, namespace,
-        TF_JOB_PLURAL, name)
+        TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name)
     except rest.ApiException as e:
       if e.status == httplib.NOT_FOUND:
         return
@@ -240,6 +249,7 @@ def wait_for_delete(client,
 
     time.sleep(polling_interval.seconds)
 
+
 def get_labels(name, replica_type=None, replica_index=None):
   """Return labels.
   """
@@ -248,11 +258,12 @@ def get_labels(name, replica_type=None, replica_index=None):
     "tf_job_name": name,
   }
   if replica_type:
-    labels["tf-replica-type"] = replica_type
+    labels["tf-replica-type"] = str.lower(replica_type)
 
   if replica_index:
     labels["tf-replica-index"] = replica_index
   return labels
+
 
 def to_selector(labels):
   parts = []
@@ -261,14 +272,18 @@ def to_selector(labels):
 
   return ",".join(parts)
 
-def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name, replica_type, phases):
+
+def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
+                                    replica_type, phases):
   pod_labels = get_labels(tfjob_name, replica_type)
   pod_selector = to_selector(pod_labels)
-  k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
-                                         pod_selector,
-                                         phases,
-                                         timeout=datetime.timedelta(
-                                         minutes=4))
+  k8s_util.wait_for_pods_to_be_in_phases(
+    api_client,
+    namespace,
+    pod_selector,
+    phases,
+    timeout=datetime.timedelta(minutes=4))
+
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
 def terminate_replica(master_host, namespace, target, exit_code=0):
@@ -285,7 +300,13 @@ def terminate_replica(master_host, namespace, target, exit_code=0):
   }
   util.send_request(master_host, namespace, target, "exit", params)
 
-def terminate_replicas(api_client, namespace, name, replica, num_targets):
+
+def terminate_replicas(api_client,
+                       namespace,
+                       name,
+                       replica,
+                       num_targets,
+                       exit_code=0):
   """Terminates the specified replica(s).
 
   Args:
@@ -294,6 +315,7 @@ def terminate_replicas(api_client, namespace, name, replica, num_targets):
     name: TFJob name
     replica: Replica type (chief, worker, ps)
     num_targets: Number of replicas to terminate.
+    exit_code: What exit code to terminate the pods with.
   """
   target = "{name}-{replica}".format(name=name, replica=replica)
   pod_labels = get_labels(namespace, name)
@@ -304,16 +326,16 @@ def terminate_replicas(api_client, namespace, name, replica, num_targets):
   # TODO(jlewi): We are get pods using a label selector so there is
   # a risk that the pod we actual care about isn't present.
   logging.info("Waiting for pods to be running before shutting down.")
-  k8s_util.wait_for_pods_to_be_in_phases(api_client, namespace,
-                                         pod_selector,
-                                         ["Running"],
-                                         timeout=datetime.timedelta(
-                                         minutes=4))
+  k8s_util.wait_for_pods_to_be_in_phases(
+    api_client,
+    namespace,
+    pod_selector, ["Running"],
+    timeout=datetime.timedelta(minutes=4))
   logging.info("Pods are ready")
   logging.info("Issuing the terminate request")
   for num in range(num_targets):
     full_target = target + "-{0}".format(num)
-    terminate_replica(masterHost, namespace, full_target)
+    terminate_replica(masterHost, namespace, full_target, exit_code)
 
 
 def job_succeeded(tfjob):
@@ -345,7 +367,8 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
 
   num_expected = 0
   for replicakey in tfjob.get("spec", {}).get("tfReplicaSpecs", {}):
-    replica_spec = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(replicakey, {})
+    replica_spec = tfjob.get("spec", {}).get("tfReplicaSpecs", {}).get(
+      replicakey, {})
     if replica_spec:
       num_expected += replica_spec.get("replicas", 1)
 
@@ -357,7 +380,79 @@ def get_creation_failures_from_tfjob(api_client, namespace, tfjob):
 
   if len(created_services) != num_expected:
     message = ("Expected {0} services to be created but only "
-               "got {1} create events.").format(num_expected, len(created_services))
+               "got {1} create events.").format(num_expected,
+                                                len(created_services))
     creation_failures.append(message)
 
   return creation_failures
+
+
+def get_start_time_by_index(api_client, namespace, name, replica_type,
+                            replica_index, phase):
+  """Returns the start time of the specified pod.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    name: TFJob name.
+    replica_type: Replica type (chief, worker, ps).
+    replica_index: Index of the replicas.
+    phase: expected of the phase when getting the start time
+  """
+  pod_labels = get_labels(name, replica_type)
+  pod_selector = to_selector(pod_labels)
+  return k8s_util.get_container_start_time(api_client, namespace, pod_selector,
+                                           replica_index, phase)
+
+
+def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
+                                    replica_index, exit_code, expect_restart):
+  """ Return True for passing the test and False for failing the test.
+  # if expect_restart is true, check that the second restart time is after the first.
+  # if expect_restart is false, check that the restart time has not changed.
+
+  Args:
+   api_client: The K8s API client.
+   namespace: The K8s namespace.
+   name: TFJob name.
+   replica_type: Replica type (chief, worker, ps).
+   replica_index: Index of the replicas.
+   exit_code: exit_code for the pod to exit with.
+   expect_restart: expectation of whether the pod will restart after being terminated
+  """
+  wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                    ["Running"])
+  first_start_time = get_start_time_by_index(api_client, namespace, name,
+                                             replica_type, replica_index, "Running")
+  terminate_replicas(api_client, namespace, name, "ps", 1, exit_code)
+
+  if expect_restart:
+    wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                    ["Running"])
+    restart_time = get_start_time_by_index(
+      api_client, namespace, name, replica_type, replica_index, "Running")
+    logging.info("First start time: %s, restart time: %s",
+                 str(first_start_time), str(restart_time))
+    if restart_time <= first_start_time:
+      return False
+
+  elif expect_restart is False and exit_code == 0:
+    wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                    ["Succeeded"])
+    restart_time = get_start_time_by_index(
+      api_client, namespace, name, replica_type, replica_index, "Succeeded")
+    logging.info("First start time: %s, restart time: %s",
+                 str(first_start_time), str(restart_time))
+    if restart_time != first_start_time:
+      return False
+  else:
+    wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
+                                    ["Failed"])
+    restart_time = get_start_time_by_index(
+      api_client, namespace, name, replica_type, replica_index, "Failed")
+    logging.info("First start time: %s, restart time: %s",
+                 str(first_start_time), str(restart_time))
+    if restart_time != first_start_time:
+      return False
+
+  return True

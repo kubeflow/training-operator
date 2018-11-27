@@ -19,8 +19,8 @@ from py import util as tf_operator_util
 # between retries is because we have multiple tests running in parallel
 # that are all modifying the same ksonnet app via ks. I think this can
 # lead to failures.
-@retrying.retry(stop_max_attempt_number=10, wait_random_min=1000,
-                wait_random_max=10000)
+@retrying.retry(
+  stop_max_attempt_number=10, wait_random_min=1000, wait_random_max=10000)
 def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
   gcs_client = storage.Client(project=args.project)
@@ -41,7 +41,7 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
 
   start = time.time()
 
-  try: # pylint: disable=too-many-nested-blocks
+  try:  # pylint: disable=too-many-nested-blocks
     # We repeat the test multiple times.
     # This ensures that if we delete the job we can create a new job with the
     # same name.
@@ -77,9 +77,11 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
   finally:
     test_case.time = time.time() - start
     if args.artifacts_path:
-      test_util.create_junit_xml_file([test_case],
+      test_util.create_junit_xml_file(
+        [test_case],
         args.artifacts_path + "/junit_" + test_func.__name__ + ".xml",
         gcs_client)
+
 
 def parse_runtime_params(args):
   salt = uuid.uuid4().hex[0:4]
@@ -106,6 +108,7 @@ def parse_runtime_params(args):
     raise ValueError("namespace must be provided as a parameter.")
 
   return namespace, name, env
+
 
 def add_common_args(parser):
   """Add a set of common parser arguments."""
@@ -156,7 +159,7 @@ def add_common_args(parser):
     default=None,
     type=str,
     help="(Optional) the name for the ksonnet environment; if not specified "
-         "a random one is created.")
+    "a random one is created.")
 
   parser.add_argument(
     "--num_trials",
@@ -177,7 +180,8 @@ def main(module=None):  # pylint: disable=too-many-locals
     level=logging.INFO,
     format=('%(levelname)s|%(asctime)s'
             '|%(pathname)s|%(lineno)d| %(message)s'),
-    datefmt='%Y-%m-%dT%H:%M:%S',)
+    datefmt='%Y-%m-%dT%H:%M:%S',
+  )
 
   util.maybe_activate_service_account()
 

@@ -17,13 +17,12 @@ def setup_ks_app(app_dir, env, namespace, component, params):
     # Create a new environment for this run
     try:
       util.run(["ks", "env", "add", env, "--namespace=" + namespace],
-                cwd=app_dir)
+               cwd=app_dir)
     except subprocess.CalledProcessError as e:
       if not re.search(".*environment.*already exists.*", e.output):
         raise
 
     for pair in params.split(","):
       k, v = pair.split("=", 1)
-      util.run(
-        ["ks", "param", "set", "--env=" + env, component, k, v],
-        cwd=app_dir)
+      util.run(["ks", "param", "set", "--env=" + env, component, k, v],
+               cwd=app_dir)

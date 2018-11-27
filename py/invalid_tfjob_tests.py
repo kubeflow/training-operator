@@ -9,7 +9,9 @@ from py import tf_job_client
 
 INVALID_TFJOB_COMPONENT_NAME = "invalid_tfjob"
 
+
 class InvalidTfJobTests(test_util.TestCase):
+
   def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
@@ -17,7 +19,8 @@ class InvalidTfJobTests(test_util.TestCase):
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     self.params = args.params
-    super(InvalidTfJobTests, self).__init__(class_name="InvalidTfJobTests", name=name)
+    super(InvalidTfJobTests, self).__init__(
+      class_name="InvalidTfJobTests", name=name)
 
   def test_invalid_tfjob_spec(self):
     api_client = k8s_client.ApiClient()
@@ -25,7 +28,7 @@ class InvalidTfJobTests(test_util.TestCase):
 
     # Setup the ksonnet app
     ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
-      self.params)
+                         self.params)
 
     # Create the TF job
     util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
@@ -33,8 +36,11 @@ class InvalidTfJobTests(test_util.TestCase):
 
     logging.info("Wait for conditions Failed")
     results = tf_job_client.wait_for_condition(
-      api_client, self.namespace, self.name, ["Failed"],
-      version=self.tfjob_version, status_callback=tf_job_client.log_status)
+      api_client,
+      self.namespace,
+      self.name, ["Failed"],
+      version=self.tfjob_version,
+      status_callback=tf_job_client.log_status)
 
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
@@ -54,12 +60,17 @@ class InvalidTfJobTests(test_util.TestCase):
       logging.error(self.failure)
 
     # Delete the TFJob.
-    tf_job_client.delete_tf_job(api_client, self.namespace, self.name, version=self.tfjob_version)
-    logging.info("Waiting for job %s in namespaces %s to be deleted.", self.name,
-                 self.namespace)
+    tf_job_client.delete_tf_job(
+      api_client, self.namespace, self.name, version=self.tfjob_version)
+    logging.info("Waiting for job %s in namespaces %s to be deleted.",
+                 self.name, self.namespace)
     tf_job_client.wait_for_delete(
-      api_client, self.namespace, self.name, self.tfjob_version,
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
       status_callback=tf_job_client.log_status)
+
 
 if __name__ == "__main__":
   test_runner.main(module=__name__)
