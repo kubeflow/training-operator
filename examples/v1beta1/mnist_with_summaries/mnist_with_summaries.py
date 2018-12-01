@@ -143,7 +143,7 @@ def train():
   # Every 10th step, measure test-set accuracy, and write test summaries
   # All other steps, run train_step on training data, & add training summaries
 
-  def feed_dict(train):
+  def feed_dict(train):     # pylint: disable=redefined-outer-name
     """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
     if train or FLAGS.fake_data:
       xs, ys = mnist.train.next_batch(FLAGS.batch_size, fake_data=FLAGS.fake_data)
@@ -193,7 +193,7 @@ if __name__ == '__main__':
   parser.add_argument('--learning_rate', type=float, default=0.001,
                       help='Initial learning rate')
   parser.add_argument('--batch_size', type=int, default=100,
-                      help='Training batch size')  
+                      help='Training batch size')
   parser.add_argument('--dropout', type=float, default=0.9,
                       help='Keep probability for training dropout.')
   parser.add_argument(
