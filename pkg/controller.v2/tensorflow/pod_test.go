@@ -16,6 +16,7 @@
 package tensorflow
 
 import (
+	"os"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -89,34 +90,47 @@ func TestClusterSpec(t *testing.T) {
 		tfJob               *tfv1alpha2.TFJob
 		rt                  string
 		index               string
+		customClusterDomain string
 		expectedClusterSpec string
 	}
 	testCase := []tc{
 		tc{
-			tfJob: testutil.NewTFJob(1, 0),
-			rt:    "worker",
-			index: "0",
+			tfJob:               testutil.NewTFJobWithNamespace(1, 0, "ns0"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "",
 			expectedClusterSpec: `{"cluster":{"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+				`-worker-0.ns0.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 		tc{
-			tfJob: testutil.NewTFJob(1, 1),
-			rt:    "worker",
-			index: "0",
-			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
-				`-ps-0:2222"],"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+			tfJob:               testutil.NewTFJobWithNamespace(1, 0, "ns1"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "tf.training.com",
+			expectedClusterSpec: `{"cluster":{"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns1.svc.tf.training.com:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 		tc{
-			tfJob: testutil.NewTFJobWithEvaluator(1, 1, 1),
-			rt:    "worker",
-			index: "0",
+			tfJob:               testutil.NewTFJobWithNamespace(1, 1, "ns2"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "tf.training.org",
 			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
-				`-ps-0:2222"],"worker":["` + testutil.TestTFJobName +
-				`-worker-0:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+				`-ps-0.ns2.svc.tf.training.org:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns2.svc.tf.training.org:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+		},
+		tc{
+			tfJob:               testutil.NewTFJobWithEvaluatorAndNamespace(1, 1, 1, "ns3"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "tf.training.io",
+			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 	}
 	for _, c := range testCase {
+		os.Setenv(EnvCustomClusterDomain, c.customClusterDomain)
 		demoTemplateSpec := c.tfJob.Spec.TFReplicaSpecs[tfv1alpha2.TFReplicaTypeWorker].Template
 		if err := setClusterSpec(&demoTemplateSpec, c.tfJob, c.rt, c.index); err != nil {
 			t.Errorf("Failed to set cluster spec: %v", err)

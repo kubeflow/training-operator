@@ -44,14 +44,14 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     num_replicas = num_workers
 
   # Construct the expected cluster spec
-  chief_list = ["{name}-chief-0:2222".format(name=job_name)]
+  chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
   ps_list = []
   for i in range(num_ps):
-    ps_list.append("{name}-ps-{index}:2222".format(name=job_name, index=i))
+    ps_list.append("{name}-ps-{index}.{ns}.svc:2222".format(name=job_name, index=i, ns=namespace))
   worker_list = []
   for i in range(num_workers):
-    worker_list.append("{name}-worker-{index}:2222".format(
-      name=job_name, index=i))
+    worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
+      index=i, ns=namespace))
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
@@ -62,13 +62,14 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     full_target = "{name}-{replica}-{index}".format(
       name=job_name, replica=replica.lower(), index=i)
     actual_config = get_runconfig(master_host, namespace, full_target)
+    full_svc = "{ft}.{ns}.svc".format(ft=full_target, ns=namespace)
     expected_config = {
       "task_type": replica,
       "task_id": i,
       "cluster_spec": cluster_spec,
       "is_chief": is_chief,
-      "master": "grpc://{target}:2222".format(target=full_target),
-      "num_worker_replicas": num_workers + 1,  # Chief is also a worker
+      "master": "grpc://{fs}:2222".format(fs=full_svc),
+      "num_worker_replicas": num_workers + 1, # Chief is also a worker
       "num_ps_replicas": num_ps,
     }
     # Compare expected and actual configs

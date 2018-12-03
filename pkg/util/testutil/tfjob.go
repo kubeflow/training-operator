@@ -103,6 +103,20 @@ func NewTFJob(worker, ps int) *tfv1alpha2.TFJob {
 	return tfJob
 }
 
+func NewTFJobWithNamespace(worker, ps int, ns string) *tfv1alpha2.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Namespace = ns
+
+	return tfJob
+}
+
+func NewTFJobWithEvaluatorAndNamespace(worker, ps, evaluator int, ns string) *tfv1alpha2.TFJob {
+	tfJob := NewTFJobWithEvaluator(worker, ps, evaluator)
+	tfJob.Namespace = ns
+
+	return tfJob
+}
+
 func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 	return v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
