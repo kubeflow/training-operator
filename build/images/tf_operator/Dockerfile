@@ -2,7 +2,10 @@ FROM centos:7
 
 ENV GOLANG_VERSION 1.8.3
 
-RUN yum -y install go && yum clean all
+RUN curl -LO https://dl.google.com/go/go$GOLANG_VERSION.linux-amd64.tar.gz &&\
+    tar -C /usr/local -xzf go$GOLANG_VERSION.linux-amd64.tar.gz
+
+ENV PATH $PATH:/usr/local/go/bin
 
 # TODO(jlewi): We should probably change the directory to /opt/kubeflow.
 RUN mkdir -p /opt/tensorflow_k8s/dashboard/
