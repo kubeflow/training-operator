@@ -1,0 +1,29 @@
+apiVersion: "kubeflow.org/v1beta1"
+kind: "TFJob"
+metadata:
+  name: "mnist"
+  namespace: kubeflow 
+spec:
+  cleanPodPolicy: None 
+  tfReplicaSpecs:
+    Worker:
+      replicas: 1 
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: gcr.io/kubeflow-ci/tf-mnist-with-summaries:1.0
+              command:
+                - "python"
+                - "/var/tf_mnist/mnist_with_summaries.py"
+                - "--log_dir=/train"
+                - "--learning_rate=0.01"
+                - "--batch_size=150"
+              volumeMounts:
+                - mountPath: "/train"
+                  name: "training"
+          volumes:
+            - name: "training"
+              persistentVolumeClaim:
+                claimName: "tfevent-volume"  
