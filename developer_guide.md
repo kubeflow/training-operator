@@ -90,7 +90,7 @@ After the cluster is up, the TFJob CRD should be created on the cluster.
 
 ```bash
 # If you are using v1beta1
-kubectl create -f ./examples/crd/crd-v1beta1.yml
+kubectl create -f ./examples/crd/crd-v1beta1.yaml
 ```
 
 Or
