@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	failedMarshalTFJobReason = "FailedInvalidTFJobSpec"
+	failedMarshalTFJobReason = "InvalidTFJobSpec"
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
