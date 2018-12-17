@@ -22,6 +22,7 @@ install:
 script:
   - go build -o tf-operator.v2 github.com/kubeflow/tf-operator/cmd/tf-operator.v2
   - go build -o tf-operator.v1beta1 github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
+  - go build -o backend github.com/kubeflow/tf-operator/dashboard/backend
   - gometalinter --config=linter_config.json --vendor ./...
   # We customize the build step because by default
   # Travis runs go test -v ./... which will include the vendor
