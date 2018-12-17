@@ -65,9 +65,9 @@ func (tc *TFController) getTFJobFromName(namespace, name string) (*tfv1alpha2.TF
 }
 
 func (tc *TFController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
+	logger := tflogger.LoggerForKey(key)
 	// Check if the key exists.
 	obj, exists, err := tc.tfJobInformer.GetIndexer().GetByKey(key)
-	logger := tflogger.LoggerForKey(key)
 	if err != nil {
 		logger.Errorf("Failed to get TFJob '%s' from informer index: %+v", key, err)
 		return nil, errGetFromKey
@@ -77,11 +77,7 @@ func (tc *TFController) getTFJobFromKey(key string) (*tfv1alpha2.TFJob, error) {
 		return nil, errNotExists
 	}
 
-	tfjob, err := tfJobFromUnstructured(obj)
-	if err != nil {
-		return nil, err
-	}
-	return tfjob, nil
+	return tfJobFromUnstructured(obj)
 }
 
 func tfJobFromUnstructured(obj interface{}) (*tfv1alpha2.TFJob, error) {
