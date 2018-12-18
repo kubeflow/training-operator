@@ -17,7 +17,8 @@ package validation
 import (
 	"testing"
 
-        common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
+	"github.com/golang/protobuf/proto"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 
@@ -86,6 +87,23 @@ func TestValidateAlphaTwoTFJobSpec(t *testing.T) {
 							Containers: []v1.Container{},
 						},
 					},
+				},
+			},
+		},
+		{
+			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
+				tfv2.TFReplicaTypeEval: &tfv2.TFReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Name:  "tensorflow",
+									Image: "kubeflow/tf-dist-mnist-test:1.0",
+								},
+							},
+						},
+					},
+					Replicas: proto.Int32(2),
 				},
 			},
 		},
@@ -160,6 +178,23 @@ func TestValidateBetaOneTFJobSpec(t *testing.T) {
 							Containers: []v1.Container{},
 						},
 					},
+				},
+			},
+		},
+		{
+			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*common.ReplicaSpec{
+				tfv1beta1.TFReplicaTypeEval: &common.ReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Name:  "tensorflow",
+									Image: "kubeflow/tf-dist-mnist-test:1.0",
+								},
+							},
+						},
+					},
+					Replicas: proto.Int32(2),
 				},
 			},
 		},

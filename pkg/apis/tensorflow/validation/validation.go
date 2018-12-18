@@ -34,12 +34,16 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*common.Repli
 		return fmt.Errorf("TFJobSpec is not valid")
 	}
 	foundChief := 0
+	var foundEvaluator int32 = 0
 	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
 		if tfv1beta1.IsChieforMaster(rType) {
 			foundChief++
+		}
+		if tfv1beta1.IsEvaluator(rType) {
+			foundEvaluator = foundEvaluator + *value.Replicas
 		}
 		// Make sure the image is defined in the container.
 		numNamedTensorflow := 0
@@ -61,6 +65,9 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*common.Repli
 	if foundChief > 1 {
 		return fmt.Errorf("More than 1 chief/master found")
 	}
+	if foundEvaluator > 1 {
+		return fmt.Errorf("More than 1 evaluator found")
+	}
 	return nil
 }
 
@@ -74,12 +81,16 @@ func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSp
 		return fmt.Errorf("TFJobSpec is not valid")
 	}
 	foundChief := 0
+	var foundEvaluator int32 = 0
 	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
 		if tfv2.IsChieforMaster(rType) {
 			foundChief++
+		}
+		if tfv2.IsEvaluator(rType) {
+			foundEvaluator = foundEvaluator + *value.Replicas
 		}
 		// Make sure the image is defined in the container.
 		numNamedTensorflow := 0
@@ -100,6 +111,9 @@ func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSp
 	}
 	if foundChief > 1 {
 		return fmt.Errorf("More than 1 chief/master found")
+	}
+	if foundEvaluator > 1 {
+		return fmt.Errorf("More than 1 evaluator found")
 	}
 	return nil
 }
