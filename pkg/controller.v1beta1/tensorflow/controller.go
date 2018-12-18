@@ -49,6 +49,7 @@ const (
 	tfReplicaIndexLabel = "tf-replica-index"
 	labelGroupName      = "group_name"
 	labelTFJobName      = "tf_job_name"
+	labelTFJobRole      = "tf_job_role"
 )
 
 var (

@@ -61,17 +61,31 @@ func (tc *TFController) reconcilePods(
 	replicas := int(*spec.Replicas)
 	restart := false
 	worker0Completed := false
+	masterRole := false
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
 	podSlices := tc.GetPodSlices(pods, replicas, logger)
 	for index, podSlice := range podSlices {
+		masterRole = false
 		if len(podSlice) > 1 {
 			logger.Warningf("We have too many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			logger.Infof("Need to create new pod: %s-%d", rt, index)
-			err = tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec)
+
+			// if master pod is present, select the master pod
+			// if master is not present, first worker pod is selected as the master.
+			if ContainChieforMasterSpec(tfjob) {
+				if tfv1beta1.IsChieforMaster(rtype) {
+					masterRole = true
+				}
+			} else {
+				if tfv1beta1.IsWorker(rtype) && (index == 0) {
+					masterRole = true
+				}
+			}
+			err = tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec, masterRole)
 			if err != nil {
 				return err
 			}
@@ -111,7 +125,7 @@ func (tc *TFController) reconcilePods(
 }
 
 // createNewPod creates a new pod for the given index and type.
-func (tc *TFController) createNewPod(tfjob *tfv1beta1.TFJob, rt, index string, spec *common.ReplicaSpec) error {
+func (tc *TFController) createNewPod(tfjob *tfv1beta1.TFJob, rt, index string, spec *common.ReplicaSpec, masterRole bool) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
@@ -130,6 +144,10 @@ func (tc *TFController) createNewPod(tfjob *tfv1beta1.TFJob, rt, index string, s
 	labels := tc.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
+
+	if masterRole {
+		labels[labelTFJobRole] = "master"
+	}
 
 	podTemplate := spec.Template.DeepCopy()
 
