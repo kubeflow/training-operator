@@ -77,11 +77,7 @@ func (tc *TFController) getTFJobFromKey(key string) (*tfv1beta1.TFJob, error) {
 		return nil, errNotExists
 	}
 
-	tfjob, err := tfJobFromUnstructured(obj)
-	if err != nil {
-		return nil, err
-	}
-	return tfjob, nil
+	return tfJobFromUnstructured(obj)
 }
 
 func tfJobFromUnstructured(obj interface{}) (*tfv1beta1.TFJob, error) {
