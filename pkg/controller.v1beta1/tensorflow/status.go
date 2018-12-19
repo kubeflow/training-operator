@@ -180,8 +180,10 @@ func newCondition(conditionType common.JobConditionType, reason, message string)
 
 // getCondition returns the condition with the provided type.
 func getCondition(status common.JobStatus, condType common.JobConditionType) *common.JobCondition {
-	if len(status.Conditions) > 0 {
-		return &status.Conditions[len(status.Conditions)-1]
+	for _, condition := range status.Conditions {
+		if condition.Type == condType {
+			return &condition
+		}
 	}
 	return nil
 }
