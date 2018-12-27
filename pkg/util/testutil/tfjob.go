@@ -70,6 +70,10 @@ func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1alpha2.TFJob {
 }
 
 func NewTFJob(worker, ps int) *tfv1alpha2.TFJob {
+	return NewTFJobWithRpcLayer(worker, ps, "")
+}
+
+func NewTFJobWithRpcLayer(worker, ps int, rpcLayer string) *tfv1alpha2.TFJob {
 	tfJob := &tfv1alpha2.TFJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: tfv1alpha2.Kind,
@@ -79,6 +83,7 @@ func NewTFJob(worker, ps int) *tfv1alpha2.TFJob {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: tfv1alpha2.TFJobSpec{
+			TFRpcLayer:     rpcLayer,
 			TFReplicaSpecs: make(map[tfv1alpha2.TFReplicaType]*tfv1alpha2.TFReplicaSpec),
 		},
 	}
@@ -105,6 +110,13 @@ func NewTFJob(worker, ps int) *tfv1alpha2.TFJob {
 
 func NewTFJobWithNamespace(worker, ps int, ns string) *tfv1alpha2.TFJob {
 	tfJob := NewTFJob(worker, ps)
+	tfJob.Namespace = ns
+
+	return tfJob
+}
+
+func NewTFJobWithRpcLayerAndNamespace(worker, ps int, ns, rpcLayer string) *tfv1alpha2.TFJob {
+	tfJob := NewTFJobWithRpcLayer(worker, ps, rpcLayer)
 	tfJob.Namespace = ns
 
 	return tfJob
