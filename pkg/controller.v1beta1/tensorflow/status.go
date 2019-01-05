@@ -18,7 +18,7 @@ package tensorflow
 import (
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
@@ -86,7 +86,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1bet
 			// All workers are succeeded or worker 0 completed, leave a succeeded condition.
 			if expected == 0 || worker0Completed {
 				msg := fmt.Sprintf("TFJob %s successfully completed.", tfjob.Name)
-			        tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
+				tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
 				if tfjob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					tfjob.Status.CompletionTime = &now
