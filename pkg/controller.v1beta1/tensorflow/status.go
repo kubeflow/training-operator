@@ -40,7 +40,7 @@ const (
 )
 
 // updateStatus updates the status of the tfjob.
-func updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
+func (tc *TFController) updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
 	commonType := common.ReplicaType(rtype)
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.ReplicaStatuses[commonType].Succeeded)
@@ -68,7 +68,8 @@ func updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, r
 				}
 			}
 			if expected == 0 {
-				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				msg := fmt.Sprintf("TFJob %s successfully completed.", tfjob.Name)
+				tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
 				if tfjob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					tfjob.Status.CompletionTime = &now
@@ -84,7 +85,8 @@ func updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, r
 		if rtype == tfv1beta1.TFReplicaTypeWorker {
 			// All workers are succeeded or worker 0 completed, leave a succeeded condition.
 			if expected == 0 || worker0Completed {
-				msg := fmt.Sprintf("TFJob %s is successfully completed.", tfjob.Name)
+				msg := fmt.Sprintf("TFJob %s successfully completed.", tfjob.Name)
+			        tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
 				if tfjob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					tfjob.Status.CompletionTime = &now
@@ -108,14 +110,18 @@ func updateStatusSingle(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, r
 
 	if failed > 0 {
 		if restart {
-			msg := fmt.Sprintf("TFJob %s is restarting.", tfjob.Name)
+			msg := fmt.Sprintf("TFJob %s is restarting because %d %s replica(s) failed.",
+				tfjob.Name, failed, rtype)
+			tc.Recorder.Event(tfjob, v1.EventTypeWarning, tfJobRestartingReason, msg)
 			err := updateTFJobConditions(tfjob, common.JobRestarting, tfJobRestartingReason, msg)
 			if err != nil {
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
 		} else {
-			msg := fmt.Sprintf("TFJob %s is failed.", tfjob.Name)
+			msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
+				tfjob.Name, failed, rtype)
+			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, msg)
 			if tfjob.Status.CompletionTime == nil {
 				now := metav1.Now()
 				tfjob.Status.CompletionTime = &now
