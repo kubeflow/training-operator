@@ -45,6 +45,8 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
 
   # Construct the expected cluster spec
   chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
+  # Estimator only has one instance.
+  estimator_list = ["{name}-estimator-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
   ps_list = []
   for i in range(num_ps):
     ps_list.append("{name}-ps-{index}.{ns}.svc:2222".format(name=job_name, index=i, ns=namespace))
@@ -52,8 +54,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   for i in range(num_workers):
     worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
       index=i, ns=namespace))
-  # Estimator only has one instance.
-  estimator_list = ["{name}-estimator-0.{ns}.svc:2222".format(name=job_name, ns=namespace])]
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
