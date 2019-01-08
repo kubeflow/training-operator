@@ -19,13 +19,39 @@ import (
 	"testing"
 
 	"k8s.io/api/core/v1"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/kubernetes/pkg/controller"
 
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1/app/options"
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
+	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 )
 
 func TestFailed(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1beta1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+
 	tfJob := testutil.NewTFJob(3, 0)
 	initializeTFReplicaStatuses(tfJob, tfv1beta1.TFReplicaTypeWorker)
 	pod := testutil.NewBasePod("pod", tfJob, t)
@@ -34,7 +60,7 @@ func TestFailed(t *testing.T) {
 	if tfJob.Status.ReplicaStatuses[common.ReplicaType(tfv1beta1.TFReplicaTypeWorker)].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := updateStatusSingle(tfJob, tfv1beta1.TFReplicaTypeWorker, 3, false, false)
+	err := ctr.updateStatusSingle(tfJob, tfv1beta1.TFReplicaTypeWorker, 3, false, false)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -332,6 +358,32 @@ func TestStatus(t *testing.T) {
 	}
 
 	for i, c := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1beta1.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		ctr.updateStatusHandler = func(tfJob *tfv1beta1.TFJob) error {
+			return nil
+		}
+
 		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeWorker)
 		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypeChief)
 		initializeTFReplicaStatuses(c.tfJob, tfv1beta1.TFReplicaTypePS)
@@ -341,20 +393,20 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.tfJob, tfv1beta1.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, t)
 
 		if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeChief]; ok {
-			err := updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeChief, 1, c.restart, c.worker0Completed)
+			err := ctr.updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeChief, 1, c.restart, c.worker0Completed)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypePS].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
@@ -362,14 +414,14 @@ func TestStatus(t *testing.T) {
 		} else {
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1beta1.TFReplicaTypePS].Replicas
-				err := updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1beta1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}

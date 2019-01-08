@@ -121,7 +121,7 @@ func (tc *TFController) reconcilePods(
 		}
 	}
 
-	return updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
+	return tc.updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
 }
 
 // createNewPod creates a new pod for the given index and type.
