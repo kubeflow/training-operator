@@ -52,10 +52,13 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   for i in range(num_workers):
     worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
       index=i, ns=namespace))
+  # Estimator only has one instance.
+  estimator_list = ["{name}-estimator-0.{ns}.svc:2222".format(name=job_name, ns=namespace])]
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
     "worker": worker_list,
+    "estimator": estimator_list,
   }
 
   for i in range(num_replicas):
@@ -125,6 +128,8 @@ class EstimatorRunconfigTests(test_util.TestCase):
     verify_runconfig(masterHost, self.namespace, self.name, "worker", num_ps,
                      num_workers)
     verify_runconfig(masterHost, self.namespace, self.name, "ps", num_ps,
+                     num_workers)
+    verify_runconfig(masterHost, self.namespace, self.name, "estimator", num_ps,
                      num_workers)
 
     tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
