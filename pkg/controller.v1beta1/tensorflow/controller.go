@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1/app/options"
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -373,12 +372,11 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 		// If any replicas are still Active, set their status to succeeded.
 		if isSucceeded(tfjob.Status) {
 			for rtype, _ := range tfjob.Status.ReplicaStatuses {
-				commonType := common.ReplicaType(rtype)
-				tfjob.Status.ReplicaStatuses[commonType].Succeeded += tfjob.Status.ReplicaStatuses[commonType].Active
-				tfjob.Status.ReplicaStatuses[commonType].Active = 0
+				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
+				tfjob.Status.ReplicaStatuses[rtype].Active = 0
 			}
 		}
-		return tc.updateStatusHandler(tfjob)
+		return nil
 	}
 
 	// Save the current state of the replicas
