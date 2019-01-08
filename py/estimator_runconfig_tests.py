@@ -64,7 +64,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     actual_config = get_runconfig(master_host, namespace, full_target)
     full_svc = "{ft}.{ns}.svc".format(ft=full_target, ns=namespace)
     expected_config = {
-      "task_type": "dummy",
+      "task_type": replica,
       "task_id": i,
       "cluster_spec": cluster_spec,
       "is_chief": is_chief,
