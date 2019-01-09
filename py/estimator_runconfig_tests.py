@@ -60,7 +60,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     "chief": chief_list,
     "ps": ps_list,
     "worker": worker_list,
-    "evaluator": evaluator_list,
   }
 
   for i in range(num_replicas):
