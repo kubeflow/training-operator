@@ -58,7 +58,7 @@ local parts(namespace, name, image) = {
             },
           },
         },
-        Estimator: {
+        Evaluator: {
           replicas: 1,
           restartPolicy: "Never",
           template: {
