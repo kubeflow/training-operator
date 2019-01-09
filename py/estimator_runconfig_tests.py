@@ -30,7 +30,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
     job_name: The name of the TF job
-    replica: The replica type (chief, ps, or worker)
+    replica: The replica type (chief, ps, worker, or estimator)
     num_ps: The number of PS replicas
     num_workers: The number of worker replicas
   """
@@ -42,6 +42,8 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   elif replica == "worker":
     is_chief = False
     num_replicas = num_workers
+  elif replica == "estimator":
+    is_chief = False
 
   # Construct the expected cluster spec
   chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
