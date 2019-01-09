@@ -376,7 +376,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 				tfjob.Status.ReplicaStatuses[rtype].Active = 0
 			}
 		}
-		return nil
+		return tc.updateStatusHandler(tfjob)
 	}
 
 	// Save the current state of the replicas
