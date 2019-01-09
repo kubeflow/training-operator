@@ -20,7 +20,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -372,11 +372,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 			}
 		}
 
-		// Initialize the status.
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeWorker)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypePS)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeChief)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeMaster)
+		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
+		// If any replicas are still Active, set their status to succeeded.
+		if isSucceeded(tfjob.Status) {
+			for rtype, _ := range tfjob.Status.ReplicaStatuses {
+				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
+				tfjob.Status.ReplicaStatuses[rtype].Active = 0
+			}
+		}
 		return tc.updateStatusHandler(tfjob)
 	}
 
