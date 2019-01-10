@@ -1,5 +1,6 @@
 """Tests for pod_names_validation."""
 
+import json
 import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import ks_util, test_util, util
@@ -10,7 +11,7 @@ COMPONENT_NAME = "pod_names_validation"
 
 class PodNamesValidationTest(test_util.TestCase):
 
-  def test_give_me_a_name(self, args):
+  def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
     self.env = env
