@@ -30,7 +30,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     master_host: The IP address of the master e.g. https://35.188.37.10
     namespace: The namespace
     job_name: The name of the TF job
-    replica: The replica type (chief, ps, or worker)
+    replica: The replica type (chief, ps, worker, or evaluator)
     num_ps: The number of PS replicas
     num_workers: The number of worker replicas
   """
@@ -42,6 +42,8 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   elif replica == "worker":
     is_chief = False
     num_replicas = num_workers
+  elif replica == "evaluator":
+    is_chief = False
 
   # Construct the expected cluster spec
   chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
@@ -52,6 +54,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   for i in range(num_workers):
     worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
       index=i, ns=namespace))
+  # Evaluator is not part of training cluster.
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
@@ -71,7 +74,17 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "master": "grpc://{fs}:2222".format(fs=full_svc),
       "num_worker_replicas": num_workers + 1, # Chief is also a worker
       "num_ps_replicas": num_ps,
+    } if not replica == "evaluator" else {
+      # Evaluator has special config.
+      "task_type": replica,
+      "task_id": 0,
+      "cluster_spec": {},
+      "is_chief": is_chief,
+      "master": "",
+      "num_worker_replicas": 0,
+      "num_ps_replicas": 0,
     }
+
     # Compare expected and actual configs
     if actual_config != expected_config:
       msg = "Actual runconfig differs from expected. Expected: {0} Actual: {1}".format(
@@ -125,6 +138,8 @@ class EstimatorRunconfigTests(test_util.TestCase):
     verify_runconfig(masterHost, self.namespace, self.name, "worker", num_ps,
                      num_workers)
     verify_runconfig(masterHost, self.namespace, self.name, "ps", num_ps,
+                     num_workers)
+    verify_runconfig(masterHost, self.namespace, self.name, "evaluator", num_ps,
                      num_workers)
 
     tf_job_client.terminate_replicas(api_client, self.namespace, self.name,

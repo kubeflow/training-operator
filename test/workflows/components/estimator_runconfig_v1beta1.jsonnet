@@ -58,6 +58,20 @@ local parts(namespace, name, image) = {
             },
           },
         },
+        Evaluator: {
+          replicas: 1,
+          restartPolicy: "Never",
+          template: {
+            spec: {
+              containers: [
+                {
+                  name: "tensorflow",
+                  image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180904-7d89548b",
+                },
+              ],
+            },
+          },
+        },
       },
     },
   },
