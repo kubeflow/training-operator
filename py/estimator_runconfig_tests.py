@@ -47,8 +47,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
 
   # Construct the expected cluster spec
   chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
-  # Evaluator only has one instance.
-  evaluator_list = ["{name}-evaluator-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
   ps_list = []
   for i in range(num_ps):
     ps_list.append("{name}-ps-{index}.{ns}.svc:2222".format(name=job_name, index=i, ns=namespace))
@@ -56,6 +54,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   for i in range(num_workers):
     worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
       index=i, ns=namespace))
+  # Evaluator is not part of training cluster.
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
@@ -75,7 +74,18 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "master": "grpc://{fs}:2222".format(fs=full_svc),
       "num_worker_replicas": num_workers + 1, # Chief is also a worker
       "num_ps_replicas": num_ps,
+    } if not replica == "evaluator" else {
+      # Evaluator has special config.
+      "task_type": replica,
+      "task_id": 0,
+      "cluster_spec": {},
+      "is_chief": is_chief,
+      "master": "",
+      "num_worker_replicas": 0,
+      "num_ps_replicas": 0,
+      "evaluator_master": "",
     }
+
     # Compare expected and actual configs
     if actual_config != expected_config:
       msg = "Actual runconfig differs from expected. Expected: {0} Actual: {1}".format(
