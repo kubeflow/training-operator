@@ -83,7 +83,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "master": "",
       "num_worker_replicas": 0,
       "num_ps_replicas": 0,
-      "evaluator_master": "",
     }
 
     # Compare expected and actual configs
