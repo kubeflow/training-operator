@@ -289,6 +289,11 @@
                     template: "replica-restart-policy-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  {
+                    name: "pod-names-validation-tests",
+                    template: "pod-names-validation-tests",
+                    dependencies: ["setup-kubeflow"],
+                  },
                 ],  //tasks
               },
             },
@@ -390,6 +395,8 @@
               "invalid-tfjob-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "replica-restart-policy-tests"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "pod-names-validation-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",
