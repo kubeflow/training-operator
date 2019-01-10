@@ -6,8 +6,29 @@ from kubernetes import client as k8s_client
 from kubeflow.testing import ks_util, test_util, util
 from py import test_runner
 from py import tf_job_client
+from tensorflow.python.estimator import run_config as run_config_lib
 
 COMPONENT_NAME = "pod_names_validation"
+
+def error_case(msg):
+  logging.error(msg)
+  raise RuntimeError(msg)
+
+def extract_replica_specs(replica_spec):
+  specs = {}
+  valid_types = tuple(v for k, v in vars(run_config_lib.TaskType) if not k.startswith("_"))
+  for replica_type in replica_spec:
+    if not replica_type in valid_types:
+      error_case("Not valid replica type: {0} Valid list: {1}".format(
+          replica_type, str(valid_types)))
+    if replica_type in specs:
+      error_case("Duplicated replica type: " + replica_type)
+    specs[replica_type] = {
+        "num_replicas": replica_spec[replica_type].get("replicas", 0)
+    }
+
+  return specs
+
 
 class PodNamesValidationTest(test_util.TestCase):
 
@@ -38,6 +59,9 @@ class PodNamesValidationTest(test_util.TestCase):
       version=self.tfjob_version,
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
+
+    replica_specs = extract_replica_specs(results.get("spec", {}).get("tfReplicaSpecs", {}))
+    print("Replica specs: ", str(replica_specs))
 
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)
