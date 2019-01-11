@@ -23,7 +23,7 @@ class PodNamesValidationTest(test_util.TestCase):
 
   def test_pod_names(self):
     api_client = k8s_client.ApiClient()
-    masterHost = api_client.configuration.host
+    # masterHost = api_client.configuration.host
     component = COMPONENT_NAME + "_" + self.tfjob_version
 
     ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
