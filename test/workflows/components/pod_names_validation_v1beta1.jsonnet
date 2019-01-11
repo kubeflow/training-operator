@@ -1,7 +1,7 @@
 // Test that all pods have expected names, e.g. [job-name]-[replica-type]-[index].
 // Each replica runs a tf-operator-test-server, so a manual exit on the chief
 // worker is required for the job to end successfully.
-local params = std.extVar("__ksonnet/params").components.estimator_runconfig_v1beta1;
+local params = std.extVar("__ksonnet/params").components.pod_names_validation_v1beta1;
 
 local k = import "k.libsonnet";
 
