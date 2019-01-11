@@ -271,7 +271,7 @@ def get_jobs(client,
              timeout=datetime.timedelta(minutes=10)):
   crd_api = k8s_client.CustomObjectsApi(client)
   end_time = datetime.datetime.now() + timeout
-  resp = crd_api.list_namespaced_custom_object(TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL)
+  resp = crd_api.list_namespaced_custom_object(TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, pretty=True)
   logging.error("get_jobs result: ", str(resp))
   return
 
