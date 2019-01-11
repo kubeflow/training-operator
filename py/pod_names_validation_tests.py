@@ -9,22 +9,6 @@ from py import tf_job_client
 
 COMPONENT_NAME = "pod_names_validation"
 
-def error_case(msg):
-  logging.error(msg)
-  raise RuntimeError(msg)
-
-def extract_replica_specs(replica_spec):
-  specs = {}
-  for replica_type in replica_spec:
-    if replica_type in specs:
-      error_case("Duplicated replica type: " + replica_type)
-    specs[replica_type] = {
-        "num_replicas": replica_spec[replica_type].get("replicas", 0)
-    }
-
-  return specs
-
-
 class PodNamesValidationTest(test_util.TestCase):
 
   def __init__(self, args):
@@ -54,9 +38,6 @@ class PodNamesValidationTest(test_util.TestCase):
       version=self.tfjob_version,
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
-
-    replica_specs = extract_replica_specs(results.get("spec", {}).get("tfReplicaSpecs", {}))
-    print("Replica specs: ", str(replica_specs))
 
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)
