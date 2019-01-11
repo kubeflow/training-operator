@@ -264,6 +264,16 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
+def get_jobs(client,
+             namespace,
+             name,
+             version="v1beta1",
+             timeout=datetime.timedelta(minutes=10)):
+  crd_api = k8s_client.CustomObjectsApi(client)
+  end_time = datetime.datetime.now() + timeout
+  resp = ced_api.list_namespaced_custom_object(TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL)
+  logging.error("get_jobs result: ", str(resp))
+  return
 
 def to_selector(labels):
   parts = []
