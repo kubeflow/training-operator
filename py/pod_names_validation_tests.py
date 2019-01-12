@@ -14,6 +14,7 @@ class PodNamesValidationTest(test_util.TestCase):
   def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
     self.app_dir = args.app_dir
+    self.cluster_name = args.cluster
     self.env = env
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
@@ -39,7 +40,7 @@ class PodNamesValidationTest(test_util.TestCase):
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-    tf_job_client.get_jobs(api_client, self.namespace, self.name)
+    tf_job_client.get_jobs(api_client, self.cluster_name)
 
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)
