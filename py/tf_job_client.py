@@ -176,7 +176,7 @@ def wait_for_condition(client,
     time.sleep(polling_interval.seconds)
 
   # Linter complains if we don't have a return statement even though
-  # this code is unreachable.
+#this code is unreachable.
   return None
 
 
@@ -264,14 +264,10 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
-def get_jobs(client,
-             namespace,
-             name,
-             version="v1beta1",
-             timeout=datetime.timedelta(minutes=10)):
-  crd_api = k8s_client.CustomObjectsApi(client)
-  end_time = datetime.datetime.now() + timeout
-  resp = crd_api.list_namespaced_custom_object(TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, pretty=True)
+def get_jobs(client, namespace, name):
+  core_api = k8s_client.CoreV1Api(client)
+  # end_time = datetime.datetime.now() + timeout
+  resp = core_api.list_namespaced_pod(namespace, field_selector="metadata.name=" + name)
   logging.error("get_jobs result:\n %s", json.dumps(resp, indent=2))
   return
 
@@ -332,7 +328,7 @@ def terminate_replicas(api_client,
   pod_selector = to_selector(pod_labels)
   masterHost = api_client.configuration.host
 
-  # Wait for the pods to be ready before we shutdown
+# Wait for the pods to be ready before we shutdown
   # TODO(jlewi): We are get pods using a label selector so there is
   # a risk that the pod we actual care about isn't present.
   logging.info("Waiting for pods to be running before shutting down.")
