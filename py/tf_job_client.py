@@ -264,9 +264,9 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
-def get_jobs(client, cluster):
+def get_jobs(client, cluster, namespace):
   core_api = k8s_client.CoreV1Api(client)
-  resp = core_api.list_cluster_custom_object(cluster)
+  resp = core_api.list_namespaced_pod(namespace, field_selector="metadata.cluster_name=" + cluster)
   logging.info("get_jobs returned type: %s", type(resp))
   logging.info("get_jobs returned:\n %s", str(resp))
   return
