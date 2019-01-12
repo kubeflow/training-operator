@@ -268,7 +268,7 @@ def get_jobs(client, namespace, name):
   core_api = k8s_client.CoreV1Api(client)
   # end_time = datetime.datetime.now() + timeout
   resp = core_api.list_namespaced_pod(namespace, field_selector="metadata.name=" + name)
-  logging.error("get_jobs result:\n %s", json.dumps(resp, indent=2))
+  logging.error("get_jobs result:\n %s", str(resp))
   return
 
 def to_selector(labels):
