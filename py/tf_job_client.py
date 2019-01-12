@@ -267,7 +267,7 @@ def get_labels(name, replica_type=None, replica_index=None):
 def get_jobs(client, namespace, name):
   core_api = k8s_client.CoreV1Api(client)
   # end_time = datetime.datetime.now() + timeout
-  resp = core_api.list_namespaced_pod(namespace)
+  # resp = core_api.list_namespaced_pod(namespace)
   logging.error("name(%s) namespace(%s) get_jobs result:", name, namespace)
   return
 
