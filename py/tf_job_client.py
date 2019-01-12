@@ -268,7 +268,7 @@ def get_jobs(client, namespace):
   core_api = k8s_client.CoreV1Api(client)
   resp = core_api.list_namespaced_pod(namespace)
   pod_names = []
-  for pod in resp.items():
+  for pod in resp.items:
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
 
