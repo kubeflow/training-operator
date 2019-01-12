@@ -272,6 +272,7 @@ def get_jobs(client, namespace):
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
 
+  logging.info("list_namespaced_pod:\n %s", str(resp))
   logging.info("List of names:\n %s", str(pod_names))
   return
 
