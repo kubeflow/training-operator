@@ -40,7 +40,7 @@ class PodNamesValidationTest(test_util.TestCase):
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-    tf_job_client.get_jobs(api_client, self.namespace)
+    tf_job_client.get_jobs(api_client, self.namespace, self.name)
 
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)
