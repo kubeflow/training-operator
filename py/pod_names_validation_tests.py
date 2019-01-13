@@ -53,8 +53,8 @@ class PodNamesValidationTest(test_util.TestCase):
     for replica_type, replica_num in job_specs.items():
       logging.info("job_type = %s, replica = %s", replica_type, replica_num)
       for i in xrange(replica_num):
-        expected_pod_names.append("{name}-{replica}-{index}",
-          name=self.name, replica=replica_type, index=i)
+        expected_pod_names.append("{name}-{replica}-{index}".format(
+          name=self.name, replica=replica_type, index=i))
     expected_pod_names = tuple(expected_pod_names)
     pod_names = tf_job_client.get_pod_names(api_client,
                                             self.namespace,
