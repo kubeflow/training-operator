@@ -26,6 +26,7 @@ class PodNamesValidationTest(test_util.TestCase):
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     self.params = args.params
+    self.failure = None
     super(PodNamesValidationTest, self).__init__(
         class_name="PodNamesValidationTest", name=name)
 
@@ -55,14 +56,35 @@ class PodNamesValidationTest(test_util.TestCase):
       for i in xrange(replica_num):
         expected_pod_names.append("{name}-{replica}-{index}".format(
           name=self.name, replica=replica_type, index=i))
-    expected_pod_names = tuple(expected_pod_names)
-    pod_names = tf_job_client.get_pod_names(api_client,
+    expected_pod_names = set(expected_pod_names)
+    actual_pod_names = tf_job_client.get_pod_names(api_client,
                                             self.namespace,
                                             self.name)
 
-    logging.info("Expected = %s", str(expected_pod_names))
-    logging.info("Actual = %s", str(pod_names))
+    if not expected_pod_names == actual_pod_names:
+      msg = "Actual pod names doesn't match. Expected: {0} Actual: {1}".format(
+        str(expected_pod_names), str(actual_pod_names))
+      logging.error(msg)
+      raise RuntimeError(msg)
 
+    tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
+                                     "chief", 1)
+    # Wait for the job to complete.
+    logging.info("Waiting for job to finish.")
+    results = tf_job_client.wait_for_job(
+      api_client,
+      self.namespace,
+      self.name,
+      self.tfjob_version,
+      status_callback=tf_job_client.log_status)
+    logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
+
+    if not tf_job_client.job_succeeded(results):
+      self.failure = "Job {0} in namespace {1} in status {2}".format(
+        self.name, self.namespace, results.get("status", {}))
+      logging.error(self.failure)
+
+    # Delete the TFJob.
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)
     logging.info("Waiting for job %s in namespaces %s to be deleted.",

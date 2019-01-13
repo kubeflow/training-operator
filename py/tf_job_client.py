@@ -273,7 +273,7 @@ def get_pod_names(client, namespace, name):
   for pod in resp.items:
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
-  return tuple(pod_names)
+  return set(pod_names)
 
 def to_selector(labels):
   parts = []
