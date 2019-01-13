@@ -12,7 +12,8 @@ COMPONENT_NAME = "pod_names_validation"
 def extract_job_specs(replica_specs):
   specs = dict()
   for job_type in replica_specs:
-    specs[job_type.encode("ascii").lower()] = int(replica_specs.get(job_type, {}).get("replicas", 0))
+    specs[job_type.encode("ascii").lower()] = int(replica_specs.get(job_type, {})
+                                                               .get("replicas", 0))
   return specs
 
 class PodNamesValidationTest(test_util.TestCase):
@@ -50,6 +51,7 @@ class PodNamesValidationTest(test_util.TestCase):
                                          .get("tfReplicaSpecs", {}))
     expected_pod_names = []
     for job_type, replica in job_specs:
+      logging.info("job_type = %s, replica = %s", job_type, replica)
       logging.info("replica type = %s", type(replica))
       for i in xrange(replica):
         expected_pod_names.append("{name}-{replica}-{index}",
