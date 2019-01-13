@@ -11,8 +11,8 @@ COMPONENT_NAME = "pod_names_validation"
 
 def extract_job_specs(replica_specs):
   specs = dict()
-  for job_type, spec in replica_specs:
-    specs[job_type.lowercase()] = spec.get("replicas", 0)
+  for job_type in replica_specs:
+    specs[job_type.lowercase()] = replica_specs.get(job_type, {}).get("replicas", 0)
   return specs
 
 class PodNamesValidationTest(test_util.TestCase):
