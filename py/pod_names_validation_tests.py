@@ -9,6 +9,12 @@ from py import tf_job_client
 
 COMPONENT_NAME = "pod_names_validation"
 
+def extract_job_specs(replica_specs):
+  specs = dict()
+  for job_type, spec in replica_specs:
+    specs[job_type.lowercase()] = spec.get("replicas", 0)
+  return specs
+
 class PodNamesValidationTest(test_util.TestCase):
 
   def __init__(self, args):
@@ -40,7 +46,20 @@ class PodNamesValidationTest(test_util.TestCase):
       status_callback=tf_job_client.log_status)
     logging.info("Current TFJob:\n %s", json.dumps(results, indent=2))
 
-    tf_job_client.get_jobs(api_client, self.namespace, self.name)
+    job_specs = extract_job_specs(results.get("spec", {})
+                                         .get("tfReplicaSpecs", {}))
+    expected_pod_names = []
+    for job_type, replica in job_specs:
+      for i in xrange(replica):
+        expected_pod_names.append("{name}-{replica}-{index}",
+          name=self.name, replica=job_type, index=i)
+    expected_pod_names = tuple(expected_pod_names)
+    pod_names = tf_job_client.get_pod_names(api_client,
+                                            self.namespace,
+                                            self.name)
+
+    logging.info("Expected = %s", str(expected_pod_names))
+    logging.info("Actual = %s", str(pod_names))
 
     tf_job_client.delete_tf_job(
       api_client, self.namespace, self.name, version=self.tfjob_version)

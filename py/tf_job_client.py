@@ -17,6 +17,7 @@ from py import util
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
+TF_JOB_NAME_LABEL = "tf_job_name"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
@@ -255,7 +256,7 @@ def get_labels(name, replica_type=None, replica_index=None):
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_name": name,
+    TF_JOB_NAME_LABEL: name,
   }
   if replica_type:
     labels["tf-replica-type"] = str.lower(replica_type)
@@ -264,23 +265,15 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
-def get_jobs(client, namespace, name):
+def get_pod_names(client, namespace, name):
   core_api = k8s_client.CoreV1Api(client)
   resp = core_api.list_namespaced_pod(namespace,
-                                      label_selector="tf_job_name=" + name)
+                                      label_selector=TF_JOB_NAME_LABEL + "=" + name)
   pod_names = []
   for pod in resp.items:
-    logging.info("pod:\n %s", str(pod))
-    if pod.metadata:
-      logging.info("metadata: %s", str(pod.metadata))
-      if pod.metadata.name:
-        logging.info("name: %s", str(pod.metadata.name))
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
-
-  # logging.info("list_namespaced_pod:\n %s", str(resp))
-  logging.info("List of names:\n %s", str(pod_names))
-  return
+  return tuple(pod_names)
 
 def to_selector(labels):
   parts = []
