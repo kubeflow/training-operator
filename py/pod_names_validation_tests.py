@@ -13,6 +13,7 @@ def extract_job_specs(replica_specs):
   specs = dict()
   for job_type in replica_specs:
     specs[job_type.lowercase()] = replica_specs.get(job_type, {}).get("replicas", 0)
+
   return specs
 
 class PodNamesValidationTest(test_util.TestCase):
