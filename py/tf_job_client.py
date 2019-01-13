@@ -272,9 +272,9 @@ def get_jobs(client, namespace, name):
   for pod in resp.items:
     logging.info("pod:\n %s", str(pod))
     if pod.metadata:
-        logging.info("metadata: %s", str(pod.metadata))
-        if pod.metadata.name:
-            logging.info("name: %s", str(pod.metadata.name))
+      logging.info("metadata: %s", str(pod.metadata))
+      if pod.metadata.name:
+        logging.info("name: %s", str(pod.metadata.name))
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
 
