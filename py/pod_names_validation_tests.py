@@ -53,7 +53,7 @@ class PodNamesValidationTest(test_util.TestCase):
     expected_pod_names = []
     for replica_type, replica_num in job_specs.items():
       logging.info("job_type = %s, replica = %s", replica_type, replica_num)
-      for i in xrange(replica_num):
+      for i in range(replica_num):
         expected_pod_names.append("{name}-{replica}-{index}".format(
           name=self.name, replica=replica_type, index=i))
     expected_pod_names = set(expected_pod_names)
