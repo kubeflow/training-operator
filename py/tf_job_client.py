@@ -177,7 +177,7 @@ def wait_for_condition(client,
     time.sleep(polling_interval.seconds)
 
   # Linter complains if we don't have a return statement even though
-#this code is unreachable.
+  #this code is unreachable.
   return None
 
 
@@ -334,7 +334,7 @@ def terminate_replicas(api_client,
   pod_selector = to_selector(pod_labels)
   masterHost = api_client.configuration.host
 
-# Wait for the pods to be ready before we shutdown
+  # Wait for the pods to be ready before we shutdown
   # TODO(jlewi): We are get pods using a label selector so there is
   # a risk that the pod we actual care about isn't present.
   logging.info("Waiting for pods to be running before shutting down.")
