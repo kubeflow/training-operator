@@ -1,40 +1,3 @@
-"""Some utility functions for working with TFJobs."""
-
-import datetime
-import httplib
-import json
-import logging
-import multiprocessing
-import retrying
-import time
-
-from kubernetes import client as k8s_client
-from kubernetes.client import rest
-
-from py import k8s_util
-from py import util
-
-TF_JOB_GROUP = "kubeflow.org"
-TF_JOB_PLURAL = "tfjobs"
-TF_JOB_KIND = "TFJob"
-TF_JOB_NAME_LABEL = "tf_job_name"
-
-# How long to wait in seconds for requests to the ApiServer
-TIMEOUT = 120
-
-
-def create_tf_job(client, spec, version="v1beta1"):
-  """Create a TFJob.
-
-  Args:
-    client: A K8s api client.
-    spec: The spec for the job.
-  """
-  crd_api = k8s_client.CustomObjectsApi(client)
-  try:
-    # Create a Resource
-    namespace = spec["metadata"].get("namespace", "default")
-    thread = crd_api.create_namespaced_custom_object(
       TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, spec, async_req=True)
     api_response = thread.get(TIMEOUT)
     logging.info("Created job %s", api_response["metadata"]["name"])
@@ -257,6 +220,7 @@ def get_labels(name, replica_type=None, replica_index=None):
   labels = {
     "group_name": "kubeflow.org",
     TF_JOB_NAME_LABEL: name,
+    "foo": "bar",
   }
   if replica_type:
     labels["tf-replica-type"] = str.lower(replica_type)
@@ -278,6 +242,7 @@ def get_pod_names(client, namespace, name):
   core_api = k8s_client.CoreV1Api(client)
   resp = core_api.list_namespaced_pod(namespace,
                                       label_selector=to_selector({TF_JOB_NAME_LABEL: name}))
+  logging.info("list_namespaced_pod = %s", str(resp))
   pod_names = []
   for pod in resp.items:
     if pod.metadata and pod.metadata.name:
