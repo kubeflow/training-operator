@@ -220,7 +220,6 @@ def get_labels(name, replica_type=None, replica_index=None):
   labels = {
     "group_name": "kubeflow.org",
     TF_JOB_NAME_LABEL: name,
-    "foo": "bar",
   }
   if replica_type:
     labels["tf-replica-type"] = str.lower(replica_type)
