@@ -1,4 +1,6 @@
-"""Tests for pod_names_validation."""
+"""Tests for pod_names_validation. This test takes app manifest and validate instantiated
+pod names are in the format POD_NAME_FORMAT mentioned.
+"""
 
 import json
 import logging
@@ -8,8 +10,15 @@ from py import test_runner
 from py import tf_job_client
 
 COMPONENT_NAME = "pod_names_validation"
+POD_NAME_FORMAT = "{name}-{replica}-{index}"
 
 def extract_job_specs(replica_specs):
+  """Extract tf job specs from tfReplicaSpecs.
+
+  Args:
+    replica_specs: A dictionary having information of tfReplicaSpecs from manifest.
+    returns: Dictionary. Key is tf job type and value is number of replicas.
+  """
   specs = dict()
   for job_type in replica_specs:
     specs[job_type.encode("ascii").lower()] = int(replica_specs.get(job_type, {})
@@ -27,6 +36,8 @@ class PodNamesValidationTest(test_util.TestCase):
     self.tfjob_version = args.tfjob_version
     self.params = args.params
     self.failure = None
+    logging.info("env = %s", str(self.env))
+    logging.info("params = %s", str(self.params))
     super(PodNamesValidationTest, self).__init__(
         class_name="PodNamesValidationTest", name=name)
 
@@ -54,7 +65,7 @@ class PodNamesValidationTest(test_util.TestCase):
     for replica_type, replica_num in job_specs.items():
       logging.info("job_type = %s, replica = %s", replica_type, replica_num)
       for i in range(replica_num):
-        expected_pod_names.append("{name}-{replica}-{index}".format(
+        expected_pod_names.append(POD_NAME_FORMAT.format(
           name=self.name, replica=replica_type, index=i))
     expected_pod_names = set(expected_pod_names)
     actual_pod_names = tf_job_client.get_pod_names(api_client,
