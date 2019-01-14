@@ -71,7 +71,10 @@ class PodNamesValidationTest(test_util.TestCase):
                                             self.namespace,
                                             self.name)
 
-    if not expected_pod_names == actual_pod_names:
+    # We are not able to guarantee pods selected with default namespace and job
+    # name are only for this test run only. Therefore we only do partial check,
+    # e.g. make sure expected set of pod names are in the selected pod names.
+    if not (expected_pod_names & actual_pod_names) == expected_pod_names:
       msg = "Actual pod names doesn't match. Expected: {0} Actual: {1}".format(
         str(expected_pod_names), str(actual_pod_names))
       logging.error(msg)
