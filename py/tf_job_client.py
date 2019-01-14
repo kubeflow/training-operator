@@ -265,16 +265,6 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
-def get_pod_names(client, namespace, name):
-  core_api = k8s_client.CoreV1Api(client)
-  resp = core_api.list_namespaced_pod(namespace,
-                                      label_selector=TF_JOB_NAME_LABEL + "=" + name)
-  pod_names = []
-  for pod in resp.items:
-    if pod.metadata and pod.metadata.name:
-      pod_names.append(pod.metadata.name)
-  return set(pod_names)
-
 def to_selector(labels):
   parts = []
   for k, v in labels.iteritems():
@@ -282,6 +272,17 @@ def to_selector(labels):
 
   return ",".join(parts)
 
+def get_pod_names(client, namespace, name):
+  """Get pod names from k8s.
+  """
+  core_api = k8s_client.CoreV1Api(client)
+  resp = core_api.list_namespaced_pod(namespace,
+                                      label_selector=to_selector({TF_JOB_NAME_LABEL: name}))
+  pod_names = []
+  for pod in resp.items:
+    if pod.metadata and pod.metadata.name:
+      pod_names.append(pod.metadata.name)
+  return set(pod_names)
 
 def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
                                     replica_type, phases):
