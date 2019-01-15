@@ -15,7 +15,9 @@ dashboard/frontend/build
 *~
 
 # VIM temporary files.
-.swp
+*~
+*.swp
+*.swo
 
 # Other temporary files
 .DS_Store
