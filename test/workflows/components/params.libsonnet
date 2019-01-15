@@ -81,6 +81,11 @@
        namespace: "kubeflow-test-infra",
        image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
     },
+    pod_names_validation_v1alpha2: {
+      name: "pod_names_validation",
+      namespace: "kubeflow-test-infra",
+      image: "",
+    },
     // v1beta1 components
     simple_tfjob_v1beta1: {
       name: "simple-001",
@@ -147,6 +152,11 @@
        name: "replica-restart-policy-exitcode",
        namespace: "kubeflow-test-infra",
        image: "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest"
+    },
+    pod_names_validation_v1beta1: {
+      name: "pod_names_validation",
+      namespace: "kubeflow-test-infra",
+      image: "",
     },
   },
 }
