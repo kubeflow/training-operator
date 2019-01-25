@@ -122,13 +122,13 @@ func Run(opt *options.ServerOption) error {
 
 	id, err := os.Hostname()
 	if err != nil {
-		return fmt.Errorf("Failed to get hostname: %v", err)
+		return fmt.Errorf("failed to get hostname: %v", err)
 	}
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
 	if err = v1.AddToScheme(scheme.Scheme); err != nil {
-		return fmt.Errorf("CoreV1 Add Scheme failed: %v", err)
+		return fmt.Errorf("coreV1 Add Scheme failed: %v", err)
 	}
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tf-operator"})
 

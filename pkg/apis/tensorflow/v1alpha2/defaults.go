@@ -78,7 +78,7 @@ func setTypeNamesToCamelCase(tfJob *TFJob) {
 // E.g. from ps to PS; from WORKER to Worker.
 func setTypeNameToCamelCase(tfJob *TFJob, typ TFReplicaType) {
 	for t := range tfJob.Spec.TFReplicaSpecs {
-		if strings.ToLower(string(t)) == strings.ToLower(string(typ)) && t != typ {
+		if strings.EqualFold(string(t), string(typ)) && t != typ {
 			spec := tfJob.Spec.TFReplicaSpecs[t]
 			delete(tfJob.Spec.TFReplicaSpecs, t)
 			tfJob.Spec.TFReplicaSpecs[typ] = spec

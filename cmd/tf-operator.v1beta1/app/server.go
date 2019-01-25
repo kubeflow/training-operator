@@ -122,7 +122,7 @@ func Run(opt *options.ServerOption) error {
 
 	id, err := os.Hostname()
 	if err != nil {
-		return fmt.Errorf("Failed to get hostname: %v", err)
+		return fmt.Errorf("failed to get hostname: %v", err)
 	}
 
 	// Prepare event clients.

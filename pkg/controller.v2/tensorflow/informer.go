@@ -26,9 +26,9 @@ const (
 )
 
 var (
-	errGetFromKey    = fmt.Errorf("Failed to get TFJob from key")
-	errNotExists     = fmt.Errorf("The object is not found")
-	errFailedMarshal = fmt.Errorf("Failed to marshal the object to TFJob")
+	errGetFromKey    = fmt.Errorf("failed to get TFJob from key")
+	errNotExists     = fmt.Errorf("the object is not found")
+	errFailedMarshal = fmt.Errorf("failed to marshal the object to TFJob")
 )
 
 func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string) tfjobinformersv1alpha2.TFJobInformer {

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -252,7 +252,7 @@ func (tc *TFController) processNextWorkItem() bool {
 		return true
 	}
 
-	utilruntime.HandleError(fmt.Errorf("Error syncing tfjob: %v", err))
+	utilruntime.HandleError(fmt.Errorf("error syncing tfjob: %v", err))
 	tc.WorkQueue.AddRateLimited(key)
 
 	return true
@@ -261,7 +261,7 @@ func (tc *TFController) processNextWorkItem() bool {
 func (tc *TFController) enqueueTFJob(tfjob interface{}) {
 	key, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return
 	}
 
@@ -375,7 +375,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
 		// If any replicas are still Active, set their status to succeeded.
 		if isSucceeded(tfjob.Status) {
-			for rtype, _ := range tfjob.Status.ReplicaStatuses {
+			for rtype := range tfjob.Status.ReplicaStatuses {
 				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
 				tfjob.Status.ReplicaStatuses[rtype].Active = 0
 			}
@@ -413,7 +413,7 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta1.TFJob) bool {
 	satisfied := false
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return false
 	}
 

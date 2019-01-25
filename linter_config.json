@@ -9,8 +9,8 @@
     "goimports",
     "varcheck",
     "gosec",
+    "gotype",
     "staticcheck",
-    "gosimple",
     "lll",
     "unconvert",
     "misspell",
@@ -36,6 +36,6 @@
     "pkg/controller.v2/controller_utils.go",
     "dashboard/backend/handler/api_handler.go"
   ],
-  "Deadline": "300s",
+  "Deadline": "500s",
   "Skip": ["pkg/client"]
 }

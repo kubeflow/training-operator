@@ -113,7 +113,7 @@ func (tc *TFController) reconcilePods(
 func (tc *TFController) createNewPod(tfjob *tfv1alpha2.TFJob, rt, index string, spec *tfv1alpha2.TFReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
 	expectationPodsKey := jobcontroller.GenExpectationPodsKey(tfjobKey, rt)

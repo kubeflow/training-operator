@@ -33,9 +33,7 @@ func TestClaimServices(t *testing.T) {
 		name     string
 		manager  *ServiceControllerRefManager
 		services []*v1.Service
-		filters  []func(*v1.Service) bool
 		claimed  []*v1.Service
-		released []*v1.Service
 	}
 	var tests = []test{
 		func() test {
