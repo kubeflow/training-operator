@@ -253,7 +253,7 @@ func (tc *TFController) processNextWorkItem() bool {
 		return true
 	}
 
-	utilruntime.HandleError(fmt.Errorf("Error syncing tfjob: %v", err))
+	utilruntime.HandleError(fmt.Errorf("error syncing tfjob: %v", err))
 	tc.WorkQueue.AddRateLimited(key)
 
 	return true
@@ -262,7 +262,7 @@ func (tc *TFController) processNextWorkItem() bool {
 func (tc *TFController) enqueueTFJob(tfjob interface{}) {
 	key, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return
 	}
 
@@ -408,7 +408,7 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1alpha2.TFJob) bool {
 	satisfied := false
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return false
 	}
 

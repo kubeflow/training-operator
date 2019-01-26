@@ -1,13 +1,6 @@
 language: go
 
 go:
-  # we cannot enable `gotyp` in gometalinter while at the same time
-  # keep 1.8 here. so I (jiay) went with removing `gotype` for now.
-  # see open issues:
-  # - https://github.com/alecthomas/gometalinter/issues/358
-  # - https://github.com/golang/go/issues/21712
-  # TODO jiayu: re-evaluate the pending issues and add back `gotype`
-  - "1.8"
   - "1.9"
   - "1.10"
 

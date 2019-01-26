@@ -70,7 +70,7 @@ func (tc *TFController) reconcileServices(
 func (tc *TFController) createNewService(tfjob *tfv1beta1.TFJob, rtype tfv1beta1.TFReplicaType, index string, spec *common.ReplicaSpec) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
 

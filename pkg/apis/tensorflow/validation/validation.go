@@ -63,10 +63,10 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*common.Repli
 		}
 	}
 	if foundChief > 1 {
-		return fmt.Errorf("More than 1 chief/master found")
+		return fmt.Errorf("more than 1 chief/master found")
 	}
 	if foundEvaluator > 1 {
-		return fmt.Errorf("More than 1 evaluator found")
+		return fmt.Errorf("more than 1 evaluator found")
 	}
 	return nil
 }
@@ -110,10 +110,10 @@ func validateAlphaTwoReplicaSpecs(specs map[tfv2.TFReplicaType]*tfv2.TFReplicaSp
 		}
 	}
 	if foundChief > 1 {
-		return fmt.Errorf("More than 1 chief/master found")
+		return fmt.Errorf("more than 1 chief/master found")
 	}
 	if foundEvaluator > 1 {
-		return fmt.Errorf("More than 1 evaluator found")
+		return fmt.Errorf("more than 1 evaluator found")
 	}
 	return nil
 }
