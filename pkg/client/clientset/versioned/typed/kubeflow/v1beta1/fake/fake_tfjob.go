@@ -1,4 +1,4 @@
-// Copyright 2018 The Kubeflow Authors
+// Copyright 2019 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,6 +91,18 @@ func (c *FakeTFJobs) Create(tFJob *v1beta1.TFJob) (result *v1beta1.TFJob, err er
 func (c *FakeTFJobs) Update(tFJob *v1beta1.TFJob) (result *v1beta1.TFJob, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(tfjobsResource, c.ns, tFJob), &v1beta1.TFJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.TFJob), err
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeTFJobs) UpdateStatus(tFJob *v1beta1.TFJob) (*v1beta1.TFJob, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &v1beta1.TFJob{})
 
 	if obj == nil {
 		return nil, err

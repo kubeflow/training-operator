@@ -1,4 +1,4 @@
-// Copyright 2018 The Kubeflow Authors
+// Copyright 2019 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ type TFJobsGetter interface {
 type TFJobInterface interface {
 	Create(*v1beta1.TFJob) (*v1beta1.TFJob, error)
 	Update(*v1beta1.TFJob) (*v1beta1.TFJob, error)
+	UpdateStatus(*v1beta1.TFJob) (*v1beta1.TFJob, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
 	Get(name string, options v1.GetOptions) (*v1beta1.TFJob, error)
@@ -112,6 +113,22 @@ func (c *tFJobs) Update(tFJob *v1beta1.TFJob) (result *v1beta1.TFJob, err error)
 		Namespace(c.ns).
 		Resource("tfjobs").
 		Name(tFJob.Name).
+		Body(tFJob).
+		Do().
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+
+func (c *tFJobs) UpdateStatus(tFJob *v1beta1.TFJob) (result *v1beta1.TFJob, err error) {
+	result = &v1beta1.TFJob{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("tfjobs").
+		Name(tFJob.Name).
+		SubResource("status").
 		Body(tFJob).
 		Do().
 		Into(result)
