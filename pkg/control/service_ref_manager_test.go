@@ -22,8 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	tfv1alpha2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
+	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
 )
 
 func TestClaimServices(t *testing.T) {
@@ -52,7 +52,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					tfJob,
 					tfJobLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testutil.NewBaseService("service1", tfJob, t), testService},
 				claimed:  []*v1.Service{testutil.NewBaseService("service1", tfJob, t)},
@@ -78,7 +78,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testService1, testService2},
 				claimed:  nil,
@@ -102,7 +102,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testService2},
 				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
@@ -124,7 +124,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testutil.NewBaseService("service2", controller2, t)},
 				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
@@ -146,7 +146,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testutil.NewBaseService("service1", controller, t), testService2},
 				claimed:  []*v1.Service{testutil.NewBaseService("service1", controller, t)},
@@ -173,7 +173,7 @@ func TestClaimServices(t *testing.T) {
 				manager: NewServiceControllerRefManager(&FakeServiceControl{},
 					controller,
 					controllerLabelSelector,
-					tfv1alpha2.SchemeGroupVersionKind,
+					tfv1beta1.SchemeGroupVersionKind,
 					func() error { return nil }),
 				services: []*v1.Service{testService1, testService2},
 				claimed:  []*v1.Service{testService1},

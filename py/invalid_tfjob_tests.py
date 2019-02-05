@@ -44,7 +44,7 @@ class InvalidTfJobTests(test_util.TestCase):
 
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
-    # For v1alpha2 check for non-empty completionTime
+    # For v1beta1 check for non-empty completionTime
     last_condition = results.get("status", {}).get("conditions", [])[-1]
     if last_condition.get("type", "").lower() != "failed":
       self.failure = "Job {0} in namespace {1} did not fail; status {2}".format(
