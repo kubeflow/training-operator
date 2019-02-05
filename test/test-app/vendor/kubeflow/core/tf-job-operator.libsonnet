@@ -121,7 +121,7 @@
           plural: "tfjobs",
         },
         subresources: {
-	  status: {}
+	  status: {},
         },
         validation: {
           openAPIV3Schema: {
