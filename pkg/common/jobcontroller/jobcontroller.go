@@ -200,10 +200,6 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
 func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
 	labelJobName := jc.Controller.GetJobNameLabelKey()
-	// Non-distributed training is not required gang scheduling
-	if minAvailableReplicas < 2 {
-		return nil, nil
-	}
 
 	// Check the pdb exist or not
 	pdb, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
