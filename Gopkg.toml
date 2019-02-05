@@ -26,7 +26,7 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "v10.0.0"
+  version = "kubernetes-1.13.1"
 
 [[constraint]]
   # kube-openapi does not have any version.
@@ -35,23 +35,23 @@ required = [
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "v1.13.0"
+  version = "v1.13.1"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[override]]
   # To solve undefined: reference.ParseNormalizedNamed in Kubernetes.
@@ -76,7 +76,7 @@ required = [
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[override]]
   name = "k8s.io/gengo"

@@ -478,8 +478,8 @@
     "storage/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "89a74a8d264df0e993299876a8cde88379b940ee"
-  version = "kubernetes-1.13.0"
+  revision = "05914d821849570fba9eacfb29466f2d8d3cd229"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
   digest = "1:09949d3a2ceff9874863e6dd454f553696fdfac4a8d35b931cc7fd8556f7b5ca"
@@ -493,8 +493,8 @@
     "pkg/features",
   ]
   pruneopts = "NUT"
-  revision = "20c909e7c8c3fec1a0e345b1d4e57f1c1623c368"
-  version = "kubernetes-1.13.0"
+  revision = "0fe22c71c47604641d9aa352c785b7912c200562"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
   digest = "1:c24bce4df40135826eb657eb33c1c3fb365be061575462fde19ebdb21d46b912"
@@ -549,7 +549,7 @@
   ]
   pruneopts = "NUT"
   revision = "2b1284ed4c93a43499e781493253e2ac5959c4fd"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
   digest = "1:5952dd60d6f633bad69f8c99fee24db4fad319844f9115e119ae2516d9730fe4"
@@ -562,11 +562,11 @@
     "pkg/util/feature",
   ]
   pruneopts = "NUT"
-  revision = "9caa0299108fbdf51d3d9b8e8956834ae84dac75"
-  version = "kubernetes-1.13.0"
+  revision = "3ccfe8365421eb08e334b195786a2973460741d8"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
-  digest = "1:857606017c31babf60e38593397836ff877ee95c2777324c55c23b5acfd79b12"
+  digest = "1:2e1ebf39ee130c280a4f53f8a535eb6f73121c0399eade5870c84764ed313862"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -749,8 +749,8 @@
     "util/workqueue",
   ]
   pruneopts = "NUT"
-  revision = "e64494209f554a6723674bd494d69445fb76a1d4"
-  version = "v10.0.0"
+  revision = "8d9ed539ba3134352c586810e749e58df4e94e4f"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
   digest = "1:dc1ae99dcab96913d81ae970b1f7a7411a54199b14bfb17a7e86f9a56979c720"
@@ -778,7 +778,7 @@
   ]
   pruneopts = "T"
   revision = "c2090bec4d9b1fb25de3812f868accc2bc9ecbae"
-  version = "kubernetes-1.13.0"
+  version = "kubernetes-1.13.1"
 
 [[projects]]
   digest = "1:61024ed77a53ac618effed55043bf6a9afbdeb64136bd6a5b0c992d4c0363766"
@@ -953,6 +953,7 @@
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",
