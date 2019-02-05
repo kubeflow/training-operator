@@ -120,6 +120,9 @@
           singular: "tfjob",
           plural: "tfjobs",
         },
+        subresources: {
+	  status: {}
+        },
         validation: {
           openAPIV3Schema: {
             properties: {
@@ -450,6 +453,7 @@
           ],
           resources: [
             "tfjobs",
+            "tfjobs/status",
           ],
           verbs: [
             "*",
