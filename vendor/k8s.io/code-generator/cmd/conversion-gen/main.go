@@ -35,49 +35,43 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"path/filepath"
 
-	"k8s.io/code-generator/cmd/conversion-gen/generators"
-	"k8s.io/gengo/args"
-
-	"github.com/golang/glog"
 	"github.com/spf13/pflag"
+	"k8s.io/gengo/args"
+	"k8s.io/klog"
+
+	generatorargs "k8s.io/code-generator/cmd/conversion-gen/args"
+	"k8s.io/code-generator/cmd/conversion-gen/generators"
+	"k8s.io/code-generator/pkg/util"
 )
 
 func main() {
-	arguments := args.Default()
-
-	// Custom args.
-	// TODO: make callers pass this in.  It is too opaque here, and any use of
-	// the flag that DOESN'T include these is broken.
-	customArgs := &generators.CustomArgs{
-		ExtraPeerDirs: []string{
-			"k8s.io/kubernetes/pkg/api",
-			"k8s.io/kubernetes/pkg/api/v1",
-			"k8s.io/api/core/v1",
-			"k8s.io/apimachinery/pkg/apis/meta/v1",
-			"k8s.io/apimachinery/pkg/conversion",
-			"k8s.io/apimachinery/pkg/runtime",
-		},
-		SkipUnsafe: false,
-	}
-	pflag.CommandLine.StringSliceVar(&customArgs.ExtraPeerDirs, "extra-peer-dirs", customArgs.ExtraPeerDirs,
-		"Comma-separated list of import paths which are considered, after tag-specified peers, for conversions.")
-	pflag.CommandLine.BoolVar(&customArgs.SkipUnsafe, "skip-unsafe", customArgs.SkipUnsafe,
-		"If true, will not generate code using unsafe pointer conversions; resulting code may be slower.")
+	klog.InitFlags(nil)
+	genericArgs, customArgs := generatorargs.NewDefaults()
 
 	// Override defaults.
-	arguments.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), "k8s.io/kubernetes/hack/boilerplate/boilerplate.go.txt")
-	arguments.OutputFileBaseName = "conversion_generated"
-	arguments.CustomArgs = customArgs
+	// TODO: move this out of conversion-gen
+	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
+
+	genericArgs.AddFlags(pflag.CommandLine)
+	customArgs.AddFlags(pflag.CommandLine)
+	flag.Set("logtostderr", "true")
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	if err := generatorargs.Validate(genericArgs); err != nil {
+		klog.Fatalf("Error: %v", err)
+	}
 
 	// Run it.
-	if err := arguments.Execute(
+	if err := genericArgs.Execute(
 		generators.NameSystems(),
 		generators.DefaultNameSystem(),
 		generators.Packages,
 	); err != nil {
-		glog.Fatalf("Error: %v", err)
+		klog.Fatalf("Error: %v", err)
 	}
-	glog.V(2).Info("Completed successfully.")
+	klog.V(2).Info("Completed successfully.")
 }
