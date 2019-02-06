@@ -19,102 +19,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
-	tfv2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 
 	"k8s.io/api/core/v1"
 )
-
-func TestValidateAlphaTwoTFJobSpec(t *testing.T) {
-	testCases := []tfv2.TFJobSpec{
-		{
-			TFReplicaSpecs: nil,
-		},
-		{
-			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
-				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
-				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Image: "",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
-				tfv2.TFReplicaTypeWorker: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
-				tfv2.TFReplicaTypeChief: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-				tfv2.TFReplicaTypeMaster: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv2.TFReplicaType]*tfv2.TFReplicaSpec{
-				tfv2.TFReplicaTypeEval: &tfv2.TFReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "tensorflow",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-					Replicas: proto.Int32(2),
-				},
-			},
-		},
-	}
-	for _, c := range testCases {
-		err := ValidateAlphaTwoTFJobSpec(&c)
-		if err == nil {
-			t.Error("Expected error got nil")
-		}
-	}
-}
 
 func TestValidateBetaOneTFJobSpec(t *testing.T) {
 	testCases := []tfv1beta1.TFJobSpec{

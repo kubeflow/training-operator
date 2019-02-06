@@ -37,18 +37,10 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
 
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
- tensorflow:v1alpha2,v1beta1 \
+ tensorflow:v1beta1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
-echo "Generating defaulters for v1alpha2"
-${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-cd - > /dev/null
-
-echo "Generating OpenAPI specification for v1alpha2"
-${GOPATH}/bin/openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-cd - > /dev/null
-
 echo "Generating defaulters for common/v1beta1"
 ${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1 -O zz_generated.defaults --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 cd - > /dev/null
