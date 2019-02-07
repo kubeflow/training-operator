@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	v1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
+	v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -55,6 +56,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=Kubeflow, Version=V1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("tfjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1beta1().TFJobs().Informer()}, nil
+
+		// Group=Kubeflow, Version=V1beta2
+	case v1beta2.SchemeGroupVersion.WithResource("tfjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1beta2().TFJobs().Informer()}, nil
 
 	}
 

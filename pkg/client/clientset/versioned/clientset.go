@@ -19,6 +19,7 @@ package versioned
 import (
 	glog "github.com/golang/glog"
 	kubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1beta1"
+	kubeflowv1beta2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/kubeflow/v1beta2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,8 +28,9 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface
+	KubeflowV1beta2() kubeflowv1beta2.KubeflowV1beta2Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Kubeflow() kubeflowv1beta1.KubeflowV1beta1Interface
+	Kubeflow() kubeflowv1beta2.KubeflowV1beta2Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -36,6 +38,7 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	kubeflowV1beta1 *kubeflowv1beta1.KubeflowV1beta1Client
+	kubeflowV1beta2 *kubeflowv1beta2.KubeflowV1beta2Client
 }
 
 // KubeflowV1beta1 retrieves the KubeflowV1beta1Client
@@ -43,10 +46,15 @@ func (c *Clientset) KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface {
 	return c.kubeflowV1beta1
 }
 
+// KubeflowV1beta2 retrieves the KubeflowV1beta2Client
+func (c *Clientset) KubeflowV1beta2() kubeflowv1beta2.KubeflowV1beta2Interface {
+	return c.kubeflowV1beta2
+}
+
 // Deprecated: Kubeflow retrieves the default version of KubeflowClient.
 // Please explicitly pick a version.
-func (c *Clientset) Kubeflow() kubeflowv1beta1.KubeflowV1beta1Interface {
-	return c.kubeflowV1beta1
+func (c *Clientset) Kubeflow() kubeflowv1beta2.KubeflowV1beta2Interface {
+	return c.kubeflowV1beta2
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -69,6 +77,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.kubeflowV1beta2, err = kubeflowv1beta2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -83,6 +95,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.kubeflowV1beta1 = kubeflowv1beta1.NewForConfigOrDie(c)
+	cs.kubeflowV1beta2 = kubeflowv1beta2.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -92,6 +105,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.kubeflowV1beta1 = kubeflowv1beta1.New(c)
+	cs.kubeflowV1beta2 = kubeflowv1beta2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
