@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta2/testutil"
 )
 
 func TestClaimServices(t *testing.T) {

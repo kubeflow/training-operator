@@ -17,6 +17,11 @@
                     $.parts(params.namespace).crdv1beta1,
                     $.parts(params.namespace).tfJobDeployV1Beta1(params.tfJobImage),
                   ]
+                else if params.tfJobVersion == "v1beta2" then
+                  [
+                    $.parts(params.namespace).crdv1beta2,
+                    $.parts(params.namespace).tfJobDeployV1Beta2(params.tfJobImage),
+                  ]
                 else
                   [
                     $.parts(params.namespace).crd,
@@ -100,6 +105,66 @@
         },
       },
     }, // crdv1beta1
+
+    crdv1beta2: {
+      apiVersion: "apiextensions.k8s.io/v1beta1",
+      kind: "CustomResourceDefinition",
+      metadata: {
+        name: "tfjobs.kubeflow.org",
+      },
+      spec: {
+        group: "kubeflow.org",
+        version: "v1beta2",
+        names: {
+          kind: "TFJob",
+          singular: "tfjob",
+          plural: "tfjobs",
+        },
+        validation: {
+          openAPIV3Schema: {
+            properties: {
+              spec: {
+                properties: {
+                  tfReplicaSpecs: {
+                    properties: {
+                      // The validation works when the configuration contains
+                      // `Worker`, `PS` or `Chief`. Otherise it will not be validated.
+                      Worker: {
+                        properties: {
+                          // We do not validate pod template because of
+                          // https://github.com/kubernetes/kubernetes/issues/54579
+                          replicas: {
+                            type: "integer",
+                            minimum: 1,
+                          },
+                        },
+                      },
+                      PS: {
+                        properties: {
+                          replicas: {
+                            type: "integer",
+                            minimum: 1,
+                          },
+                        },
+                      },
+                      Chief: {
+                        properties: {
+                          replicas: {
+                            type: "integer",
+                            minimum: 1,
+                            maximum: 1,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }, // crdv1beta2
 
     tfJobDeploy(image): {
       apiVersion: "extensions/v1beta1",
@@ -231,6 +296,71 @@
         },
       },
     },  // tfJobDeployV1Beta1
+
+    tfJobDeployV1Beta2(image): {
+      apiVersion: "extensions/v1beta1",
+      kind: "Deployment",
+      metadata: {
+        name: "tf-job-operator-v1beta2",
+        namespace: namespace,
+      },
+      spec: {
+        replicas: 1,
+        template: {
+          metadata: {
+            labels: {
+              name: "tf-job-operator",
+            },
+          },
+          spec: {
+            containers: [
+              {
+                command: [
+                  "/opt/kubeflow/tf-operator.v1beta2",
+                  "--alsologtostderr",
+                  "-v=1",
+                ],
+                env: [
+                  {
+                    name: "MY_POD_NAMESPACE",
+                    valueFrom: {
+                      fieldRef: {
+                        fieldPath: "metadata.namespace",
+                      },
+                    },
+                  },
+                  {
+                    name: "MY_POD_NAME",
+                    valueFrom: {
+                      fieldRef: {
+                        fieldPath: "metadata.name",
+                      },
+                    },
+                  },
+                ],
+                image: image,
+                name: "tf-job-operator",
+                volumeMounts: [
+                  {
+                    mountPath: "/etc/config",
+                    name: "config-volume",
+                  },
+                ],
+              },
+            ],
+            serviceAccountName: "tf-job-operator",
+            volumes: [
+              {
+                configMap: {
+                  name: "tf-job-operator-config",
+                },
+                name: "config-volume",
+              },
+            ],
+          },
+        },
+      },
+    },  // tfJobDeployV1Beta2
 
     // Default value for
     defaultControllerConfig(tfDefaultImage):: {
