@@ -10,4 +10,5 @@ local updatedParams = params {
   namespace: if params.namespace == "null" then env.namespace else params.namespace,
 };
 
-std.prune(k.core.v1.list.new(all.parts(updatedParams).all))
+// Do not prune here since it will remove the status subresource which is an empty dictionary.
+k.core.v1.list.new(all.parts(updatedParams).all)

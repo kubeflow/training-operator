@@ -80,3 +80,17 @@ func (c *CRDRestClient) Update(obj *metav1unstructured.Unstructured, plural stri
 	}
 	return err
 }
+
+func (c *CRDRestClient) UpdateStatus(obj *metav1unstructured.Unstructured, plural string) error {
+	logger := tflogger.LoggerForUnstructured(obj, obj.GetKind())
+	if plural == "" {
+		logger.Errorf("Could not issue update because plural not set.")
+		return fmt.Errorf("plural must be set")
+	}
+	r := c.restcli.Put().Resource(plural).Namespace(obj.GetNamespace()).Name(obj.GetName()).SubResource("status").Body(obj)
+	_, err := r.DoRaw()
+	if err != nil {
+		logger.Errorf("Could not issue update using URL: %v; error; %v", r.URL().String(), err)
+	}
+	return err
+}

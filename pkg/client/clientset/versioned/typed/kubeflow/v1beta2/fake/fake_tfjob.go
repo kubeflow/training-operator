@@ -98,6 +98,18 @@ func (c *FakeTFJobs) Update(tFJob *v1beta2.TFJob) (result *v1beta2.TFJob, err er
 	return obj.(*v1beta2.TFJob), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeTFJobs) UpdateStatus(tFJob *v1beta2.TFJob) (*v1beta2.TFJob, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &v1beta2.TFJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta2.TFJob), err
+}
+
 // Delete takes name of the tFJob and deletes it. Returns an error if one occurs.
 func (c *FakeTFJobs) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.

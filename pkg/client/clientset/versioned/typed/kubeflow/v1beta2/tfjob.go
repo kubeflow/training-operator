@@ -35,6 +35,7 @@ type TFJobsGetter interface {
 type TFJobInterface interface {
 	Create(*v1beta2.TFJob) (*v1beta2.TFJob, error)
 	Update(*v1beta2.TFJob) (*v1beta2.TFJob, error)
+	UpdateStatus(*v1beta2.TFJob) (*v1beta2.TFJob, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
 	Get(name string, options v1.GetOptions) (*v1beta2.TFJob, error)
@@ -112,6 +113,22 @@ func (c *tFJobs) Update(tFJob *v1beta2.TFJob) (result *v1beta2.TFJob, err error)
 		Namespace(c.ns).
 		Resource("tfjobs").
 		Name(tFJob.Name).
+		Body(tFJob).
+		Do().
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+
+func (c *tFJobs) UpdateStatus(tFJob *v1beta2.TFJob) (result *v1beta2.TFJob, err error) {
+	result = &v1beta2.TFJob{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("tfjobs").
+		Name(tFJob.Name).
+		SubResource("status").
 		Body(tFJob).
 		Do().
 		Into(result)
