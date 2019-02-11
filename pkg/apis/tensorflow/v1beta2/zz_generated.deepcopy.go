@@ -19,7 +19,7 @@
 package v1beta2
 
 import (
-	common_v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
+	commonv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -89,7 +89,7 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	*out = *in
 	if in.CleanPodPolicy != nil {
 		in, out := &in.CleanPodPolicy, &out.CleanPodPolicy
-		*out = new(common_v1beta2.CleanPodPolicy)
+		*out = new(commonv1beta2.CleanPodPolicy)
 		**out = **in
 	}
 	if in.TTLSecondsAfterFinished != nil {
@@ -99,14 +99,14 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	}
 	if in.TFReplicaSpecs != nil {
 		in, out := &in.TFReplicaSpecs, &out.TFReplicaSpecs
-		*out = make(map[TFReplicaType]*common_v1beta2.ReplicaSpec, len(*in))
+		*out = make(map[TFReplicaType]*commonv1beta2.ReplicaSpec, len(*in))
 		for key, val := range *in {
-			var outVal *common_v1beta2.ReplicaSpec
+			var outVal *commonv1beta2.ReplicaSpec
 			if val == nil {
 				(*out)[key] = nil
 			} else {
 				in, out := &val, &outVal
-				*out = new(common_v1beta2.ReplicaSpec)
+				*out = new(commonv1beta2.ReplicaSpec)
 				(*in).DeepCopyInto(*out)
 			}
 			(*out)[key] = outVal
