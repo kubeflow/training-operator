@@ -5,9 +5,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -15,7 +15,7 @@ import (
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	tfjobinformersv1beta2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1beta2"
+	tfjobinformersv1beta2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1beta2"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta2/unstructured"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
@@ -32,18 +32,17 @@ var (
 )
 
 func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string) tfjobinformersv1beta2.TFJobInformer {
-	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
-	dclient, err := dynClientPool.ClientForGroupVersionKind(tfv1beta2.SchemeGroupVersionKind)
+	dclient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		panic(err)
 	}
-	resource := &metav1.APIResource{
-		Name:         tfv1beta2.Plural,
-		SingularName: tfv1beta2.Singular,
-		Namespaced:   true,
-		Group:        tfv1beta2.GroupName,
-		Version:      tfv1beta2.GroupVersion,
+
+	resource := schema.GroupVersionResource{
+		Group:    tfv1beta2.GroupName,
+		Version:  tfv1beta2.GroupVersion,
+		Resource: tfv1beta2.Plural,
 	}
+
 	informer := unstructured.NewTFJobInformer(
 		resource,
 		dclient,
