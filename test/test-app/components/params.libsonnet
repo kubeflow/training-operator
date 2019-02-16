@@ -27,5 +27,14 @@
       tfStatsdImage: "quay.io/datawire/statsd:0.30.1",
       usageId: "unknown_cluster",
     },
+    "tf-job-operator": {
+      cloud: "null",
+      name: "tf-job-operator",
+      namespace: "null",
+      tfAmbassadorServiceType: "ClusterIP",
+      tfDefaultImage: "null",
+      tfJobImage: "gcr.io/kubeflow-images-public/tf_operator:kubeflow-tf-operator-postsubmit-v2-70cafb1-271-1911",
+      tfJobUiServiceType: "ClusterIP",
+    },
   },
 }

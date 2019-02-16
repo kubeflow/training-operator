@@ -213,13 +213,7 @@ def setup_kubeflow(args):
     ks_deploy(args.test_app_dir, component, params, account=account)
 
     # Verify that the TfJob operator is actually deployed.
-    if args.tf_job_version == "v1beta1":
-      tf_job_deployment_name = "tf-job-operator-v1beta1"
-    elif args.tf_job_version == "v1beta2":
-      tf_job_deployment_name = "tf-job-operator-v1beta2"
-    else:
-      raise ValueError(
-        "Unrecognized value for tf_job_version %s" % args.tf_job_version)
+    tf_job_deployment_name = "tf-job-operator"
     logging.info("Verifying TfJob deployment %s started.",
                  tf_job_deployment_name)
 
