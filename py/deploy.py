@@ -201,7 +201,6 @@ def setup_kubeflow(args):
       "tfJobImage": args.image,
       "name": "kubeflow-core",
       "namespace": args.namespace,
-      "tfJobVersion": args.tf_job_version,
     }
 
     component = "core"
@@ -316,11 +315,6 @@ def main():  # pylint: disable=too-many-locals
 
   parser_kubeflow = subparsers.add_parser(
     "setup_kubeflow", help="Deploy Kubeflow for testing.")
-
-  parser_kubeflow.add_argument(
-    "--tf_job_version",
-    dest="tf_job_version",
-    help="Which version of the TFJobOperator to deploy.")
 
   parser_kubeflow.set_defaults(func=setup_kubeflow)
 
