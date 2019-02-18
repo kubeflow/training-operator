@@ -403,7 +403,7 @@ func TestSyncPdb(t *testing.T) {
 		expectPdb *v1beta1.PodDisruptionBudget
 	}
 
-	minAvailable2 := intstr.FromInt(2)
+	minAvailable := intstr.FromInt(1)
 	testCases := []testCase{
 		{
 			tfJob: &tfv1beta2.TFJob{
@@ -418,24 +418,9 @@ func TestSyncPdb(t *testing.T) {
 					},
 				},
 			},
-			expectPdb: nil,
-		},
-		{
-			tfJob: &tfv1beta2.TFJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-sync-pdb",
-				},
-				Spec: tfv1beta2.TFJobSpec{
-					TFReplicaSpecs: map[tfv1beta2.TFReplicaType]*common.ReplicaSpec{
-						tfv1beta2.TFReplicaTypeWorker: &common.ReplicaSpec{
-							Replicas: proto.Int32(2),
-						},
-					},
-				},
-			},
 			expectPdb: &v1beta1.PodDisruptionBudget{
 				Spec: v1beta1.PodDisruptionBudgetSpec{
-					MinAvailable: &minAvailable2,
+					MinAvailable: &minAvailable,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"tf_job_name": "test-sync-pdb",
