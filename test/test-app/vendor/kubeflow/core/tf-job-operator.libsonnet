@@ -10,12 +10,12 @@
                   $.parts(params.namespace).uiService(params.tfJobUiServiceType),
                   $.parts(params.namespace).uiServiceAccount,
                   $.parts(params.namespace).ui(params.tfJobImage),
-                  $.parts(params.namespace).crdv1beta2,
-                  $.parts(params.namespace).tfJobDeployV1Beta2(params.tfJobImage),
+                  $.parts(params.namespace).crd,
+                  $.parts(params.namespace).tfJobDeploy(params.tfJobImage),
                 ],
 
   parts(namespace):: {
-    crdv1beta2: {
+    crd: {
       apiVersion: "apiextensions.k8s.io/v1beta1",
       kind: "CustomResourceDefinition",
       metadata: {
@@ -23,7 +23,7 @@
       },
       spec: {
         group: "kubeflow.org",
-        version: "v1beta2",
+        version: "v1beta1",
         names: {
           kind: "TFJob",
           singular: "tfjob",
@@ -79,18 +79,18 @@
           {
             name: "v1beta1",
             served: true,
-            storage: false,
+            storage: true,
           },
           {
             name: "v1beta2",
             served: true,
-            storage: true,
+            storage: false,
           },
         ],
       },
-    }, // crdv1beta2
+    }, // crd
 
-    tfJobDeployV1Beta2(image): {
+    tfJobDeploy(image): {
       apiVersion: "extensions/v1beta1",
       kind: "Deployment",
       metadata: {
@@ -153,7 +153,7 @@
           },
         },
       },
-    },  // tfJobDeployV1Beta2
+    },  // tfJobDeploy
 
     // Default value for
     defaultControllerConfig(tfDefaultImage):: {
