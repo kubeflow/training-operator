@@ -167,7 +167,7 @@
             test_name, [
               "python",
               "-m",
-              "py." + std.strReplace(test_name, "-", "_"),
+              "kubeflow.tf_operator" + std.strReplace(test_name, "-", "_"),
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
@@ -334,7 +334,7 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", [
               "python",
               "-m",
-              "py.release",
+              "kubeflow.tf_operator.release",
               "build",
               "--src_dir=" + srcDir,
               "--registry=" + params.registry,
@@ -358,7 +358,7 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
               "python",
               "-m",
-              "py.deploy",
+              "kubeflow.tf_operator.deploy",
               "setup_cluster",
               "--cluster=" + cluster,
               "--zone=" + zone,
@@ -370,7 +370,7 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-kubeflow", [
               "python",
               "-m",
-              "py.deploy",
+              "kubeflow.tf_operator.deploy",
               "setup_kubeflow",
               "--cluster=" + cluster,
               "--zone=" + zone,
@@ -408,7 +408,7 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
               "python",
               "-m",
-              "py.deploy",
+              "kubeflow.tf_operator.deploy",
               "teardown",
               "--cluster=" + cluster,
               "--zone=" + zone,
