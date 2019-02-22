@@ -2,8 +2,7 @@ import tempfile
 import unittest
 
 import mock
-
-from py import release
+from kubeflow.tf_operator import release
 
 
 class ReleaseTest(unittest.TestCase):

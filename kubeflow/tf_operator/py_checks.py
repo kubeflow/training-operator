@@ -11,8 +11,8 @@ import time
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
-from py import util
-from py import test_util
+from kubeflow import util
+from kubeflow import test_util
 
 
 def run_lint(args):

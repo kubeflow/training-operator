@@ -18,8 +18,8 @@ import platform
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
-from py import build_and_push_image
-from py import util
+from kubeflow import build_and_push_image
+from kubeflow import util
 
 # Repo org and name can be set via environment variables when running
 # on PROW. But we choose sensible defaults so that we can run locally without

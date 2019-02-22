@@ -1,11 +1,9 @@
 import json
 import logging
+
+from kubeflow.testing import ks_util, test_util, util
+from kubeflow.tf_operator import k8s_util, test_runner, tf_job_client
 from kubernetes import client as k8s_client
-from kubeflow.testing import ks_util
-from kubeflow.testing import test_util, util
-from py import k8s_util
-from py import test_runner
-from py import tf_job_client
 
 CLEANPOD_ALL_COMPONENT_NAME = "clean_pod_all"
 CLEANPOD_RUNNING_COMPONENT_NAME = "clean_pod_running"

@@ -3,8 +3,8 @@ import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import ks_util
 from kubeflow.testing import test_util, util
-from py import test_runner
-from py import tf_job_client
+from kubeflow import test_runner
+from kubeflow import tf_job_client
 
 MASTER_IS_CHIEF_COMPONENT_NAME = "master_is_chief"
 WORKER0_IS_CHIEF_COMPONENT_NAME = "worker0_is_chief"

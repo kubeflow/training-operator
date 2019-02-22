@@ -9,7 +9,7 @@ from xml.etree import ElementTree
 
 import six
 
-from py import util
+from kubeflow import util
 
 
 class TestCase(object):

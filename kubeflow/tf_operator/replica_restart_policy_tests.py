@@ -3,8 +3,8 @@ import logging
 from kubernetes import client as k8s_client
 from kubeflow.testing import ks_util
 from kubeflow.testing import test_util, util
-from py import test_runner
-from py import tf_job_client
+from kubeflow import test_runner
+from kubeflow import tf_job_client
 
 REPLICA_RESTART_POLICY_ALWAYS_COMPONENT_NAME = "replica_restart_policy_always"
 REPLICA_RESTART_POLICY_ONFAILURE_COMPONENT_NAME = "replica_restart_policy_onfailure"

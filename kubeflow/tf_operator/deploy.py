@@ -19,7 +19,7 @@ from kubernetes.client import rest
 from googleapiclient import discovery
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
-from py import test_util
+from kubeflow import test_util
 
 
 def _setup_namespace(api_client, name):

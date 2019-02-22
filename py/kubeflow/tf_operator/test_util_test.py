@@ -1,12 +1,12 @@
 from __future__ import print_function
 
-import subprocess
 import StringIO
+import subprocess
 import tempfile
 import time
 import unittest
 
-from py import test_util
+from kubeflow.tf_operator import test_util
 
 
 class XMLTest(unittest.TestCase):

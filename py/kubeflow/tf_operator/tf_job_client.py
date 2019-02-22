@@ -5,14 +5,12 @@ import httplib
 import json
 import logging
 import multiprocessing
-import retrying
 import time
 
+import retrying
+from kubeflow.tf_operator import k8s_util, util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
-
-from py import k8s_util
-from py import util
 
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
@@ -265,6 +263,7 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
+
 def to_selector(labels):
   parts = []
   for k, v in labels.iteritems():
@@ -272,18 +271,20 @@ def to_selector(labels):
 
   return ",".join(parts)
 
+
 def get_pod_names(client, namespace, name):
   """Get pod names from k8s.
   """
   core_api = k8s_client.CoreV1Api(client)
-  resp = core_api.list_namespaced_pod(namespace,
-                                      label_selector=to_selector({TF_JOB_NAME_LABEL: name}))
+  resp = core_api.list_namespaced_pod(
+    namespace, label_selector=to_selector({TF_JOB_NAME_LABEL: name}))
   logging.info("list_namespaced_pod: %s", str(resp))
   pod_names = []
   for pod in resp.items:
     if pod.metadata and pod.metadata.name:
       pod_names.append(pod.metadata.name)
   return set(pod_names)
+
 
 def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
                                     replica_type, phases):
@@ -433,9 +434,9 @@ def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
    expect_restart: expectation of whether the pod will restart after being terminated
   """
   wait_for_replica_type_in_phases(api_client, namespace, name, "ps",
-                                    ["Running"])
-  first_start_time = get_start_time_by_index(api_client, namespace, name,
-                                             replica_type, replica_index, "Running")
+                                  ["Running"])
+  first_start_time = get_start_time_by_index(
+    api_client, namespace, name, replica_type, replica_index, "Running")
   terminate_replicas(api_client, namespace, name, "ps", 1, exit_code)
 
   if expect_restart:

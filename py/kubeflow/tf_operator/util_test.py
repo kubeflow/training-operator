@@ -2,10 +2,9 @@ from __future__ import print_function
 
 import unittest
 
-from kubernetes import client as k8s_client
 import mock
-
-from py import util
+from kubeflow.tf_operator import util
+from kubernetes import client as k8s_client
 
 
 class UtilTest(unittest.TestCase):

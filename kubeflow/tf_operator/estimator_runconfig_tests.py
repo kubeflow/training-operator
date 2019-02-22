@@ -4,9 +4,9 @@ import yaml
 from kubernetes import client as k8s_client
 from kubeflow.testing import ks_util
 from kubeflow.testing import test_util, util
-from py import test_runner
-from py import tf_job_client
-from py import util as tf_operator_util
+from kubeflow import test_runner
+from kubeflow import tf_job_client
+from kubeflow import util as tf_operator_util
 
 COMPONENT_NAME = "estimator_runconfig"
 

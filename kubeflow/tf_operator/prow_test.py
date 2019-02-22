@@ -4,7 +4,7 @@ import unittest
 import mock
 from google.cloud import storage  # pylint: disable=no-name-in-module
 
-from py import prow
+from kubeflow import prow
 
 
 class TestProw(unittest.TestCase):

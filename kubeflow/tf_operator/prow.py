@@ -22,8 +22,8 @@ import re
 import time
 
 from google.cloud import storage  # pylint: disable=no-name-in-module
-from py import test_util
-from py import util  # pylint: disable=no-name-in-module
+from kubeflow import test_util
+from kubeflow import util  # pylint: disable=no-name-in-module
 
 # Default repository organization and name.
 # This should match the values used in Go imports.

@@ -1,15 +1,15 @@
 import json
 import logging
+
+from kubeflow.testing import ks_util, test_util, util
+from kubeflow.tf_operator import test_runner, tf_job_client
 from kubernetes import client as k8s_client
-from kubeflow.testing import ks_util
-from kubeflow.testing import test_util, util
-from py import test_runner
-from py import tf_job_client
 
-TFJOB_COMPONENT_NAME = "distributed_training"
+CPU_TFJOB_COMPONENT_NAME = "simple_tfjob"
+GPU_TFJOB_COMPONENT_NAME = "gpu_tfjob"
 
 
-class DistributedTrainingJobTests(test_util.TestCase):
+class SimpleTfJobTests(test_util.TestCase):
 
   def __init__(self, args):
     namespace, name, env = test_runner.parse_runtime_params(args)
@@ -18,12 +18,11 @@ class DistributedTrainingJobTests(test_util.TestCase):
     self.namespace = namespace
     self.tfjob_version = args.tfjob_version
     self.params = args.params
-    super(DistributedTrainingJobTests, self).__init__(
-      class_name="DistributedTrainingJobTests", name=name)
+    super(SimpleTfJobTests, self).__init__(
+      class_name="SimpleTfJobTests", name=name)
 
-  # Run a distributed training TFJob, wait for it to complete, and check for pod/service
-  # creation errors.
-  def run_distributed_training_job(self, component):
+  # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+  def run_simple_tfjob(self, component):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
@@ -64,6 +63,11 @@ class DistributedTrainingJobTests(test_util.TestCase):
     creation_failures = tf_job_client.get_creation_failures_from_tfjob(
       api_client, self.namespace, results)
     if creation_failures:
+      # TODO(jlewi): Starting with
+      # https://github.com/kubeflow/tf-operator/pull/646 the number of events
+      # no longer seems to match the expected; it looks like maybe events
+      # are being combined? For now we just log a warning rather than an
+      # error.
       logging.warning(creation_failures)
 
     # Delete the TFJob.
@@ -78,11 +82,13 @@ class DistributedTrainingJobTests(test_util.TestCase):
       self.tfjob_version,
       status_callback=tf_job_client.log_status)
 
-  # Run a distributed training TFJob, wait for it to complete, and check for pod/service
-  # creation errors.
-  def test_distributed_training_independent_worker(self):
-    self.run_distributed_training_job(TFJOB_COMPONENT_NAME + "_" +
-                                      self.tfjob_version)
+  # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+  def test_simple_tfjob_cpu(self):
+    self.run_simple_tfjob(CPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
+
+  # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
+  def test_simple_tfjob_gpu(self):
+    self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
 
 if __name__ == "__main__":
