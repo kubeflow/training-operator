@@ -89,6 +89,7 @@
       // py scripts to use.
       local k8sPy = srcDir;
       local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
+      local kubeflowPyTFJob = srcRootDir + "/kubeflow/tf-operator/py";
 
       local project = params.project;
       // GKE cluster to use
@@ -118,7 +119,7 @@
               {
                 // Add the source directories to the python path.
                 name: "PYTHONPATH",
-                value: k8sPy + ":" + kubeflowPy,
+                value: k8sPy + ":" + kubeflowPy + ":" + kubeflowPyTFJob,
               },
               {
                 // Set the GOPATH
