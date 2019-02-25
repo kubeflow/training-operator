@@ -7,11 +7,11 @@ from kubeflow.tf_operator import release
 
 class ReleaseTest(unittest.TestCase):
 
-  @mock.patch("py.release.os.makedirs")
-  @mock.patch("py.release.os.symlink")
-  @mock.patch("py.release.util.install_go_deps")
-  @mock.patch("py.release.util.clone_repo")
-  @mock.patch("py.release.build_and_push")
+  @mock.patch("kubeflow.tf_operator.release.os.makedirs")
+  @mock.patch("kubeflow.tf_operator.release.os.symlink")
+  @mock.patch("kubeflow.tf_operator.release.util.install_go_deps")
+  @mock.patch("kubeflow.tf_operator.release.util.clone_repo")
+  @mock.patch("kubeflow.tf_operator.release.build_and_push")
   def test_build_postsubmit(  # pylint: disable=no-self-use
       self, mock_build_and_push, mock_clone, _mock_install, _mock_os,
       _mock_makedirs):
@@ -29,11 +29,11 @@ class ReleaseTest(unittest.TestCase):
     mock_clone.assert_called_once_with('/top/src_dir/git_tensorflow_k8s',
                                        'kubeflow', 'tf-operator', None, None)
 
-  @mock.patch("py.release.os.makedirs")
-  @mock.patch("py.release.os.symlink")
-  @mock.patch("py.release.util.install_go_deps")
-  @mock.patch("py.release.util.clone_repo")
-  @mock.patch("py.release.build_and_push")
+  @mock.patch("kubeflow.tf_operator.release.os.makedirs")
+  @mock.patch("kubeflow.tf_operator.release.os.symlink")
+  @mock.patch("kubeflow.tf_operator.release.util.install_go_deps")
+  @mock.patch("kubeflow.tf_operator.release.util.clone_repo")
+  @mock.patch("kubeflow.tf_operator.release.build_and_push")
   def test_build_pr(  # pylint: disable=no-self-use
       self, mock_build_and_push, mock_clone, _mock_install, _mock_os,
       _mock_makedirs):
