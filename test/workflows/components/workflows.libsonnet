@@ -168,7 +168,7 @@
             test_name, [
               "python",
               "-m",
-              "kubeflow.tf_operator" + std.strReplace(test_name, "-", "_"),
+              "kubeflow.tf_operator." + std.strReplace(test_name, "-", "_"),
               "--cluster=" + cluster,
               "--zone=" + zone,
               "--project=" + project,
