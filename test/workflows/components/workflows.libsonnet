@@ -379,7 +379,6 @@
               "--namespace=" + deployNamespace,
               "--test_app_dir=" + srcDir + "/test/test-app",
               "--image=" + tfJobImage,
-              "--tf_job_version=" + params.tfJobVersion,
               "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
             ]),  // setup cluster
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
