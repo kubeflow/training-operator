@@ -88,7 +88,7 @@
       // The directory within the kubeflow_testing submodule containing
       // py scripts to use.
       local k8sPy = srcDir;
-      local kubeflowPy = srcRootDir + "/kubeflow/testing/py";
+      local kubeflowPyTesting = srcRootDir + "/kubeflow/testing/py";
       local kubeflowPyTFJob = srcRootDir + "/kubeflow/tf-operator/py";
 
       local project = params.project;
@@ -119,7 +119,7 @@
               {
                 // Add the source directories to the python path.
                 name: "PYTHONPATH",
-                value: k8sPy + ":" + kubeflowPy + ":" + kubeflowPyTFJob,
+                value: k8sPy + ":" + kubeflowPyTFJob + ":" +  kubeflowPyTesting,
               },
               {
                 // Set the GOPATH
