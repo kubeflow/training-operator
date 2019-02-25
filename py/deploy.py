@@ -94,7 +94,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     apply_command.append("--as=" + account)
   util.run(apply_command, cwd=app_dir)
 
-@retry(stop_max_attempt_number=3)
+@retrying.retry(stop_max_attempt_number=3)
 def setup_cluster(args):
   """Setup a GKE cluster for TensorFlow jobs.
 
@@ -176,7 +176,7 @@ def setup_cluster(args):
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
-@retry(stop_max_attempt_number=3)
+@retrying.retry(stop_max_attempt_number=3)
 def setup_kubeflow(args):
   """Setup Kubeflow.
 
@@ -248,7 +248,7 @@ def setup_kubeflow(args):
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
-@retry(stop_max_attempt_number=3)
+@retrying.retry(stop_max_attempt_number=3)
 def teardown(args):
   """Teardown the resources."""
   gke = discovery.build("container", "v1")
