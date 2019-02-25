@@ -9,7 +9,6 @@
 // @optionalParam tfJobImage string gcr.io/kubeflow-images-public/tf_operator:kubeflow-tf-operator-postsubmit-v2-70cafb1-271-1911 The image for the TfJob controller.
 // @optionalParam tfDefaultImage string null The default image to use for TensorFlow.
 // @optionalParam tfJobUiServiceType string ClusterIP The service type for the UI.
-// @optionalParam tfJobVersion string v1alpha1 which version of the TFJob operator to use
 
 // TODO(https://github.com/ksonnet/ksonnet/issues/235): ks param set args won't work if the arg starts with "--".
 

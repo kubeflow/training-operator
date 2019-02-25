@@ -94,7 +94,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     apply_command.append("--as=" + account)
   util.run(apply_command, cwd=app_dir)
 
-
+@retrying.retry(stop_max_attempt_number=3)
 def setup_cluster(args):
   """Setup a GKE cluster for TensorFlow jobs.
 
@@ -176,7 +176,7 @@ def setup_cluster(args):
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
-
+@retrying.retry(stop_max_attempt_number=3)
 def setup_kubeflow(args):
   """Setup Kubeflow.
 
@@ -201,7 +201,6 @@ def setup_kubeflow(args):
       "tfJobImage": args.image,
       "name": "kubeflow-core",
       "namespace": args.namespace,
-      "tfJobVersion": args.tf_job_version,
     }
 
     component = "core"
@@ -213,13 +212,7 @@ def setup_kubeflow(args):
     ks_deploy(args.test_app_dir, component, params, account=account)
 
     # Verify that the TfJob operator is actually deployed.
-    if args.tf_job_version == "v1beta1":
-      tf_job_deployment_name = "tf-job-operator-v1beta1"
-    elif args.tf_job_version == "v1beta2":
-      tf_job_deployment_name = "tf-job-operator-v1beta2"
-    else:
-      raise ValueError(
-        "Unrecognized value for tf_job_version %s" % args.tf_job_version)
+    tf_job_deployment_name = "tf-job-operator"
     logging.info("Verifying TfJob deployment %s started.",
                  tf_job_deployment_name)
 
@@ -255,7 +248,7 @@ def setup_kubeflow(args):
     gcs_client = storage.Client(project=args.project)
     test_util.create_junit_xml_file([t], args.junit_path, gcs_client)
 
-
+@retrying.retry(stop_max_attempt_number=3)
 def teardown(args):
   """Teardown the resources."""
   gke = discovery.build("container", "v1")
@@ -322,11 +315,6 @@ def main():  # pylint: disable=too-many-locals
 
   parser_kubeflow = subparsers.add_parser(
     "setup_kubeflow", help="Deploy Kubeflow for testing.")
-
-  parser_kubeflow.add_argument(
-    "--tf_job_version",
-    dest="tf_job_version",
-    help="Which version of the TFJobOperator to deploy.")
 
   parser_kubeflow.set_defaults(func=setup_kubeflow)
 
