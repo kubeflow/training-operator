@@ -6,22 +6,21 @@ import datetime
 import logging
 import os
 import re
-import requests
 import subprocess
 import tempfile
 import time
 import urllib
-import yaml
 
 import google.auth
 import google.auth.transport
 import google.auth.transport.requests
-
+import requests
+import yaml
 from googleapiclient import errors
 from kubernetes import client as k8s_client
-from kubernetes.config import kube_config
 from kubernetes.client import configuration as kubernetes_configuration
 from kubernetes.client import rest
+from kubernetes.config import kube_config
 
 # Default name for the repo organization and name.
 # This should match the values used in Go imports.

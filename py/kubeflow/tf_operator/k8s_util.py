@@ -1,10 +1,11 @@
 """K8s util class for E2E tests."""
 
 import datetime
-import logging
 import json
+import logging
 import re
 import time
+
 from kubeflow.testing import util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest

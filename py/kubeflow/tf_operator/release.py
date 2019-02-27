@@ -12,14 +12,13 @@ import datetime
 import json
 import logging
 import os
+import platform
 import shutil
 import tempfile
-import platform
+
 import yaml
 from google.cloud import storage  # pylint: disable=no-name-in-module
-
-from py import build_and_push_image
-from py import util
+from kubeflow.tf_operator import build_and_push_image, util
 
 # Repo org and name can be set via environment variables when running
 # on PROW. But we choose sensible defaults so that we can run locally without

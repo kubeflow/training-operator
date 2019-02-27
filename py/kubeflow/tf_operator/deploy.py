@@ -8,18 +8,17 @@ import argparse
 import datetime
 import logging
 import re
-import retrying
 import subprocess
 import time
 import uuid
 
+import retrying
+from google.cloud import storage  # pylint: disable=no-name-in-module
+from googleapiclient import discovery
 from kubeflow.testing import util
+from kubeflow.tf_operator import test_util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
-from googleapiclient import discovery
-from google.cloud import storage  # pylint: disable=no-name-in-module
-
-from py import test_util
 
 
 def _setup_namespace(api_client, name):

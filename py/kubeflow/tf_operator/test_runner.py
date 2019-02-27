@@ -4,15 +4,14 @@ import argparse
 import inspect
 import json
 import logging
-import retrying
 import time
 import uuid
-
 from importlib import import_module
 
+import retrying
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import test_util, util
-from py import util as tf_operator_util
+from kubeflow.tf_operator import util as tf_operator_util
 
 
 # One of the reasons we set so many retries and a random amount of wait

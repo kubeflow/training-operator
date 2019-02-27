@@ -8,8 +8,7 @@ import time
 from xml.etree import ElementTree
 
 import six
-
-from py import util
+from kubeflow.tf_operator import util
 
 
 class TestCase(object):

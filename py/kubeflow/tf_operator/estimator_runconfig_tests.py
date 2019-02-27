@@ -1,12 +1,11 @@
 import json
 import logging
+
 import yaml
+from kubeflow.testing import ks_util, test_util, util
+from kubeflow.tf_operator import test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
-from kubeflow.testing import ks_util
-from kubeflow.testing import test_util, util
-from py import test_runner
-from py import tf_job_client
-from py import util as tf_operator_util
 
 COMPONENT_NAME = "estimator_runconfig"
 
@@ -46,14 +45,17 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
     is_chief = False
 
   # Construct the expected cluster spec
-  chief_list = ["{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)]
+  chief_list = [
+    "{name}-chief-0.{ns}.svc:2222".format(name=job_name, ns=namespace)
+  ]
   ps_list = []
   for i in range(num_ps):
-    ps_list.append("{name}-ps-{index}.{ns}.svc:2222".format(name=job_name, index=i, ns=namespace))
+    ps_list.append("{name}-ps-{index}.{ns}.svc:2222".format(
+      name=job_name, index=i, ns=namespace))
   worker_list = []
   for i in range(num_workers):
-    worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(name=job_name,
-      index=i, ns=namespace))
+    worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(
+      name=job_name, index=i, ns=namespace))
   # Evaluator is not part of training cluster.
   cluster_spec = {
     "chief": chief_list,
@@ -72,7 +74,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "cluster_spec": cluster_spec,
       "is_chief": is_chief,
       "master": "grpc://{fs}:2222".format(fs=full_svc),
-      "num_worker_replicas": num_workers + 1, # Chief is also a worker
+      "num_worker_replicas": num_workers + 1,  # Chief is also a worker
       "num_ps_replicas": num_ps,
     } if not replica == "evaluator" else {
       # Evaluator has special config.
