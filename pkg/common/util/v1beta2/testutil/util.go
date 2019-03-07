@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	LabelGroupName = "group_name"
-	LabelTFJobName = "tf_job_name"
+	LabelGroupName = "group-name"
+	LabelTFJobName = "tf-job-name"
 )
 
 var (
