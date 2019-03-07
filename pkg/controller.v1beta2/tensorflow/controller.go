@@ -302,9 +302,9 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 
 	if tc.Config.EnableGangScheduling {
 		minAvailableReplicas := getTotalReplicas(tfjob)
-		_, err := tc.SyncPdb(tfjob, minAvailableReplicas)
+		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
 		if err != nil {
-			logger.Warnf("Sync pdb %v: %v", tfjob.Name, err)
+			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
 		}
 	}
 
@@ -362,12 +362,12 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting pdb")
-			if err := tc.DeletePdb(tfjob); err != nil {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePdb", "Error deleting: %v", err)
+			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
+			if err := tc.DeletePodGroup(tfjob); err != nil {
+				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
 			} else {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePdb", "Deleted pdb: %v", tfjob.Name)
+				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted pdb: %v", tfjob.Name)
 
 			}
 		}

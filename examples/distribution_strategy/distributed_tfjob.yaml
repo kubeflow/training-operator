@@ -10,6 +10,9 @@ spec:
       replicas: 3 
       restartPolicy: Never
       template:
+        metadata:
+              annotations:
+                scheduling.k8s.io/group-name: "distributed-training"
         spec:
           containers:
             - name: tensorflow
