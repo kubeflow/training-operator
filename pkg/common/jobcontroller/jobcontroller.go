@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
@@ -23,6 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/pkg/control"
+	"github.com/kubeflow/tf-operator/pkg/util/kbutil"
 )
 
 // Common Interface to be implemented by all operators.
@@ -197,6 +199,34 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 	}
 }
 
+func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas int32) (*v1alpha1.PodGroup, error) {
+
+	kubeBatchClientInterface := kbutil.GetKubeBatchClientInterface()
+	// Check whether podGroup exists or not
+	podGroup, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
+	if err == nil || !k8serrors.IsNotFound(err) {
+		if err == nil {
+			err = errors.New(string(metav1.StatusReasonAlreadyExists))
+		}
+		return podGroup, err
+	}
+
+	// create podGroup for gang scheduling by kube-batch
+	minAvailable := intstr.FromInt(int(minAvailableReplicas))
+	createPodGroup := &v1alpha1.PodGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: job.GetName(),
+			OwnerReferences: []metav1.OwnerReference{
+				*jc.GenOwnerReference(job),
+			},
+		},
+		Spec: v1alpha1.PodGroupSpec{
+			MinMember: minAvailable.IntVal,
+		},
+	}
+	return kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Create(createPodGroup)
+}
+
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
 func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
 	labelJobName := jc.Controller.GetJobNameLabelKey()
@@ -229,6 +259,25 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 		},
 	}
 	return jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(createPdb)
+}
+
+func (jc *JobController) DeletePodGroup(job metav1.Object) error {
+	kubeBatchClientInterface := kbutil.GetKubeBatchClientInterface()
+
+	//check whether podGroup exists or not
+	_, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
+	if err != nil && k8serrors.IsNotFound(err) {
+		return nil
+	}
+
+	msg := fmt.Sprintf("Deleting PodGroup %s", job.GetName())
+	log.Info(msg)
+
+	//delete podGroup
+	if err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Delete(job.GetName(), &metav1.DeleteOptions{}); err != nil {
+		return fmt.Errorf("unable to delete PodGroup: %v", err)
+	}
+	return nil
 }
 
 func (jc *JobController) DeletePdb(job metav1.Object) error {
