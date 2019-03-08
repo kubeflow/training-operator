@@ -423,7 +423,7 @@ func TestSyncPdb(t *testing.T) {
 					MinAvailable: &minAvailable,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							"tf_job_name": "test-sync-pdb",
+							"tf-job-name": "test-sync-pdb",
 						},
 					},
 				},

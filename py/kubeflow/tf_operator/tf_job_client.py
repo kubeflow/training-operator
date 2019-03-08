@@ -15,7 +15,7 @@ from kubernetes.client import rest
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
-TF_JOB_NAME_LABEL = "tf_job_name"
+TF_JOB_NAME_LABEL = "tf-job-name"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
@@ -253,7 +253,7 @@ def get_labels(name, replica_type=None, replica_index=None):
   """Return labels.
   """
   labels = {
-    "group_name": "kubeflow.org",
+    "group-name": "kubeflow.org",
     TF_JOB_NAME_LABEL: name,
   }
   if replica_type:

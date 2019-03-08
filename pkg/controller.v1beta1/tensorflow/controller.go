@@ -47,9 +47,9 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
-	labelGroupName      = "group_name"
-	labelTFJobName      = "tf_job_name"
-	labelTFJobRole      = "tf_job_role"
+	labelGroupName      = "group-name"
+	labelTFJobName      = "tf-job-name"
+	labelTFJobRole      = "tf-job-role"
 )
 
 var (
@@ -464,6 +464,10 @@ func (tc *TFController) GetReplicaTypeLabelKey() string {
 
 func (tc *TFController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
+}
+
+func (tc *TFController) GetJobRoleKey() string {
+	return labelTFJobRole
 }
 
 func (tc *TFController) ControllerName() string {
