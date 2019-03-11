@@ -103,11 +103,34 @@ func (tc *TFController) addTFJob(obj interface{}) {
 // When a pod is updated, enqueue the current tfjob.
 func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
+	curTFJob, err := tfJobFromUnstructured(cur)
+
+	// never return error
+	key, err := KeyFunc(curTFJob)
 	if err != nil {
 		return
 	}
+
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
 	tc.enqueueTFJob(cur)
+
+	// check if need to add a new rsync for ActiveDeadlineSeconds
+	if curTFJob.Status.StartTime != nil {
+		curTFJobADS := curTFJob.Spec.ActiveDeadlineSeconds
+		if curTFJobADS == nil {
+			return
+		}
+		oldTFJobADS := oldTFJob.Spec.ActiveDeadlineSeconds
+		if oldTFJobADS == nil || *oldTFJobADS != *curTFJobADS {
+			now := metav1.Now()
+			start := curTFJob.Status.StartTime.Time
+			passed := now.Time.Sub(start)
+			total := time.Duration(*curTFJobADS) * time.Second
+			// AddAfter will handle total < passed
+			tc.WorkQueue.AddAfter(key, total-passed)
+			log.Infof("job ActiveDeadlineSeconds updated, will rsync after %d seconds", total-passed)
+		}
+	}
 }
 
 func (tc *TFController) deletePodsAndServices(tfJob *tfv1beta2.TFJob, pods []*v1.Pod) error {

@@ -17,13 +17,14 @@ package tensorflow
 
 import (
 	"fmt"
-
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 const (
@@ -31,9 +32,9 @@ const (
 	tfJobCreatedReason = "TFJobCreated"
 	// tfJobSucceededReason is added in a tfjob when it is succeeded.
 	tfJobSucceededReason = "TFJobSucceeded"
-	// tfJobSucceededReason is added in a tfjob when it is running.
+	// tfJobRunningReason is added in a tfjob when it is running.
 	tfJobRunningReason = "TFJobRunning"
-	// tfJobSucceededReason is added in a tfjob when it is failed.
+	// tfJobFailedReason is added in a tfjob when it is failed.
 	tfJobFailedReason = "TFJobFailed"
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
@@ -41,6 +42,12 @@ const (
 
 // updateStatus updates the status of the tfjob.
 func (tc *TFController) updateStatusSingle(tfjob *tfv1beta2.TFJob, rtype tfv1beta2.TFReplicaType, replicas int, restart, worker0Completed bool) error {
+	tfjobKey, err := KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
+		return err
+	}
+
 	commonType := common.ReplicaType(rtype)
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(tfjob.Status.ReplicaStatuses[commonType].Succeeded)
@@ -53,6 +60,11 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1beta2.TFJob, rtype tfv1bet
 	if running == replicas && tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if tfjob.Spec.ActiveDeadlineSeconds != nil {
+			tflogger.LoggerForJob(tfjob).Infof("Job has ActiveDeadlineSeconds will sync after %d seconds", *tfjob.Spec.ActiveDeadlineSeconds)
+			tc.WorkQueue.AddAfter(tfjobKey, time.Duration(*tfjob.Spec.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	// If the TFJob contains Chief or Master spec, then we will update the status
