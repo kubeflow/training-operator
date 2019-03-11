@@ -96,11 +96,6 @@ func SetDefaults_TFJob(tfjob *TFJob) {
 		tfjob.Spec.CleanPodPolicy = &running
 	}
 
-	if tfjob.Spec.BackoffLimit == nil {
-		tfjob.Spec.BackoffLimit = new(int32)
-		*tfjob.Spec.BackoffLimit = 6
-	}
-
 	// Update the key of TFReplicaSpecs to camel case.
 	setTypeNamesToCamelCase(tfjob)
 

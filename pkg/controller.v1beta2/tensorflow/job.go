@@ -103,7 +103,13 @@ func (tc *TFController) addTFJob(obj interface{}) {
 // When a pod is updated, enqueue the current tfjob.
 func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
+	if err != nil {
+		return
+	}
 	curTFJob, err := tfJobFromUnstructured(cur)
+	if err != nil {
+		return
+	}
 
 	// never return error
 	key, err := KeyFunc(curTFJob)

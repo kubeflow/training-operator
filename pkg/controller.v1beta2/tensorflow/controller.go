@@ -329,6 +329,10 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
 func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	tfjobKey, err := KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
+		return false
+	}
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
@@ -491,6 +495,10 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta2.TFJob) bool {
 // pastBackoffLimitOnFailure checks if container restartCounts sum exceeds BackoffLimit
 // this method applies only to pods with restartPolicy == OnFailure
 func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods []*v1.Pod) (bool, error) {
+	if tfjob.Spec.BackoffLimit == nil {
+		return false, nil
+	}
+
 	result := int32(0)
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
 		if spec.RestartPolicy != common.RestartPolicyOnFailure {
