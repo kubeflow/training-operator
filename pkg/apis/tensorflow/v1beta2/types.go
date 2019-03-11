@@ -42,6 +42,16 @@ type TFJob struct {
 
 // TFJobSpec is a desired state description of the TFJob.
 type TFJobSpec struct {
+	// Specifies the duration in seconds relative to the startTime that the job may be active
+	// before the system tries to terminate it; value must be positive integer
+	// +optional
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
+	// Optional number of retries before marking this job failed.
+	// Defaults to 6
+	// +optional
+	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
+
 	// CleanPodPolicy defines the policy to kill pods after TFJob is
 	// succeeded.
 	// Default to Running.
