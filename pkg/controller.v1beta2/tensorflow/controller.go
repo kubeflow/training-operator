@@ -365,7 +365,12 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	exceedsBackoffLimit := jobHaveNewFailure && (active != totalReplicas) &&
 		(int32(previousRetry)+1 > *tfjob.Spec.BackoffLimit)
 
-	if exceedsBackoffLimit || tc.pastBackoffLimitOnFailure(tfjob, pods) {
+	pastBackoffLimitOnFailure, err := tc.pastBackoffLimitOnFailure(tfjob, pods)
+	if err != nil {
+		return err
+	}
+
+	if exceedsBackoffLimit || pastBackoffLimitOnFailure {
 		// check if the number of pod restart exceeds backoff (for restart OnFailure only)
 		// OR if the number of failed jobs increased since the last syncJob
 		tfJobFailed = true
@@ -485,7 +490,7 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta2.TFJob) bool {
 
 // pastBackoffLimitOnFailure checks if container restartCounts sum exceeds BackoffLimit
 // this method applies only to pods with restartPolicy == OnFailure
-func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods []*v1.Pod) bool {
+func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods []*v1.Pod) (bool, error) {
 	result := int32(0)
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
 		if spec.RestartPolicy != common.RestartPolicyOnFailure {
@@ -493,7 +498,10 @@ func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods [
 		}
 		// Convert TFReplicaType to lower string.
 		rt := strings.ToLower(string(rtype))
-		pods, _ := tc.FilterPodsForReplicaType(pods, rt)
+		pods, err := tc.FilterPodsForReplicaType(pods, rt)
+		if err != nil {
+			return 0, err
+		}
 		for i := range pods {
 			po := pods[i]
 			if po.Status.Phase != v1.PodRunning {
@@ -511,9 +519,9 @@ func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods [
 	}
 
 	if *tfjob.Spec.BackoffLimit == 0 {
-		return result > 0
+		return result > 0, nil
 	}
-	return result >= *tfjob.Spec.BackoffLimit
+	return result >= *tfjob.Spec.BackoffLimit, nil
 }
 
 // pastActiveDeadline checks if job has ActiveDeadlineSeconds field set and if it is exceeded.
