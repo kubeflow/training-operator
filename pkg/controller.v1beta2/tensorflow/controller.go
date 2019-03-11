@@ -500,7 +500,7 @@ func (tc *TFController) pastBackoffLimitOnFailure(tfjob *tfv1beta2.TFJob, pods [
 		rt := strings.ToLower(string(rtype))
 		pods, err := tc.FilterPodsForReplicaType(pods, rt)
 		if err != nil {
-			return 0, err
+			return false, err
 		}
 		for i := range pods {
 			po := pods[i]
