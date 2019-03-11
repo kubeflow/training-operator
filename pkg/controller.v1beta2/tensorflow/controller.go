@@ -361,17 +361,21 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 
 	tfJobFailed := false
 	var failureMessage string
+	var exceedsBackoffLimit bool = false
+	var pastBackoffLimitOnFailure bool = false
 
-	jobHaveNewFailure := failed > prevReplicasFailedNum
-	// new failures happen when status does not reflect the failures and active
-	// is different than parallelism, otherwise the previous controller loop
-	// failed updating status so even if we pick up failure it is not a new one
-	exceedsBackoffLimit := jobHaveNewFailure && (active != totalReplicas) &&
-		(int32(previousRetry)+1 > *tfjob.Spec.BackoffLimit)
+	if tfjob.Spec.BackoffLimit != nil {
+		jobHaveNewFailure := failed > prevReplicasFailedNum
+		// new failures happen when status does not reflect the failures and active
+		// is different than parallelism, otherwise the previous controller loop
+		// failed updating status so even if we pick up failure it is not a new one
+		exceedsBackoffLimit = jobHaveNewFailure && (active != totalReplicas) &&
+			(int32(previousRetry)+1 > *tfjob.Spec.BackoffLimit)
 
-	pastBackoffLimitOnFailure, err := tc.pastBackoffLimitOnFailure(tfjob, pods)
-	if err != nil {
-		return err
+		pastBackoffLimitOnFailure, err = tc.pastBackoffLimitOnFailure(tfjob, pods)
+		if err != nil {
+			return err
+		}
 	}
 
 	if exceedsBackoffLimit || pastBackoffLimitOnFailure {
