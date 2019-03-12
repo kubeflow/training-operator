@@ -1,10 +1,10 @@
-# Testing v1alpha2
+# Testing v1beta1
 
-v1alpha2 is not ready yet but if you still want to try it out you can run it locally by following the instructions below. You need to run it locally because it is not included in Kubeflow yet. Please have a look at [developer_guide.md](../developer_guide.md)
+There are two versions of the TF operator: v1beta1 and v1beta2. Please have a look at [developer_guide.md](../developer_guide.md). The quick start shows example of v1beta1 of TF operator.
 
 ## Create a TFJob
 
-Please see the [example](../examples/v1alpha2/dist-mnist/README.md) to create a TFJob.
+Please see the [example](../examples/v1beta1/dist-mnist/README.md) to create a TFJob.
 
 ## Monitor your job
 
@@ -17,18 +17,18 @@ kubectl get -o yaml tfjobs $JOB
 Here is sample output for an example job
 
 ```yaml
-apiVersion: kubeflow.org/v1alpha2
+apiVersion: kubeflow.org/v1beta1
 kind: TFJob
 metadata:
-  clusterName: ""
-  creationTimestamp: 2018-05-10T05:51:10Z
+  creationTimestamp: 2019-03-06T09:50:49Z
   generation: 1
   name: dist-mnist-for-e2e-test
-  namespace: default
-  resourceVersion: "606"
-  selfLink: /apis/kubeflow.org/v1alpha2/namespaces/default/tfjobs/dist-mnist-for-e2e-test
-  uid: 243e12f5-5416-11e8-bb3c-484d7e9d305b
+  namespace: kubeflow
+  resourceVersion: "16575458"
+  selfLink: /apis/kubeflow.org/v1beta1/namespaces/kubeflow/tfjobs/dist-mnist-for-e2e-test
+  uid: 526545f8-3ff5-11e9-a818-0016ac101ba4
 spec:
+  cleanPodPolicy: Running
   tfReplicaSpecs:
     PS:
       replicas: 2
@@ -39,7 +39,7 @@ spec:
         spec:
           containers:
           - image: kubeflow/tf-dist-mnist-test:1.0
-            name: dist-mnist-ps
+            name: tensorflow
             ports:
             - containerPort: 2222
               name: tfjob-port
@@ -52,33 +52,30 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - args:
-            - train_steps
-            - "50000"
-            image: kubeflow/tf-dist-mnist-test:1.0
-            name: dist-mnist-worker
+          - image: kubeflow/tf-dist-mnist-test:1.0
+            name: tensorflow
             ports:
             - containerPort: 2222
               name: tfjob-port
             resources: {}
 status:
   conditions:
-  - lastTransitionTime: 2018-05-10T05:51:10Z
-    lastUpdateTime: 2018-05-10T05:51:10Z
+  - lastTransitionTime: 2019-03-06T09:50:36Z
+    lastUpdateTime: 2019-03-06T09:50:36Z
     message: TFJob dist-mnist-for-e2e-test is created.
     reason: TFJobCreated
     status: "True"
     type: Created
-  - lastTransitionTime: 2018-05-10T05:51:11Z
-    lastUpdateTime: 2018-05-10T05:51:11Z
+  - lastTransitionTime: 2019-03-06T09:50:57Z
+    lastUpdateTime: 2019-03-06T09:50:57Z
     message: TFJob dist-mnist-for-e2e-test is running.
     reason: TFJobRunning
     status: "True"
     type: Running
-  startTime: 2018-05-10T05:51:24Z
-  tfReplicaStatuses:
+  replicaStatuses:
     PS:
       active: 2
     Worker:
       active: 4
+  startTime: 2019-03-06T09:50:48Z
 ```
