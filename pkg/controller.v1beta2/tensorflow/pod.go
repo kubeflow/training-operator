@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -35,11 +35,17 @@ const (
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
 
+	// gang scheduler name.
+	gangSchedulerName = "kube-batch"
+
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
 	exitedWithCodeReason = "ExitedWithCode"
+	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
+	// in pod templates with gang-scheduling enabled
+	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -175,6 +181,19 @@ func (tc *TFController) createNewPod(tfjob *tfv1beta2.TFJob, rt, index string, s
 	}
 	setRestartPolicy(podTemplate, spec)
 
+	// if gang-scheduling is enabled:
+	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
+	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
+	if tc.Config.EnableGangScheduling {
+		if isNonGangSchedulerSet(tfjob) {
+			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
+			logger.Warning(errMsg)
+			tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
+		} else {
+			podTemplate.Spec.SchedulerName = gangSchedulerName
+		}
+	}
+
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Pod is created but its initialization has timed out.
@@ -220,4 +239,13 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaS
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
+}
+
+func isNonGangSchedulerSet(tfjob *tfv1beta2.TFJob) bool {
+	for _, spec := range tfjob.Spec.TFReplicaSpecs {
+		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
+			return true
+		}
+	}
+	return false
 }
