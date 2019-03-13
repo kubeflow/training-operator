@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
@@ -46,6 +47,9 @@ const (
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
+
+	// nodeLostReason is the reason when the node is down.
+	nodeLostReason = "NodeLost"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -116,6 +120,20 @@ func (tc *TFController) reconcilePods(
 						return err
 					}
 					restart = true
+				}
+			}
+
+			// According to the issue kubernetes/kubernetes#51333,
+			// k8s would not delete the pod on the node if the node is down.
+			// tf-operator should take care of this case by deleting the pod
+			// so that a new pod will be created and scheduled to healthy node.
+			// if the node is down, the pod's phase is sitll "Running"
+			// and its reason is "NodeLost", so we use reason to check.
+			if pod.Status.Reason == nodeLostReason {
+				logger.Infof("Need to delete pod on lost node: %v.%v", pod.Namespace, pod.Name)
+				err = tc.deletePodNow(pod)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -248,4 +266,12 @@ func isNonGangSchedulerSet(tfjob *tfv1beta2.TFJob) bool {
 		}
 	}
 	return false
+}
+
+func (tc *TFController) deletePodNow(pod *v1.Pod) error {
+	// According to the issue kubernetes/kubernetes#51333,
+	// To delete pod on lost node, have to set the GracePeriodSeconds to 0,
+	// otherwise the pod will be in "Terminating" forever.
+	now := int64(0)
+	return tc.KubeClientSet.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{GracePeriodSeconds: &now})
 }
