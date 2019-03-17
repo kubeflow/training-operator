@@ -304,7 +304,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
 	if tc.Config.EnableGangScheduling {
-		minAvailableReplicas := tc.getTotalReplicas(tfjob)
+		minAvailableReplicas := getTotalReplicas(tfjob)
 		_, err := tc.SyncPdb(tfjob, minAvailableReplicas)
 		if err != nil {
 			logger.Warnf("Sync pdb %v: %v", tfjob.Name, err)
@@ -357,8 +357,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	activePods := k8sutil.FilterActivePods(pods)
 	active := int32(len(activePods))
 	_, failed := getSucceededAndFailedCount(pods)
-	totalReplicas := tc.getTotalReplicas(tfjob)
-	prevReplicasFailedNum := tc.getTotalFailedReplicas(tfjob)
+	totalReplicas := getTotalReplicas(tfjob)
+	prevReplicasFailedNum := getTotalFailedReplicas(tfjob)
 
 	tfJobFailed := false
 	var failureMessage string
