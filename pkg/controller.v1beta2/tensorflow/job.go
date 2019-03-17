@@ -193,3 +193,19 @@ func (tc *TFController) cleanupTFJob(tfJob *tfv1beta2.TFJob) error {
 func (tc *TFController) deleteTFJob(tfJob *tfv1beta2.TFJob) error {
 	return tc.tfJobClientSet.KubeflowV1beta2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
 }
+
+func (tc *TFController) getTotalReplicas(tfjob *tfv1beta2.TFJob) int32 {
+	tfjobReplicas := int32(0)
+	for _, r := range tfjob.Spec.TFReplicaSpecs {
+		tfjobReplicas += *r.Replicas
+	}
+	return tfjobReplicas
+}
+
+func (tc *TFController) getTotalFailedReplicas(tfjob *tfv1beta2.TFJob) int32 {
+	totalFailedReplicas := int32(0)
+	for rtype := range tfjob.Status.ReplicaStatuses {
+		totalFailedReplicas += tfjob.Status.ReplicaStatuses[rtype].Failed
+	}
+	return totalFailedReplicas
+}

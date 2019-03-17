@@ -18,8 +18,6 @@ import (
 	"fmt"
 
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
 )
 
 var (
@@ -50,24 +48,4 @@ func ContainChieforMasterSpec(tfJob *tfv1beta2.TFJob) bool {
 		return true
 	}
 	return false
-}
-
-// FilterActivePods returns pods that have not terminated.
-func FilterActivePods(pods []*v1.Pod) []*v1.Pod {
-	var result []*v1.Pod
-	for _, p := range pods {
-		if IsPodActive(p) {
-			result = append(result, p)
-		} else {
-			log.Infof("Ignoring inactive pod %v/%v in state %v, deletion time %v",
-				p.Namespace, p.Name, p.Status.Phase, p.DeletionTimestamp)
-		}
-	}
-	return result
-}
-
-func IsPodActive(p *v1.Pod) bool {
-	return v1.PodSucceeded != p.Status.Phase &&
-		v1.PodFailed != p.Status.Phase &&
-		p.DeletionTimestamp == nil
 }

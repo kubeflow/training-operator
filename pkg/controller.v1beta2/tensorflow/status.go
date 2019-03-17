@@ -62,7 +62,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1beta2.TFJob, rtype tfv1bet
 		tfjob.Status.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
 		if tfjob.Spec.ActiveDeadlineSeconds != nil {
-			tflogger.LoggerForJob(tfjob).Infof("Job has ActiveDeadlineSeconds will sync after %d seconds", *tfjob.Spec.ActiveDeadlineSeconds)
+			tflogger.LoggerForJob(tfjob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *tfjob.Spec.ActiveDeadlineSeconds)
 			tc.WorkQueue.AddAfter(tfjobKey, time.Duration(*tfjob.Spec.ActiveDeadlineSeconds)*time.Second)
 		}
 	}
