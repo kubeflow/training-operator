@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -525,7 +526,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		expectedDeleteFinished bool
 	}
 
-	ads2 := int32(2)
+	ads2 := int64(2)
 	adsTest2 := &ads2
 	testCases := []testCase{
 		testCase{
@@ -620,7 +621,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
 		now := metav1.Now()
-		tc.tfjob.Status.StartTime = &now
+		tc.tfJob.Status.StartTime = &now
 
 		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
 		if ads != nil {
