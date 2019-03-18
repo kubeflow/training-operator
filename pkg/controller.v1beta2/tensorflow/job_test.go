@@ -633,7 +633,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			time.Sleep(dur)
 		}
 
-		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		forget, err = ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
 		if err != nil {
 			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
 		}
