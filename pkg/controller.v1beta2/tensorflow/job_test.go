@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -619,9 +618,6 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
-
-		now := metav1.Now()
-		tc.tfJob.Status.StartTime = &now
 
 		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
 		if ads != nil {
