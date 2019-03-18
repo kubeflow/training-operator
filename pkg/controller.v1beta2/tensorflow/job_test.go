@@ -503,3 +503,141 @@ func TestCleanupTFJob(t *testing.T) {
 		}
 	}
 }
+
+func TestActiveDeadlineSeconds(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1beta2.TFJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
+
+		activeWorkerServices int32
+		activePSServices     int32
+
+		expectedDeleteFinished bool
+	}
+
+	ads2 := int32(2)
+	adsTest2 := &ads2
+	testCases := []testCase{
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds unset",
+			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, nil),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedDeleteFinished: false,
+		},
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 10",
+			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedDeleteFinished: true,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1beta2.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
+			return nil
+		}
+		deleteFinished := false
+		ctr.deleteTFJobHandler = func(tfJob *tfv1beta2.TFJob) error {
+			deleteFinished = true
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
+
+		now := metav1.Now()
+		tc.tfjob.Status.StartTime = &now
+
+		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
+		if ads != nil {
+			dur := time.Second * time.Duration(*ads)
+			time.Sleep(dur)
+		}
+
+		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+		if !forget {
+			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
+		}
+
+		if deleteFinished != tc.expectedDeleteFinished {
+			t.Errorf("%s: unexpected status. Expected %v, saw %v", tc.description, tc.expectedDeleteFinished, deleteFinished)
+		}
+	}
+}
