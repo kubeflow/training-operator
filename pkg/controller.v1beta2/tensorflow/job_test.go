@@ -619,6 +619,14 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
+		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+		if !forget {
+			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
+		}
+
 		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
 		if ads != nil {
 			dur := time.Second * time.Duration(*ads)
