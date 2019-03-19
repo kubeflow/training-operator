@@ -210,6 +210,19 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:680c0fba95a0cff934e350b1ad6774d8229378a3e37d9902e07e2861e82a5908"
+  name = "github.com/kubernetes-sigs/kube-batch"
+  packages = [
+    "pkg/apis/scheduling/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/scheduling/v1alpha1",
+  ]
+  pruneopts = "NUT"
+  revision = "b0dbd4f2df590237cecee48f463bfb8746cfa357"
+  version = "v0.3"
+
+[[projects]]
   branch = "master"
   digest = "1:84a5a2b67486d5d67060ac393aa255d05d24ed5ee41daecd5635ec22657b6492"
   name = "github.com/mailru/easyjson"
@@ -931,6 +944,8 @@
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
+    "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1",
+    "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned",
     "github.com/onrik/logrus/filename",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
