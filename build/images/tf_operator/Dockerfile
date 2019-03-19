@@ -1,4 +1,4 @@
-FROM centos:7
+FROM registry.access.redhat.com/ubi8-dev-preview/ubi:latest
 
 ARG GOLANG_VERSION=1.8.3
 ARG GOLANG_ARCH=amd64
