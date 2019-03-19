@@ -30,7 +30,7 @@ import (
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
@@ -96,7 +96,10 @@ func Run(opt *options.ServerOption) error {
 	if err != nil {
 		return err
 	}
-
+	if !checkCRDExists(tfJobClientSet, opt.Namespace) {
+		log.Info("CRD doesn't exist. Exiting")
+		os.Exit(1)
+	}
 	// Create informer factory.
 	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, resyncPeriod, opt.Namespace, nil)
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
@@ -164,14 +167,6 @@ func Run(opt *options.ServerOption) error {
 
 func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, kubebatchclient.Interface, error) {
 
-	crdClient, err := crdclient.NewForConfig(config)
-
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	checkCRDExists(crdClient, v1beta2.TFCRD)
-
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -194,10 +189,16 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, kubeBatchClientSet, nil
 }
 
-func checkCRDExists(clientset crdclient.Interface, crdName string) {
-	_, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crdName, metav1.GetOptions{})
+func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
+	_, err := clientset.KubeflowV1beta2().TFJobs(namespace).List(metav1.ListOptions{})
+
 	if err != nil {
 		log.Error(err)
-		os.Exit(1)
+		if _, ok := err.(*errors.StatusError); ok {
+			if errors.IsNotFound(err) {
+				return false
+			}
+		}
 	}
+	return true
 }
