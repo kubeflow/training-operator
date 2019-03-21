@@ -19,6 +19,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -88,4 +89,35 @@ func CascadeDeleteOptions(gracePeriodSeconds int64) *metav1.DeleteOptions {
 			return &foreground
 		}(),
 	}
+}
+
+// FilterActivePods returns pods that have not terminated.
+func FilterActivePods(pods []*v1.Pod) []*v1.Pod {
+	var result []*v1.Pod
+	for _, p := range pods {
+		if IsPodActive(p) {
+			result = append(result, p)
+		} else {
+			log.Infof("Ignoring inactive pod %v/%v in state %v, deletion time %v",
+				p.Namespace, p.Name, p.Status.Phase, p.DeletionTimestamp)
+		}
+	}
+	return result
+}
+
+func IsPodActive(p *v1.Pod) bool {
+	return v1.PodSucceeded != p.Status.Phase &&
+		v1.PodFailed != p.Status.Phase &&
+		p.DeletionTimestamp == nil
+}
+
+// filterPods returns pods based on their phase.
+func FilterPods(pods []*v1.Pod, phase v1.PodPhase) int {
+	result := 0
+	for i := range pods {
+		if phase == pods[i].Status.Phase {
+			result++
+		}
+	}
+	return result
 }
