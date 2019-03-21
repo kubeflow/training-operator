@@ -487,7 +487,7 @@ func (tc *TFController) pastBackoffLimit(tfjob *tfv1beta2.TFJob, pods []*v1.Pod)
 	if tfjob.Spec.BackoffLimit == nil {
 		return false, nil
 	}
-
+	logger := tflogger.LoggerForKey(key)
 	result := int32(0)
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
 		if spec.RestartPolicy != common.RestartPolicyOnFailure && spec.RestartPolicy != common.RestartPolicyAlways {
