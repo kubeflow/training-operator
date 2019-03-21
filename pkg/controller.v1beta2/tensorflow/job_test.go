@@ -19,7 +19,7 @@ import (
 	"time"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -648,7 +648,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
 			return nil
 		}
-		
+
 		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
 		if err != nil {
 			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
@@ -675,7 +675,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			time.Sleep(dur)
 		}
 
-		forget, err = ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
 		if err != nil {
 			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
 		}
