@@ -43,7 +43,8 @@ type TFJob struct {
 // TFJobSpec is a desired state description of the TFJob.
 type TFJobSpec struct {
 	// Specifies the duration in seconds relative to the startTime that the job may be active
-	// before the system tries to terminate it; value must be positive integer
+	// before the system tries to terminate it; value must be positive integer.
+	// This method applies only to pods with restartPolicy == OnFailure or Always.
 	// +optional
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 

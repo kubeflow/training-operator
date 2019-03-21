@@ -360,7 +360,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	totalReplicas := getTotalReplicas(tfjob)
 	prevReplicasFailedNum := getTotalFailedReplicas(tfjob)
 
-	tfJobFailed := false
+	tfJobExceedsLimit := false
 	var failureMessage string
 	var exceedsBackoffLimit bool = false
 	var pastBackoffLimit bool = false
@@ -382,15 +382,15 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	if exceedsBackoffLimit || pastBackoffLimit {
 		// check if the number of pod restart exceeds backoff (for restart OnFailure only)
 		// OR if the number of failed jobs increased since the last syncJob
-		tfJobFailed = true
+		tfJobExceedsLimit = true
 		failureMessage = fmt.Sprintf("TFJob %s has failed because it has reached the specified backoff limit", tfjob.Name)
 	} else if tc.pastActiveDeadline(tfjob) {
 		failureMessage = fmt.Sprintf("TFJob %s has failed because it was active longer than specified deadline", tfjob.Name)
-		tfJobFailed = true
+		tfJobExceedsLimit = true
 	}
 
 	// If the TFJob is terminated, delete all pods and services.
-	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) || tfJobFailed {
+	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) || tfJobExceedsLimit {
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
 		}
@@ -410,7 +410,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 			}
 		}
 
-		if tfJobFailed {
+		if tfJobExceedsLimit {
 			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
 			if tfjob.Status.CompletionTime == nil {
 				now := metav1.Now()
@@ -491,6 +491,7 @@ func (tc *TFController) pastBackoffLimit(tfjob *tfv1beta2.TFJob, pods []*v1.Pod)
 	result := int32(0)
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
 		if spec.RestartPolicy != common.RestartPolicyOnFailure && spec.RestartPolicy != common.RestartPolicyAlways {
+			logger.Warnf("The restart policy of replica %v of the job %v is not OnFailure or Always. Not counted in backoff limit.", rtype, tfjob.Name)
 			continue
 		}
 		// Convert TFReplicaType to lower string.

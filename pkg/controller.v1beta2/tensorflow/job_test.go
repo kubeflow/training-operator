@@ -522,7 +522,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		activeWorkerServices int32
 		activePSServices     int32
 
-		expectedDeleteFinished bool
+		expectedPodDeletions int
 	}
 
 	ads2 := int64(2)
@@ -545,10 +545,10 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			activeWorkerServices: 4,
 			activePSServices:     2,
 
-			expectedDeleteFinished: false,
+			expectedPodDeletions: 0,
 		},
 		testCase{
-			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 10",
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 2",
 			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
 
 			pendingWorkerPods:   0,
@@ -564,7 +564,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			activeWorkerServices: 4,
 			activePSServices:     2,
 
-			expectedDeleteFinished: true,
+			expectedPodDeletions: 6,
 		},
 	}
 	for _, tc := range testCases {
@@ -596,11 +596,6 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
 			return nil
 		}
-		deleteFinished := false
-		ctr.deleteTFJobHandler = func(tfJob *tfv1beta2.TFJob) error {
-			deleteFinished = true
-			return nil
-		}
 
 		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
 		if err != nil {
@@ -619,13 +614,8 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
-		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
-		if err != nil {
-			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
-		}
-		if !forget {
-			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
-		}
+		now := metav1.Now()
+		tc.tfjob.Status.StartTime = &now
 
 		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
 		if ads != nil {
@@ -641,8 +631,11 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
 		}
 
-		if deleteFinished != tc.expectedDeleteFinished {
-			t.Errorf("%s: unexpected status. Expected %v, saw %v", tc.description, tc.expectedDeleteFinished, deleteFinished)
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
 		}
 	}
 }
