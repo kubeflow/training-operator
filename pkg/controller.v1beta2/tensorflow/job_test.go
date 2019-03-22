@@ -669,8 +669,8 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		now := metav1.Now()
 		tc.tfJob.Status.StartTime = &now
 
-		_, err := tfJobClientSet.KubeflowV1beta2().TFJobs(metav1.NamespaceDefault).UpdateStatus(tc.tfJob)
-		if err != nil{
+		_, err = tfJobClientSet.KubeflowV1beta2().TFJobs(metav1.NamespaceDefault).UpdateStatus(tc.tfJob)
+		if err != nil {
 			t.Errorf("%s: unexpected error when updating status of the jobs %v", tc.description, err)
 		}
 
