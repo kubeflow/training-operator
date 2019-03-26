@@ -65,6 +65,23 @@ func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *tfv1b
 	return tfJob
 }
 
+func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *tfv1beta2.TFJob {
+	if chief == 1 {
+		tfJob := NewTFJobWithChief(worker, ps)
+		tfJob.Spec.BackoffLimit = backoffLimit
+		tfJob.Spec.TFReplicaSpecs[TFReplicaTypeWorker].RestartPolicy = RestartPolicyOnFailure
+		policy := common.CleanPodPolicyNone
+		tfJob.Spec.CleanPodPolicy = &policy
+		return tfJob
+	}
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.BackoffLimit = backoffLimit
+	tfJob.Spec.TFReplicaSpecs[TFReplicaTypeWorker].RestartPolicy = RestartPolicyOnFailure
+	policy := common.CleanPodPolicyNone
+	tfJob.Spec.CleanPodPolicy = &policy
+	return tfJob
+}
+
 func NewTFJobWithChief(worker, ps int) *tfv1beta2.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.TFReplicaSpecs[tfv1beta2.TFReplicaTypeChief] = &common.ReplicaSpec{

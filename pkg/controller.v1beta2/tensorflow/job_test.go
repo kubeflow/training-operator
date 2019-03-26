@@ -715,10 +715,12 @@ func TestBackoffForOnFailure(t *testing.T) {
 		expectedPodDeletions int
 	}
 
+	backoffLimit4 := int32(4)
+	backoffLimitTest4 := &backoffLimit4
 	testCases := []testCase{
 		testCase{
 			description: "4 workers each having 1 restartCount and 2 ps is running, backoffLimit 4 ",
-			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
+			tfJob:       testutil.NewTFJobWithBackoffLimit(0, 4, 2, backoffLimitTest4),
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
