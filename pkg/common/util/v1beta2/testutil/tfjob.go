@@ -69,14 +69,14 @@ func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *tfv1b
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.BackoffLimit = backoffLimit
-		tfJob.Spec.TFReplicaSpecs[TFReplicaTypeWorker].RestartPolicy = RestartPolicyOnFailure
+		tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
 		policy := common.CleanPodPolicyNone
 		tfJob.Spec.CleanPodPolicy = &policy
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.BackoffLimit = backoffLimit
-	tfJob.Spec.TFReplicaSpecs[TFReplicaTypeWorker].RestartPolicy = RestartPolicyOnFailure
+	tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
 	policy := common.CleanPodPolicyNone
 	tfJob.Spec.CleanPodPolicy = &policy
 	return tfJob
