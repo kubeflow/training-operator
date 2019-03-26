@@ -106,8 +106,37 @@ func (tc *TFController) updateTFJob(old, cur interface{}) {
 	if err != nil {
 		return
 	}
+	curTFJob, err := tfJobFromUnstructured(cur)
+	if err != nil {
+		return
+	}
+
+	// never return error
+	key, err := KeyFunc(curTFJob)
+	if err != nil {
+		return
+	}
+
 	log.Infof("Updating tfjob: %s", oldTFJob.Name)
 	tc.enqueueTFJob(cur)
+
+	// check if need to add a new rsync for ActiveDeadlineSeconds
+	if curTFJob.Status.StartTime != nil {
+		curTFJobADS := curTFJob.Spec.ActiveDeadlineSeconds
+		if curTFJobADS == nil {
+			return
+		}
+		oldTFJobADS := oldTFJob.Spec.ActiveDeadlineSeconds
+		if oldTFJobADS == nil || *oldTFJobADS != *curTFJobADS {
+			now := metav1.Now()
+			start := curTFJob.Status.StartTime.Time
+			passed := now.Time.Sub(start)
+			total := time.Duration(*curTFJobADS) * time.Second
+			// AddAfter will handle total < passed
+			tc.WorkQueue.AddAfter(key, total-passed)
+			log.Infof("job ActiveDeadlineSeconds updated, will rsync after %d seconds", total-passed)
+		}
+	}
 }
 
 func (tc *TFController) deletePodsAndServices(tfJob *tfv1beta2.TFJob, pods []*v1.Pod) error {
@@ -163,4 +192,20 @@ func (tc *TFController) cleanupTFJob(tfJob *tfv1beta2.TFJob) error {
 // deleteTFJob deletes the given TFJob.
 func (tc *TFController) deleteTFJob(tfJob *tfv1beta2.TFJob) error {
 	return tc.tfJobClientSet.KubeflowV1beta2().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
+}
+
+func getTotalReplicas(tfjob *tfv1beta2.TFJob) int32 {
+	tfjobReplicas := int32(0)
+	for _, r := range tfjob.Spec.TFReplicaSpecs {
+		tfjobReplicas += *r.Replicas
+	}
+	return tfjobReplicas
+}
+
+func getTotalFailedReplicas(tfjob *tfv1beta2.TFJob) int32 {
+	totalFailedReplicas := int32(0)
+	for rtype := range tfjob.Status.ReplicaStatuses {
+		totalFailedReplicas += tfjob.Status.ReplicaStatuses[rtype].Failed
+	}
+	return totalFailedReplicas
 }

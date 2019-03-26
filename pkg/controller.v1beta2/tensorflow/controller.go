@@ -17,6 +17,7 @@ package tensorflow
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2/app/options"
+	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -39,6 +41,7 @@ import (
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1beta2"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -325,17 +328,14 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	return true, err
 }
 
-func getTotalReplicas(tfjob *tfv1beta2.TFJob) int32 {
-	tfjobReplicas := int32(0)
-	for _, r := range tfjob.Spec.TFReplicaSpecs {
-		tfjobReplicas += *r.Replicas
-	}
-	return tfjobReplicas
-}
-
 // reconcileTFJobs checks and updates replicas for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods/services.
 func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
+	tfjobKey, err := KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
+		return err
+	}
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
@@ -353,8 +353,46 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 		return err
 	}
 
+	// retrieve the previous number of retry
+	previousRetry := tc.WorkQueue.NumRequeues(tfjobKey)
+
+	activePods := k8sutil.FilterActivePods(pods)
+	active := int32(len(activePods))
+	_, failed := getSucceededAndFailedCount(pods)
+	totalReplicas := getTotalReplicas(tfjob)
+	prevReplicasFailedNum := getTotalFailedReplicas(tfjob)
+
+	tfJobExceedsLimit := false
+	var failureMessage string
+	var exceedsBackoffLimit bool = false
+	var pastBackoffLimit bool = false
+
+	if tfjob.Spec.BackoffLimit != nil {
+		jobHasNewFailure := failed > prevReplicasFailedNum
+		// new failures happen when status does not reflect the failures and active
+		// is different than parallelism, otherwise the previous controller loop
+		// failed updating status so even if we pick up failure it is not a new one
+		exceedsBackoffLimit = jobHasNewFailure && (active != totalReplicas) &&
+			(int32(previousRetry)+1 > *tfjob.Spec.BackoffLimit)
+
+		pastBackoffLimit, err = tc.pastBackoffLimit(tfjob, pods)
+		if err != nil {
+			return err
+		}
+	}
+
+	if exceedsBackoffLimit || pastBackoffLimit {
+		// check if the number of pod restart exceeds backoff (for restart OnFailure only)
+		// OR if the number of failed jobs increased since the last syncJob
+		tfJobExceedsLimit = true
+		failureMessage = fmt.Sprintf("TFJob %s has failed because it has reached the specified backoff limit", tfjob.Name)
+	} else if tc.pastActiveDeadline(tfjob) {
+		failureMessage = fmt.Sprintf("TFJob %s has failed because it was active longer than specified deadline", tfjob.Name)
+		tfJobExceedsLimit = true
+	}
+
 	// If the TFJob is terminated, delete all pods and services.
-	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
+	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) || tfJobExceedsLimit {
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
 		}
@@ -371,6 +409,19 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 			} else {
 				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted pdb: %v", tfjob.Name)
 
+			}
+		}
+
+		if tfJobExceedsLimit {
+			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
+			if tfjob.Status.CompletionTime == nil {
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
+			}
+			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
+			if err != nil {
+				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
 			}
 		}
 
@@ -430,6 +481,66 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta2.TFJob) bool {
 	}
 
 	return satisfied
+}
+
+// pastBackoffLimitOnFailure checks if container restartCounts sum exceeds BackoffLimit
+// this method applies only to pods with restartPolicy == OnFailure or Always
+func (tc *TFController) pastBackoffLimit(tfjob *tfv1beta2.TFJob, pods []*v1.Pod) (bool, error) {
+	if tfjob.Spec.BackoffLimit == nil {
+		return false, nil
+	}
+	logger := tflogger.LoggerForJob(tfjob)
+	result := int32(0)
+	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
+		if spec.RestartPolicy != common.RestartPolicyOnFailure && spec.RestartPolicy != common.RestartPolicyAlways {
+			logger.Warnf("The restart policy of replica %v of the job %v is not OnFailure or Always. Not counted in backoff limit.", rtype, tfjob.Name)
+			continue
+		}
+		// Convert TFReplicaType to lower string.
+		rt := strings.ToLower(string(rtype))
+		pods, err := tc.FilterPodsForReplicaType(pods, rt)
+		if err != nil {
+			return false, err
+		}
+		for i := range pods {
+			po := pods[i]
+			if po.Status.Phase != v1.PodRunning {
+				continue
+			}
+			for j := range po.Status.InitContainerStatuses {
+				stat := po.Status.InitContainerStatuses[j]
+				result += stat.RestartCount
+			}
+			for j := range po.Status.ContainerStatuses {
+				stat := po.Status.ContainerStatuses[j]
+				result += stat.RestartCount
+			}
+		}
+	}
+
+	if *tfjob.Spec.BackoffLimit == 0 {
+		return result > 0, nil
+	}
+	return result >= *tfjob.Spec.BackoffLimit, nil
+}
+
+// pastActiveDeadline checks if job has ActiveDeadlineSeconds field set and if it is exceeded.
+func (tc *TFController) pastActiveDeadline(tfjob *tfv1beta2.TFJob) bool {
+	if tfjob.Spec.ActiveDeadlineSeconds == nil || tfjob.Status.StartTime == nil {
+		return false
+	}
+	now := metav1.Now()
+	start := tfjob.Status.StartTime.Time
+	duration := now.Time.Sub(start)
+	allowedDuration := time.Duration(*tfjob.Spec.ActiveDeadlineSeconds) * time.Second
+	return duration >= allowedDuration
+}
+
+// getSucceededAndFailedCount returns no of succeeded and failed pods running a job
+func getSucceededAndFailedCount(pods []*v1.Pod) (succeeded, failed int32) {
+	succeeded = int32(k8sutil.FilterPods(pods, v1.PodSucceeded))
+	failed = int32(k8sutil.FilterPods(pods, v1.PodFailed))
+	return
 }
 
 func (tc *TFController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
