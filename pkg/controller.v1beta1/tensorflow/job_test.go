@@ -316,8 +316,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
@@ -477,8 +477,8 @@ func TestCleanupTFJob(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)

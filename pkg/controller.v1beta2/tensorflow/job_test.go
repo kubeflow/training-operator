@@ -570,7 +570,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 	ads2 := int64(2)
 	adsTest2 := &ads2
 	testCases := []testCase{
-		/*testCase{
+		testCase{
 			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds unset",
 			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, nil),
 
@@ -588,7 +588,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			activePSServices:     2,
 
 			expectedPodDeletions: 0,
-		},*/
+		},
 		testCase{
 			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 2",
 			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
@@ -677,8 +677,6 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		}
 
 		err = ctr.reconcileTFJobs(foo)
-		t.Errorf(">>>>>> TIME AFTER SYNC: %v", tc.tfJob.Status.StartTime)
-		t.Errorf(">>>>>> TIME AFTER SYNC: %v", foo.Status.StartTime)
 		if err != nil {
 			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
 		}

@@ -387,8 +387,6 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 		tfJobExceedsLimit = true
 		failureMessage = fmt.Sprintf("TFJob %s has failed because it has reached the specified backoff limit", tfjob.Name)
 	} else if tc.pastActiveDeadline(tfjob) {
-		logger.Infof(">>>>>> TFJobs start time %v", tfjob.Status.StartTime.Time)
-		logger.Infof(">>>>>> TFJobs was active longer than specified deadline  %s", tfjob.Name)
 		failureMessage = fmt.Sprintf("TFJob %s has failed because it was active longer than specified deadline", tfjob.Name)
 		tfJobExceedsLimit = true
 	}
@@ -415,7 +413,6 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 		}
 
 		if tfJobExceedsLimit {
-			logger.Infof(">>>>>> TFJobs was ExceedsLimit  %s", tfjob.Name)
 			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
 			if tfjob.Status.CompletionTime == nil {
 				now := metav1.Now()
