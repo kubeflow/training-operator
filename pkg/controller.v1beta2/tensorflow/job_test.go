@@ -691,3 +691,132 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		}
 	}
 }
+
+func TestBackoffForOnFailure(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1beta2.TFJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		restartCounts []int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
+
+		activeWorkerServices int32
+		activePSServices     int32
+
+		expectedPodDeletions int
+	}
+
+	testCases := []testCase{
+		testCase{
+			description: "4 workers each having 1 restartCount and 2 ps is running, backoffLimit 4 ",
+			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			restartCounts
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 6,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1beta2.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
+
+		foo, _ := ctr.getTFJobFromName("default", "test-tfjob")
+		now := metav1.Now()
+		foo.Status.StartTime = &now
+
+		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
+		if ads != nil {
+			dur := time.Second * time.Duration(*ads)
+			time.Sleep(dur)
+		}
+
+		err = ctr.reconcileTFJobs(foo)
+		t.Errorf(">>>>>> TIME AFTER SYNC: %v", tc.tfJob.Status.StartTime)
+		t.Errorf(">>>>>> TIME AFTER SYNC: %v", foo.Status.StartTime)
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
+		}
+	}
+}
