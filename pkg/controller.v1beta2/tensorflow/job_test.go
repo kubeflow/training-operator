@@ -666,13 +666,9 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
 
+		foo, _ := ctr.getTFJobFromName("default", "test-tfjob")
 		now := metav1.Now()
-		tc.tfJob.Status.StartTime = &now
-
-		_, err = tfJobClientSet.KubeflowV1beta2().TFJobs(metav1.NamespaceDefault).UpdateStatus(tc.tfJob)
-		if err != nil {
-			t.Errorf("%s: unexpected error when updating status of the jobs %v", tc.description, err)
-		}
+		foo.Status.StartTime = &now
 
 		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
 		if ads != nil {
@@ -680,12 +676,9 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			time.Sleep(dur)
 		}
 
-		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		err = ctr.reconcileTFJobs(foo)
 		if err != nil {
 			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
-		}
-		if !forget {
-			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
 		}
 
 		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
