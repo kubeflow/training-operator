@@ -111,9 +111,9 @@ func IsPodActive(p *v1.Pod) bool {
 		p.DeletionTimestamp == nil
 }
 
-// filterPods returns pods based on their phase.
-func FilterPods(pods []*v1.Pod, phase v1.PodPhase) int {
-	result := 0
+// filterPodCount returns pods based on their phase.
+func FilterPodCount(pods []*v1.Pod, phase v1.PodPhase) int32 {
+	var result int32
 	for i := range pods {
 		if phase == pods[i].Status.Phase {
 			result++

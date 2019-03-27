@@ -49,7 +49,6 @@ type TFJobSpec struct {
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 
 	// Optional number of retries before marking this job failed.
-	// Defaults to 6
 	// +optional
 	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 
