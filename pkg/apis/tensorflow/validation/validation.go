@@ -59,7 +59,7 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*commonv1beta
 		}
 		// Make sure there has at least one container named "tensorflow".
 		if numNamedTensorflow == 0 {
-			log.Warnf("There is no container named tensorflow in %v", rType)
+			log.Warnf("There is no container named %s in %v", tfv1beta1.DefaultContainerName, rType)
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
 	}
@@ -106,7 +106,7 @@ func validateBetaTwoReplicaSpecs(specs map[tfv1beta2.TFReplicaType]*commonv1beta
 		}
 		// Make sure there has at least one container named "tensorflow".
 		if numNamedTensorflow == 0 {
-			log.Warnf("There is no container named tensorflow in %v", rType)
+			log.Warnf("There is no container named %s in %v", tfv1beta2.DefaultContainerName, rType)
 			return fmt.Errorf("TFJobSpec is not valid")
 		}
 	}
