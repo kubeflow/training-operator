@@ -1,3 +1,4 @@
+# for https://mlbot.net a Github bot that labels issues using KubeFlow
 label-alias:
   bug: 'kind/bug'
   feature_request: 'improvement/enhancement'
