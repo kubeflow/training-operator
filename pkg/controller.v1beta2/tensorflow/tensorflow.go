@@ -43,7 +43,6 @@ type TFConfig struct {
 	Cluster  ClusterSpec `json:"cluster"`
 	Task     TaskSpec    `json:"task"`
 	RpcLayer string      `json:"rpc_layer,omitempty"`
-
 	// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
 	// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
 	Environment string `json:"environment"`

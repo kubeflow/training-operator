@@ -50,10 +50,10 @@ func newFilteredUnstructuredInformer(resource schema.GroupVersionResource, clien
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.Resource(resource).List(options)
+				return client.Resource(resource).Namespace(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return client.Resource(resource).Watch(options)
+				return client.Resource(resource).Namespace(namespace).Watch(options)
 			},
 		},
 		&unstructured.Unstructured{},

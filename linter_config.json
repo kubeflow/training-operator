@@ -38,6 +38,6 @@
     "pkg/apis/tensorflow/v1beta2/openapi_generated.go",    
     "dashboard/backend/handler/api_handler.go"
   ],
-  "Deadline": "500s",
+  "Deadline": "600s",
   "Skip": ["pkg/client"]
 }

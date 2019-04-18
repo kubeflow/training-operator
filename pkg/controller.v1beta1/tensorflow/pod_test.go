@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	"k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -40,6 +41,16 @@ func TestAddPod(t *testing.T) {
 		},
 	},
 	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
@@ -47,7 +58,7 @@ func TestAddPod(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -219,6 +230,16 @@ func TestExitCode(t *testing.T) {
 		},
 	},
 	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
@@ -226,7 +247,7 @@ func TestExitCode(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady

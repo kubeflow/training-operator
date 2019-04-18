@@ -18,7 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/core/v1"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -41,6 +43,16 @@ func TestAddTFJob(t *testing.T) {
 		},
 	},
 	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
@@ -48,7 +60,7 @@ func TestAddTFJob(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -100,6 +112,16 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		},
 	},
 	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
@@ -107,7 +129,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
@@ -279,6 +301,16 @@ func TestDeletePodsAndServices(t *testing.T) {
 			},
 		},
 		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
@@ -286,7 +318,7 @@ func TestDeletePodsAndServices(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
 		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
@@ -316,8 +348,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
@@ -433,6 +465,16 @@ func TestCleanupTFJob(t *testing.T) {
 			},
 		},
 		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
@@ -440,7 +482,7 @@ func TestCleanupTFJob(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 		fakePodControl := &controller.FakePodControl{}
 		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
@@ -477,8 +519,8 @@ func TestCleanupTFJob(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
@@ -500,6 +542,271 @@ func TestCleanupTFJob(t *testing.T) {
 
 		if deleteFinished != tc.expectedDeleteFinished {
 			t.Errorf("%s: unexpected status. Expected %v, saw %v", tc.description, tc.expectedDeleteFinished, deleteFinished)
+		}
+	}
+}
+
+func TestActiveDeadlineSeconds(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1beta2.TFJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
+
+		activeWorkerServices int32
+		activePSServices     int32
+
+		expectedPodDeletions int
+	}
+
+	ads2 := int64(2)
+	adsTest2 := &ads2
+	testCases := []testCase{
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds unset",
+			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, nil),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 0,
+		},
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 2",
+			tfJob:       testutil.NewTFJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 6,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1beta2.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
+
+		foo, _ := ctr.getTFJobFromName("default", "test-tfjob")
+		now := metav1.Now()
+		foo.Status.StartTime = &now
+
+		ads := tc.tfJob.Spec.ActiveDeadlineSeconds
+		if ads != nil {
+			dur := time.Second * time.Duration(*ads)
+			time.Sleep(dur)
+		}
+
+		err = ctr.reconcileTFJobs(foo)
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
+		}
+	}
+}
+
+func TestBackoffForOnFailure(t *testing.T) {
+	type testCase struct {
+		description string
+		tfJob       *tfv1beta2.TFJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		restartCounts []int32
+
+		pendingPSPods   int32
+		activePSPods    int32
+		succeededPSPods int32
+		failedPSPods    int32
+
+		activeWorkerServices int32
+		activePSServices     int32
+
+		expectedPodDeletions int
+	}
+
+	backoffLimit4 := int32(4)
+	backoffLimitTest4 := &backoffLimit4
+	testCases := []testCase{
+		testCase{
+			description: "4 workers each having 1 restartCount and 2 ps is running, backoffLimit 4 ",
+			tfJob:       testutil.NewTFJobWithBackoffLimit(0, 4, 2, backoffLimitTest4),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			restartCounts: []int32{1, 1, 1, 1},
+
+			pendingPSPods:   0,
+			activePSPods:    2,
+			succeededPSPods: 0,
+			failedPSPods:    0,
+
+			activeWorkerServices: 4,
+			activePSServices:     2,
+
+			expectedPodDeletions: 6,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1beta2.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(tfJob *tfv1beta2.TFJob) error {
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertTFJobToUnstructured(tc.tfJob)
+		if err != nil {
+			t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+		}
+
+		if err := tfJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, tc.restartCounts, t)
+		testutil.SetPodsStatuses(podIndexer, tc.tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, tc.restartCounts, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.tfJob, testutil.LabelPS, tc.activePSServices, t)
+
+		forget, err := ctr.syncTFJob(testutil.GetKey(tc.tfJob, t))
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+		if !forget {
+			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
+		}
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
 		}
 	}
 }

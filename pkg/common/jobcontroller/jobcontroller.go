@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
@@ -52,6 +54,9 @@ type ControllerInterface interface {
 	// Returns the Replica Index(value) in the labels of the job
 	GetReplicaIndexLabelKey() string
 
+	// Returns the Job Role(key) in the labels of the job
+	GetJobRoleKey() string
+
 	// Returns the Job from Informer Cache
 	GetJobFromInformerCache(namespace, name string) (metav1.Object, error)
 
@@ -87,6 +92,9 @@ type JobController struct {
 
 	// kubeClientSet is a standard kubernetes clientset.
 	KubeClientSet kubeclientset.Interface
+
+	//KubeBatchClientSet is a standard kube-batch clientset.
+	KubeBatchClientSet kubebatchclient.Interface
 
 	// podLister can list/get pods from the shared informer's store.
 	PodLister corelisters.PodLister
@@ -135,6 +143,7 @@ func NewJobController(
 	reconcilerSyncPeriod metav1.Duration,
 	enableGangScheduling bool,
 	kubeClientSet kubeclientset.Interface,
+	kubeBatchClientSet kubebatchclient.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	workQueueName string) JobController {
 
@@ -160,14 +169,15 @@ func NewJobController(
 	}
 
 	jc := JobController{
-		Controller:     controllerImpl,
-		Config:         jobControllerConfig,
-		PodControl:     realPodControl,
-		ServiceControl: realServiceControl,
-		KubeClientSet:  kubeClientSet,
-		Expectations:   controller.NewControllerExpectations(),
-		WorkQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), workQueueName),
-		Recorder:       recorder,
+		Controller:         controllerImpl,
+		Config:             jobControllerConfig,
+		PodControl:         realPodControl,
+		ServiceControl:     realServiceControl,
+		KubeClientSet:      kubeClientSet,
+		KubeBatchClientSet: kubeBatchClientSet,
+		Expectations:       controller.NewControllerExpectations(),
+		WorkQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), workQueueName),
+		Recorder:           recorder,
 	}
 	return jc
 
@@ -195,6 +205,31 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 		labelGroupName: groupName,
 		labelJobName:   strings.Replace(jobName, "/", "-", -1),
 	}
+}
+
+func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas int32) (*v1alpha1.PodGroup, error) {
+
+	kubeBatchClientInterface := jc.KubeBatchClientSet
+	// Check whether podGroup exists or not
+	podGroup, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
+	if err == nil {
+		return podGroup, nil
+	}
+
+	// create podGroup for gang scheduling by kube-batch
+	minAvailable := intstr.FromInt(int(minAvailableReplicas))
+	createPodGroup := &v1alpha1.PodGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: job.GetName(),
+			OwnerReferences: []metav1.OwnerReference{
+				*jc.GenOwnerReference(job),
+			},
+		},
+		Spec: v1alpha1.PodGroupSpec{
+			MinMember: minAvailable.IntVal,
+		},
+	}
+	return kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Create(createPodGroup)
 }
 
 // SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
@@ -229,6 +264,25 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 		},
 	}
 	return jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(createPdb)
+}
+
+func (jc *JobController) DeletePodGroup(job metav1.Object) error {
+	kubeBatchClientInterface := jc.KubeBatchClientSet
+
+	//check whether podGroup exists or not
+	_, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
+	if err != nil && k8serrors.IsNotFound(err) {
+		return nil
+	}
+
+	log.Infof("Deleting PodGroup %s", job.GetName())
+
+	//delete podGroup
+	err = kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Delete(job.GetName(), &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to delete PodGroup: %v", err)
+	}
+	return nil
 }
 
 func (jc *JobController) DeletePdb(job metav1.Object) error {

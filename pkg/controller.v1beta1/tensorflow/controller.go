@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,9 +48,9 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
-	labelGroupName      = "group_name"
-	labelTFJobName      = "tf_job_name"
-	labelTFJobRole      = "tf_job_role"
+	labelGroupName      = "group-name"
+	labelTFJobName      = "tf-job-name"
+	labelTFJobRole      = "tf-job-role"
 )
 
 var (
@@ -98,6 +99,7 @@ func NewTFController(
 	// This variable is for unstructured informer.
 	tfJobInformer tfjobinformersv1beta1.TFJobInformer,
 	kubeClientSet kubeclientset.Interface,
+	kubeBatchClientSet kubebatchclient.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
@@ -116,7 +118,7 @@ func NewTFController(
 	// Create base controller
 	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, tfv1beta1.Plural)
+		option.EnableGangScheduling, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1beta1.Plural)
 	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
@@ -464,6 +466,10 @@ func (tc *TFController) GetReplicaTypeLabelKey() string {
 
 func (tc *TFController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
+}
+
+func (tc *TFController) GetJobRoleKey() string {
+	return labelTFJobRole
 }
 
 func (tc *TFController) ControllerName() string {
