@@ -1,13 +1,6 @@
 language: go
 
 go:
-  # we cannot enable `gotyp` in gometalinter while at the same time
-  # keep 1.8 here. so I (jiay) went with removing `gotype` for now.
-  # see open issues:
-  # - https://github.com/alecthomas/gometalinter/issues/358
-  # - https://github.com/golang/go/issues/21712
-  # TODO jiayu: re-evaluate the pending issues and add back `gotype`
-  - "1.8"
   - "1.9"
   - "1.10"
 
@@ -20,8 +13,8 @@ install:
   - gometalinter --install
 
 script:
-  - go build -o tf-operator.v2 github.com/kubeflow/tf-operator/cmd/tf-operator.v2
   - go build -o tf-operator.v1beta1 github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
+  - go build -o tf-operator.v1beta2 github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2
   - go build -o backend github.com/kubeflow/tf-operator/dashboard/backend
   - gometalinter --config=linter_config.json --vendor ./...
   # We customize the build step because by default

@@ -28,7 +28,7 @@ import (
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta1/testutil"
 )
 
 func TestAddPod(t *testing.T) {
@@ -128,6 +128,15 @@ func TestClusterSpec(t *testing.T) {
 			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
 				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+		},
+		tc{
+			tfJob:               testutil.NewTFJobNamespaceAndRpcLayer(1, 1, "ns4", "grpc+gdr"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "tf.training.io",
+			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+				`-ps-0.ns4.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns4.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"rpc_layer":"grpc+gdr","environment":"cloud"}`,
 		},
 	}
 	for _, c := range testCase {

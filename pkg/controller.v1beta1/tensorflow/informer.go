@@ -5,9 +5,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -15,8 +15,8 @@ import (
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
-	"github.com/kubeflow/tf-operator/pkg/common/util/unstructured"
+	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1beta1"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta1/unstructured"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
@@ -26,24 +26,23 @@ const (
 )
 
 var (
-	errGetFromKey    = fmt.Errorf("Failed to get TFJob from key")
-	errNotExists     = fmt.Errorf("The object is not found")
-	errFailedMarshal = fmt.Errorf("Failed to marshal the object to TFJob")
+	errGetFromKey    = fmt.Errorf("failed to get TFJob from key")
+	errNotExists     = fmt.Errorf("the object is not found")
+	errFailedMarshal = fmt.Errorf("failed to marshal the object to TFJob")
 )
 
 func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string) tfjobinformersv1beta1.TFJobInformer {
-	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
-	dclient, err := dynClientPool.ClientForGroupVersionKind(tfv1beta1.SchemeGroupVersionKind)
+	dclient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		panic(err)
 	}
-	resource := &metav1.APIResource{
-		Name:         tfv1beta1.Plural,
-		SingularName: tfv1beta1.Singular,
-		Namespaced:   true,
-		Group:        tfv1beta1.GroupName,
-		Version:      tfv1beta1.GroupVersion,
+
+	resource := schema.GroupVersionResource{
+		Group:    tfv1beta1.GroupName,
+		Version:  tfv1beta1.GroupVersion,
+		Resource: tfv1beta1.Plural,
 	}
+
 	informer := unstructured.NewTFJobInformer(
 		resource,
 		dclient,

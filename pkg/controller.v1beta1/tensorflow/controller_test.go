@@ -32,7 +32,7 @@ import (
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	"github.com/kubeflow/tf-operator/pkg/common/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta1/testutil"
 	"github.com/kubeflow/tf-operator/pkg/control"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,7 +403,7 @@ func TestSyncPdb(t *testing.T) {
 		expectPdb *v1beta1.PodDisruptionBudget
 	}
 
-	minAvailable2 := intstr.FromInt(2)
+	minAvailable := intstr.FromInt(1)
 	testCases := []testCase{
 		{
 			tfJob: &tfv1beta1.TFJob{
@@ -418,24 +418,9 @@ func TestSyncPdb(t *testing.T) {
 					},
 				},
 			},
-			expectPdb: nil,
-		},
-		{
-			tfJob: &tfv1beta1.TFJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-sync-pdb",
-				},
-				Spec: tfv1beta1.TFJobSpec{
-					TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*common.ReplicaSpec{
-						tfv1beta1.TFReplicaTypeWorker: &common.ReplicaSpec{
-							Replicas: proto.Int32(2),
-						},
-					},
-				},
-			},
 			expectPdb: &v1beta1.PodDisruptionBudget{
 				Spec: v1beta1.PodDisruptionBudgetSpec{
-					MinAvailable: &minAvailable2,
+					MinAvailable: &minAvailable,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"tf_job_name": "test-sync-pdb",

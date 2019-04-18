@@ -289,6 +289,11 @@
                     template: "replica-restart-policy-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  {
+                    name: "pod-names-validation-tests",
+                    template: "pod-names-validation-tests",
+                    dependencies: ["setup-kubeflow"],
+                  },
                 ],  //tasks
               },
             },
@@ -314,7 +319,8 @@
                 ],
                 env: prow_env + [{
                   name: "EXTRA_REPOS",
-                  value: "kubeflow/testing@HEAD",
+                  // TODO(jlewi): Switch back to head once kubeflow/testing#271 is submitted.
+                  value: "kubeflow/testing@HEAD:271",
                 }],
                 image: image,
                 volumeMounts: [
@@ -389,6 +395,8 @@
               "invalid-tfjob-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "replica-restart-policy-tests"),
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
+              "pod-names-validation-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
               "python",
               "-m",

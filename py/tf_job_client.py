@@ -17,6 +17,7 @@ from py import util
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
+TF_JOB_NAME_LABEL = "tf_job_name"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120
@@ -171,12 +172,12 @@ def wait_for_condition(client,
     if datetime.datetime.now() + polling_interval > end_time:
       raise util.JobTimeoutError(
         "Timeout waiting for job {0} in namespace {1} to enter one of the "
-        "conditions {2}.".format(name, namespace, conditions), results)
+        "conditions {2}.".format(name, namespace, expected_condition), results)
 
     time.sleep(polling_interval.seconds)
 
   # Linter complains if we don't have a return statement even though
-  # this code is unreachable.
+  #this code is unreachable.
   return None
 
 
@@ -255,7 +256,7 @@ def get_labels(name, replica_type=None, replica_index=None):
   """
   labels = {
     "group_name": "kubeflow.org",
-    "tf_job_name": name,
+    TF_JOB_NAME_LABEL: name,
   }
   if replica_type:
     labels["tf-replica-type"] = str.lower(replica_type)
@@ -264,7 +265,6 @@ def get_labels(name, replica_type=None, replica_index=None):
     labels["tf-replica-index"] = replica_index
   return labels
 
-
 def to_selector(labels):
   parts = []
   for k, v in labels.iteritems():
@@ -272,6 +272,18 @@ def to_selector(labels):
 
   return ",".join(parts)
 
+def get_pod_names(client, namespace, name):
+  """Get pod names from k8s.
+  """
+  core_api = k8s_client.CoreV1Api(client)
+  resp = core_api.list_namespaced_pod(namespace,
+                                      label_selector=to_selector({TF_JOB_NAME_LABEL: name}))
+  logging.info("list_namespaced_pod: %s", str(resp))
+  pod_names = []
+  for pod in resp.items:
+    if pod.metadata and pod.metadata.name:
+      pod_names.append(pod.metadata.name)
+  return set(pod_names)
 
 def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
                                     replica_type, phases):

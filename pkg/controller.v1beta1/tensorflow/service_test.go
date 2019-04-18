@@ -26,7 +26,7 @@ import (
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1/app/options"
 	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/util/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta1/testutil"
 )
 
 func TestAddService(t *testing.T) {

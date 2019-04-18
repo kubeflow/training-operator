@@ -34,8 +34,8 @@ import (
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
-	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/kubeflow/v1beta1"
+	tfjobinformersv1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1beta1"
+	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1beta1"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -252,7 +252,7 @@ func (tc *TFController) processNextWorkItem() bool {
 		return true
 	}
 
-	utilruntime.HandleError(fmt.Errorf("Error syncing tfjob: %v", err))
+	utilruntime.HandleError(fmt.Errorf("error syncing tfjob: %v", err))
 	tc.WorkQueue.AddRateLimited(key)
 
 	return true
@@ -261,7 +261,7 @@ func (tc *TFController) processNextWorkItem() bool {
 func (tc *TFController) enqueueTFJob(tfjob interface{}) {
 	key, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return
 	}
 
@@ -372,11 +372,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 			}
 		}
 
-		// Initialize the status.
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeWorker)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypePS)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeChief)
-		initializeTFReplicaStatuses(tfjob, tfv1beta1.TFReplicaTypeMaster)
+		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
+		// If any replicas are still Active, set their status to succeeded.
+		if isSucceeded(tfjob.Status) {
+			for rtype := range tfjob.Status.ReplicaStatuses {
+				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
+				tfjob.Status.ReplicaStatuses[rtype].Active = 0
+			}
+		}
 		return tc.updateStatusHandler(tfjob)
 	}
 
@@ -410,7 +413,7 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta1.TFJob) bool {
 	satisfied := false
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for tfjob object %#v: %v", tfjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return false
 	}
 

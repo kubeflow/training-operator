@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubeflow/tf-operator/dashboard/backend/client"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1alpha2"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 )
 
 // APIHandler handles the API calls
@@ -24,13 +24,13 @@ type APIHandler struct {
 // TFJobDetail describe the specification of a TFJob
 // if any and related pods
 type TFJobDetail struct {
-	TFJob *v1alpha2.TFJob `json:"tfJob"`
+	TFJob *v1beta1.TFJob `json:"tfJob"`
 	Pods  []v1.Pod        `json:"pods"`
 }
 
 // TFJobList is a list of TFJobs
 type TFJobList struct {
-	TFJobs []v1alpha2.TFJob `json:"TFJobs"`
+	TFJobs []v1beta1.TFJob `json:"TFJobs"`
 }
 
 // NamespaceList is a list of namespaces
@@ -94,8 +94,8 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 	apiV1Ws.Route(
 		apiV1Ws.POST("/tfjob").
 			To(apiHandler.handleDeploy).
-			Reads(v1alpha2.TFJob{}).
-			Writes(v1alpha2.TFJob{}))
+			Reads(v1beta1.TFJob{}).
+			Writes(v1beta1.TFJob{}))
 
 	apiV1Ws.Route(
 		apiV1Ws.DELETE("/tfjob/{namespace}/{tfjob}").
@@ -117,7 +117,7 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
-	jobs, err := apiHandler.cManager.TFJobClient.KubeflowV1alpha2().TFJobs(namespace).List(metav1.ListOptions{})
+	jobs, err := apiHandler.cManager.TFJobClient.KubeflowV1beta1().TFJobs(namespace).List(metav1.ListOptions{})
 
 	ns := "all"
 	if namespace != "" {
@@ -139,7 +139,7 @@ func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response
 func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
-	job, err := apiHandler.cManager.TFJobClient.KubeflowV1alpha2().TFJobs(namespace).Get(name, metav1.GetOptions{})
+	job, err := apiHandler.cManager.TFJobClient.KubeflowV1beta1().TFJobs(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		log.Infof("cannot find TFJob %v under namespace %v, error: %v", name, namespace, err)
 		if errors.IsNotFound(err) {
@@ -178,7 +178,7 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 
 func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *restful.Response) {
 	clt := apiHandler.cManager.TFJobClient
-	tfJob := new(v1alpha2.TFJob)
+	tfJob := new(v1beta1.TFJob)
 	if err := request.ReadEntity(tfJob); err != nil {
 		if err2 := response.WriteError(http.StatusBadRequest, err); err2 != nil {
 			log.Errorf("Failed to write response: %v", err2)
@@ -204,7 +204,7 @@ func (apiHandler *APIHandler) handleDeploy(request *restful.Request, response *r
 		}
 	}
 
-	j, err := clt.KubeflowV1alpha2().TFJobs(tfJob.Namespace).Create(tfJob)
+	j, err := clt.KubeflowV1beta1().TFJobs(tfJob.Namespace).Create(tfJob)
 	if err != nil {
 		log.Warningf("failed to deploy TFJob %v under namespace %v: %v", tfJob.Name, tfJob.Namespace, err)
 		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
@@ -222,7 +222,7 @@ func (apiHandler *APIHandler) handleDeleteTFJob(request *restful.Request, respon
 	namespace := request.PathParameter("namespace")
 	name := request.PathParameter("tfjob")
 	clt := apiHandler.cManager.TFJobClient
-	err := clt.KubeflowV1alpha2().TFJobs(namespace).Delete(name, &metav1.DeleteOptions{})
+	err := clt.KubeflowV1beta1().TFJobs(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Warningf("failed to delete TFJob %v under namespace %v: %v", name, namespace, err)
 		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {
