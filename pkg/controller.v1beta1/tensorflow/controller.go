@@ -17,6 +17,7 @@ package tensorflow
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
@@ -339,6 +340,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
+	oldStatus := tfjob.Status.DeepCopy()
+
 	pods, err := tc.GetPodsForJob(tfjob)
 
 	if err != nil {
@@ -404,8 +407,11 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta1.TFJob) error {
 		}
 	}
 
-	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
-	return tc.updateStatusHandler(tfjob)
+	// no need to update the tfjob if the status hasn't changed since last time.
+	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+		return tc.updateStatusHandler(tfjob)
+	}
+	return nil
 }
 
 // satisfiedExpectations returns true if the required adds/dels for the given tfjob have been observed.

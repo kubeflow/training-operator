@@ -17,6 +17,7 @@ package tensorflow
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -339,6 +340,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	logger := tflogger.LoggerForJob(tfjob)
 	logger.Infof("Reconcile TFJobs %s", tfjob.Name)
 
+	oldStatus := tfjob.Status.DeepCopy()
+
 	pods, err := tc.GetPodsForJob(tfjob)
 
 	if err != nil {
@@ -358,14 +361,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 
 	activePods := k8sutil.FilterActivePods(pods)
 	active := int32(len(activePods))
-	_, failed := getSucceededAndFailedCount(pods)
+	failed := k8sutil.FilterPodCount(pods, v1.PodFailed)
 	totalReplicas := getTotalReplicas(tfjob)
 	prevReplicasFailedNum := getTotalFailedReplicas(tfjob)
 
-	tfJobExceedsLimit := false
 	var failureMessage string
-	var exceedsBackoffLimit bool = false
-	var pastBackoffLimit bool = false
+	tfJobExceedsLimit := false
+	exceedsBackoffLimit := false
+	pastBackoffLimit := false
 
 	if tfjob.Spec.BackoffLimit != nil {
 		jobHasNewFailure := failed > prevReplicasFailedNum
@@ -455,8 +458,11 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 		}
 	}
 
-	// TODO(CPH): Add check here, no need to update the tfjob if the status hasn't changed since last time.
-	return tc.updateStatusHandler(tfjob)
+	// no need to update the tfjob if the status hasn't changed since last time.
+	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+		return tc.updateStatusHandler(tfjob)
+	}
+	return nil
 }
 
 // satisfiedExpectations returns true if the required adds/dels for the given tfjob have been observed.
@@ -534,13 +540,6 @@ func (tc *TFController) pastActiveDeadline(tfjob *tfv1beta2.TFJob) bool {
 	duration := now.Time.Sub(start)
 	allowedDuration := time.Duration(*tfjob.Spec.ActiveDeadlineSeconds) * time.Second
 	return duration >= allowedDuration
-}
-
-// getSucceededAndFailedCount returns no of succeeded and failed pods running a job
-func getSucceededAndFailedCount(pods []*v1.Pod) (succeeded, failed int32) {
-	succeeded = int32(k8sutil.FilterPods(pods, v1.PodSucceeded))
-	failed = int32(k8sutil.FilterPods(pods, v1.PodFailed))
-	return
 }
 
 func (tc *TFController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
