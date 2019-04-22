@@ -140,6 +140,15 @@ func TestClusterSpec(t *testing.T) {
 				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
+		tc{
+			tfJob:               testutil.NewTFJobNamespaceAndRpcLayer(1, 1, "ns4", "grpc+gdr"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "tf.training.io",
+			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+				`-ps-0.ns4.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns4.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"rpc_layer":"grpc+gdr","environment":"cloud"}`,
+		},
 	}
 	for _, c := range testCase {
 		os.Setenv(EnvCustomClusterDomain, c.customClusterDomain)
