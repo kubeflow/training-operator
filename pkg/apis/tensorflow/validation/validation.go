@@ -38,7 +38,7 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*commonv1beta
 	var foundEvaluator int32 = 0
 	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
-			return fmt.Errorf("TFJobSpec is not valid")
+			return fmt.Errorf("TFJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		if tfv1beta1.IsChieforMaster(rType) {
 			foundChief++
@@ -50,8 +50,9 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*commonv1beta
 		numNamedTensorflow := 0
 		for _, container := range value.Template.Spec.Containers {
 			if container.Image == "" {
-				log.Warn("Image is undefined in the container")
-				return fmt.Errorf("TFJobSpec is not valid")
+				msg := fmt.Sprintf("TFJobSpec is not valid: Image is undefined in the container of %v", rType)
+				log.Error(msg)
+				return fmt.Errorf(msg)
 			}
 			if container.Name == tfv1beta1.DefaultContainerName {
 				numNamedTensorflow++
@@ -59,15 +60,16 @@ func validateBetaOneReplicaSpecs(specs map[tfv1beta1.TFReplicaType]*commonv1beta
 		}
 		// Make sure there has at least one container named "tensorflow".
 		if numNamedTensorflow == 0 {
-			log.Warnf("There is no container named %s in %v", tfv1beta1.DefaultContainerName, rType)
-			return fmt.Errorf("TFJobSpec is not valid")
+			msg := fmt.Sprintf("TFJobSpec is not valid: There is no container named %s in %v", tfv1beta1.DefaultContainerName, rType)
+			log.Error(msg)
+			return fmt.Errorf(msg)
 		}
 	}
 	if foundChief > 1 {
-		return fmt.Errorf("more than 1 chief/master found")
+		return fmt.Errorf("TFJobSpec is not valid: more than 1 chief/master found")
 	}
 	if foundEvaluator > 1 {
-		return fmt.Errorf("more than 1 evaluator found")
+		return fmt.Errorf("TFJobSpec is not valid: more than 1 evaluator found")
 	}
 	return nil
 }
@@ -85,7 +87,7 @@ func validateBetaTwoReplicaSpecs(specs map[tfv1beta2.TFReplicaType]*commonv1beta
 	var foundEvaluator int32 = 0
 	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
-			return fmt.Errorf("TFJobSpec is not valid")
+			return fmt.Errorf("TFJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		if tfv1beta2.IsChieforMaster(rType) {
 			foundChief++
@@ -97,8 +99,9 @@ func validateBetaTwoReplicaSpecs(specs map[tfv1beta2.TFReplicaType]*commonv1beta
 		numNamedTensorflow := 0
 		for _, container := range value.Template.Spec.Containers {
 			if container.Image == "" {
-				log.Warn("Image is undefined in the container")
-				return fmt.Errorf("TFJobSpec is not valid")
+				msg := fmt.Sprintf("TFJobSpec is not valid: Image is undefined in the container of %v", rType)
+				log.Error(msg)
+				return fmt.Errorf(msg)
 			}
 			if container.Name == tfv1beta2.DefaultContainerName {
 				numNamedTensorflow++
@@ -106,15 +109,16 @@ func validateBetaTwoReplicaSpecs(specs map[tfv1beta2.TFReplicaType]*commonv1beta
 		}
 		// Make sure there has at least one container named "tensorflow".
 		if numNamedTensorflow == 0 {
-			log.Warnf("There is no container named %s in %v", tfv1beta2.DefaultContainerName, rType)
-			return fmt.Errorf("TFJobSpec is not valid")
+			msg := fmt.Sprintf("TFJobSpec is not valid: There is no container named %s in %v", tfv1beta2.DefaultContainerName, rType)
+			log.Error(msg)
+			return fmt.Errorf(msg)
 		}
 	}
 	if foundChief > 1 {
-		return fmt.Errorf("more than 1 chief/master found")
+		return fmt.Errorf("TFJobSpec is not valid: more than 1 chief/master found")
 	}
 	if foundEvaluator > 1 {
-		return fmt.Errorf("more than 1 evaluator found")
+		return fmt.Errorf("TFJobSpec is not valid: more than 1 evaluator found")
 	}
 	return nil
 }
