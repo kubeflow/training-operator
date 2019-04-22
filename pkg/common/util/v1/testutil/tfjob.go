@@ -144,6 +144,14 @@ func NewTFJobWithNamespace(worker, ps int, ns string) *tfv1.TFJob {
 	return tfJob
 }
 
+func NewTFJobNamespaceAndRpcLayer(worker, ps int, ns, rpclayer string) *tfv1.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Namespace = ns
+	tfJob.Spec.TFRPCLayer = &rpclayer
+
+	return tfJob
+}
+
 func NewTFJobWithEvaluatorAndNamespace(worker, ps, evaluator int, ns string) *tfv1.TFJob {
 	tfJob := NewTFJobWithEvaluator(worker, ps, evaluator)
 	tfJob.Namespace = ns

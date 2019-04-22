@@ -164,6 +164,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								},
 							},
 						},
+						"tfRpcLayer": {
+							SchemaProps: spec.SchemaProps{
+								Description: "TFRpcLayer is rpc layer in TFConfig For example, {\n   \"tfRpcLayer\": TFRpcLayer\n}",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
 					},
 					Required: []string{"tfReplicaSpecs"},
 				},

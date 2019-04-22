@@ -69,6 +69,13 @@ type TFJobSpec struct {
 	//     "Worker": ReplicaSpec,
 	//   }
 	TFReplicaSpecs map[TFReplicaType]*common.ReplicaSpec `json:"tfReplicaSpecs"`
+
+	// TFRpcLayer is rpc layer in TFConfig
+	// For example,
+	// {
+	//    "tfRpcLayer": TFRpcLayer
+	// }
+	TFRPCLayer *string `json:"tfRpcLayer,omitempty"`
 }
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),

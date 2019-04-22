@@ -122,6 +122,11 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 			(*out)[key] = outVal
 		}
 	}
+	if in.TFRPCLayer != nil {
+		in, out := &in.TFRPCLayer, &out.TFRPCLayer
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
