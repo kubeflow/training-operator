@@ -107,6 +107,11 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.TFRPCLayer != nil {
+		in, out := &in.TFRPCLayer, &out.TFRPCLayer
+		*out = new(string)
+		**out = **in
+	}
 	if in.TFReplicaSpecs != nil {
 		in, out := &in.TFReplicaSpecs, &out.TFReplicaSpecs
 		*out = make(map[TFReplicaType]*commonv1.ReplicaSpec, len(*in))
