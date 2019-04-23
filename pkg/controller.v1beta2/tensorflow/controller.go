@@ -489,7 +489,7 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1beta2.TFJob) bool {
 	return satisfied
 }
 
-// pastBackoffLimitOnFailure checks if container restartCounts sum exceeds BackoffLimit
+// pastBackoffLimit checks if container restartCounts sum exceeds BackoffLimit
 // this method applies only to pods with restartPolicy == OnFailure or Always
 func (tc *TFController) pastBackoffLimit(tfjob *tfv1beta2.TFJob, pods []*v1.Pod) (bool, error) {
 	if tfjob.Spec.BackoffLimit == nil {
