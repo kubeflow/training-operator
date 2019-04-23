@@ -410,7 +410,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
 			} else {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted pdb: %v", tfjob.Name)
+				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", tfjob.Name)
 
 			}
 		}
