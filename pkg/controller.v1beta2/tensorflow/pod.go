@@ -67,12 +67,13 @@ func (tc *TFController) reconcilePods(
 	replicas := int(*spec.Replicas)
 	restart := false
 	worker0Completed := false
-	var masterRole bool
+	masterRole := false
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
 	podSlices := tc.GetPodSlices(pods, replicas, logger)
 	for index, podSlice := range podSlices {
+		masterRole = false
 		if len(podSlice) > 1 {
 			logger.Warningf("We have too many pods for %s %d", rt, index)
 			// TODO(gaocegege): Kill some pods.
