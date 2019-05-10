@@ -30,7 +30,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobCondition": {
+		"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobCondition": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "JobCondition describes the state of the job at a certain point.",
@@ -82,7 +82,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus": {
+		"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobStatus": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "JobStatus represents the current observed state of the training Job.",
@@ -94,7 +94,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobCondition"),
+											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobCondition"),
 										},
 									},
 								},
@@ -107,7 +107,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaStatus"),
+											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaStatus"),
 										},
 									},
 								},
@@ -136,9 +136,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobCondition", "github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+				"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobCondition", "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec": {
+		"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaSpec": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "ReplicaSpec is a description of the replica",
@@ -169,7 +169,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/api/core/v1.PodTemplateSpec"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaStatus": {
+		"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaStatus": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "ReplicaStatus represents the current observed state of the replica.",
