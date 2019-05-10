@@ -29,7 +29,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/version"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -66,7 +66,7 @@ func Run(opt *options.ServerOption) error {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace")
 		namespace = metav1.NamespaceDefault
 	}
-	if opt.Namespace == v1.NamespaceAll {
+	if opt.Namespace == corev1.NamespaceAll {
 		log.Info("Using cluster scoped operator")
 	} else {
 		log.Infof("Scoping operator to namespace %s", opt.Namespace)
@@ -134,7 +134,7 @@ func Run(opt *options.ServerOption) error {
 	if err = v1.AddToScheme(scheme.Scheme); err != nil {
 		return fmt.Errorf("CoreV1 Add Scheme failed: %v", err)
 	}
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "tf-operator"})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "tf-operator"})
 
 	rl := &resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
