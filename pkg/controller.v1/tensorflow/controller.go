@@ -400,6 +400,19 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			return err
 		}
 
+		if tfJobExceedsLimit {
+			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
+			if tfjob.Status.CompletionTime == nil {
+				now := metav1.Now()
+				tfjob.Status.CompletionTime = &now
+			}
+			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
+			if err != nil {
+				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				return err
+			}
+		}
+
 		if err := tc.cleanupTFJob(tfjob); err != nil {
 			return err
 		}
@@ -412,19 +425,6 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			} else {
 				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", tfjob.Name)
 
-			}
-		}
-
-		if tfJobExceedsLimit {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
-			if tfjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
-			}
-			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
-			if err != nil {
-				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
 			}
 		}
 
