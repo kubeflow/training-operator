@@ -123,6 +123,20 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "TFJobSpec is a desired state description of the TFJob.",
 					Properties: map[string]spec.Schema{
+						"activeDeadlineSeconds": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer. This method applies only to pods with restartPolicy == OnFailure or Always.",
+								Type:        []string{"integer"},
+								Format:      "int64",
+							},
+						},
+						"backoffLimit": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Optional number of retries before marking this job failed.",
+								Type:        []string{"integer"},
+								Format:      "int32",
+							},
+						},
 						"cleanPodPolicy": {
 							SchemaProps: spec.SchemaProps{
 								Description: "CleanPodPolicy defines the policy to kill pods after TFJob is succeeded. Default to Running.",

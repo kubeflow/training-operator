@@ -18,6 +18,7 @@ package kubeflow
 
 import (
 	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
 	v1beta1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1beta1"
 	v1beta2 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1beta2"
 )
@@ -28,6 +29,8 @@ type Interface interface {
 	V1beta1() v1beta1.Interface
 	// V1beta2 provides access to shared informers for resources in V1beta2.
 	V1beta2() v1beta2.Interface
+	// V1 provides access to shared informers for resources in V1.
+	V1() v1.Interface
 }
 
 type group struct {
@@ -49,4 +52,9 @@ func (g *group) V1beta1() v1beta1.Interface {
 // V1beta2 returns a new v1beta2.Interface.
 func (g *group) V1beta2() v1beta2.Interface {
 	return v1beta2.New(g.factory, g.namespace, g.tweakListOptions)
+}
+
+// V1 returns a new v1.Interface.
+func (g *group) V1() v1.Interface {
+	return v1.New(g.factory, g.namespace, g.tweakListOptions)
 }

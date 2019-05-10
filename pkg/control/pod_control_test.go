@@ -32,7 +32,7 @@ import (
 	utiltesting "k8s.io/client-go/util/testing"
 	"k8s.io/kubernetes/pkg/api/testapi"
 
-	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta2/testutil"
+	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
 )
 
 func TestCreatePods(t *testing.T) {
