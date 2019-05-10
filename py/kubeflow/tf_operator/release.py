@@ -181,7 +181,7 @@ def build_operator_image(root_dir,
     "build/images/tf_operator/Dockerfile", "examples/tf_sample/tf_smoke.py",
     os.path.join(go_path, bin_path, "tf-operator.v1beta1"),
     os.path.join(go_path, bin_path, "tf-operator.v1beta2"),
-    os.path.join(go_path, bin_path, "tf-operator.v1"),    
+    os.path.join(go_path, bin_path, "tf-operator.v1"),
     os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build"
   ]
 
