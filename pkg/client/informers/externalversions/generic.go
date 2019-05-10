@@ -19,6 +19,7 @@ package externalversions
 import (
 	"fmt"
 
+	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	v1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -51,7 +52,11 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=kubeflow.org, Version=v1beta1
+	// Group=kubeflow.org, Version=v1
+	case v1.SchemeGroupVersion.WithResource("tfjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().TFJobs().Informer()}, nil
+
+		// Group=kubeflow.org, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("tfjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1beta1().TFJobs().Informer()}, nil
 

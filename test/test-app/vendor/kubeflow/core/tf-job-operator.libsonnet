@@ -79,10 +79,15 @@
           {
             name: "v1beta1",
             served: true,
-            storage: true,
+            storage: false,
           },
           {
             name: "v1beta2",
+            served: true,
+            storage: true,
+          },
+          {
+            name: "v1",
             served: true,
             storage: false,
           },
@@ -109,7 +114,7 @@
             containers: [
               {
                 command: [
-                  "/opt/kubeflow/tf-operator.v1beta2",
+                  "/opt/kubeflow/tf-operator.v1",
                   "--alsologtostderr",
                   "-v=1",
                 ],

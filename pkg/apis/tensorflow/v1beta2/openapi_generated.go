@@ -30,7 +30,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJob": {
+		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "TFJob represents the configuration of signal TFJob",
@@ -58,22 +58,22 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						"spec": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Specification of the desired behavior of the TFJob.",
-								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJobSpec"),
+								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec"),
 							},
 						},
 						"status": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Most recently observed status of the TFJob. This data may not be up to date. Populated by the system. Read-only.",
-								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobStatus"),
+								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus"),
 							},
 						},
 					},
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+				"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJobList": {
+		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobList": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "TFJobList is a list of TFJobs.",
@@ -105,7 +105,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJob"),
+											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob"),
 										},
 									},
 								},
@@ -116,13 +116,27 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+				"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2.TFJobSpec": {
+		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Description: "TFJobSpec is a desired state description of the TFJob.",
 					Properties: map[string]spec.Schema{
+						"activeDeadlineSeconds": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer. This method applies only to pods with restartPolicy == OnFailure or Always.",
+								Type:        []string{"integer"},
+								Format:      "int64",
+							},
+						},
+						"backoffLimit": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Optional number of retries before marking this job failed.",
+								Type:        []string{"integer"},
+								Format:      "int32",
+							},
+						},
 						"cleanPodPolicy": {
 							SchemaProps: spec.SchemaProps{
 								Description: "CleanPodPolicy defines the policy to kill pods after TFJob is succeeded. Default to Running.",
@@ -144,7 +158,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaSpec"),
+											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec"),
 										},
 									},
 								},
@@ -155,7 +169,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2.ReplicaSpec"},
+				"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec"},
 		},
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource": {
 			Schema: spec.Schema{

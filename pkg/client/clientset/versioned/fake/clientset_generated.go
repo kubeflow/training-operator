@@ -18,6 +18,8 @@ package fake
 
 import (
 	clientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	kubeflowv1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	fakekubeflowv1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake"
 	kubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1beta1"
 	fakekubeflowv1beta1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1beta1/fake"
 	kubeflowv1beta2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1beta2"
@@ -81,7 +83,12 @@ func (c *Clientset) KubeflowV1beta2() kubeflowv1beta2.KubeflowV1beta2Interface {
 	return &fakekubeflowv1beta2.FakeKubeflowV1beta2{Fake: &c.Fake}
 }
 
-// Kubeflow retrieves the KubeflowV1beta2Client
-func (c *Clientset) Kubeflow() kubeflowv1beta2.KubeflowV1beta2Interface {
-	return &fakekubeflowv1beta2.FakeKubeflowV1beta2{Fake: &c.Fake}
+// KubeflowV1 retrieves the KubeflowV1Client
+func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
+	return &fakekubeflowv1.FakeKubeflowV1{Fake: &c.Fake}
+}
+
+// Kubeflow retrieves the KubeflowV1Client
+func (c *Clientset) Kubeflow() kubeflowv1.KubeflowV1Interface {
+	return &fakekubeflowv1.FakeKubeflowV1{Fake: &c.Fake}
 }
