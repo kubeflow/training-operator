@@ -56,8 +56,8 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 	tflogger.LoggerForJob(tfjob).Infof("TFJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
 		tfjob.Name, rtype, expected, running, failed)
-	// All workers are running, set StartTime.
-	if running == replicas && tfjob.Status.StartTime == nil {
+	// set StartTime.
+	if tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
