@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -153,6 +154,17 @@ func (r RealPodControl) DeletePod(namespace string, podID string, object runtime
 	accessor, err := meta.Accessor(object)
 	if err != nil {
 		return fmt.Errorf("object does not have ObjectMeta, %v", err)
+	}
+	pod, err := r.KubeClient.CoreV1().Pods(namespace).Get(podID, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if pod.DeletionTimestamp != nil {
+		glog.V(3).Infof("pod %s/%s is terminating, skip deleting", pod.Namespace, pod.Name)
+		return nil
 	}
 	glog.V(2).Infof("Controller %v deleting pod %v/%v", accessor.GetName(), namespace, podID)
 	if err := r.KubeClient.CoreV1().Pods(namespace).Delete(podID, nil); err != nil {
