@@ -1,6 +1,6 @@
 # Developer Guide
 
-There are two versions of the TF operator: one for v1alpha2 (to be deprecated) and one for v1beta1.
+Tf-operator is currently at v1. The v1beta2 version will still be supported and is compatible with v1.
 
 ## Building the operator
 
@@ -24,13 +24,7 @@ dep ensure
 Build it
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
-```
-
-If you want to build the operator for v1alpha2, please use the command here:
-
-```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator.v2
+go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1
 ```
 
 ## Building all the artifacts.
@@ -89,15 +83,7 @@ export KUBEFLOW_NAMESPACE=$(your_namespace)
 After the cluster is up, the TFJob CRD should be created on the cluster.
 
 ```bash
-# If you are using v1beta1
-kubectl create -f ./examples/crd/crd-v1beta1.yaml
-```
-
-Or
-
-```bash
-# If you are using v1alpha2
-kubectl create -f ./examples/crd/crd-v1alpha2.yaml
+kubectl create -f ./examples/crd/crd-v1.yaml
 ```
 
 ### Run Operator
@@ -111,17 +97,7 @@ tf-operator
 To verify local operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-# If you are using v1beta1
-cd ./examples/v1beta1/dist-mnist
-docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
-kubectl create -f ./tf_job_mnist.yaml
-```
-
-Or
-
-```bash
-# If you are using v1alpha2
-cd ./examples/v1alpha2/dist-mnist
+cd ./examples/v1/dist-mnist
 docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
 kubectl create -f ./tf_job_mnist.yaml
 ```
