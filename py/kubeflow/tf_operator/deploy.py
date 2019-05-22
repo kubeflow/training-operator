@@ -67,7 +67,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   if not component:
     raise ValueError("component can't be None.")
 
-  ks_cmd = ks_util.get_ksonnet_cmd(app_dir)
+
 
   # TODO(jlewi): It might be better if the test creates the app and uses
   # the latest stable release of the ksonnet configs. That however will cause
@@ -80,6 +80,9 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     env = "e2e-" + now.strftime("%m%d-%H%M-") + uuid.uuid4().hex[0:4]
 
   logging.info("Using app directory: %s", app_dir)
+
+  ks_cmd = ks_util.get_ksonnet_cmd(app_dir)
+  logging.info("Using ksonnet cmd: %s", ks_cmd)
 
   try:
     util.run([ks_cmd, "env", "add", env], cwd=app_dir)
