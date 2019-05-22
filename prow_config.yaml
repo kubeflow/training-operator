@@ -11,7 +11,7 @@ workflows:
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1beta1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1beta2
@@ -20,7 +20,7 @@ workflows:
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1beta2
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4      
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1
@@ -29,7 +29,7 @@ workflows:
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1
@@ -38,4 +38,4 @@ workflows:
     params:
       registry: "gcr.io/kubeflow-images-public"
       tfJobVersion: v1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20180822-da7cefc-e3b0c4
+      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
