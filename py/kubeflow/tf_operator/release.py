@@ -207,7 +207,7 @@ def build_operator_image(root_dir,
 
   if project:
     util.run([
-      "gcloud", "container", "builds", "submit", context_dir, "--tag=" + image,
+      "gcloud", "builds", "submit", context_dir, "--tag=" + image,
       "--project=" + project
     ])
 
