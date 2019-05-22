@@ -15,6 +15,7 @@ import uuid
 import retrying
 from google.cloud import storage  # pylint: disable=no-name-in-module
 from googleapiclient import discovery
+from kubeflow.testing import ks_util
 from kubeflow.testing import util
 from kubeflow.tf_operator import test_util
 from kubernetes import client as k8s_client
@@ -66,6 +67,8 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   if not component:
     raise ValueError("component can't be None.")
 
+  ks_cmd = ks_util.get_ksonnet_cmd(app_dir)
+
   # TODO(jlewi): It might be better if the test creates the app and uses
   # the latest stable release of the ksonnet configs. That however will cause
   # problems when we make changes to the TFJob operator that require changes
@@ -79,16 +82,16 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
   logging.info("Using app directory: %s", app_dir)
 
   try:
-    util.run(["ks", "env", "add", env], cwd=app_dir)
+    util.run([ks_cmd, "env", "add", env], cwd=app_dir)
   except subprocess.CalledProcessError as e:
     if not re.search(".*environment.*already exists.*", e.output):
       raise
 
   for k, v in params.iteritems():
-    util.run(["ks", "param", "set", "--env=" + env, component, k, v],
+    util.run([ks_cmd, "param", "set", "--env=" + env, component, k, v],
              cwd=app_dir)
 
-  apply_command = ["ks", "apply", env, "-c", component]
+  apply_command = [ks_cmd, "apply", env, "-c", component]
   if account:
     apply_command.append("--as=" + account)
   util.run(apply_command, cwd=app_dir)

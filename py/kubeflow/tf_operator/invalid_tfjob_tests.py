@@ -30,7 +30,8 @@ class InvalidTfJobTests(test_util.TestCase):
                          self.params)
 
     # Create the TF job
-    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
+    ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
+    util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
     logging.info("Wait for conditions Failed")

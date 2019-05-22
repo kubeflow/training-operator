@@ -46,10 +46,10 @@ class PodNamesValidationTest(test_util.TestCase):
   def test_pod_names(self):
     api_client = k8s_client.ApiClient()
     component = COMPONENT_NAME + "_" + self.tfjob_version
-
+    ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
     ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
-    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
+    util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
     logging.info("Wait for conditions Running, Succeeded, or Failed")
     results = tf_job_client.wait_for_condition(
