@@ -24,13 +24,13 @@ dep ensure
 Build it
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
+go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2
 ```
 
-If you want to build the operator for v1alpha2, please use the command here:
+If you want to build the operator for v1beta1, please use the command here:
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator.v2
+go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta1
 ```
 
 ## Building all the artifacts.
@@ -47,11 +47,11 @@ You can run
 
 ```sh
 # to setup pipenv you have to step into the directory where Pipfile is located
-cd py
+cd py/kubeflow/tf_operator
 pipenv install
 pipenv shell
-cd ..
-python -m py.release local --registry=${REGISTRY}
+cd ../..
+python -m kubeflow.tf_operator.release local --registry=${REGISTRY}
 ```
 
 * The docker image will be tagged into your registry

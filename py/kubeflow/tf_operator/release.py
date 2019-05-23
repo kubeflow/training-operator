@@ -390,7 +390,7 @@ def build_local(args):
   if not go_dir:
     raise ValueError("GOPATH environment variable must be set.")
 
-  src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+  src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 
   go_src_dir = os.path.join(go_dir, "src", "github.com", REPO_ORG, REPO_NAME)
 
