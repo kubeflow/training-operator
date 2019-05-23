@@ -1,4 +1,4 @@
-apiVersion: 0.1.0
+apiVersion: 0.3.0
 environments:
   default:
     destination:
@@ -8,24 +8,16 @@ environments:
     path: default
 kind: ksonnet.io/app
 libraries:
-  core:
-    gitVersion:
-      commitSha: f7a68336ad7a65c2cbba8462e89d24a10626687e
-      refSpec: master
+  kubeflow/core:
     name: core
     registry: kubeflow
+    version: f7a68336ad7a65c2cbba8462e89d24a10626687e
 name: test-app
 registries:
   incubator:
-    gitVersion:
-      commitSha: 40285d8a14f1ac5787e405e1023cf0c07f6aa28c
-      refSpec: master
     protocol: github
     uri: github.com/ksonnet/parts/tree/master/incubator
   kubeflow:
-    gitVersion:
-      commitSha: f7a68336ad7a65c2cbba8462e89d24a10626687e
-      refSpec: master
     protocol: github
     uri: github.com/kubeflow/kubeflow/tree/master/kubeflow
 version: 0.0.1

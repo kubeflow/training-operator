@@ -149,7 +149,7 @@ def add_common_args(parser):
 
   parser.add_argument(
     "--tfjob_version",
-    default="v1beta1",
+    default="v1",
     type=str,
     help="The TFJob version to use.")
 

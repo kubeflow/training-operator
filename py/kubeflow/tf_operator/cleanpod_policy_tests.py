@@ -26,11 +26,12 @@ class CleanPodPolicyTests(test_util.TestCase):
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
+    ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
     ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job
-    util.run(["ks", "apply", self.env, "-c", component], cwd=self.app_dir)
+    util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)
 
     # Wait for the job to either be in Running state or a terminal state
