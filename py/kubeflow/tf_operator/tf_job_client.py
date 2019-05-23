@@ -21,7 +21,7 @@ TF_JOB_NAME_LABEL = "tf-job-name"
 TIMEOUT = 120
 
 
-def create_tf_job(client, spec, version="v1beta1"):
+def create_tf_job(client, spec, version="v1"):
   """Create a TFJob.
 
   Args:
@@ -58,7 +58,7 @@ def create_tf_job(client, spec, version="v1beta1"):
     raise e
 
 
-def delete_tf_job(client, namespace, name, version="v1beta1"):
+def delete_tf_job(client, namespace, name, version="v1"):
   crd_api = k8s_client.CustomObjectsApi(client)
   try:
     body = {
@@ -118,7 +118,7 @@ def wait_for_condition(client,
                        namespace,
                        name,
                        expected_condition,
-                       version="v1beta1",
+                       version="v1",
                        timeout=datetime.timedelta(minutes=10),
                        polling_interval=datetime.timedelta(seconds=30),
                        status_callback=None):
@@ -182,7 +182,7 @@ def wait_for_condition(client,
 def wait_for_job(client,
                  namespace,
                  name,
-                 version="v1beta1",
+                 version="v1",
                  timeout=datetime.timedelta(minutes=10),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
@@ -211,7 +211,7 @@ def wait_for_job(client,
 def wait_for_delete(client,
                     namespace,
                     name,
-                    version="v1beta1",
+                    version="v1",
                     timeout=datetime.timedelta(minutes=5),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
