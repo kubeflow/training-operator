@@ -320,8 +320,7 @@
                 ],
                 env: prow_env + [{
                   name: "EXTRA_REPOS",
-                  // TODO(jlewi): Switch back to head once kubeflow/testing#271 is submitted.
-                  value: "kubeflow/testing@HEAD:271",
+                  value: "kubeflow/testing@HEAD",
                 }],
                 image: image,
                 volumeMounts: [
