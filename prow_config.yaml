@@ -8,6 +8,22 @@ workflows:
     name: v1beta2
     job_types:
       - presubmit
+    include_dirs:
+    - build/*
+    - cmd/tf-operator.v1beta2/*
+    - dashboard/*
+    - pkg/apis/common/v1beta2/*
+    - pkg/apis/tensorflow/v1beta2/*
+    - pkg/apis/tensorflow/validation/*
+    - pkg/common/*
+    - pkg/control/*
+    - pkg/controller.v1beta2/*
+    - pkg/logger/*
+    - pkg/util/*
+    - pkg/version/*
+    - py/*
+    - test/*
+    - vendor/*
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1beta2
@@ -17,6 +33,22 @@ workflows:
     name: v1
     job_types:
       - presubmit
+    include_dirs:
+    - build/*
+    - cmd/tf-operator.v1/*
+    - dashboard/*
+    - pkg/apis/common/v1/*
+    - pkg/apis/tensorflow/v1/*
+    - pkg/apis/tensorflow/validation/*
+    - pkg/common/*
+    - pkg/control/*
+    - pkg/controller.v1/*
+    - pkg/logger/*
+    - pkg/util/*
+    - pkg/version/*
+    - py/*
+    - test/*
+    - vendor/*
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1
