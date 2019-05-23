@@ -19,105 +19,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	commonv1 "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
-	commonv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta1"
 	commonv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	tfv1beta1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta1"
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 
 	"k8s.io/api/core/v1"
 )
-
-func TestValidateBetaOneTFJobSpec(t *testing.T) {
-	testCases := []tfv1beta1.TFJobSpec{
-		{
-			TFReplicaSpecs: nil,
-		},
-		{
-			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*commonv1beta1.ReplicaSpec{
-				tfv1beta1.TFReplicaTypeWorker: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*commonv1beta1.ReplicaSpec{
-				tfv1beta1.TFReplicaTypeWorker: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Image: "",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*commonv1beta1.ReplicaSpec{
-				tfv1beta1.TFReplicaTypeWorker: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*commonv1beta1.ReplicaSpec{
-				tfv1beta1.TFReplicaTypeChief: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-				tfv1beta1.TFReplicaTypeMaster: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[tfv1beta1.TFReplicaType]*commonv1beta1.ReplicaSpec{
-				tfv1beta1.TFReplicaTypeEval: &commonv1beta1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "tensorflow",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-					Replicas: proto.Int32(2),
-				},
-			},
-		},
-	}
-	for _, c := range testCases {
-		err := ValidateBetaOneTFJobSpec(&c)
-		if err == nil {
-			t.Error("Expected error got nil")
-		}
-	}
-}
 
 func TestValidateBetaTwoTFJobSpec(t *testing.T) {
 	testCases := []tfv1beta2.TFJobSpec{
