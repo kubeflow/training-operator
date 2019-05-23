@@ -33,7 +33,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "TFJob represents the configuration of signal TFJob",
+					Description: "Represents a TFJob resource.",
 					Properties: map[string]spec.Schema{
 						"kind": {
 							SchemaProps: spec.SchemaProps{
@@ -51,19 +51,19 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"metadata": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Standard object's metadata.",
+								Description: "Standard Kubernetes object's metadata.",
 								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 							},
 						},
 						"spec": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Specification of the desired behavior of the TFJob.",
+								Description: "Specification of the desired state of the TFJob.",
 								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec"),
 							},
 						},
 						"status": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Most recently observed status of the TFJob. This data may not be up to date. Populated by the system. Read-only.",
+								Description: "Most recently observed status of the TFJob. Read-only (modified by the system).",
 								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus"),
 							},
 						},
@@ -125,35 +125,35 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"activeDeadlineSeconds": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer. This method applies only to pods with restartPolicy == OnFailure or Always.",
+								Description: "Specifies the duration (in seconds) since startTime during which the job can remain active before it is terminated. Must be a positive integer. This setting applies only to pods where restartPolicy is OnFailure or Always.",
 								Type:        []string{"integer"},
 								Format:      "int64",
 							},
 						},
 						"backoffLimit": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Optional number of retries before marking this job failed.",
+								Description: "Number of retries before marking this job as failed.",
 								Type:        []string{"integer"},
 								Format:      "int32",
 							},
 						},
 						"cleanPodPolicy": {
 							SchemaProps: spec.SchemaProps{
-								Description: "CleanPodPolicy defines the policy to kill pods after TFJob is succeeded. Default to Running.",
+								Description: "Defines the policy for cleaning up pods after the TFJob completes. Defaults to Running.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
 						},
 						"ttlSecondsAfterFinished": {
 							SchemaProps: spec.SchemaProps{
-								Description: "TTLSecondsAfterFinished is the TTL to clean up tf-jobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
+								Description: "Defines the TTL for cleaning up finished TFJobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Defaults to infinite.",
 								Type:        []string{"integer"},
 								Format:      "int32",
 							},
 						},
 						"tfReplicaSpecs": {
 							SchemaProps: spec.SchemaProps{
-								Description: "TFReplicaSpecs is map of TFReplicaType and ReplicaSpec specifies the TF replicas to run. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
+								Description: "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
 								Type:        []string{"object"},
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{

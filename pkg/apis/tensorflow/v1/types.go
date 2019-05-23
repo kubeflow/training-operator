@@ -1,4 +1,4 @@
-// Copyright 2018 The Kubeflow Authors
+// Copyright 2019 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,49 +23,46 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjob
 
-// TFJob represents the configuration of signal TFJob
+// Represents a TFJob resource.
 type TFJob struct {
+	// Standard Kubernetes type metadata.
 	metav1.TypeMeta `json:",inline"`
 
-	// Standard object's metadata.
+	// Standard Kubernetes object's metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Specification of the desired behavior of the TFJob.
+	// Specification of the desired state of the TFJob.
 	Spec TFJobSpec `json:"spec,omitempty"`
 
 	// Most recently observed status of the TFJob.
-	// This data may not be up to date.
-	// Populated by the system.
-	// Read-only.
+	// Read-only (modified by the system).
 	Status common.JobStatus `json:"status,omitempty"`
 }
 
 // TFJobSpec is a desired state description of the TFJob.
 type TFJobSpec struct {
-	// Specifies the duration in seconds relative to the startTime that the job may be active
-	// before the system tries to terminate it; value must be positive integer.
-	// This method applies only to pods with restartPolicy == OnFailure or Always.
+	// Specifies the duration (in seconds) since startTime during which the job can remain active
+	// before it is terminated. Must be a positive integer.
+	// This setting applies only to pods where restartPolicy is OnFailure or Always.
 	// +optional
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 
-	// Optional number of retries before marking this job failed.
+	// Number of retries before marking this job as failed.
 	// +optional
 	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 
-	// CleanPodPolicy defines the policy to kill pods after TFJob is
-	// succeeded.
-	// Default to Running.
+	// Defines the policy for cleaning up pods after the TFJob completes.
+	// Defaults to Running.
 	CleanPodPolicy *common.CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
-	// TTLSecondsAfterFinished is the TTL to clean up tf-jobs (temporary
+	// Defines the TTL for cleaning up finished TFJobs (temporary
 	// before kubernetes adds the cleanup controller).
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
 	// reconcile gets called periodically.
-	// Default to infinite.
+	// Defaults to infinite.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 
-	// TFReplicaSpecs is map of TFReplicaType and ReplicaSpec
-	// specifies the TF replicas to run.
+	// A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
 	// For example,
 	//   {
 	//     "PS": ReplicaSpec,
@@ -74,7 +71,8 @@ type TFJobSpec struct {
 	TFReplicaSpecs map[TFReplicaType]*common.ReplicaSpec `json:"tfReplicaSpecs"`
 }
 
-// TFReplicaType is the type for TFReplica.
+// TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),
+// "Worker", "PS", or "Evaluator".
 type TFReplicaType common.ReplicaType
 
 const (
@@ -103,6 +101,7 @@ const (
 
 // TFJobList is a list of TFJobs.
 type TFJobList struct {
+	// Standard type metadata.
 	metav1.TypeMeta `json:",inline"`
 
 	// Standard list metadata.
