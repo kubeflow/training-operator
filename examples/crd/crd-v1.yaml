@@ -9,6 +9,13 @@ spec:
     kind: TFJob
     singular: tfjob
     plural: tfjobs
+  versions:
+  - name: v1
+    served: true
+    storage: true
+  - name: v1beta2
+    served: true
+    storage: false
   subresources:
     status: {}
   validation:
@@ -36,11 +43,3 @@ spec:
                       type: integer
                       minimum: 1
                       maximum: 1
-  version: v1
-  versions:
-  - name: v1
-    served: true
-    storage: true
-  - name: v1beta2
-    served: true
-    storage: false
