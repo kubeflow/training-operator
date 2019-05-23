@@ -117,7 +117,7 @@ def build_and_push(dockerfile_template,
           logging.info("Pushed image: %s", full_image)
     else:
       run_and_stream([
-        "gcloud", "container", "builds", "submit", context_dir,
+        "gcloud", "builds", "submit", context_dir,
         "--tag=" + full_image, "--project=" + project
       ])
   return images
