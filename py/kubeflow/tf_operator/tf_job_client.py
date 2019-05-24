@@ -5,6 +5,7 @@ import httplib
 import json
 import logging
 import multiprocessing
+import threading
 import time
 
 import retrying
@@ -416,6 +417,61 @@ def get_start_time_by_index(api_client, namespace, name, replica_type,
   pod_selector = to_selector(pod_labels)
   return k8s_util.get_container_start_time(api_client, namespace, pod_selector,
                                            replica_index, phase)
+
+
+def get_streaming_log(api_client, namespace, pod_name, container_name,
+    wait_time):
+  """Stream log from container.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    pod_name: Pod name to stream log.
+    container_name: Container name to stream log.
+    wait_time: Time between adjacent read_namespaced_pod_log operations.
+  """
+  core_api = k8s_client.CoreV1Api(api_client)
+  prev_time = time.time()
+  while True:
+    try:
+      since_seconds = int(time.time() - prev_time)
+      resp = core_api.read_namespaced_pod_log(
+          pod_name,
+          namespace,
+          container=container_name,
+          follow=False,
+          _preload_content=False,
+          since_seconds=since_seconds)
+      log_message = resp.read().decode("utf-8")
+      if log_message:
+        # The message is already in log's form.
+        print(log_message, end="")
+    except k8s_client.rest.ApiException as e:  # pylint: disable=unused-variable
+      pass
+    except Exception as e:
+      raise RuntimeError(
+          "Failed to stream log from {}:{} in namespace {} due to {}".format(
+              pod_name, container_name, namespace, e))
+    prev_time = time.time()
+    time.sleep(wait_time)
+
+
+def start_streaming_log_thread(api_client, namespace, pod_name,
+    container_name=None, wait_time=1):
+  """Start a daemon thread to stream log from container.
+
+  Args:
+    api_client: The K8s API client.
+    namespace: The K8s namespace.
+    pod_name: Pod name to stream log.
+    container_name: Container name to stream log.
+    wait_time: Time between adjacent read_namespaced_pod_log operation.
+  """
+  log_thread = threading.Thread(
+      target=get_streaming_log,
+      args=(api_client, namespace, pod_name, container_name, wait_time))
+  log_thread.daemon = True
+  log_thread.start()
 
 
 def terminate_and_verify_start_time(api_client, namespace, name, replica_type,
