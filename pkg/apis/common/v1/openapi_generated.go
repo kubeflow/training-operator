@@ -44,7 +44,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"status": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Status of the condition, one of True, False, Unknown.",
+								Description: "Status of the condition, one of True, False, or Unknown.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -58,7 +58,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"message": {
 							SchemaProps: spec.SchemaProps{
-								Description: "A human readable message indicating details about the transition.",
+								Description: "A readable message indicating details about the transition.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -85,11 +85,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "JobStatus represents the current observed state of the training Job.",
+					Description: "JobStatus represents the current observed state of the training job.",
 					Properties: map[string]spec.Schema{
 						"conditions": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Conditions is an array of current observed job conditions.",
+								Description: "An array of current observed job conditions.",
 								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
@@ -102,7 +102,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"replicaStatuses": {
 							SchemaProps: spec.SchemaProps{
-								Description: "ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.",
+								Description: "A map from ReplicaType (key) to ReplicaStatus (value), specifying the status of each replica.",
 								Type:        []string{"object"},
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
@@ -115,19 +115,19 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"startTime": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Description: "Represents the time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
 								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 							},
 						},
 						"completionTime": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Description: "Represents the time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
 								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 							},
 						},
 						"lastReconcileTime": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Represents last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Description: "Represents the last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
 								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 							},
 						},
@@ -141,24 +141,24 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "ReplicaSpec is a description of the replica",
+					Description: "ReplicaSpec is a description of the job replica.",
 					Properties: map[string]spec.Schema{
 						"replicas": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Replicas is the desired number of replicas of the given template. If unspecified, defaults to 1.",
+								Description: "The desired number of replicas of the given template. If unspecified, defaults to 1.",
 								Type:        []string{"integer"},
 								Format:      "int32",
 							},
 						},
 						"template": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
+								Description: "Describes the pod that will be created for this replica. Note that RestartPolicy in PodTemplateSpec will be overidden by RestartPolicy in ReplicaSpec.",
 								Ref:         ref("k8s.io/api/core/v1.PodTemplateSpec"),
 							},
 						},
 						"restartPolicy": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Restart policy for all replicas within the job. One of Always, OnFailure, Never and ExitCode. Default to Never.",
+								Description: "Restart policy for all replicas within the job. One of Always, OnFailure, Never, or ExitCode. Defaults to Never.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
