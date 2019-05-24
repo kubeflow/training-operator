@@ -41,11 +41,11 @@ You can run
 
 ```sh
 # to setup pipenv you have to step into the directory where Pipfile is located
-cd py
+cd py/kubeflow/tf_operator
 pipenv install
 pipenv shell
-cd ..
-python -m py.release local --registry=${REGISTRY}
+cd ../..
+python -m kubeflow.tf_operator.release local --registry=${REGISTRY}
 ```
 
 * The docker image will be tagged into your registry
