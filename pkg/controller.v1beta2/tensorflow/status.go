@@ -156,6 +156,17 @@ func (tc *TFController) updateTFJobStatus(tfjob *tfv1beta2.TFJob) error {
 
 // updateTFJobConditions updates the conditions of the given tfjob.
 func updateTFJobConditions(tfjob *tfv1beta2.TFJob, conditionType common.JobConditionType, reason, message string) error {
+	// Check if the condition exists in the conditions.
+	// See https://github.com/kubeflow/pytorch-operator/issues/88
+	for i, c := range tfjob.Status.Conditions {
+		// Found the condition, thus no need to update the LastTransitionTime.
+		if c.Type == conditionType && c.Status == v1.ConditionTrue {
+			tfjob.Status.Conditions[i].LastUpdateTime = metav1.Now()
+			tfjob.Status.Conditions[i].Reason = reason
+			tfjob.Status.Conditions[i].Message = message
+			return nil
+		}
+	}
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
 	return nil
