@@ -113,6 +113,10 @@ func (jc *JobController) UpdatePod(old, cur interface{}) {
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (jc *JobController) DeletePod(obj interface{}) {
 	pod, ok := obj.(*v1.Pod)
+	if pod == nil {
+		log.Errorf("DeletePod err, pod is nil")
+		return
+	}
 
 	logger := jclogger.LoggerForPod(pod, jc.Controller.GetAPIGroupVersionKind().Kind)
 
