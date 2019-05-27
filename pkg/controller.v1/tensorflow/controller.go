@@ -306,14 +306,6 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
-	if tc.Config.EnableGangScheduling {
-		minAvailableReplicas := getTotalReplicas(tfjob)
-		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
-		if err != nil {
-			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
-		}
-	}
-
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
 
@@ -418,13 +410,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
 			if err := tc.DeletePodGroup(tfjob); err != nil {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
-			} else {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", tfjob.Name)
-
 			}
 		}
 
@@ -437,6 +424,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			}
 		}
 		return tc.updateStatusHandler(tfjob)
+	}
+
+	if tc.Config.EnableGangScheduling {
+		minAvailableReplicas := getTotalReplicas(tfjob)
+		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
+		if err != nil {
+			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
+		}
 	}
 
 	// Save the current state of the replicas

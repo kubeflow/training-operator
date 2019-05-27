@@ -11,7 +11,9 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
@@ -29,7 +31,6 @@ import (
 
 // Common Interface to be implemented by all operators.
 type ControllerInterface interface {
-
 	// Returns the Controller name
 	ControllerName() string
 
@@ -266,21 +267,32 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 	return jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(createPdb)
 }
 
-func (jc *JobController) DeletePodGroup(job metav1.Object) error {
+func (jc *JobController) DeletePodGroup(object runtime.Object) error {
 	kubeBatchClientInterface := jc.KubeBatchClientSet
 
-	//check whether podGroup exists or not
-	_, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
-	if err != nil && k8serrors.IsNotFound(err) {
-		return nil
+	accessor, err := meta.Accessor(object)
+	if err != nil {
+		return fmt.Errorf("object does not have ObjectMeta, %v", err)
 	}
 
-	log.Infof("Deleting PodGroup %s", job.GetName())
+	//check whether podGroup exists or not
+	_, err = kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(accessor.GetNamespace()).Get(accessor.GetName(), metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	log.Infof("Deleting PodGroup %s", accessor.GetName())
 
 	//delete podGroup
-	err = kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Delete(job.GetName(), &metav1.DeleteOptions{})
+	err = kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(accessor.GetNamespace()).Delete(accessor.GetName(), &metav1.DeleteOptions{})
 	if err != nil {
+		jc.Recorder.Eventf(object, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 		return fmt.Errorf("unable to delete PodGroup: %v", err)
+	} else {
+		jc.Recorder.Eventf(object, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", accessor.GetName())
 	}
 	return nil
 }
