@@ -113,12 +113,6 @@ func (jc *JobController) UpdatePod(old, cur interface{}) {
 // obj could be an *v1.Pod, or a DeletionFinalStateUnknown marker item.
 func (jc *JobController) DeletePod(obj interface{}) {
 	pod, ok := obj.(*v1.Pod)
-	if pod == nil {
-		log.Errorf("DeletePod err, pod is nil")
-		return
-	}
-
-	logger := jclogger.LoggerForPod(pod, jc.Controller.GetAPIGroupVersionKind().Kind)
 
 	// When a delete is dropped, the relist will notice a pod in the store not
 	// in the list, leading to the insertion of a tombstone object which contains
@@ -137,6 +131,7 @@ func (jc *JobController) DeletePod(obj interface{}) {
 		}
 	}
 
+	logger := jclogger.LoggerForPod(pod, jc.Controller.GetAPIGroupVersionKind().Kind)
 	controllerRef := metav1.GetControllerOf(pod)
 	if controllerRef == nil {
 		// No controller should care about orphans being deleted.
