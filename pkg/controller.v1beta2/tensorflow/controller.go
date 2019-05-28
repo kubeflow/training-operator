@@ -505,16 +505,15 @@ func (tc *TFController) pastBackoffLimit(tfjob *tfv1beta2.TFJob, pods []*v1.Pod)
 		}
 		for i := range pods {
 			po := pods[i]
-			if po.Status.Phase != v1.PodRunning {
-				continue
-			}
-			for j := range po.Status.InitContainerStatuses {
-				stat := po.Status.InitContainerStatuses[j]
-				result += stat.RestartCount
-			}
-			for j := range po.Status.ContainerStatuses {
-				stat := po.Status.ContainerStatuses[j]
-				result += stat.RestartCount
+			if po.Status.Phase == v1.PodRunning || po.Status.Phase != v1.PodPending {
+				for j := range po.Status.InitContainerStatuses {
+					stat := po.Status.InitContainerStatuses[j]
+					result += stat.RestartCount
+				}
+				for j := range po.Status.ContainerStatuses {
+					stat := po.Status.ContainerStatuses[j]
+					result += stat.RestartCount
+				}
 			}
 		}
 	}
