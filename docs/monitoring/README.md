@@ -51,9 +51,16 @@ sum (rate (container_network_transmit_bytes_total{pod_name=~"tfjob-name-.*"}[1m]
 sum (rate (container_fs_write_seconds_total{pod_name=~"tfjob-name-.*"}[1m])) by (pod_name)
 ```
 
-**Keep-Alive check**
+**Keep-Alive check**  
+```
+up
+```
+This is maintained by Prometheus on its own with its `up` metric detailed in the documentation [here](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series).
 
 **Is Leader check**
+```
+tf_operator_is_leader
+```
 
 *Note*: Replace `tfjob-name` with your own TF Job name you want to monitor for the example queries above.
 
