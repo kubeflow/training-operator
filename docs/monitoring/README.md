@@ -35,6 +35,9 @@ sum (rate (container_cpu_usage_seconds_total{pod_name=~"tfjob-name-.*"}[1m])) by
 ```
 
 **GPU Usage**
+```
+sum (rate (container_accelerator_memory_used_bytes{pod_name=~"tfjob-name-.*"}[1m])) by (pod_name)
+```
 
 **Memory Usage**
 ```
@@ -67,9 +70,21 @@ tf_operator_is_leader
 ### Report TFJob metrics:
 
 **Job Creation**
+```
+tf_operator_jobs_created
+```
+
+**Job Creation**
+```
+sum (rate (tf_operator_jobs_created[60m]))
+```
 
 **Job Deletion**
-
-**Jobs Created per Hour**
+```
+tf_operator_jobs_deleted
+```
 
 **Successful Job Completions**
+```
+tf_operator_jobs_successful
+```

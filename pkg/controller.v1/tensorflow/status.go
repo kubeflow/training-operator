@@ -25,6 +25,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -38,6 +40,13 @@ const (
 	tfJobFailedReason = "TFJobFailed"
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
+)
+
+var (
+	tfJobsSuccessCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_successful",
+		Help: "Counts number of TF jobs successful",
+  })
 )
 
 // updateStatus updates the status of the tfjob.
@@ -91,6 +100,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
+				tfJobsSuccessCount.Inc()
 			}
 		}
 	} else {
@@ -108,6 +118,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
+				tfJobsSuccessCount.Inc()
 			} else if running > 0 {
 				// Some workers are still running, leave a running condition.
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)

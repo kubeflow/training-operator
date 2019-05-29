@@ -15,10 +15,19 @@ import (
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
 	failedMarshalTFJobReason = "InvalidTFJobSpec"
+)
+
+var (
+	tfJobsCreatedCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_created",
+		Help: "Counts number of TF jobs created",
+  })
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -98,6 +107,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		return
 	}
 	tc.enqueueTFJob(obj)
+	tfJobsCreatedCount.Inc()
 }
 
 // When a pod is updated, enqueue the current tfjob.

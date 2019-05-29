@@ -307,11 +307,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:09fd8d3e830bac0a0e2d1f7009fe33a0c435ee14ae818be9cc9ceb5f77da18ae"
+  digest = "1:0cdaf6137130e4cbe124b737f85fc6c589ef341d43ac1fd1942a381e8b733b55"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
     "prometheus/internal",
+    "prometheus/promauto",
     "prometheus/promhttp",
   ]
   pruneopts = "NUT"
@@ -568,16 +569,9 @@
   version = "kubernetes-1.11.2"
 
 [[projects]]
-  digest = "1:51e1d04096765a19202e8735ba297d10dadd5c7efd26673fb43da72501dc2159"
+  digest = "1:aff2ac035da399e2ccd6d58a0c484f87a52c82868b652397727c2ce1a3aba7f0"
   name = "k8s.io/apiextensions-apiserver"
-  packages = [
-    "pkg/apis/apiextensions",
-    "pkg/apis/apiextensions/v1beta1",
-    "pkg/client/clientset/clientset",
-    "pkg/client/clientset/clientset/scheme",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
-    "pkg/features",
-  ]
+  packages = ["pkg/features"]
   pruneopts = "NUT"
   revision = "408db4a50408e2149acbd657bceb2480c13cb0a4"
   version = "kubernetes-1.11.2"
@@ -1007,12 +1001,12 @@
     "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned",
     "github.com/onrik/logrus/filename",
     "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promauto",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "k8s.io/api/core/v1",
     "k8s.io/api/policy/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",

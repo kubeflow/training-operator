@@ -44,6 +44,8 @@ import (
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -68,6 +70,11 @@ var (
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 		EnableGangScheduling:     false,
 	}
+
+	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_deleted",
+		Help: "Counts number of TF jobs deleted",
+  })
 )
 
 // TFController is the type for TFJob Controller, which manages
@@ -235,6 +242,7 @@ func (tc *TFController) processNextWorkItem() bool {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
+			tfJobsDeletedCount.Inc()
 			return true
 		}
 
@@ -297,6 +305,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
+			tfJobsDeletedCount.Inc()
 			// jm.expectations.DeleteExpectations(key)
 			return true, nil
 		}
