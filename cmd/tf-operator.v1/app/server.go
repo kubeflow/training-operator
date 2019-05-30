@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	restclientset "k8s.io/client-go/rest"
@@ -127,6 +128,8 @@ func Run(opt *options.ServerOption) error {
 	if err != nil {
 		return fmt.Errorf("failed to get hostname: %v", err)
 	}
+	// add a uniquifier so that two processes on the same host don't accidentally both become active
+	id = id + "_" + string(uuid.NewUUID())
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
