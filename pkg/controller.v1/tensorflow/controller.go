@@ -43,9 +43,9 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -74,7 +74,7 @@ var (
 	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "tf_operator_jobs_deleted",
 		Help: "Counts number of TF jobs deleted",
-  })
+	})
 )
 
 // TFController is the type for TFJob Controller, which manages

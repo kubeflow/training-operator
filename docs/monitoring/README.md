@@ -1,16 +1,5 @@
 # Prometheus Monitoring for TF operator
 
-## Install Prometheus in your Kubernetes Cluster
-To install the chart with the release name `my-release`:
-
-```console
-$ helm install --name my-release stable/prometheus-operator
-```
-
-Follow instructions in this [link](https://github.com/helm/charts/blob/master/stable/prometheus-operator/README.md#installing-the-chart) for elaborate instructions.
-
-*Note*: This [link](https://github.com/coreos/prometheus-operator/blob/master/Documentation/troubleshooting.md) helps in troubleshooting your setup.
-
 ## Available Metrics
 
 Currently available metrics to monitor are listed below.

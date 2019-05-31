@@ -28,6 +28,8 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -39,8 +41,6 @@ import (
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -61,7 +61,7 @@ var (
 	isLeader = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "tf_operator_is_leader",
 		Help: "Is this client the leader of this tf-operator client set?",
-  })
+	})
 )
 
 func Run(opt *options.ServerOption) error {

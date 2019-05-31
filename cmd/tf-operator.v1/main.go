@@ -15,10 +15,10 @@
 package main
 
 import (
-	"os"
 	"flag"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
@@ -35,12 +35,14 @@ func init() {
 	log.AddHook(filenameHook)
 }
 
-func startMonitoring() {
+func startMonitoring(monitoringPort int) {
 	go func() {
-		monitoringPort := os.Getenv("MONITORING_CLIENT_PORT") //TODO (krishnadurai): remove with static port
-		log.Infof("Setting up client for monitoring on port: %s", monitoringPort)
+		log.Infof("Setting up client for monitoring on port: %s", strconv.Itoa(monitoringPort))
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(fmt.Sprintf(":%s", monitoringPort), nil)
+		err := http.ListenAndServe(fmt.Sprintf(":%s", strconv.Itoa(monitoringPort)), nil)
+		if err != nil {
+			log.Error("Monitoring endpoint setup failure.")
+		}
 	}()
 }
 
@@ -55,7 +57,7 @@ func main() {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 
-  startMonitoring()
+	startMonitoring(s.MonitoringPort)
 
 	if err := app.Run(s); err != nil {
 		log.Fatalf("%v\n", err)

@@ -22,11 +22,11 @@ import (
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -46,7 +46,7 @@ var (
 	tfJobsSuccessCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "tf_operator_jobs_successful",
 		Help: "Counts number of TF jobs successful",
-  })
+	})
 )
 
 // updateStatus updates the status of the tfjob.
