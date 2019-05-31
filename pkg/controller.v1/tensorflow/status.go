@@ -65,8 +65,8 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 	tflogger.LoggerForJob(tfjob).Infof("TFJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
 		tfjob.Name, rtype, expected, running, failed)
-	// All workers are running, set StartTime.
-	if running == replicas && tfjob.Status.StartTime == nil {
+	// set StartTime.
+	if tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
@@ -167,6 +167,17 @@ func (tc *TFController) updateTFJobStatus(tfjob *tfv1.TFJob) error {
 
 // updateTFJobConditions updates the conditions of the given tfjob.
 func updateTFJobConditions(tfjob *tfv1.TFJob, conditionType common.JobConditionType, reason, message string) error {
+	// Check if the condition exists in the conditions.
+	// See https://github.com/kubeflow/pytorch-operator/issues/88
+	for i, c := range tfjob.Status.Conditions {
+		// Found the condition, thus no need to update the LastTransitionTime.
+		if c.Type == conditionType && c.Status == v1.ConditionTrue {
+			tfjob.Status.Conditions[i].LastUpdateTime = metav1.Now()
+			tfjob.Status.Conditions[i].Reason = reason
+			tfjob.Status.Conditions[i].Message = message
+			return nil
+		}
+	}
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
 	return nil

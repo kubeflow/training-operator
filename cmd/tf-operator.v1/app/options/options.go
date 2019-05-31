@@ -16,9 +16,12 @@ package options
 
 import (
 	"flag"
+	"time"
 
 	"k8s.io/api/core/v1"
 )
+
+const DefaultResyncPeriod = 12 * time.Hour
 
 // ServerOption is the main context object for the controller manager.
 type ServerOption struct {
@@ -30,6 +33,7 @@ type ServerOption struct {
 	EnableGangScheduling bool
 	Namespace            string
 	MonitoringPort       int
+	ResyncPeriod         time.Duration
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -59,4 +63,5 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.IntVar(&s.MonitoringPort, "monitoring-port", 8443,
 		`Endpoint port for displaying monitoring metrics`)
+	fs.DurationVar(&s.ResyncPeriod, "resyc-period", DefaultResyncPeriod, "Resync interval of the tf-operator")
 }

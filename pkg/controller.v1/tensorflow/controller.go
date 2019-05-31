@@ -315,14 +315,6 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
-	if tc.Config.EnableGangScheduling {
-		minAvailableReplicas := getTotalReplicas(tfjob)
-		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
-		if err != nil {
-			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
-		}
-	}
-
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
 
@@ -427,13 +419,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
 			if err := tc.DeletePodGroup(tfjob); err != nil {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
-			} else {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", tfjob.Name)
-
 			}
 		}
 
@@ -446,6 +433,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			}
 		}
 		return tc.updateStatusHandler(tfjob)
+	}
+
+	if tc.Config.EnableGangScheduling {
+		minAvailableReplicas := getTotalReplicas(tfjob)
+		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
+		if err != nil {
+			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
+		}
 	}
 
 	// Save the current state of the replicas
@@ -519,16 +514,15 @@ func (tc *TFController) pastBackoffLimit(tfjob *tfv1.TFJob, pods []*v1.Pod) (boo
 		}
 		for i := range pods {
 			po := pods[i]
-			if po.Status.Phase != v1.PodRunning {
-				continue
-			}
-			for j := range po.Status.InitContainerStatuses {
-				stat := po.Status.InitContainerStatuses[j]
-				result += stat.RestartCount
-			}
-			for j := range po.Status.ContainerStatuses {
-				stat := po.Status.ContainerStatuses[j]
-				result += stat.RestartCount
+			if po.Status.Phase == v1.PodRunning || po.Status.Phase != v1.PodPending {
+				for j := range po.Status.InitContainerStatuses {
+					stat := po.Status.InitContainerStatuses[j]
+					result += stat.RestartCount
+				}
+				for j := range po.Status.ContainerStatuses {
+					stat := po.Status.ContainerStatuses[j]
+					result += stat.RestartCount
+				}
 			}
 		}
 	}
