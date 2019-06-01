@@ -149,6 +149,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
+			tfJobsFailureCount.Inc()
 			tfJobsRestartCount.Inc()
 		} else {
 			msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
