@@ -47,12 +47,13 @@ var (
 		Name: "tf_operator_jobs_successful",
 		Help: "Counts number of TF jobs successful",
 	})
-)
-
-var (
 	tfJobsFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "tf_operator_jobs_failed",
 		Help: "Counts number of TF jobs failed",
+	})
+	tfJobsRestartCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_restarted",
+		Help: "Counts number of TF jobs restarted",
 	})
 )
 
@@ -148,6 +149,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
+			tfJobsRestartCount.Inc()
 		} else {
 			msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)

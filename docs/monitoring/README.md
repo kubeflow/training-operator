@@ -82,3 +82,8 @@ tf_operator_jobs_successful
 ```
 tf_operator_jobs_failed
 ```
+
+**Restarted Jobs**
+```
+tf_operator_jobs_restarted
+```
