@@ -8,7 +8,7 @@ Currently available metrics to monitor are listed below.
 
 Component Containers:
 * tf-operator
-* tf-master
+* tf-chief
 * tf-ps
 * tf-worker
 
@@ -76,4 +76,9 @@ tf_operator_jobs_deleted
 **Successful Job Completions**
 ```
 tf_operator_jobs_successful
+```
+
+**Failed Jobs**
+```
+tf_operator_jobs_failed
 ```

@@ -49,6 +49,13 @@ var (
 	})
 )
 
+var (
+	tfJobsFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_failed",
+		Help: "Counts number of TF jobs failed",
+	})
+)
+
 // updateStatus updates the status of the tfjob.
 func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
 	tfjobKey, err := KeyFunc(tfjob)
@@ -154,6 +161,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
+			tfJobsFailureCount.Inc()
 		}
 	}
 	return nil
