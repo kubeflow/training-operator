@@ -32,6 +32,7 @@ type ServerOption struct {
 	JSONLogFormat        bool
 	EnableGangScheduling bool
 	Namespace            string
+	MonitoringPort       int
 	ResyncPeriod         time.Duration
 }
 
@@ -48,7 +49,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 		 will overrides any value in kubeconfig, only required if out-of-cluster.`)
 
 	fs.StringVar(&s.Namespace, "namespace", v1.NamespaceAll,
-		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide. 
+		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide.
                 If set, it only monitors tfjobs in the given namespace.`)
 
 	fs.IntVar(&s.Threadiness, "threadiness", 1,
@@ -60,5 +61,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 		"Set true to use json style log format. Set false to use plaintext style log format")
 	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-batch.")
 
+	fs.IntVar(&s.MonitoringPort, "monitoring-port", 8443,
+		`Endpoint port for displaying monitoring metrics`)
 	fs.DurationVar(&s.ResyncPeriod, "resyc-period", DefaultResyncPeriod, "Resync interval of the tf-operator")
 }

@@ -28,6 +28,8 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -54,6 +56,13 @@ var (
 )
 
 const RecommendedKubeConfigPathEnv = "KUBECONFIG"
+
+var (
+	isLeader = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "tf_operator_is_leader",
+		Help: "Is this client the leader of this tf-operator client set?",
+	})
+)
 
 func Run(opt *options.ServerOption) error {
 	// Check if the -version flag was passed and, if so, print the version and exit.
@@ -119,6 +128,7 @@ func Run(opt *options.ServerOption) error {
 
 	// Set leader election start function.
 	run := func(<-chan struct{}) {
+		isLeader.Set(1)
 		if err := tc.Run(opt.Threadiness, stopCh); err != nil {
 			log.Errorf("Failed to run the controller: %v", err)
 		}
@@ -159,6 +169,7 @@ func Run(opt *options.ServerOption) error {
 		Callbacks: election.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
+				isLeader.Set(0)
 				log.Fatalf("leader election lost")
 			},
 		},

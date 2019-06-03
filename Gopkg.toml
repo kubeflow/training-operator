@@ -58,6 +58,10 @@ required = [
   name = "k8s.io/code-generator"
   version = "kubernetes-1.11.2"
 
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "v0.9.3"
+
 [[override]]
   # To solve undefined: reference.ParseNormalizedNamed in Kubernetes.
   name = "github.com/docker/distribution"
