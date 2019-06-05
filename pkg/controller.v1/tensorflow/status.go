@@ -178,17 +178,6 @@ func (tc *TFController) updateTFJobStatus(tfjob *tfv1.TFJob) error {
 
 // updateTFJobConditions updates the conditions of the given tfjob.
 func updateTFJobConditions(tfjob *tfv1.TFJob, conditionType common.JobConditionType, reason, message string) error {
-	// Check if the condition exists in the conditions.
-	// See https://github.com/kubeflow/pytorch-operator/issues/88
-	for i, c := range tfjob.Status.Conditions {
-		// Found the condition, thus no need to update the LastTransitionTime.
-		if c.Type == conditionType && c.Status == v1.ConditionTrue {
-			tfjob.Status.Conditions[i].LastUpdateTime = metav1.Now()
-			tfjob.Status.Conditions[i].Reason = reason
-			tfjob.Status.Conditions[i].Message = message
-			return nil
-		}
-	}
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&tfjob.Status, condition)
 	return nil
@@ -260,24 +249,26 @@ func isFailed(status common.JobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *common.JobStatus, condition common.JobCondition) {
-	// Do nothing if TFJobStatus have failed condition
+	// Do nothing if TFJobStatus have failed condition.
 	if isFailed(*status) {
 		return
 	}
 
 	currentCond := getCondition(*status, condition.Type)
 
-	// Do nothing if condition doesn't change
-	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
-		return
+	if currentCond != nil {
+		if currentCond.Status == condition.Status &&
+			currentCond.Reason == condition.Reason &&
+			currentCond.Message == condition.Message {
+			// Do nothing if the condition does not change.
+			return
+		} else if currentCond.Status == condition.Status {
+			// Do not update lastTransitionTime if the status of the condition doesn't change.
+			condition.LastTransitionTime = currentCond.LastTransitionTime
+		}
 	}
 
-	// Do not update lastTransitionTime if the status of the condition doesn't change.
-	if currentCond != nil && currentCond.Status == condition.Status {
-		condition.LastTransitionTime = currentCond.LastTransitionTime
-	}
-
-	// Append the updated condition to the
+	// Append the updated condition to the status.Conditions.
 	newConditions := filterOutCondition(status.Conditions, condition.Type)
 	status.Conditions = append(newConditions, condition)
 }
