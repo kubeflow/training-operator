@@ -227,8 +227,8 @@ func isFailed(status common.JobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *common.JobStatus, condition common.JobCondition) {
-	// Do nothing if TFJobStatus have failed condition.
-	if isFailed(*status) {
+	// Do nothing if TFJobStatus is completed.
+	if isFailed(*status) || isSucceeded(*status) {
 		return
 	}
 
