@@ -90,22 +90,19 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 		if tfv1.IsChieforMaster(rtype) {
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-				err := updateTFJobConditions(tfjob, common.JobRunning, tfJobRunningReason, msg)
-				if err != nil {
-					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				if err := tc.markJobRunning(tfjob, msg); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job running %v", err)
 					return err
 				}
 			}
 			if expected == 0 {
 				msg := fmt.Sprintf("TFJob %s successfully completed.", tfjob.Name)
-				tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
-				if tfjob.Status.CompletionTime == nil {
-					now := metav1.Now()
-					tfjob.Status.CompletionTime = &now
+				if err := tc.cleanupJobResources(tfjob); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Cleanup tfjob failed %v", err)
+					return err
 				}
-				err := updateTFJobConditions(tfjob, common.JobSucceeded, tfJobSucceededReason, msg)
-				if err != nil {
-					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				if err := tc.markJobSucceeded(tfjob, msg); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job succeeded %v", err)
 					return err
 				}
 				tfJobsSuccessCount.Inc()
@@ -116,23 +113,20 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 			// All workers are succeeded or worker 0 completed, leave a succeeded condition.
 			if expected == 0 || worker0Completed {
 				msg := fmt.Sprintf("TFJob %s successfully completed.", tfjob.Name)
-				tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
-				if tfjob.Status.CompletionTime == nil {
-					now := metav1.Now()
-					tfjob.Status.CompletionTime = &now
+				if err := tc.cleanupJobResources(tfjob); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Cleanup tfjob failed %v", err)
+					return err
 				}
-				err := updateTFJobConditions(tfjob, common.JobSucceeded, tfJobSucceededReason, msg)
-				if err != nil {
-					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				if err := tc.markJobSucceeded(tfjob, msg); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job succeeded %v", err)
 					return err
 				}
 				tfJobsSuccessCount.Inc()
 			} else if running > 0 {
 				// Some workers are still running, leave a running condition.
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
-				err := updateTFJobConditions(tfjob, common.JobRunning, tfJobRunningReason, msg)
-				if err != nil {
-					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+				if err := tc.markJobRunning(tfjob, msg); err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job running %v", err)
 					return err
 				}
 			}
@@ -143,10 +137,9 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 		if restart {
 			msg := fmt.Sprintf("TFJob %s is restarting because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)
-			tc.Recorder.Event(tfjob, v1.EventTypeWarning, tfJobRestartingReason, msg)
-			err := updateTFJobConditions(tfjob, common.JobRestarting, tfJobRestartingReason, msg)
-			if err != nil {
-				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+
+			if err := tc.markJobRestarting(tfjob, msg); err != nil {
+				tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job restarting %v", err)
 				return err
 			}
 			tfJobsFailureCount.Inc()
@@ -154,18 +147,67 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 		} else {
 			msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, msg)
-			if tfjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
+			if err := tc.cleanupJobResources(tfjob); err != nil {
+				tflogger.LoggerForJob(tfjob).Infof("Cleanup tfjob failed %v", err)
+				return err
 			}
-			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, msg)
-			if err != nil {
-				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			if err := tc.markJobFailed(tfjob, msg); err != nil {
+				tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job failed %v", err)
 				return err
 			}
 			tfJobsFailureCount.Inc()
 		}
+	}
+	return nil
+}
+
+func (tc *TFController) markJobSucceeded(tfjob *tfv1.TFJob, msg string) error {
+	tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobSucceededReason, msg)
+	if tfjob.Status.CompletionTime == nil {
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+	}
+	if err := updateTFJobConditions(tfjob, common.JobSucceeded, tfJobSucceededReason, msg); err != nil {
+		tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+		return err
+	}
+	// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
+	// If any replicas are still Active, set their status to succeeded.
+	if isSucceeded(tfjob.Status) {
+		for rtype := range tfjob.Status.ReplicaStatuses {
+			tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
+			tfjob.Status.ReplicaStatuses[rtype].Active = 0
+		}
+	}
+	return nil
+}
+
+func (tc *TFController) markJobFailed(tfjob *tfv1.TFJob, msg string) error {
+	tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, msg)
+	if tfjob.Status.CompletionTime == nil {
+		now := metav1.Now()
+		tfjob.Status.CompletionTime = &now
+	}
+	if err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, msg); err != nil {
+		tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (tc *TFController) markJobRunning(tfjob *tfv1.TFJob, msg string) error {
+	if err := updateTFJobConditions(tfjob, common.JobRunning, tfJobRunningReason, msg); err != nil {
+		tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (tc *TFController) markJobRestarting(tfjob *tfv1.TFJob, msg string) error {
+	tc.Recorder.Event(tfjob, v1.EventTypeWarning, tfJobRestartingReason, msg)
+	if err := updateTFJobConditions(tfjob, common.JobRestarting, tfJobRestartingReason, msg); err != nil {
+		tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+		return err
 	}
 	return nil
 }

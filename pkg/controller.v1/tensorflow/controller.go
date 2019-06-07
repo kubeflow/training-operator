@@ -313,7 +313,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	}
 
 	tfjob := sharedTFJob.DeepCopy()
-	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
+	tfjobNeedsSync := tc.satisfiedExpectations(tfjob) && !isCompleted(tfjob)
 
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
@@ -395,42 +395,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		tfJobExceedsLimit = true
 	}
 
-	// If the TFJob is terminated, delete all pods and services.
-	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) || tfJobExceedsLimit {
-		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+	if tfJobExceedsLimit {
+		if err := tc.markJobFailed(tfjob, failureMessage); err != nil {
+			tflogger.LoggerForJob(tfjob).Infof("Failed to mark Job failed %v", err)
 			return err
 		}
-
-		if tfJobExceedsLimit {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
-			if tfjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
-			}
-			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
-			if err != nil {
-				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
-		}
-
-		if err := tc.cleanupTFJob(tfjob); err != nil {
+		if err := tc.cleanupJobResources(tfjob); err != nil {
+			tflogger.LoggerForJob(tfjob).Infof("Cleanup tfjob failed %v", err)
 			return err
-		}
-
-		if tc.Config.EnableGangScheduling {
-			if err := tc.DeletePodGroup(tfjob); err != nil {
-				return err
-			}
-		}
-
-		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
-		// If any replicas are still Active, set their status to succeeded.
-		if isSucceeded(tfjob.Status) {
-			for rtype := range tfjob.Status.ReplicaStatuses {
-				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
-				tfjob.Status.ReplicaStatuses[rtype].Active = 0
-			}
 		}
 		return tc.updateStatusHandler(tfjob)
 	}
@@ -465,6 +437,28 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 	// no need to update the tfjob if the status hasn't changed since last time.
 	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
 		return tc.updateStatusHandler(tfjob)
+	}
+	return nil
+}
+
+func (tc *TFController) cleanupJobResources(tfjob *tfv1.TFJob) error {
+	pods, err := tc.GetPodsForJob(tfjob)
+	logger := tflogger.LoggerForJob(tfjob)
+	if err != nil {
+		logger.Warnf("getPodsForTFJob error %v", err)
+		return err
+	}
+	if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+		return err
+	}
+	if err := tc.cleanupTFJob(tfjob); err != nil {
+		return err
+	}
+
+	if tc.Config.EnableGangScheduling {
+		if err := tc.DeletePodGroup(tfjob); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -545,6 +539,9 @@ func (tc *TFController) pastActiveDeadline(tfjob *tfv1.TFJob) bool {
 	return duration >= allowedDuration
 }
 
+func isCompleted(tfjob *tfv1.TFJob) bool {
+	return isSucceeded(tfjob.Status) || isFailed(tfjob.Status)
+}
 func (tc *TFController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
 	return tc.getTFJobFromName(namespace, name)
 }
