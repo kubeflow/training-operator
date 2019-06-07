@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8-dev-preview/ubi:latest
+FROM registry.access.redhat.com/ubi8/ubi:latest
 
 ARG GOLANG_VERSION=1.8.3
 ENV GOROOT=/usr/local/go PATH=$PATH:/usr/local/go/bin
