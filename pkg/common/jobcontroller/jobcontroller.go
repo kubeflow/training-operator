@@ -75,7 +75,7 @@ type JobControllerConfiguration struct {
 	// e.g. 15s, 30s, 60s, 120s...
 	ReconcilerSyncLoopPeriod metav1.Duration
 
-	// Enable gang scheduling by kube-arbitrator
+	// Enable gang scheduling by kube-batch
 	EnableGangScheduling bool
 }
 
@@ -233,7 +233,7 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 	return kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Create(createPodGroup)
 }
 
-// SyncPdb will create a PDB for gang scheduling by kube-arbitrator.
+// SyncPdb will create a PDB for gang scheduling by kube-batch.
 func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
 	labelJobName := jc.Controller.GetJobNameLabelKey()
 
@@ -246,7 +246,7 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 		return pdb, err
 	}
 
-	// Create pdb for gang scheduling by kube-arbitrator
+	// Create pdb for gang scheduling by kube-batch
 	minAvailable := intstr.FromInt(int(minAvailableReplicas))
 	createPdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
