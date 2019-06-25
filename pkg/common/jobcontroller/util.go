@@ -50,3 +50,7 @@ func GenExpectationPodsKey(jobKey, replicaType string) string {
 func GenExpectationServicesKey(jobKey, replicaType string) string {
 	return jobKey + "/" + strings.ToLower(replicaType) + "/services"
 }
+
+func GenPodGroupName(jobName string) string {
+	return jobName
+}

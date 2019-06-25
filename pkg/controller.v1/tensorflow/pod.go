@@ -196,8 +196,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 		if podTemplate.Annotations == nil {
 			podTemplate.Annotations = map[string]string{}
 		}
-		// we create the podGroup with the same name as the tfjob
-		podTemplate.Annotations["scheduling.k8s.io/group-name"] = tfjob.Name
+		podTemplate.Annotations["scheduling.k8s.io/group-name"] = jobcontroller.GenPodGroupName(tfjob.Name)
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
