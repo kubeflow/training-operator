@@ -16,7 +16,7 @@ one or more tests. A test typically runs the following:
 
 ## Adding a Test Method
 
-An example can be found [here](https://github.com/kubeflow/tf-operator/tree/master/py/simple_tfjob_tests.py).
+An example can be found [here](https://github.com/kubeflow/tf-operator/blob/master/py/kubeflow/tf_operator/simple_tfjob_tests.py).
 
 A test class can have several test methods. Each method executes a series of user actions (e.g.
 starting or deleting a TFJob), and performs verifications of expected results (e.g. TFJob exits with
