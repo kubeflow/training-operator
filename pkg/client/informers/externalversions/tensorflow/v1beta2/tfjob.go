@@ -19,7 +19,7 @@ package v1beta2
 import (
 	time "time"
 
-	tensorflowv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
+	tensorflow_v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	versioned "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1beta2 "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1beta2"
@@ -68,7 +68,7 @@ func NewFilteredTFJobInformer(client versioned.Interface, namespace string, resy
 				return client.KubeflowV1beta2().TFJobs(namespace).Watch(options)
 			},
 		},
-		&tensorflowv1beta2.TFJob{},
+		&tensorflow_v1beta2.TFJob{},
 		resyncPeriod,
 		indexers,
 	)
@@ -79,7 +79,7 @@ func (f *tFJobInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *tFJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&tensorflowv1beta2.TFJob{}, f.defaultInformer)
+	return f.factory.InformerFor(&tensorflow_v1beta2.TFJob{}, f.defaultInformer)
 }
 
 func (f *tFJobInformer) Lister() v1beta2.TFJobLister {

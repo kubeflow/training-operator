@@ -19,7 +19,7 @@
 package v1beta2
 
 import (
-	commonv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
+	common_v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -89,42 +89,59 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	*out = *in
 	if in.ActiveDeadlineSeconds != nil {
 		in, out := &in.ActiveDeadlineSeconds, &out.ActiveDeadlineSeconds
-		*out = new(int64)
-		**out = **in
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int64)
+			**out = **in
+		}
 	}
 	if in.BackoffLimit != nil {
 		in, out := &in.BackoffLimit, &out.BackoffLimit
-		*out = new(int32)
-		**out = **in
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int32)
+			**out = **in
+		}
 	}
 	if in.CleanPodPolicy != nil {
 		in, out := &in.CleanPodPolicy, &out.CleanPodPolicy
-		*out = new(commonv1beta2.CleanPodPolicy)
-		**out = **in
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(common_v1beta2.CleanPodPolicy)
+			**out = **in
+		}
 	}
 	if in.TTLSecondsAfterFinished != nil {
 		in, out := &in.TTLSecondsAfterFinished, &out.TTLSecondsAfterFinished
-		*out = new(int32)
-		**out = **in
-	}
-	if in.TFRPCLayer != nil {
-		in, out := &in.TFRPCLayer, &out.TFRPCLayer
-		*out = new(string)
-		**out = **in
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int32)
+			**out = **in
+		}
 	}
 	if in.TFReplicaSpecs != nil {
 		in, out := &in.TFReplicaSpecs, &out.TFReplicaSpecs
-		*out = make(map[TFReplicaType]*commonv1beta2.ReplicaSpec, len(*in))
+		*out = make(map[TFReplicaType]*common_v1beta2.ReplicaSpec, len(*in))
 		for key, val := range *in {
-			var outVal *commonv1beta2.ReplicaSpec
 			if val == nil {
 				(*out)[key] = nil
 			} else {
-				in, out := &val, &outVal
-				*out = new(commonv1beta2.ReplicaSpec)
-				(*in).DeepCopyInto(*out)
+				(*out)[key] = new(common_v1beta2.ReplicaSpec)
+				val.DeepCopyInto((*out)[key])
 			}
-			(*out)[key] = outVal
+		}
+	}
+	if in.TFRPCLayer != nil {
+		in, out := &in.TFRPCLayer, &out.TFRPCLayer
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(string)
+			**out = **in
 		}
 	}
 	return

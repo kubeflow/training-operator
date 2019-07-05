@@ -17,7 +17,7 @@
 package fake
 
 import (
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tensorflow_v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,20 +37,20 @@ var tfjobsResource = schema.GroupVersionResource{Group: "kubeflow.org", Version:
 var tfjobsKind = schema.GroupVersionKind{Group: "kubeflow.org", Version: "v1", Kind: "TFJob"}
 
 // Get takes name of the tFJob, and returns the corresponding tFJob object, and an error if there is any.
-func (c *FakeTFJobs) Get(name string, options v1.GetOptions) (result *tensorflowv1.TFJob, err error) {
+func (c *FakeTFJobs) Get(name string, options v1.GetOptions) (result *tensorflow_v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(tfjobsResource, c.ns, name), &tensorflowv1.TFJob{})
+		Invokes(testing.NewGetAction(tfjobsResource, c.ns, name), &tensorflow_v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*tensorflowv1.TFJob), err
+	return obj.(*tensorflow_v1.TFJob), err
 }
 
 // List takes label and field selectors, and returns the list of TFJobs that match those selectors.
-func (c *FakeTFJobs) List(opts v1.ListOptions) (result *tensorflowv1.TFJobList, err error) {
+func (c *FakeTFJobs) List(opts v1.ListOptions) (result *tensorflow_v1.TFJobList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(tfjobsResource, tfjobsKind, c.ns, opts), &tensorflowv1.TFJobList{})
+		Invokes(testing.NewListAction(tfjobsResource, tfjobsKind, c.ns, opts), &tensorflow_v1.TFJobList{})
 
 	if obj == nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (c *FakeTFJobs) List(opts v1.ListOptions) (result *tensorflowv1.TFJobList, 
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &tensorflowv1.TFJobList{ListMeta: obj.(*tensorflowv1.TFJobList).ListMeta}
-	for _, item := range obj.(*tensorflowv1.TFJobList).Items {
+	list := &tensorflow_v1.TFJobList{ListMeta: obj.(*tensorflow_v1.TFJobList).ListMeta}
+	for _, item := range obj.(*tensorflow_v1.TFJobList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -77,43 +77,43 @@ func (c *FakeTFJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a tFJob and creates it.  Returns the server's representation of the tFJob, and an error, if there is any.
-func (c *FakeTFJobs) Create(tFJob *tensorflowv1.TFJob) (result *tensorflowv1.TFJob, err error) {
+func (c *FakeTFJobs) Create(tFJob *tensorflow_v1.TFJob) (result *tensorflow_v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(tfjobsResource, c.ns, tFJob), &tensorflowv1.TFJob{})
+		Invokes(testing.NewCreateAction(tfjobsResource, c.ns, tFJob), &tensorflow_v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*tensorflowv1.TFJob), err
+	return obj.(*tensorflow_v1.TFJob), err
 }
 
 // Update takes the representation of a tFJob and updates it. Returns the server's representation of the tFJob, and an error, if there is any.
-func (c *FakeTFJobs) Update(tFJob *tensorflowv1.TFJob) (result *tensorflowv1.TFJob, err error) {
+func (c *FakeTFJobs) Update(tFJob *tensorflow_v1.TFJob) (result *tensorflow_v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(tfjobsResource, c.ns, tFJob), &tensorflowv1.TFJob{})
+		Invokes(testing.NewUpdateAction(tfjobsResource, c.ns, tFJob), &tensorflow_v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*tensorflowv1.TFJob), err
+	return obj.(*tensorflow_v1.TFJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeTFJobs) UpdateStatus(tFJob *tensorflowv1.TFJob) (*tensorflowv1.TFJob, error) {
+func (c *FakeTFJobs) UpdateStatus(tFJob *tensorflow_v1.TFJob) (*tensorflow_v1.TFJob, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &tensorflowv1.TFJob{})
+		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &tensorflow_v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*tensorflowv1.TFJob), err
+	return obj.(*tensorflow_v1.TFJob), err
 }
 
 // Delete takes name of the tFJob and deletes it. Returns an error if one occurs.
 func (c *FakeTFJobs) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(tfjobsResource, c.ns, name), &tensorflowv1.TFJob{})
+		Invokes(testing.NewDeleteAction(tfjobsResource, c.ns, name), &tensorflow_v1.TFJob{})
 
 	return err
 }
@@ -122,17 +122,17 @@ func (c *FakeTFJobs) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeTFJobs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(tfjobsResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &tensorflowv1.TFJobList{})
+	_, err := c.Fake.Invokes(action, &tensorflow_v1.TFJobList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched tFJob.
-func (c *FakeTFJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *tensorflowv1.TFJob, err error) {
+func (c *FakeTFJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *tensorflow_v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, data, subresources...), &tensorflowv1.TFJob{})
+		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, data, subresources...), &tensorflow_v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*tensorflowv1.TFJob), err
+	return obj.(*tensorflow_v1.TFJob), err
 }
