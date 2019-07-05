@@ -50,28 +50,37 @@ func (in *JobStatus) DeepCopyInto(out *JobStatus) {
 		in, out := &in.ReplicaStatuses, &out.ReplicaStatuses
 		*out = make(map[ReplicaType]*ReplicaStatus, len(*in))
 		for key, val := range *in {
-			var outVal *ReplicaStatus
 			if val == nil {
 				(*out)[key] = nil
 			} else {
-				in, out := &val, &outVal
-				*out = new(ReplicaStatus)
-				**out = **in
+				(*out)[key] = new(ReplicaStatus)
+				val.DeepCopyInto((*out)[key])
 			}
-			(*out)[key] = outVal
 		}
 	}
 	if in.StartTime != nil {
 		in, out := &in.StartTime, &out.StartTime
-		*out = (*in).DeepCopy()
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = (*in).DeepCopy()
+		}
 	}
 	if in.CompletionTime != nil {
 		in, out := &in.CompletionTime, &out.CompletionTime
-		*out = (*in).DeepCopy()
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = (*in).DeepCopy()
+		}
 	}
 	if in.LastReconcileTime != nil {
 		in, out := &in.LastReconcileTime, &out.LastReconcileTime
-		*out = (*in).DeepCopy()
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = (*in).DeepCopy()
+		}
 	}
 	return
 }
@@ -91,8 +100,12 @@ func (in *ReplicaSpec) DeepCopyInto(out *ReplicaSpec) {
 	*out = *in
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
-		*out = new(int32)
-		**out = **in
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int32)
+			**out = **in
+		}
 	}
 	in.Template.DeepCopyInto(&out.Template)
 	return

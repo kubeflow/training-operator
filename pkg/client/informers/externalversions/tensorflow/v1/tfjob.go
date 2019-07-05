@@ -19,11 +19,11 @@ package v1
 import (
 	time "time"
 
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tensorflow_v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	versioned "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
@@ -55,20 +55,20 @@ func NewTFJobInformer(client versioned.Interface, namespace string, resyncPeriod
 func NewFilteredTFJobInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.KubeflowV1().TFJobs(namespace).List(options)
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.KubeflowV1().TFJobs(namespace).Watch(options)
 			},
 		},
-		&tensorflowv1.TFJob{},
+		&tensorflow_v1.TFJob{},
 		resyncPeriod,
 		indexers,
 	)
@@ -79,7 +79,7 @@ func (f *tFJobInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *tFJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&tensorflowv1.TFJob{}, f.defaultInformer)
+	return f.factory.InformerFor(&tensorflow_v1.TFJob{}, f.defaultInformer)
 }
 
 func (f *tFJobInformer) Lister() v1.TFJobLister {
