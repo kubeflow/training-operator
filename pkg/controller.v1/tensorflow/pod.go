@@ -120,7 +120,8 @@ func (tc *TFController) reconcilePods(
 			}
 
 			// Check whether worker 0 is exited without error.
-			if rtype == tfv1.TFReplicaTypeWorker && index == 0 && exitCode == 0 {
+			if rtype == tfv1.TFReplicaTypeWorker && index == 0 &&
+				exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
 				worker0Completed = true
 			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
