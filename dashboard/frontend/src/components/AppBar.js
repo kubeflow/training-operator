@@ -37,6 +37,9 @@ class AppBar extends Component {
     ];
 
     let rightMenu = null;
+    let ns = null;
+    let name = null;
+
     if (this.props.location.pathname !== "/new") {
       rightMenu = (
         <div style={this.styles.rightMenu}>
@@ -49,6 +52,10 @@ class AppBar extends Component {
           />
         </div>
       );
+      let path = this.props.location.pathname.replace("/", "");
+      path = path.split("/");
+      ns = path[0];
+      name = path[1];
     }
     return (
       <div>
@@ -63,7 +70,7 @@ class AppBar extends Component {
           modal={true}
           open={this.state.isModalVisible}
         >
-          {'Are you sure you want to delete TFJob "test" in namespace "test"?'}
+          {'Are you sure you want to delete TFJob "' + name + '" in namespace "' + ns + '"?'}
         </Dialog>
       </div>
     );
