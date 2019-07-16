@@ -143,7 +143,7 @@ func Run(opt *options.ServerOption) error {
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
-	if err = v1.AddToScheme(scheme.Scheme); err != nil {
+	if err = corev1.AddToScheme(scheme.Scheme); err != nil {
 		return fmt.Errorf("CoreV1 Add Scheme failed: %v", err)
 	}
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "tf-operator"})
