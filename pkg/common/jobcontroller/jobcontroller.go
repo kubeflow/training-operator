@@ -212,7 +212,8 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 
 	kubeBatchClientInterface := jc.KubeBatchClientSet
 	// Check whether podGroup exists or not
-	podGroup, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
+	podGroupName := GenPodGroupName(job.GetName())
+	podGroup, err := kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Get(podGroupName, metav1.GetOptions{})
 	if err == nil {
 		return podGroup, nil
 	}
@@ -221,7 +222,7 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 	minAvailable := intstr.FromInt(int(minAvailableReplicas))
 	createPodGroup := &v1alpha1.PodGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: job.GetName(),
+			Name: podGroupName,
 			OwnerReferences: []metav1.OwnerReference{
 				*jc.GenOwnerReference(job),
 			},
