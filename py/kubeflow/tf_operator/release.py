@@ -151,7 +151,7 @@ def build_operator_image(root_dir,
   ]
   for t in targets:
     if t in [
-        "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2"
+        "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2",
         "github.com/kubeflow/tf-operator/cmd/tf-operator.v1"
     ]:
       util.run([
@@ -159,6 +159,7 @@ def build_operator_image(root_dir,
         "-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}".format(
           commit), t
       ])
+      continue
     util.run(["go", "install", t])
 
   # Dashboard's frontend:
