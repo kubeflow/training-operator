@@ -22,6 +22,7 @@ import (
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"github.com/labstack/gommon/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	v1 "k8s.io/api/core/v1"
@@ -172,6 +173,10 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 // updateTFJobStatus updates the status of the given TFJob.
 func (tc *TFController) updateTFJobStatus(tfjob *tfv1.TFJob) error {
+	startTime := time.Now()
+	defer func() {
+		log.Infof("Finished updating TFJobs Status %q (%v)", tfjob.Name, time.Since(startTime))
+	}()
 	_, err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfjob.Namespace).UpdateStatus(tfjob)
 	return err
 }
