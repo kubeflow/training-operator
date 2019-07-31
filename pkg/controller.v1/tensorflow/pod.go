@@ -36,7 +36,8 @@ const (
 	tfConfig = "TF_CONFIG"
 
 	// gang scheduler name.
-	gangSchedulerName = "kube-batch"
+	gangSchedulerName                = "volcano"
+	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
@@ -197,7 +198,8 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 		if podTemplate.Annotations == nil {
 			podTemplate.Annotations = map[string]string{}
 		}
-		podTemplate.Annotations["scheduling.k8s.io/group-name"] = jobcontroller.GenPodGroupName(tfjob.Name)
+		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] =
+			jobcontroller.GenPodGroupName(tfjob.Name)
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
