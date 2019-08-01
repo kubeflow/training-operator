@@ -43,6 +43,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -457,7 +458,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 	}
 
 	// no need to update the tfjob if the status hasn't changed since last time.
-	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+	if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
 		return tc.updateStatusHandler(tfjob)
 	}
 	return nil

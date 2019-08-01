@@ -45,6 +45,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -433,7 +434,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			}
 		}
 		// no need to update the tfjob if the status hasn't changed since last time even the tfjob is not running.
-		if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+
+		if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
 			return tc.updateStatusHandler(tfjob)
 		}
 		return nil
