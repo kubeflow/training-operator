@@ -72,7 +72,7 @@ var (
 	}
 
 	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_deleted",
+		Name: "tf_operator_jobs_deleted_total",
 		Help: "Counts number of TF jobs deleted",
 	})
 )
