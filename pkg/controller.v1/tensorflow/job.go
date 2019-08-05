@@ -25,7 +25,7 @@ const (
 
 var (
 	tfJobsCreatedCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_created",
+		Name: "tf_operator_jobs_created_total",
 		Help: "Counts number of TF jobs created",
 	})
 )
@@ -50,7 +50,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 
 			status := common.JobStatus{
 				Conditions: []common.JobCondition{
-					common.JobCondition{
+					{
 						Type:               common.JobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),

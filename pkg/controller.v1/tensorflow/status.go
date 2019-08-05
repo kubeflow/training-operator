@@ -44,15 +44,15 @@ const (
 
 var (
 	tfJobsSuccessCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_successful",
+		Name: "tf_operator_jobs_successful_total",
 		Help: "Counts number of TF jobs successful",
 	})
 	tfJobsFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_failed",
+		Name: "tf_operator_jobs_failed_total",
 		Help: "Counts number of TF jobs failed",
 	})
 	tfJobsRestartCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_restarted",
+		Name: "tf_operator_jobs_restarted_total",
 		Help: "Counts number of TF jobs restarted",
 	})
 )
