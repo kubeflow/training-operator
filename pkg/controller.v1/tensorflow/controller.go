@@ -17,7 +17,6 @@ package tensorflow
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -45,6 +44,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -432,7 +432,12 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 				tfjob.Status.ReplicaStatuses[rtype].Active = 0
 			}
 		}
-		return tc.updateStatusHandler(tfjob)
+		// no need to update the tfjob if the status hasn't changed since last time even the tfjob is not running.
+
+		if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
+			return tc.updateStatusHandler(tfjob)
+		}
+		return nil
 	}
 
 	if tc.Config.EnableGangScheduling {
@@ -463,7 +468,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 	}
 
 	// no need to update the tfjob if the status hasn't changed since last time.
-	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+	if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
 		return tc.updateStatusHandler(tfjob)
 	}
 	return nil

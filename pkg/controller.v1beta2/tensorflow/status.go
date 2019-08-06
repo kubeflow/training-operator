@@ -150,6 +150,11 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1beta2.TFJob, rtype tfv1bet
 
 // updateTFJobStatus updates the status of the given TFJob.
 func (tc *TFController) updateTFJobStatus(tfjob *tfv1beta2.TFJob) error {
+	startTime := time.Now()
+	defer func() {
+		tflogger.LoggerForJob(tfjob).Infof("Finished updating TFJobs Status %q (%v)",
+			tfjob.Name, time.Since(startTime))
+	}()
 	_, err := tc.tfJobClientSet.KubeflowV1beta2().TFJobs(tfjob.Namespace).UpdateStatus(tfjob)
 	return err
 }
