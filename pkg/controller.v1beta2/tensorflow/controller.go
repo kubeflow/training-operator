@@ -17,7 +17,6 @@ package tensorflow
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -425,7 +424,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1beta2.TFJob) error {
 			}
 		}
 		// no need to update the tfjob if the status hasn't changed since last time even the tfjob is not running.
-		if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+		if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
 			return tc.updateStatusHandler(tfjob)
 		}
 	}
