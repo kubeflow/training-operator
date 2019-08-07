@@ -28,8 +28,9 @@ import (
 )
 
 const (
-	LabelGroupName = "group-name"
-	LabelTFJobName = "job-name"
+	LabelGroupName           = "group-name"
+	JobNameLabel             = "job-name"
+	DeprecatedLabelTFJobName = "tf-job-name"
 )
 
 var (
@@ -42,8 +43,9 @@ var (
 
 func GenLabels(jobName string) map[string]string {
 	return map[string]string{
-		LabelGroupName: GroupName,
-		LabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+		LabelGroupName:           GroupName,
+		JobNameLabel:             strings.Replace(jobName, "/", "-", -1),
+		DeprecatedLabelTFJobName: strings.Replace(jobName, "/", "-", -1),
 	}
 }
 
