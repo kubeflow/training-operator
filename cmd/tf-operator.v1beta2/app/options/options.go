@@ -29,6 +29,12 @@ type ServerOption struct {
 	JSONLogFormat        bool
 	EnableGangScheduling bool
 	Namespace            string
+	// QPS indicates the maximum QPS to the master from this client.
+	// If it's zero, the created RESTClient will use DefaultQPS: 5
+	QPS int
+	// Maximum burst for throttle.
+	// If it's zero, the created RESTClient will use DefaultBurst: 10.
+	Burst int
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -46,7 +52,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 		 will overrides any value in kubeconfig, only required if out-of-cluster.`)
 
 	fs.StringVar(&s.Namespace, "namespace", v1.NamespaceAll,
-		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide. 
+		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide.
                 If set, it only monitors tfjobs in the given namespace.`)
 
 	fs.IntVar(&s.Threadiness, "threadiness", 1,
@@ -57,4 +63,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.JSONLogFormat, "json-log-format", true,
 		"Set true to use json style log format. Set false to use plaintext style log format")
 	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-batch.")
+
+	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
+	fs.IntVar(&s.Burst, "burst", 10, "Maximum burst for throttle.")
 }

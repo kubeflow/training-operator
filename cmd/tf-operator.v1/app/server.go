@@ -101,8 +101,13 @@ func Run(opt *options.ServerOption) error {
 		log.Fatalf("Error building kubeconfig: %s", err.Error())
 	}
 
+	// Set client qps and burst by opt.
+	kcfg.QPS = float32(opt.QPS)
+	kcfg.Burst = opt.Burst
+
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, tfJobClientSet, kubeBatchClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet, tfJobClientSet,
+		kubeBatchClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
