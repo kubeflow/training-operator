@@ -55,9 +55,6 @@ type ControllerInterface interface {
 	// Returns the Replica Index(value) in the labels of the job
 	GetReplicaIndexLabelKey() string
 
-	// Returns the Job Role(key) in the labels of the job
-	GetJobRoleKey() string
-
 	// Returns the Job from Informer Cache
 	GetJobFromInformerCache(namespace, name string) (metav1.Object, error)
 
@@ -139,6 +136,14 @@ type JobController struct {
 	Recorder record.EventRecorder
 }
 
+const (
+	// JobNameLabel represents the label key for the job name, the value is job name
+	JobNameLabel = "job-name"
+
+	// JobRoleLabel represents the label key for the job role, e.g. the value is master
+	JobRoleLabel = "job-role"
+)
+
 func NewJobController(
 	controllerImpl ControllerInterface,
 	reconcilerSyncPeriod metav1.Duration,
@@ -200,11 +205,13 @@ func (jc *JobController) GenOwnerReference(obj metav1.Object) *metav1.OwnerRefer
 
 func (jc *JobController) GenLabels(jobName string) map[string]string {
 	labelGroupName := jc.Controller.GetGroupNameLabelKey()
-	labelJobName := jc.Controller.GetJobNameLabelKey()
+	// deprecatedLabel is kept for backward compatibility. Has to be removed later
+	deprecatedLabelJobName := jc.Controller.GetJobNameLabelKey()
 	groupName := jc.Controller.GetGroupNameLabelValue()
 	return map[string]string{
-		labelGroupName: groupName,
-		labelJobName:   strings.Replace(jobName, "/", "-", -1),
+		labelGroupName:         groupName,
+		JobNameLabel:           strings.Replace(jobName, "/", "-", -1),
+		deprecatedLabelJobName: strings.Replace(jobName, "/", "-", -1),
 	}
 }
 
@@ -236,8 +243,6 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 
 // SyncPdb will create a PDB for gang scheduling by kube-batch.
 func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
-	labelJobName := jc.Controller.GetJobNameLabelKey()
-
 	// Check the pdb exist or not
 	pdb, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
 	if err == nil || !k8serrors.IsNotFound(err) {
@@ -260,7 +265,7 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 			MinAvailable: &minAvailable,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					labelJobName: job.GetName(),
+					JobNameLabel: job.GetName(),
 				},
 			},
 		},

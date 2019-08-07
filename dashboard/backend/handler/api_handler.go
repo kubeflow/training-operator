@@ -25,7 +25,7 @@ type APIHandler struct {
 // if any and related pods
 type TFJobDetail struct {
 	TFJob *tfv1.TFJob `json:"tfJob"`
-	Pods  []v1.Pod       `json:"pods"`
+	Pods  []v1.Pod    `json:"pods"`
 }
 
 // TFJobList is a list of TFJobs
@@ -160,7 +160,7 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 
 	// Get associated pods
 	pods, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("group-name=kubeflow.org,tf-job-name=%s", name),
+		LabelSelector: fmt.Sprintf("group-name=kubeflow.org,job-name=%s", name),
 	})
 	if err != nil {
 		log.Warningf("failed to list pods for TFJob %v under namespace %v: %v", name, namespace, err)

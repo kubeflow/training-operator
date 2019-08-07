@@ -29,7 +29,7 @@ import (
 
 const (
 	LabelGroupName = "group-name"
-	LabelTFJobName = "tf-job-name"
+	LabelTFJobName = "job-name"
 )
 
 var (
