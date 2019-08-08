@@ -34,6 +34,12 @@ type ServerOption struct {
 	Namespace            string
 	MonitoringPort       int
 	ResyncPeriod         time.Duration
+	// QPS indicates the maximum QPS to the master from this client.
+	// If it's zero, the created RESTClient will use DefaultQPS: 5
+	QPS int
+	// Maximum burst for throttle.
+	// If it's zero, the created RESTClient will use DefaultBurst: 10.
+	Burst int
 }
 
 // NewServerOption creates a new CMServer with a default config.
@@ -66,4 +72,7 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.IntVar(&s.MonitoringPort, "monitoring-port", 8443,
 		`Endpoint port for displaying monitoring metrics`)
 	fs.DurationVar(&s.ResyncPeriod, "resyc-period", DefaultResyncPeriod, "Resync interval of the tf-operator")
+
+	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
+	fs.IntVar(&s.Burst, "burst", 10, "Maximum burst for throttle.")
 }
