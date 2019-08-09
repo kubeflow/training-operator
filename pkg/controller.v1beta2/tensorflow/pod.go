@@ -153,7 +153,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1beta2.TFJob, rt, index string, s
 	labels[tfReplicaIndexLabel] = index
 
 	if masterRole {
-		labels[labelTFJobRole] = "master"
+		labels[jobcontroller.JobRoleLabel] = "master"
 	}
 
 	podTemplate := spec.Template.DeepCopy()

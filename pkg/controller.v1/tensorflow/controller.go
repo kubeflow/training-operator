@@ -55,8 +55,8 @@ const (
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
 	labelGroupName      = "group-name"
-	labelTFJobName      = "tf-job-name"
-	labelTFJobRole      = "tf-job-role"
+	// Deprecated label for backwards compatibility. Has to be removed
+	labelTFJobName = "tf-job-name"
 )
 
 var (
@@ -570,6 +570,7 @@ func (tc *TFController) GetGroupNameLabelKey() string {
 	return labelGroupName
 }
 
+// Deprecated function for backwards compatibility. Has to be removed later
 func (tc *TFController) GetJobNameLabelKey() string {
 	return labelTFJobName
 }
@@ -584,10 +585,6 @@ func (tc *TFController) GetReplicaTypeLabelKey() string {
 
 func (tc *TFController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
-}
-
-func (tc *TFController) GetJobRoleKey() string {
-	return labelTFJobRole
 }
 
 func (tc *TFController) ControllerName() string {
