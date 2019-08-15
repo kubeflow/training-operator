@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	"github.com/kubeflow/tf-operator/pkg/util"

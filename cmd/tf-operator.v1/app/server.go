@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
