@@ -24,6 +24,7 @@ script:
   # And we can not use ** because goveralls uses filepath.Match
   # to match ignore files and it does not support it.
   - goveralls -service=travis-ci -v -package ./pkg/... -ignore "pkg/client/*/*.go,pkg/client/*/*/*.go,pkg/client/*/*/*/*.go,pkg/client/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*/*.go,pkg/util/testutil/*.go,pkg/apis/tensorflow/*/zz_generated.*.go,pkg/apis/tensorflow/*/*_generated.go,pkg/apis/common/*/zz_generated.*.go,pkg/apis/common/*/*_generated.go"
+  - hack/verify-codegen.sh
 
 notifications:
   webhooks: https://www.travisbuddy.com/
