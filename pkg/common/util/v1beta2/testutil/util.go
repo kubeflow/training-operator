@@ -21,7 +21,7 @@ import (
 
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
@@ -31,14 +31,16 @@ const (
 	LabelGroupName           = "group-name"
 	JobNameLabel             = "job-name"
 	DeprecatedLabelTFJobName = "tf-job-name"
+	ControllerNameLabel      = "controller-name"
 )
 
 var (
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
-	KeyFunc   = cache.DeletionHandlingMetaNamespaceKeyFunc
-	GroupName = tfv1beta2.GroupName
+	KeyFunc        = cache.DeletionHandlingMetaNamespaceKeyFunc
+	GroupName      = tfv1beta2.GroupName
+	ControllerName = "tf-operator"
 )
 
 func GenLabels(jobName string) map[string]string {
@@ -46,6 +48,7 @@ func GenLabels(jobName string) map[string]string {
 		LabelGroupName:           GroupName,
 		JobNameLabel:             strings.Replace(jobName, "/", "-", -1),
 		DeprecatedLabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+		ControllerNameLabel:      ControllerName,
 	}
 }
 

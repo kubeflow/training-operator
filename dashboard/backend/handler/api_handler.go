@@ -160,7 +160,7 @@ func (apiHandler *APIHandler) handleGetTFJobDetail(request *restful.Request, res
 
 	// Get associated pods
 	pods, err := apiHandler.cManager.ClientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("group-name=kubeflow.org,job-name=%s", name),
+		LabelSelector: fmt.Sprintf("group-name=kubeflow.org,job-name=%s,controller-name=tf-operator", name),
 	})
 	if err != nil {
 		log.Warningf("failed to list pods for TFJob %v under namespace %v: %v", name, namespace, err)

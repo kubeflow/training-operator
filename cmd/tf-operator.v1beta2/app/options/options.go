@@ -17,7 +17,7 @@ package options
 import (
 	"flag"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // ServerOption is the main context object for the controller manager.

@@ -8,7 +8,7 @@ import (
 	"github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -142,6 +142,9 @@ const (
 
 	// JobRoleLabel represents the label key for the job role, e.g. the value is master
 	JobRoleLabel = "job-role"
+
+	// ControllerNameLabel represents the label key for the job controller name
+	ControllerNameLabel = "controller-name"
 )
 
 func NewJobController(
@@ -208,10 +211,12 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 	// deprecatedLabel is kept for backward compatibility. Has to be removed later
 	deprecatedLabelJobName := jc.Controller.GetJobNameLabelKey()
 	groupName := jc.Controller.GetGroupNameLabelValue()
+	controllerName := jc.Controller.ControllerName()
 	return map[string]string{
 		labelGroupName:         groupName,
 		JobNameLabel:           strings.Replace(jobName, "/", "-", -1),
 		deprecatedLabelJobName: strings.Replace(jobName, "/", "-", -1),
+		ControllerNameLabel:    controllerName,
 	}
 }
 
@@ -265,7 +270,8 @@ func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) 
 			MinAvailable: &minAvailable,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					JobNameLabel: job.GetName(),
+					JobNameLabel:        job.GetName(),
+					ControllerNameLabel: jc.Controller.ControllerName(),
 				},
 			},
 		},
