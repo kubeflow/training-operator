@@ -62,12 +62,6 @@ var (
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
-
-	// DefaultTFControllerConfiguration is the suggested tf-operator configuration for production.
-	DefaultTFControllerConfiguration = jobcontroller.JobControllerConfiguration{
-		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-		EnableGangScheduling:     false,
-	}
 )
 
 // TFController is the type for TFJob Controller, which manages
