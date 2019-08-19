@@ -28,6 +28,7 @@ type ServerOption struct {
 	PrintVersion         bool
 	JSONLogFormat        bool
 	EnableGangScheduling bool
+	GangSchedulerName    string
 	Namespace            string
 	// QPS indicates the maximum QPS to the master from this client.
 	// If it's zero, the created RESTClient will use DefaultQPS: 5
@@ -62,7 +63,9 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.BoolVar(&s.JSONLogFormat, "json-log-format", true,
 		"Set true to use json style log format. Set false to use plaintext style log format")
+
 	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-batch.")
+	fs.StringVar(&s.GangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule tfjobs, defaults to volcano")
 
 	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
 	fs.IntVar(&s.Burst, "burst", 10, "Maximum burst for throttle.")

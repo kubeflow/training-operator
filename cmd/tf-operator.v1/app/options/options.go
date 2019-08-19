@@ -31,6 +31,7 @@ type ServerOption struct {
 	PrintVersion         bool
 	JSONLogFormat        bool
 	EnableGangScheduling bool
+	GangSchedulerName    string
 	Namespace            string
 	MonitoringPort       int
 	ResyncPeriod         time.Duration
@@ -67,7 +68,9 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 
 	fs.BoolVar(&s.JSONLogFormat, "json-log-format", true,
 		"Set true to use json style log format. Set false to use plaintext style log format")
-	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling by kube-batch.")
+
+	fs.BoolVar(&s.EnableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
+	fs.StringVar(&s.GangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule tfjobs, defaults to volcano")
 
 	fs.IntVar(&s.MonitoringPort, "monitoring-port", 8443,
 		`Endpoint port for displaying monitoring metrics`)
