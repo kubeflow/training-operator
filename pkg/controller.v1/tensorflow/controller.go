@@ -118,7 +118,10 @@ func NewTFController(
 	tfJobInformerFactory tfjobinformers.SharedInformerFactory,
 	option options.ServerOption) *TFController {
 
-	tfjobscheme.AddToScheme(scheme.Scheme)
+	err := tfjobscheme.AddToScheme(scheme.Scheme)
+	if err != nil {
+		log.Fatalf("Failed to add tfjob scheme: %v", err)
+	}
 
 	log.Info("Creating TFJob controller")
 	// Create new TFController.
