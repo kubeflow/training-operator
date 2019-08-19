@@ -115,6 +115,7 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 			TFReplicaSpecs: make(map[tfv1.TFReplicaType]*common.ReplicaSpec),
 		},
 	}
+	tfv1.SetObjectDefaults_TFJob(tfJob)
 
 	if worker > 0 {
 		worker := int32(worker)
