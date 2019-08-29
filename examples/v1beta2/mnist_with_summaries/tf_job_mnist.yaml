@@ -17,7 +17,7 @@ spec:
               command:
                 - "python"
                 - "/var/tf_mnist/mnist_with_summaries.py"
-                - "--log_dir=/train"
+                - "--log_dir=/train/logs"
                 - "--learning_rate=0.01"
                 - "--batch_size=150"
               volumeMounts:
