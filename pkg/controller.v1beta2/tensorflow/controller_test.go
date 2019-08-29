@@ -16,17 +16,17 @@
 package tensorflow
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2/app/options"
 	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1beta2"
 	tfv1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
@@ -34,11 +34,6 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1beta2/testutil"
 	"github.com/kubeflow/tf-operator/pkg/control"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 var (
@@ -403,74 +398,5 @@ func TestRun(t *testing.T) {
 	err := ctr.Run(testutil.ThreadCount, stopCh)
 	if err != nil {
 		t.Errorf("Failed to run: %v", err)
-	}
-}
-
-func TestSyncPdb(t *testing.T) {
-	config := &rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1beta2.SchemeGroupVersion,
-		},
-	}
-
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
-		},
-	},
-	)
-
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	kubeClientSet := fake.NewSimpleClientset()
-	option := options.ServerOption{
-		EnableGangScheduling: true,
-	}
-	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
-
-	type testCase struct {
-		tfJob     *tfv1beta2.TFJob
-		expectPdb *v1beta1.PodDisruptionBudget
-	}
-
-	minAvailable := intstr.FromInt(1)
-	testCases := []testCase{
-		{
-			tfJob: &tfv1beta2.TFJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-sync-pdb",
-				},
-				Spec: tfv1beta2.TFJobSpec{
-					TFReplicaSpecs: map[tfv1beta2.TFReplicaType]*common.ReplicaSpec{
-						tfv1beta2.TFReplicaTypeWorker: &common.ReplicaSpec{
-							Replicas: proto.Int32(1),
-						},
-					},
-				},
-			},
-			expectPdb: &v1beta1.PodDisruptionBudget{
-				Spec: v1beta1.PodDisruptionBudgetSpec{
-					MinAvailable: &minAvailable,
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"job-name":        "test-sync-pdb",
-							"controller-name": "tf-operator",
-						},
-					},
-				},
-			},
-		},
-	}
-	for _, c := range testCases {
-		pdb, _ := ctr.SyncPdb(c.tfJob, getTotalReplicas(c.tfJob))
-		if pdb == nil && c.expectPdb != nil {
-			t.Errorf("Got nil, want %v", c.expectPdb.Spec)
-		}
-
-		if pdb != nil && !reflect.DeepEqual(c.expectPdb.Spec, pdb.Spec) {
-			t.Errorf("Got %+v, want %+v", pdb.Spec, c.expectPdb.Spec)
-		}
 	}
 }

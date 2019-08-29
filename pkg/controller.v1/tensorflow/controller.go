@@ -65,12 +65,6 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	// DefaultTFControllerConfiguration is the suggested tf-operator configuration for production.
-	DefaultTFControllerConfiguration = jobcontroller.JobControllerConfiguration{
-		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-		EnableGangScheduling:     false,
-	}
-
 	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "tf_operator_jobs_deleted_total",
 		Help: "Counts number of TF jobs deleted",
@@ -132,7 +126,7 @@ func NewTFController(
 	// Create base controller
 	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1.Plural)
+		option.EnableGangScheduling, option.GangSchedulerName, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1.Plural)
 	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob

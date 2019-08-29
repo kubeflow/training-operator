@@ -35,8 +35,7 @@ const (
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
 
-	// gang scheduler name.
-	gangSchedulerName = "kube-batch"
+	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
@@ -186,13 +185,19 @@ func (tc *TFController) createNewPod(tfjob *tfv1beta2.TFJob, rt, index string, s
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
 	if tc.Config.EnableGangScheduling {
-		if isNonGangSchedulerSet(tfjob) {
+		if tc.isNonGangSchedulerSet(tfjob) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
 		} else {
-			podTemplate.Spec.SchedulerName = gangSchedulerName
+			podTemplate.Spec.SchedulerName = tc.Config.GangSchedulerName
 		}
+
+		if podTemplate.Annotations == nil {
+			podTemplate.Annotations = map[string]string{}
+		}
+		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] =
+			jobcontroller.GenPodGroupName(tfjob.Name)
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
@@ -242,9 +247,9 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaS
 	}
 }
 
-func isNonGangSchedulerSet(tfjob *tfv1beta2.TFJob) bool {
+func (tc *TFController) isNonGangSchedulerSet(tfjob *tfv1beta2.TFJob) bool {
 	for _, spec := range tfjob.Spec.TFReplicaSpecs {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
+		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != tc.Config.GangSchedulerName {
 			return true
 		}
 	}

@@ -1,7 +1,6 @@
 package jobcontroller
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,8 +70,9 @@ type JobControllerConfiguration struct {
 	// e.g. 15s, 30s, 60s, 120s...
 	ReconcilerSyncLoopPeriod metav1.Duration
 
-	// Enable gang scheduling by kube-batch
+	// Enable gang scheduling
 	EnableGangScheduling bool
+	GangSchedulerName    string
 }
 
 // JobController abstracts other operators to manage the lifecycle of Jobs.
@@ -151,6 +150,7 @@ func NewJobController(
 	controllerImpl ControllerInterface,
 	reconcilerSyncPeriod metav1.Duration,
 	enableGangScheduling bool,
+	gangSchedulerName string,
 	kubeClientSet kubeclientset.Interface,
 	kubeBatchClientSet kubebatchclient.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
@@ -175,6 +175,7 @@ func NewJobController(
 	jobControllerConfig := JobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: reconcilerSyncPeriod,
 		EnableGangScheduling:     enableGangScheduling,
+		GangSchedulerName:        gangSchedulerName,
 	}
 
 	jc := JobController{
@@ -246,39 +247,6 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 	return kubeBatchClientInterface.SchedulingV1alpha1().PodGroups(job.GetNamespace()).Create(createPodGroup)
 }
 
-// SyncPdb will create a PDB for gang scheduling by kube-batch.
-func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodDisruptionBudget, error) {
-	// Check the pdb exist or not
-	pdb, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
-	if err == nil || !k8serrors.IsNotFound(err) {
-		if err == nil {
-			err = errors.New(string(metav1.StatusReasonAlreadyExists))
-		}
-		return pdb, err
-	}
-
-	// Create pdb for gang scheduling by kube-batch
-	minAvailable := intstr.FromInt(int(minAvailableReplicas))
-	createPdb := &v1beta1.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: job.GetName(),
-			OwnerReferences: []metav1.OwnerReference{
-				*jc.GenOwnerReference(job),
-			},
-		},
-		Spec: v1beta1.PodDisruptionBudgetSpec{
-			MinAvailable: &minAvailable,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					JobNameLabel:        job.GetName(),
-					ControllerNameLabel: jc.Controller.ControllerName(),
-				},
-			},
-		},
-	}
-	return jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(createPdb)
-}
-
 func (jc *JobController) DeletePodGroup(object runtime.Object) error {
 	kubeBatchClientInterface := jc.KubeBatchClientSet
 
@@ -305,23 +273,6 @@ func (jc *JobController) DeletePodGroup(object runtime.Object) error {
 		return fmt.Errorf("unable to delete PodGroup: %v", err)
 	} else {
 		jc.Recorder.Eventf(object, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", accessor.GetName())
-	}
-	return nil
-}
-
-func (jc *JobController) DeletePdb(job metav1.Object) error {
-
-	// Check the pdb exist or not
-	_, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(job.GetName(), metav1.GetOptions{})
-	if err != nil && k8serrors.IsNotFound(err) {
-		return nil
-	}
-
-	msg := fmt.Sprintf("Deleting pdb %s", job.GetName())
-	log.Info(msg)
-
-	if err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Delete(job.GetName(), &metav1.DeleteOptions{}); err != nil {
-		return fmt.Errorf("unable to delete pdb: %v", err)
 	}
 	return nil
 }
