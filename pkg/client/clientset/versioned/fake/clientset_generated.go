@@ -20,8 +20,6 @@ import (
 	clientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	kubeflowv1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
 	fakekubeflowv1 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake"
-	kubeflowv1beta2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1beta2"
-	fakekubeflowv1beta2 "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -70,11 +68,6 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 var _ clientset.Interface = &Clientset{}
-
-// KubeflowV1beta2 retrieves the KubeflowV1beta2Client
-func (c *Clientset) KubeflowV1beta2() kubeflowv1beta2.KubeflowV1beta2Interface {
-	return &fakekubeflowv1beta2.FakeKubeflowV1beta2{Fake: &c.Fake}
-}
 
 // KubeflowV1 retrieves the KubeflowV1Client
 func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {

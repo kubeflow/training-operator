@@ -1,6 +1,6 @@
 # Developer Guide
 
-Tf-operator is currently at v1. The v1beta2 version will still be supported and is compatible with v1.
+Tf-operator is currently at v1.
 
 ## Building the operator
 
