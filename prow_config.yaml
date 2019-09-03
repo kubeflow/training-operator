@@ -5,31 +5,6 @@
 workflows:
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
-    name: v1beta2
-    job_types:
-      - presubmit
-    include_dirs:
-    - build/*
-    - cmd/tf-operator.v1beta2/*
-    - dashboard/*
-    - pkg/apis/common/v1beta2/*
-    - pkg/apis/tensorflow/v1beta2/*
-    - pkg/apis/tensorflow/validation/*
-    - pkg/common/*
-    - pkg/control/*
-    - pkg/controller.v1beta2/*
-    - pkg/logger/*
-    - pkg/util/*
-    - pkg/version/*
-    - py/*
-    - test/*
-    - vendor/*
-    params:
-      registry: "gcr.io/kubeflow-ci"
-      tfJobVersion: v1beta2
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
-  - app_dir: kubeflow/tf-operator/test/workflows
-    component: workflows
     name: v1
     job_types:
       - presubmit
