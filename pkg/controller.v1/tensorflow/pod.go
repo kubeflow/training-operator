@@ -269,10 +269,7 @@ func isDistributed(tfjob *tfv1.TFJob) bool {
 			}
 		}
 	}
-	if distributionCount != 1 {
-		return true
-	}
-	return false
+	return distributionCount != 1
 }
 
 func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaSpec) {
