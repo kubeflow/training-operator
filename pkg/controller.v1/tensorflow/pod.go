@@ -216,7 +216,12 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	return nil
 }
 
+// setClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, index string) error {
+	// Do not set TF_CONFIG for local training jobs.
+	if !isDistributed(tfjob) {
+		return nil
+	}
 	// Generate TF_CONFIG JSON string.
 	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
 	if err != nil {
@@ -226,17 +231,45 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, 
 	if tfConfigStr == "" {
 		return nil
 	}
-	// Add TF_CONFIG environment variable.
+	// Add TF_CONFIG environment variable to tensorflow container in the pod.
 	for i := range podTemplateSpec.Spec.Containers {
-		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
-			podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+		if podTemplateSpec.Spec.Containers[i].Name == tfv1.DefaultContainerName {
+			if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
+				podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+			}
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
+				Name:  tfConfig,
+				Value: tfConfigStr,
+			})
+			break
 		}
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
-			Name:  tfConfig,
-			Value: tfConfigStr,
-		})
 	}
 	return nil
+}
+
+// isDistributed returns if the TFJob is a distributed training job.
+// Ref https://github.com/kubeflow/tf-operator/issues/1078.
+func isDistributed(tfjob *tfv1.TFJob) bool {
+	replicas := tfjob.Spec.TFReplicaSpecs
+	distributionCount := 0
+	allTypes := []tfv1.TFReplicaType{
+		tfv1.TFReplicaTypeChief,
+		tfv1.TFReplicaTypeEval,
+		tfv1.TFReplicaTypeMaster,
+		tfv1.TFReplicaTypePS,
+		tfv1.TFReplicaTypeWorker,
+	}
+	// Check if there is only one replica.
+	for _, typ := range allTypes {
+		if replicas[typ] != nil {
+			if replicas[typ].Replicas == nil {
+				distributionCount++
+			} else {
+				distributionCount += int(*replicas[typ].Replicas)
+			}
+		}
+	}
+	return distributionCount != 1
 }
 
 func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaSpec) {
