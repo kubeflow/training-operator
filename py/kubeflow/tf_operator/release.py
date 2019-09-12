@@ -188,7 +188,7 @@ def build_operator_image(root_dir,
     if os.path.exists(dest_path):
       os.unlink(dest_path)
     if os.path.isdir(src_path):
-      shutil.copytree(src_path, dest_path, symlinks=False, ignore=None)
+      shutil.copytree(src_path, dest_path, symlinks=False, ignore=None, ignore_dangling_symlinks=True)
     else:
       shutil.copyfile(src_path, dest_path)
 
