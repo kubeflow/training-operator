@@ -178,7 +178,8 @@ def build_operator_image(root_dir,
   sources = [
     "build/images/tf_operator/Dockerfile", "examples/tf_sample/tf_smoke.py",
     os.path.join(go_path, bin_path, "tf-operator.v1"),
-    os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build"
+    os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build",
+    "cmd", "pkg", "dashboard", "vendor"
   ]
 
   for s in sources:
@@ -187,7 +188,7 @@ def build_operator_image(root_dir,
     if os.path.exists(dest_path):
       os.unlink(dest_path)
     if os.path.isdir(src_path):
-      shutil.copytree(src_path, dest_path)
+      shutil.copytree(src_path, dest_path, symlinks=True)
     else:
       shutil.copyfile(src_path, dest_path)
 
