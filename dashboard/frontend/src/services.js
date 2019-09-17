@@ -22,7 +22,7 @@ export function createTFJobService(spec) {
       "Content-Type": "application/json"
     },
     credentials: "include",
-    redirect: "follow"
+    redirect: "follow",
     body: JSON.stringify(spec)
   };
 
