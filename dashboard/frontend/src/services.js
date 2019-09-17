@@ -15,14 +15,14 @@ export function getTFJobListService(namespace) {
 }
 
 export function createTFJobService(spec) {
-  let myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-  myHeaders.set("mode", "cors");
-  myHeaders.set("credentials", "include");
-  myHeaders.set("redirect", "follow");
   const options = {
     method: "POST",
-    headers: myHeaders,
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    redirect: "follow"
     body: JSON.stringify(spec)
   };
 
@@ -42,14 +42,14 @@ export function getTFJobService(namespace, name) {
 }
 
 export function deleteTFJob(namespace, name) {
-  let myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-  myHeaders.set("mode", "cors");
-  myHeaders.set("credentials", "include");
-  myHeaders.set("redirect", "follow");
   const options = {
     method: "DELETE",
-    headers: myHeaders
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    redirect: "follow"
   };
 
   return fetch(`${host}/api/tfjob/${namespace}/${name}`, options).then(r =>
