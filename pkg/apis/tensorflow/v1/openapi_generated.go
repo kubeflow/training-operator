@@ -64,14 +64,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						"status": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Most recently observed status of the TFJob. Read-only (modified by the system).",
-								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus"),
+								Ref:         ref("github.com/kubeflow/common/job_controller/api/v1.JobStatus"),
 							},
 						},
 					},
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+				"github.com/kubeflow/common/job_controller/api/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 		},
 		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobList": {
 			Schema: spec.Schema{
@@ -158,7 +158,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec"),
+											Ref: ref("github.com/kubeflow/common/job_controller/api/v1.ReplicaSpec"),
 										},
 									},
 								},
@@ -169,7 +169,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec"},
+				"github.com/kubeflow/common/job_controller/api/v1.ReplicaSpec"},
 		},
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource": {
 			Schema: spec.Schema{

@@ -28,7 +28,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
