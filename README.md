@@ -25,6 +25,10 @@ Please refer to the [developer_guide](developer_guide.md)
 
 Please refer to [CHANGELOG](CHANGELOG.md)
 
+## Adopters
+
+Please refer to [adopters list](./docs/adopters.md).
+
 ## Community
 
 This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
