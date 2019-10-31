@@ -128,6 +128,11 @@ const (
 	// reached phase failed with no restarting.
 	// The training has failed its execution.
 	JobFailed JobConditionType = "Failed"
+
+	// JobReconcileFinished means this job reached JobSucceeded or JobFailed
+	// and its sub-resources have been cleaned according to CleanPodPolicy,
+	// No more reconciliation is needed for this job.
+	JobReconcileFinished JobConditionType = "ReconcileFinished"
 )
 
 // CleanPodPolicy describes how to deal with pods when the job is finished. Can be one

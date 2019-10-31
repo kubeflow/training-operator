@@ -312,6 +312,13 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
 
+	//If the job's reconciliation is finished, just return to avoid performance issue when there is a lot of terminated jobs.
+	//See issue: https://github.com/kubeflow/tf-operator/issues/965
+	if isReconcileFinished(tfjob.Status) {
+		logger.Infof("TFJob has finished reconciliation: %v", key)
+		return true, nil
+	}
+
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
 
@@ -429,6 +436,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 				tfjob.Status.ReplicaStatuses[rtype].Active = 0
 			}
 		}
+
+		//If the job is terminated and its sub-resources are deleted, it no longer need reconciliation,
+		//so update the condition JobReconcileFinished to true.
+		msg := fmt.Sprintf("TFJob %s finished reconcile.", tfjob.Name)
+		if err := updateTFJobConditions(tfjob, common.JobReconcileFinished, tfJobReconcileFinishedReason, msg); err != nil {
+			return err
+		}
+
 		// no need to update the tfjob if the status hasn't changed since last time even the tfjob is not running.
 
 		if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {

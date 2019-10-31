@@ -40,6 +40,8 @@ const (
 	tfJobFailedReason = "TFJobFailed"
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
+	// tfJobReconcileFinishedReason is added in a tfjob when it is terminated and its sub-resources are cleaned up.
+	tfJobReconcileFinishedReason = "TFJobReconcileFinished"
 )
 
 var (
@@ -250,13 +252,19 @@ func isFailed(status common.JobStatus) bool {
 	return hasCondition(status, common.JobFailed)
 }
 
+func isReconcileFinished(status common.JobStatus) bool {
+	return hasCondition(status, common.JobReconcileFinished)
+}
+
 // setCondition updates the tfjob to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *common.JobStatus, condition common.JobCondition) {
 	// Do nothing if TFJobStatus is completed.
 	if isFailed(*status) || isSucceeded(*status) {
-		return
+		if condition.Type != common.JobReconcileFinished {
+			return
+		}
 	}
 
 	currentCond := getCondition(*status, condition.Type)
