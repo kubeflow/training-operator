@@ -48,6 +48,8 @@ def run(command, cwd=None, env=None, dryrun=False):
   goarch = "amd64"
   if platform.machine() == "ppc64le":
     goarch = "ppc64le"
+  elif platform.machine() == "aarch64":
+    goarch = "arm64"
   extra_envs = {"GOOS": "linux", "GOARCH": goarch}
 
   if not env:
