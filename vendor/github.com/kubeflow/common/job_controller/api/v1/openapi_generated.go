@@ -30,146 +30,213 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob": {
+		"github.com/kubeflow/common/operator/v1.JobCondition": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "Represents a TFJob resource.",
+					Description: "JobCondition describes the state of the job at a certain point.",
 					Properties: map[string]spec.Schema{
-						"kind": {
+						"type": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+								Description: "Type of job condition.",
 								Type:        []string{"string"},
 								Format:      "",
-							},
-						},
-						"apiVersion": {
-							SchemaProps: spec.SchemaProps{
-								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"metadata": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Standard Kubernetes object's metadata.",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-							},
-						},
-						"spec": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Specification of the desired state of the TFJob.",
-								Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec"),
 							},
 						},
 						"status": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Most recently observed status of the TFJob. Read-only (modified by the system).",
-								Ref:         ref("github.com/kubeflow/common/job_controller/api/v1.JobStatus"),
+								Description: "Status of the condition, one of True, False, Unknown.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"reason": {
+							SchemaProps: spec.SchemaProps{
+								Description: "The reason for the condition's last transition.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"message": {
+							SchemaProps: spec.SchemaProps{
+								Description: "A human readable message indicating details about the transition.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"lastUpdateTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "The last time this condition was updated.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							},
+						},
+						"lastTransitionTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Last time the condition transitioned from one status to another.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 							},
 						},
 					},
+					Required: []string{"type", "status"},
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/common/job_controller/api/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+				"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobList": {
+		"github.com/kubeflow/common/operator/v1.JobStatus": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "TFJobList is a list of TFJobs.",
+					Description: "JobStatus represents the current observed state of the training Job.",
 					Properties: map[string]spec.Schema{
-						"kind": {
+						"conditions": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"apiVersion": {
-							SchemaProps: spec.SchemaProps{
-								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"metadata": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Standard list metadata.",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-							},
-						},
-						"items": {
-							SchemaProps: spec.SchemaProps{
-								Description: "List of TFJobs.",
+								Description: "Conditions is an array of current observed job conditions.",
 								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob"),
+											Ref: ref("github.com/kubeflow/common/operator/v1.JobCondition"),
 										},
 									},
 								},
 							},
 						},
+						"replicaStatuses": {
+							SchemaProps: spec.SchemaProps{
+								Description: "ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.",
+								Type:        []string{"object"},
+								AdditionalProperties: &spec.SchemaOrBool{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/kubeflow/common/operator/v1.ReplicaStatus"),
+										},
+									},
+								},
+							},
+						},
+						"startTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							},
+						},
+						"completionTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							},
+						},
+						"lastReconcileTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Represents last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							},
+						},
 					},
-					Required: []string{"items"},
+					Required: []string{"conditions", "replicaStatuses"},
 				},
 			},
 			Dependencies: []string{
-				"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+				"github.com/kubeflow/common/operator/v1.JobCondition", "github.com/kubeflow/common/operator/v1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 		},
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec": {
+		"github.com/kubeflow/common/operator/v1.ReplicaSpec": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "TFJobSpec is a desired state description of the TFJob.",
+					Description: "ReplicaSpec is a description of the replica",
 					Properties: map[string]spec.Schema{
-						"activeDeadlineSeconds": {
+						"replicas": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Specifies the duration (in seconds) since startTime during which the job can remain active before it is terminated. Must be a positive integer. This setting applies only to pods where restartPolicy is OnFailure or Always.",
-								Type:        []string{"integer"},
-								Format:      "int64",
-							},
-						},
-						"backoffLimit": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Number of retries before marking this job as failed.",
+								Description: "Replicas is the desired number of replicas of the given template. If unspecified, defaults to 1.",
 								Type:        []string{"integer"},
 								Format:      "int32",
 							},
 						},
+						"template": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
+								Ref:         ref("k8s.io/api/core/v1.PodTemplateSpec"),
+							},
+						},
+						"restartPolicy": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Restart policy for all replicas within the job. One of Always, OnFailure, Never and ExitCode. Default to Never.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+					},
+				},
+			},
+			Dependencies: []string{
+				"k8s.io/api/core/v1.PodTemplateSpec"},
+		},
+		"github.com/kubeflow/common/operator/v1.ReplicaStatus": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "ReplicaStatus represents the current observed state of the replica.",
+					Properties: map[string]spec.Schema{
+						"active": {
+							SchemaProps: spec.SchemaProps{
+								Description: "The number of actively running pods.",
+								Type:        []string{"integer"},
+								Format:      "int32",
+							},
+						},
+						"succeeded": {
+							SchemaProps: spec.SchemaProps{
+								Description: "The number of pods which reached phase Succeeded.",
+								Type:        []string{"integer"},
+								Format:      "int32",
+							},
+						},
+						"failed": {
+							SchemaProps: spec.SchemaProps{
+								Description: "The number of pods which reached phase Failed.",
+								Type:        []string{"integer"},
+								Format:      "int32",
+							},
+						},
+					},
+				},
+			},
+			Dependencies: []string{},
+		},
+		"github.com/kubeflow/common/operator/v1.RunPolicy": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+					Properties: map[string]spec.Schema{
 						"cleanPodPolicy": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Defines the policy for cleaning up pods after the TFJob completes. Defaults to Running.",
+								Description: "CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
 						},
 						"ttlSecondsAfterFinished": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Defines the TTL for cleaning up finished TFJobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Defaults to infinite.",
+								Description: "TTLSecondsAfterFinished is the TTL to clean up jobs. It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
 								Type:        []string{"integer"},
 								Format:      "int32",
 							},
 						},
-						"tfReplicaSpecs": {
+						"activeDeadlineSeconds": {
 							SchemaProps: spec.SchemaProps{
-								Description: "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
-								Type:        []string{"object"},
-								AdditionalProperties: &spec.SchemaOrBool{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/common/job_controller/api/v1.ReplicaSpec"),
-										},
-									},
-								},
+								Description: "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer.",
+								Type:        []string{"integer"},
+								Format:      "int64",
+							},
+						},
+						"backoffLimit": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Optional number of retries before marking this job failed.",
+								Type:        []string{"integer"},
+								Format:      "int32",
 							},
 						},
 					},
-					Required: []string{"tfReplicaSpecs"},
 				},
 			},
-			Dependencies: []string{
-				"github.com/kubeflow/common/job_controller/api/v1.ReplicaSpec"},
+			Dependencies: []string{},
 		},
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource": {
 			Schema: spec.Schema{
@@ -1305,7 +1372,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"resources": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+								Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources",
 								Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 							},
 						},
@@ -1480,7 +1547,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"protocol": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".",
+								Description: "Protocol for port. Must be UDP or TCP. Defaults to \"TCP\".",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -1888,7 +1955,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"protocol": {
 							SchemaProps: spec.SchemaProps{
-								Description: "The IP protocol for this port. Must be UDP, TCP, or SCTP. Default is TCP.",
+								Description: "The IP protocol for this port. Must be UDP or TCP. Default is TCP.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -3388,14 +3455,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"path": {
 							SchemaProps: spec.SchemaProps{
-								Description: "The full path to the volume on the node. It can be either a directory or block device (disk, partition, ...).",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"fsType": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Filesystem type to mount. It applies only when the Path is a block device. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". The default value is to auto-select a fileystem if unspecified.",
+								Description: "The full path to the volume on the node. It can be either a directory or block device (disk, partition, ...). Directories can be represented only by PersistentVolume with VolumeMode=Filesystem. Block devices can be represented only by VolumeMode=Block, which also requires the BlockVolume alpha feature gate to be enabled.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -4585,17 +4645,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format:      "",
 							},
 						},
-						"dataSource": {
-							SchemaProps: spec.SchemaProps{
-								Description: "This field requires the VolumeSnapshotDataSource alpha feature gate to be enabled and currently VolumeSnapshot is the only supported data source. If the provisioner can support VolumeSnapshot data source, it will create a new volume and data will be restored to the volume at the same time. If the provisioner does not support VolumeSnapshot data source, volume will not be created and the failure will be reported as an event. In the future, we plan to support more data source types and the behavior of the provisioner may change.",
-								Ref:         ref("k8s.io/api/core/v1.TypedLocalObjectReference"),
-							},
-						},
 					},
 				},
 			},
 			Dependencies: []string{
-				"k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.TypedLocalObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+				"k8s.io/api/core/v1.ResourceRequirements", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 		},
 		"k8s.io/api/core/v1.PersistentVolumeClaimStatus": {
 			Schema: spec.Schema{
@@ -6019,7 +6073,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"shareProcessNamespace": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Share a single process namespace between all of the containers in a pod. When this is set containers will be able to view and signal processes from other containers in the same pod, and the first process in each container will not be assigned PID 1. HostPID and ShareProcessNamespace cannot both be set. Optional: Default to false. This field is beta-level and may be disabled with the PodShareProcessNamespace feature.",
+								Description: "Share a single process namespace between all of the containers in a pod. When this is set containers will be able to view and signal processes from other containers in the same pod, and the first process in each container will not be assigned PID 1. HostPID and ShareProcessNamespace cannot both be set. Optional: Default to false. This field is alpha-level and is honored only by servers that enable the PodShareProcessNamespace feature.",
 								Type:        []string{"boolean"},
 								Format:      "",
 							},
@@ -6139,13 +6193,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 										},
 									},
 								},
-							},
-						},
-						"runtimeClassName": {
-							SchemaProps: spec.SchemaProps{
-								Description: "RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this pod.  If no RuntimeClass resource matches the named class, the pod will not be run. If unset or empty, the \"legacy\" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://github.com/kubernetes/community/blob/master/keps/sig-node/0014-runtime-class.md This is an alpha feature and may change in the future.",
-								Type:        []string{"string"},
-								Format:      "",
 							},
 						},
 					},
@@ -7408,7 +7455,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"storageMode": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned. Default is ThinProvisioned.",
+								Description: "Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -7422,7 +7469,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"fsType": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Default is \"xfs\"",
+								Description: "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -7489,7 +7536,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"storageMode": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned. Default is ThinProvisioned.",
+								Description: "Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -7503,7 +7550,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"fsType": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Default is \"xfs\".",
+								Description: "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -7918,13 +7965,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format:      "",
 							},
 						},
-						"procMount": {
-							SchemaProps: spec.SchemaProps{
-								Description: "procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
 					},
 				},
 			},
@@ -8211,7 +8251,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"protocol": {
 							SchemaProps: spec.SchemaProps{
-								Description: "The IP protocol for this port. Supports \"TCP\", \"UDP\", and \"SCTP\". Default is TCP.",
+								Description: "The IP protocol for this port. Supports \"TCP\" and \"UDP\". Default is TCP.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -8721,38 +8761,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			},
 			Dependencies: []string{
 				"k8s.io/api/core/v1.TopologySelectorLabelRequirement"},
-		},
-		"k8s.io/api/core/v1.TypedLocalObjectReference": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "TypedLocalObjectReference contains enough information to let you locate the typed referenced object inside the same namespace.",
-					Properties: map[string]spec.Schema{
-						"apiGroup": {
-							SchemaProps: spec.SchemaProps{
-								Description: "APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"kind": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Kind is the type of resource being referenced",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"name": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Name is the name of resource being referenced",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-					},
-					Required: []string{"kind", "name"},
-				},
-			},
-			Dependencies: []string{},
 		},
 		"k8s.io/api/core/v1.Volume": {
 			Schema: spec.Schema{
@@ -9624,51 +9632,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/apimachinery/pkg/apis/meta/v1.ServerAddressByClientCIDR"},
 		},
-		"k8s.io/apimachinery/pkg/apis/meta/v1.CreateOptions": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "CreateOptions may be provided when creating an API object.",
-					Properties: map[string]spec.Schema{
-						"kind": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"apiVersion": {
-							SchemaProps: spec.SchemaProps{
-								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"dryRun": {
-							SchemaProps: spec.SchemaProps{
-								Description: "When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed",
-								Type:        []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Type:   []string{"string"},
-											Format: "",
-										},
-									},
-								},
-							},
-						},
-						"includeUninitialized": {
-							SchemaProps: spec.SchemaProps{
-								Description: "If IncludeUninitialized is specified, the object may be returned without completing initialization.",
-								Type:        []string{"boolean"},
-								Format:      "",
-							},
-						},
-					},
-				},
-			},
-			Dependencies: []string{},
-		},
 		"k8s.io/apimachinery/pkg/apis/meta/v1.DeleteOptions": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -9713,20 +9676,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Description: "Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground.",
 								Type:        []string{"string"},
 								Format:      "",
-							},
-						},
-						"dryRun": {
-							SchemaProps: spec.SchemaProps{
-								Description: "When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed",
-								Type:        []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Type:   []string{"string"},
-											Format: "",
-										},
-									},
-								},
 							},
 						},
 					},
@@ -10209,7 +10158,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"continue": {
 							SchemaProps: spec.SchemaProps{
-								Description: "continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.",
+								Description: "continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -10289,7 +10238,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"continue": {
 							SchemaProps: spec.SchemaProps{
-								Description: "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
+								Description: "The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server the server will respond with a 410 ResourceExpired error indicating the client must restart their list without the continue field. This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -10799,44 +10748,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
 								Type:        []string{"string"},
 								Format:      "",
-							},
-						},
-					},
-				},
-			},
-			Dependencies: []string{},
-		},
-		"k8s.io/apimachinery/pkg/apis/meta/v1.UpdateOptions": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "UpdateOptions may be provided when updating an API object.",
-					Properties: map[string]spec.Schema{
-						"kind": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"apiVersion": {
-							SchemaProps: spec.SchemaProps{
-								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"dryRun": {
-							SchemaProps: spec.SchemaProps{
-								Description: "When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed",
-								Type:        []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Type:   []string{"string"},
-											Format: "",
-										},
-									},
-								},
 							},
 						},
 					},
