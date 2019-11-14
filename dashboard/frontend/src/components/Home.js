@@ -46,13 +46,17 @@ class Home extends Component {
 
   fetchNamespaces() {
     getNamespaces()
-      .then(b =>
+      .then(b => {
+        let namespaces_list = b.items.map(ns => ns.metadata.name);
+        if (namespaces_list.length > 1) {
+          namespaces_list = namespaces_list.concat(allNamespacesKey);
+        } else {
+          this.setState({ selectedNamespace: namespaces_list[0] });
+        }
         this.setState({
-          namespaces: b.items
-            .map(ns => ns.metadata.name)
-            .concat(allNamespacesKey)
-        })
-      )
+          namespaces: namespaces_list
+        });
+      })
       .catch(console.error);
   }
 

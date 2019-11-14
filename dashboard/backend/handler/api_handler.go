@@ -19,6 +19,7 @@ import (
 // APIHandler handles the API calls
 type APIHandler struct {
 	cManager client.ClientManager
+	namespace *v1.NamespaceList
 }
 
 // TFJobDetail describe the specification of a TFJob
@@ -39,9 +40,22 @@ type NamespaceList struct {
 }
 
 // CreateHTTPAPIHandler creates the restful Container and defines the routes the API will serve
-func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
+func CreateHTTPAPIHandler(client client.ClientManager, namespace string) (http.Handler, error) {
+	ns := &v1.NamespaceList{}
+	if namespace != "" {
+		ns = &v1.NamespaceList{
+			Items: []v1.Namespace{
+				v1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: namespace,
+					},
+				},
+			},
+		}
+	}
 	apiHandler := APIHandler{
 		cManager: client,
+		namespace: ns,
 	}
 
 	wsContainer := restful.NewContainer()
@@ -117,6 +131,9 @@ func CreateHTTPAPIHandler(client client.ClientManager) (http.Handler, error) {
 
 func (apiHandler *APIHandler) handleGetTFJobs(request *restful.Request, response *restful.Response) {
 	namespace := request.PathParameter("namespace")
+	if namespace == "" && len(apiHandler.namespace.Items) > 0 {
+		namespace = apiHandler.namespace.Items[0].Name
+	}
 	jobs, err := apiHandler.cManager.TFJobClient.KubeflowV1().TFJobs(namespace).List(metav1.ListOptions{})
 
 	ns := "all"
@@ -252,7 +269,12 @@ func (apiHandler *APIHandler) handleGetPodLogs(request *restful.Request, respons
 }
 
 func (apiHandler *APIHandler) handleGetNamespaces(request *restful.Request, response *restful.Response) {
-	l, err := apiHandler.cManager.ClientSet.CoreV1().Namespaces().List(metav1.ListOptions{})
+	l, err := apiHandler.namespace, (error)(nil)
+	if len(apiHandler.namespace.Items) > 0 {
+		log.Infof("using predefined namespace: %v", apiHandler.namespace.Items[0].Name)
+	} else {
+		l, err = apiHandler.cManager.ClientSet.CoreV1().Namespaces().List(metav1.ListOptions{})
+	}
 	if err != nil {
 		log.Warningf("failed to list namespaces.")
 		if err2 := response.WriteError(http.StatusInternalServerError, err); err2 != nil {

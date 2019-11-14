@@ -19,8 +19,12 @@ const (
 func main() {
 	var frontendDir string
 	var port int
+	var namespace string
 	flag.StringVar(&frontendDir, "frontend-dir", DefaultFrontendDir,
 		`directory of the dashboard frontend`)
+	flag.StringVar(&namespace, "namespace", "",
+		`The namespace to monitor tfjobs. If unset, it monitors all namespaces cluster-wide.
+		 If set, it only monitors tfjobs in the given namespace.`)
 	flag.IntVar(&port, "port", DefaultBackendPort,
 		`port this program will listen`)
 	flag.Parse()
@@ -29,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error while initializing connection to Kubernetes apiserver: %v", err)
 	}
-	apiHandler, err := handler.CreateHTTPAPIHandler(cm)
+	apiHandler, err := handler.CreateHTTPAPIHandler(cm, namespace)
 	if err != nil {
 		log.Fatalf("Error while creating the API Handler: %v", err)
 	}
