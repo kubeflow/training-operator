@@ -73,7 +73,9 @@ func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.GangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule tfjobs, defaults to volcano")
 
 	fs.IntVar(&s.MonitoringPort, "monitoring-port", 8443,
-		`Endpoint port for displaying monitoring metrics`)
+		`Endpoint port for displaying monitoring metrics. 
+It can be set to "0" to disable the metrics serving.`)
+
 	fs.DurationVar(&s.ResyncPeriod, "resyc-period", DefaultResyncPeriod, "Resync interval of the tf-operator")
 
 	fs.IntVar(&s.QPS, "qps", 5, "QPS indicates the maximum QPS to the master from this client.")
