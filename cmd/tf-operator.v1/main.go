@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"strconv"
 
 	"github.com/onrik/logrus/filename"
@@ -36,14 +37,16 @@ func init() {
 }
 
 func startMonitoring(monitoringPort int) {
-	go func() {
-		log.Infof("Setting up client for monitoring on port: %s", strconv.Itoa(monitoringPort))
-		http.Handle("/metrics", promhttp.Handler())
-		err := http.ListenAndServe(fmt.Sprintf(":%s", strconv.Itoa(monitoringPort)), nil)
-		if err != nil {
-			log.Error("Monitoring endpoint setup failure.")
-		}
-	}()
+	if monitoringPort != 0 {
+		go func() {
+			log.Infof("Setting up client for monitoring on port: %s", strconv.Itoa(monitoringPort))
+			http.Handle("/metrics", promhttp.Handler())
+			err := http.ListenAndServe(fmt.Sprintf(":%s", strconv.Itoa(monitoringPort)), nil)
+			if err != nil {
+				log.Error("Monitoring endpoint setup failure.", err)
+			}
+		}()
+	}
 }
 
 func main() {
