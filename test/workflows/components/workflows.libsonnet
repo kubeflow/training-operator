@@ -90,6 +90,7 @@
       local k8sPy = srcDir;
       local kubeflowPyTesting = srcRootDir + "/kubeflow/testing/py";
       local kubeflowPyTFJob = srcRootDir + "/kubeflow/tf-operator/py";
+      local TFJobSDK = srcRootDir + "/kubeflow/tf-operator/sdk/python";
 
       local project = params.project;
       // GKE cluster to use
@@ -119,7 +120,7 @@
               {
                 // Add the source directories to the python path.
                 name: "PYTHONPATH",
-                value: k8sPy + ":" + kubeflowPyTFJob + ":" +  kubeflowPyTesting,
+                value: k8sPy + ":" + kubeflowPyTFJob + ":" +  kubeflowPyTesting + ":" + TFJobSDK,
               },
               {
                 // Set the GOPATH
@@ -295,6 +296,11 @@
                     template: "pod-names-validation-tests",
                     dependencies: ["setup-kubeflow"],
                   },
+                  {
+                    name: "tfjob-sdk-tests",
+                    template: "tfjob-sdk-tests",
+                    dependencies: ["setup-kubeflow"],
+                  },
                 ],  //tasks
               },
             },
@@ -425,6 +431,13 @@
               // This will prevent different versions of the workflow from clobbering each other
               // when uploading the results to gubernator.
               "--suffix=" + params.tfJobVersion,
+            ]),  // copy-artifacts
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("tfjob-sdk-tests", [
+              "pytest",
+              "sdk/python/test",
+               "--log-cli-level=info",
+               "--log-cli-format='%(levelname)s|%(asctime)s|%(pathname)s|%(lineno)d| %(message)s'",
+              "--junitxml=" + artifactsDir + "/junit_sdk-test.xml",
             ]),  // copy-artifacts
           ],  // templates
         },

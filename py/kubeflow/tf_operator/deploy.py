@@ -153,13 +153,17 @@ def setup_cluster(args):
   try:
     start = time.time()
 
-    account = util.run_and_output(
-      ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
-    logging.info("Using GCP account %s", account)
-    util.run([
-      "kubectl", "create", "clusterrolebinding", "default-admin",
-      "--clusterrole=cluster-admin", "--user=" + account
-    ])
+    # CI tests always failed here due to default-admin exits, check firstly.
+    clusterrolebinding = util.run_and_output(
+      ["kubectl", "get", "clusterrolebinding"])
+    if "default-admin" not in str(clusterrolebinding):
+      account = util.run_and_output(
+        ["gcloud", "config", "get-value", "account", "--quiet"]).strip()
+      logging.info("Using GCP account %s", account)
+      util.run([
+        "kubectl", "create", "clusterrolebinding", "default-admin",
+        "--clusterrole=cluster-admin", "--user=" + account
+      ])
 
     _setup_namespace(api_client, args.namespace)
 
