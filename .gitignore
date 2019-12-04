@@ -36,3 +36,7 @@ examples/tf_sample/tf_sample.egg-info/
 examples/.ipynb_checkpoints/
 
 **/.ipynb_checkpoints
+
+# swagger-codegen tools and auto generated files but useless
+hack/python-sdk/swagger-codegen-cli.jar
+
