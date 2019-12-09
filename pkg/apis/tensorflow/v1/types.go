@@ -43,11 +43,11 @@ type TFJob struct {
 type TFJobSpec struct {
 	// Specifies the duration (in seconds) since startTime during which the job can remain active
 	// before it is terminated. Must be a positive integer.
+	// This setting applies only to pods where restartPolicy is OnFailure or Always.
 	// +optional
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 
 	// Number of retries before marking this job as failed.
-	// This setting applies only to pods where restartPolicy is OnFailure or Always.
 	// +optional
 	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 
