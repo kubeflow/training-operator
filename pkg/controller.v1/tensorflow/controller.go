@@ -446,8 +446,8 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 			now := metav1.Now()
 			tfjob.Status.CompletionTime = &now
 		}
-		err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
-		if err != nil {
+		if err := updateTFJobConditions(
+		tfjob, common.JobFailed, tfJobFailedReason, failureMessage); err != nil {
 			tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 			return err
 		}
