@@ -36,7 +36,7 @@ echo "Generating OpenAPI specification ..."
 go run vendor/k8s.io/code-generator/cmd/openapi-gen/main.go --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/job_controller/api/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt
 
 echo "Generating swagger file ..."
-go run hack/python-sdk/main.go 0.1 > pkg/apis/tensorflow/v1/swagger.json
+go run hack/python-sdk/main.go 0.1 > ${SWAGGER_CODEGEN_FILE}
 
 echo "Downloading the swagger-codegen JAR package ..."
 wget -O ${SWAGGER_CODEGEN_JAR} ${SWAGGER_JAR_URL}
