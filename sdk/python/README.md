@@ -29,12 +29,12 @@ python setup.py install --user
 
 ## Getting Started
 
-Please follow the [sample](../../examples/sdk/tfjob-sdk.ipynb) to create, update and delete TFJob.
+Please follow the [sample](examples/kubeflow-tfjob-sdk.ipynb) to create, update and delete TFJob.
 
 ## Documentation for API Endpoints
 
 Class | Method | Description
------------- | ------------- | ------------- | -------------
+------------ | -------------  | -------------
 [TFJobClient](docs/TFJobClient.md) | [create](docs/TFJobClient.md#create) | Create TFJob|
 [TFJobClient](docs/TFJobClient.md) | [get](docs/TFJobClient.md#get)    | Get or watch the specified TFJob or all TFJob in the namespace |
 [TFJobClient](docs/TFJobClient.md) | [patch](docs/TFJobClient.md#patch)  | Patch the specified TFJob|
