@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import multiprocessing
+import time
 
 from kubernetes import client, config
 
@@ -77,28 +79,52 @@ class TFJobClient(object):
       namespace = utils.get_default_target_namespace()
 
     if name:
+      thread = self.api_instance.get_namespaced_custom_object(
+        constants.TFJOB_GROUP,
+        constants.TFJOB_VERSION,
+        namespace,
+        constants.TFJOB_PLURAL,
+        name,
+        async_req=True)
+
+      tfjobs = None
       try:
-        return self.api_instance.get_namespaced_custom_object(
-            constants.TFJOB_GROUP,
-            constants.TFJOB_VERSION,
-            namespace,
-            constants.TFJOB_PLURAL,
-            name)
+        tfjobs = thread.get(constants.APISERVER_TIMEOUT)
+      except multiprocessing.TimeoutError:
+        raise RuntimeError("Timeout trying to get TFJob.")
       except client.rest.ApiException as e:
         raise RuntimeError(
           "Exception when calling CustomObjectsApi->get_namespaced_custom_object:\
-            %s\n" % e)
+          %s\n" % e)
+      except Exception as e:
+        raise RuntimeError(
+          "There was a problem to get TFJob {0} in namespace {1}. Exception: \
+          {2} ".format(name, namespace, e))
+
     else:
+      thread = self.api_instance.list_namespaced_custom_object(
+        constants.TFJOB_GROUP,
+        constants.TFJOB_VERSION,
+        namespace,
+        constants.TFJOB_PLURAL,
+        async_req=True)
+
+      tfjobs = None
       try:
-        return self.api_instance.list_namespaced_custom_object(
-          constants.TFJOB_GROUP,
-          constants.TFJOB_VERSION,
-          namespace,
-          constants.TFJOB_PLURAL)
+        tfjobs = thread.get(constants.APISERVER_TIMEOUT)
+      except multiprocessing.TimeoutError:
+        raise RuntimeError("Timeout trying to get TFJob.")
       except client.rest.ApiException as e:
         raise RuntimeError(
           "Exception when calling CustomObjectsApi->list_namespaced_custom_object:\
           %s\n" % e)
+      except Exception as e:
+        raise RuntimeError(
+          "There was a problem to List TFJob in namespace {0}. \
+          Exception: {1} ".format(namespace, e))
+
+    return tfjobs
+
 
   def patch(self, name, tfjob, namespace=None):
     """
@@ -149,3 +175,115 @@ class TFJobClient(object):
       raise RuntimeError(
         "Exception when calling CustomObjectsApi->delete_namespaced_custom_object:\
          %s\n" % e)
+
+
+  def wait_for_job(self, name,
+                   namespace=None,
+                   timeout_seconds=600,
+                   polling_interval=30,
+                   status_callback=None):
+    """Wait for the specified job to finish.
+
+    Args:
+      name: Name of the TfJob.
+      namespace: defaults to current or default namespace.
+      timeout_seconds: How long to wait for the job.
+      polling_interval: How often to poll for the status of the job.
+      status_callback: (Optional): Callable. If supplied this callable is
+        invoked after we poll the job. Callable takes a single argument which
+        is the job.
+    """
+    if namespace is None:
+      namespace = utils.get_default_target_namespace()
+
+    return self.wait_for_condition(
+      name,
+      ["Succeeded", "Failed"],
+      namespace=namespace,
+      timeout_seconds=timeout_seconds,
+      polling_interval=polling_interval,
+      status_callback=status_callback)
+
+
+  def wait_for_condition(self, name,
+                         expected_condition,
+                         namespace=None,
+                         timeout_seconds=600,
+                         polling_interval=30,
+                         status_callback=None):
+    """Waits until any of the specified conditions occur.
+
+    Args:
+      name: Name of the job.
+      expected_condition: A list of conditions. Function waits until any of the
+        supplied conditions is reached.
+      namespace: defaults to current or default namespace.
+      timeout_seconds: How long to wait for the job.
+      polling_interval: How often to poll for the status of the job.
+      status_callback: (Optional): Callable. If supplied this callable is
+        invoked after we poll the job. Callable takes a single argument which
+        is the job.
+    """
+
+    if namespace is None:
+      namespace = utils.get_default_target_namespace()
+
+    for _ in range(round(timeout_seconds/polling_interval)):
+
+      tfjob = None
+      tfjob = self.get(name, namespace=namespace)
+
+      if tfjob:
+        if status_callback:
+          status_callback(tfjob)
+
+        # If we poll the CRD quick enough status won't have been set yet.
+        conditions = tfjob.get("status", {}).get("conditions", [])
+        # Conditions might have a value of None in status.
+        conditions = conditions or []
+        for c in conditions:
+          if c.get("type", "") in expected_condition:
+            return tfjob
+
+      time.sleep(polling_interval)
+
+    raise RuntimeError(
+      "Timeout waiting for TFJob {0} in namespace {1} to enter one of the "
+      "conditions {2}.".format(name, namespace, expected_condition), tfjob)
+
+
+  def get_job_status(self, name, namespace=None):
+    """Returns TFJob status, such as Running, Failed or Succeeded.
+
+    Args:
+      name: The TFJob name.
+      namespace: defaults to current or default namespace.
+    """
+    if namespace is None:
+      namespace = utils.get_default_target_namespace()
+
+    tfjob = self.get(name, namespace=namespace)
+    last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
+    return last_condition.get("type", "")
+
+
+  def if_job_running(self, name, namespace=None):
+    """Returns true if the TFJob running; false otherwise.
+
+    Args:
+      name: The TFJob name.
+      namespace: defaults to current or default namespace.
+    """
+    tfjob_status = self.get_job_status(name, namespace=namespace)
+    return tfjob_status.lower() == "running"
+
+
+  def if_job_succeeded(self, name, namespace=None):
+    """Returns true if the TFJob succeeded; false otherwise.
+
+    Args:
+      name: The TFJob name.
+      namespace: defaults to current or default namespace.
+    """
+    tfjob_status = self.get_job_status(name, namespace=namespace)
+    return tfjob_status.lower() == "succeeded"

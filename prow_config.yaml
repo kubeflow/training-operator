@@ -24,6 +24,7 @@ workflows:
     - py/*
     - test/*
     - vendor/*
+    - sdk/*
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1

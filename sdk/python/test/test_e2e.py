@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import os
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -26,24 +25,7 @@ from kubeflow.tfjob import TFJobClient
 
 
 TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
-
-def wait_for_tfjob_ready(name, namespace='default',
-                        timeout_seconds=600):
-  for _ in range(round(timeout_seconds/10)):
-    time.sleep(10)
-    tfjob = TFJOB_CLIENT.get(name, namespace=namespace)
-
-    last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
-    last_status = last_condition.get("type", "").lower()
-
-    if last_status == "succeeded":
-      return
-    elif last_status == "failed":
-      raise RuntimeError("The TFJob is failed.")
-    else:
-      continue
-
-    raise RuntimeError("Timeout to finish the TFJob.")
+SDK_TEST_NAMESPACE = 'default'
 
 def test_sdk_e2e():
 
@@ -71,7 +53,7 @@ def test_sdk_e2e():
   tfjob = V1TFJob(
     api_version="kubeflow.org/v1",
     kind="TFJob",
-    metadata=V1ObjectMeta(name="mnist-ci-test", namespace='default'),
+    metadata=V1ObjectMeta(name="mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
     spec=V1TFJobSpec(
       clean_pod_policy="None",
       tf_replica_specs={"Worker": worker}
@@ -79,7 +61,10 @@ def test_sdk_e2e():
   )
 
 
-  TFJOB_CLIENT.create(tfjob)
-  wait_for_tfjob_ready("mnist-ci-test")
+  TFJOB_CLIENT.create(tfjob, namespace=SDK_TEST_NAMESPACE)
 
-  TFJOB_CLIENT.delete("mnist-ci-test", namespace='default')
+  TFJOB_CLIENT.wait_for_job("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+  if not TFJOB_CLIENT.if_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
+    raise RuntimeError("The TFJob is not succeeded.")
+
+  TFJOB_CLIENT.delete("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)

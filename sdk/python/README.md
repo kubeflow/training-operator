@@ -39,6 +39,11 @@ Class | Method | Description
 [TFJobClient](docs/TFJobClient.md) | [get](docs/TFJobClient.md#get)    | Get or watch the specified TFJob or all TFJob in the namespace |
 [TFJobClient](docs/TFJobClient.md) | [patch](docs/TFJobClient.md#patch)  | Patch the specified TFJob|
 [TFJobClient](docs/TFJobClient.md) | [delete](docs/TFJobClient.md#delete) | Delete the specified TFJob |
+[TFJobClient](docs/TFJobClient.md)  | [wait_for_job](docs/TFJobClient.md#wait_for_job) | Wait for the specified job to finish |
+[TFJobClient](docs/TFJobClient.md)  | [wait_for_condition](docs/TFJobClient.md#wait_for_condition) | Waits until any of the specified conditions occur |
+[TFJobClient](docs/TFJobClient.md)  | [get_job_status](docs/TFJobClient.md#get_job_status) | Get the TFJob status|
+[TFJobClient](docs/TFJobClient.md)  | [if_job_running](docs/TFJobClient.md#if_job_running) | Check if the TFJob running |
+[TFJobClient](docs/TFJobClient.md)  | [if_job_succeeded](docs/TFJobClient.md#if_job_succeeded) | Check if the TFJob Succeeded |
 
 ## Documentation For Models
 
