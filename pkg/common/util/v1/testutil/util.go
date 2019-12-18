@@ -15,7 +15,6 @@
 package testutil
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -25,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -67,18 +67,15 @@ func GenOwnerReference(tfjob *tfv1.TFJob) *metav1.OwnerReference {
 	return controllerRef
 }
 
-// ConvertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
+// ConvertTFJobToUnstructured uses function ToUnstructured to convert TFJob to Unstructured.
 func ConvertTFJobToUnstructured(tfJob *tfv1.TFJob) (*unstructured.Unstructured, error) {
-	var unstructured unstructured.Unstructured
-	b, err := json.Marshal(tfJob)
+	object, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := json.Unmarshal(b, &unstructured); err != nil {
-		return nil, err
-	}
-	return &unstructured, nil
+	return &unstructured.Unstructured{
+		Object:object,
+	},nil
 }
 
 func GetKey(tfJob *tfv1.TFJob, t *testing.T) string {
