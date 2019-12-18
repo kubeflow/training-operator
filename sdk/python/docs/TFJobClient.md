@@ -23,8 +23,8 @@ TFJobClient | [delete](#delete) | Delete the specified TFJob |
 TFJobClient | [wait_for_job](#wait_for_job) | Wait for the specified job to finish |
 TFJobClient | [wait_for_condition](#wait_for_condition) | Waits until any of the specified conditions occur |
 TFJobClient | [get_job_status](#get_job_status) | Get the TFJob status|
-TFJobClient | [if_job_running](#if_job_running) | Check if the TFJob running |
-TFJobClient | [if_job_succeeded](#if_job_succeeded) | Check if the TFJob Succeeded |s
+TFJobClient | [is_job_running](#is_job_running) | Check if the TFJob status is running |
+TFJobClient | [is_job_succeeded](#is_job_succeeded) | Check if the TFJob status is Succeeded |
 
 ## create
 > create(tfjob, namespace=None)
@@ -262,8 +262,8 @@ namespace | str | The tfjob's namespace. Defaults to current or default namespac
 ### Return type
 Str
 
-## if_job_running
-> if_job_running(name, namespace=None)
+## is_job_running
+> is_job_running(name, namespace=None)
 
 Returns True if the TFJob running; false otherwise.
 
@@ -273,7 +273,7 @@ Returns True if the TFJob running; false otherwise.
 from kubeflow.tfjob import TFJobClient
 
 tfjob_client = TFJobClient()
-tfjob_client.if_job_running('mnist', namespace='kubeflow')
+tfjob_client.is_job_running('mnist', namespace='kubeflow')
 ```
 
 ### Parameters
@@ -285,8 +285,8 @@ namespace | str | The tfjob's namespace. Defaults to current or default namespac
 ### Return type
 Bool
 
-## if_job_succeeded
-> if_job_succeeded(name, namespace=None)
+## is_job_succeeded
+> is_job_succeeded(name, namespace=None)
 
 Returns True if the TFJob succeeded; false otherwise.
 
@@ -296,7 +296,7 @@ Returns True if the TFJob succeeded; false otherwise.
 from kubeflow.tfjob import TFJobClient
 
 tfjob_client = TFJobClient()
-tfjob_client.if_job_succeeded('mnist', namespace='kubeflow')
+tfjob_client.is_job_succeeded('mnist', namespace='kubeflow')
 ```
 
 ### Parameters

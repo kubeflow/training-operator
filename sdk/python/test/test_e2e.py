@@ -64,7 +64,7 @@ def test_sdk_e2e():
   TFJOB_CLIENT.create(tfjob, namespace=SDK_TEST_NAMESPACE)
 
   TFJOB_CLIENT.wait_for_job("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
-  if not TFJOB_CLIENT.if_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
+  if not TFJOB_CLIENT.is_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
     raise RuntimeError("The TFJob is not succeeded.")
 
   TFJOB_CLIENT.delete("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
