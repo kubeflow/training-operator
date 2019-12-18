@@ -20,7 +20,11 @@ TFJobClient| [create](#create) | Create TFJob|
 TFJobClient | [get](#get)    | Get the specified TFJob or all TFJob in the namespace |
 TFJobClient | [patch](#patch)  | Patch the specified TFJob|
 TFJobClient | [delete](#delete) | Delete the specified TFJob |
-
+TFJobClient | [wait_for_job](#wait_for_job) | Wait for the specified job to finish |
+TFJobClient | [wait_for_condition](#wait_for_condition) | Waits until any of the specified conditions occur |
+TFJobClient | [get_job_status](#get_job_status) | Get the TFJob status|
+TFJobClient | [if_job_running](#if_job_running) | Check if the TFJob running |
+TFJobClient | [if_job_succeeded](#if_job_succeeded) | Check if the TFJob Succeeded |s
 
 ## create
 > create(tfjob, namespace=None)
@@ -108,7 +112,7 @@ tfjob_client.get('mnist', namespace='kubeflow')
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-name  | str | tfjob name. If the `name` is not specified, it will get all tfjobs in the namespace.| Optional. |
+name  | str | The TFJob name. If the `name` is not specified, it will get all tfjobs in the namespace.| Optional. |
 namespace | str | The tfjob's namespace. Defaults to current or default namespace.| Optional |
 
 
@@ -164,8 +168,142 @@ tfjob_client.delete('mnist', namespace='kubeflow')
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-name  | str | tfjob name| |
+name  | str | The TFJob name.| |
 namespace | str | The tfjob's namespace. Defaults to current or default namespace. | Optional|
 
 ### Return type
 object
+
+
+## wait_for_job
+> wait_for_job(name,
+>              namespace=None,
+>              timeout_seconds=600,
+>              polling_interval=30,
+>              status_callback=None):
+
+Wait for the specified job to finish.
+
+### Example
+
+```python
+from kubeflow.tfjob import TFJobClient
+
+tfjob_client = TFJobClient()
+tfjob_client.wait_for_job('mnist', namespace='kubeflow')
+```
+
+### Parameters
+Name | Type |  Description | Notes
+------------ | ------------- | ------------- | -------------
+name  | str | The TFJob name.| |
+namespace | str | The tfjob's namespace. Defaults to current or default namespace. | Optional|
+timeout_seconds | int | How long to wait for the job, default wait for 600 seconds. | Optional|
+polling_interval | int | How often to poll for the status of the job.| Optional|
+status_callback | str | Callable. If supplied this callable is invoked after we poll the job. Callable takes a single argument which is the tfjob.| Optional|
+
+### Return type
+object
+
+
+## wait_for_condition
+> wait_for_condition(name,
+>                    expected_condition,
+>                    namespace=None,
+>                    timeout_seconds=600,
+>                    polling_interval=30,
+>                    status_callback=None):
+
+
+Waits until any of the specified conditions occur.
+
+### Example
+
+```python
+from kubeflow.tfjob import TFJobClient
+
+tfjob_client = TFJobClient()
+tfjob_client.wait_for_condition('mnist', expected_condition=["Succeeded", "Failed"], namespace='kubeflow')
+```
+
+### Parameters
+Name | Type |  Description | Notes
+------------ | ------------- | ------------- | -------------
+name  | str | The TFJob name.| |
+expected_condition  |List |A list of conditions. Function waits until any of the supplied conditions is reached.| |
+namespace | str | The tfjob's namespace. Defaults to current or default namespace. | Optional|
+timeout_seconds | int | How long to wait for the job, default wait for 600 seconds. | Optional|
+polling_interval | int | How often to poll for the status of the job.| Optional|
+status_callback | str | Callable. If supplied this callable is invoked after we poll the job. Callable takes a single argument which is the tfjob.| Optional|
+
+### Return type
+object
+
+## get_job_status
+> get_job_status(name, namespace=None)
+
+Returns TFJob status, such as Running, Failed or Succeeded.
+
+### Example
+
+```python
+from kubeflow.tfjob import TFJobClient
+
+tfjob_client = TFJobClient()
+tfjob_client.get_job_status('mnist', namespace='kubeflow')
+```
+
+### Parameters
+Name | Type |  Description | Notes
+------------ | ------------- | ------------- | -------------
+name  | str | The TFJob name. | |
+namespace | str | The tfjob's namespace. Defaults to current or default namespace.| Optional |
+
+### Return type
+Str
+
+## if_job_running
+> if_job_running(name, namespace=None)
+
+Returns True if the TFJob running; false otherwise.
+
+### Example
+
+```python
+from kubeflow.tfjob import TFJobClient
+
+tfjob_client = TFJobClient()
+tfjob_client.if_job_running('mnist', namespace='kubeflow')
+```
+
+### Parameters
+Name | Type |  Description | Notes
+------------ | ------------- | ------------- | -------------
+name  | str | The TFJob name.| |
+namespace | str | The tfjob's namespace. Defaults to current or default namespace.| Optional |
+
+### Return type
+Bool
+
+## if_job_succeeded
+> if_job_succeeded(name, namespace=None)
+
+Returns True if the TFJob succeeded; false otherwise.
+
+### Example
+
+```python
+from kubeflow.tfjob import TFJobClient
+
+tfjob_client = TFJobClient()
+tfjob_client.if_job_succeeded('mnist', namespace='kubeflow')
+```
+
+### Parameters
+Name | Type |  Description | Notes
+------------ | ------------- | ------------- | -------------
+name  | str | The TFJob name.| |
+namespace | str | The tfjob's namespace. Defaults to current or default namespace.| Optional |
+
+### Return type
+Bool

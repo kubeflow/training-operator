@@ -25,7 +25,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
   name='kubeflow-tfjob',
-  version='0.1',
+  version='0.1.1',
   author="Kubeflow Authors",
   author_email='hejinchi@cn.ibm.com',
   license="Apache License Version 2.0",

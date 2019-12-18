@@ -15,9 +15,12 @@
 import os
 
 # TFJob K8S constants
-TFJOB_GROUP = "kubeflow.org"
-TFJOB_KIND = "TFJob"
-TFJOB_PLURAL = "tfjobs"
-TFJOB_VERSION = "v1"
+TFJOB_GROUP = 'kubeflow.org'
+TFJOB_KIND = 'TFJob'
+TFJOB_PLURAL = 'tfjobs'
+TFJOB_VERSION = os.environ.get('TFJOB_VERSION', 'v1')
 
 TFJOB_LOGLEVEL = os.environ.get('TFJOB_LOGLEVEL', 'INFO').upper()
+
+# How long to wait in seconds for requests to the ApiServer
+APISERVER_TIMEOUT = 120
