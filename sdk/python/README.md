@@ -42,8 +42,8 @@ Class | Method | Description
 [TFJobClient](docs/TFJobClient.md)  | [wait_for_job](docs/TFJobClient.md#wait_for_job) | Wait for the specified job to finish |
 [TFJobClient](docs/TFJobClient.md)  | [wait_for_condition](docs/TFJobClient.md#wait_for_condition) | Waits until any of the specified conditions occur |
 [TFJobClient](docs/TFJobClient.md)  | [get_job_status](docs/TFJobClient.md#get_job_status) | Get the TFJob status|
-[TFJobClient](docs/TFJobClient.md)  | [if_job_running](docs/TFJobClient.md#if_job_running) | Check if the TFJob running |
-[TFJobClient](docs/TFJobClient.md)  | [if_job_succeeded](docs/TFJobClient.md#if_job_succeeded) | Check if the TFJob Succeeded |
+[TFJobClient](docs/TFJobClient.md)  | [is_job_running](docs/TFJobClient.md#is_job_running) | Check if the TFJob status is Running |
+[TFJobClient](docs/TFJobClient.md)  | [is_job_succeeded](docs/TFJobClient.md#is_job_succeeded) | Check if the TFJob status is Succeeded |
 
 ## Documentation For Models
 

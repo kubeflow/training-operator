@@ -267,7 +267,7 @@ class TFJobClient(object):
     return last_condition.get("type", "")
 
 
-  def if_job_running(self, name, namespace=None):
+  def is_job_running(self, name, namespace=None):
     """Returns true if the TFJob running; false otherwise.
 
     Args:
@@ -278,7 +278,7 @@ class TFJobClient(object):
     return tfjob_status.lower() == "running"
 
 
-  def if_job_succeeded(self, name, namespace=None):
+  def is_job_succeeded(self, name, namespace=None):
     """Returns true if the TFJob succeeded; false otherwise.
 
     Args:
