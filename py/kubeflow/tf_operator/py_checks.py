@@ -1,5 +1,4 @@
 """Run checks on python source files.
-
 This binary invokes checks (e.g. lint and unittests) on our Python source files.
 """
 import argparse
@@ -23,7 +22,6 @@ def run_lint(args):
   # TODO(jlewi): Perhaps we should get a list of submodules and exclude
   # them automatically?
   dir_excludes = [
-    "dashboard/frontend/node_modules",
     "kubeflow_testing",
     "test/test-app",
     "vendor",

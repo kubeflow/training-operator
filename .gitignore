@@ -3,9 +3,6 @@
 bin/
 /tf-operator
 
-node_modules/
-dashboard/frontend/build
-
 .vscode/
 
 # Compiled python files.

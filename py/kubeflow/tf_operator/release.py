@@ -146,7 +146,6 @@ def build_operator_image(root_dir,
 
   targets = [
     "github.com/kubeflow/tf-operator/cmd/tf-operator.v1",
-    "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     if t in [
@@ -161,13 +160,6 @@ def build_operator_image(root_dir,
       continue
     util.run(["go", "install", t])
 
-  # Dashboard's frontend:
-  # Resolving dashboard's front-end dependencies
-  util.run(
-    ["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "install"])
-  # Building dashboard's front-end
-  util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "build"])
-
   # If the release is not done from a Linux machine
   # we need to grab the artefacts from /bin/linux_amd64
   bin_path = "bin"
@@ -178,8 +170,7 @@ def build_operator_image(root_dir,
   sources = [
     "build/images/tf_operator/Dockerfile", "examples/tf_sample/tf_smoke.py",
     os.path.join(go_path, bin_path, "tf-operator.v1"),
-    os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build",
-    "cmd", "pkg", "dashboard", "vendor"
+    "cmd", "pkg", "vendor"
   ]
 
   for s in sources:
