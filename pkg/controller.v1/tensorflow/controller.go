@@ -491,7 +491,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 // Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
 // manager.
 func (tc *TFController) satisfiedExpectations(tfjob *tfv1.TFJob) bool {
-	satisfied := false
+	satisfied := true
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
@@ -501,11 +501,11 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1.TFJob) bool {
 	for rtype := range tfjob.Spec.TFReplicaSpecs {
 		// Check the expectations of the pods.
 		expectationPodsKey := jobcontroller.GenExpectationPodsKey(tfjobKey, string(rtype))
-		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationPodsKey)
+		satisfied = satisfied && tc.Expectations.SatisfiedExpectations(expectationPodsKey)
 
 		// Check the expectations of the services.
 		expectationServicesKey := jobcontroller.GenExpectationServicesKey(tfjobKey, string(rtype))
-		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationServicesKey)
+		satisfied = satisfied && tc.Expectations.SatisfiedExpectations(expectationServicesKey)
 	}
 
 	return satisfied
