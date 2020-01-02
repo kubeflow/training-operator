@@ -96,7 +96,7 @@ namespace | str | Namespace for tfjob deploying to. If the `namespace` is not de
 object
 
 ## get
-> get(name=None, namespace=None)
+> get(name=None, namespace=None, watch=False, timeout_seconds=600)
 
 Get the created tfjob in the specified namespace
 
@@ -114,7 +114,8 @@ Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
 name  | str | The TFJob name. If the `name` is not specified, it will get all tfjobs in the namespace.| Optional. |
 namespace | str | The tfjob's namespace. Defaults to current or default namespace.| Optional |
-
+watch | bool | Watch the created TFJob if `True`, otherwise will return the created TFJob object. Stop watching if TFJob reaches the optional specified `timeout_seconds` or once the TFJob status `Succeeded` or `Failed`. | Optional |
+timeout_seconds | int | Timeout seconds for watching. Defaults to 600. | Optional |
 
 ### Return type
 object
@@ -180,6 +181,7 @@ object
 >              namespace=None,
 >              timeout_seconds=600,
 >              polling_interval=30,
+>              watch=False,
 >              status_callback=None):
 
 Wait for the specified job to finish.
@@ -191,6 +193,14 @@ from kubeflow.tfjob import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.wait_for_job('mnist', namespace='kubeflow')
+
+# The API also supports watching the TFJob status till it's Succeeded or Failed.
+tfjob_client.wait_for_job('mnist', namespace=namespace, watch=True)
+NAME                           STATE                TIME
+mnist                          Created              2019-12-31T09:20:07Z
+mnist                          Running              2019-12-31T09:20:19Z
+mnist                          Running              2019-12-31T09:20:19Z
+mnist                          Succeeded            2019-12-31T09:22:04Z
 ```
 
 ### Parameters
@@ -201,6 +211,7 @@ namespace | str | The tfjob's namespace. Defaults to current or default namespac
 timeout_seconds | int | How long to wait for the job, default wait for 600 seconds. | Optional|
 polling_interval | int | How often to poll for the status of the job.| Optional|
 status_callback | str | Callable. If supplied this callable is invoked after we poll the job. Callable takes a single argument which is the tfjob.| Optional|
+watch | bool | Watch the TFJob if `True`. Stop watching if TFJob reaches the optional specified `timeout_seconds` or once the TFJob status `Succeeded` or `Failed`. | Optional |
 
 ### Return type
 object
