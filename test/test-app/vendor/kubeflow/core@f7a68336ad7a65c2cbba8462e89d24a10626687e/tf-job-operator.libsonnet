@@ -102,7 +102,7 @@
             containers: [
               {
                 command: [
-                  "/opt/kubeflow/tf-operator.v1",
+                  "/opt/tf-operator.v1",
                   "--alsologtostderr",
                   "-v=1",
                 ],
