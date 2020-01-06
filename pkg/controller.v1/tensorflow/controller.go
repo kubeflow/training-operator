@@ -54,6 +54,7 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
+	tfOnExitLabel       = "tf-onexit"
 	labelGroupName      = "group-name"
 	// Deprecated label for backwards compatibility. Has to be removed
 	labelTFJobName = "tf-job-name"
@@ -355,7 +356,7 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 	}
 
 	// If the TFJob is terminated, delete all pods and services.
-	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
+	if (isSucceeded(tfjob.Status) || isFailed(tfjob.Status)) && isOnExitHandlerCompleted(tfjob) {
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
 		}
@@ -478,6 +479,14 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 				return err
 			}
 		}
+
+		if (isSucceeded(tfjob.Status) || isFailed(tfjob.Status)) && tfjob.Spec.OnExit != nil {
+			err = tc.reconcileOnExitPod(tfjob, pods)
+			if err != nil {
+				logger.Warnf("reconcilePods error %v", err)
+				return err
+			}
+		}
 	}
 
 	// no need to update the tfjob if the status hasn't changed since last time.
@@ -506,6 +515,16 @@ func (tc *TFController) satisfiedExpectations(tfjob *tfv1.TFJob) bool {
 		// Check the expectations of the services.
 		expectationServicesKey := jobcontroller.GenExpectationServicesKey(tfjobKey, string(rtype))
 		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationServicesKey)
+	}
+
+	if tfjob.Spec.OnExit != nil {
+		// check the expectations of the exit handler pod
+		exitPod, err := tc.getOnExitPod(tfjob)
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("couldn't get exit pod: %v", err))
+			return false
+		}
+		satisfied = satisfied || exitPod == nil
 	}
 
 	return satisfied

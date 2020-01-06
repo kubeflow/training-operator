@@ -16,6 +16,7 @@ package v1
 
 import (
 	common "github.com/kubeflow/common/job_controller/api/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -69,6 +70,9 @@ type TFJobSpec struct {
 	//     "Worker": ReplicaSpec,
 	//   }
 	TFReplicaSpecs map[TFReplicaType]*common.ReplicaSpec `json:"tfReplicaSpecs"`
+
+	// at the end of the tensorflow training, OnExit always executes irrespective of success or failure
+	OnExit *v1.PodTemplateSpec  `json:"onExit,omitempty"`
 }
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),

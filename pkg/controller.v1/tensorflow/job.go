@@ -160,7 +160,7 @@ func (tc *TFController) deletePodsAndServices(tfJob *tfv1.TFJob, pods []*v1.Pod)
 	}
 
 	for _, pod := range pods {
-		if *tfJob.Spec.CleanPodPolicy == common.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
+		if pod.Labels[common.JobRoleLabel] != "onexit" && *tfJob.Spec.CleanPodPolicy == common.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
 			continue
 		}
 		if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {

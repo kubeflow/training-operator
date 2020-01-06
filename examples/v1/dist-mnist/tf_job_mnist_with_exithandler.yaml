@@ -1,0 +1,30 @@
+apiVersion: "kubeflow.org/v1"
+kind: "TFJob"
+metadata:
+  name: "dist-mnist-with-exithandler-for-e2e-test"
+spec:
+  tfReplicaSpecs:
+    PS:
+      replicas: 2
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: kubeflow/tf-dist-mnist-test:1.0
+    Worker:
+      replicas: 4
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: kubeflow/tf-dist-mnist-test:1.0
+  onExit:
+    spec:
+      containers:
+        - name: exit-handler
+          image: busybox:latest
+          command: [sh, -c]
+          # $TFJOB_RESULT: Succeeded or Failed
+          args: ["echo $TFJOB_RESULT && echo $TFJOB_START_TIME && echo $TFJOB_COMPLETION_TIME && sleep 10"]
