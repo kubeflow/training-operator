@@ -40,6 +40,10 @@ const (
 	tfJobFailedReason = "TFJobFailed"
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
+	// onExitRunningReason is added in a tfjob when it's exit handler running
+	onExitRunningReason = "TFJobOnExitRunning"
+	// onExitCompletedReason is added in a tfjob when it's exit handler completed
+	onExitCompletedReason = "TFJobOnExitCompleted"
 )
 
 var (
@@ -56,6 +60,32 @@ var (
 		Help: "Counts number of TF jobs restarted",
 	})
 )
+
+
+func (tc *TFController) updateOnExitStatus(tfjob *tfv1.TFJob, curStatus common.OnExitStatus) error {
+	status := curStatus
+	tfjob.Status.OnExitStatus = &status
+
+	var reason string
+	var condition common.JobConditionType
+	if curStatus == common.OnExitRunning {
+		reason = onExitRunningReason
+		condition = common.JobOnExitRunning
+	} else if curStatus == common.OnExitCompleted {
+		reason = onExitCompletedReason
+		condition = common.JobOnExitCompleted
+	}
+
+	msg := fmt.Sprintf("TFJob %s on exit pod %v.", tfjob.Name, reason)
+	tc.Recorder.Event(tfjob, v1.EventTypeNormal, reason, msg)
+	err := updateTFJobConditions(tfjob, condition, reason, msg)
+	if err != nil {
+		tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+		return err
+	}
+
+	return nil
+}
 
 // updateStatus updates the status of the tfjob.
 func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
@@ -184,7 +214,7 @@ func (tc *TFController) updateTFJobStatus(tfjob *tfv1.TFJob) error {
 // updateTFJobConditions updates the conditions of the given tfjob.
 func updateTFJobConditions(tfjob *tfv1.TFJob, conditionType common.JobConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)
-	setCondition(&tfjob.Status, condition)
+	setCondition(tfjob, condition)
 	return nil
 }
 
@@ -250,12 +280,21 @@ func isFailed(status common.JobStatus) bool {
 	return hasCondition(status, common.JobFailed)
 }
 
+func isOnExitHandlerCompleted(tfjob *tfv1.TFJob) bool {
+	if tfjob.Spec.OnExit == nil {
+		return true
+	}
+	return hasCondition(tfjob.Status, common.JobOnExitCompleted)
+}
+
 // setCondition updates the tfjob to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
-func setCondition(status *common.JobStatus, condition common.JobCondition) {
+func setCondition(tfjob *tfv1.TFJob, condition common.JobCondition) {
+
+	status := &tfjob.Status
 	// Do nothing if TFJobStatus is completed.
-	if isFailed(*status) || isSucceeded(*status) {
+	if (isFailed(*status) || isSucceeded(*status)) && isOnExitHandlerCompleted(tfjob) {
 		return
 	}
 
