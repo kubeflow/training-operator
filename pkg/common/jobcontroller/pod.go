@@ -2,6 +2,7 @@ package jobcontroller
 
 import (
 	"fmt"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	"reflect"
 	"strconv"
 
@@ -216,6 +217,26 @@ func (jc *JobController) FilterPodsForReplicaType(pods []*v1.Pod, replicaType st
 		result = append(result, pod)
 	}
 	return result, nil
+}
+
+func (jc *JobController) FilterPodsForOnExit(pods []*v1.Pod) (*v1.Pod, error) {
+	onExitSelector := &metav1.LabelSelector{
+		MatchLabels: make(map[string]string),
+	}
+
+	onExitSelector.MatchLabels[common.JobRoleLabel] = "onexit"
+	for _, pod := range pods {
+		selector, err := metav1.LabelSelectorAsSelector(onExitSelector)
+		if err != nil {
+			return nil, err
+		}
+		if !selector.Matches(labels.Set(pod.Labels)) {
+			continue
+		}
+		return pod, nil
+	}
+
+	return nil, nil
 }
 
 // getPodSlices returns a slice, which element is the slice of pod.

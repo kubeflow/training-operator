@@ -17,6 +17,7 @@ package tensorflow
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
 
@@ -46,6 +47,33 @@ const (
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 )
+
+func (tc *TFController) reconcileOnExitPod(tfjob *tfv1.TFJob, pods []*v1.Pod) error {
+	onExitPod, err := tc.JobController.FilterPodsForOnExit(pods)
+	if err != nil {
+		return err
+	}
+
+	if onExitPod == nil {
+		// create on exit pod
+		tflogger.LoggerForJob(tfjob).Infof("create onexit pod")
+		if err := tc.createOnExitPod(tfjob); err != nil {
+			return err
+		}
+	} else {
+		if onExitPod.Status.Phase == v1.PodRunning {
+			if tfjob.Status.OnExitStatus == nil {
+				return tc.updateOnExitStatus(tfjob, common.OnExitRunning)
+			}
+		} else if onExitPod.Status.Phase == v1.PodSucceeded || onExitPod.Status.Phase == v1.PodFailed {
+			if tfjob.Status.OnExitStatus == nil || *tfjob.Status.OnExitStatus != common.OnExitCompleted {
+				return tc.updateOnExitStatus(tfjob, common.OnExitCompleted)
+			}
+		}
+	}
+
+	return nil
+}
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
@@ -128,6 +156,82 @@ func (tc *TFController) reconcilePods(
 	}
 
 	return tc.updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
+}
+
+// createOnExitPod creates a pod when tfjob succeed or failed
+func (tc *TFController) createOnExitPod(tfjob *tfv1.TFJob) error {
+	controllerRef := tc.GenOwnerReference(tfjob)
+
+	labels := tc.GenLabels(tfjob.Name)
+	labels[jobcontroller.JobRoleLabel] = "onexit"
+
+	podTemplate := tfjob.Spec.OnExit
+	podTemplate.Name = tfjob.Name + "-onexit"
+	if podTemplate.Labels == nil {
+		podTemplate.Labels = make(map[string]string)
+	}
+
+	for key, values := range labels {
+		podTemplate.Labels[key] = values
+	}
+
+	podTemplate.Spec.RestartPolicy = v1.RestartPolicyNever
+
+	envs := make([]v1.EnvVar, 0)
+	var res string
+	if isSucceeded(tfjob.Status) {
+		res = "Succeeded"
+	} else if isFailed(tfjob.Status) {
+		res = "Failed"
+	}
+	resEnv := v1.EnvVar{Name: "TFJOB_RESULT", Value: res }
+	envs = append(envs, resEnv)
+	startTimeEnv := v1.EnvVar{Name: "TFJOB_START_TIME", Value: tfjob.Status.StartTime.String()}
+	envs = append(envs, startTimeEnv)
+	completionTimeEnv := v1.EnvVar{Name: "TFJOB_COMPLETION_TIME", Value: tfjob.Status.CompletionTime.String()}
+	envs = append(envs, completionTimeEnv)
+
+	// inject environment
+	for i := range podTemplate.Spec.Containers {
+		podTemplate.Spec.Containers[i].Env = envs
+	}
+
+	err := tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
+	if err != nil && errors.IsTimeout(err) {
+		// Pod is created but its initialization has timed out.
+		// If the initialization is successful eventually, the
+		// controller will observe the creation via the informer.
+		// If the initialization fails, or if the pod keeps
+		// uninitialized for a long time, the informer will not
+		// receive any update, and the controller will create a new
+		// pod when the expectation expires.
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (tc *TFController) getOnExitPod(tfjob *tfv1.TFJob) (*v1.Pod, error) {
+	// Create selector.
+	exitPodLabels := tc.JobController.GenLabels(tfjob.GetName())
+	exitPodLabels[jobcontroller.JobRoleLabel] = "onexit"
+	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+		MatchLabels: exitPodLabels,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't convert Job selector: %v", err)
+	}
+	// List all pods to include those that don't match the selector anymore
+	// but have a ControllerRef pointing to this controller.
+	pods, err := tc.JobController.PodLister.Pods(tfjob.GetNamespace()).List(selector)
+
+	if len(pods) == 0 {
+		return nil, err
+	}
+
+	return pods[0], err
 }
 
 // createNewPod creates a new pod for the given index and type.

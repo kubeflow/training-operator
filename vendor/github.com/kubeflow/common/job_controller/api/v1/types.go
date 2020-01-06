@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 // JobStatus represents the current observed state of the training Job.
 type JobStatus struct {
@@ -27,6 +28,9 @@ type JobStatus struct {
 	// ReplicaStatuses is map of ReplicaType and ReplicaStatus,
 	// specifies the status of each replica.
 	ReplicaStatuses map[ReplicaType]*ReplicaStatus `json:"replicaStatuses"`
+
+	// OnExitStatus is tfjob on exit handler status
+	OnExitStatus *OnExitStatus `json:"OnExitStatus"`
 
 	// Represents time when the job was acknowledged by the job controller.
 	// It is not guaranteed to be set in happens-before order across separate operations.
@@ -44,10 +48,19 @@ type JobStatus struct {
 	LastReconcileTime *metav1.Time `json:"lastReconcileTime,omitempty"`
 }
 
+type OnExitStatus string
+
+const (
+	OnExitRunning OnExitStatus = "Running"
+	OnExitCompleted OnExitStatus = "Completed"
+)
+
+// +k8s:openapi-gen=true
 // ReplicaType represents the type of the replica. Each operator needs to define its
 // own set of ReplicaTypes.
 type ReplicaType string
 
+// +k8s:openapi-gen=true
 // ReplicaStatus represents the current observed state of the replica.
 type ReplicaStatus struct {
 	// The number of actively running pods.
@@ -60,6 +73,7 @@ type ReplicaStatus struct {
 	Failed int32 `json:"failed,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 // ReplicaSpec is a description of the replica
 type ReplicaSpec struct {
@@ -78,6 +92,7 @@ type ReplicaSpec struct {
 	RestartPolicy RestartPolicy `json:"restartPolicy,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
 // JobCondition describes the state of the job at a certain point.
 type JobCondition struct {
@@ -124,8 +139,16 @@ const (
 	// reached phase failed with no restarting.
 	// The training has failed its execution.
 	JobFailed JobConditionType = "Failed"
+
+
+	// OnExitRunning means tfjob ps/worker pods finish, on exit handler is running
+	JobOnExitRunning JobConditionType = "OnExitRunning"
+
+	// JobOnExitCompleted means on exit handler completed
+	JobOnExitCompleted JobConditionType = "OnExitCompleted"
 )
 
+// +k8s:openapi-gen=true
 // CleanPodPolicy describes how to deal with pods when the job is finished.
 type CleanPodPolicy string
 
