@@ -54,7 +54,6 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
-	tfOnExitLabel       = "tf-onexit"
 	labelGroupName      = "group-name"
 	// Deprecated label for backwards compatibility. Has to be removed
 	labelTFJobName = "tf-job-name"

@@ -20,6 +20,7 @@ package v1
 
 import (
 	apiv1 "github.com/kubeflow/common/job_controller/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -121,6 +122,11 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 			}
 			(*out)[key] = outVal
 		}
+	}
+	if in.OnExit != nil {
+		in, out := &in.OnExit, &out.OnExit
+		*out = new(corev1.PodTemplateSpec)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
