@@ -18,6 +18,8 @@ COPY --from=build-image /go/src/github.com/kubeflow/tf-operator/tf-operator.v1 /
 
 COPY third_party/library/license.txt /opt/kubeflow/license.txt
 
+COPY vendor /opt/kubeflow/.
+
 RUN chmod a+x /opt/kubeflow/tf-operator.v1
 
 ENTRYPOINT ["/opt/kubeflow/tf-operator.v1"]
