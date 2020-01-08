@@ -170,7 +170,7 @@ def build_operator_image(root_dir,
   sources = [
     "build/images/tf_operator/Dockerfile", "examples/tf_sample/tf_smoke.py",
     os.path.join(go_path, bin_path, "tf-operator.v1"),
-    "cmd", "pkg", "vendor"
+    "cmd", "pkg", "third_party", "vendor"
   ]
 
   for s in sources:
