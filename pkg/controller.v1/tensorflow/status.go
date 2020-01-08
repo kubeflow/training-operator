@@ -19,9 +19,11 @@ import (
 	"fmt"
 	"time"
 
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -40,6 +42,21 @@ const (
 	tfJobRestartingReason = "TFJobRestarting"
 )
 
+var (
+	tfJobsSuccessCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_successful_total",
+		Help: "Counts number of TF jobs successful",
+	})
+	tfJobsFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_failed_total",
+		Help: "Counts number of TF jobs failed",
+	})
+	tfJobsRestartCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_restarted_total",
+		Help: "Counts number of TF jobs restarted",
+	})
+)
+
 // updateStatus updates the status of the tfjob.
 func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
 	tfjobKey, err := KeyFunc(tfjob)
@@ -56,8 +73,8 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 	tflogger.LoggerForJob(tfjob).Infof("TFJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
 		tfjob.Name, rtype, expected, running, failed)
-	// All workers are running, set StartTime.
-	if running == replicas && tfjob.Status.StartTime == nil {
+	// set StartTime.
+	if tfjob.Status.StartTime == nil {
 		now := metav1.Now()
 		tfjob.Status.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
@@ -91,6 +108,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
+				tfJobsSuccessCount.Inc()
 			}
 		}
 	} else {
@@ -108,6 +126,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
+				tfJobsSuccessCount.Inc()
 			} else if running > 0 {
 				// Some workers are still running, leave a running condition.
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
@@ -130,6 +149,8 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
+			tfJobsFailureCount.Inc()
+			tfJobsRestartCount.Inc()
 		} else {
 			msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)
@@ -143,6 +164,7 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
 				return err
 			}
+			tfJobsFailureCount.Inc()
 		}
 	}
 	return nil
@@ -150,6 +172,11 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 // updateTFJobStatus updates the status of the given TFJob.
 func (tc *TFController) updateTFJobStatus(tfjob *tfv1.TFJob) error {
+	startTime := time.Now()
+	defer func() {
+		tflogger.LoggerForJob(tfjob).Infof("Finished updating TFJobs Status %q (%v)",
+			tfjob.Name, time.Since(startTime))
+	}()
 	_, err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfjob.Namespace).UpdateStatus(tfjob)
 	return err
 }
@@ -227,24 +254,26 @@ func isFailed(status common.JobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *common.JobStatus, condition common.JobCondition) {
-	// Do nothing if TFJobStatus have failed condition
-	if isFailed(*status) {
+	// Do nothing if TFJobStatus is completed.
+	if isFailed(*status) || isSucceeded(*status) {
 		return
 	}
 
 	currentCond := getCondition(*status, condition.Type)
 
-	// Do nothing if condition doesn't change
-	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
-		return
+	if currentCond != nil {
+		if currentCond.Status == condition.Status &&
+			currentCond.Reason == condition.Reason &&
+			currentCond.Message == condition.Message {
+			// Do nothing if the condition does not change.
+			return
+		} else if currentCond.Status == condition.Status {
+			// Do not update lastTransitionTime if the status of the condition doesn't change.
+			condition.LastTransitionTime = currentCond.LastTransitionTime
+		}
 	}
 
-	// Do not update lastTransitionTime if the status of the condition doesn't change.
-	if currentCond != nil && currentCond.Status == condition.Status {
-		condition.LastTransitionTime = currentCond.LastTransitionTime
-	}
-
-	// Append the updated condition to the
+	// Append the updated condition to the status.Conditions.
 	newConditions := filterOutCondition(status.Conditions, condition.Type)
 	status.Conditions = append(newConditions, condition)
 }

@@ -20,13 +20,13 @@ import (
 	"testing"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
@@ -66,7 +66,9 @@ func TestAddPod(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 	go run(stopCh)
 
@@ -111,16 +113,14 @@ func TestClusterSpec(t *testing.T) {
 			rt:                  "worker",
 			index:               "0",
 			customClusterDomain: "",
-			expectedClusterSpec: `{"cluster":{"worker":["` + testutil.TestTFJobName +
-				`-worker-0.ns0.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+			expectedClusterSpec: "",
 		},
 		tc{
 			tfJob:               testutil.NewTFJobWithNamespace(1, 0, "ns1"),
 			rt:                  "worker",
 			index:               "0",
 			customClusterDomain: "tf.training.com",
-			expectedClusterSpec: `{"cluster":{"worker":["` + testutil.TestTFJobName +
-				`-worker-0.ns1.svc.tf.training.com:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+			expectedClusterSpec: "",
 		},
 		tc{
 			tfJob:               testutil.NewTFJobWithNamespace(1, 1, "ns2"),
@@ -140,6 +140,15 @@ func TestClusterSpec(t *testing.T) {
 				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
+		tc{
+			tfJob:               testutil.NewTFJobWithEvaluatorAndNamespace(1, 1, 1, "ns3"),
+			rt:                  "worker",
+			index:               "0",
+			customClusterDomain: "",
+			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+				`-ps-0.ns3.svc:2222"],"worker":["` + testutil.TestTFJobName +
+				`-worker-0.ns3.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
+		},
 	}
 	for _, c := range testCase {
 		os.Setenv(EnvCustomClusterDomain, c.customClusterDomain)
@@ -147,9 +156,48 @@ func TestClusterSpec(t *testing.T) {
 		if err := setClusterSpec(&demoTemplateSpec, c.tfJob, c.rt, c.index); err != nil {
 			t.Errorf("Failed to set cluster spec: %v", err)
 		}
-		actual := demoTemplateSpec.Spec.Containers[0].Env[0].Value
-		if c.expectedClusterSpec != actual {
-			t.Errorf("Expected %s, got %s", c.expectedClusterSpec, actual)
+		// The expected cluster spec is nil, which means that we should not set TF_CONFIG.
+		if c.expectedClusterSpec == "" {
+			if len(demoTemplateSpec.Spec.Containers[0].Env) != 0 {
+				t.Errorf("Expected empty TF_CONFIG, got %s",
+					demoTemplateSpec.Spec.Containers[0].Env[0].Value)
+			}
+		} else {
+			actual := demoTemplateSpec.Spec.Containers[0].Env[0].Value
+			if c.expectedClusterSpec != actual {
+				t.Errorf("Expected %s, got %s", c.expectedClusterSpec, actual)
+			}
+		}
+	}
+}
+
+func TestIsDistributed(t *testing.T) {
+	type tc struct {
+		tfJob    *tfv1.TFJob
+		expected bool
+	}
+	testCase := []tc{
+		{
+			tfJob:    testutil.NewTFJob(1, 0),
+			expected: false,
+		},
+		{
+			tfJob:    testutil.NewTFJob(1, 1),
+			expected: true,
+		},
+		{
+			tfJob:    testutil.NewTFJob(0, 1),
+			expected: false,
+		},
+		{
+			tfJob:    testutil.NewTFJobWithChief(1, 0),
+			expected: true,
+		},
+	}
+	for _, c := range testCase {
+		actual := isDistributed(c.tfJob)
+		if actual != c.expected {
+			t.Errorf("Expected %t, got %t", c.expected, actual)
 		}
 	}
 }
@@ -166,7 +214,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := common.RestartPolicyExitCode
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1.TFReplicaTypeWorker,
 			}
@@ -176,7 +224,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := common.RestartPolicyNever
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          tfv1.TFReplicaTypeWorker,
 			}
@@ -186,7 +234,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := common.RestartPolicyAlways
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyAlways,
 				expectedType:          tfv1.TFReplicaTypeWorker,
 			}
@@ -196,7 +244,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := common.RestartPolicyOnFailure
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				tfJob: tfJob,
+				tfJob:                 tfJob,
 				expectedRestartPolicy: v1.RestartPolicyOnFailure,
 				expectedType:          tfv1.TFReplicaTypeWorker,
 			}
@@ -249,7 +297,9 @@ func TestExitCode(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 	go run(stopCh)
 

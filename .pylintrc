@@ -13,7 +13,8 @@ ignore=third_party,jupyterhub_spawner.py,dist_mnist.py
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
-ignore-patterns=
+# Ignore files that are created automatically during SDK generation.
+ignore-patterns=api_client.py,configuration.py,v1_job_condition.py,v1_job_status.py,v1_replica_spec.py,v1_replica_status.py,v1_tf_job.py,v1_tf_job_list.py,v1_tf_job_spec.py,v1_time.py,rest.py,test_v1_job_status.py,test_v1_replica_spec.py,test_v1_replica_status.py,test_v1_tf_job.py,test_v1_tf_job_list.py,test_v1_tf_job_spec.py,test_v1_job_condition.py
 
 # Pickle collected data for later comparisons.
 persistent=no

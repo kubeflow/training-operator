@@ -5,20 +5,29 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
 	failedMarshalTFJobReason = "InvalidTFJobSpec"
+)
+
+var (
+	tfJobsCreatedCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_created_total",
+		Help: "Counts number of TF jobs created",
+	})
 )
 
 // When a pod is added, set the defaults and enqueue the current tfjob.
@@ -41,7 +50,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 
 			status := common.JobStatus{
 				Conditions: []common.JobCondition{
-					common.JobCondition{
+					{
 						Type:               common.JobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),
@@ -98,6 +107,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		return
 	}
 	tc.enqueueTFJob(obj)
+	tfJobsCreatedCount.Inc()
 }
 
 // When a pod is updated, enqueue the current tfjob.

@@ -16,12 +16,17 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	"strconv"
 
 	"github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func init() {
@@ -29,6 +34,19 @@ func init() {
 	filenameHook := filename.NewHook()
 	filenameHook.Field = "filename"
 	log.AddHook(filenameHook)
+}
+
+func startMonitoring(monitoringPort int) {
+	if monitoringPort != 0 {
+		go func() {
+			log.Infof("Setting up client for monitoring on port: %s", strconv.Itoa(monitoringPort))
+			http.Handle("/metrics", promhttp.Handler())
+			err := http.ListenAndServe(fmt.Sprintf(":%s", strconv.Itoa(monitoringPort)), nil)
+			if err != nil {
+				log.Error("Monitoring endpoint setup failure.", err)
+			}
+		}()
+	}
 }
 
 func main() {
@@ -41,6 +59,8 @@ func main() {
 		// Output logs in a json format so that it can be parsed by services like Stackdriver.
 		log.SetFormatter(&log.JSONFormatter{})
 	}
+
+	startMonitoring(s.MonitoringPort)
 
 	if err := app.Run(s); err != nil {
 		log.Fatalf("%v\n", err)

@@ -145,28 +145,20 @@ def build_operator_image(root_dir,
   commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
-    "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2",
     "github.com/kubeflow/tf-operator/cmd/tf-operator.v1",
-    "github.com/kubeflow/tf-operator/dashboard/backend",
   ]
   for t in targets:
     if t in [
-        "github.com/kubeflow/tf-operator/cmd/tf-operator.v1beta2"
         "github.com/kubeflow/tf-operator/cmd/tf-operator.v1"
     ]:
       util.run([
         "go", "install", "-ldflags",
-        "-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}".format(
-          commit), t
+        '''-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}
+          -X github.com/kubeflow/tf-operator/pkg/version.Version={}'''.format(
+          commit, version_tag), t
       ])
+      continue
     util.run(["go", "install", t])
-
-  # Dashboard's frontend:
-  # Resolving dashboard's front-end dependencies
-  util.run(
-    ["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "install"])
-  # Building dashboard's front-end
-  util.run(["yarn", "--cwd", "{}/dashboard/frontend".format(root_dir), "build"])
 
   # If the release is not done from a Linux machine
   # we need to grab the artefacts from /bin/linux_amd64
@@ -177,9 +169,8 @@ def build_operator_image(root_dir,
   # List of paths to copy relative to root.
   sources = [
     "build/images/tf_operator/Dockerfile", "examples/tf_sample/tf_smoke.py",
-    os.path.join(go_path, bin_path, "tf-operator.v1beta2"),
     os.path.join(go_path, bin_path, "tf-operator.v1"),
-    os.path.join(go_path, bin_path, "backend"), "dashboard/frontend/build"
+    "cmd", "pkg", "vendor"
   ]
 
   for s in sources:
@@ -188,7 +179,7 @@ def build_operator_image(root_dir,
     if os.path.exists(dest_path):
       os.unlink(dest_path)
     if os.path.isdir(src_path):
-      shutil.copytree(src_path, dest_path)
+      shutil.copytree(src_path, dest_path, symlinks=True)
     else:
       shutil.copyfile(src_path, dest_path)
 

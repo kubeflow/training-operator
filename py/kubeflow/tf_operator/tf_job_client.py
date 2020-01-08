@@ -15,7 +15,7 @@ from kubernetes.client import rest
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
 TF_JOB_KIND = "TFJob"
-TF_JOB_NAME_LABEL = "tf-job-name"
+TF_JOB_NAME_LABEL = "job-name"
 
 # How long to wait in seconds for requests to the ApiServer
 TIMEOUT = 120

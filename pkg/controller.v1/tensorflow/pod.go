@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
@@ -35,8 +35,7 @@ const (
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
 
-	// gang scheduler name.
-	gangSchedulerName = "kube-batch"
+	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
@@ -120,7 +119,8 @@ func (tc *TFController) reconcilePods(
 			}
 
 			// Check whether worker 0 is exited without error.
-			if rtype == tfv1.TFReplicaTypeWorker && index == 0 && exitCode == 0 {
+			if rtype == tfv1.TFReplicaTypeWorker && index == 0 &&
+				exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
 				worker0Completed = true
 			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
@@ -152,7 +152,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	labels[tfReplicaIndexLabel] = index
 
 	if masterRole {
-		labels[labelTFJobRole] = "master"
+		labels[jobcontroller.JobRoleLabel] = "master"
 	}
 
 	podTemplate := spec.Template.DeepCopy()
@@ -185,13 +185,19 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
 	if tc.Config.EnableGangScheduling {
-		if isNonGangSchedulerSet(tfjob) {
+		if tc.isNonGangSchedulerSet(tfjob) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
 		} else {
-			podTemplate.Spec.SchedulerName = gangSchedulerName
+			podTemplate.Spec.SchedulerName = tc.Config.GangSchedulerName
 		}
+
+		if podTemplate.Annotations == nil {
+			podTemplate.Annotations = map[string]string{}
+		}
+		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] =
+			jobcontroller.GenPodGroupName(tfjob.Name)
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
@@ -210,7 +216,12 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	return nil
 }
 
+// setClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, index string) error {
+	// Do not set TF_CONFIG for local training jobs.
+	if !isDistributed(tfjob) {
+		return nil
+	}
 	// Generate TF_CONFIG JSON string.
 	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
 	if err != nil {
@@ -220,17 +231,45 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, 
 	if tfConfigStr == "" {
 		return nil
 	}
-	// Add TF_CONFIG environment variable.
+	// Add TF_CONFIG environment variable to tensorflow container in the pod.
 	for i := range podTemplateSpec.Spec.Containers {
-		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
-			podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+		if podTemplateSpec.Spec.Containers[i].Name == tfv1.DefaultContainerName {
+			if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
+				podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+			}
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
+				Name:  tfConfig,
+				Value: tfConfigStr,
+			})
+			break
 		}
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
-			Name:  tfConfig,
-			Value: tfConfigStr,
-		})
 	}
 	return nil
+}
+
+// isDistributed returns if the TFJob is a distributed training job.
+// Ref https://github.com/kubeflow/tf-operator/issues/1078.
+func isDistributed(tfjob *tfv1.TFJob) bool {
+	replicas := tfjob.Spec.TFReplicaSpecs
+	distributionCount := 0
+	allTypes := []tfv1.TFReplicaType{
+		tfv1.TFReplicaTypeChief,
+		tfv1.TFReplicaTypeEval,
+		tfv1.TFReplicaTypeMaster,
+		tfv1.TFReplicaTypePS,
+		tfv1.TFReplicaTypeWorker,
+	}
+	// Check if there is only one replica.
+	for _, typ := range allTypes {
+		if replicas[typ] != nil {
+			if replicas[typ].Replicas == nil {
+				distributionCount++
+			} else {
+				distributionCount += int(*replicas[typ].Replicas)
+			}
+		}
+	}
+	return distributionCount != 1
 }
 
 func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaSpec) {
@@ -241,9 +280,9 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaS
 	}
 }
 
-func isNonGangSchedulerSet(tfjob *tfv1.TFJob) bool {
+func (tc *TFController) isNonGangSchedulerSet(tfjob *tfv1.TFJob) bool {
 	for _, spec := range tfjob.Spec.TFReplicaSpecs {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
+		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != tc.Config.GangSchedulerName {
 			return true
 		}
 	}

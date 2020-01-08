@@ -15,12 +15,13 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
@@ -28,10 +29,13 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	restclientset "k8s.io/client-go/rest"
@@ -50,10 +54,16 @@ var (
 	leaseDuration = 15 * time.Second
 	renewDuration = 5 * time.Second
 	retryPeriod   = 3 * time.Second
-	resyncPeriod  = 30 * time.Second
 )
 
 const RecommendedKubeConfigPathEnv = "KUBECONFIG"
+
+var (
+	isLeader = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "tf_operator_is_leader",
+		Help: "Is this client the leader of this tf-operator client set?",
+	})
+)
 
 func Run(opt *options.ServerOption) error {
 	// Check if the -version flag was passed and, if so, print the version and exit.
@@ -91,8 +101,13 @@ func Run(opt *options.ServerOption) error {
 		log.Fatalf("Error building kubeconfig: %s", err.Error())
 	}
 
+	// Set client qps and burst by opt.
+	kcfg.QPS = float32(opt.QPS)
+	kcfg.Burst = opt.Burst
+
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, tfJobClientSet, kubeBatchClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet, tfJobClientSet,
+		kubeBatchClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
@@ -101,8 +116,8 @@ func Run(opt *options.ServerOption) error {
 		os.Exit(1)
 	}
 	// Create informer factory.
-	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, resyncPeriod, opt.Namespace, nil)
-	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod)
+	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, opt.ResyncPeriod, opt.Namespace, nil)
+	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, opt.ResyncPeriod)
 
 	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg, opt.Namespace)
 
@@ -118,7 +133,8 @@ func Run(opt *options.ServerOption) error {
 	go unstructuredInformer.Informer().Run(stopCh)
 
 	// Set leader election start function.
-	run := func(<-chan struct{}) {
+	run := func(context.Context) {
+		isLeader.Set(1)
 		if err := tc.Run(opt.Threadiness, stopCh); err != nil {
 			log.Errorf("Failed to run the controller: %v", err)
 		}
@@ -128,10 +144,12 @@ func Run(opt *options.ServerOption) error {
 	if err != nil {
 		return fmt.Errorf("failed to get hostname: %v", err)
 	}
+	// add a uniquifier so that two processes on the same host don't accidentally both become active
+	id = id + "_" + string(uuid.NewUUID())
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
-	if err = v1.AddToScheme(scheme.Scheme); err != nil {
+	if err = corev1.AddToScheme(scheme.Scheme); err != nil {
 		return fmt.Errorf("CoreV1 Add Scheme failed: %v", err)
 	}
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "tf-operator"})
@@ -149,7 +167,7 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Start leader election.
-	election.RunOrDie(election.LeaderElectionConfig{
+	election.RunOrDie(context.TODO(), election.LeaderElectionConfig{
 		Lock:          rl,
 		LeaseDuration: leaseDuration,
 		RenewDeadline: renewDuration,
@@ -157,6 +175,7 @@ func Run(opt *options.ServerOption) error {
 		Callbacks: election.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
+				isLeader.Set(0)
 				log.Fatalf("leader election lost")
 			},
 		},

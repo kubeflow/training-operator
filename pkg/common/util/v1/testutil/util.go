@@ -15,35 +15,41 @@
 package testutil
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	LabelGroupName = "group-name"
-	LabelTFJobName = "tf-job-name"
+	LabelGroupName      = "group-name"
+	JobNameLabel        = "job-name"
+	ControllerNameLabel = "controller-name"
+	// Deprecated label. Has to be removed later
+	DeprecatedLabelTFJobName = "tf-job-name"
 )
 
 var (
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
-	KeyFunc   = cache.DeletionHandlingMetaNamespaceKeyFunc
-	GroupName = tfv1.GroupName
+	KeyFunc        = cache.DeletionHandlingMetaNamespaceKeyFunc
+	GroupName      = tfv1.GroupName
+	ControllerName = "tf-operator"
 )
 
 func GenLabels(jobName string) map[string]string {
 	return map[string]string{
-		LabelGroupName: GroupName,
-		LabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+		LabelGroupName:           GroupName,
+		JobNameLabel:             strings.Replace(jobName, "/", "-", -1),
+		DeprecatedLabelTFJobName: strings.Replace(jobName, "/", "-", -1),
+		ControllerNameLabel:      ControllerName,
 	}
 }
 
@@ -61,18 +67,15 @@ func GenOwnerReference(tfjob *tfv1.TFJob) *metav1.OwnerReference {
 	return controllerRef
 }
 
-// ConvertTFJobToUnstructured uses JSON to convert TFJob to Unstructured.
+// ConvertTFJobToUnstructured uses function ToUnstructured to convert TFJob to Unstructured.
 func ConvertTFJobToUnstructured(tfJob *tfv1.TFJob) (*unstructured.Unstructured, error) {
-	var unstructured unstructured.Unstructured
-	b, err := json.Marshal(tfJob)
+	object, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := json.Unmarshal(b, &unstructured); err != nil {
-		return nil, err
-	}
-	return &unstructured, nil
+	return &unstructured.Unstructured{
+		Object:object,
+	},nil
 }
 
 func GetKey(tfJob *tfv1.TFJob, t *testing.T) string {

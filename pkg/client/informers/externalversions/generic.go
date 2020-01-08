@@ -1,4 +1,4 @@
-// Copyright 2019 The Kubeflow Authors
+// Copyright 2020 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	v1beta2 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1beta2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -54,10 +53,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=kubeflow.org, Version=v1
 	case v1.SchemeGroupVersion.WithResource("tfjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().TFJobs().Informer()}, nil
-
-		// Group=kubeflow.org, Version=v1beta2
-	case v1beta2.SchemeGroupVersion.WithResource("tfjobs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1beta2().TFJobs().Informer()}, nil
 
 	}
 

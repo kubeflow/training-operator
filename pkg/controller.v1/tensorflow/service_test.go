@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
@@ -64,7 +64,9 @@ func TestAddService(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 	go run(stopCh)
 

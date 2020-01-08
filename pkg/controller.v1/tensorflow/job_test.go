@@ -27,7 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
@@ -68,7 +68,9 @@ func TestAddTFJob(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 	go run(stopCh)
 
@@ -139,7 +141,9 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
 	}
 	go run(stopCh)
 

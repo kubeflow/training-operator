@@ -17,13 +17,12 @@ package tensorflow
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -32,8 +31,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	common "github.com/kubeflow/common/job_controller/api/v1"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/tf-operator/pkg/apis/common/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobscheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
@@ -43,6 +42,9 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -53,8 +55,8 @@ const (
 	tfReplicaTypeLabel  = "tf-replica-type"
 	tfReplicaIndexLabel = "tf-replica-index"
 	labelGroupName      = "group-name"
-	labelTFJobName      = "tf-job-name"
-	labelTFJobRole      = "tf-job-role"
+	// Deprecated label for backwards compatibility. Has to be removed
+	labelTFJobName = "tf-job-name"
 )
 
 var (
@@ -63,11 +65,10 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	// DefaultTFControllerConfiguration is the suggested tf-operator configuration for production.
-	DefaultTFControllerConfiguration = jobcontroller.JobControllerConfiguration{
-		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-		EnableGangScheduling:     false,
-	}
+	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_deleted_total",
+		Help: "Counts number of TF jobs deleted",
+	})
 )
 
 // TFController is the type for TFJob Controller, which manages
@@ -111,7 +112,10 @@ func NewTFController(
 	tfJobInformerFactory tfjobinformers.SharedInformerFactory,
 	option options.ServerOption) *TFController {
 
-	tfjobscheme.AddToScheme(scheme.Scheme)
+	err := tfjobscheme.AddToScheme(scheme.Scheme)
+	if err != nil {
+		log.Fatalf("Failed to add tfjob scheme: %v", err)
+	}
 
 	log.Info("Creating TFJob controller")
 	// Create new TFController.
@@ -122,7 +126,7 @@ func NewTFController(
 	// Create base controller
 	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1.Plural)
+		option.EnableGangScheduling, option.GangSchedulerName, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1.Plural)
 	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
@@ -235,6 +239,7 @@ func (tc *TFController) processNextWorkItem() bool {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
+			tfJobsDeletedCount.Inc()
 			return true
 		}
 
@@ -297,6 +302,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
+			tfJobsDeletedCount.Inc()
 			// jm.expectations.DeleteExpectations(key)
 			return true, nil
 		}
@@ -305,14 +311,6 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 
 	tfjob := sharedTFJob.DeepCopy()
 	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
-
-	if tc.Config.EnableGangScheduling {
-		minAvailableReplicas := getTotalReplicas(tfjob)
-		_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
-		if err != nil {
-			logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
-		}
-	}
 
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
@@ -356,6 +354,38 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		return err
 	}
 
+	// If the TFJob is terminated, delete all pods and services.
+	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) {
+		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
+			return err
+		}
+
+		if err := tc.cleanupTFJob(tfjob); err != nil {
+			return err
+		}
+
+		if tc.Config.EnableGangScheduling {
+			if err := tc.DeletePodGroup(tfjob); err != nil {
+				return err
+			}
+		}
+
+		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
+		// If any replicas are still Active, set their status to succeeded.
+		if isSucceeded(tfjob.Status) {
+			for rtype := range tfjob.Status.ReplicaStatuses {
+				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
+				tfjob.Status.ReplicaStatuses[rtype].Active = 0
+			}
+		}
+		// no need to update the tfjob if the status hasn't changed since last time even the tfjob is not running.
+
+		if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
+			return tc.updateStatusHandler(tfjob)
+		}
+		return nil
+	}
+
 	// retrieve the previous number of retry
 	previousRetry := tc.WorkQueue.NumRequeues(tfjobKey)
 
@@ -394,23 +424,11 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		tfJobExceedsLimit = true
 	}
 
-	// If the TFJob is terminated, delete all pods and services.
-	if isSucceeded(tfjob.Status) || isFailed(tfjob.Status) || tfJobExceedsLimit {
+	if tfJobExceedsLimit {
+		// If the TFJob exceeds backoff limit or is past active deadline
+		// delete all pods and services, then set the status to failed
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
 			return err
-		}
-
-		if tfJobExceedsLimit {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
-			if tfjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				tfjob.Status.CompletionTime = &now
-			}
-			err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, failureMessage)
-			if err != nil {
-				tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
-				return err
-			}
 		}
 
 		if err := tc.cleanupTFJob(tfjob); err != nil {
@@ -418,48 +436,52 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(tfjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
 			if err := tc.DeletePodGroup(tfjob); err != nil {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
-			} else {
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", tfjob.Name)
-
 			}
 		}
 
-		// At this point the pods may have been deleted, so if the job succeeded, we need to manually set the replica status.
-		// If any replicas are still Active, set their status to succeeded.
-		if isSucceeded(tfjob.Status) {
-			for rtype := range tfjob.Status.ReplicaStatuses {
-				tfjob.Status.ReplicaStatuses[rtype].Succeeded += tfjob.Status.ReplicaStatuses[rtype].Active
-				tfjob.Status.ReplicaStatuses[rtype].Active = 0
+		tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, failureMessage)
+		if tfjob.Status.CompletionTime == nil {
+			now := metav1.Now()
+			tfjob.Status.CompletionTime = &now
+		}
+		if err := updateTFJobConditions(
+			tfjob, common.JobFailed, tfJobFailedReason, failureMessage); err != nil {
+			tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+			return err
+		}
+	} else {
+		if tc.Config.EnableGangScheduling {
+			minAvailableReplicas := getTotalReplicas(tfjob)
+			_, err := tc.SyncPodGroup(tfjob, minAvailableReplicas)
+			if err != nil {
+				logger.Warnf("Sync PodGroup %v: %v", tfjob.Name, err)
 			}
 		}
-		return tc.updateStatusHandler(tfjob)
-	}
 
-	// Save the current state of the replicas
-	replicasStatus := make(map[string]v1.PodPhase)
+		// Save the current state of the replicas
+		replicasStatus := make(map[string]v1.PodPhase)
 
-	// Diff current active pods/services with replicas.
-	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
-		err = tc.reconcilePods(tfjob, pods, rtype, spec, replicasStatus)
-		if err != nil {
-			logger.Warnf("reconcilePods error %v", err)
-			return err
-		}
+		// Diff current active pods/services with replicas.
+		for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
+			err = tc.reconcilePods(tfjob, pods, rtype, spec, replicasStatus)
+			if err != nil {
+				logger.Warnf("reconcilePods error %v", err)
+				return err
+			}
 
-		err = tc.reconcileServices(tfjob, services, rtype, spec)
+			err = tc.reconcileServices(tfjob, services, rtype, spec)
 
-		if err != nil {
-			logger.Warnf("reconcileServices error %v", err)
-			return err
+			if err != nil {
+				logger.Warnf("reconcileServices error %v", err)
+				return err
+			}
 		}
 	}
 
 	// no need to update the tfjob if the status hasn't changed since last time.
-	if !reflect.DeepEqual(*oldStatus, tfjob.Status) {
+	if !apiequality.Semantic.DeepEqual(*oldStatus, tfjob.Status) {
 		return tc.updateStatusHandler(tfjob)
 	}
 	return nil
@@ -510,16 +532,15 @@ func (tc *TFController) pastBackoffLimit(tfjob *tfv1.TFJob, pods []*v1.Pod) (boo
 		}
 		for i := range pods {
 			po := pods[i]
-			if po.Status.Phase != v1.PodRunning {
-				continue
-			}
-			for j := range po.Status.InitContainerStatuses {
-				stat := po.Status.InitContainerStatuses[j]
-				result += stat.RestartCount
-			}
-			for j := range po.Status.ContainerStatuses {
-				stat := po.Status.ContainerStatuses[j]
-				result += stat.RestartCount
+			if po.Status.Phase == v1.PodRunning || po.Status.Phase == v1.PodPending {
+				for j := range po.Status.InitContainerStatuses {
+					stat := po.Status.InitContainerStatuses[j]
+					result += stat.RestartCount
+				}
+				for j := range po.Status.ContainerStatuses {
+					stat := po.Status.ContainerStatuses[j]
+					result += stat.RestartCount
+				}
 			}
 		}
 	}
@@ -562,6 +583,7 @@ func (tc *TFController) GetGroupNameLabelKey() string {
 	return labelGroupName
 }
 
+// Deprecated function for backwards compatibility. Has to be removed later
 func (tc *TFController) GetJobNameLabelKey() string {
 	return labelTFJobName
 }
@@ -576,10 +598,6 @@ func (tc *TFController) GetReplicaTypeLabelKey() string {
 
 func (tc *TFController) GetReplicaIndexLabelKey() string {
 	return tfReplicaIndexLabel
-}
-
-func (tc *TFController) GetJobRoleKey() string {
-	return labelTFJobRole
 }
 
 func (tc *TFController) ControllerName() string {
