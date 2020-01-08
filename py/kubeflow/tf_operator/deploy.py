@@ -128,9 +128,6 @@ def setup_cluster(args):
   }
 
   if args.accelerators:
-    # TODO(jlewi): Stop enabling Alpha once GPUs make it out of Alpha
-    cluster_request["cluster"]["enableKubernetesAlpha"] = True
-
     cluster_request["cluster"]["nodeConfig"]["accelerators"] = []
     for accelerator_spec in args.accelerators:
       accelerator_type, accelerator_count = accelerator_spec.split("=", 1)
