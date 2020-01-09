@@ -10,7 +10,7 @@ FROM gcr.io/distroless/base-debian10
 
 COPY third_party/library/license.txt /opt/license.txt
 
-COPY vendor /opt
+COPY vendor /opt/
 
 COPY --from=build-image /go/src/github.com/kubeflow/tf-operator/tf-operator.v1 /opt/
 
