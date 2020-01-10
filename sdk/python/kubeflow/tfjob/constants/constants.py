@@ -24,3 +24,11 @@ TFJOB_LOGLEVEL = os.environ.get('TFJOB_LOGLEVEL', 'INFO').upper()
 
 # How long to wait in seconds for requests to the ApiServer
 APISERVER_TIMEOUT = 120
+
+#TFJob Labels Name
+TFJOB_CONTROLLER_LABEL = 'controller-name'
+TFJOB_GROUP_LABEL = 'group-name'
+TFJOB_NAME_LABEL = 'tf-job-name'
+TFJOB_TYPE_LABEL = 'tf-replica-type'
+TFJOB_INDEX_LABEL = 'tf-replica-index'
+TFJOB_ROLE_LABEL = 'job-role'

@@ -39,11 +39,13 @@ Class | Method | Description
 [TFJobClient](docs/TFJobClient.md) | [get](docs/TFJobClient.md#get)    | Get or watch the specified TFJob or all TFJob in the namespace |
 [TFJobClient](docs/TFJobClient.md) | [patch](docs/TFJobClient.md#patch)  | Patch the specified TFJob|
 [TFJobClient](docs/TFJobClient.md) | [delete](docs/TFJobClient.md#delete) | Delete the specified TFJob |
-[TFJobClient](docs/TFJobClient.md)  | [wait_for_job](docs/TFJobClient.md#wait_for_job) | Wait for the specified job to finish |
-[TFJobClient](docs/TFJobClient.md)  | [wait_for_condition](docs/TFJobClient.md#wait_for_condition) | Waits until any of the specified conditions occur |
-[TFJobClient](docs/TFJobClient.md)  | [get_job_status](docs/TFJobClient.md#get_job_status) | Get the TFJob status|
-[TFJobClient](docs/TFJobClient.md)  | [is_job_running](docs/TFJobClient.md#is_job_running) | Check if the TFJob status is Running |
-[TFJobClient](docs/TFJobClient.md)  | [is_job_succeeded](docs/TFJobClient.md#is_job_succeeded) | Check if the TFJob status is Succeeded |
+[TFJobClient](docs/TFJobClient.md) | [wait_for_job](docs/TFJobClient.md#wait_for_job) | Wait for the specified job to finish |
+[TFJobClient](docs/TFJobClient.md) | [wait_for_condition](docs/TFJobClient.md#wait_for_condition) | Waits until any of the specified conditions occur |
+[TFJobClient](docs/TFJobClient.md) | [get_job_status](docs/TFJobClient.md#get_job_status) | Get the TFJob status|
+[TFJobClient](docs/TFJobClient.md) | [is_job_running](docs/TFJobClient.md#is_job_running) | Check if the TFJob status is Running |
+[TFJobClient](docs/TFJobClient.md) | [is_job_succeeded](docs/TFJobClient.md#is_job_succeeded) | Check if the TFJob status is Succeeded |
+[TFJobClient](docs/TFJobClient.md) | [get_pod_names](docs/TFJobClient.md#get_pod_names) | Get pod names of TFJob |
+[TFJobClient](docs/TFJobClient.md) | [get_logs](docs/TFJobClient.md#get_logs) | Get training logs of the TFJob |
 
 ## Documentation For Models
 
