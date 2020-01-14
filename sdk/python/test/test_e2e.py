@@ -67,4 +67,6 @@ def test_sdk_e2e():
   if not TFJOB_CLIENT.is_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
     raise RuntimeError("The TFJob is not succeeded.")
 
+  TFJOB_CLIENT.get_logs("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+
   TFJOB_CLIENT.delete("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)

@@ -13,6 +13,7 @@
 # limitations under the License.
 import multiprocessing
 import time
+import logging
 
 from kubernetes import client, config
 
@@ -20,6 +21,9 @@ from kubeflow.tfjob.constants import constants
 from kubeflow.tfjob.utils import utils
 
 from .tf_job_watch import watch as tfjob_watch
+
+logging.basicConfig(format='%(message)s')
+logging.getLogger().setLevel(logging.INFO)
 
 class TFJobClient(object):
 
@@ -41,7 +45,8 @@ class TFJobClient(object):
     else:
       config.load_incluster_config()
 
-    self.api_instance = client.CustomObjectsApi()
+    self.custom_api = client.CustomObjectsApi()
+    self.core_api = client.CoreV1Api()
 
 
   def create(self, tfjob, namespace=None):
@@ -56,7 +61,7 @@ class TFJobClient(object):
       namespace = utils.set_tfjob_namespace(tfjob)
 
     try:
-      outputs = self.api_instance.create_namespaced_custom_object(
+      outputs = self.custom_api.create_namespaced_custom_object(
         constants.TFJOB_GROUP,
         constants.TFJOB_VERSION,
         namespace,
@@ -88,7 +93,7 @@ class TFJobClient(object):
           namespace=namespace,
           timeout_seconds=timeout_seconds)
       else:
-        thread = self.api_instance.get_namespaced_custom_object(
+        thread = self.custom_api.get_namespaced_custom_object(
           constants.TFJOB_GROUP,
           constants.TFJOB_VERSION,
           namespace,
@@ -116,7 +121,7 @@ class TFJobClient(object):
             namespace=namespace,
             timeout_seconds=timeout_seconds)
       else:
-        thread = self.api_instance.list_namespaced_custom_object(
+        thread = self.custom_api.list_namespaced_custom_object(
           constants.TFJOB_GROUP,
           constants.TFJOB_VERSION,
           namespace,
@@ -151,7 +156,7 @@ class TFJobClient(object):
       namespace = utils.set_tfjob_namespace(tfjob)
 
     try:
-      outputs = self.api_instance.patch_namespaced_custom_object(
+      outputs = self.custom_api.patch_namespaced_custom_object(
         constants.TFJOB_GROUP,
         constants.TFJOB_VERSION,
         namespace,
@@ -177,7 +182,7 @@ class TFJobClient(object):
       namespace = utils.get_default_target_namespace()
 
     try:
-      return self.api_instance.delete_namespaced_custom_object(
+      return self.custom_api.delete_namespaced_custom_object(
         constants.TFJOB_GROUP,
         constants.TFJOB_VERSION,
         namespace,
@@ -308,3 +313,80 @@ class TFJobClient(object):
     """
     tfjob_status = self.get_job_status(name, namespace=namespace)
     return tfjob_status.lower() == "succeeded"
+
+
+  def get_pod_names(self, name, namespace=None, master=False, #pylint: disable=inconsistent-return-statements
+                    replica_type=None, replica_index=None):
+    """
+    Get pod names of TFJob.
+    :param name: tfjob name
+    :param namespace: defaults to current or default namespace.
+    :param master: Only get pod with label 'job-role: master' pod if True.
+    :param replica_type: User can specify one of 'worker, ps, chief' to only get one type pods.
+           By default get all type pods.
+    :param replica_index: User can specfy replica index to get one pod of TFJob.
+    :return: set: pods name
+    """
+
+    if namespace is None:
+      namespace = utils.get_default_target_namespace()
+
+    labels = utils.get_labels(name, master=master,
+                              replica_type=replica_type,
+                              replica_index=replica_index)
+
+    try:
+      resp = self.core_api.list_namespaced_pod(
+        namespace, label_selector=utils.to_selector(labels))
+    except client.rest.ApiException as e:
+      raise RuntimeError(
+        "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+
+    pod_names = []
+    for pod in resp.items:
+      if pod.metadata and pod.metadata.name:
+        pod_names.append(pod.metadata.name)
+
+    if not pod_names:
+      logging.warning("Not found Pods of the TFJob %s with the labels %s.", name, labels)
+    else:
+      return set(pod_names)
+
+
+  def get_logs(self, name, namespace=None, master=True,
+               replica_type=None, replica_index=None,
+               follow=False):
+    """
+    Get training logs of the TFJob.
+    By default only get the logs of Pod that has labels 'job-role: master'.
+    :param name: tfjob name
+    :param namespace: defaults to current or default namespace.
+    :param master: By default get pod with label 'job-role: master' pod if True.
+                   If need to get more Pod Logs, set False.
+    :param replica_type: User can specify one of 'worker, ps, chief' to only get one type pods.
+           By default get all type pods.
+    :param replica_index: User can specfy replica index to get one pod of TFJob.
+    :param follow: Follow the log stream of the pod. Defaults to false.
+    :return: str: pods logs
+    """
+
+    if namespace is None:
+      namespace = utils.get_default_target_namespace()
+
+    pod_names = self.get_pod_names(name, namespace=namespace,
+                                   master=master,
+                                   replica_type=replica_type,
+                                   replica_index=replica_index)
+
+    if pod_names:
+      for pod in pod_names:
+        try:
+          pod_logs = self.core_api.read_namespaced_pod_log(
+            pod, namespace, follow=follow)
+          logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
+        except client.rest.ApiException as e:
+          raise RuntimeError(
+            "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+    else:
+      raise RuntimeError("Not found Pods of the TFJob {} "
+                         "in namespace {}".format(name, namespace))
