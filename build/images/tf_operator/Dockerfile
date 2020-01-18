@@ -1,4 +1,4 @@
-FROM golang:1.10 AS build-image
+FROM golang:1.13.5 AS build-image
 
 ADD . /go/src/github.com/kubeflow/tf-operator
 
@@ -6,21 +6,12 @@ WORKDIR /go/src/github.com/kubeflow/tf-operator
 
 RUN go build -o tf-operator.v1 ./cmd/tf-operator.v1
 
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM gcr.io/distroless/base-debian10
 
-# TODO(jlewi): We should probably change the directory to /opt/kubeflow.
-RUN mkdir -p /opt/kubeflow/samples
+COPY third_party/library/license.txt /opt/license.txt
 
-COPY tf_smoke.py /opt/kubeflow/samples/
-RUN chmod a+x /opt/kubeflow/samples/*
+COPY vendor /opt/
 
-COPY --from=build-image /go/src/github.com/kubeflow/tf-operator/tf-operator.v1 /opt/kubeflow
+COPY --from=build-image /go/src/github.com/kubeflow/tf-operator/tf-operator.v1 /opt/
 
-COPY third_party/library/license.txt /opt/kubeflow/license.txt
-
-RUN mkdir -p /opt/kubeflow/vendor
-COPY vendor /opt/kubeflow/vendor/
-
-RUN chmod a+x /opt/kubeflow/tf-operator.v1
-
-ENTRYPOINT ["/opt/kubeflow/tf-operator.v1"]
+ENTRYPOINT ["/opt/tf-operator.v1"]
