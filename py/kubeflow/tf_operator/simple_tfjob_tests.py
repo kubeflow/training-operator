@@ -2,8 +2,7 @@ import json
 import logging
 
 from kubeflow.testing import ks_util, test_util, util
-from kubeflow.tf_operator import test_runner
-from kubeflow.tf_operator import tf_job_client_py3 as tf_job_client
+from kubeflow.tf_operator import test_runner, tf_job_client
 from kubernetes import client as k8s_client
 
 CPU_TFJOB_COMPONENT_NAME = "simple_tfjob"

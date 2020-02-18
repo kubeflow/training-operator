@@ -1,7 +1,6 @@
 """Some utility functions for working with TFJobs."""
 
 import datetime
-import httplib
 import json
 import logging
 import multiprocessing
@@ -11,6 +10,7 @@ import retrying
 from kubeflow.tf_operator import k8s_util, util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
+from six.moves import httplib
 
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
