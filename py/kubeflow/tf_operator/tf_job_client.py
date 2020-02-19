@@ -1,7 +1,6 @@
 """Some utility functions for working with TFJobs."""
 
 import datetime
-import httplib
 import json
 import logging
 import multiprocessing
@@ -11,6 +10,7 @@ import retrying
 from kubeflow.tf_operator import k8s_util, util
 from kubernetes import client as k8s_client
 from kubernetes.client import rest
+from six.moves import http_client
 
 TF_JOB_GROUP = "kubeflow.org"
 TF_JOB_PLURAL = "tfjobs"
@@ -234,7 +234,7 @@ def wait_for_delete(client,
       results = crd_api.get_namespaced_custom_object(
         TF_JOB_GROUP, version, namespace, TF_JOB_PLURAL, name)
     except rest.ApiException as e:
-      if e.status == httplib.NOT_FOUND:
+      if e.status == http_client.NOT_FOUND:
         return
       logging.exception("rest.ApiException thrown")
       raise
