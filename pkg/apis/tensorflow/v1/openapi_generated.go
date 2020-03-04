@@ -63,7 +63,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"status": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Most recently observed status of the TFJob. Read-only (modified by the system).",
+								Description: "Most recently observed status of the TFJob. Populated by the system. Read-only.",
 								Ref:         ref("github.com/kubeflow/common/job_controller/api/v1.JobStatus"),
 							},
 						},

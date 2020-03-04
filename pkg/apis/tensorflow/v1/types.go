@@ -29,13 +29,17 @@ type TFJob struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// Standard Kubernetes object's metadata.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired state of the TFJob.
+	// +optional
 	Spec TFJobSpec `json:"spec,omitempty"`
 
 	// Most recently observed status of the TFJob.
-	// Read-only (modified by the system).
+	// Populated by the system.
+	// Read-only.
+	// +optional
 	Status common.JobStatus `json:"status,omitempty"`
 }
 
@@ -53,6 +57,7 @@ type TFJobSpec struct {
 
 	// Defines the policy for cleaning up pods after the TFJob completes.
 	// Defaults to Running.
+	// +optional
 	CleanPodPolicy *common.CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
 	// Defines the TTL for cleaning up finished TFJobs (temporary
@@ -60,6 +65,7 @@ type TFJobSpec struct {
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
 	// reconcile gets called periodically.
 	// Defaults to infinite.
+	// +optional
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 
 	// A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
@@ -105,6 +111,7 @@ type TFJobList struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// Standard list metadata.
+	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
 
 	// List of TFJobs.
