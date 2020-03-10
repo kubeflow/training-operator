@@ -75,6 +75,9 @@ type TFJobSpec struct {
 	//     "Worker": ReplicaSpec,
 	//   }
 	TFReplicaSpecs map[TFReplicaType]*common.ReplicaSpec `json:"tfReplicaSpecs"`
+
+	// A switch to enable dynamic worker
+	EnableDynamicWorker bool `json:"enableDynamicWorker,omitempty"`
 }
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),
