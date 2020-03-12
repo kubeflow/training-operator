@@ -164,6 +164,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								},
 							},
 						},
+						"enableDynamicWorker": {
+							SchemaProps: spec.SchemaProps{
+								Description: "A switch to enable dynamic worker",
+								Type:        []string{"boolean"},
+								Format:      "",
+							},
+						},
 					},
 					Required: []string{"tfReplicaSpecs"},
 				},
