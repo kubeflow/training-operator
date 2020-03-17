@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
-	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	common "github.com/kubeflow/common/job_controller/api/v1"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
@@ -89,7 +89,7 @@ func TestAddPod(t *testing.T) {
 	if err := tfJobIndexer.Add(unstructured); err != nil {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
-	pod := testutil.NewPod(tfJob, testutil.LabelWorker, 0, t)
+	pod := testutil.NewPod(tfJob, testutil.LabelWorker, 0)
 	ctr.AddPod(pod)
 
 	syncChan <- "sync"
@@ -317,7 +317,7 @@ func TestExitCode(t *testing.T) {
 	if err := tfJobIndexer.Add(unstructured); err != nil {
 		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
 	}
-	pod := testutil.NewPod(tfJob, testutil.LabelWorker, 0, t)
+	pod := testutil.NewPod(tfJob, testutil.LabelWorker, 0)
 	pod.Status.Phase = v1.PodFailed
 	pod.Spec.Containers = append(pod.Spec.Containers, v1.Container{})
 	pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, v1.ContainerStatus{

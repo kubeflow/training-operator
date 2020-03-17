@@ -35,7 +35,7 @@ var (
 	controllerKind = tfv1.SchemeGroupVersionKind
 )
 
-func NewBasePod(name string, tfJob *tfv1.TFJob, t *testing.T) *v1.Pod {
+func NewBasePod(name string, tfJob *tfv1.TFJob) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
@@ -46,18 +46,18 @@ func NewBasePod(name string, tfJob *tfv1.TFJob, t *testing.T) *v1.Pod {
 	}
 }
 
-func NewPod(tfJob *tfv1.TFJob, typ string, index int, t *testing.T) *v1.Pod {
-	pod := NewBasePod(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
+func NewPod(tfJob *tfv1.TFJob, typ string, index int) *v1.Pod {
+	pod := NewBasePod(fmt.Sprintf("%s-%d", typ, index), tfJob)
 	pod.Labels[tfReplicaTypeLabel] = typ
 	pod.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return pod
 }
 
 // create count pods with the given phase for the given tfJob
-func NewPodList(count int32, status v1.PodPhase, tfJob *tfv1.TFJob, typ string, start int32, t *testing.T) []*v1.Pod {
+func NewPodList(count int32, status v1.PodPhase, tfJob *tfv1.TFJob, typ string, start int32) []*v1.Pod {
 	pods := []*v1.Pod{}
 	for i := int32(0); i < count; i++ {
-		newPod := NewPod(tfJob, typ, int(start+i), t)
+		newPod := NewPod(tfJob, typ, int(start+i))
 		newPod.Status = v1.PodStatus{Phase: status}
 		pods = append(pods, newPod)
 	}
@@ -66,13 +66,13 @@ func NewPodList(count int32, status v1.PodPhase, tfJob *tfv1.TFJob, typ string, 
 
 func SetPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1.TFJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32, t *testing.T) {
 	var index int32
-	for _, pod := range NewPodList(pendingPods, v1.PodPending, tfJob, typ, index, t) {
+	for _, pod := range NewPodList(pendingPods, v1.PodPending, tfJob, typ, index) {
 		if err := podIndexer.Add(pod); err != nil {
 			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 		}
 	}
 	index += pendingPods
-	for i, pod := range NewPodList(activePods, v1.PodRunning, tfJob, typ, index, t) {
+	for i, pod := range NewPodList(activePods, v1.PodRunning, tfJob, typ, index) {
 		if restartCounts != nil {
 			pod.Status.ContainerStatuses = []v1.ContainerStatus{{RestartCount: restartCounts[i]}}
 		}
@@ -81,13 +81,13 @@ func SetPodsStatuses(podIndexer cache.Indexer, tfJob *tfv1.TFJob, typ string, pe
 		}
 	}
 	index += activePods
-	for _, pod := range NewPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index, t) {
+	for _, pod := range NewPodList(succeededPods, v1.PodSucceeded, tfJob, typ, index) {
 		if err := podIndexer.Add(pod); err != nil {
 			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 		}
 	}
 	index += succeededPods
-	for _, pod := range NewPodList(failedPods, v1.PodFailed, tfJob, typ, index, t) {
+	for _, pod := range NewPodList(failedPods, v1.PodFailed, tfJob, typ, index) {
 		if err := podIndexer.Add(pod); err != nil {
 			t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 		}

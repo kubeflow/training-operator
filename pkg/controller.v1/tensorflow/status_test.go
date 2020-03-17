@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
 
-	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	common "github.com/kubeflow/common/job_controller/api/v1"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
@@ -65,7 +65,7 @@ func TestFailed(t *testing.T) {
 
 	tfJob := testutil.NewTFJob(3, 0)
 	initializeTFReplicaStatuses(tfJob, tfv1.TFReplicaTypeWorker)
-	pod := testutil.NewBasePod("pod", tfJob, t)
+	pod := testutil.NewBasePod("pod", tfJob)
 	pod.Status.Phase = v1.PodFailed
 	updateTFJobReplicaStatuses(tfJob, tfv1.TFReplicaTypeWorker, pod)
 	if tfJob.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != 1 {
@@ -465,7 +465,7 @@ func TestStatus(t *testing.T) {
 }
 
 func setStatusForTest(tfJob *tfv1.TFJob, typ tfv1.TFReplicaType, failed, succeeded, active int32, t *testing.T) {
-	pod := testutil.NewBasePod("pod", tfJob, t)
+	pod := testutil.NewBasePod("pod", tfJob)
 	var i int32
 	for i = 0; i < failed; i++ {
 		pod.Status.Phase = v1.PodFailed
