@@ -56,11 +56,13 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
   for i in range(num_workers):
     worker_list.append("{name}-worker-{index}.{ns}.svc:2222".format(
       name=job_name, index=i, ns=namespace))
-  # Evaluator is not part of training cluster.
+  evaluator_list = ["{name}-evaluator-0.{ns}.svc:2222".format(
+      name=job_name, ns=namespace))
   cluster_spec = {
     "chief": chief_list,
     "ps": ps_list,
     "worker": worker_list,
+    "evaluator": evaluator_list,
   }
 
   for i in range(num_replicas):
@@ -76,15 +78,6 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "master": "grpc://{fs}:2222".format(fs=full_svc),
       "num_worker_replicas": num_workers + 1,  # Chief is also a worker
       "num_ps_replicas": num_ps,
-    } if not replica == "evaluator" else {
-      # Evaluator has special config.
-      "task_type": replica,
-      "task_id": 0,
-      "cluster_spec": {},
-      "is_chief": is_chief,
-      "master": "",
-      "num_worker_replicas": 0,
-      "num_ps_replicas": 0,
     }
 
     # Compare expected and actual configs

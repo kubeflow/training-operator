@@ -107,11 +107,6 @@ func genClusterSpec(tfjob *tfv1.TFJob) (ClusterSpec, error) {
 	clusterSpec := make(ClusterSpec)
 
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {
-		if rtype == tfv1.TFReplicaTypeEval {
-			// https://www.tensorflow.org/api_docs/python/tf/estimator/RunConfig
-			// evaluator is not part of training cluster
-			continue
-		}
 		rt := strings.ToLower(string(rtype))
 		replicaNames := make([]string, 0, *spec.Replicas)
 
