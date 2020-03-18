@@ -90,7 +90,7 @@ def verify_runconfig(master_host, namespace, job_name, replica, num_ps,
       "is_chief": is_chief,
       "master": "",
       "num_worker_replicas": 0,
-      "num_ps_replicas": 0,    
+      "num_ps_replicas": 0,
     }
 
     # Compare expected and actual configs
