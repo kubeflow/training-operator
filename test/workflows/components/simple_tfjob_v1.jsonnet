@@ -22,7 +22,7 @@ local parts(namespace, name, image) = {
           template: {
             metadata: {
               annotations: {
-                "sidecar.istio.io/inject": "false"
+                "sidecar.istio.io/inject": "false",
               },
             },
             spec: {
@@ -41,7 +41,7 @@ local parts(namespace, name, image) = {
           template: {
             metadata: {
               annotations: {
-                "sidecar.istio.io/inject": "false"
+                "sidecar.istio.io/inject": "false",
               },
             },
             spec: {
@@ -60,7 +60,7 @@ local parts(namespace, name, image) = {
           template: {
             metadata: {
               annotations: {
-                "sidecar.istio.io/inject": "false"
+                "sidecar.istio.io/inject": "false",
               },
             },
             spec: {
