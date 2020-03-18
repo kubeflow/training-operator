@@ -133,14 +133,16 @@ class EstimatorRunconfigTests(test_util.TestCase):
                                          {}).get("PS", {}).get("replicas", 0)
     num_workers = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
       "Worker", {}).get("replicas", 0)
+    num_evaluators = results.get("spec", {}).get("tfReplicaSpecs", {}).get(
+      "Evaluator", {}).get("replicas", 0)
     verify_runconfig(masterHost, self.namespace, self.name, "chief", num_ps,
-                     num_workers)
+                     num_workers, num_evaluators)
     verify_runconfig(masterHost, self.namespace, self.name, "worker", num_ps,
-                     num_workers)
+                     num_workers, num_evaluators)
     verify_runconfig(masterHost, self.namespace, self.name, "ps", num_ps,
-                     num_workers)
+                     num_workers, num_evaluators)
     verify_runconfig(masterHost, self.namespace, self.name, "evaluator", num_ps,
-                     num_workers)
+                     num_workers, num_evaluators)
 
     tf_job_client.terminate_replicas(api_client, self.namespace, self.name,
                                      "chief", 1)
