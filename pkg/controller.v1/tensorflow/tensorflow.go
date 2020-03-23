@@ -32,6 +32,17 @@ const (
 	EnvCustomClusterDomain = "CUSTOM_CLUSTER_DOMAIN"
 )
 
+// TaskSpec is the specification for a task (PS or worker) of the TFJob.
+type TaskSpec struct {
+	Type  string `json:"type"`
+	Index int    `json:"index"`
+}
+
+// ClusterSpec represents a cluster TensorFlow specification.
+// https://www.tensorflow.org/deploy/distributed#create_a_tftrainclusterspec_to_describe_the_cluster
+// It is a map from job names to network addresses.
+type ClusterSpec map[string][]string
+
 // TFConfig is a struct representing the distributed TensorFlow config.
 // This struct is turned into an environment variable TF_CONFIG
 // which is used by TensorFlow processes to configure themselves.
@@ -47,15 +58,28 @@ type TFConfig struct {
 	Environment string `json:"environment"`
 }
 
-// ClusterSpec represents a cluster TensorFlow specification.
-// https://www.tensorflow.org/deploy/distributed#create_a_tftrainclusterspec_to_describe_the_cluster
-// It is a map from job names to network addresses.
-type ClusterSpec map[string][]string
+// SparseClusterSpec enables a server to be configured without needing to know
+// the identity of (for example) all other worker tasks.
+// https://www.tensorflow.org/api_docs/python/tf/train/ClusterSpec
+type SparseClusterSpec struct {
+	Worker map[int32]string `json:"worker"`
+	PS     []string         `json:"ps"`
+}
 
-// TaskSpec is the specification for a task (PS or worker) of the TFJob.
-type TaskSpec struct {
-	Type  string `json:"type"`
-	Index int    `json:"index"`
+type SparseTFConfig struct {
+	Cluster SparseClusterSpec `json:"sparseCluster"`
+	Task    TaskSpec          `json:"task"`
+}
+
+func convertClusterSpecToSparseClusterSpec(clusterSpec ClusterSpec, rtype string, index int32) SparseClusterSpec {
+	sparseClusterSpec := SparseClusterSpec{Worker: map[int32]string{}, PS: []string{}}
+	if rtype == strings.ToLower(string(tfv1.TFReplicaTypePS)) {
+		sparseClusterSpec.PS = append(sparseClusterSpec.PS, clusterSpec[rtype][index])
+	} else if rtype == strings.ToLower(string(tfv1.TFReplicaTypeWorker)) {
+		sparseClusterSpec.PS = clusterSpec[strings.ToLower(string(tfv1.TFReplicaTypePS))]
+		sparseClusterSpec.Worker[index] = clusterSpec[rtype][index]
+	}
+	return sparseClusterSpec
 }
 
 // genTFConfig will generate the environment variable TF_CONFIG
@@ -82,24 +106,36 @@ func genTFConfigJSONStr(tfjob *tfv1.TFJob, rtype, index string) (string, error) 
 		return "", err
 	}
 
-	tfConfig := TFConfig{
-		Cluster: cluster,
-		Task: TaskSpec{
-			Type:  rtype,
-			Index: int(i),
-		},
-		// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
-		// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
-		// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
-		Environment: "cloud",
+	var tfConfigJSONByteSlice []byte
+	if tfjob.Spec.EnableDynamicWorker {
+		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, rtype, int32(i))
+		sparseTFConfig := SparseTFConfig{
+			Cluster: sparseCluster,
+			Task: TaskSpec{
+				Type:  rtype,
+				Index: int(i),
+			},
+		}
+		tfConfigJSONByteSlice, err = json.Marshal(sparseTFConfig)
+	} else {
+		tfConfig := TFConfig{
+			Cluster: cluster,
+			Task: TaskSpec{
+				Type:  rtype,
+				Index: int(i),
+			},
+			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
+			// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
+			// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
+			Environment: "cloud",
+		}
+		tfConfigJSONByteSlice, err = json.Marshal(tfConfig)
 	}
-
-	tfConfigJSONStr, err := json.Marshal(tfConfig)
 	if err != nil {
 		return "", err
 	}
 
-	return string(tfConfigJSONStr), nil
+	return string(tfConfigJSONByteSlice), nil
 }
 
 // genClusterSpec will generate ClusterSpec.
