@@ -48,7 +48,20 @@ func (tc *TFController) reconcileServices(
 		return err
 	}
 
-	serviceSlices := tc.GetServiceSlices(services, replicas, tflogger.LoggerForReplica(tfjob, rt))
+	serviceSlices, servicesToBeRemoved := tc.GetServiceSlices(services, replicas, tflogger.LoggerForReplica(tfjob, rt))
+
+	// Scale down
+	if tfjob.Spec.EnableDynamicWorker && len(servicesToBeRemoved) > 0 {
+		// Currently only allow to scale down services for workers
+		if rtype == tfv1.TFReplicaTypeWorker {
+			tflogger.LoggerForReplica(tfjob, rt).Infof("Removing %d services", len(servicesToBeRemoved))
+			for _, service := range servicesToBeRemoved {
+				tc.ServiceControl.DeleteService(tfjob.Namespace, service.Name, tfjob)
+			}
+		} else {
+			tflogger.LoggerForReplica(tfjob, rt).Warningf("Trying to scale down %s services, which might be a mistake", rt)
+		}
+	}
 
 	for index, serviceSlice := range serviceSlices {
 		if len(serviceSlice) > 1 {

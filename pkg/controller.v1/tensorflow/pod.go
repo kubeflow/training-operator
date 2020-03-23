@@ -70,7 +70,21 @@ func (tc *TFController) reconcilePods(
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
-	podSlices := tc.GetPodSlices(pods, replicas, logger)
+	podSlices, podsToBeRemoved := tc.GetPodSlices(pods, replicas, logger)
+
+	// Scale down
+	if tfjob.Spec.EnableDynamicWorker && len(podsToBeRemoved) > 0 {
+		// Currently only allow to scale down workers
+		if rtype == tfv1.TFReplicaTypeWorker {
+			logger.Infof("Removing %d workers", len(podsToBeRemoved))
+			for _, pods := range podsToBeRemoved {
+				tc.PodControl.DeletePod(tfjob.Namespace, pods.Name, tfjob)
+			}
+		} else {
+			logger.Warningf("Trying to scale down %s pods, which might be a mistake", rt)
+		}
+	}
+
 	for index, podSlice := range podSlices {
 		masterRole = false
 		if len(podSlice) > 1 {
