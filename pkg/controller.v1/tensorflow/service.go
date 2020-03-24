@@ -56,7 +56,9 @@ func (tc *TFController) reconcileServices(
 		if rtype == tfv1.TFReplicaTypeWorker {
 			tflogger.LoggerForReplica(tfjob, rt).Infof("Removing %d services", len(servicesToBeRemoved))
 			for _, service := range servicesToBeRemoved {
-				tc.ServiceControl.DeleteService(tfjob.Namespace, service.Name, tfjob)
+				if err := tc.ServiceControl.DeleteService(tfjob.Namespace, service.Name, tfjob); err != nil {
+					return err
+				}
 			}
 		} else {
 			tflogger.LoggerForReplica(tfjob, rt).Warningf("Trying to scale down %s services, which might be a mistake", rt)

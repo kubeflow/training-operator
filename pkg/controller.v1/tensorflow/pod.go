@@ -78,7 +78,9 @@ func (tc *TFController) reconcilePods(
 		if rtype == tfv1.TFReplicaTypeWorker {
 			logger.Infof("Removing %d workers", len(podsToBeRemoved))
 			for _, pods := range podsToBeRemoved {
-				tc.PodControl.DeletePod(tfjob.Namespace, pods.Name, tfjob)
+				if err := tc.PodControl.DeletePod(tfjob.Namespace, pods.Name, tfjob); err!=nil {
+					return err
+				}
 			}
 		} else {
 			logger.Warningf("Trying to scale down %s pods, which might be a mistake", rt)
