@@ -136,7 +136,8 @@ func TestClusterSpec(t *testing.T) {
 			rt:                  "worker",
 			index:               "0",
 			customClusterDomain: "tf.training.io",
-			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+			expectedClusterSpec: `{"cluster":{"evaluator":["` + testutil.TestTFJobName +
+			        `-evaluator-0.ns3.svc.tf.training.io:2222"],"ps":["` + testutil.TestTFJobName +
 				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
@@ -145,7 +146,8 @@ func TestClusterSpec(t *testing.T) {
 			rt:                  "worker",
 			index:               "0",
 			customClusterDomain: "",
-			expectedClusterSpec: `{"cluster":{"ps":["` + testutil.TestTFJobName +
+			expectedClusterSpec: `{"cluster":{"evaluator":["` + testutil.TestTFJobName +
+			        `-evaluator-0.ns3.svc:2222"],"ps":["` + testutil.TestTFJobName +
 				`-ps-0.ns3.svc:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
