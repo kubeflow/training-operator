@@ -399,6 +399,7 @@ func TestScaleDown(t *testing.T) {
 	}
 
 	tfJob := testutil.NewTFJob(1, 0)
+	tfJob.SelfLink = "/api/v1/namespaces/default/tfjob/test-tfjob"
 	tfJob.Spec.EnableDynamicWorker = true
 	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
