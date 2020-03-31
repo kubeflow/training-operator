@@ -400,7 +400,7 @@ func TestScaleDown(t *testing.T) {
 		return nil
 	}
 
-	tfJob := testutil.NewTFJob(1, 0)
+	tfJob := testutil.NewTFJob(2, 0)
 	tfJob.SelfLink = "/api/v1/namespaces/default/tfjob/test-tfjob"
 	tfJob.Spec.EnableDynamicWorker = true
 	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
@@ -429,7 +429,7 @@ func TestScaleDown(t *testing.T) {
 		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
 	}
 
-	expectedDeletePods := []string{"worker-1", "worker-2"}
+	expectedDeletePods := []string{"worker-2"}
 	if !reflect.DeepEqual(expectedDeletePods, fakePodControl.DeletePodName) {
 		t.Errorf("Scale down workers test failed")
 	}
