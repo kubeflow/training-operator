@@ -350,6 +350,7 @@ func TestExitCode(t *testing.T) {
 	close(stopCh)
 }
 
+// Test scaling down number of workers while training is running
 func TestScaleDown(t *testing.T) {
 	// Prepare the clientset and controller for the test.
 	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
@@ -432,6 +433,7 @@ func TestScaleDown(t *testing.T) {
 	close(stopCh)
 }
 
+// Test scaling up number of workers while training is running
 func TestScaleUp(t *testing.T) {
 	// Prepare the clientset and controller for the test.
 	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
