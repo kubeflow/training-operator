@@ -45,6 +45,8 @@ const (
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
+	// podScaleDown is the normal reason when scaling down number of pods
+	podScaleDown = "PodScaleDown"
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -70,7 +72,25 @@ func (tc *TFController) reconcilePods(
 
 	initializeTFReplicaStatuses(tfjob, rtype)
 
-	podSlices := tc.GetPodSlices(pods, replicas, logger)
+	podSlices, podsToBeRemoved := tc.GetPodSlices(pods, replicas, logger)
+
+	// Scale down
+	if tfjob.Spec.EnableDynamicWorker && len(podsToBeRemoved) > 0 {
+		// Currently only allow to scale down workers
+		if rtype == tfv1.TFReplicaTypeWorker {
+			logger.Infof("Removing %d workers", len(podsToBeRemoved))
+			for _, pod := range podsToBeRemoved {
+				err := tc.PodControl.DeletePod(tfjob.Namespace, pod.Name, tfjob)
+				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, podScaleDown, "Pod: %v.%v is being removed", pod.Namespace, pod.Name)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			logger.Warningf("Trying to scale down %s pods, which might be a mistake", rt)
+		}
+	}
+
 	for index, podSlice := range podSlices {
 		masterRole = false
 		if len(podSlice) > 1 {

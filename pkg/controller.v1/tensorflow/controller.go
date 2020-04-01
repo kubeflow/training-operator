@@ -310,7 +310,9 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	}
 
 	tfjob := sharedTFJob.DeepCopy()
-	tfjobNeedsSync := tc.satisfiedExpectations(tfjob)
+
+	// Sync tfjob every time if EnableDynamicWorker is true
+	tfjobNeedsSync := tfjob.Spec.EnableDynamicWorker || tc.satisfiedExpectations(tfjob)
 
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)

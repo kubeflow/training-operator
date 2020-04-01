@@ -218,9 +218,12 @@ func (jc *JobController) FilterPodsForReplicaType(pods []*v1.Pod, replicaType st
 	return result, nil
 }
 
-// getPodSlices returns a slice, which element is the slice of pod.
-func (jc *JobController) GetPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) [][]*v1.Pod {
+// GetPodSlices returns two slices -- one is for the pods to be kept, and the other is for the pods to be removed.
+// For the first slice, assuming the return object is podSlices, then podSlices[i] is an
+// array of pointers to pods corresponding to Pods for replica i.
+func (jc *JobController) GetPodSlices(pods []*v1.Pod, replicas int, logger *log.Entry) ([][]*v1.Pod, []*v1.Pod) {
 	podSlices := make([][]*v1.Pod, replicas)
+	podsToBeRemoved := []*v1.Pod{}
 	for _, pod := range pods {
 		if _, ok := pod.Labels[jc.Controller.GetReplicaIndexLabelKey()]; !ok {
 			logger.Warning("The pod do not have the index label.")
@@ -231,11 +234,14 @@ func (jc *JobController) GetPodSlices(pods []*v1.Pod, replicas int, logger *log.
 			logger.Warningf("Error when strconv.Atoi: %v", err)
 			continue
 		}
-		if index < 0 || index >= replicas {
+
+		if index < 0 {
 			logger.Warningf("The label index is not expected: %d", index)
-		} else {
+		} else if index < replicas {
 			podSlices[index] = append(podSlices[index], pod)
+		} else {
+			podsToBeRemoved = append(podsToBeRemoved, pod)
 		}
 	}
-	return podSlices
+	return podSlices, podsToBeRemoved
 }

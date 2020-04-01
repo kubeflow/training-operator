@@ -17,12 +17,14 @@ package tensorflow
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
 
 	common "github.com/kubeflow/common/job_controller/api/v1"
@@ -348,5 +350,166 @@ func TestExitCode(t *testing.T) {
 	if !found {
 		t.Errorf("Failed to delete pod %s", pod.Name)
 	}
+	close(stopCh)
+}
+
+// Test scaling down number of workers while training is running
+func TestScaleDown(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	fakePodControl := &controller.FakePodControl{}
+	ctr.PodControl = fakePodControl
+	ctr.Recorder = &record.FakeRecorder{}
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
+	}
+	go run(stopCh)
+
+	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
+		return nil
+	}
+
+	tfJob := testutil.NewTFJob(2, 0)
+	tfJob.SelfLink = "/api/v1/namespaces/default/tfjob/test-tfjob"
+	tfJob.Spec.EnableDynamicWorker = true
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+	pod0 := testutil.NewPod(tfJob, testutil.LabelWorker, 0)
+	pod1 := testutil.NewPod(tfJob, testutil.LabelWorker, 1)
+	pod2 := testutil.NewPod(tfJob, testutil.LabelWorker, 2)
+
+	if err := podIndexer.Add(pod0); err != nil {
+		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+	}
+	if err := podIndexer.Add(pod1); err != nil {
+		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+	}
+	if err := podIndexer.Add(pod2); err != nil {
+		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+	}
+	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+	if err != nil {
+		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	}
+
+	expectedDeletePods := []string{"worker-2"}
+	if !reflect.DeepEqual(expectedDeletePods, fakePodControl.DeletePodName) {
+		t.Errorf("Scale down workers test failed")
+	}
+	close(stopCh)
+}
+
+// Test scaling up number of workers while training is running
+func TestScaleUp(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	fakePodControl := &controller.FakePodControl{}
+	ctr.PodControl = fakePodControl
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
+	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+
+	stopCh := make(chan struct{})
+	run := func(<-chan struct{}) {
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run the controller: %v", err)
+		}
+	}
+	go run(stopCh)
+
+	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
+		return nil
+	}
+
+	tfJob := testutil.NewTFJob(3, 0)
+	tfJob.Spec.EnableDynamicWorker = true
+	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
+	if err != nil {
+		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
+	}
+
+	if err := tfJobIndexer.Add(unstructured); err != nil {
+		t.Errorf("Failed to add tfjob to tfJobIndexer: %v", err)
+	}
+	pod0 := testutil.NewPod(tfJob, testutil.LabelWorker, 0)
+
+	if err := podIndexer.Add(pod0); err != nil {
+		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
+	}
+
+	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+	if err != nil {
+		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	}
+
+	if !(len(fakePodControl.Templates) == 2 && fakePodControl.Templates[0].Name == "test-tfjob-worker-1" && fakePodControl.Templates[1].Name == "test-tfjob-worker-2") {
+		t.Error("Scale up workers test failed")
+	}
+
 	close(stopCh)
 }

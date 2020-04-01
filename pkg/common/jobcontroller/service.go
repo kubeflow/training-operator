@@ -123,11 +123,12 @@ func (jc *JobController) FilterServicesForReplicaType(services []*v1.Service, re
 	return result, nil
 }
 
-// getServiceSlices returns a slice, which element is the slice of service.
-// Assume the return object is serviceSlices, then serviceSlices[i] is an
+// GetServiceSlices returns two slices -- one is for the services to be kept, and the other is for the services to be removed.
+// For the first slice, assuming the return object is serviceSlices, then serviceSlices[i] is an
 // array of pointers to services corresponding to Services for replica i.
-func (jc *JobController) GetServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) [][]*v1.Service {
+func (jc *JobController) GetServiceSlices(services []*v1.Service, replicas int, logger *log.Entry) ([][]*v1.Service, []*v1.Service) {
 	serviceSlices := make([][]*v1.Service, replicas)
+	servicesToBeRemoved := []*v1.Service{}
 	for _, service := range services {
 		if _, ok := service.Labels[jc.Controller.GetReplicaIndexLabelKey()]; !ok {
 			logger.Warning("The service do not have the index label.")
@@ -138,11 +139,13 @@ func (jc *JobController) GetServiceSlices(services []*v1.Service, replicas int, 
 			logger.Warningf("Error when strconv.Atoi: %v", err)
 			continue
 		}
-		if index < 0 || index >= replicas {
+		if index < 0 {
 			logger.Warningf("The label index is not expected: %d", index)
-		} else {
+		} else if index < replicas {
 			serviceSlices[index] = append(serviceSlices[index], service)
+		} else {
+			servicesToBeRemoved = append(servicesToBeRemoved, service)
 		}
 	}
-	return serviceSlices
+	return serviceSlices, servicesToBeRemoved
 }
