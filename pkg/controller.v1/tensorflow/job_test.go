@@ -26,8 +26,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
 
+	common "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
@@ -153,6 +153,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 
 	tfJob := testutil.NewTFJob(1, 0)
 	annotations := map[string]string{
+
 		"annotation1": "1",
 	}
 	labels := map[string]string{

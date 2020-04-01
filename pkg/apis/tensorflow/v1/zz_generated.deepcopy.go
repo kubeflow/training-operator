@@ -19,7 +19,7 @@
 package v1
 
 import (
-	apiv1 "github.com/kubeflow/common/job_controller/api/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -55,7 +55,7 @@ func (in *TFJob) DeepCopyObject() runtime.Object {
 func (in *TFJobList) DeepCopyInto(out *TFJobList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]TFJob, len(*in))
@@ -99,7 +99,7 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	}
 	if in.CleanPodPolicy != nil {
 		in, out := &in.CleanPodPolicy, &out.CleanPodPolicy
-		*out = new(apiv1.CleanPodPolicy)
+		*out = new(commonv1.CleanPodPolicy)
 		**out = **in
 	}
 	if in.TTLSecondsAfterFinished != nil {
@@ -109,14 +109,14 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	}
 	if in.TFReplicaSpecs != nil {
 		in, out := &in.TFReplicaSpecs, &out.TFReplicaSpecs
-		*out = make(map[TFReplicaType]*apiv1.ReplicaSpec, len(*in))
+		*out = make(map[TFReplicaType]*commonv1.ReplicaSpec, len(*in))
 		for key, val := range *in {
-			var outVal *apiv1.ReplicaSpec
+			var outVal *commonv1.ReplicaSpec
 			if val == nil {
 				(*out)[key] = nil
 			} else {
 				in, out := &val, &outVal
-				*out = new(apiv1.ReplicaSpec)
+				*out = new(commonv1.ReplicaSpec)
 				(*in).DeepCopyInto(*out)
 			}
 			(*out)[key] = outVal

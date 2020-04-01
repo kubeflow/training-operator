@@ -67,7 +67,7 @@ func main() {
 
 func swaggify(name string) string {
 	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/common/job_controller/api/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/v1/", "", -1)
 	name = strings.Replace(name, "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/", "", -1)
 	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
 	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)

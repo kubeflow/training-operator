@@ -29,6 +29,7 @@ func newFormatter(old logrus.Formatter, hook *Hook) logrus.Formatter {
 type Hook struct {
 	Field        string
 	Skip         int
+	Depth        int
 	levels       []logrus.Level
 	SkipPrefixes []string
 	Formatter    func(file, function string, line int) string
@@ -53,7 +54,7 @@ func (hook *Hook) findCaller() (string, string, int) {
 		function string
 		line     int
 	)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < hook.Depth; i++ {
 		pc, file, line = getCaller(hook.Skip + i)
 		if !hook.skipFile(file) {
 			break
@@ -82,6 +83,7 @@ func NewHook(levels ...logrus.Level) *Hook {
 	hook := Hook{
 		Field:        "_source",
 		Skip:         5,
+		Depth:        20,
 		levels:       levels,
 		SkipPrefixes: []string{"logrus/", "logrus@"},
 		Formatter: func(file, function string, line int) string {

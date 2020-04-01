@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - "1.12"
+  - "1.13"
 
 go_import_path: github.com/kubeflow/tf-operator
 
