@@ -28,7 +28,6 @@ import (
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
@@ -43,6 +42,7 @@ import (
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 )
 
 const (
@@ -107,7 +107,7 @@ func Run(opt *options.ServerOption) error {
 
 	// Create clients.
 	kubeClientSet, leaderElectionClientSet, tfJobClientSet,
-		kubeBatchClientSet, err := createClientSets(kcfg)
+		volcanoClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func Run(opt *options.ServerOption) error {
 	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg, opt.Namespace)
 
 	// Create tf controller.
-	tc := controller.NewTFController(unstructuredInformer, kubeClientSet, kubeBatchClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)
+	tc := controller.NewTFController(unstructuredInformer, kubeClientSet, volcanoClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
@@ -184,7 +184,7 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, kubebatchclient.Interface, error) {
+func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, volcanoclient.Interface, error) {
 
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
@@ -201,11 +201,11 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 		return nil, nil, nil, nil, err
 	}
 
-	kubeBatchClientSet, err := kubebatchclient.NewForConfig(restclientset.AddUserAgent(config, "kube-batch"))
+	volcanoClientSet, err := volcanoclient.NewForConfig(restclientset.AddUserAgent(config, "volcano"))
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, kubeBatchClientSet, nil
+	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, volcanoClientSet, nil
 }
 
 func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {

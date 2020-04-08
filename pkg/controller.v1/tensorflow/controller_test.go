@@ -19,16 +19,17 @@ import (
 	"testing"
 	"time"
 
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+
+	common "github.com/kubeflow/common/job_controller/api/v1"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	common "github.com/kubeflow/common/job_controller/api/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
@@ -44,7 +45,7 @@ var (
 func newTFController(
 	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
-	kubeBatchClientSet kubebatchclient.Interface,
+	volcanoClientSet volcanoclient.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
 	option options.ServerOption,
@@ -57,7 +58,7 @@ func newTFController(
 
 	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll)
 
-	ctr := NewTFController(tfJobInformer, kubeClientSet, kubeBatchClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
+	ctr := NewTFController(tfJobInformer, kubeClientSet, volcanoClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}
 	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
@@ -213,8 +214,8 @@ func TestNormalPath(t *testing.T) {
 		},
 		)
 
-		// Prepare the kube-batch clientset and controller for the test.
-		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		// Prepare the volcano clientset and controller for the test.
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
 				GroupVersion: &v1.SchemeGroupVersion,
@@ -230,7 +231,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		option := options.ServerOption{}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -366,8 +367,8 @@ func TestRun(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
 			GroupVersion: &v1.SchemeGroupVersion,
@@ -382,7 +383,7 @@ func TestRun(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady

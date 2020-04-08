@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,8 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+
 
 	common "github.com/kubeflow/common/job_controller/api/v1"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
@@ -104,7 +105,7 @@ func NewTFController(
 	// This variable is for unstructured informer.
 	tfJobInformer tfjobinformersv1.TFJobInformer,
 	kubeClientSet kubeclientset.Interface,
-	kubeBatchClientSet kubebatchclient.Interface,
+	volcanoClientSet volcanoclient.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
@@ -126,7 +127,7 @@ func NewTFController(
 	// Create base controller
 	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, option.GangSchedulerName, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, tfv1.Plural)
+		option.EnableGangScheduling, option.GangSchedulerName, kubeClientSet, volcanoClientSet, kubeInformerFactory, tfv1.Plural)
 	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob

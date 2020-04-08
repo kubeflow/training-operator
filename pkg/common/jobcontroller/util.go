@@ -51,7 +51,7 @@ func GenExpectationServicesKey(jobKey, replicaType string) string {
 	return jobKey + "/" + strings.ToLower(replicaType) + "/services"
 }
 
-// Gen PodGroupName for kube-batch, which is used for crd podGroup and annotation in pod
+// Gen PodGroupName for volcano, which is used for crd podGroup and annotation in pod
 func GenPodGroupName(jobName string) string {
 	return jobName
 }
