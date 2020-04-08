@@ -234,39 +234,6 @@
   revision = "09e1ac17011c3a384d4123381ac3bb0128402dbf"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2ba84ac2019c51a749d704eec204a02ede3521df5984a029bc104c8d874931df"
-  name = "github.com/kubeflow/tf-operator"
-  packages = [
-    "cmd/tf-operator.v1/app",
-    "cmd/tf-operator.v1/app/options",
-    "pkg/apis/tensorflow/v1",
-    "pkg/apis/tensorflow/validation",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/tensorflow/v1",
-    "pkg/client/clientset/versioned/typed/tensorflow/v1/fake",
-    "pkg/client/informers/externalversions",
-    "pkg/client/informers/externalversions/internalinterfaces",
-    "pkg/client/informers/externalversions/tensorflow",
-    "pkg/client/informers/externalversions/tensorflow/v1",
-    "pkg/client/listers/tensorflow/v1",
-    "pkg/common/jobcontroller",
-    "pkg/common/util/v1/testutil",
-    "pkg/common/util/v1/unstructured",
-    "pkg/control",
-    "pkg/controller.v1/tensorflow",
-    "pkg/logger",
-    "pkg/util",
-    "pkg/util/k8sutil",
-    "pkg/util/signals",
-    "pkg/util/train",
-    "pkg/version",
-  ]
-  pruneopts = "NUT"
-  revision = "d455e6ef57dc2cb85315ea8ad9281fe5e9c6c9f3"
-
-[[projects]]
   digest = "1:680c0fba95a0cff934e350b1ad6774d8229378a3e37d9902e07e2861e82a5908"
   name = "github.com/kubernetes-sigs/kube-batch"
   packages = [
@@ -1038,6 +1005,24 @@
   pruneopts = "NUT"
   revision = "581e00157fb1a0435d4fac54a52d1ca1e481d60e"
 
+[[projects]]
+  digest = "1:6ac22399e515bd45215693ac9717f8fecfbe722c3464b6497361528f70d11234"
+  name = "volcano.sh/volcano"
+  packages = [
+    "pkg/apis/batch/v1alpha1",
+    "pkg/apis/bus/v1alpha1",
+    "pkg/apis/scheduling",
+    "pkg/apis/scheduling/v1beta1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/batch/v1alpha1",
+    "pkg/client/clientset/versioned/typed/bus/v1alpha1",
+    "pkg/client/clientset/versioned/typed/scheduling/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "81201a7d567a9964670fdc3b66efd27dfc8d4df0"
+  version = "v0.4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1046,32 +1031,6 @@
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/kubeflow/common/job_controller/api/v1",
-    "github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app",
-    "github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options",
-    "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1",
-    "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation",
-    "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned",
-    "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme",
-    "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1",
-    "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake",
-    "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions",
-    "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces",
-    "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow",
-    "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1",
-    "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1",
-    "github.com/kubeflow/tf-operator/pkg/common/jobcontroller",
-    "github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil",
-    "github.com/kubeflow/tf-operator/pkg/common/util/v1/unstructured",
-    "github.com/kubeflow/tf-operator/pkg/control",
-    "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow",
-    "github.com/kubeflow/tf-operator/pkg/logger",
-    "github.com/kubeflow/tf-operator/pkg/util",
-    "github.com/kubeflow/tf-operator/pkg/util/k8sutil",
-    "github.com/kubeflow/tf-operator/pkg/util/signals",
-    "github.com/kubeflow/tf-operator/pkg/util/train",
-    "github.com/kubeflow/tf-operator/pkg/version",
-    "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1",
-    "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned",
     "github.com/onrik/logrus/filename",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promauto",
@@ -1125,6 +1084,8 @@
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/kubernetes/pkg/api/testapi",
     "k8s.io/kubernetes/pkg/controller",
+    "volcano.sh/volcano/pkg/apis/scheduling/v1beta1",
+    "volcano.sh/volcano/pkg/client/clientset/versioned",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
