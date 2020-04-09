@@ -427,6 +427,12 @@ func (tc *TFController) reconcileTFJobs(tfjob *tfv1.TFJob) error {
 	}
 
 	if tfJobExceedsLimit {
+		// Set job completion time if it has not set yet.
+		if tfjob.Status.CompletionTime == nil {
+			now := metav1.Now()
+			tfjob.Status.CompletionTime = &now
+		}
+
 		// If the TFJob exceeds backoff limit or is past active deadline
 		// delete all pods and services, then set the status to failed
 		if err := tc.deletePodsAndServices(tfjob, pods); err != nil {
