@@ -300,14 +300,6 @@ func TestExitCode(t *testing.T) {
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
-	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run the controller: %v", err)
-		}
-	}
-	go run(stopCh)
-
 	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
 		return nil
 	}
@@ -351,7 +343,6 @@ func TestExitCode(t *testing.T) {
 	if !found {
 		t.Errorf("Failed to delete pod %s", pod.Name)
 	}
-	close(stopCh)
 }
 
 // Test scaling down number of workers while training is running
@@ -391,14 +382,6 @@ func TestScaleDown(t *testing.T) {
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
-	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run the controller: %v", err)
-		}
-	}
-	go run(stopCh)
-
 	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
 		return nil
 	}
@@ -436,7 +419,6 @@ func TestScaleDown(t *testing.T) {
 	if !reflect.DeepEqual(expectedDeletePods, fakePodControl.DeletePodName) {
 		t.Errorf("Scale down workers test failed")
 	}
-	close(stopCh)
 }
 
 // Test scaling up number of workers while training is running
@@ -475,14 +457,6 @@ func TestScaleUp(t *testing.T) {
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
-	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run the controller: %v", err)
-		}
-	}
-	go run(stopCh)
-
 	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
 		return nil
 	}
@@ -512,5 +486,4 @@ func TestScaleUp(t *testing.T) {
 		t.Error("Scale up workers test failed")
 	}
 
-	close(stopCh)
 }
