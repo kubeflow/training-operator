@@ -139,15 +139,6 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
 	tfJobIndexer := ctr.tfJobInformer.GetIndexer()
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
-	/*run := func(<-chan struct{}) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run the controller: %v", err)
-		}
-	}
-	go run(stopCh)
-	*/
 	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
 		return nil
 	}
@@ -194,8 +185,6 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	if v != "1" {
 		t.Errorf("Annotations value does not equal")
 	}
-	time.Sleep(1 * time.Second)
-
 }
 
 func TestDeletePodsAndServices(t *testing.T) {
