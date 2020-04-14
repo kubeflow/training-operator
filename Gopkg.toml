@@ -87,3 +87,7 @@ required = [
 [[constraint]]
   name = "volcano.sh/volcano"
   version = "0.4.0"
+
+[[constraint]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "0.15.10"

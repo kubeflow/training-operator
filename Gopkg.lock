@@ -566,12 +566,12 @@
   version = "kubernetes-1.15.10"
 
 [[projects]]
-  digest = "1:aff2ac035da399e2ccd6d58a0c484f87a52c82868b652397727c2ce1a3aba7f0"
+  digest = "1:6adb48001ef8ecc300912d06645f6351fdd9ccb55f9274a3f5149cf7e9e6024b"
   name = "k8s.io/apiextensions-apiserver"
   packages = ["pkg/features"]
   pruneopts = "NUT"
-  revision = "408db4a50408e2149acbd657bceb2480c13cb0a4"
-  version = "kubernetes-1.11.2"
+  revision = "3b4db33c402cdc8c02b57ee9b94456b1f7a84fa1"
+  version = "v0.15.11"
 
 [[projects]]
   digest = "1:22886736f45f4a44419347db6eee500ba17470986c5c97ce62424b9341466b57"
