@@ -1,0 +1,47 @@
+# This file contains golangci-lint configurations
+
+run:
+  # default concurrency is a available CPU number
+  concurrency: 4
+
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 300s
+
+  # exit code when at least one issue was found, default is 1
+  issues-exit-code: 1
+
+  # include test files or not, default is true
+  tests: true
+
+  # which dirs to skip: issues from them won't be reported;
+  skip-dirs:
+    - test_job/client
+    - pkg/apis/common/v1/zz_generated.deepcopy.go
+    - pkg/apis/common/v1/zz_generated.defaults.go
+    - test_job/apis/test_job/v1/zz_generated.deepcopy.go
+    - test_job/apis/test_job/v1/zz_generated.defaults.go
+
+  # default is true. Enables skipping of directories:
+  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  skip-dirs-use-default: true
+
+linters:
+  # please, do not use `enable-all`: it's deprecated and will be removed soon.
+  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - errcheck
+    - misspell
+    - lll
+    - typecheck
+    - unconvert
+    - unused
+    - varcheck
+    - govet
+    - staticcheck
+linters-settings:
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    line-length: 240

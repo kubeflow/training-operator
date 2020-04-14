@@ -33,7 +33,7 @@ fi
 mv pkg/apis/tensorflow/v1/openapi_generated.go pkg/apis/tensorflow/v1/openapi_generated.go.backup
 
 echo "Generating OpenAPI specification ..."
-go run vendor/k8s.io/code-generator/cmd/openapi-gen/main.go --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/job_controller/api/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt
+go run vendor/k8s.io/code-generator/cmd/openapi-gen/main.go --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/pkg/apis/common/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt
 
 echo "Generating swagger file ..."
 go run hack/python-sdk/main.go 0.1 > ${SWAGGER_CODEGEN_FILE}

@@ -1030,7 +1030,7 @@
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
-    "github.com/kubeflow/common/job_controller/api/v1",
+    "github.com/kubeflow/common/pkg/apis/common/v1",
     "github.com/onrik/logrus/filename",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promauto",
