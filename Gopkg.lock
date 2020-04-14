@@ -227,24 +227,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:77edf86659dbc30631c76be50d5ba4a22dabc4a3a3e236b6f96854f21333034b"
+  digest = "1:bf93f9a7bc758d1a753635aa4ecdfb5ce200fd2d5fe740b899b04d7b5b20d9fe"
   name = "github.com/kubeflow/common"
-  packages = ["job_controller/api/v1"]
+  packages = ["pkg/apis/common/v1"]
   pruneopts = "NUT"
-  revision = "09e1ac17011c3a384d4123381ac3bb0128402dbf"
-
-[[projects]]
-  digest = "1:680c0fba95a0cff934e350b1ad6774d8229378a3e37d9902e07e2861e82a5908"
-  name = "github.com/kubernetes-sigs/kube-batch"
-  packages = [
-    "pkg/apis/scheduling/v1alpha1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/scheduling/v1alpha1",
-  ]
-  pruneopts = "NUT"
-  revision = "b0dbd4f2df590237cecee48f463bfb8746cfa357"
-  version = "v0.3"
+  revision = "fda69c7bdd3870ab5981538542c2e6b01fe076be"
 
 [[projects]]
   branch = "master"
