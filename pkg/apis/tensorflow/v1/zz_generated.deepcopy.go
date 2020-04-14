@@ -55,7 +55,7 @@ func (in *TFJob) DeepCopyObject() runtime.Object {
 func (in *TFJobList) DeepCopyInto(out *TFJobList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]TFJob, len(*in))
