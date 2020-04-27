@@ -47,7 +47,7 @@ be added to one of the helper modules:
 ## Adding a TFJob Spec
 
 This is needed if you want to use your own TFJob spec instead of an existing one. An example can be found
-[here](https://github.com/kubeflow/tf-operator/tree/master/test/workflows/components/simple_tfjob_v1alpha2.jsonnet).
+[here](https://github.com/kubeflow/tf-operator/tree/master/test/workflows/components/simple_tfjob_v1.jsonnet).
 All TFJob specs should be placed in the same directory.
 
 These are similar to actual TFJob specs. Note that many of these are using the 
