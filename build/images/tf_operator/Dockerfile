@@ -4,7 +4,11 @@ ADD . /go/src/github.com/kubeflow/tf-operator
 
 WORKDIR /go/src/github.com/kubeflow/tf-operator
 
-RUN go build -o tf-operator.v1 ./cmd/tf-operator.v1
+RUN if [ "$(uname -m)" = "aarch64" ]; then \
+        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o tf-operator.v1 ./cmd/tf-operator.v1; \
+    else \
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o tf-operator.v1 ./cmd/tf-operator.v1; \
+    fi
 
 FROM gcr.io/distroless/base-debian10
 
