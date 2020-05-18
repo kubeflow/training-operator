@@ -25,8 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/apis/autoscaling"
-	api "k8s.io/kubernetes/pkg/apis/core"
-	core "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/apis/core"
 )
 
 func addConversionFuncs(scheme *runtime.Scheme) error {
@@ -151,8 +150,7 @@ func Convert_autoscaling_PodsMetricSource_To_v1_PodsMetricSource(in *autoscaling
 }
 
 func Convert_v1_PodsMetricSource_To_autoscaling_PodsMetricSource(in *autoscalingv1.PodsMetricSource, out *autoscaling.PodsMetricSource, s conversion.Scope) error {
-	var metricType autoscaling.MetricTargetType
-	metricType = autoscaling.AverageValueMetricType
+	metricType := autoscaling.AverageValueMetricType
 
 	out.Target = autoscaling.MetricTarget{
 		Type:         metricType,
@@ -296,9 +294,13 @@ func Convert_autoscaling_HorizontalPodAutoscaler_To_v1_HorizontalPodAutoscaler(i
 		return err
 	}
 
+	// clear any pre-existing round-trip annotations to make sure the only ones set are ones we produced during conversion
+	annotations, copiedAnnotations := autoscaling.DropRoundTripHorizontalPodAutoscalerAnnotations(out.Annotations)
+	out.Annotations = annotations
+
 	otherMetrics := make([]autoscalingv1.MetricSpec, 0, len(in.Spec.Metrics))
 	for _, metric := range in.Spec.Metrics {
-		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == api.ResourceCPU && metric.Resource.Target.AverageUtilization != nil {
+		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == core.ResourceCPU && metric.Resource.Target.AverageUtilization != nil {
 			continue
 		}
 
@@ -325,20 +327,15 @@ func Convert_autoscaling_HorizontalPodAutoscaler_To_v1_HorizontalPodAutoscaler(i
 		}
 	}
 
-	if len(otherMetrics) > 0 || len(in.Status.CurrentMetrics) > 0 || len(currentConditions) > 0 {
-		old := out.Annotations
-		out.Annotations = make(map[string]string, len(old)+3)
-		if old != nil {
-			for k, v := range old {
-				out.Annotations[k] = v
-			}
-		}
-	}
-
 	if len(otherMetrics) > 0 {
 		otherMetricsEnc, err := json.Marshal(otherMetrics)
 		if err != nil {
 			return err
+		}
+		// copy before mutating
+		if !copiedAnnotations {
+			copiedAnnotations = true
+			out.Annotations = autoscaling.DeepCopyStringMap(out.Annotations)
 		}
 		out.Annotations[autoscaling.MetricSpecsAnnotation] = string(otherMetricsEnc)
 	}
@@ -348,6 +345,11 @@ func Convert_autoscaling_HorizontalPodAutoscaler_To_v1_HorizontalPodAutoscaler(i
 		if err != nil {
 			return err
 		}
+		// copy before mutating
+		if !copiedAnnotations {
+			copiedAnnotations = true
+			out.Annotations = autoscaling.DeepCopyStringMap(out.Annotations)
+		}
 		out.Annotations[autoscaling.MetricStatusesAnnotation] = string(currentMetricsEnc)
 	}
 
@@ -355,6 +357,11 @@ func Convert_autoscaling_HorizontalPodAutoscaler_To_v1_HorizontalPodAutoscaler(i
 		currentConditionsEnc, err := json.Marshal(currentConditions)
 		if err != nil {
 			return err
+		}
+		// copy before mutating
+		if !copiedAnnotations {
+			copiedAnnotations = true
+			out.Annotations = autoscaling.DeepCopyStringMap(out.Annotations)
 		}
 		out.Annotations[autoscaling.HorizontalPodAutoscalerConditionsAnnotation] = string(currentConditionsEnc)
 	}
@@ -369,38 +376,32 @@ func Convert_v1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(i
 
 	if otherMetricsEnc, hasOtherMetrics := out.Annotations[autoscaling.MetricSpecsAnnotation]; hasOtherMetrics {
 		var otherMetrics []autoscalingv1.MetricSpec
-		if err := json.Unmarshal([]byte(otherMetricsEnc), &otherMetrics); err != nil {
-			return err
-		}
-
-		// the normal Spec conversion could have populated out.Spec.Metrics with a single element, so deal with that
-		outMetrics := make([]autoscaling.MetricSpec, len(otherMetrics)+len(out.Spec.Metrics))
-		for i, metric := range otherMetrics {
-			if err := Convert_v1_MetricSpec_To_autoscaling_MetricSpec(&metric, &outMetrics[i], s); err != nil {
-				return err
+		if err := json.Unmarshal([]byte(otherMetricsEnc), &otherMetrics); err == nil {
+			// the normal Spec conversion could have populated out.Spec.Metrics with a single element, so deal with that
+			outMetrics := make([]autoscaling.MetricSpec, len(otherMetrics)+len(out.Spec.Metrics))
+			for i, metric := range otherMetrics {
+				if err := Convert_v1_MetricSpec_To_autoscaling_MetricSpec(&metric, &outMetrics[i], s); err != nil {
+					return err
+				}
 			}
+			if out.Spec.Metrics != nil {
+				outMetrics[len(otherMetrics)] = out.Spec.Metrics[0]
+			}
+			out.Spec.Metrics = outMetrics
 		}
-		if out.Spec.Metrics != nil {
-			outMetrics[len(otherMetrics)] = out.Spec.Metrics[0]
-		}
-		out.Spec.Metrics = outMetrics
-		delete(out.Annotations, autoscaling.MetricSpecsAnnotation)
 	}
 
 	if currentMetricsEnc, hasCurrentMetrics := out.Annotations[autoscaling.MetricStatusesAnnotation]; hasCurrentMetrics {
 		// ignore any existing status values -- the ones here have more information
 		var currentMetrics []autoscalingv1.MetricStatus
-		if err := json.Unmarshal([]byte(currentMetricsEnc), &currentMetrics); err != nil {
-			return err
-		}
-
-		out.Status.CurrentMetrics = make([]autoscaling.MetricStatus, len(currentMetrics))
-		for i, currentMetric := range currentMetrics {
-			if err := Convert_v1_MetricStatus_To_autoscaling_MetricStatus(&currentMetric, &out.Status.CurrentMetrics[i], s); err != nil {
-				return err
+		if err := json.Unmarshal([]byte(currentMetricsEnc), &currentMetrics); err == nil {
+			out.Status.CurrentMetrics = make([]autoscaling.MetricStatus, len(currentMetrics))
+			for i, currentMetric := range currentMetrics {
+				if err := Convert_v1_MetricStatus_To_autoscaling_MetricStatus(&currentMetric, &out.Status.CurrentMetrics[i], s); err != nil {
+					return err
+				}
 			}
 		}
-		delete(out.Annotations, autoscaling.MetricStatusesAnnotation)
 	}
 
 	// autoscaling/v1 formerly had an implicit default applied in the controller.  In v2beta1, we apply it explicitly.
@@ -411,7 +412,7 @@ func Convert_v1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(i
 			{
 				Type: autoscaling.ResourceMetricSourceType,
 				Resource: &autoscaling.ResourceMetricSource{
-					Name: api.ResourceCPU,
+					Name: core.ResourceCPU,
 					Target: autoscaling.MetricTarget{
 						Type: autoscaling.UtilizationMetricType,
 					},
@@ -424,18 +425,18 @@ func Convert_v1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(i
 
 	if currentConditionsEnc, hasCurrentConditions := out.Annotations[autoscaling.HorizontalPodAutoscalerConditionsAnnotation]; hasCurrentConditions {
 		var currentConditions []autoscalingv1.HorizontalPodAutoscalerCondition
-		if err := json.Unmarshal([]byte(currentConditionsEnc), &currentConditions); err != nil {
-			return err
-		}
-
-		out.Status.Conditions = make([]autoscaling.HorizontalPodAutoscalerCondition, len(currentConditions))
-		for i, currentCondition := range currentConditions {
-			if err := Convert_v1_HorizontalPodAutoscalerCondition_To_autoscaling_HorizontalPodAutoscalerCondition(&currentCondition, &out.Status.Conditions[i], s); err != nil {
-				return err
+		if err := json.Unmarshal([]byte(currentConditionsEnc), &currentConditions); err == nil {
+			out.Status.Conditions = make([]autoscaling.HorizontalPodAutoscalerCondition, len(currentConditions))
+			for i, currentCondition := range currentConditions {
+				if err := Convert_v1_HorizontalPodAutoscalerCondition_To_autoscaling_HorizontalPodAutoscalerCondition(&currentCondition, &out.Status.Conditions[i], s); err != nil {
+					return err
+				}
 			}
 		}
-		delete(out.Annotations, autoscaling.HorizontalPodAutoscalerConditionsAnnotation)
 	}
+
+	// drop round-tripping annotations after converting to internal
+	out.Annotations, _ = autoscaling.DropRoundTripHorizontalPodAutoscalerAnnotations(out.Annotations)
 
 	return nil
 }
@@ -449,7 +450,7 @@ func Convert_autoscaling_HorizontalPodAutoscalerSpec_To_v1_HorizontalPodAutoscal
 	out.MaxReplicas = in.MaxReplicas
 
 	for _, metric := range in.Metrics {
-		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == api.ResourceCPU {
+		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == core.ResourceCPU {
 			if metric.Resource.Target.AverageUtilization != nil {
 				out.TargetCPUUtilizationPercentage = new(int32)
 				*out.TargetCPUUtilizationPercentage = *metric.Resource.Target.AverageUtilization
@@ -474,7 +475,7 @@ func Convert_v1_HorizontalPodAutoscalerSpec_To_autoscaling_HorizontalPodAutoscal
 			{
 				Type: autoscaling.ResourceMetricSourceType,
 				Resource: &autoscaling.ResourceMetricSource{
-					Name: api.ResourceCPU,
+					Name: core.ResourceCPU,
 					Target: autoscaling.MetricTarget{
 						Type: autoscaling.UtilizationMetricType,
 					},
@@ -496,7 +497,7 @@ func Convert_autoscaling_HorizontalPodAutoscalerStatus_To_v1_HorizontalPodAutosc
 	out.DesiredReplicas = in.DesiredReplicas
 
 	for _, metric := range in.CurrentMetrics {
-		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == api.ResourceCPU {
+		if metric.Type == autoscaling.ResourceMetricSourceType && metric.Resource != nil && metric.Resource.Name == core.ResourceCPU {
 			if metric.Resource.Current.AverageUtilization != nil {
 
 				out.CurrentCPUUtilizationPercentage = new(int32)
@@ -519,7 +520,7 @@ func Convert_v1_HorizontalPodAutoscalerStatus_To_autoscaling_HorizontalPodAutosc
 			{
 				Type: autoscaling.ResourceMetricSourceType,
 				Resource: &autoscaling.ResourceMetricStatus{
-					Name: api.ResourceCPU,
+					Name: core.ResourceCPU,
 				},
 			},
 		}

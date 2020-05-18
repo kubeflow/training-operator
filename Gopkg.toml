@@ -10,8 +10,8 @@ required = [
 ]
 
 [[constraint]]
-  name = "github.com/emicklei/go-restful"
-  version = "2.7.1"
+  name = "github.com/kubeflow/common"
+  version = "v0.3.1"
 
 [[constraint]]
   name = "github.com/golang/protobuf"
