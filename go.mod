@@ -1,0 +1,70 @@
+module github.com/kubeflow/tf-operator
+
+go 1.14
+
+require (
+	cloud.google.com/go v0.36.0
+	github.com/PuerkitoBio/purell v1.1.0
+	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
+	github.com/beorn7/perks v1.0.0
+	github.com/davecgh/go-spew v1.1.1
+	github.com/docker/distribution v2.6.0-rc.1.0.20170726174610-edc3ab29cdff+incompatible
+	github.com/emicklei/go-restful v2.8.1+incompatible
+	github.com/go-openapi/jsonpointer v0.18.0
+	github.com/go-openapi/jsonreference v0.18.0
+	github.com/go-openapi/spec v0.18.0
+	github.com/go-openapi/swag v0.18.0
+	github.com/gogo/protobuf v1.2.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
+	github.com/golang/protobuf v1.2.0
+	github.com/google/go-cmp v0.4.1
+	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
+	github.com/google/uuid v1.1.1
+	github.com/googleapis/gnostic v0.2.0
+	github.com/hashicorp/golang-lru v0.5.0
+	github.com/imdario/mergo v0.3.7
+	github.com/json-iterator/go v1.1.5
+	github.com/konsorten/go-windows-terminal-sequences v1.0.1
+	github.com/kubeflow/common v0.3.1
+	github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860
+	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329
+	github.com/matttproud/golang_protobuf_extensions v1.0.1
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
+	github.com/opencontainers/go-digest v1.0.0-rc1
+	github.com/pkg/errors v0.9.1
+	github.com/pmezard/go-difflib v1.0.0
+	github.com/prometheus/client_golang v0.9.3
+	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
+	github.com/prometheus/common v0.4.1
+	github.com/prometheus/procfs v0.0.0-20190523193104-a7aeb8df3389
+	github.com/sirupsen/logrus v1.3.0
+	github.com/spf13/pflag v1.0.3
+	github.com/stretchr/testify v1.3.0
+	golang.org/x/crypto v0.0.0-20190208162236-193df9c0f06f
+	golang.org/x/net v0.0.0-20190206173232-65e2d4e15006
+	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
+	golang.org/x/sys v0.0.0-20190209173611-3b5209105503
+	golang.org/x/text v0.3.0
+	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+	golang.org/x/tools v0.0.0-20190208222737-3744606dbb67
+	google.golang.org/appengine v1.4.0
+	gopkg.in/inf.v0 v0.9.1
+	gopkg.in/square/go-jose.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.2
+	k8s.io/api v0.16.10-0.20200417022101-d49a3f108dab
+	k8s.io/apiextensions-apiserver v0.16.10-0.20200417030104-e0288c14e6fd
+	k8s.io/apimachinery v0.16.10-beta.0.0.20200410003356-f336d9be0221
+	k8s.io/apiserver v0.16.10-0.20200417024013-3987e0d46aec
+	k8s.io/client-go v0.16.10-0.20200417022747-002560d5bf54
+	k8s.io/code-generator v0.16.9-beta.0
+	k8s.io/component-base v0.18.2
+	k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6
+	k8s.io/klog v0.1.0
+	k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31
+	k8s.io/kubernetes v1.16.9
+	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	sigs.k8s.io/yaml v1.2.0
+)
