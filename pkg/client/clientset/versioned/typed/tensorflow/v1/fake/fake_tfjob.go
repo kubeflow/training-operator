@@ -129,7 +129,7 @@ func (c *FakeTFJobs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.
 // Patch applies the patch and returns the patched tFJob.
 func (c *FakeTFJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *tensorflowv1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, data, subresources...), &tensorflowv1.TFJob{})
+		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, pt, data, subresources...), &tensorflowv1.TFJob{})
 
 	if obj == nil {
 		return nil, err

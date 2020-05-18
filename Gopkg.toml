@@ -23,7 +23,8 @@ required = [
 
 [[constraint]]
   name = "github.com/kubernetes-sigs/kube-batch"
-  version = "v0.3"
+  #version = "v0.3"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -83,6 +84,10 @@ required = [
 
 [[override]]
   name = "k8s.io/apiserver"
+  version = "kubernetes-1.16.9"
+
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
   version = "kubernetes-1.16.9"
 
 [prune]

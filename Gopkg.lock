@@ -229,17 +229,19 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:680c0fba95a0cff934e350b1ad6774d8229378a3e37d9902e07e2861e82a5908"
+  branch = "master"
+  digest = "1:1b1acf12a610cd04167940c2da6bdbf8362e751590ec60ef248ebff8fcd92f0c"
   name = "github.com/kubernetes-sigs/kube-batch"
   packages = [
     "pkg/apis/scheduling/v1alpha1",
+    "pkg/apis/scheduling/v1alpha2",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/scheduling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/scheduling/v1alpha2",
   ]
   pruneopts = "NUT"
-  revision = "b0dbd4f2df590237cecee48f463bfb8746cfa357"
-  version = "v0.3"
+  revision = "2e934d1c88604d01dcb5c40ff9f0534875a10730"
 
 [[projects]]
   branch = "master"
@@ -582,12 +584,12 @@
   version = "kubernetes-1.16.9"
 
 [[projects]]
-  digest = "1:aff2ac035da399e2ccd6d58a0c484f87a52c82868b652397727c2ce1a3aba7f0"
+  digest = "1:b6ae8a8274108daa96bbf3b84b22ac7155772f2b63c9d2f95fa34ec122fcf901"
   name = "k8s.io/apiextensions-apiserver"
   packages = ["pkg/features"]
   pruneopts = "NUT"
-  revision = "408db4a50408e2149acbd657bceb2480c13cb0a4"
-  version = "kubernetes-1.11.2"
+  revision = "e0288c14e6fda28eefbd584da8c657447e414f96"
+  version = "kubernetes-1.16.9"
 
 [[projects]]
   digest = "1:8df491485887dbb495dfd3ee4e5259af1f356bbecdb64348d4440b9bc504c422"
