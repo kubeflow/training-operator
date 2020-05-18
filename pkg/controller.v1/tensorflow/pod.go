@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	common "github.com/kubeflow/common/job_controller/api/v1"
+	common "github.com/kubeflow/common/pkg/apis/common/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	tflogger "github.com/kubeflow/tf-operator/pkg/logger"

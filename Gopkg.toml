@@ -31,28 +31,30 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.16.9"
 
 [[constraint]]
   # kube-openapi does not have any version.
   name = "k8s.io/kube-openapi"
-  branch = "release-1.10"
+  branch = "release-1.16"
+  # xychu kubeflow/common
+  # k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "v1.12.3"
+  version = "v1.16.9"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.16.9"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.16.9"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.16.9"
 
 [[constraint]]
   name = "github.com/prometheus/client_golang"
@@ -81,7 +83,7 @@ required = [
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.16.9"
 
 [prune]
   go-tests = true

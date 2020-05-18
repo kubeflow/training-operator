@@ -15,7 +15,7 @@
 package v1
 
 import (
-	common "github.com/kubeflow/common/job_controller/api/v1"
+	common "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 const (

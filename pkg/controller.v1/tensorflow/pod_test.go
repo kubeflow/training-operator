@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
 
-	common "github.com/kubeflow/common/job_controller/api/v1"
+	common "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -139,7 +139,7 @@ func TestClusterSpec(t *testing.T) {
 			index:               "0",
 			customClusterDomain: "tf.training.io",
 			expectedClusterSpec: `{"cluster":{"evaluator":["` + testutil.TestTFJobName +
-			        `-evaluator-0.ns3.svc.tf.training.io:2222"],"ps":["` + testutil.TestTFJobName +
+				`-evaluator-0.ns3.svc.tf.training.io:2222"],"ps":["` + testutil.TestTFJobName +
 				`-ps-0.ns3.svc.tf.training.io:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc.tf.training.io:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
@@ -149,7 +149,7 @@ func TestClusterSpec(t *testing.T) {
 			index:               "0",
 			customClusterDomain: "",
 			expectedClusterSpec: `{"cluster":{"evaluator":["` + testutil.TestTFJobName +
-			        `-evaluator-0.ns3.svc:2222"],"ps":["` + testutil.TestTFJobName +
+				`-evaluator-0.ns3.svc:2222"],"ps":["` + testutil.TestTFJobName +
 				`-ps-0.ns3.svc:2222"],"worker":["` + testutil.TestTFJobName +
 				`-worker-0.ns3.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
