@@ -30,7 +30,7 @@ CODEGEN_PKG=${SCRIPT_ROOT}/vendor/k8s.io/code-generator
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
 
-${CODEGEN_PKG}/generate-groups.sh "all" \
+bash ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
  tensorflow:v1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt
