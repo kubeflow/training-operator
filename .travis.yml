@@ -1,7 +1,8 @@
 language: go
 
 go:
-  - "1.12"
+  - "1.13"
+  - "1.14"
 
 go_import_path: github.com/kubeflow/tf-operator
 
@@ -10,6 +11,7 @@ install:
   - go get github.com/mattn/goveralls
   - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.18.0
   - go install ./vendor/k8s.io/code-generator/cmd/openapi-gen
+  - go mod vendor
 
 script:
   - hack/verify-codegen.sh
