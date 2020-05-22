@@ -198,8 +198,7 @@ func Convert_autoscaling_PodsMetricSource_To_v2beta1_PodsMetricSource(in *autosc
 
 func Convert_v2beta1_PodsMetricSource_To_autoscaling_PodsMetricSource(in *autoscalingv2beta1.PodsMetricSource, out *autoscaling.PodsMetricSource, s conversion.Scope) error {
 	targetAverageValue := &in.TargetAverageValue
-	var metricType autoscaling.MetricTargetType
-	metricType = autoscaling.AverageValueMetricType
+	metricType := autoscaling.AverageValueMetricType
 
 	out.Target = autoscaling.MetricTarget{
 		Type:         metricType,
@@ -213,9 +212,7 @@ func Convert_v2beta1_PodsMetricSource_To_autoscaling_PodsMetricSource(in *autosc
 }
 
 func Convert_autoscaling_ExternalMetricStatus_To_v2beta1_ExternalMetricStatus(in *autoscaling.ExternalMetricStatus, out *autoscalingv2beta1.ExternalMetricStatus, s conversion.Scope) error {
-	if &in.Current.AverageValue != nil {
-		out.CurrentAverageValue = in.Current.AverageValue
-	}
+	out.CurrentAverageValue = in.Current.AverageValue
 	out.MetricName = in.Metric.Name
 	if in.Current.Value != nil {
 		out.CurrentValue = *in.Current.Value
@@ -291,4 +288,31 @@ func Convert_v2beta1_PodsMetricStatus_To_autoscaling_PodsMetricStatus(in *autosc
 		Selector: in.Selector,
 	}
 	return nil
+}
+
+func Convert_autoscaling_HorizontalPodAutoscaler_To_v2beta1_HorizontalPodAutoscaler(in *autoscaling.HorizontalPodAutoscaler, out *autoscalingv2beta1.HorizontalPodAutoscaler, s conversion.Scope) error {
+	if err := autoConvert_autoscaling_HorizontalPodAutoscaler_To_v2beta1_HorizontalPodAutoscaler(in, out, s); err != nil {
+		return err
+	}
+
+	// clear any pre-existing round-trip annotations to make sure the only ones set are ones we produced during conversion
+	annotations, _ := autoscaling.DropRoundTripHorizontalPodAutoscalerAnnotations(out.Annotations)
+	out.Annotations = annotations
+
+	return nil
+}
+
+func Convert_v2beta1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(in *autoscalingv2beta1.HorizontalPodAutoscaler, out *autoscaling.HorizontalPodAutoscaler, s conversion.Scope) error {
+	if err := autoConvert_v2beta1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(in, out, s); err != nil {
+		return err
+	}
+
+	// drop round-tripping annotations after converting to internal
+	out.Annotations, _ = autoscaling.DropRoundTripHorizontalPodAutoscalerAnnotations(out.Annotations)
+
+	return nil
+}
+
+func Convert_autoscaling_HorizontalPodAutoscalerSpec_To_v2beta1_HorizontalPodAutoscalerSpec(in *autoscaling.HorizontalPodAutoscalerSpec, out *autoscalingv2beta1.HorizontalPodAutoscalerSpec, s conversion.Scope) error {
+	return autoConvert_autoscaling_HorizontalPodAutoscalerSpec_To_v2beta1_HorizontalPodAutoscalerSpec(in, out, s)
 }

@@ -19,3 +19,10 @@ package v1alpha1
 // GroupNameAnnotationKey is the annotation key of Pod to identify
 // which PodGroup it belongs to.
 const GroupNameAnnotationKey = "scheduling.k8s.io/group-name"
+
+// GroupMinMemberAnnotationKey is the annotation key of Pod to specify
+// the minimal number of members/tasks to run the pod group with.
+//
+// If Pod has GroupNameAnnotationKey annotation specified,
+// then min member value specified in the aforementioned PodGroup will be used instead.
+const GroupMinMemberAnnotationKey = "scheduling.k8s.io/group-min-member"
