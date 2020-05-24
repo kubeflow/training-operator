@@ -1,0 +1,25 @@
+apiVersion: kubeflow.org/v1
+kind: TFJob
+metadata:
+  name: multi-worker
+spec:
+  cleanPodPolicy: None
+  tfReplicaSpecs:
+    Worker:
+      replicas: 2
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: kubeflowimages/multi_worker_strategy:v20200522-2a5b081c
+              volumeMounts:
+                - mountPath: /train
+                  name: training
+              resources:
+                limits:
+                  nvidia.com/gpu: 1
+          volumes:
+            - name: training
+              persistentVolumeClaim:
+                claimName: strategy-volume
