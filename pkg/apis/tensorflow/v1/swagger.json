@@ -181,6 +181,10 @@
           "type": "integer",
           "format": "int32"
         },
+        "successPolicy": {
+          "description": "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
+          "type": "string"
+        },
         "cleanPodPolicy": {
           "description": "Defines the policy for cleaning up pods after the TFJob completes. Defaults to Running.",
           "type": "string"
