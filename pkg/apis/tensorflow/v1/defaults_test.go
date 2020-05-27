@@ -51,8 +51,11 @@ func expectedTFJob(cleanPodPolicy common.CleanPodPolicy, restartPolicy common.Re
 		)
 	}
 
+	defaultSuccessPolicy := SuccessPolicyDefault
+
 	return &TFJob{
 		Spec: TFJobSpec{
+			SuccessPolicy:  &defaultSuccessPolicy,
 			CleanPodPolicy: &cleanPodPolicy,
 			TFReplicaSpecs: map[TFReplicaType]*common.ReplicaSpec{
 				TFReplicaTypeWorker: &common.ReplicaSpec{
