@@ -125,11 +125,3 @@ type TFJobList struct {
 	// List of TFJobs.
 	Items []TFJob `json:"items"`
 }
-
-// SuccessPolicy is the success policy.
-type SuccessPolicy string
-
-const (
-	SuccessPolicyDefault    SuccessPolicy = ""
-	SuccessPolicyAllWorkers SuccessPolicy = "AllWorkers"
-)

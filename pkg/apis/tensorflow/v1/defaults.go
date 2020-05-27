@@ -97,7 +97,7 @@ func SetDefaults_TFJob(tfjob *TFJob) {
 	}
 	// Set default success policy to "".
 	if tfjob.Spec.SuccessPolicy == nil {
-		defaultPolicy := ""
+		defaultPolicy := SuccessPolicyDefault
 		tfjob.Spec.SuccessPolicy = &defaultPolicy
 	}
 
