@@ -55,6 +55,11 @@ type TFJobSpec struct {
 	// +optional
 	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 
+	// SuccessPolicy defines the policy to mark the TFJob as succeeded.
+	// Default to "", using the default rules.
+	// +optional
+	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
+
 	// Defines the policy for cleaning up pods after the TFJob completes.
 	// Defaults to Running.
 	// +optional

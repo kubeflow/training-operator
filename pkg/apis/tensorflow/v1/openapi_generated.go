@@ -410,6 +410,13 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 							Format:      "int32",
 						},
 					},
+					"successPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"cleanPodPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Defines the policy for cleaning up pods after the TFJob completes. Defaults to Running.",
