@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
 )
 
@@ -52,9 +51,9 @@ func TestGenLabels(t *testing.T) {
 	expctedKey := "test-key"
 
 	labels := testutil.GenLabels(testKey)
-	jobNamelabel := jobcontroller.JobNameLabel
+	jobNamelabel := testutil.JobNameLabel
 
-	controllerName := jobcontroller.ControllerNameLabel
+	controllerName := testutil.ControllerNameLabel
 	expectedcontrollerName := "tf-operator"
 
 	if labels[jobNamelabel] != expctedKey {

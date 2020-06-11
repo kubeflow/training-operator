@@ -25,6 +25,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31
 	k8s.io/kubernetes v1.16.9
 	sigs.k8s.io/yaml v1.2.0 // indirect
+	volcano.sh/volcano v0.4.0
 )
 
 replace (
