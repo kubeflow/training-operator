@@ -12,12 +12,12 @@ import (
 	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	tflogger "github.com/kubeflow/common/pkg/util"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/unstructured"
-	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (

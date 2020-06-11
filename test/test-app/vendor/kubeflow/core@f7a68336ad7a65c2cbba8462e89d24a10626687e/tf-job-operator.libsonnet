@@ -103,8 +103,6 @@
               {
                 command: [
                   "/opt/tf-operator.v1",
-                  "--alsologtostderr",
-                  "-v=1",
                 ],
                 env: [
                   {

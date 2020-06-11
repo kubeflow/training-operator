@@ -10,17 +10,19 @@ import (
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonutil "github.com/kubeflow/common/pkg/util"
+	"github.com/kubeflow/common/pkg/util/k8sutil"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
-	"github.com/kubeflow/tf-operator/pkg/util/k8sutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	failedMarshalTFJobReason = "InvalidTFJobSpec"
+	failedMarshalTFJobReason  = "InvalidTFJobSpec"
+	FailedDeleteJobReason     = "FailedDeleteJob"
+	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 )
 
 var (
@@ -30,6 +32,24 @@ var (
 	})
 )
 
+func (tc *TFController) DeleteJob(job interface{}) error {
+	tfJob, ok := job.(*tfv1.TFJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of TFJob", tfJob)
+	}
+
+	log := commonutil.LoggerForJob(tfJob)
+	if err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{}); err != nil {
+		tc.JobController.Recorder.Eventf(tfJob, v1.EventTypeWarning, FailedDeleteJobReason, "Error deleting: %v", err)
+		log.Errorf("failed to delete job %s/%s, %v", tfJob.Namespace, tfJob.Name, err)
+		return err
+	}
+
+	tc.JobController.Recorder.Eventf(tfJob, v1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", tfJob.Name)
+	log.Infof("job %s/%s has been deleted", tfJob.Namespace, tfJob.Name)
+	return nil
+}
+
 // When a pod is added, set the defaults and enqueue the current tfjob.
 func (tc *TFController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
@@ -38,7 +58,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		un, ok := obj.(*metav1unstructured.Unstructured)
 		logger := &log.Entry{}
 		if ok {
-			logger = tflogger.LoggerForUnstructured(un, tfv1.Kind)
+			logger = commonutil.LoggerForUnstructured(un, tfv1.Kind)
 		}
 		logger.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.
@@ -48,10 +68,10 @@ func (tc *TFController) addTFJob(obj interface{}) {
 			// TODO(jlewi): v1 doesn't appear to define an error type.
 			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalTFJobReason, errMsg)
 
-			status := common.JobStatus{
-				Conditions: []common.JobCondition{
+			status := commonv1.JobStatus{
+				Conditions: []commonv1.JobCondition{
 					{
-						Type:               common.JobFailed,
+						Type:               commonv1.JobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),
 						LastTransitionTime: metav1.Now(),
@@ -90,11 +110,13 @@ func (tc *TFController) addTFJob(obj interface{}) {
 	scheme.Scheme.Default(tfJob)
 
 	msg := fmt.Sprintf("TFJob %s is created.", tfJob.Name)
-	logger := tflogger.LoggerForJob(tfJob)
+	logger := commonutil.LoggerForJob(tfJob)
 	logger.Info(msg)
 
 	// Add a created condition.
-	err = updateTFJobConditions(tfJob, common.JobCreated, tfJobCreatedReason, msg)
+	//[Jack]
+	// err = updateTFJobConditions(tfJob, common.JobCreated, tfJobCreatedReason, msg)
+	err = commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, tfJobCreatedReason, msg)
 	if err != nil {
 		logger.Errorf("Append tfJob condition error: %v", err)
 		return
@@ -132,11 +154,11 @@ func (tc *TFController) updateTFJob(old, cur interface{}) {
 
 	// check if need to add a new rsync for ActiveDeadlineSeconds
 	if curTFJob.Status.StartTime != nil {
-		curTFJobADS := curTFJob.Spec.ActiveDeadlineSeconds
+		curTFJobADS := curTFJob.Spec.RunPolicy.ActiveDeadlineSeconds
 		if curTFJobADS == nil {
 			return
 		}
-		oldTFJobADS := oldTFJob.Spec.ActiveDeadlineSeconds
+		oldTFJobADS := oldTFJob.Spec.RunPolicy.ActiveDeadlineSeconds
 		if oldTFJobADS == nil || *oldTFJobADS != *curTFJobADS {
 			now := metav1.Now()
 			start := curTFJob.Status.StartTime.Time
@@ -147,75 +169,4 @@ func (tc *TFController) updateTFJob(old, cur interface{}) {
 			log.Infof("job ActiveDeadlineSeconds updated, will rsync after %d seconds", total-passed)
 		}
 	}
-}
-
-func (tc *TFController) deletePodsAndServices(tfJob *tfv1.TFJob, pods []*v1.Pod) error {
-	if len(pods) == 0 {
-		return nil
-	}
-
-	// Delete nothing when the cleanPodPolicy is None.
-	if *tfJob.Spec.CleanPodPolicy == common.CleanPodPolicyNone {
-		return nil
-	}
-
-	for _, pod := range pods {
-		if *tfJob.Spec.CleanPodPolicy == common.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
-			continue
-		}
-		if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
-			return err
-		}
-		// Pod and service have the same name, thus the service could be deleted using pod's name.
-		if err := tc.ServiceControl.DeleteService(pod.Namespace, pod.Name, tfJob); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (tc *TFController) cleanupTFJob(tfJob *tfv1.TFJob) error {
-	currentTime := time.Now()
-	ttl := tfJob.Spec.TTLSecondsAfterFinished
-	if ttl == nil {
-		// do nothing if the cleanup delay is not set
-		return nil
-	}
-	duration := time.Second * time.Duration(*ttl)
-	if currentTime.After(tfJob.Status.CompletionTime.Add(duration)) {
-		err := tc.deleteTFJobHandler(tfJob)
-		if err != nil {
-			tflogger.LoggerForJob(tfJob).Warnf("Cleanup TFJob error: %v.", err)
-			return err
-		}
-		return nil
-	}
-	key, err := KeyFunc(tfJob)
-	if err != nil {
-		tflogger.LoggerForJob(tfJob).Warnf("Couldn't get key for tfjob object: %v", err)
-		return err
-	}
-	tc.WorkQueue.AddRateLimited(key)
-	return nil
-}
-
-// deleteTFJob deletes the given TFJob.
-func (tc *TFController) deleteTFJob(tfJob *tfv1.TFJob) error {
-	return tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
-}
-
-func getTotalReplicas(tfjob *tfv1.TFJob) int32 {
-	tfjobReplicas := int32(0)
-	for _, r := range tfjob.Spec.TFReplicaSpecs {
-		tfjobReplicas += *r.Replicas
-	}
-	return tfjobReplicas
-}
-
-func getTotalFailedReplicas(tfjob *tfv1.TFJob) int32 {
-	totalFailedReplicas := int32(0)
-	for rtype := range tfjob.Status.ReplicaStatuses {
-		totalFailedReplicas += tfjob.Status.ReplicaStatuses[rtype].Failed
-	}
-	return totalFailedReplicas
 }

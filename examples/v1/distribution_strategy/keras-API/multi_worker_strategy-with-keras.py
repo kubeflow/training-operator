@@ -42,7 +42,7 @@ def make_datasets_unbatched():
 def build_and_compile_cnn_model():
   model = models.Sequential()
   model.add(
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+      layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
   model.add(layers.MaxPooling2D((2, 2)))
   model.add(layers.Conv2D(64, (3, 3), activation='relu'))
   model.add(layers.MaxPooling2D((2, 2)))
@@ -63,10 +63,9 @@ def build_and_compile_cnn_model():
 def decay(epoch):
   if epoch < 3: #pylint: disable=no-else-return
     return 1e-3
-  elif epoch >= 3 and epoch < 7:
+  if 3 <= epoch < 7:
     return 1e-4
-  else:
-    return 1e-5
+  return 1e-5
 
 
 def main(args):
@@ -75,7 +74,7 @@ def main(args):
   # layers on each device across all workers
   # if your GPUs don't support NCCL, replace "communication" with another
   strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-    communication=tf.distribute.experimental.CollectiveCommunication.NCCL)
+      communication=tf.distribute.experimental.CollectiveCommunication.NCCL)
 
   BATCH_SIZE_PER_REPLICA = 64
   BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
@@ -84,7 +83,7 @@ def main(args):
     ds_train = make_datasets_unbatched().batch(BATCH_SIZE).repeat()
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = \
-                                        tf.data.experimental.AutoShardPolicy.DATA
+        tf.data.experimental.AutoShardPolicy.DATA
     ds_train = ds_train.with_options(options)
     # Model building/compiling need to be within `strategy.scope()`.
     multi_worker_model = build_and_compile_cnn_model()
@@ -105,11 +104,11 @@ def main(args):
         epoch + 1, multi_worker_model.optimizer.lr.numpy()))
 
   callbacks = [
-    tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_prefix,
-                                       save_weights_only=True),
-    tf.keras.callbacks.LearningRateScheduler(decay),
-    PrintLR()
+      tf.keras.callbacks.TensorBoard(log_dir='./logs'),
+      tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_prefix,
+                                         save_weights_only=True),
+      tf.keras.callbacks.LearningRateScheduler(decay),
+      PrintLR()
   ]
 
   # Keras' `model.fit()` trains the model with specified number of epochs and
