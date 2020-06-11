@@ -118,7 +118,7 @@ def wait_for_condition(client,
                        name,
                        expected_condition,
                        version="v1",
-                       timeout=datetime.timedelta(minutes=10),
+                       timeout=datetime.timedelta(minutes=30),
                        polling_interval=datetime.timedelta(seconds=30),
                        status_callback=None):
   """Waits until any of the specified conditions occur.
@@ -182,7 +182,7 @@ def wait_for_job(client,
                  namespace,
                  name,
                  version="v1",
-                 timeout=datetime.timedelta(minutes=10),
+                 timeout=datetime.timedelta(minutes=15),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
   """Wait for the specified job to finish.
@@ -211,7 +211,7 @@ def wait_for_delete(client,
                     namespace,
                     name,
                     version="v1",
-                    timeout=datetime.timedelta(minutes=5),
+                    timeout=datetime.timedelta(minutes=15),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
   """Wait for the specified job to be deleted.
@@ -256,10 +256,10 @@ def get_labels(name, replica_type=None, replica_index=None):
     TF_JOB_NAME_LABEL: name,
   }
   if replica_type:
-    labels["tf-replica-type"] = str.lower(replica_type)
+    labels["replica-type"] = str.lower(replica_type)
 
   if replica_index:
-    labels["tf-replica-index"] = replica_index
+    labels["replica-index"] = replica_index
   return labels
 
 
@@ -294,7 +294,7 @@ def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
     namespace,
     pod_selector,
     phases,
-    timeout=datetime.timedelta(minutes=4))
+    timeout=datetime.timedelta(minutes=30))
 
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
@@ -330,7 +330,7 @@ def terminate_replicas(api_client,
     exit_code: What exit code to terminate the pods with.
   """
   target = "{name}-{replica}".format(name=name, replica=replica)
-  pod_labels = get_labels(namespace, name)
+  pod_labels = get_labels(name, replica_type=replica)
   pod_selector = to_selector(pod_labels)
   masterHost = api_client.configuration.host
 
@@ -342,7 +342,7 @@ def terminate_replicas(api_client,
     api_client,
     namespace,
     pod_selector, ["Running"],
-    timeout=datetime.timedelta(minutes=4))
+    timeout=datetime.timedelta(minutes=15))
   logging.info("Pods are ready")
   logging.info("Issuing the terminate request")
   for num in range(num_targets):

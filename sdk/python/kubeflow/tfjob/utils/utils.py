@@ -48,7 +48,6 @@ def get_labels(name, master=False, replica_type=None, replica_index=None):
   """
   labels = {
     constants.TFJOB_GROUP_LABEL: 'kubeflow.org',
-    constants.TFJOB_CONTROLLER_LABEL: 'tf-operator',
     constants.TFJOB_NAME_LABEL: name,
   }
 

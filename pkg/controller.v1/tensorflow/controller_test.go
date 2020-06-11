@@ -19,32 +19,33 @@ import (
 	"testing"
 	"time"
 
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
+	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
-	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
 var (
-	tfJobRunning   = common.JobRunning
-	tfJobSucceeded = common.JobSucceeded
+	tfJobRunning   = commonv1.JobRunning
+	tfJobSucceeded = commonv1.JobSucceeded
 )
 
 func newTFController(
 	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
-	kubeBatchClientSet kubebatchclient.Interface,
+	volcanoClientSet volcanoclient.Interface,
 	tfJobClientSet tfjobclientset.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
 	option options.ServerOption,
@@ -57,7 +58,7 @@ func newTFController(
 
 	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll)
 
-	ctr := NewTFController(tfJobInformer, kubeClientSet, kubeBatchClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
+	ctr := NewTFController(tfJobInformer, kubeClientSet, volcanoClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}
 	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
@@ -69,8 +70,8 @@ func TestNormalPath(t *testing.T) {
 		ps     int
 
 		// pod setup
-		ControllerError error
-		jobKeyForget    bool
+		// ControllerError error
+		// jobKeyForget    bool
 
 		pendingWorkerPods   int32
 		activeWorkerPods    int32
@@ -98,7 +99,7 @@ func TestNormalPath(t *testing.T) {
 		expectedSucceededPSPods int32
 		expectedFailedPSPods    int32
 
-		expectedCondition       *common.JobConditionType
+		expectedCondition       *commonv1.JobConditionType
 		expectedConditionReason string
 
 		// There are some cases that should not check start time since the field should be set in the previous sync loop.
@@ -106,7 +107,6 @@ func TestNormalPath(t *testing.T) {
 	}{
 		"Local TFJob is created": {
 			1, 0,
-			nil, true,
 			0, 0, 0, 0,
 			0, 0, 0, 0,
 			0, 0,
@@ -119,7 +119,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created": {
 			4, 2,
-			nil, true,
 			0, 0, 0, 0,
 			0, 0, 0, 0,
 			0, 0,
@@ -131,7 +130,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are pending": {
 			4, 2,
-			nil, true,
 			4, 0, 0, 0,
 			2, 0, 0, 0,
 			4, 2,
@@ -143,7 +141,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are running": {
 			4, 2,
-			nil, true,
 			0, 4, 0, 0,
 			0, 2, 0, 0,
 			4, 2,
@@ -155,7 +152,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending": {
 			4, 2,
-			nil, true,
 			2, 0, 0, 0,
 			1, 0, 0, 0,
 			2, 1,
@@ -167,7 +163,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending, 1 worker is running": {
 			4, 2,
-			nil, true,
 			2, 1, 0, 0,
 			1, 0, 0, 0,
 			3, 1,
@@ -179,7 +174,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending, 1 worker is succeeded": {
 			4, 2,
-			nil, true,
 			2, 0, 1, 0,
 			1, 0, 0, 0,
 			3, 1,
@@ -191,7 +185,6 @@ func TestNormalPath(t *testing.T) {
 		},
 		"Distributed TFJob (4 workers, 2 PS) is succeeded": {
 			4, 2,
-			nil, true,
 			0, 0, 4, 0,
 			0, 0, 2, 0,
 			4, 2,
@@ -213,11 +206,11 @@ func TestNormalPath(t *testing.T) {
 		},
 		)
 
-		// Prepare the kube-batch clientset and controller for the test.
-		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		// Prepare the volcano clientset and controller for the test.
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &v1.SchemeGroupVersion,
+				GroupVersion: &batchv1beta1.SchemeGroupVersion,
 			},
 		},
 		)
@@ -230,17 +223,11 @@ func TestNormalPath(t *testing.T) {
 		}
 		option := options.ServerOption{}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady
 		tfJobIndexer := ctr.tfJobInformer.GetIndexer()
-
-		var actual *tfv1.TFJob
-		ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
-			actual = tfJob
-			return nil
-		}
 
 		// Run the test logic.
 		tfJob := testutil.NewTFJob(tc.worker, tc.ps)
@@ -261,20 +248,8 @@ func TestNormalPath(t *testing.T) {
 		testutil.SetServices(serviceIndexer, tfJob, testutil.LabelWorker, tc.activeWorkerServices, t)
 		testutil.SetServices(serviceIndexer, tfJob, testutil.LabelPS, tc.activePSServices, t)
 
-		forget, err := ctr.syncTFJob(testutil.GetKey(tfJob, t))
-		// We need requeue syncJob task if podController error
-		if tc.ControllerError != nil {
-			if err == nil {
-				t.Errorf("%s: Syncing jobs would return error when podController exception", name)
-			}
-		} else {
-			if err != nil {
-				t.Errorf("%s: unexpected error when syncing jobs %v", name, err)
-			}
-		}
-		if forget != tc.jobKeyForget {
-			t.Errorf("%s: unexpected forget value. Expected %v, saw %v\n", name, tc.jobKeyForget, forget)
-		}
+		//_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+		_ = ctr.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
 		fakePodControl := ctr.PodControl.(*controller.FakePodControl)
 		fakeServiceControl := ctr.ServiceControl.(*control.FakeServiceControl)
@@ -310,48 +285,48 @@ func TestNormalPath(t *testing.T) {
 			}
 		}
 		// Validate worker status.
-		if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)] != nil {
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Active != tc.expectedActiveWorkerPods {
+		if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)] != nil {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Active != tc.expectedActiveWorkerPods {
 				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n",
 					name, tc.expectedActiveWorkerPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Active)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Active)
 			}
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Succeeded != tc.expectedSucceededWorkerPods {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Succeeded != tc.expectedSucceededWorkerPods {
 				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n",
 					name, tc.expectedSucceededWorkerPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Succeeded)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Succeeded)
 			}
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != tc.expectedFailedWorkerPods {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != tc.expectedFailedWorkerPods {
 				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n",
 					name, tc.expectedFailedWorkerPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed)
 			}
 		}
 		// Validate PS status.
-		if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)] != nil {
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Active != tc.expectedActivePSPods {
+		if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)] != nil {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Active != tc.expectedActivePSPods {
 				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n",
 					name, tc.expectedActivePSPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Active)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Active)
 			}
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Succeeded != tc.expectedSucceededPSPods {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Succeeded != tc.expectedSucceededPSPods {
 				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n",
 					name, tc.expectedSucceededPSPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Succeeded)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Succeeded)
 			}
-			if actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Failed != tc.expectedFailedPSPods {
+			if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Failed != tc.expectedFailedPSPods {
 				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n",
 					name, tc.expectedFailedPSPods,
-					actual.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypePS)].Failed)
+					tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypePS)].Failed)
 			}
 		}
 		// Validate StartTime.
-		if tc.needCheckStartTime && actual.Status.StartTime == nil {
+		if tc.needCheckStartTime && tfJob.Status.StartTime == nil {
 			t.Errorf("%s: StartTime was not set", name)
 		}
 		// Validate conditions.
-		if tc.expectedCondition != nil && !testutil.CheckCondition(actual, *tc.expectedCondition, tc.expectedConditionReason) {
-			t.Errorf("%s: expected condition %#v, got %#v", name, *tc.expectedCondition, actual.Status.Conditions)
+		if tc.expectedCondition != nil && !testutil.CheckCondition(tfJob, *tc.expectedCondition, tc.expectedConditionReason) {
+			t.Errorf("%s: expected condition %#v, got %#v", name, *tc.expectedCondition, tfJob.Status.Conditions)
 		}
 	}
 }
@@ -366,11 +341,11 @@ func TestRun(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
 		},
 	},
 	)
@@ -382,7 +357,7 @@ func TestRun(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady

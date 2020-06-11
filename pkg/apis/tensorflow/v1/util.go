@@ -14,17 +14,21 @@
 
 package v1
 
+import (
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+)
+
 // IsChieforMaster returns true if the type is Master or Chief.
-func IsChieforMaster(typ TFReplicaType) bool {
+func IsChieforMaster(typ commonv1.ReplicaType) bool {
 	return typ == TFReplicaTypeChief || typ == TFReplicaTypeMaster
 }
 
 // IsWorker returns true if the type is Worker.
-func IsWorker(typ TFReplicaType) bool {
+func IsWorker(typ commonv1.ReplicaType) bool {
 	return typ == TFReplicaTypeWorker
 }
 
 // IsEvaluator returns true if the type is Evaluator.
-func IsEvaluator(typ TFReplicaType) bool {
+func IsEvaluator(typ commonv1.ReplicaType) bool {
 	return typ == TFReplicaTypeEval
 }

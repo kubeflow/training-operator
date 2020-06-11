@@ -20,14 +20,16 @@ import (
 	"reflect"
 	"testing"
 
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/controller"
+	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -44,11 +46,11 @@ func TestAddPod(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
 		},
 	},
 	)
@@ -60,7 +62,7 @@ func TestAddPod(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -154,20 +156,68 @@ func TestClusterSpec(t *testing.T) {
 				`-worker-0.ns3.svc:2222"]},"task":{"type":"worker","index":0},"environment":"cloud"}`,
 		},
 	}
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+
 	for _, c := range testCase {
 		os.Setenv(EnvCustomClusterDomain, c.customClusterDomain)
-		demoTemplateSpec := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template
-		if err := setClusterSpec(&demoTemplateSpec, c.tfJob, c.rt, c.index); err != nil {
+
+		podTemplate := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template.DeepCopy()
+
+		// Set name for the template.
+		podTemplate.Name = common.GenGeneralName(c.tfJob.GetName(), c.rt, c.index)
+
+		if podTemplate.Labels == nil {
+			podTemplate.Labels = make(map[string]string)
+		}
+
+		// Set type and index for the worker.
+		labels := ctr.GenLabels(c.tfJob.GetName())
+		labels[commonv1.ReplicaTypeLabel] = c.rt
+		labels[commonv1.ReplicaIndexLabel] = c.index
+
+		for key, value := range labels {
+			podTemplate.Labels[key] = value
+		}
+
+		if err := ctr.SetClusterSpec(c.tfJob, podTemplate, c.rt, c.index); err != nil {
 			t.Errorf("Failed to set cluster spec: %v", err)
 		}
 		// The expected cluster spec is nil, which means that we should not set TF_CONFIG.
 		if c.expectedClusterSpec == "" {
-			if len(demoTemplateSpec.Spec.Containers[0].Env) != 0 {
+			if len(podTemplate.Spec.Containers[0].Env) != 0 {
 				t.Errorf("Expected empty TF_CONFIG, got %s",
-					demoTemplateSpec.Spec.Containers[0].Env[0].Value)
+					podTemplate.Spec.Containers[0].Env[0].Value)
 			}
 		} else {
-			actual := demoTemplateSpec.Spec.Containers[0].Env[0].Value
+			actual := podTemplate.Spec.Containers[0].Env[0].Value
 			if c.expectedClusterSpec != actual {
 				t.Errorf("Expected %s, got %s", c.expectedClusterSpec, actual)
 			}
@@ -210,12 +260,12 @@ func TestRestartPolicy(t *testing.T) {
 	type tc struct {
 		tfJob                 *tfv1.TFJob
 		expectedRestartPolicy v1.RestartPolicy
-		expectedType          tfv1.TFReplicaType
+		expectedType          commonv1.ReplicaType
 	}
 	testCase := []tc{
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := common.RestartPolicyExitCode
+			specRestartPolicy := commonv1.RestartPolicyExitCode
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				tfJob:                 tfJob,
@@ -225,7 +275,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := common.RestartPolicyNever
+			specRestartPolicy := commonv1.RestartPolicyNever
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				tfJob:                 tfJob,
@@ -235,7 +285,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := common.RestartPolicyAlways
+			specRestartPolicy := commonv1.RestartPolicyAlways
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				tfJob:                 tfJob,
@@ -245,7 +295,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			tfJob := testutil.NewTFJob(1, 0)
-			specRestartPolicy := common.RestartPolicyOnFailure
+			specRestartPolicy := commonv1.RestartPolicyOnFailure
 			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				tfJob:                 tfJob,
@@ -274,11 +324,11 @@ func TestExitCode(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
 		},
 	},
 	)
@@ -290,7 +340,7 @@ func TestExitCode(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
@@ -307,12 +357,8 @@ func TestExitCode(t *testing.T) {
 	}
 	go run(stopCh)
 
-	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
-		return nil
-	}
-
 	tfJob := testutil.NewTFJob(1, 0)
-	tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = common.RestartPolicyExitCode
+	tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = commonv1.RestartPolicyExitCode
 	unstructured, err := testutil.ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Failed to convert the TFJob to Unstructured: %v", err)
@@ -336,10 +382,11 @@ func TestExitCode(t *testing.T) {
 	if err := podIndexer.Add(pod); err != nil {
 		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 	}
-	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
-	if err != nil {
-		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
-	}
+	_ = ctr.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+	// _, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+	// if err != nil {
+	// 	t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	// }
 
 	found := false
 	for _, deletedPodName := range fakePodControl.DeletePodName {
@@ -364,11 +411,11 @@ func TestScaleDown(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
 		},
 	},
 	)
@@ -380,7 +427,7 @@ func TestScaleDown(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.Recorder = &record.FakeRecorder{}
@@ -397,10 +444,6 @@ func TestScaleDown(t *testing.T) {
 		}
 	}
 	go run(stopCh)
-
-	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
-		return nil
-	}
 
 	tfJob := testutil.NewTFJob(2, 0)
 	tfJob.SelfLink = "/api/v1/namespaces/default/tfjob/test-tfjob"
@@ -426,10 +469,12 @@ func TestScaleDown(t *testing.T) {
 	if err := podIndexer.Add(pod2); err != nil {
 		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 	}
-	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
-	if err != nil {
-		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
-	}
+
+	_ = ctr.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+	// _, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+	// if err != nil {
+	// 	t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	// }
 
 	expectedDeletePods := []string{"worker-2"}
 	if !reflect.DeepEqual(expectedDeletePods, fakePodControl.DeletePodName) {
@@ -449,11 +494,11 @@ func TestScaleUp(t *testing.T) {
 	},
 	)
 
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
 		},
 	},
 	)
@@ -465,7 +510,7 @@ func TestScaleUp(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, kubeBatchClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	fakePodControl := &controller.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
@@ -481,10 +526,6 @@ func TestScaleUp(t *testing.T) {
 		}
 	}
 	go run(stopCh)
-
-	ctr.updateStatusHandler = func(tfJob *tfv1.TFJob) error {
-		return nil
-	}
 
 	tfJob := testutil.NewTFJob(3, 0)
 	tfJob.Spec.EnableDynamicWorker = true
@@ -502,10 +543,11 @@ func TestScaleUp(t *testing.T) {
 		t.Errorf("%s: unexpected error when adding pod %v", tfJob.Name, err)
 	}
 
-	_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
-	if err != nil {
-		t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
-	}
+	_ = ctr.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+	// _, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
+	// if err != nil {
+	// 	t.Errorf("%s: unexpected error when syncing jobs %v", tfJob.Name, err)
+	// }
 
 	if !(len(fakePodControl.Templates) == 2 && fakePodControl.Templates[0].Name == "test-tfjob-worker-1" && fakePodControl.Templates[1].Name == "test-tfjob-worker-2") {
 		t.Error("Scale up workers test failed")
