@@ -20,149 +20,160 @@ import (
 	"strconv"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
+	train_util "github.com/kubeflow/common/pkg/util/train"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
-	tflogger "github.com/kubeflow/tf-operator/pkg/logger"
-	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
+	// gang scheduler name.
+	gangSchedulerName = "volcano"
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
-
-	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
-
+	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
+	exitedWithCodeReason = "ExitedWithCode"
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
-	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
-	exitedWithCodeReason = "ExitedWithCode"
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-	// podScaleDown is the normal reason when scaling down number of pods
-	podScaleDown = "PodScaleDown"
+	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
+	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
+)
+
+var (
+	tfJobsRestartCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tf_operator_jobs_restarted_total",
+		Help: "Counts number of TF jobs restarted",
+	})
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
-func (tc *TFController) reconcilePods(
-	tfjob *tfv1.TFJob,
+func (tc *TFController) ReconcilePods(
+	job interface{},
+	jobStatus *commonv1.JobStatus,
 	pods []*v1.Pod,
-	rtype tfv1.TFReplicaType,
-	spec *common.ReplicaSpec, rstatus map[string]v1.PodPhase) error {
+	rtype commonv1.ReplicaType,
+	spec *commonv1.ReplicaSpec,
+	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
+) error {
 
-	// Convert TFReplicaType to lower string.
+	tfJob, ok := job.(*tfv1.TFJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of TFJob", tfJob)
+	}
+
+	// Convert ReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
-	logger := tflogger.LoggerForReplica(tfjob, rt)
+	logger := commonutil.LoggerForJob(tfJob)
 	// Get all pods for the type rt.
 	pods, err := tc.FilterPodsForReplicaType(pods, rt)
 	if err != nil {
 		return err
 	}
-	replicas := int(*spec.Replicas)
-	restart := false
-	worker0Completed := false
+	numReplicas := int(*spec.Replicas)
 	masterRole := false
+	//restart := false
+	//worker0Completed := false
 
-	initializeTFReplicaStatuses(tfjob, rtype)
+	initializeReplicaStatuses(jobStatus, rtype)
 
-	podSlices, podsToBeRemoved := tc.GetPodSlices(pods, replicas, logger)
-
-	// Scale down
-	if tfjob.Spec.EnableDynamicWorker && len(podsToBeRemoved) > 0 {
-		// Currently only allow to scale down workers
-		if rtype == tfv1.TFReplicaTypeWorker {
-			logger.Infof("Removing %d workers", len(podsToBeRemoved))
-			for _, pod := range podsToBeRemoved {
-				err := tc.PodControl.DeletePod(tfjob.Namespace, pod.Name, tfjob)
-				tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, podScaleDown, "Pod: %v.%v is being removed", pod.Namespace, pod.Name)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			logger.Warningf("Trying to scale down %s pods, which might be a mistake", rt)
-		}
-	}
-
+	// GetPodSlices will return enough information here to make decision to add/remove/update resources.
+	//
+	// For example, let's assume we have pods with replica-index 0, 1, 2
+	// If replica is 4, return a slice with size 4. [[0],[1],[2],[]], a pod with replica-index 3 will be created.
+	//
+	// If replica is 1, return a slice with size 3. [[0],[1],[2]], pod with replica-index 1 and 2 are out of range and will be deleted.
+	podSlices := tc.GetPodSlices(pods, numReplicas, logger)
 	for index, podSlice := range podSlices {
-		masterRole = false
 		if len(podSlice) > 1 {
 			logger.Warningf("We have too many pods for %s %d", rt, index)
-			// TODO(gaocegege): Kill some pods.
 		} else if len(podSlice) == 0 {
 			logger.Infof("Need to create new pod: %s-%d", rt, index)
 
-			// if master pod is present, select the master pod
-			// if master is not present, first worker pod is selected as the master.
-			if ContainChieforMasterSpec(tfjob) {
-				if tfv1.IsChieforMaster(rtype) {
-					masterRole = true
-				}
-			} else {
-				if tfv1.IsWorker(rtype) && (index == 0) {
-					masterRole = true
-				}
-			}
-			err = tc.createNewPod(tfjob, rt, strconv.Itoa(index), spec, masterRole)
+			// check if this replica is the master role
+			masterRole = tc.IsMasterRole(replicas, rtype, index)
+			// TODO: [should change to CreateNewPod]
+			err = tc.createNewPod(tfJob, rt, strconv.Itoa(index), spec, masterRole, replicas)
 			if err != nil {
 				return err
 			}
 		} else {
 			// Check the status of the current pod.
 			pod := podSlice[0]
-			// Get the exit code of the tensorflow container.
+
+			// check if the index is in the valid range, if not, we should kill the pod
+			if index < 0 || index >= numReplicas {
+				err = tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob)
+				if err != nil {
+					return err
+				}
+			}
+			// Get the exit code of the container.
 			var exitCode int32 = 0xbeef // magic number
 			for _, status := range pod.Status.ContainerStatuses {
 				state := status.State
-				if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
+				if status.Name == tc.GetDefaultContainerName() && state.Terminated != nil {
 					exitCode = state.Terminated.ExitCode
 					logger.Infof("Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
-					tc.Recorder.Eventf(tfjob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
+					tc.Recorder.Eventf(tfJob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
 				}
 			}
 			// Check if the pod is retryable.
-			if spec.RestartPolicy == common.RestartPolicyExitCode {
+			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
 					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
-					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfjob); err != nil {
+					if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
 						return err
 					}
-					restart = true
+
+					// with common library framework, we have to handle restart status here
+					// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
+					msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
+						tfJob.Name, rtype)
+					tc.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+						return err
+					}
+					tfJobsRestartCount.Inc()
 				}
 			}
 
-			// Check whether worker 0 is exited without error.
-			if rtype == tfv1.TFReplicaTypeWorker && index == 0 &&
-				exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
-				worker0Completed = true
-			}
-			updateTFJobReplicaStatuses(tfjob, rtype, pod)
+			updateJobReplicaStatuses(jobStatus, rtype, pod)
 		}
 	}
-
-	return tc.updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
+	return nil
 }
 
 // createNewPod creates a new pod for the given index and type.
-func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *common.ReplicaSpec, masterRole bool) error {
+func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
+	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
-	expectationPodsKey := jobcontroller.GenExpectationPodsKey(tfjobKey, rt)
+	expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, rt)
 	err = tc.Expectations.ExpectCreations(expectationPodsKey, 1)
 	if err != nil {
 		return err
 	}
-	logger := tflogger.LoggerForReplica(tfjob, rt)
+	logger := commonutil.LoggerForReplica(tfjob, rt)
 	// Create OwnerReference.
 	controllerRef := tc.GenOwnerReference(tfjob)
 
@@ -172,13 +183,13 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	labels[tfReplicaIndexLabel] = index
 
 	if masterRole {
-		labels[jobcontroller.JobRoleLabel] = "master"
+		labels[commonv1.JobRoleLabel] = "master"
 	}
 
 	podTemplate := spec.Template.DeepCopy()
 
 	// Set name for the template.
-	podTemplate.Name = jobcontroller.GenGeneralName(tfjob.Name, rt, index)
+	podTemplate.Name = common.GenGeneralName(tfjob.Name, rt, index)
 
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
@@ -188,7 +199,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 		podTemplate.Labels[key] = value
 	}
 
-	if err := setClusterSpec(podTemplate, tfjob, rt, index); err != nil {
+	if err := tc.SetClusterSpec(tfjob, podTemplate, rt, index); err != nil {
 		return err
 	}
 
@@ -205,19 +216,18 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
 	if tc.Config.EnableGangScheduling {
-		if tc.isNonGangSchedulerSet(tfjob) {
+		if isNonGangSchedulerSet(replicas) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
 		} else {
-			podTemplate.Spec.SchedulerName = tc.Config.GangSchedulerName
+			podTemplate.Spec.SchedulerName = gangSchedulerName
 		}
 
 		if podTemplate.Annotations == nil {
 			podTemplate.Annotations = map[string]string{}
 		}
-		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] =
-			jobcontroller.GenPodGroupName(tfjob.Name)
+		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] = tfjob.GetName()
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
@@ -236,14 +246,19 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	return nil
 }
 
-// setClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
-func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, index string) error {
+// SetClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
+func (tc *TFController) SetClusterSpec(job interface{}, podTemplate *v1.PodTemplateSpec, rtype, index string) error {
+	tfjob, ok := job.(*tfv1.TFJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of MXJob", tfjob)
+	}
+
 	// Do not set TF_CONFIG for local training jobs.
 	if !isDistributed(tfjob) {
 		return nil
 	}
 	// Generate TF_CONFIG JSON string.
-	tfConfigStr, err := genTFConfigJSONStr(tfjob, rt, index)
+	tfConfigStr, err := genTFConfigJSONStr(tfjob, rtype, index)
 	if err != nil {
 		return err
 	}
@@ -252,12 +267,12 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, 
 		return nil
 	}
 	// Add TF_CONFIG environment variable to tensorflow container in the pod.
-	for i := range podTemplateSpec.Spec.Containers {
-		if podTemplateSpec.Spec.Containers[i].Name == tfv1.DefaultContainerName {
-			if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
-				podTemplateSpec.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
+	for i := range podTemplate.Spec.Containers {
+		if podTemplate.Spec.Containers[i].Name == tfv1.DefaultContainerName {
+			if len(podTemplate.Spec.Containers[i].Env) == 0 {
+				podTemplate.Spec.Containers[i].Env = make([]v1.EnvVar, 0)
 			}
-			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, v1.EnvVar{
+			podTemplate.Spec.Containers[i].Env = append(podTemplate.Spec.Containers[i].Env, v1.EnvVar{
 				Name:  tfConfig,
 				Value: tfConfigStr,
 			})
@@ -272,7 +287,7 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, tfjob *tfv1.TFJob, rt, 
 func isDistributed(tfjob *tfv1.TFJob) bool {
 	replicas := tfjob.Spec.TFReplicaSpecs
 	distributionCount := 0
-	allTypes := []tfv1.TFReplicaType{
+	allTypes := []commonv1.ReplicaType{
 		tfv1.TFReplicaTypeChief,
 		tfv1.TFReplicaTypeEval,
 		tfv1.TFReplicaTypeMaster,
@@ -292,17 +307,67 @@ func isDistributed(tfjob *tfv1.TFJob) bool {
 	return distributionCount != 1
 }
 
-func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *common.ReplicaSpec) {
-	if spec.RestartPolicy == common.RestartPolicyExitCode {
+func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *commonv1.ReplicaSpec) {
+	// This is necessary since restartPolicyExitCode is not supported in v1.PodTemplateSpec
+	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicyNever
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
 }
 
-func (tc *TFController) isNonGangSchedulerSet(tfjob *tfv1.TFJob) bool {
-	for _, spec := range tfjob.Spec.TFReplicaSpecs {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != tc.Config.GangSchedulerName {
+func (tc *TFController) getPodSlices(tfjob *tfv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
+	logger := commonutil.LoggerForReplica(tfjob, strings.ToLower(string(tfv1.TFReplicaTypeWorker)))
+
+	pods, err := tc.GetPodsForJob(tfjob)
+	if err != nil {
+		commonutil.LoggerForJob(tfjob).Warnf("getPodsForTFJob error %v", err)
+		return nil, err
+	}
+
+	// Get all pods for the type rt.
+	pods, err = tc.FilterPodsForReplicaType(pods, strings.ToLower(string(tfv1.TFReplicaTypeWorker)))
+	if err != nil {
+		return nil, err
+	}
+
+	podSlices := tc.GetPodSlices(pods, int(*replicasNum), logger)
+	return podSlices, nil
+}
+
+func getContainerExitCode(pod *v1.Pod) int32 {
+	var exitCode int32 = 0xbeef // magic number
+	for _, status := range pod.Status.ContainerStatuses {
+		state := status.State
+		if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
+			exitCode = state.Terminated.ExitCode
+		}
+	}
+	return exitCode
+}
+
+// IsWorker0Completed return true if pod of worker0 succeeded and exited with 0
+func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
+	worker0Completed := false
+	podSlices, err := tc.getPodSlices(tfjob, replicas[tfv1.TFReplicaTypeWorker].Replicas)
+	if err != nil {
+		return false, err
+	}
+	for index, podSlice := range podSlices {
+		if len(podSlice) == 1 {
+			pod := podSlice[0]
+			exitCode := getContainerExitCode(pod)
+			if index == 0 && exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
+				worker0Completed = true
+			}
+		}
+	}
+	return worker0Completed, nil
+}
+
+func isNonGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
+	for _, spec := range replicas {
+		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
 			return true
 		}
 	}

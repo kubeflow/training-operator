@@ -28,7 +28,7 @@ func ValidateV1TFJobSpec(c *tfv1.TFJobSpec) error {
 	return validateV1ReplicaSpecs(c.TFReplicaSpecs)
 }
 
-func validateV1ReplicaSpecs(specs map[tfv1.TFReplicaType]*commonv1.ReplicaSpec) error {
+func validateV1ReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("TFJobSpec is not valid")
 	}

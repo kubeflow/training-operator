@@ -12,6 +12,11 @@ else
   "gcr.io/kubeflow-images-staging/tf-operator-test-server:latest";
 
 local podTemplate = {
+  metadata: {
+    annotations: {
+      "sidecar.istio.io/inject": "false",
+    },
+  },
   spec: {
     containers: [
       {
