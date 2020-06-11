@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package controller provides a Kubernetes controller for a TFJob resource.
+// Package tensorflow provides a Kubernetes controller for a TFJob resource.
 package tensorflow
 
 import (
@@ -79,12 +79,6 @@ type TFController struct {
 
 	// To allow injection of sync functions for testing.
 	syncHandler func(string) (bool, error)
-
-	// To allow injection of updateStatus for testing.
-	updateStatusHandler func(job interface{}, jobStatus *commonv1.JobStatus) error
-
-	// To allow injection of deleteTFJob for testing.
-	deleteTFJobHandler func(tfjob *tfv1.TFJob) error
 
 	// tfJobInformer is a temporary field for unstructured informer support.
 	tfJobInformer cache.SharedIndexInformer

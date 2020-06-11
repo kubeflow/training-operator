@@ -171,8 +171,3 @@ func (tc *TFController) updateTFJob(old, cur interface{}) {
 		}
 	}
 }
-
-// deleteTFJob deletes the given TFJob.
-func (tc *TFController) deleteTFJob(tfJob *tfv1.TFJob) error {
-	return tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{})
-}

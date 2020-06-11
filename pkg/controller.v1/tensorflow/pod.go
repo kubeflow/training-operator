@@ -32,19 +32,19 @@ const (
 	tfConfig = "TF_CONFIG"
 	// gang scheduler name.
 
-	gangSchedulerName                = "volcano"
-	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
+	//gangSchedulerName = "volcano"
+	//gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
-	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
+	//podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
-	exitedWithCodeReason = "ExitedWithCode"
+	//exitedWithCodeReason = "ExitedWithCode"
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
-	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
+	//podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 	// podScaleDown is the normal reason when scaling down number of pods
-	podScaleDown = "PodScaleDown"
+	//podScaleDown = "PodScaleDown"
 )
 
 // SetClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
