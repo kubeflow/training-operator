@@ -30,7 +30,6 @@ import (
 	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
@@ -75,7 +74,7 @@ func TestFailed(t *testing.T) {
 	pod.Status.Phase = v1.PodFailed
 
 	updateJobReplicaStatuses(&tfJob.Status, tfv1.TFReplicaTypeWorker, pod)
-	if tfJob.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != 1 {
+	if tfJob.Status.ReplicaStatuses[commonv1.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
 
@@ -85,7 +84,7 @@ func TestFailed(t *testing.T) {
 	}
 	found := false
 	for _, condition := range tfJob.Status.Conditions {
-		if condition.Type == common.JobFailed {
+		if condition.Type == commonv1.JobFailed {
 			found = true
 		}
 	}
@@ -114,7 +113,7 @@ func TestStatus(t *testing.T) {
 		restart          bool
 		worker0Completed bool
 
-		expectedType common.JobConditionType
+		expectedType commonv1.JobConditionType
 	}
 
 	testCases := []testCase{
@@ -132,7 +131,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobSucceeded,
+			expectedType:            commonv1.JobSucceeded,
 		},
 		testCase{
 			description:             "Chief worker is running",
@@ -148,7 +147,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "Chief worker is failed",
@@ -164,7 +163,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker) Worker is failed",
@@ -180,7 +179,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker) Worker is succeeded",
@@ -196,7 +195,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobSucceeded,
+			expectedType:            commonv1.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker) Worker is running",
@@ -212,7 +211,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are succeeded, 2 workers are active",
@@ -228,7 +227,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are running, 2 workers are failed",
@@ -244,7 +243,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker) 2 workers are succeeded, 2 workers are failed",
@@ -260,7 +259,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker) worker-0 are succeeded, 3 workers are active",
@@ -276,7 +275,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobSucceeded,
+			expectedType:            commonv1.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) worker-0 are succeeded, 3 workers are active",
@@ -292,7 +291,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) 4 workers are succeeded",
@@ -308,7 +307,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobSucceeded,
+			expectedType:            commonv1.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
@@ -324,7 +323,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "Chief is running, workers are failed",
@@ -340,7 +339,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "Chief is running, workers are succeeded",
@@ -356,7 +355,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobRunning,
+			expectedType:            commonv1.JobRunning,
 		},
 		testCase{
 			description:             "Chief is running, a PS is failed",
@@ -372,7 +371,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "Chief is failed, workers are succeeded",
@@ -388,7 +387,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobFailed,
+			expectedType:            commonv1.JobFailed,
 		},
 		testCase{
 			description:             "Chief is succeeded, workers are failed",
@@ -404,7 +403,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
-			expectedType:            common.JobSucceeded,
+			expectedType:            commonv1.JobSucceeded,
 		},
 		testCase{
 			description:             "Chief is failed and restarting",
@@ -420,7 +419,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 true,
 			worker0Completed:        false,
-			expectedType:            common.JobRestarting,
+			expectedType:            commonv1.JobRestarting,
 		},
 	}
 
@@ -489,41 +488,6 @@ func TestStatus(t *testing.T) {
 		if err != nil {
 			t.Errorf("%s: Expected error %v to be nil", c.description, err)
 		}
-		// if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief]; ok {
-		// 	err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeChief, 1, c.restart, c.worker0Completed)
-		// 	if err != nil {
-		// 		t.Errorf("%s: Expected error %v to be nil", c.description, err)
-		// 	}
-		// 	if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] != nil {
-		// 		replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Replicas
-		// 		err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
-		// 		if err != nil {
-		// 			t.Errorf("%s: Expected error %v to be nil", c.description, err)
-		// 		}
-		// 	}
-		// 	if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] != nil {
-		// 		replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS].Replicas
-		// 		err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
-		// 		if err != nil {
-		// 			t.Errorf("%s: Expected error %v to be nil", c.description, err)
-		// 		}
-		// 	}
-		// } else {
-		// 	if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] != nil {
-		// 		replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Replicas
-		// 		err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
-		// 		if err != nil {
-		// 			t.Errorf("%s: Expected error %v to be nil", c.description, err)
-		// 		}
-		// 	}
-		// 	if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] != nil {
-		// 		replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS].Replicas
-		// 		err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
-		// 		if err != nil {
-		// 			t.Errorf("%s: Expected error %v to be nil", c.description, err)
-		// 		}
-		// 	}
-		// }
 
 		// Test filterOutCondition
 		filterOutConditionTest(c.tfJob.Status, t)
@@ -615,10 +579,10 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 	}
 }
 
-func filterOutConditionTest(status common.JobStatus, t *testing.T) {
+func filterOutConditionTest(status commonv1.JobStatus, t *testing.T) {
 	flag := isFailed(status) || isSucceeded(status)
 	for _, condition := range status.Conditions {
-		if flag && condition.Type == common.JobRunning && condition.Status == v1.ConditionTrue {
+		if flag && condition.Type == commonv1.JobRunning && condition.Status == v1.ConditionTrue {
 			t.Error("Error condition status when succeeded or failed")
 		}
 	}

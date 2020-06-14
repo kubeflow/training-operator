@@ -30,21 +30,6 @@ import (
 const (
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
-	// gang scheduler name.
-
-	//gangSchedulerName = "volcano"
-	//gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
-
-	// podTemplateRestartPolicyReason is the warning reason when the restart
-	// policy is set in pod template.
-	//podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
-	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
-	//exitedWithCodeReason = "ExitedWithCode"
-	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
-	// in pod templates with gang-scheduling enabled
-	//podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-	// podScaleDown is the normal reason when scaling down number of pods
-	//podScaleDown = "PodScaleDown"
 )
 
 // SetClusterSpec generates and sets TF_CONFIG for the given podTemplateSpec.
@@ -117,36 +102,47 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *commonv1.Replic
 	}
 }
 
-// IsWorker0Completed return true if pod of worker0 succeeded and exited with 0
-func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
-	worker0Completed := false
+func (tc *TFController) getPodSlices(tfjob *tfv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
 	logger := tflogger.LoggerForReplica(tfjob, strings.ToLower(string(tfv1.TFReplicaTypeWorker)))
 
 	pods, err := tc.GetPodsForJob(tfjob)
 	if err != nil {
 		tflogger.LoggerForJob(tfjob).Warnf("getPodsForTFJob error %v", err)
-		return false, err
+		return nil, err
 	}
 
 	// Get all pods for the type rt.
 	pods, err = tc.FilterPodsForReplicaType(pods, strings.ToLower(string(tfv1.TFReplicaTypeWorker)))
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	podSlices := tc.GetPodSlices(pods, int(*replicas[tfv1.TFReplicaTypeWorker].Replicas), logger)
+	podSlices := tc.GetPodSlices(pods, int(*replicasNum), logger)
+	return podSlices, nil
+}
+
+func getContainerExitCode(pod *v1.Pod) int32 {
+	var exitCode int32 = 0xbeef // magic number
+	for _, status := range pod.Status.ContainerStatuses {
+		state := status.State
+		if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
+			exitCode = state.Terminated.ExitCode
+		}
+	}
+	return exitCode
+}
+
+// IsWorker0Completed return true if pod of worker0 succeeded and exited with 0
+func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
+	worker0Completed := false
+	podSlices, err := tc.getPodSlices(tfjob, replicas[tfv1.TFReplicaTypeWorker].Replicas)
+	if err != nil {
+		return false, err
+	}
 	for index, podSlice := range podSlices {
 		if len(podSlice) == 1 {
 			pod := podSlice[0]
-			// Get the exit code of the tensorflow container.
-			var exitCode int32 = 0xbeef // magic number
-			for _, status := range pod.Status.ContainerStatuses {
-				state := status.State
-				if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
-					exitCode = state.Terminated.ExitCode
-				}
-			}
-
+			exitCode := getContainerExitCode(pod)
 			if index == 0 && exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
 				worker0Completed = true
 			}
@@ -158,34 +154,14 @@ func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commo
 // PodRestart return true if pod failed with retryable exit code
 func (tc *TFController) PodRestart(tfjob *tfv1.TFJob, spec *commonv1.ReplicaSpec, rtype commonv1.ReplicaType) (bool, error) {
 	podRestart := false
-	logger := tflogger.LoggerForReplica(tfjob, strings.ToLower(string(rtype)))
-
-	pods, err := tc.GetPodsForJob(tfjob)
-	if err != nil {
-		tflogger.LoggerForJob(tfjob).Warnf("getPodsForTFJob error %v", err)
-		return false, err
-	}
-
-	// Get all pods for the type rt.
-	pods, err = tc.FilterPodsForReplicaType(pods, strings.ToLower(string(rtype)))
+	podSlices, err := tc.getPodSlices(tfjob, spec.Replicas)
 	if err != nil {
 		return false, err
 	}
-
-	podSlices := tc.GetPodSlices(pods, int(*spec.Replicas), logger)
 	for _, podSlice := range podSlices {
 		if len(podSlice) == 1 {
 			pod := podSlice[0]
-
-			// Get the exit code of the tensorflow container.
-			var exitCode int32 = 0xbeef // magic number
-			for _, status := range pod.Status.ContainerStatuses {
-				state := status.State
-				if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
-					exitCode = state.Terminated.ExitCode
-				}
-			}
-
+			exitCode := getContainerExitCode(pod)
 			// Check if the pod is retryable.
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
