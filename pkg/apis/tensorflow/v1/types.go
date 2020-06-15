@@ -60,6 +60,11 @@ type TFJobSpec struct {
 	// +optional
 	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
 
+	// FailurePolicy defines the policy to mark the TFJob as failure.
+	// Default to "", using the default rules.
+	// +optional
+	FailurePolicy *FailurePolicy `json:"FailurePolicy,omitempty"`
+
 	// Defines the policy for cleaning up pods after the TFJob completes.
 	// Defaults to Running.
 	// +optional

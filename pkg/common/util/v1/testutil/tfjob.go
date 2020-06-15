@@ -108,6 +108,12 @@ func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy tfv1.SuccessPolicy)
 	return tfJob
 }
 
+func NewTFJobWithFailurePolicy(worker, ps int, failurePolicy tfv1.FailurePolicy) *tfv1.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.FailurePolicy = &failurePolicy
+	return tfJob
+}
+
 func NewTFJob(worker, ps int) *tfv1.TFJob {
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{

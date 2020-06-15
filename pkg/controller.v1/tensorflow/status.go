@@ -141,7 +141,10 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 		}
 	}
 
-	if failed > 0 {
+	// Leave a failure condition for the following two cases:
+	// 1. If default failure policy is used and a worker is failed
+	// 2. If `FailurePolicyAllWorkers` failure policy is used and all workers are failed.
+	if failed == replicas || (failed > 0 && *tfjob.Spec.FailurePolicy == tfv1.FailurePolicyDefault) {
 		if restart {
 			msg := fmt.Sprintf("TFJob %s is restarting because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)
