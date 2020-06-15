@@ -100,6 +100,11 @@ func SetDefaults_TFJob(tfjob *TFJob) {
 		defaultPolicy := SuccessPolicyDefault
 		tfjob.Spec.SuccessPolicy = &defaultPolicy
 	}
+	// Set default failure policy to "".
+	if tfjob.Spec.FailurePolicy == nil {
+		defaultPolicy := FailurePolicyDefault
+		tfjob.Spec.FailurePolicy = &defaultPolicy
+	}
 
 	// Update the key of TFReplicaSpecs to camel case.
 	setTypeNamesToCamelCase(tfjob)
