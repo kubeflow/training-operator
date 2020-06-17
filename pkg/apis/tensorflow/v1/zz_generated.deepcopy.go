@@ -102,6 +102,11 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 		*out = new(SuccessPolicy)
 		**out = **in
 	}
+	if in.FailurePolicy != nil {
+		in, out := &in.FailurePolicy, &out.FailurePolicy
+		*out = new(FailurePolicy)
+		**out = **in
+	}
 	if in.CleanPodPolicy != nil {
 		in, out := &in.CleanPodPolicy, &out.CleanPodPolicy
 		*out = new(commonv1.CleanPodPolicy)
