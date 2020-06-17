@@ -348,7 +348,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobSucceeded,
+			expectedType:            common.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker, failurePolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
