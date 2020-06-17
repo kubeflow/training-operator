@@ -347,7 +347,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
-			worker0Completed:        true,
+			worker0Completed:        false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
