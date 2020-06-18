@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/go-openapi/spec v0.19.2
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
