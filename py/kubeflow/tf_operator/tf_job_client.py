@@ -118,7 +118,7 @@ def wait_for_condition(client,
                        name,
                        expected_condition,
                        version="v1",
-                       timeout=datetime.timedelta(minutes=10),
+                       timeout=datetime.timedelta(minutes=15),
                        polling_interval=datetime.timedelta(seconds=30),
                        status_callback=None):
   """Waits until any of the specified conditions occur.
@@ -182,7 +182,7 @@ def wait_for_job(client,
                  namespace,
                  name,
                  version="v1",
-                 timeout=datetime.timedelta(minutes=10),
+                 timeout=datetime.timedelta(minutes=15),
                  polling_interval=datetime.timedelta(seconds=30),
                  status_callback=None):
   """Wait for the specified job to finish.
@@ -211,7 +211,7 @@ def wait_for_delete(client,
                     namespace,
                     name,
                     version="v1",
-                    timeout=datetime.timedelta(minutes=5),
+                    timeout=datetime.timedelta(minutes=10),
                     polling_interval=datetime.timedelta(seconds=30),
                     status_callback=None):
   """Wait for the specified job to be deleted.
@@ -294,7 +294,7 @@ def wait_for_replica_type_in_phases(api_client, namespace, tfjob_name,
     namespace,
     pod_selector,
     phases,
-    timeout=datetime.timedelta(minutes=4))
+    timeout=datetime.timedelta(minutes=5))
 
 
 @retrying.retry(wait_fixed=10, stop_max_delay=60)
@@ -342,7 +342,7 @@ def terminate_replicas(api_client,
     api_client,
     namespace,
     pod_selector, ["Running"],
-    timeout=datetime.timedelta(minutes=4))
+    timeout=datetime.timedelta(minutes=5))
   logging.info("Pods are ready")
   logging.info("Issuing the terminate request")
   for num in range(num_targets):
