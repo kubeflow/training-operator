@@ -74,9 +74,9 @@ def wait_for_pods_to_be_in_phases(
 
     is_match = True
 
-    if len(pods.items) == 0:
-      time.sleep(polling_interval.seconds)
-      continue
+    # if len(pods.items) == 0:
+    #   time.sleep(polling_interval.seconds)
+    #   continue
     
     for p in pods.items:
       if p.status.phase not in phases:
@@ -84,7 +84,7 @@ def wait_for_pods_to_be_in_phases(
         logging.info("pod in phase %s", p.status.phase)
         is_match = False
 
-    if is_match:
+    if is_match and len(pods.items) != 0:
       logging.info("All pods in phase %s", phases)
       log_pods(pods)
       return pods
