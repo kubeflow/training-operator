@@ -26,7 +26,6 @@ TFJOB_LOGLEVEL = os.environ.get('TFJOB_LOGLEVEL', 'INFO').upper()
 APISERVER_TIMEOUT = 120
 
 # TFJob Labels Name
-TFJOB_CONTROLLER_LABEL = 'controller-name'
 TFJOB_GROUP_LABEL = 'group-name'
 TFJOB_NAME_LABEL = 'job-name'
 TFJOB_TYPE_LABEL = 'replica-type'
