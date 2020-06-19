@@ -22,6 +22,11 @@ local parts(namespace, name, image) = {
           replicas: 1,
           restartPolicy: "Never",
           template: {
+            metadata: {
+              annotations: {
+                "sidecar.istio.io/inject": "false",
+              },
+            },
             spec: {
               containers: [
                 {
@@ -36,6 +41,11 @@ local parts(namespace, name, image) = {
           replicas: 2,
           restartPolicy: "Never",
           template: {
+            metadata: {
+              annotations: {
+                "sidecar.istio.io/inject": "false",
+              },
+            },
             spec: {
               containers: [
                 {
@@ -50,6 +60,11 @@ local parts(namespace, name, image) = {
           replicas: 3,
           restartPolicy: "Never",
           template: {
+            metadata: {
+              annotations: {
+                "sidecar.istio.io/inject": "false",
+              },
+            },
             spec: {
               containers: [
                 {
@@ -64,6 +79,11 @@ local parts(namespace, name, image) = {
           replicas: 1,
           restartPolicy: "Never",
           template: {
+            metadata: {
+              annotations: {
+                "sidecar.istio.io/inject": "false",
+              },
+            },
             spec: {
               containers: [
                 {
