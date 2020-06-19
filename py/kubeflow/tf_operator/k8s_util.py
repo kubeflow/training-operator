@@ -74,7 +74,7 @@ def wait_for_pods_to_be_in_phases(
 
     is_match = True
 
-    if len(pods) == 0:
+    if len(pods.items) == 0:
       time.sleep(polling_interval.seconds)
       continue
     
