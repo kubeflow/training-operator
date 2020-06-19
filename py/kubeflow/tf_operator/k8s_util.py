@@ -49,7 +49,7 @@ def wait_for_pods_to_be_in_phases(
     namespace,
     pod_selector,
     phases,
-    timeout=datetime.timedelta(minutes=5),
+    timeout=datetime.timedelta(minutes=10),
     polling_interval=datetime.timedelta(seconds=30)):
   """Wait for the pods matching the selector to be in the specified state
 
@@ -75,6 +75,7 @@ def wait_for_pods_to_be_in_phases(
     is_match = True
 
     if len(pods) == 0:
+      time.sleep(polling_interval.seconds)
       continue
     
     for p in pods.items:
