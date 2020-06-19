@@ -256,10 +256,10 @@ def get_labels(name, replica_type=None, replica_index=None):
     TF_JOB_NAME_LABEL: name,
   }
   if replica_type:
-    labels["tf-replica-type"] = str.lower(replica_type)
+    labels["replica-type"] = str.lower(replica_type)
 
   if replica_index:
-    labels["tf-replica-index"] = replica_index
+    labels["replica-index"] = replica_index
   return labels
 
 
