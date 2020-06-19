@@ -48,7 +48,7 @@ type TFJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
-	RunPolicy commonv1.RunPolicy `json:",inline"`
+	RunPolicy commonv1.RunPolicy `json:"runPolicy,inline"`
 
 	// SuccessPolicy defines the policy to mark the TFJob as succeeded.
 	// Default to "", using the default rules.

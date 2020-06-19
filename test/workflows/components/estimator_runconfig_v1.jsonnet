@@ -14,7 +14,9 @@ local parts(namespace, name, image) = {
       namespace: namespace,
     },
     spec: {
-      cleanPodPolicy: "All",
+      runPolicy: {
+        cleanPodPolicy: "All",
+      },
       tfReplicaSpecs: {
         Chief: {
           replicas: 1,
