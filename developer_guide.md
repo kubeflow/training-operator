@@ -29,7 +29,7 @@ go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1
 
 ## Building all the artifacts.
 
-[pipenv](https://docs.pipenv.org/) is recommended to manage local Python environment.
+[pipenv](https://pipenv.pypa.io/en/stable/) is recommended to manage local Python environment.
 You can find setup information on their website.
 
 To build the following artifacts:
