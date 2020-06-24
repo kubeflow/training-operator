@@ -58,7 +58,7 @@ var (
 )
 
 // updateStatus updates the status of the tfjob.
-func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFReplicaType, replicas int, restart, worker0Completed bool) error {
+func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFReplicaType, replicas int, restart, worker0Completed, worker0Failed bool) error {
 	tfjobKey, err := KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
@@ -88,6 +88,21 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 	// according to the Chief/Master spec.
 	if ContainChieforMasterSpec(tfjob) {
 		if tfv1.IsChieforMaster(rtype) {
+			if failed > 0 && *tfjob.Spec.FailurePolicy == tfv1.FailurePolicyChief {
+				msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
+				tfjob.Name, failed, rtype)
+				tc.Recorder.Event(tfjob, v1.EventTypeNormal, tfJobFailedReason, msg)
+				if tfjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					tfjob.Status.CompletionTime = &now
+				}
+				err := updateTFJobConditions(tfjob, common.JobFailed, tfJobFailedReason, msg)
+				if err != nil {
+					tflogger.LoggerForJob(tfjob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+				tfJobsFailureCount.Inc()
+			}
 			if running > 0 {
 				msg := fmt.Sprintf("TFJob %s is running.", tfjob.Name)
 				err := updateTFJobConditions(tfjob, common.JobRunning, tfJobRunningReason, msg)
@@ -143,8 +158,10 @@ func (tc *TFController) updateStatusSingle(tfjob *tfv1.TFJob, rtype tfv1.TFRepli
 
 	// Leave a failure condition for the following two cases:
 	// 1. If default failure policy is used and a worker is failed
-	// 2. If `FailurePolicyAllWorkers` failure policy is used and all workers are failed.
-	if failed == replicas || (failed > 0 && *tfjob.Spec.FailurePolicy == tfv1.FailurePolicyDefault) {
+	// 2. If `FailurePolicyAllWorkers` failure policy is used and all workers are failed
+	// 3. If `FailurePolicyChief` failure policy is used and Chief worker is failed
+	if failed == replicas || (failed > 0 && *tfjob.Spec.FailurePolicy == tfv1.FailurePolicyDefault) ||
+		(worker0Failed && *tfjob.Spec.FailurePolicy == tfv1.FailurePolicyWorker0){
 		if restart {
 			msg := fmt.Sprintf("TFJob %s is restarting because %d %s replica(s) failed.",
 				tfjob.Name, failed, rtype)

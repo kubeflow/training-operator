@@ -25,5 +25,7 @@ const (
 
 const (
 	FailurePolicyDefault    FailurePolicy = ""
+	FailurePolicyChief      FailurePolicy = "Chief"
+	FailurePolicyWorker0    FailurePolicy = "Worker0"
 	FailurePolicyAllWorkers FailurePolicy = "AllWorkers"
 )

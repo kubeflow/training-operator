@@ -71,7 +71,7 @@ func TestFailed(t *testing.T) {
 	if tfJob.Status.ReplicaStatuses[common.ReplicaType(tfv1.TFReplicaTypeWorker)].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := ctr.updateStatusSingle(tfJob, tfv1.TFReplicaTypeWorker, 3, false, false)
+	err := ctr.updateStatusSingle(tfJob, tfv1.TFReplicaTypeWorker, 3, false, false, false)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -105,6 +105,7 @@ func TestStatus(t *testing.T) {
 
 		restart          bool
 		worker0Completed bool
+		worker0Failed bool
 
 		expectedType common.JobConditionType
 	}
@@ -124,6 +125,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobSucceeded,
 		},
 		testCase{
@@ -140,6 +142,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -156,6 +159,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -172,6 +176,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -188,6 +193,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobSucceeded,
 		},
 		testCase{
@@ -204,6 +210,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -220,6 +227,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -236,6 +244,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -252,6 +261,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -268,11 +278,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
+			worker0Failed:           false,
 			expectedType:            common.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) worker-0 are succeeded, 3 workers are active",
-			tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithSuccessPolicy(0, 4, 0, tfv1.SuccessPolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -284,11 +295,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) 4 workers are succeeded",
-			tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithSuccessPolicy(0, 4, 0, tfv1.SuccessPolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -300,11 +312,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
+			worker0Failed:           false,
 			expectedType:            common.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker, successPolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
-			tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithSuccessPolicy(0, 4, 0, tfv1.SuccessPolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -316,11 +329,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker, failurePolicy: AllWorkers) worker-0 are failed, 3 workers are active",
-			tfJob:                   testutil.NewTFJobWithFailurePolicy(4, 0, tfv1.FailurePolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithFailurePolicy(0, 4, 0, tfv1.FailurePolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -332,11 +346,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobRunning,
+			worker0Failed:           false,
+			expectedType:            common.JobSucceeded,
 		},
 		testCase{
 			description:             "(No chief worker, failurePolicy: AllWorkers) 4 workers are failed",
-			tfJob:                   testutil.NewTFJobWithFailurePolicy(4, 0, tfv1.FailurePolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithFailurePolicy(0, 4, 0, tfv1.FailurePolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -348,11 +363,12 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
 			description:             "(No chief worker, failurePolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
-			tfJob:                   testutil.NewTFJobWithFailurePolicy(4, 0, tfv1.FailurePolicyAllWorkers),
+			tfJob:                   testutil.NewTFJobWithFailurePolicy(0, 4, 0, tfv1.FailurePolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
 			expectedActivePS:        0,
@@ -364,8 +380,43 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        true,
-			expectedType:            common.JobRunning,
+			worker0Failed:           false,
+			expectedType:            common.JobSucceeded,
 		},
+		testCase{
+                        description:             "(No chief worker, failurePolicy: Chief) worker-0 is failed, 3 workers are running",
+                        tfJob:                   testutil.NewTFJobWithFailurePolicy(0, 4, 0, tfv1.FailurePolicyWorker0),
+                        expectedFailedPS:        0,
+                        expectedSucceededPS:     0,
+                        expectedActivePS:        0,
+                        expectedFailedWorker:    1,
+                        expectedSucceededWorker: 0,
+                        expectedActiveWorker:    3,
+                        expectedFailedChief:     0,
+                        expectedSucceededChief:  0,
+                        expectedActiveChief:     0,
+                        restart:                 false,
+                        worker0Completed:        false,
+                        worker0Failed:           true,
+                        expectedType:            common.JobFailed,
+                },
+		testCase{
+                        description:             "(failurePolicy: Chief) worker-0 is succeeded, 2 workers are running, Chief is failed",
+			 tfJob:                   testutil.NewTFJobWithFailurePolicy(1, 3, 0, tfv1.FailurePolicyChief),
+                        expectedFailedPS:        0,
+                        expectedSucceededPS:     0,
+                        expectedActivePS:        0,
+                        expectedFailedWorker:    0,
+                        expectedSucceededWorker: 1,
+                        expectedActiveWorker:    2,
+                        expectedFailedChief:     1,
+                        expectedSucceededChief:  0,
+                        expectedActiveChief:     0,
+                        restart:                 false,
+                        worker0Completed:        true,
+			 worker0Failed:           false,
+                        expectedType:            common.JobFailed,
+               },
 		testCase{
 			description:             "Chief is running, workers are failed",
 			tfJob:                   testutil.NewTFJobWithChief(4, 2),
@@ -380,6 +431,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -396,6 +448,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -412,6 +465,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     1,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -428,6 +482,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobFailed,
 		},
 		testCase{
@@ -444,6 +499,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 false,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobSucceeded,
 		},
 		testCase{
@@ -460,6 +516,7 @@ func TestStatus(t *testing.T) {
 			expectedActiveChief:     0,
 			restart:                 true,
 			worker0Completed:        false,
+			worker0Failed:           false,
 			expectedType:            common.JobRestarting,
 		},
 	}
@@ -510,20 +567,20 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.tfJob, tfv1.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, t)
 
 		if _, ok := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief]; ok {
-			err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeChief, 1, c.restart, c.worker0Completed)
+			err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeChief, 1, c.restart, c.worker0Completed, c.worker0Failed)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Replicas
-				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed, c.worker0Failed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS].Replicas
-				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed, c.worker0Failed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
@@ -531,14 +588,14 @@ func TestStatus(t *testing.T) {
 		} else {
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Replicas
-				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypeWorker, int(*replicas), c.restart, c.worker0Completed, c.worker0Failed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] != nil {
 				replicas := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS].Replicas
-				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed)
+				err := ctr.updateStatusSingle(c.tfJob, tfv1.TFReplicaTypePS, int(*replicas), c.restart, c.worker0Completed, c.worker0Failed)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}

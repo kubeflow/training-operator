@@ -102,13 +102,23 @@ func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1.TFJob {
 	return tfJob
 }
 
-func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy tfv1.SuccessPolicy) *tfv1.TFJob {
+func NewTFJobWithSuccessPolicy(chief, worker, ps int, successPolicy tfv1.SuccessPolicy) *tfv1.TFJob {
+	if chief == 1 {
+		tfJob := NewTFJobWithChief(worker, ps)
+		tfJob.Spec.SuccessPolicy = &successPolicy
+		return tfJob
+	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.SuccessPolicy = &successPolicy
 	return tfJob
 }
 
-func NewTFJobWithFailurePolicy(worker, ps int, failurePolicy tfv1.FailurePolicy) *tfv1.TFJob {
+func NewTFJobWithFailurePolicy(chief, worker, ps int, failurePolicy tfv1.FailurePolicy) *tfv1.TFJob {
+	if chief == 1 {
+                tfJob := NewTFJobWithChief(worker, ps)
+		tfJob.Spec.FailurePolicy = &failurePolicy
+		return tfJob
+	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.FailurePolicy = &failurePolicy
 	return tfJob

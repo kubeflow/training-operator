@@ -68,6 +68,7 @@ func (tc *TFController) reconcilePods(
 	replicas := int(*spec.Replicas)
 	restart := false
 	worker0Completed := false
+	worker0Failed := false
 	masterRole := false
 
 	initializeTFReplicaStatuses(tfjob, rtype)
@@ -139,15 +140,19 @@ func (tc *TFController) reconcilePods(
 			}
 
 			// Check whether worker 0 is exited without error.
-			if rtype == tfv1.TFReplicaTypeWorker && index == 0 &&
-				exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
-				worker0Completed = true
+			if rtype == tfv1.TFReplicaTypeWorker && index == 0 {
+				if exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
+					worker0Completed = true
+				}
+				if exitCode == 1 || pod.Status.Phase == v1.PodFailed {
+                                        worker0Failed = true
+                                }
 			}
 			updateTFJobReplicaStatuses(tfjob, rtype, pod)
 		}
 	}
 
-	return tc.updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed)
+	return tc.updateStatusSingle(tfjob, rtype, replicas, restart, worker0Completed, worker0Failed)
 }
 
 // createNewPod creates a new pod for the given index and type.
