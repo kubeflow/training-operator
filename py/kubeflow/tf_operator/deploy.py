@@ -112,12 +112,14 @@ def setup_cluster(args):
   cluster_name = args.cluster
   zone = args.zone
   machine_type = "n1-standard-8"
+  cluster_version = "1.14.10-gke.42"
 
   cluster_request = {
     "cluster": {
       "name": cluster_name,
       "description": "A GKE cluster for TF.",
       "initialNodeCount": 1,
+      "initialClusterVersion": cluster_version,
       "nodeConfig": {
         "machineType": machine_type,
         "oauthScopes": [
