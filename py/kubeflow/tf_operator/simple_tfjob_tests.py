@@ -88,8 +88,8 @@ class SimpleTfJobTests(test_util.TestCase):
     self.run_simple_tfjob(CPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
   # Run a generic TFJob, wait for it to complete, and check for pod/service creation errors.
-  def test_simple_tfjob_gpu(self):
-    self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
+  # def test_simple_tfjob_gpu(self):
+  #   self.run_simple_tfjob(GPU_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version)
 
 
 if __name__ == "__main__":

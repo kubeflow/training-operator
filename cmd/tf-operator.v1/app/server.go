@@ -20,15 +20,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/kubeflow/common/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-
-	"github.com/kubeflow/common/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/pkg/version"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
