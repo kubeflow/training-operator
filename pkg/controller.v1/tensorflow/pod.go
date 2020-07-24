@@ -144,7 +144,11 @@ func (tc *TFController) ReconcilePods(
 					msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
 						tfJob.Name, rtype)
 					tc.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
-					commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+						return err
+					}
 					tfJobsRestartCount.Inc()
 				}
 			}
