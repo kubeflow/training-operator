@@ -356,7 +356,7 @@ def job_succeeded(tfjob):
   Args:
     tfjob: The TFJob custom resource returned from K8s.
   """
-  last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
+  last_condition = tfjob.get("status", {}).get("conditions", [{}])[-1]
   return last_condition.get("type", "").lower() == "succeeded"
 
 
