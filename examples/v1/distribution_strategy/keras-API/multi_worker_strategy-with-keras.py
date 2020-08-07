@@ -1,4 +1,4 @@
-# Copyright 2018 The Kubeflow Authors. All Rights Reserved.
+# Copyright 2020 The Kubeflow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import argparse
 import json
 import os
 
-import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras import datasets, layers, models
+import tensorflow as tf
+from tensorflow.keras import layers, models
 
 
 def make_datasets_unbatched():
@@ -34,7 +34,7 @@ def make_datasets_unbatched():
     image /= 255
     return image, label
 
-  datasets, info = tfds.load(name='mnist', with_info=True, as_supervised=True)
+  datasets, _ = tfds.load(name='mnist', with_info=True, as_supervised=True)
 
   return datasets['train'].map(scale).cache().shuffle(BUFFER_SIZE)
 
@@ -61,7 +61,7 @@ def build_and_compile_cnn_model():
 
 
 def decay(epoch):
-  if epoch < 3:
+  if epoch < 3: #pylint: disable=no-else-return
     return 1e-3
   elif epoch >= 3 and epoch < 7:
     return 1e-4
@@ -100,7 +100,7 @@ def main(args):
   # Callback for printing the LR at the end of each epoch.
   class PrintLR(tf.keras.callbacks.Callback):
 
-    def on_epoch_end(self, epoch, logs=None):
+    def on_epoch_end(self, epoch): #pylint: disable=no-self-use
       print('\nLearning rate for epoch {} is {}'.format(
         epoch + 1, multi_worker_model.optimizer.lr.numpy()))
 
@@ -125,7 +125,7 @@ def main(args):
   # current task type and returns True if the worker is the chief and False
   # otherwise.
   def is_chief():
-    return (TASK_INDEX == 0)
+    return TASK_INDEX == 0
 
   if is_chief():
     model_path = args.saved_model_dir
@@ -157,5 +157,5 @@ if __name__ == '__main__':
                       required=True,
                       help='Tensorflow checkpoint directory.')
 
-  args = parser.parse_args()
-  main(args)
+  parsed_args = parser.parse_args()
+  main(parsed_args)
