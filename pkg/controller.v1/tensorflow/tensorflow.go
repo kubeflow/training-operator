@@ -157,9 +157,9 @@ func genClusterSpec(tfjob *tfv1.TFJob) (ClusterSpec, error) {
 			// which maybe different between kubernetes clusters.
 			hostName := jobcontroller.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i))
 			svcName := hostName + "." + tfjob.Namespace + "." + "svc"
-			cluserDomain := os.Getenv(EnvCustomClusterDomain)
-			if len(cluserDomain) > 0 {
-				svcName += "." + cluserDomain
+			clusterDomain := os.Getenv(EnvCustomClusterDomain)
+			if len(clusterDomain) > 0 {
+				svcName += "." + clusterDomain
 			}
 
 			endpoint := fmt.Sprintf("%s:%d", svcName, port)
