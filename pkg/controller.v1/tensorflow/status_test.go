@@ -331,7 +331,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
-			worker0Completed:        true,
+			worker0Completed:        false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
@@ -351,7 +351,7 @@ func TestStatus(t *testing.T) {
 			expectedType:            common.JobFailed,
 		},
 		testCase{
-			description:             "(No chief worker, failurePolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
+			description:             "(No chief worker, failurePolicy: AllWorkers) worker-0 is failed, 2 workers are running, 1 worker is succeeded",
 			tfJob:                   testutil.NewTFJobWithFailurePolicy(4, 0, tfv1.FailurePolicyAllWorkers),
 			expectedFailedPS:        0,
 			expectedSucceededPS:     0,
@@ -363,7 +363,7 @@ func TestStatus(t *testing.T) {
 			expectedSucceededChief:  0,
 			expectedActiveChief:     0,
 			restart:                 false,
-			worker0Completed:        true,
+			worker0Completed:        false,
 			expectedType:            common.JobRunning,
 		},
 		testCase{
