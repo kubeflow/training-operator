@@ -49,7 +49,7 @@ def wait_for_pods_to_be_in_phases(
     namespace,
     pod_selector,
     phases,
-    timeout=datetime.timedelta(minutes=5),
+    timeout=datetime.timedelta(minutes=15),
     polling_interval=datetime.timedelta(seconds=30)):
   """Wait for the pods matching the selector to be in the specified state
 
@@ -73,13 +73,14 @@ def wait_for_pods_to_be_in_phases(
     logging.info("%s pods matched %s pods", len(pods.items), pod_selector)
 
     is_match = True
+
     for p in pods.items:
       if p.status.phase not in phases:
         # for debug
         logging.info("pod in phase %s", p.status.phase)
         is_match = False
 
-    if is_match:
+    if is_match and pods.items:
       logging.info("All pods in phase %s", phases)
       log_pods(pods)
       return pods
@@ -100,7 +101,7 @@ def wait_for_pods_to_be_deleted(
     client,
     namespace,
     pod_selector,
-    timeout=datetime.timedelta(minutes=5),
+    timeout=datetime.timedelta(minutes=10),
     polling_interval=datetime.timedelta(seconds=30)):
   """Wait for the specified job to be deleted.
 

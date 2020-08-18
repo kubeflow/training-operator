@@ -297,7 +297,7 @@ func schema_pkg_apis_tensorflow_v1_TFJob(ref common.ReferenceCallback) common.Op
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Represents a TFJob resource.",
+				Description: "TFJob represents a TFJob resource.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -396,18 +396,38 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 				Description: "TFJobSpec is a desired state description of the TFJob.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"cleanPodPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"ttlSecondsAfterFinished": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TTLSecondsAfterFinished is the TTL to clean up jobs. It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"activeDeadlineSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specifies the duration (in seconds) since startTime during which the job can remain active before it is terminated. Must be a positive integer. This setting applies only to pods where restartPolicy is OnFailure or Always.",
+							Description: "Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"backoffLimit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Number of retries before marking this job as failed.",
+							Description: "Optional number of retries before marking this job failed.",
 							Type:        []string{"integer"},
 							Format:      "int32",
+						},
+					},
+					"schedulingPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SchedulingPolicy defines the policy related to scheduling, e.g. gang-scheduling",
+							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy"),
 						},
 					},
 					"successPolicy": {
@@ -415,20 +435,6 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 							Description: "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"cleanPodPolicy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Defines the policy for cleaning up pods after the TFJob completes. Defaults to Running.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"ttlSecondsAfterFinished": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Defines the TTL for cleaning up finished TFJobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Defaults to infinite.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"tfReplicaSpecs": {
@@ -447,7 +453,7 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 					},
 					"enableDynamicWorker": {
 						SchemaProps: spec.SchemaProps{
-							Description: "A switch to enable dynamic worker",
+							Description: "// A switch to enable dynamic worker",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -457,7 +463,7 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec", "github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy"},
 	}
 }
 

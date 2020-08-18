@@ -23,6 +23,7 @@ const (
 	TestTFJobName = "test-tfjob"
 	LabelWorker   = "worker"
 	LabelPS       = "ps"
+	LabelChief    = "chief"
 
 	SleepInterval = 500 * time.Millisecond
 	ThreadCount   = 1

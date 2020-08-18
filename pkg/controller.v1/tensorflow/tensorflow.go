@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 )
 
 const (
@@ -108,11 +108,11 @@ func genTFConfigJSONStr(tfjob *tfv1.TFJob, rtype, index string) (string, error) 
 
 	var tfConfigJSONByteSlice []byte
 	if tfjob.Spec.EnableDynamicWorker {
-		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, rtype, int32(i))
+		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, strings.ToLower(rtype), int32(i))
 		sparseTFConfig := SparseTFConfig{
 			Cluster: sparseCluster,
 			Task: TaskSpec{
-				Type:  rtype,
+				Type:  strings.ToLower(rtype),
 				Index: int(i),
 			},
 		}
@@ -121,7 +121,7 @@ func genTFConfigJSONStr(tfjob *tfv1.TFJob, rtype, index string) (string, error) 
 		tfConfig := TFConfig{
 			Cluster: cluster,
 			Task: TaskSpec{
-				Type:  rtype,
+				Type:  strings.ToLower(rtype),
 				Index: int(i),
 			},
 			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
@@ -155,7 +155,7 @@ func genClusterSpec(tfjob *tfv1.TFJob) (ClusterSpec, error) {
 			// Headless service assigned a DNS A record for a name of the form "my-svc.my-namespace.svc.cluster.local".
 			// And the last part "svc.cluster.local" is called cluster domain
 			// which maybe different between kubernetes clusters.
-			hostName := jobcontroller.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i))
+			hostName := common.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i))
 			svcName := hostName + "." + tfjob.Namespace + "." + "svc"
 			clusterDomain := os.Getenv(EnvCustomClusterDomain)
 			if len(clusterDomain) > 0 {

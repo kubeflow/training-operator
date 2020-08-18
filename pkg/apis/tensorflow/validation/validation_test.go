@@ -30,7 +30,7 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 			TFReplicaSpecs: nil,
 		},
 		{
-			TFReplicaSpecs: map[tfv1.TFReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				tfv1.TFReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -41,7 +41,7 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 			},
 		},
 		{
-			TFReplicaSpecs: map[tfv1.TFReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				tfv1.TFReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -56,7 +56,7 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 			},
 		},
 		{
-			TFReplicaSpecs: map[tfv1.TFReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				tfv1.TFReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -72,7 +72,7 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 			},
 		},
 		{
-			TFReplicaSpecs: map[tfv1.TFReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				tfv1.TFReplicaTypeChief: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -90,7 +90,7 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 			},
 		},
 		{
-			TFReplicaSpecs: map[tfv1.TFReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				tfv1.TFReplicaTypeEval: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
