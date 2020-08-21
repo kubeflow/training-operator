@@ -165,7 +165,12 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 			}
 		}
 
-		if failed > 0 {
+		// Leave a failure condition for the following two cases:
+		// 1. If default failure policy is used and any replica is failed
+		// 2. If `FailurePolicyAllWorkers` failure policy is used and all workers are failed.
+		// 3. If `FailurePolicyChief` failure policy is used and chief is failed.
+		if failed == *(spec.Replicas) || (failed > 0 && *tfJob.Spec.FailurePolicy == tfv1.FailurePolicyDefault) ||
+			(failed > 0 && tfv1.IsChieforMaster(rtype) && *tfJob.Spec.FailurePolicy == tfv1.FailurePolicyChief) {
 			restart := false
 			for _, condition := range jobStatus.Conditions {
 				if condition.Type == commonv1.JobRestarting {

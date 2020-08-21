@@ -16,8 +16,15 @@ package v1
 
 // SuccessPolicy is the success policy.
 type SuccessPolicy string
+type FailurePolicy string
 
 const (
 	SuccessPolicyDefault    SuccessPolicy = ""
 	SuccessPolicyAllWorkers SuccessPolicy = "AllWorkers"
+)
+
+const (
+	FailurePolicyDefault    FailurePolicy = ""
+	FailurePolicyAllWorkers FailurePolicy = "AllWorkers"
+	FailurePolicyChief FailurePolicy = "Chief"
 )

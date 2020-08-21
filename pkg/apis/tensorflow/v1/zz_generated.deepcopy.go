@@ -93,6 +93,11 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 		*out = new(SuccessPolicy)
 		**out = **in
 	}
+	if in.FailurePolicy != nil {
+		in, out := &in.FailurePolicy, &out.FailurePolicy
+		*out = new(FailurePolicy)
+		**out = **in
+	}
 	if in.TFReplicaSpecs != nil {
 		in, out := &in.TFReplicaSpecs, &out.TFReplicaSpecs
 		*out = make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec, len(*in))

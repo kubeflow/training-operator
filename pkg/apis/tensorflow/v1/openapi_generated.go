@@ -437,6 +437,13 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"FailurePolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailurePolicy defines the policy to mark the TFJob as failure. Default to \"\", using the default rules.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"tfReplicaSpecs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",

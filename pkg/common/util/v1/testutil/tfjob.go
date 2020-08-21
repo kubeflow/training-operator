@@ -110,6 +110,23 @@ func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy tfv1.SuccessPolicy)
 	return tfJob
 }
 
+func NewTFJobWithFailurePolicy(worker, ps int, failurePolicy tfv1.FailurePolicy) *tfv1.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.FailurePolicy = &failurePolicy
+	return tfJob
+}
+
+func NewTFJobWithChiefAndFailurePolicy(worker, ps int, failurePolicy tfv1.FailurePolicy) *tfv1.TFJob {
+	tfJob := NewTFJob(worker, ps)
+	tfJob.Spec.FailurePolicy = &failurePolicy
+	chief := int32(1)
+	tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = &commonv1.ReplicaSpec{
+		Replicas: &chief,
+		Template: NewTFReplicaSpecTemplate(),
+	}
+	return tfJob
+}
+
 func NewTFJob(worker, ps int) *tfv1.TFJob {
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{

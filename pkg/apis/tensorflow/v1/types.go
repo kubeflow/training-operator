@@ -55,6 +55,11 @@ type TFJobSpec struct {
 	// +optional
 	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
 
+	// FailurePolicy defines the policy to mark the TFJob as failure.
+	// Default to "", using the default rules.
+	// +optional
+	FailurePolicy *FailurePolicy `json:"FailurePolicy,omitempty"`
+
 	// A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
 	// For example,
 	//   {
