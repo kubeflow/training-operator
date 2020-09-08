@@ -112,7 +112,7 @@ def setup_cluster(args):
   cluster_name = args.cluster
   zone = args.zone
   machine_type = "n1-standard-8"
-  cluster_version = "1.14.10-gke.42"
+  cluster_version = "1.16.13-gke.400"
 
   cluster_request = {
     "cluster": {
