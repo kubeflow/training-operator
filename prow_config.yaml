@@ -28,7 +28,7 @@ workflows:
     params:
       registry: "gcr.io/kubeflow-ci"
       tfJobVersion: v1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
+      testWorkerImage: 348134392524.dkr.ecr.us-west-2.amazonaws.com/aws-kubeflow-ci/test-worker:0.1
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1
