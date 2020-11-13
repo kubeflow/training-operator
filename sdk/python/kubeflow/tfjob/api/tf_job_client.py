@@ -289,7 +289,7 @@ class TFJobClient(object):
       namespace = utils.get_default_target_namespace()
 
     tfjob = self.get(name, namespace=namespace)
-    last_condition = tfjob.get("status", {}).get("conditions", [])[-1]
+    last_condition = tfjob.get("status", {}).get("conditions", [{}])[-1]
     return last_condition.get("type", "")
 
 

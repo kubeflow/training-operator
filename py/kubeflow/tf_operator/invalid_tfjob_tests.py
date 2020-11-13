@@ -44,7 +44,7 @@ class InvalidTfJobTests(test_util.TestCase):
 
     logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
 
-    last_condition = results.get("status", {}).get("conditions", [])[-1]
+    last_condition = results.get("status", {}).get("conditions", [{}])[-1]
     if last_condition.get("type", "").lower() != "failed":
       self.failure = "Job {0} in namespace {1} did not fail; status {2}".format(
         self.name, self.namespace, results.get("status", {}))

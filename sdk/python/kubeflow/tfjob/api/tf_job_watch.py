@@ -48,7 +48,7 @@ def watch(name=None, namespace=None, timeout_seconds=600):
     else:
       status = ''
       update_time = ''
-      last_condition = tfjob.get('status', {}).get('conditions', [])[-1]
+      last_condition = tfjob.get('status', {}).get('conditions', [{}])[-1]
       status = last_condition.get('type', '')
       update_time = last_condition.get('lastTransitionTime', '')
 
