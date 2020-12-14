@@ -99,7 +99,7 @@ def main(args):
   # Callback for printing the LR at the end of each epoch.
   class PrintLR(tf.keras.callbacks.Callback):
 
-    def on_epoch_end(self, epoch): #pylint: disable=no-self-use
+    def on_epoch_end(self, epoch, logs=None): #pylint: disable=no-self-use
       print('\nLearning rate for epoch {} is {}'.format(
         epoch + 1, multi_worker_model.optimizer.lr.numpy()))
 
