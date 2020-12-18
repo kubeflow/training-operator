@@ -22,11 +22,11 @@ import (
 	"strconv"
 
 	"github.com/onrik/logrus/filename"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func init() {
@@ -63,7 +63,6 @@ func main() {
 	startMonitoring(s.MonitoringPort)
 
 	if err := app.Run(s); err != nil {
-		log.Fatalf("%v\n", err)
+		log.Fatalf("Failed to run: %v", err)
 	}
-
 }
