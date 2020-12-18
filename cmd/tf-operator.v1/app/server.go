@@ -114,7 +114,8 @@ func Run(opt *options.ServerOption) error {
 		return err
 	}
 	if !checkCRDExists(tfJobClientSet, opt.Namespace) {
-		return fmt.Errorf("Failed to get the expected TFJobs with API version %s", tfJobClientSet.KubeflowV1().RESTClient().APIVersion())
+		return fmt.Errorf("Failed to get the expected TFJobs with API version %s",
+			tfJobClientSet.KubeflowV1().RESTClient().APIVersion())
 	}
 	// Create informer factory.
 	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, opt.ResyncPeriod, opt.Namespace, nil)
