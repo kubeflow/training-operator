@@ -20,15 +20,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubeflow/common/pkg/util/signals"
-	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
-	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
-	controller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-	"github.com/kubeflow/tf-operator/pkg/version"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
@@ -44,6 +35,15 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+
+	"github.com/kubeflow/common/pkg/util/signals"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
+	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	controller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
+	"github.com/kubeflow/tf-operator/pkg/version"
 )
 
 const (
@@ -57,6 +57,7 @@ var (
 	retryPeriod   = 3 * time.Second
 )
 
+// RecommendedKubeConfigPathEnv is the environment variable name for kubeconfig.
 const RecommendedKubeConfigPathEnv = "KUBECONFIG"
 
 var (
@@ -66,6 +67,7 @@ var (
 	})
 )
 
+// Run runs the server.
 func Run(opt *options.ServerOption) error {
 	// Check if the -version flag was passed and, if so, print the version and exit.
 	if opt.PrintVersion {
@@ -112,8 +114,7 @@ func Run(opt *options.ServerOption) error {
 		return err
 	}
 	if !checkCRDExists(tfJobClientSet, opt.Namespace) {
-		log.Info("CRD doesn't exist. Exiting")
-		os.Exit(1)
+		return fmt.Errorf("Failed to get the expected TFJobs with API version %s", tfJobClientSet.KubeflowV1().RESTClient().APIVersion())
 	}
 	// Create informer factory.
 	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, opt.ResyncPeriod, opt.Namespace, nil)
@@ -209,6 +210,7 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, volcanoClientSet, nil
 }
 
+// checkCRDExists checks if the CRD exists.
 func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
 	_, err := clientset.KubeflowV1().TFJobs(namespace).List(metav1.ListOptions{})
 
