@@ -2,9 +2,9 @@ name: Publish
 
 on:
   push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -30,10 +30,6 @@ jobs:
           echo "GOPATH=$(go env GOPATH):$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: before_install
-        run: |
-          # get coveralls.io support
-          go get github.com/kubeflow/tf-operator
       - name: docker-build
         run: |
           cd src/github.com/kubeflow/tf-operator
