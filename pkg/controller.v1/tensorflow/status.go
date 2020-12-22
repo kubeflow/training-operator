@@ -105,29 +105,34 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 		running := status.Active
 		failed := status.Failed
 
-		logger.Infof("TFJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
-			tfJob.Name, rtype, expected, running, failed)
+		logger.Infof("TFJob=%s/%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
+			tfJob.Namespace, tfJob.Name, rtype, expected, running, failed)
 
 		// If the TFJob contains Chief or Master spec, then we will update the status
 		// according to the Chief/Master spec.
 		if ContainChieforMasterSpec(tfJob.Spec.TFReplicaSpecs) {
 			if tfv1.IsChieforMaster(rtype) {
 				if running > 0 {
-					msg := fmt.Sprintf("TFJob %s is running.", tfJob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, tfJobRunningReason, msg)
+					msg := fmt.Sprintf("TFJob %s/%s is running.",
+						tfJob.Namespace, tfJob.Name)
+					err := commonutil.UpdateJobConditions(jobStatus,
+						commonv1.JobRunning, tfJobRunningReason, msg)
 					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+						commonutil.LoggerForJob(tfJob).Infof(
+							"Append tfjob condition error: %v", err)
 						return err
 					}
 				}
 				if expected == 0 {
-					msg := fmt.Sprintf("TFJob %s successfully completed.", tfJob.Name)
+					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+						tfJob.Namespace, tfJob.Name)
 					tc.Recorder.Event(tfJob, corev1.EventTypeNormal, tfJobSucceededReason, msg)
 					if jobStatus.CompletionTime == nil {
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, tfJobSucceededReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus,
+						commonv1.JobSucceeded, tfJobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
@@ -141,13 +146,15 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 				// 1. If default success policy is used and worker 0 has completed.
 				// 2. If `SuccessPolicyAllWorkers` success policy is used and all workers are succeeded.
 				if expected == 0 || (worker0Completed && *tfJob.Spec.SuccessPolicy != tfv1.SuccessPolicyAllWorkers) {
-					msg := fmt.Sprintf("TFJob %s successfully completed.", tfJob.Name)
+					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+						tfJob.Namespace, tfJob.Name)
 					tc.Recorder.Event(tfJob, corev1.EventTypeNormal, tfJobSucceededReason, msg)
 					if jobStatus.CompletionTime == nil {
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, tfJobSucceededReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus,
+						commonv1.JobSucceeded, tfJobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
@@ -155,7 +162,8 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 					tfJobsSuccessCount.Inc()
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
-					msg := fmt.Sprintf("TFJob %s is running.", tfJob.Name)
+					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+						tfJob.Namespace, tfJob.Name)
 					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, tfJobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
@@ -178,14 +186,15 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 				// we know it because we update the status condition when reconciling the replicas
 				tfJobsFailureCount.Inc()
 			} else {
-				msg := fmt.Sprintf("TFJob %s has failed because %d %s replica(s) failed.",
-					tfJob.Name, failed, rtype)
+				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
+					tfJob.Namespace, tfJob.Name, failed, rtype)
 				tc.Recorder.Event(tfJob, corev1.EventTypeNormal, tfJobFailedReason, msg)
 				if tfJob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					tfJob.Status.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, tfJobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus,
+					commonv1.JobFailed, tfJobFailedReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 					return err
