@@ -28,14 +28,13 @@ jobs:
           pwd
           go env
           echo "GOPATH=$(go env GOPATH):$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: docker-build
         run: |
           cd src/github.com/kubeflow/tf-operator
-          docker build -t ghcr.io/kubeflow/tf-operator:$RELEASE_VERSION -f build/images/tf_operator/Dockerfile .
+          docker build -t ghcr.io/kubeflow/tf-operator:latest -f build/images/tf_operator/Dockerfile .
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
       - name: docker-push
         run: |
-          docker push ghcr.io/kubeflow/tf-operator:$RELEASE_VERSION -f build/images/tf_operator/Dockerfile .
+          docker push ghcr.io/kubeflow/tf-operator:latest -f build/images/tf_operator/Dockerfile .
