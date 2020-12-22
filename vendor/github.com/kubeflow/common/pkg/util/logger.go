@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -33,11 +33,12 @@ func LoggerForReplica(job metav1.Object, rtype string) *log.Entry {
 	})
 }
 
+// LoggerForJob gets the logger for the given job.
 func LoggerForJob(job metav1.Object) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
-		"job": job.GetNamespace() + "." + job.GetName(),
+		"job": job.GetNamespace() + "/" + job.GetName(),
 		"uid": job.GetUID(),
 	})
 }

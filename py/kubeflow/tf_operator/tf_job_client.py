@@ -65,7 +65,7 @@ def delete_tf_job(client, namespace, name, version="v1"):
       # owned references are deleted.
       "propagationPolicy": "Foreground",
     }
-    logging.info("Deleting job %s.%s", namespace, name)
+    logging.info("Deleting job %s/%s", namespace, name)
     thread = crd_api.delete_namespaced_custom_object(
       TF_JOB_GROUP,
       version,
@@ -75,7 +75,7 @@ def delete_tf_job(client, namespace, name, version="v1"):
       body,
       async_req=True)
     api_response = thread.get(TIMEOUT)
-    logging.info("Deleting job %s.%s returned: %s", namespace, name,
+    logging.info("Deleting job %s/%s returned: %s", namespace, name,
                  api_response)
     return api_response
   except rest.ApiException as e:
@@ -150,8 +150,8 @@ def wait_for_condition(client,
     except multiprocessing.TimeoutError:
       logging.error("Timeout trying to get TFJob.")
     except Exception as e:
-      logging.error("There was a problem waiting for Job %s.%s; Exception; %s",
-                    name, name, e)
+      logging.error("There was a problem waiting for Job %s/%s; Exception; %s",
+                    namespace, name, e)
       raise
 
     if results:
