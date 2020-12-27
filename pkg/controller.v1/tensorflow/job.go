@@ -114,8 +114,6 @@ func (tc *TFController) addTFJob(obj interface{}) {
 	logger.Info(msg)
 
 	// Add a created condition.
-	//[Jack]
-	// err = updateTFJobConditions(tfJob, common.JobCreated, tfJobCreatedReason, msg)
 	err = commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, tfJobCreatedReason, msg)
 	if err != nil {
 		logger.Errorf("Append tfJob condition error: %v", err)

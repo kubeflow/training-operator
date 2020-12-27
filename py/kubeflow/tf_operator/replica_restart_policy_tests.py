@@ -3,6 +3,7 @@ import logging
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
 
 REPLICA_RESTART_POLICY_ALWAYS_COMPONENT_NAME = "replica_restart_policy_always"
@@ -25,10 +26,11 @@ class ReplicaRestartPolicyTests(test_util.TestCase):
 
   def run_tfjob_with_replica_restart_policy(self, component,
                                             replica_restart_policy, exit_code):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job

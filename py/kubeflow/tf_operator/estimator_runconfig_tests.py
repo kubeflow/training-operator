@@ -115,12 +115,13 @@ class EstimatorRunconfigTests(test_util.TestCase):
 
   # Run a TFJob, verify that the TensorFlow runconfig specs are set correctly.
   def test_tfjob_and_verify_runconfig(self):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
     masterHost = api_client.configuration.host
     component = COMPONENT_NAME + "_" + self.tfjob_version
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job

@@ -72,7 +72,7 @@ def delete_tf_job(client, namespace, name, version="v1"):
       namespace,
       TF_JOB_PLURAL,
       name,
-      body,
+      body=body,
       async_req=True)
     api_response = thread.get(TIMEOUT)
     logging.info("Deleting job %s.%s returned: %s", namespace, name,
@@ -265,7 +265,7 @@ def get_labels(name, replica_type=None, replica_index=None):
 
 def to_selector(labels):
   parts = []
-  for k, v in labels.iteritems():
+  for k, v in labels.items():
     parts.append("{0}={1}".format(k, v))
 
   return ",".join(parts)

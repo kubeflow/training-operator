@@ -25,7 +25,7 @@ from kubeflow.tfjob import TFJobClient
 
 
 TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
-SDK_TEST_NAMESPACE = 'default'
+SDK_TEST_NAMESPACE = 'kubeflow'
 
 def test_sdk_e2e():
 

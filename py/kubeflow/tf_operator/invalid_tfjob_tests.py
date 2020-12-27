@@ -4,6 +4,7 @@ import re
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
 
 INVALID_TFJOB_COMPONENT_NAME = "invalid_tfjob"
@@ -22,11 +23,12 @@ class InvalidTfJobTests(test_util.TestCase):
       class_name="InvalidTfJobTests", name=name)
 
   def test_invalid_tfjob_spec(self):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
     component = INVALID_TFJOB_COMPONENT_NAME + "_" + self.tfjob_version
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job

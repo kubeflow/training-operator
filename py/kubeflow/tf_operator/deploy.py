@@ -90,7 +90,7 @@ def ks_deploy(app_dir, component, params, env=None, account=None):
     if not re.search(".*environment.*already exists.*", e.output):
       raise
 
-  for k, v in params.iteritems():
+  for k, v in params.items():
     util.run([ks_cmd, "param", "set", "--env=" + env, component, k, v],
              cwd=app_dir)
 

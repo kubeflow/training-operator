@@ -3,6 +3,7 @@ import logging
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
 
 MASTER_IS_CHIEF_COMPONENT_NAME = "master_is_chief"
@@ -22,10 +23,11 @@ class ShutdownPolicyTests(test_util.TestCase):
       class_name="ShutdownPolicyTests", name=name)
 
   def run_tfjob_with_shutdown_policy(self, component, shutdown_policy):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job
