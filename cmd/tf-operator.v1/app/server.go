@@ -221,6 +221,8 @@ func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
 			if errors.IsNotFound(err) {
 				return false
 			}
+		} else {
+			return false;
 		}
 	}
 	return true
