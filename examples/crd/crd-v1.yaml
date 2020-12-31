@@ -40,3 +40,9 @@ spec:
                       type: integer
                       minimum: 1
                       maximum: 1
+                Evaluator:
+                  properties:
+                    replicas:
+                      type: integer
+                      minimum: 0
+                      maximum: 1
