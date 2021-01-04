@@ -1,0 +1,33 @@
+apiVersion: "kubeflow.org/v1"
+kind: "TFJob"
+metadata:
+  name: "dist-mnist-for-e2e-test"
+spec:
+  cleanPodPolicy: None
+  tfReplicaSpecs:
+    PS:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: ghcr.io/kubeflow-incubator/monitored_training_session:1.0
+    Worker:
+      replicas: 2
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: ghcr.io/kubeflow-incubator/monitored_training_session:1.0
+              volumeMounts:
+                - mountPath: "/train"
+                  name: "training"
+                - mountPath: "/mnist_data"
+                  name: "data"
+          volumes:
+            - name: "training"
+              emptyDir: {}
+            - name: "data"
+              emptyDir: {}
