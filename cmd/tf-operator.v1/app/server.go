@@ -111,6 +111,7 @@ func Run(opt *options.ServerOption) error {
 	// Create clients.
 	kubeClientSet, leaderElectionClientSet, tfJobClientSet, volcanoClientSet, err := createClientSets(kcfg)
 	if err != nil {
+		log.Fatalf("Error create client set : %s", err.Error())
 		return err
 	}
 	if !checkCRDExists(tfJobClientSet, opt.Namespace) {
@@ -222,7 +223,7 @@ func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
 				return false
 			}
 		} else {
-			return false;
+			return false
 		}
 	}
 	return true
