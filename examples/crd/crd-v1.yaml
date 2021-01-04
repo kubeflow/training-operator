@@ -23,7 +23,7 @@ spec:
             tfReplicaSpecs:
               properties:
                 # The validation works when the configuration contains
-                # `Worker`, `PS` or `Chief`. Otherwise it will not be validated.
+                # `Worker`, `PS` , `Chief` or `Evaluator`. Otherwise it will not be validated.
                 Worker:
                   properties:
                     replicas:
@@ -39,4 +39,10 @@ spec:
                     replicas:
                       type: integer
                       minimum: 1
+                      maximum: 1
+                Evaluator:
+                  properties:
+                    replicas:
+                      type: integer
+                      minimum: 0
                       maximum: 1
