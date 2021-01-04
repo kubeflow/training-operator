@@ -24,10 +24,6 @@ spec:
               volumeMounts:
                 - mountPath: "/train"
                   name: "training"
-                - mountPath: "/mnist_data"
-                  name: "data"
           volumes:
             - name: "training"
-              emptyDir: {}
-            - name: "data"
               emptyDir: {}

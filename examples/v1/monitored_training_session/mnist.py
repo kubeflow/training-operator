@@ -98,7 +98,7 @@ def main(_):
       accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     # The StopAtStepHook handles stopping after running given steps.
-    hooks=[tf.train.StopAtStepHook(last_step=1000)]
+    hooks=[tf.train.StopAtStepHook(last_step=1000000000)]
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -115,6 +115,7 @@ def main(_):
               x: batch[0], y_: batch[1], keep_prob: 1.0})
           print('global_step %s, task:%d_step %d, training accuracy %g'
                 % (tf.train.global_step(mon_sess, global_step), FLAGS.task_index, i, train_accuracy))
+          sys.stdout.flush()
         mon_sess.run(train_step, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
         i = i + 1
 

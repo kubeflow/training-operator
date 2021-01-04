@@ -37,3 +37,4 @@ examples/.ipynb_checkpoints/
 # swagger-codegen tools and auto generated files but useless
 hack/python-sdk/swagger-codegen-cli.jar
 
+data/
