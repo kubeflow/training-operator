@@ -349,6 +349,10 @@ func getContainerExitCode(pod *v1.Pod) int32 {
 // IsWorker0Completed return true if pod of worker0 succeeded and exited with 0
 func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
 	worker0Completed := false
+	_, ok := replicas[tfv1.TFReplicaTypeWorker]
+	if !ok {
+		return true, nil
+	}
 	podSlices, err := tc.getPodSlices(tfjob, replicas[tfv1.TFReplicaTypeWorker].Replicas)
 	if err != nil {
 		return false, err
