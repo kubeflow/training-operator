@@ -557,10 +557,6 @@ func TestScaleUp(t *testing.T) {
 }
 
 func TestIsWorker0Completed(t *testing.T) {
-	type args struct {
-		tfJob    *tfv1.TFJob
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec
-	}
 	newInt32 := func(in int32) *int32 {
 		return &in
 	}
