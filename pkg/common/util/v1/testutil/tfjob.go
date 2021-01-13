@@ -145,6 +145,68 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 	return tfJob
 }
 
+func NewTFJobV2(worker, ps, master, cheif, evaluator int) *tfv1.TFJob {
+	tfJob := &tfv1.TFJob{
+		TypeMeta: metav1.TypeMeta{
+			Kind: tfv1.Kind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      TestTFJobName,
+			Namespace: metav1.NamespaceDefault,
+		},
+		Spec: tfv1.TFJobSpec{
+			TFReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
+		},
+	}
+	tfv1.SetObjectDefaults_TFJob(tfJob)
+
+	if worker > 0 {
+		worker := int32(worker)
+		workerReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &worker,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] = workerReplicaSpec
+	}
+
+	if ps > 0 {
+		ps := int32(ps)
+		psReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &ps,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] = psReplicaSpec
+	}
+
+	if master > 0 {
+		master := int32(master)
+		masterReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &master,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeMaster] = masterReplicaSpec
+	}
+
+	if cheif > 0 {
+		cheif := int32(cheif)
+		cheifReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &cheif,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = cheifReplicaSpec
+	}
+
+	if evaluator > 0 {
+		evaluator := int32(evaluator)
+		evaluatorReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &evaluator,
+			Template: NewTFReplicaSpecTemplate(),
+		}
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = evaluatorReplicaSpec
+	}
+	return tfJob
+}
+
 func NewTFJobWithNamespace(worker, ps int, ns string) *tfv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Namespace = ns
