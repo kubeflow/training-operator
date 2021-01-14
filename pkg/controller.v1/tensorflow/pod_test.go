@@ -555,3 +555,140 @@ func TestScaleUp(t *testing.T) {
 
 	close(stopCh)
 }
+
+func TestIsWorker0Completed(t *testing.T) {
+	newInt32 := func(in int32) *int32 {
+		return &in
+	}
+	tests := []struct {
+		// worker failed, succeeded, running num
+		workers     [3]int32
+		tfJob       *tfv1.TFJob
+		replicas    map[commonv1.ReplicaType]*commonv1.ReplicaSpec
+		expected    bool
+		expectedErr bool
+	}{
+		{
+			workers:     [3]int32{0, 0, 1},
+			tfJob:       testutil.NewTFJobV2(1, 1, 0, 0, 0),
+			expected:    false,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeWorker: {
+					Replicas: newInt32(1),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+				tfv1.TFReplicaTypePS: {
+					Replicas: newInt32(1),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+		{
+			workers:     [3]int32{0, 1, 0},
+			tfJob:       testutil.NewTFJobV2(1, 0, 0, 0, 0),
+			expected:    true,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeWorker: {
+					Replicas: newInt32(1),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+		{
+			workers:     [3]int32{0, 0, 0},
+			tfJob:       testutil.NewTFJobV2(0, 0, 1, 0, 0),
+			expected:    true,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeMaster: {
+					Replicas: newInt32(1),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+		{
+			workers:     [3]int32{0, 0, 0},
+			tfJob:       testutil.NewTFJobV2(0, 0, 0, 1, 0),
+			expected:    true,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeChief: {
+					Replicas: newInt32(1),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+		{
+			workers:     [3]int32{1, 1, 0},
+			tfJob:       testutil.NewTFJobV2(2, 0, 0, 0, 0),
+			expected:    true,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeWorker: {
+					Replicas: newInt32(2),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+		{
+			workers:     [3]int32{1, 0, 1},
+			tfJob:       testutil.NewTFJobV2(2, 0, 0, 0, 0),
+			expected:    false,
+			expectedErr: false,
+			replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				tfv1.TFReplicaTypeWorker: {
+					Replicas: newInt32(2),
+					Template: testutil.NewTFReplicaSpecTemplate(),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		// Prepare the volcano clientset and controller for the test.
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &batchv1beta1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &tfv1.SchemeGroupVersion,
+			},
+		}
+		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		ctr.tfJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+
+		// only related to worker status
+		initializeReplicaStatuses(&tt.tfJob.Status, tfv1.TFReplicaTypeWorker)
+		// set status and add pod to indexer
+		setStatusForTest(tt.tfJob, tfv1.TFReplicaTypeWorker, tt.workers[0], tt.workers[1], tt.workers[2], false, true, podIndexer, t)
+
+		got, err := ctr.IsWorker0Completed(tt.tfJob, tt.replicas)
+		if (err != nil) != tt.expectedErr {
+			t.Errorf("IsWorker0Completed() error = %v, wantErr %v", err, tt.expectedErr)
+			return
+		}
+		if got != tt.expected {
+			t.Errorf("IsWorker0Completed() got = %v, want %v", got, tt.expected)
+		}
+	}
+}
