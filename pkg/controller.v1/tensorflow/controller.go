@@ -307,7 +307,6 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
 			tfJobsDeletedCount.Inc()
-			// jm.expectations.DeleteExpectations(key)
 			return true, nil
 		}
 		return false, err
