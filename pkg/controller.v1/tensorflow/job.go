@@ -32,6 +32,7 @@ var (
 	})
 )
 
+// DeleteJob implements ControllerInterface interface.
 func (tc *TFController) DeleteJob(job interface{}) error {
 	tfJob, ok := job.(*tfv1.TFJob)
 	if !ok {
@@ -50,7 +51,7 @@ func (tc *TFController) DeleteJob(job interface{}) error {
 	return nil
 }
 
-// When a pod is added, set the defaults and enqueue the current tfjob.
+// addTFJob sets the defaults and enqueue the current tfjob.
 func (tc *TFController) addTFJob(obj interface{}) {
 	// Convert from unstructured object.
 	tfJob, err := tfJobFromUnstructured(obj)
@@ -114,8 +115,6 @@ func (tc *TFController) addTFJob(obj interface{}) {
 	logger.Info(msg)
 
 	// Add a created condition.
-	//[Jack]
-	// err = updateTFJobConditions(tfJob, common.JobCreated, tfJobCreatedReason, msg)
 	err = commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, tfJobCreatedReason, msg)
 	if err != nil {
 		logger.Errorf("Append tfJob condition error: %v", err)
@@ -132,7 +131,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 	tfJobsCreatedCount.Inc()
 }
 
-// When a pod is updated, enqueue the current tfjob.
+// updateTFJob enqueues the current tfjob.
 func (tc *TFController) updateTFJob(old, cur interface{}) {
 	oldTFJob, err := tfJobFromUnstructured(old)
 	if err != nil {
