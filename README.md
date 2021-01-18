@@ -17,6 +17,12 @@ run distributed or non-distributed TensorFlow jobs on Kubernetes.
 
 Please refer to the [user guide](https://www.kubeflow.org/docs/guides/components/tftraining/) for more information.
 
+## Deploy
+
+```bash
+kubectl apply -f ./deploy/v1/tf-operator.yaml
+```
+
 ## Contributing
 
 Please refer to the [developer_guide](developer_guide.md)
