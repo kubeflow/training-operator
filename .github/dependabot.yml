@@ -1,0 +1,349 @@
+updates:
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/golang.org/x/net/http2
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: examples/tf_sample
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: examples/v1/mnist_with_summaries
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: build/images/tf_operator
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: test/test-server
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - jinchihe
+  directory: sdk/python
+  open-pull-requests-limit: 10
+  package-ecosystem: pip
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: .
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - dims
+  - thockin
+  - justinsb
+  - tallclair
+  - piosz
+  - brancz
+  - DirectXMan12
+  - lavalamp
+  directory: vendor/k8s.io/klog
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - jayunit100
+  - hoegaarden
+  - andyxning
+  - neolit123
+  - pohly
+  - yagonobre
+  - vincepri
+  - detiber
+  schedule:
+    interval: daily
+- assignees:
+  - lavalamp
+  - wojtek-t
+  - sttts
+  directory: vendor/k8s.io/code-generator
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - lavalamp
+  - wojtek-t
+  - sttts
+  schedule:
+    interval: daily
+- assignees:
+  - dims
+  - lavalamp
+  - smarterclayton
+  - deads2k
+  - sttts
+  - liggitt
+  - caesarxuchao
+  directory: vendor/sigs.k8s.io/yaml
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - dims
+  - thockin
+  - lavalamp
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - derekwaynecarr
+  - caesarxuchao
+  - mikedanese
+  - liggitt
+  - gmarek
+  - sttts
+  - ncdc
+  - tallclair
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/google.golang.org/appengine
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/json-iterator/go
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/hashicorp/golang-lru
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/spf13/pflag
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/go-openapi/jsonpointer
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/go-openapi/jsonreference
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/go-openapi/spec
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/go-openapi/swag
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/google/gofuzz
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/google/uuid
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/prometheus/procfs
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/konsorten/go-windows-terminal-sequences
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/cespare/xxhash/v2
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/github.com/sirupsen/logrus
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/golang.org/x/xerrors
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/golang.org/x/oauth2
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+- assignees:
+  - ChanYiLin
+  - gaocegege
+  - johnugeorge
+  directory: vendor/gopkg.in/yaml.v2
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - terrytangyuan
+  - jinchihe
+  schedule:
+    interval: daily
+version: 2
