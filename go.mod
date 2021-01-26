@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
-	github.com/kubeflow/common v0.3.1
+	github.com/kubeflow/common v0.3.2
 	github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860 // indirect
 	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
 	github.com/pkg/errors v0.9.1 // indirect
