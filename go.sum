@@ -333,6 +333,7 @@ github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kubeflow/common v0.3.1 h1:BpKu8dBgpTy/rVh6ahOqDEeJEOguU4aHg9WLQVLfhy8=
 github.com/kubeflow/common v0.3.1/go.mod h1:OyD4XjYb5+iNI11VwjvvlhjUNqcUF/0dx3AKk9VpyFQ=
+github.com/kubeflow/common v0.3.2/go.mod h1:OyD4XjYb5+iNI11VwjvvlhjUNqcUF/0dx3AKk9VpyFQ=
 github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860 h1:39KWsid3s21fCNqVRUDRMI6EjHGDT20fCvXaWCQyV54=
 github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860/go.mod h1:zz2mdDZyxgs7soNhFzkeHeCBRNjx/4X93GpHwQXe9Zw=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
