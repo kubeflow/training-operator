@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -109,12 +110,14 @@ func Run(opt *options.ServerOption) error {
 	kcfg.Burst = opt.Burst
 
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, tfJobClientSet, volcanoClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet,
+		apiextensionClientSet, tfJobClientSet,
+		volcanoClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		log.Fatalf("Error create client set : %s", err.Error())
 		return err
 	}
-	if !checkCRDExists(tfJobClientSet, opt.Namespace) {
+	if !checkCRDExists(apiextensionClientSet, opt.Namespace) {
 		return fmt.Errorf("Failed to get the expected TFJobs with API version %s",
 			tfJobClientSet.KubeflowV1().RESTClient().APIVersion())
 	}
@@ -187,34 +190,44 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, tfjobclientset.Interface, volcanoclient.Interface, error) {
+func createClientSets(config *restclientset.Config) (
+	kubeclientset.Interface, kubeclientset.Interface,
+	apiextensionclientset.Interface, tfjobclientset.Interface,
+	volcanoclient.Interface, error) {
 
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "tf-operator"))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	leaderElectionClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "leader-election"))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
+	}
+
+	apiextensionClientSet, err := apiextensionclientset.NewForConfig(restclientset.AddUserAgent(config, "leader-election"))
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
 	}
 
 	tfJobClientSet, err := tfjobclientset.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	volcanoClientSet, err := volcanoclient.NewForConfig(restclientset.AddUserAgent(config, "volcano"))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
-	return kubeClientSet, leaderElectionClientSet, tfJobClientSet, volcanoClientSet, nil
+	return kubeClientSet, leaderElectionClientSet, apiextensionClientSet, tfJobClientSet, volcanoClientSet, nil
 }
 
 // checkCRDExists checks if the CRD exists.
-func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
-	_, err := clientset.KubeflowV1().TFJobs(namespace).List(metav1.ListOptions{})
+func checkCRDExists(clientset apiextensionclientset.Interface, namespace string) bool {
+	crd, err := clientset.ApiextensionsV1beta1().
+		CustomResourceDefinitions().
+		Get(v1.TFCRD, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)
@@ -226,5 +239,8 @@ func checkCRDExists(clientset tfjobclientset.Interface, namespace string) bool {
 			return false
 		}
 	}
+
+	log.Infof("CRD %s/%s %s is registered\n",
+		crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Singular)
 	return true
 }
