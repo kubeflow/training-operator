@@ -8,6 +8,10 @@ github.com/PuerkitoBio/urlesc
 github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
+# github.com/coreos/etcd v3.3.20+incompatible
+## explicit
+# github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
+## explicit
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/docker/distribution v2.7.1+incompatible
@@ -65,7 +69,7 @@ github.com/imdario/mergo
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/kubeflow/common v0.3.1
+# github.com/kubeflow/common v0.3.2
 ## explicit
 github.com/kubeflow/common/pkg/apis/common/v1
 github.com/kubeflow/common/pkg/controller.v1/common
@@ -75,8 +79,6 @@ github.com/kubeflow/common/pkg/util
 github.com/kubeflow/common/pkg/util/k8sutil
 github.com/kubeflow/common/pkg/util/signals
 github.com/kubeflow/common/pkg/util/train
-# github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860
-## explicit
 # github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
@@ -115,6 +117,10 @@ github.com/prometheus/procfs/internal/util
 github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
+## explicit
+# go.uber.org/atomic v1.4.0
+## explicit
 # golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
@@ -148,6 +154,7 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 golang.org/x/time/rate
 # golang.org/x/tools v0.0.0-20200401192744-099440627f01
+## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/imports
 golang.org/x/tools/internal/fastwalk
@@ -244,6 +251,13 @@ k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.16.9 => k8s.io/apiextensions-apiserver v0.16.9
 ## explicit
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/features
 # k8s.io/apimachinery v0.16.10-beta.0 => k8s.io/apimachinery v0.16.10-beta.0
 ## explicit

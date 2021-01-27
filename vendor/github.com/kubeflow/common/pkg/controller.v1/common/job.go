@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,7 +28,10 @@ func (jc *JobController) DeletePodsAndServices(runPolicy *apiv1.RunPolicy, job i
 	}
 
 	for _, pod := range pods {
-		if *runPolicy.CleanPodPolicy == apiv1.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
+		// Note that pending pod will turn into running once schedulable,
+		// not cleaning it may leave orphan running pod in the future,
+		// we should treat it equivalent to running phase here.
+		if *runPolicy.CleanPodPolicy == apiv1.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodPending {
 			continue
 		}
 		if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, job.(runtime.Object)); err != nil {
@@ -65,6 +69,54 @@ func (jc *JobController) cleanupJobIfTTL(runPolicy *apiv1.RunPolicy, jobStatus a
 	}
 	jc.WorkQueue.AddRateLimited(key)
 	return nil
+}
+
+
+// recordAbnormalPods records the active pod whose latest condition is not in True status.
+func (jc *JobController) recordAbnormalPods(activePods []*v1.Pod, object runtime.Object) {
+	for _, pod := range activePods {
+		// If the pod starts running, should checks the container statuses rather than the conditions.
+		recordContainerStatus := func(status *v1.ContainerStatus) {
+			if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
+				terminated := status.State.Terminated
+				jc.Recorder.Eventf(object, v1.EventTypeWarning, terminated.Reason,
+					"Error pod %s container %s exitCode: %d terminated message: %s",
+					pod.Name, status.Name, terminated.ExitCode, terminated.Message)
+			}
+			// The terminated state and waiting state don't simultaneously exists, checks them at the same time.
+			if status.State.Waiting != nil && status.State.Waiting.Message != "" {
+				wait := status.State.Waiting
+				jc.Recorder.Eventf(object, v1.EventTypeWarning, wait.Reason,
+					"Error pod %s container %s waiting message: %s", pod.Name, status.Name, wait.Message)
+			}
+		}
+		if len(pod.Status.ContainerStatuses) != 0 {
+			for _, status := range pod.Status.ContainerStatuses {
+				recordContainerStatus(&status)
+			}
+			// If the pod has container status info, that means the init container statuses are normal.
+			continue
+		}
+		if len(pod.Status.InitContainerStatuses) != 0 {
+			for _, status := range pod.Status.InitContainerStatuses {
+				recordContainerStatus(&status)
+			}
+			continue
+		}
+		if len(pod.Status.Conditions) == 0 {
+			continue
+		}
+		// Should not modify the original pod which is stored in the informer cache.
+		status := pod.Status.DeepCopy()
+		sort.Slice(status.Conditions, func(i, j int) bool {
+			return status.Conditions[i].LastTransitionTime.After(status.Conditions[j].LastTransitionTime.Time)
+		})
+		condition := status.Conditions[0]
+		if condition.Status == v1.ConditionTrue {
+			continue
+		}
+		jc.Recorder.Eventf(object, v1.EventTypeWarning, condition.Reason, "Error pod %s condition message: %s", pod.Name, condition.Message)
+	}
 }
 
 // ReconcileJobs checks and updates replicas for each given ReplicaSpec.
@@ -146,6 +198,9 @@ func (jc *JobController) ReconcileJobs(
 	previousRetry := jc.WorkQueue.NumRequeues(jobKey)
 
 	activePods := k8sutil.FilterActivePods(pods)
+
+	jc.recordAbnormalPods(activePods, runtimeObject)
+
 	active := int32(len(activePods))
 	failed := k8sutil.FilterPodCount(pods, v1.PodFailed)
 	totalReplicas := k8sutil.GetTotalReplicas(replicas)
@@ -181,6 +236,12 @@ func (jc *JobController) ReconcileJobs(
 	}
 
 	if jobExceedsLimit {
+		// Set job completion time before resource cleanup
+		if jobStatus.CompletionTime == nil {
+			now := metav1.Now()
+			jobStatus.CompletionTime = &now
+		}
+
 		// If the Job exceeds backoff limit or is past active deadline
 		// delete all pods and services, then set the status to failed
 		if err := jc.DeletePodsAndServices(runPolicy, job, pods); err != nil {
@@ -202,10 +263,7 @@ func (jc *JobController) ReconcileJobs(
 		}
 
 		jc.Recorder.Event(runtimeObject, v1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
-		if jobStatus.CompletionTime == nil {
-			now := metav1.Now()
-			jobStatus.CompletionTime = &now
-		}
+
 		if err := commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
 			log.Infof("Append job condition error: %v", err)
 			return err

@@ -3,18 +3,22 @@ module github.com/kubeflow/tf-operator
 go 1.14
 
 require (
+	github.com/coreos/etcd v3.3.20+incompatible // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/go-openapi/spec v0.19.2
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
 	github.com/kubeflow/common v0.3.2
-	github.com/kubernetes-sigs/kube-batch v0.0.0-20200414051246-2e934d1c8860 // indirect
 	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.5.1
 	github.com/sirupsen/logrus v1.4.2
+	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
+	golang.org/x/tools v0.0.0-20200401192744-099440627f01 // indirect
 	k8s.io/api v0.16.9
-	k8s.io/apiextensions-apiserver v0.16.9 // indirect
+	k8s.io/apiextensions-apiserver v0.16.9
 	k8s.io/apimachinery v0.16.10-beta.0
 	k8s.io/client-go v0.16.9
 	k8s.io/code-generator v0.16.9
