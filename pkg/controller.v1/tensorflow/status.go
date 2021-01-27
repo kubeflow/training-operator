@@ -189,9 +189,9 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
 					tfJob.Namespace, tfJob.Name, failed, rtype)
 				tc.Recorder.Event(tfJob, corev1.EventTypeNormal, tfJobFailedReason, msg)
-				if tfJob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					tfJob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus,
 					commonv1.JobFailed, tfJobFailedReason, msg)
