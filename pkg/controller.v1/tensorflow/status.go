@@ -162,7 +162,7 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 					tfJobsSuccessCount.Inc()
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
-					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+					msg := fmt.Sprintf("TFJob %s/%s is running.",
 						tfJob.Namespace, tfJob.Name)
 					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, tfJobRunningReason, msg)
 					if err != nil {
