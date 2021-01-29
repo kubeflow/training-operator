@@ -98,6 +98,15 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 		}
 		spec := replicas[rtype]
 		status := jobStatus.ReplicaStatuses[rtype]
+		if status.LabelSelector == nil {
+			// Generate the label.
+			labels := tc.GenLabels(tfJob.Name)
+			labels[tfReplicaTypeLabel] = string(rtype)
+
+			status.LabelSelector = &metav1.LabelSelector{
+				MatchLabels: labels,
+			}
+		}
 
 		// Expect to have `replicas - succeeded` pods alive.
 		succeeded := status.Succeeded

@@ -14,7 +14,7 @@
 package v1
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,6 +53,9 @@ type ReplicaType string
 // +k8s:openapi-gen=true
 // ReplicaStatus represents the current observed state of the replica.
 type ReplicaStatus struct {
+	// LabelSelector is the selector for the replica.
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+
 	// The number of actively running pods.
 	Active int32 `json:"active,omitempty"`
 
@@ -67,6 +70,7 @@ type ReplicaStatus struct {
 // +k8s:deepcopy-gen=true
 // ReplicaSpec is a description of the replica
 type ReplicaSpec struct {
+	metav1.LabelSelector
 	// Replicas is the desired number of replicas of the given template.
 	// If unspecified, defaults to 1.
 	Replicas *int32 `json:"replicas,omitempty"`
