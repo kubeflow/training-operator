@@ -31,6 +31,7 @@ require (
 )
 
 replace (
+	github.com/kubeflow/common => /Users/gaocedidi/code/gopath/src/github.com/kubeflow/common
 	k8s.io/api => k8s.io/api v0.16.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
