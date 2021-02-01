@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
             - name: tensorflow
-              image: ghcr.io/kubeflow-incubator/monitored_training_session:1.0
+              image: ccr.ccs.tencentyun.com/kubeflow-oteam/tf-operator-monitored_training_session-example:tencent-v1.0.1-rc.4
     Worker:
       replicas: 2
       restartPolicy: OnFailure
@@ -20,7 +20,7 @@ spec:
         spec:
           containers:
             - name: tensorflow
-              image: ghcr.io/kubeflow-incubator/monitored_training_session:1.0
+              image: ccr.ccs.tencentyun.com/kubeflow-oteam/tf-operator-monitored_training_session-example:tencent-v1.0.1-rc.4
               volumeMounts:
                 - mountPath: "/train"
                   name: "training"
