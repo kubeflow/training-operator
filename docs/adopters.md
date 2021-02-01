@@ -2,8 +2,8 @@
 
 This is a list of TF Operator adopters in various industries.
 
-| Company | Industry | Success Story |
-| :--- | :--- | :--- |
-|[Caicloud](https://intl.caicloud.io/)|Cloud Computing||
-|[vip](https://www.vip.com/)|Cloud Computing||
-
+| Company | Contact | Industry | Description of Use |
+| :--- | :--- | :--- | :--- |
+|Bytedance Volcengine|[@codeflitting](https://github.com/codeflitting)|Cloud Computing|  |
+|[vip](https://www.vip.com/)|[@oikomi](https://github.com/oikomi)|E-commerce||
+|Tencent Cloud|[@gaocegege](https://github.com/gaocegege)|Cloud Computing||
