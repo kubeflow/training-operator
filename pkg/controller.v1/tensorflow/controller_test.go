@@ -24,7 +24,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/controller"
 	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
@@ -47,19 +46,21 @@ func newTFController(
 	kubeClientSet kubeclientset.Interface,
 	volcanoClientSet volcanoclient.Interface,
 	tfJobClientSet tfjobclientset.Interface,
-	resyncPeriod controller.ResyncPeriodFunc,
+	duration time.Duration,
 	option options.ServerOption,
 ) (
 	*TFController,
 	kubeinformers.SharedInformerFactory, tfjobinformers.SharedInformerFactory,
 ) {
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
-	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, resyncPeriod())
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, duration)
+	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, duration)
 
 	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll)
 
-	ctr := NewTFController(tfJobInformer, kubeClientSet, volcanoClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, option)
-	ctr.PodControl = &controller.FakePodControl{}
+	ctr := NewTFController(tfJobInformer, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, kubeInformerFactory,
+		tfJobInformerFactory, option)
+	ctr.PodControl = &control.FakePodControl{}
 	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, tfJobInformerFactory
 }
@@ -223,7 +224,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		option := options.ServerOption{}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, option)
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, 0, option)
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -251,7 +252,7 @@ func TestNormalPath(t *testing.T) {
 		//_, err = ctr.syncTFJob(testutil.GetKey(tfJob, t))
 		_ = ctr.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
-		fakePodControl := ctr.PodControl.(*controller.FakePodControl)
+		fakePodControl := ctr.PodControl.(*control.FakePodControl)
 		fakeServiceControl := ctr.ServiceControl.(*control.FakeServiceControl)
 		if int32(len(fakePodControl.Templates)) != tc.expectedPodCreations {
 			t.Errorf("%s: unexpected number of pod creates.  Expected %d, saw %d\n", name, tc.expectedPodCreations, len(fakePodControl.Templates))
@@ -357,7 +358,8 @@ func TestRun(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady

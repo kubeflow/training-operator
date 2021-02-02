@@ -24,12 +24,12 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/controller"
 	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -62,7 +62,8 @@ func TestAddPod(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -181,7 +182,8 @@ func TestClusterSpec(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -340,8 +342,9 @@ func TestExitCode(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	fakePodControl := &controller.FakePodControl{}
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	fakePodControl := &control.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
@@ -427,8 +430,9 @@ func TestScaleDown(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	fakePodControl := &controller.FakePodControl{}
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	fakePodControl := &control.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.Recorder = &record.FakeRecorder{}
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
@@ -510,8 +514,9 @@ func TestScaleUp(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	fakePodControl := &controller.FakePodControl{}
+	ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	fakePodControl := &control.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
@@ -671,7 +676,8 @@ func TestIsWorker0Completed(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+			volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
 		ctr.tfJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady

@@ -23,7 +23,6 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/controller"
 	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 
@@ -62,7 +61,9 @@ func TestAddTFJob(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0,
+		options.ServerOption{})
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -127,8 +128,9 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	fakePodControl := &controller.FakePodControl{}
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	fakePodControl := &control.FakePodControl{}
 	ctr.PodControl = fakePodControl
 	ctr.tfJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
@@ -311,8 +313,9 @@ func TestDeletePodsAndServices(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-		fakePodControl := &controller.FakePodControl{}
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+			volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+		fakePodControl := &control.FakePodControl{}
 		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
 		ctr.ServiceControl = fakeServiceControl
@@ -632,8 +635,9 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-		fakePodControl := &controller.FakePodControl{}
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+			volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+		fakePodControl := &control.FakePodControl{}
 		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
 		ctr.ServiceControl = fakeServiceControl
@@ -758,8 +762,9 @@ func TestBackoffForOnFailure(t *testing.T) {
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet, volcanoClientSet, tfJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-		fakePodControl := &controller.FakePodControl{}
+		ctr, kubeInformerFactory, _ := newTFController(config, kubeClientSet,
+			volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+		fakePodControl := &control.FakePodControl{}
 		ctr.PodControl = fakePodControl
 		fakeServiceControl := &control.FakeServiceControl{}
 		ctr.ServiceControl = fakeServiceControl
