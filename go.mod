@@ -9,7 +9,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
-	github.com/kubeflow/common v0.3.2
+	github.com/kubeflow/common v0.3.3-0.20210201092343-3fbe0ce98269
 	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.5.1
@@ -25,7 +25,6 @@ require (
 	k8s.io/component-base v0.18.2 // indirect
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31
-	k8s.io/kubernetes v1.16.9
 	sigs.k8s.io/yaml v1.2.0 // indirect
 	volcano.sh/volcano v0.4.0
 )
