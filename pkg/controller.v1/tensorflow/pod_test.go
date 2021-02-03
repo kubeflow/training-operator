@@ -16,6 +16,7 @@
 package tensorflow
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -30,6 +31,7 @@ import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
@@ -102,6 +104,127 @@ func TestAddPod(t *testing.T) {
 		t.Errorf("Failed to enqueue the TFJob %s: expected %s, got %s", tfJob.Name, testutil.GetKey(tfJob, t), key)
 	}
 	close(stopCh)
+}
+
+func TestExpectation(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+
+	ctr.PodControl = &control.FakePodControl{}
+	tfJob := testutil.NewTFJob(2, 1)
+
+	var err error
+	if err = ctr.createNewPod(tfJob, "worker", "0",
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker],
+		false, tfJob.Spec.TFReplicaSpecs); err != nil {
+		t.Errorf("Expected get nil, got error %v", err)
+	}
+
+	tfjobKey, err := KeyFunc(tfJob)
+	if err != nil {
+		t.Errorf("Expected nil, got error %v", err)
+	}
+	expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, "worker")
+	e, found, err := ctr.Expectations.GetExpectations(expectationPodsKey)
+	if err != nil {
+		t.Errorf("Expected nil, got error %v", err)
+	}
+	if !found {
+		t.Errorf("Expected to get the corresponding expectation")
+	}
+	if add, del := e.GetExpectations(); add != 1 || del != 0 {
+		t.Errorf("Expected get 1 add and 0 del, got %d add and %d del", add, del)
+	}
+}
+
+func TestExpectationWithError(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	// Prepare the volcano clientset and controller for the test.
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1beta1.SchemeGroupVersion,
+		},
+	},
+	)
+
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &tfv1.SchemeGroupVersion,
+		},
+	}
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newTFController(config, kubeClientSet,
+		volcanoClientSet, tfJobClientSet, 0, options.ServerOption{})
+	ctr.tfJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+
+	ctr.PodControl = &control.FakePodControl{}
+	tfJob := testutil.NewTFJob(2, 1)
+
+	// Fake an error.
+	ctr.PodControl.(*control.FakePodControl).Err = fmt.Errorf("Fake")
+
+	var err error
+	if err = ctr.createNewPod(tfJob, "worker", "0",
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker],
+		false, tfJob.Spec.TFReplicaSpecs); err == nil {
+		t.Errorf("Expected error, got nil")
+	}
+
+	tfjobKey, err := KeyFunc(tfJob)
+	if err != nil {
+		t.Errorf("Expected nil, got error %v", err)
+	}
+	expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, "worker")
+	e, found, err := ctr.Expectations.GetExpectations(expectationPodsKey)
+	if err != nil {
+		t.Errorf("Expected nil, got error %v", err)
+	}
+	if !found {
+		t.Errorf("Expected to get the corresponding expectation")
+	}
+	if add, del := e.GetExpectations(); add != 0 || del != 0 {
+		t.Errorf("Expected get 0 add and 0 del, got %d add and %d del", add, del)
+	}
 }
 
 func TestClusterSpec(t *testing.T) {
