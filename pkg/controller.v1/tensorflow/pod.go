@@ -241,6 +241,11 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 		// pod when the expectation expires.
 		return nil
 	} else if err != nil {
+		// Decrement the expected number of creates because the informer won't observe this pod
+		logger.Infof(
+			"Failed creation, decrementing expectations for tfjob %s/%s, key %s",
+			tfjob.Namespace, tfjob.Name, expectationPodsKey)
+		tc.Expectations.CreationObserved(expectationPodsKey)
 		return err
 	}
 	return nil
