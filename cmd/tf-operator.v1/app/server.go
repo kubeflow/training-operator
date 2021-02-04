@@ -77,7 +77,8 @@ func Run(opt *options.ServerOption) error {
 
 	namespace := os.Getenv(v1.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
-		log.Infof("EnvKubeflowNamespace not set, use default namespace")
+		log.Infof("EnvKubeflowNamespace not set, use default namespace %s",
+			metav1.NamespaceDefault)
 		namespace = metav1.NamespaceDefault
 	}
 	if opt.Namespace == corev1.NamespaceAll {
@@ -108,6 +109,9 @@ func Run(opt *options.ServerOption) error {
 	// Set client qps and burst by opt.
 	kcfg.QPS = float32(opt.QPS)
 	kcfg.Burst = opt.Burst
+	log.Infof(
+		"Creating client sets and informers with QPS %d, burst %d, resync period %s",
+		opt.QPS, opt.Burst, opt.ResyncPeriod.String())
 
 	// Create clients.
 	kubeClientSet, leaderElectionClientSet,
@@ -125,7 +129,8 @@ func Run(opt *options.ServerOption) error {
 	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, opt.ResyncPeriod, opt.Namespace, nil)
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, opt.ResyncPeriod)
 
-	unstructuredInformer := controller.NewUnstructuredTFJobInformer(kcfg, opt.Namespace)
+	unstructuredInformer := controller.NewUnstructuredTFJobInformer(
+		kcfg, opt.Namespace, opt.ResyncPeriod)
 
 	// Create tf controller.
 	tc := controller.NewTFController(unstructuredInformer, kubeClientSet, volcanoClientSet, tfJobClientSet, kubeInformerFactory, tfJobInformerFactory, *opt)
@@ -240,7 +245,7 @@ func checkCRDExists(clientset apiextensionclientset.Interface, namespace string)
 		}
 	}
 
-	log.Infof("CRD %s/%s %s is registered\n",
+	log.Infof("CRD %s/%s %s is registered",
 		crd.Spec.Group, crd.Spec.Version, crd.Spec.Names.Singular)
 	return true
 }
