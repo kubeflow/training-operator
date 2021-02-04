@@ -55,7 +55,7 @@ func newTFController(
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, duration)
 	tfJobInformerFactory := tfjobinformers.NewSharedInformerFactory(tfJobClientSet, duration)
 
-	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll)
+	tfJobInformer := NewUnstructuredTFJobInformer(config, metav1.NamespaceAll, time.Hour*12)
 
 	ctr := NewTFController(tfJobInformer, kubeClientSet,
 		volcanoClientSet, tfJobClientSet, kubeInformerFactory,

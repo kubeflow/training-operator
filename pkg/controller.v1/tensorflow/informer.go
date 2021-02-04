@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	resyncPeriod     = 30 * time.Second
 	failedMarshalMsg = "Failed to marshal the object to TFJob: %v"
 )
 
@@ -31,7 +30,7 @@ var (
 	errFailedMarshal = fmt.Errorf("failed to marshal the object to TFJob")
 )
 
-func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string) tfjobinformersv1.TFJobInformer {
+func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace string, resyncPeriod time.Duration) tfjobinformersv1.TFJobInformer {
 	dclient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		panic(err)
