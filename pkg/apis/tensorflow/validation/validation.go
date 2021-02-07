@@ -33,16 +33,12 @@ func validateV1ReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 		return fmt.Errorf("TFJobSpec is not valid")
 	}
 	foundChief := 0
-	var foundEvaluator int32 = 0
 	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("TFJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		if tfv1.IsChieforMaster(rType) {
 			foundChief++
-		}
-		if tfv1.IsEvaluator(rType) {
-			foundEvaluator = foundEvaluator + *value.Replicas
 		}
 		// Make sure the image is defined in the container.
 		numNamedTensorflow := 0
@@ -65,9 +61,6 @@ func validateV1ReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 	}
 	if foundChief > 1 {
 		return fmt.Errorf("TFJobSpec is not valid: more than 1 chief/master found")
-	}
-	if foundEvaluator > 1 {
-		return fmt.Errorf("TFJobSpec is not valid: more than 1 evaluator found")
 	}
 	return nil
 }
