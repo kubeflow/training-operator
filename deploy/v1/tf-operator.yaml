@@ -54,7 +54,6 @@ spec:
                     replicas:
                       type: integer
                       minimum: 0
-                      maximum: 1
 ---
 apiVersion: v1
 kind: Namespace
