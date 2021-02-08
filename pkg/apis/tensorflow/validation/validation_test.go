@@ -17,7 +17,6 @@ package validation
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 
@@ -86,23 +85,6 @@ func TestValidateV1TFJobSpec(t *testing.T) {
 							Containers: []v1.Container{},
 						},
 					},
-				},
-			},
-		},
-		{
-			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				tfv1.TFReplicaTypeEval: &commonv1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "tensorflow",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-					Replicas: proto.Int32(2),
 				},
 			},
 		},
