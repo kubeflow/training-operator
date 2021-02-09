@@ -3,6 +3,8 @@ from __future__ import print_function
 
 # TODO(jlewi): We should remove this file and use util in kubeflow/testing repository.
 import datetime
+import filelock
+import json
 import logging
 import os
 import re
@@ -17,6 +19,7 @@ import google.auth.transport.requests
 import requests
 import yaml
 from googleapiclient import errors
+from kubeflow.testing import util
 from kubernetes import client as k8s_client
 from kubernetes.client import configuration as kubernetes_configuration
 from kubernetes.client import rest
@@ -111,7 +114,10 @@ def send_request(master_host, namespace, target, rpc, params):
     rpc: Which rpc to call.
     params: What parameters to send in the request.
   """
-  token = subprocess.check_output(["gcloud", "auth", "print-access-token"])
+  cluster_name = os.getenv("CLUSTER_NAME")
+  res = subprocess.check_output(["aws", "eks", "get-token", "--cluster-name", cluster_name])
+  res = json.loads(res)
+  token = res["status"]["token"]
   headers = {
     "Authorization": "Bearer " + token.strip(),
   }
@@ -520,7 +526,8 @@ def load_kube_config(config_file=None,
 
   if config_file is None:
     config_file = os.path.expanduser(kube_config.KUBE_CONFIG_DEFAULT_LOCATION)
-
+  logging.info("Using Kubernetes config file: %s", config_file)
+  
   config_persister = None
   if persist_config:
 
@@ -553,3 +560,29 @@ def maybe_activate_service_account():
       "gcloud", "auth", "activate-service-account",
       "--key-file=" + os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     ])
+
+
+def setup_ks_app(app_dir, env, namespace, component, params, ks_cmd=None):
+  """Setup the ksonnet app"""
+
+  if not ks_cmd:
+    ks_cmd = "ks-13"
+
+  lock_file = os.path.join(app_dir, "app.lock")
+  logging.info("Acquiring lock on file: %s", lock_file)
+  lock = filelock.FileLock(lock_file, timeout=60)
+  with lock:
+    # Create a new environment for this run
+    try:
+      # FIXME: hardcoded the api-spec for aws test
+      util.run([ks_cmd, "env", "add", env, "--api-spec=version:v1.13.0", "--namespace=" + namespace],
+                cwd=app_dir)
+    except subprocess.CalledProcessError as e:
+      if not re.search(".*environment.*already exists.*", e.output):
+        raise
+
+    if params:
+      for pair in params.split(","):
+        k, v = pair.split("=", 1)
+        util.run([ks_cmd, "param", "set", "--env=" + env, component, k, v],
+                  cwd=app_dir)

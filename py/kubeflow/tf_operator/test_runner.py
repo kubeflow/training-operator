@@ -22,20 +22,6 @@ from kubeflow.tf_operator import util as tf_operator_util
   stop_max_attempt_number=10, wait_random_min=1000, wait_random_max=10000)
 def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,too-many-statements
   """Run a test."""
-  gcs_client = storage.Client(project=args.project)
-  project = args.project
-  cluster_name = args.cluster
-  zone = args.zone
-  # TODO(jlewi): When using GKE we should copy the .kube config and any other
-  # files to the test directory. We should then set the environment variable
-  # KUBECONFIG to point at that file. This should prevent us from having
-  # to rerun util.configure_kubectl on each step. Instead we could run it once
-  # as part of GKE cluster creation and store the config in the NFS directory.
-  # This would make the handling of credentials
-  # and KUBECONFIG more consistent between GKE and minikube and eventually
-  # this could be extended to other K8s deployments.
-  if cluster_name:
-    util.configure_kubectl(project, zone, cluster_name)
   util.load_kube_config()
 
   start = time.time()
@@ -78,8 +64,7 @@ def run_test(test_case, test_func, args):  # pylint: disable=too-many-branches,t
     if args.artifacts_path:
       test_util.create_junit_xml_file(
         [test_case],
-        args.artifacts_path + "/junit_" + test_func.__name__ + ".xml",
-        gcs_client)
+        args.artifacts_path + "/junit_" + test_func.__name__ + ".xml")
 
 
 def parse_runtime_params(args):
@@ -182,7 +167,7 @@ def main(module=None):  # pylint: disable=too-many-locals
     datefmt='%Y-%m-%dT%H:%M:%S',
   )
 
-  util.maybe_activate_service_account()
+  # util.maybe_activate_service_account()
 
   parser = argparse.ArgumentParser(description="Run a TFJob test.")
   add_common_args(parser)

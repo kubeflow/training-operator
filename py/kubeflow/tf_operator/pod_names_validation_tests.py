@@ -7,6 +7,7 @@ import logging
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
 
 COMPONENT_NAME = "pod_names_validation"
@@ -22,7 +23,7 @@ def extract_job_specs(replica_specs):
   """
   specs = dict()
   for job_type in replica_specs:
-    specs[job_type.encode("ascii").lower()] = int(
+    specs[job_type.lower()] = int(
       replica_specs.get(job_type, {}).get("replicas", 0))
   return specs
 
@@ -44,10 +45,11 @@ class PodNamesValidationTest(test_util.TestCase):
       class_name="PodNamesValidationTest", name=name)
 
   def test_pod_names(self):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
     component = COMPONENT_NAME + "_" + self.tfjob_version
     ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
     util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
     logging.info("Created job %s in namespaces %s", self.name, self.namespace)

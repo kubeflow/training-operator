@@ -27,17 +27,12 @@
 
   // default parameters.
   defaultParams:: {
-    project:: "kubeflow-ci",
-    zone:: "us-east1-d",
     // Default registry to use.
-    registry:: "gcr.io/" + $.defaultParams.project,
+    registry:: "gcr.io/kubeflow-ci",
 
     // The image tag to use.
     // Defaults to a value based on the name.
     versionTag:: null,
-
-    // The name of the secret containing GCP credentials.
-    gcpCredentialsSecretName:: "kubeflow-testing-credentials",
   },
 
   // overrides is a dictionary of parameters to provide in addition to defaults.
@@ -58,12 +53,14 @@
       local srcRootDir = testDir + "/src";
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
+      local testWorkerImage = "public.ecr.aws/j1r0q0g6/kubeflow-testing:latest";
+
       // The image should generally be overwritten in the prow_config.yaml file. This makes it easier
       // to ensure a consistent image is used for all workflows.
-      local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
-        params.testWorkerImage
-      else
-        "gcr.io/kubeflow-ci/test-worker";
+      // local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
+      //   params.testWorkerImage
+      // else
+      //   "gcr.io/kubeflow-ci/test-worker";
 
 
       // value of KUBECONFIG environment variable. This should be  a full path.
@@ -93,25 +90,22 @@
       local TFJobSDK = srcRootDir + "/kubeflow/tf-operator/sdk/python";
 
       local project = params.project;
-      // GKE cluster to use
-      // We need to truncate the cluster to no more than 40 characters because
-      // cluster names can be a max of 40 characters.
-      // We expect the suffix of the cluster name to be unique salt.
-      // We prepend a z because cluster name must start with an alphanumeric character
-      // and if we cut the prefix we might end up starting with "-" or other invalid
-      // character for first character.
+      
+      // EKS cluster name, better to be meaningful to trace back to prow job
+      // Maximum length of cluster name is 100. We set to 80 as maximum here and truncate
       local cluster =
-        if std.length(name) > 40 then
-          "z" + std.substr(name, std.length(name) - 39, 39)
+        if std.length(name) > 80 then
+          std.substr(name, std.length(name) - 79, 79)
         else
           name;
-      local zone = params.zone;
+      local registry = params.registry;
       {
         // Build an Argo template to execute a particular command.
         // step_name: Name for the template
         // command: List to pass as the container command.
-        buildTemplate(step_name, command):: {
+        buildTemplate(step_name, image, command, env_vars=[], volume_mounts=[]):: {
           name: step_name,
+          activeDeadlineSeconds: 7200,
           container: {
             command: command,
             image: image,
@@ -128,8 +122,16 @@
                 value: goDir,
               },
               {
-                name: "GOOGLE_APPLICATION_CREDENTIALS",
-                value: "/secret/gcp-credentials/key.json",
+                name: "CLUSTER_NAME",
+                value: cluster,
+              },
+              {
+                name: "GCP_REGISTRY",
+                value: registry,
+              },
+              {
+                name: "DEPLOY_NAMESPACE",
+                value: deployNamespace,
               },
               {
                 name: "GIT_TOKEN",
@@ -141,12 +143,16 @@
                 },
               },
               {
+                name: "AWS_REGION",
+                value: "us-west-2",
+              },
+              {
                 // We use a directory in our NFS share to store our kube config.
                 // This way we can configure it on a single step and reuse it on subsequent steps.
                 name: "KUBECONFIG",
                 value: kubeConfig,
               },
-            ] + prow_env,
+            ] + prow_env + env_vars,
             volumeMounts: [
               {
                 name: dataVolume,
@@ -157,24 +163,21 @@
                 mountPath: "/secret/github-token",
               },
               {
-                name: "gcp-credentials",
-                mountPath: "/secret/gcp-credentials",
+                name: "aws-secret",
+                mountPath: "/root/.aws/",
               },
-            ],
+            ] + volume_mounts,
           },
         },  // buildTemplate
 
         buildTestTemplate(test_name, num_trials=1):: {
           t:: $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate(
-            test_name, [
+            test_name, testWorkerImage, [
               "python",
               "-m",
               "kubeflow.tf_operator." + std.strReplace(test_name, "-", "_"),
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
               "--app_dir=" + srcDir + "/test/workflows",
-              "--params=name=" + test_name + "-" + params.tfJobVersion + ",namespace=default",
+              "--params=name=" + test_name + "-" + params.tfJobVersion + ",namespace=kubeflow",
               "--tfjob_version=" + params.tfJobVersion,
               "--num_trials=" + num_trials,
               "--artifacts_path=" + artifactsDir,
@@ -198,15 +201,21 @@
               },
             },
             {
-              name: "gcp-credentials",
-              secret: {
-                secretName: params.gcpCredentialsSecretName,
-              },
-            },
-            {
               name: dataVolume,
               persistentVolumeClaim: {
                 claimName: nfsVolumeClaim,
+              },
+            },
+            {
+              name: "docker-config",
+              configMap: {
+                name: "docker-config",
+              },
+            },
+            {
+              name: "aws-secret",
+              secret: {
+                secretName: "aws-secret",
               },
             },
           ],  // volumes
@@ -215,94 +224,82 @@
           templates: [
             {
               name: "e2e",
-              dag: {
-                // TODO(richardsliu): Consider templatizing the tasks further so that
-                // the dependencies are autogenerated.
-                tasks: [
+              steps: [
+                [
                   {
                     name: "checkout",
                     template: "checkout",
                   },
-
+                ],
+                [
                   {
                     name: "build",
                     template: "build",
-                    dependencies: ["checkout"],
                   },
                   {
-                    name: "create-pr-symlink",
-                    template: "create-pr-symlink",
-                    dependencies: ["checkout"],
+                    name: "copy-to-gopath",
+                    template: "copy-to-gopath",
                   },
                   {
                     name: "py-test",
                     template: "py-test",
-                    dependencies: ["checkout"],
                   },
                   {
                     name: "py-lint",
                     template: "py-lint",
-                    dependencies: ["checkout"],
                   },
-
+                ],
+                [
                   {
                     name: "setup-cluster",
                     template: "setup-cluster",
-                    dependencies: ["checkout"],
                   },
-
+                ],
+                [
                   {
-                    name: "setup-kubeflow",
-                    template: "setup-kubeflow",
-                    dependencies: ["setup-cluster", "build"],
+                    name: "setup-tf-operator",
+                    template: "setup-tf-operator",
                   },
+                ],
+                [
                   {
                     name: "simple-tfjob-tests",
                     template: "simple-tfjob-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "shutdown-policy-tests",
                     template: "shutdown-policy-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "cleanpod-policy-tests",
                     template: "cleanpod-policy-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "distributed-training-tests",
                     template: "distributed-training-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "estimator-runconfig-tests",
                     template: "estimator-runconfig-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "invalid-tfjob-tests",
                     template: "invalid-tfjob-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "replica-restart-policy-tests",
                     template: "replica-restart-policy-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "pod-names-validation-tests",
                     template: "pod-names-validation-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
                   {
                     name: "tfjob-sdk-tests",
                     template: "tfjob-sdk-tests",
-                    dependencies: ["setup-kubeflow"],
                   },
-                ],  //tasks
-              },
+                ],
+              ],
             },
             {
               name: "exit-handler",
@@ -328,7 +325,7 @@
                   name: "EXTRA_REPOS",
                   value: "kubeflow/testing@HEAD",
                 }],
-                image: image,
+                image: testWorkerImage,
                 volumeMounts: [
                   {
                     name: dataVolume,
@@ -337,55 +334,44 @@
                 ],
               },
             },  // checkout
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", [
-              "python",
-              "-m",
-              "kubeflow.tf_operator.release",
-              "build",
-              "--src_dir=" + srcDir,
-              "--registry=" + params.registry,
-              "--project=" + project,
-              "--version_tag=" + versionTag,
-            ]),  // build
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-test", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.0.0", [
+              #"scripts/build.sh",
+              "/kaniko/executor",
+              "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
+              "--context=dir://" + srcDir,
+              "--destination=" + "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator:$(PULL_BASE_SHA)",
+            ],
+            # need to add volume mounts and extra env.
+            volume_mounts=[
+              {
+                name: "docker-config",
+                mountPath: "/kaniko/.docker/",
+              },
+            ]
+            ),  // build
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("copy-to-gopath", testWorkerImage, [
+              "scripts/copy-to-gopath.sh",
+            ]),  // copy-to-gopath
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-test", testWorkerImage, [
               "python",
               "-m",
               "kubeflow.testing.test_py_checks",
               "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
             ]),  // py test
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-lint", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("py-lint", testWorkerImage, [
               "python",
               "-m",
               "kubeflow.testing.test_py_lint",
               "--artifacts_dir=" + artifactsDir,
               "--src_dir=" + srcDir,
             ]),  // py lint
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", [
-              "python",
-              "-m",
-              "kubeflow.tf_operator.deploy",
-              "setup_cluster",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--namespace=" + deployNamespace,
-              "--accelerator=nvidia-tesla-k80=1",
-              "--junit_path=" + artifactsDir + "/junit_setupcluster.xml",
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", testWorkerImage, [
+              "/usr/local/bin/create-eks-cluster.sh",
             ]),  // setup cluster
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-kubeflow", [
-              "python",
-              "-m",
-              "kubeflow.tf_operator.deploy",
-              "setup_kubeflow",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--namespace=" + deployNamespace,
-              "--test_app_dir=" + srcDir + "/test/test-app",
-              "--image=" + tfJobImage,
-              "--junit_path=" + artifactsDir + "/junit_setupkubeflow.xml",
-            ]),  // setup cluster
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-tf-operator", testWorkerImage, [
+              "scripts/setup-tf-operator.sh",
+            ]),  // setup tf-operator
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "simple-tfjob-tests", 2),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
@@ -402,7 +388,7 @@
               "replica-restart-policy-tests"),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "pod-names-validation-tests"),
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("create-pr-symlink", testWorkerImage, [
               "python",
               "-m",
               "kubeflow.testing.prow_artifacts",
@@ -410,33 +396,22 @@
               "create_pr_symlink",
               "--bucket=" + bucket,
             ]),  // create-pr-symlink
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("teardown-cluster", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("teardown-cluster", testWorkerImage, [
+              "/usr/local/bin/delete-eks-cluster.sh",
+            ]),  // teardown cluster
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("copy-artifacts", testWorkerImage, [
               "python",
               "-m",
-              "kubeflow.tf_operator.deploy",
-              "teardown",
-              "--cluster=" + cluster,
-              "--zone=" + zone,
-              "--project=" + project,
-              "--junit_path=" + artifactsDir + "/junit_teardown.xml",
-            ]),  // setup cluster
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("copy-artifacts", [
-              "python",
-              "-m",
-              "kubeflow.testing.prow_artifacts",
+              "kubeflow.testing.cloudprovider.aws.prow_artifacts",
               "--artifacts_dir=" + outputDir,
-              "copy_artifacts",
+              "copy_artifacts_to_s3",
               "--bucket=" + bucket,
-              // Suffix will be used to give a unique file name to all XML files.
-              // This will prevent different versions of the workflow from clobbering each other
-              // when uploading the results to gubernator.
-              "--suffix=" + params.tfJobVersion,
             ]),  // copy-artifacts
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("tfjob-sdk-tests", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("tfjob-sdk-tests", testWorkerImage, [
               "/bin/sh",
               "-xc",
-              "pip3 install -r sdk/python/requirements.txt; pytest sdk/python/test --log-cli-level=info --log-cli-format='%(levelname)s|%(asctime)s|%(pathname)s|%(lineno)d| %(message)s' --junitxml=" + artifactsDir + "/junit_sdk-test.xml"
-            ]),  // tfjob-sdk-tests
+              "python3.8 -m pip install -r sdk/python/requirements.txt; pytest sdk/python/test --log-cli-level=info --log-cli-format='%(levelname)s|%(asctime)s|%(pathname)s|%(lineno)d| %(message)s' --junitxml=" + artifactsDir + "/junit_sdk-test.xml"
+            ]), 
           ],  // templates
         },
       },  // e2e

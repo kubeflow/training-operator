@@ -3,6 +3,7 @@ import logging
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import k8s_util, test_runner, tf_job_client
+from kubeflow.tf_operator import util as tf_operator_util
 from kubernetes import client as k8s_client
 
 CLEANPOD_ALL_COMPONENT_NAME = "clean_pod_all"
@@ -23,11 +24,12 @@ class CleanPodPolicyTests(test_util.TestCase):
       class_name="CleanPodPolicyTests", name=name)
 
   def run_tfjob_with_cleanpod_policy(self, component, clean_pod_policy):
+    tf_operator_util.load_kube_config()
     api_client = k8s_client.ApiClient()
 
     # Setup the ksonnet app
     ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
-    ks_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
+    tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
                          self.params)
 
     # Create the TF job
