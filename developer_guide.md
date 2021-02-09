@@ -13,12 +13,10 @@ ln -sf ${GIT_TRAINING} ${go env GOPATH}/src/github.com/kubeflow/tf-operator
 
 * GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/tf-operator
 
-Resolve dependencies (if you don't have dep install, check how to do it [here](https://github.com/golang/dep))
-
 Install dependencies
 
 ```sh
-dep ensure
+GO111MODULE="on" go mod vendor
 ```
 
 Build it
@@ -26,30 +24,6 @@ Build it
 ```sh
 go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1
 ```
-
-## Building all the artifacts.
-
-[pipenv](https://pipenv.pypa.io/en/stable/) is recommended to manage local Python environment.
-You can find setup information on their website.
-
-To build the following artifacts:
-
-* Docker image for the operator
-* Helm chart for deploying it
-
-You can run
-
-```sh
-# to setup pipenv you have to step into the directory where Pipfile is located
-cd py/kubeflow/tf_operator
-pipenv install
-pipenv shell
-cd ../..
-python -m kubeflow.tf_operator.release local --registry=${REGISTRY}
-```
-
-* The docker image will be tagged into your registry
-* The helm chart will be created in **./bin**
 
 ## Running the Operator Locally
 
