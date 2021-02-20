@@ -27,6 +27,10 @@ kubectl apply -f ./deploy/v1/tf-operator.yaml
 
 Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow user guide](https://www.kubeflow.org/docs/guides/components/tftraining/) for more information.
 
+## API Documentation
+
+Please refer to [API Documentation](docs/api/generated.asciidoc)
+
 ## Community
 
 You can:
