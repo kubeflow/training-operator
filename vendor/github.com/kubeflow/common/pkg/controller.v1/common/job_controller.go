@@ -222,6 +222,7 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 	createPodGroup := &v1beta1.PodGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.GetName(),
+			Annotations: job.GetAnnotations(),
 			OwnerReferences: []metav1.OwnerReference{
 				*jc.GenOwnerReference(job),
 			},

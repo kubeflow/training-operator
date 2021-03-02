@@ -6,10 +6,10 @@ require (
 	github.com/coreos/etcd v3.3.20+incompatible // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/go-openapi/spec v0.19.2
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
-	github.com/kubeflow/common v0.3.3-0.20210201092343-3fbe0ce98269
+	github.com/kubeflow/common v0.3.3-0.20210227095238-97658773cce1
 	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.5.1
