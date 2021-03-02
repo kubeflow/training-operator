@@ -66,7 +66,7 @@ github.com/imdario/mergo
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/kubeflow/common v0.3.3-0.20210201092343-3fbe0ce98269
+# github.com/kubeflow/common v0.3.3-0.20210227095238-97658773cce1
 ## explicit
 github.com/kubeflow/common/pkg/apis/common/v1
 github.com/kubeflow/common/pkg/controller.v1/common
