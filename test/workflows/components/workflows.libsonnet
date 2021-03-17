@@ -39,6 +39,9 @@
   parts(namespace, name, overrides):: {
     // Workflow to run the e2e test.
     e2e(prow_env, bucket):
+      local imageRegistry = if $(JOB_TYPE) == "presubmit" then
+        "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
+      else "public.ecr.aws/j1r0q0g6/training/tf-operator";
       local params = $.defaultParams + overrides;
       // mountPath is the directory where the volume to store the test data
       // should be mounted.
@@ -339,7 +342,7 @@
               "/kaniko/executor",
               "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
               "--context=dir://" + srcDir,
-              "--destination=" + "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator:$(PULL_BASE_SHA)",
+              "--destination=" + imageRegistry + ":$(PULL_BASE_SHA)",
             ],
             # need to add volume mounts and extra env.
             volume_mounts=[
