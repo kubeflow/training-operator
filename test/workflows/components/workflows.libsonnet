@@ -39,7 +39,8 @@
   parts(namespace, name, overrides):: {
     // Workflow to run the e2e test.
     e2e(prow_env, bucket):
-      local imageRegistry = if $(JOB_TYPE) == "presubmit" then
+      local envVars = $.parseEnv;
+      local imageRegistry = if envVars["JOB_TYPE"] == "presubmit" then
         "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
       else "public.ecr.aws/j1r0q0g6/training/tf-operator";
       local params = $.defaultParams + overrides;
