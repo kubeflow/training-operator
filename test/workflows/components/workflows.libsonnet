@@ -118,7 +118,7 @@
                 value: cluster,
               },
               {
-                name: "GCP_REGISTRY",
+                name: "AWS_REGISTRY",
                 value: registry,
               },
               {
@@ -331,7 +331,7 @@
               "/kaniko/executor",
               "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
               "--context=dir://" + srcDir,
-              "--destination=" + "$(registry):$(PULL_BASE_SHA)",
+              "--destination=" + "$(AWS_REGISTRY):$(PULL_BASE_SHA)",
             ],
             # need to add volume mounts and extra env.
             volume_mounts=[
