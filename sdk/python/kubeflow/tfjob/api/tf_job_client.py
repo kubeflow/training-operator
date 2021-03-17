@@ -16,6 +16,7 @@ import time
 import logging
 
 from kubernetes import client, config
+from kubernetes import watch as k8s_watch
 
 from kubeflow.tfjob.constants import constants
 from kubeflow.tfjob.utils import utils
@@ -379,14 +380,35 @@ class TFJobClient(object):
                                    replica_index=replica_index)
 
     if pod_names:
-      for pod in pod_names:
-        try:
-          pod_logs = self.core_api.read_namespaced_pod_log(
-            pod, namespace, follow=follow)
-          logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
-        except client.rest.ApiException as e:
-          raise RuntimeError(
-            "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+      if follow:
+        log_streams = []
+        for pod in pod_names:
+          log_streams.append(k8s_watch.Watch().stream(self.core_api.read_namespaced_pod_log, 
+                                                      name=pod, namespace=namespace))
+        finished = [False for _ in log_streams]
+        # iterate over every watching pods' log
+        while True:
+          for index, stream in enumerate(log_streams):
+            if all(finished):
+              return
+            if finished[index]:
+              continue
+            # grouping the every 50 log lines of the same pod
+            for _ in range(50):
+              try:
+                logline = next(stream)
+                logging.info("[Pod %s]: %s", pod, logline)
+              except StopIteration:
+                finished[index] = True
+                break
+      else:
+        for pod in pod_names:
+          try:
+              pod_logs = self.core_api.read_namespaced_pod_log(pod, namespace)
+              logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
+          except client.rest.ApiException as e:
+            raise RuntimeError(
+              "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
     else:
       raise RuntimeError("Not found Pods of the TFJob {} "
                          "in namespace {}".format(name, namespace))
