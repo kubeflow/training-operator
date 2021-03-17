@@ -397,7 +397,7 @@ class TFJobClient(object):
             for _ in range(50):
               try:
                 logline = next(stream)
-                logging.info("[Pod %s]: %s", pod, logline)
+                logging.info("[Pod %s]: %s", pod_names[index], logline)
               except StopIteration:
                 finished[index] = True
                 break
