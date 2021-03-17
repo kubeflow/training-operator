@@ -20,7 +20,7 @@ run distributed or non-distributed TensorFlow jobs on Kubernetes.
 ## Installation
 
 ```bash
-kubectl apply -f ./deploy/v1/tf-operator.yaml
+kustomize build manifests/overlays/standalone | kubectl apply -f -
 ```
 
 ## Quick Start
