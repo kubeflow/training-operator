@@ -31,9 +31,9 @@ GO_DIR=${GOPATH}/src/github.com/${REPO_OWNER}/${REPO_NAME}
 echo "Configuring kubeconfig.."
 aws eks update-kubeconfig --region=${REGION} --name=${CLUSTER_NAME}
 
-echo "Update tf operator manifest with new name and tag"
+echo "Update tf operator manifest with new name $REGISTRY and tag $VERSION"
 cd manifests/overlays/standalone
-kustomize edit set image 809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator=${REGISTRY}/${REPO_NAME}:${VERSION}
+kustomize edit set image 809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator=${REGISTRY}:${VERSION}
 
 echo "Installing tf operator manifests"
 kustomize build . | kubectl apply -f -
