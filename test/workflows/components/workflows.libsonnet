@@ -53,7 +53,7 @@
       local srcRootDir = testDir + "/src";
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
-      local testWorkerImage = params.testWorkerImage;
+      local testWorkerImage = "public.ecr.aws/j1r0q0g6/kubeflow-testing:latest";
 
       // value of KUBECONFIG environment variable. This should be  a full path.
       local kubeConfig = testDir + "/.kube/kubeconfig";
