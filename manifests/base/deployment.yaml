@@ -24,6 +24,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: gcr.io/kubeflow-images-public/tf-operator:v0.6.0
+        image: public.ecr.aws/j1r0q0g6/training/tf-operator
         name: tf-job-operator
       serviceAccountName: tf-job-operator

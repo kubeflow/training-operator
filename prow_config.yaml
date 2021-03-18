@@ -26,7 +26,7 @@ workflows:
     - sdk/*
     - examples/*
     params:
-      registry: "public.ecr.aws/j1r0q0g6/training/tf-operator"
+      registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
       tfJobVersion: v1
       testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
   - app_dir: kubeflow/tf-operator/test/workflows

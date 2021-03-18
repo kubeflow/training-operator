@@ -10,5 +10,5 @@ commonLabels:
   app.kubernetes.io/component: tfjob
   app.kubernetes.io/name: tf-job-operator
 images:
-- name: gcr.io/kubeflow-images-public/tf-operator
+- name: public.ecr.aws/j1r0q0g6/training/tf-operator
 

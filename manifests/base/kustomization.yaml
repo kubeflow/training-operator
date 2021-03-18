@@ -13,4 +13,3 @@ commonLabels:
   kustomize.component: tf-job-operator
   app.kubernetes.io/component: tfjob
   app.kubernetes.io/name: tf-job-operator
-
