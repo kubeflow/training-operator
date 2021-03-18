@@ -32,11 +32,11 @@ echo "Configuring kubeconfig.."
 aws eks update-kubeconfig --region=${REGION} --name=${CLUSTER_NAME}
 
 echo "Update tf operator manifest with new name and tag"
-cd manifests/
-kustomize edit set image gcr.io/kubeflow-images-public/tf-operator=${REGISTRY}/${REPO_NAME}:${VERSION}
+cd manifests/overlays/standalone
+kustomize edit set image 809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator=${REGISTRY}/${REPO_NAME}:${VERSION}
 
 echo "Installing tf operator manifests"
-kubectl apply -k .
+kustomize build . | kubectl apply -f -
 
 TIMEOUT=30
 until kubectl get pods -n kubeflow | grep tf-job-operator | grep 1/1 || [[ $TIMEOUT -eq 1 ]]; do
