@@ -326,7 +326,7 @@
                 ],
               },
             },  // checkout
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.0.0", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.5.1", [
               #"scripts/build.sh",
               "/kaniko/executor",
               "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
