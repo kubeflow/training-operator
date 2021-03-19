@@ -34,6 +34,23 @@ workflows:
     name: v1
     job_types:
       - postsubmit
+    include_dirs:
+    - build/*
+    - cmd/tf-operator.v1/*
+    - pkg/apis/common/v1/*
+    - pkg/apis/tensorflow/v1/*
+    - pkg/apis/tensorflow/validation/*
+    - pkg/common/*
+    - pkg/control/*
+    - pkg/controller.v1/*
+    - pkg/logger/*
+    - pkg/util/*
+    - pkg/version/*
+    - py/*
+    - test/*
+    - vendor/*
+    - sdk/*
+    - examples/*
     params:
       registry: "public.ecr.aws/j1r0q0g6/training/tf-operator"
       tfJobVersion: v1
