@@ -13,7 +13,3 @@ commonLabels:
   kustomize.component: tf-job-operator
   app.kubernetes.io/component: tfjob
   app.kubernetes.io/name: tf-job-operator
-images:
-- name: gcr.io/kubeflow-images-public/tf-operator
-  newName: 809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator
-  newTag: "0.1"

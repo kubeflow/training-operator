@@ -28,7 +28,7 @@
   // default parameters.
   defaultParams:: {
     // Default registry to use.
-    registry:: "gcr.io/kubeflow-ci",
+    registry:: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator",
 
     // The image tag to use.
     // Defaults to a value based on the name.
@@ -54,14 +54,6 @@
       // The directory containing the kubeflow/tf-operator repo
       local srcDir = srcRootDir + "/kubeflow/tf-operator";
       local testWorkerImage = "public.ecr.aws/j1r0q0g6/kubeflow-testing:latest";
-
-      // The image should generally be overwritten in the prow_config.yaml file. This makes it easier
-      // to ensure a consistent image is used for all workflows.
-      // local image = if std.objectHas(params, "testWorkerImage") && std.length(params.testWorkerImage) > 0 then
-      //   params.testWorkerImage
-      // else
-      //   "gcr.io/kubeflow-ci/test-worker";
-
 
       // value of KUBECONFIG environment variable. This should be  a full path.
       local kubeConfig = testDir + "/.kube/kubeconfig";
@@ -126,7 +118,7 @@
                 value: cluster,
               },
               {
-                name: "GCP_REGISTRY",
+                name: "ECR_REGISTRY",
                 value: registry,
               },
               {
@@ -334,12 +326,12 @@
                 ],
               },
             },  // checkout
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.0.0", [
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.5.1", [
               #"scripts/build.sh",
               "/kaniko/executor",
               "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
               "--context=dir://" + srcDir,
-              "--destination=" + "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator:$(PULL_BASE_SHA)",
+              "--destination=" + "$(ECR_REGISTRY):$(PULL_BASE_SHA)",
             ],
             # need to add volume mounts and extra env.
             volume_mounts=[

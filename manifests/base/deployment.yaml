@@ -14,9 +14,7 @@ spec:
     spec:
       containers:
       - args:
-        - --alsologtostderr
-        - -v=1
-        - --monitoring-port=8443
+        - -monitoring-port=8443
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
@@ -26,6 +24,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: gcr.io/kubeflow-images-public/tf-operator:v0.6.0
+        image: public.ecr.aws/j1r0q0g6/training/tf-operator
         name: tf-job-operator
       serviceAccountName: tf-job-operator

@@ -26,15 +26,15 @@ workflows:
     - sdk/*
     - examples/*
     params:
-      registry: "gcr.io/kubeflow-ci"
+      registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
       tfJobVersion: v1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
+      testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1
     job_types:
       - postsubmit
     params:
-      registry: "gcr.io/kubeflow-images-public"
+      registry: "public.ecr.aws/j1r0q0g6/training/tf-operator"
       tfJobVersion: v1
-      testWorkerImage: gcr.io/kubeflow-ci/test-worker:v20190421-fba47fe-e3b0c4
+      testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
