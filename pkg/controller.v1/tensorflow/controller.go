@@ -43,7 +43,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
 const (

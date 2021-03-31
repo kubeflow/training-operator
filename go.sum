@@ -337,6 +337,8 @@ github.com/kubeflow/common v0.3.3-0.20210201092343-3fbe0ce98269 h1:DheSN/HVOT5QK
 github.com/kubeflow/common v0.3.3-0.20210201092343-3fbe0ce98269/go.mod h1:C3LMBqYaF5acdjTPWgdc3cgTDX/nqpKl+7iukAsznSM=
 github.com/kubeflow/common v0.3.3-0.20210227095238-97658773cce1 h1:jd/HAYLubpcQY3Rme7J66WIqCnlxOIspMUGYvLSnyJE=
 github.com/kubeflow/common v0.3.3-0.20210227095238-97658773cce1/go.mod h1:C3LMBqYaF5acdjTPWgdc3cgTDX/nqpKl+7iukAsznSM=
+github.com/kubeflow/common v0.3.3 h1:pVVFlrr1vOQVB2wR0aIVXwDxLQG16ADSHcoH2Atofvc=
+github.com/kubeflow/common v0.3.3/go.mod h1:CBP6F15xed1tfwSh0PoM4fiqtOw6IoDKkV/pIj0C+7o=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
 github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
@@ -787,5 +789,7 @@ sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
 sourcegraph.com/sqs/pbtypes v0.0.0-20180604144634-d3ebe8f20ae4/go.mod h1:ketZ/q3QxT9HOBeFhu6RdvsftgpsbFHBF5Cas6cDKZ0=
 vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc/go.mod h1:so/NYdZXCz+E3ZpW0uAoCj6uzU2+8OWDFv/HxUSs7kI=
+volcano.sh/apis v1.2.0-k8s1.16.15 h1:U2eqX0qspn9WyRVdAQW66nBi/Dim9CAZYHx+etAExug=
+volcano.sh/apis v1.2.0-k8s1.16.15/go.mod h1:+k3B8v9DUOvBOtD+1vy3e5u69+Hgi3serw4UD6xtSzc=
 volcano.sh/volcano v0.4.0 h1:B4ot28vzi9bH+hpyv6+qd/EFZFEcE37Lj27/QEI6ly0=
 volcano.sh/volcano v0.4.0/go.mod h1:2sNJRhY/oNg0MYdBYORxozuDhvgZxoyeOvKJww/Tl8A=

@@ -8,10 +8,6 @@ github.com/PuerkitoBio/urlesc
 github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/coreos/etcd v3.3.20+incompatible
-## explicit
-# github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
-## explicit
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.9.5+incompatible
@@ -24,7 +20,6 @@ github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.2
 github.com/go-openapi/jsonreference
 # github.com/go-openapi/spec v0.19.2
-## explicit
 github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.5
 github.com/go-openapi/swag
@@ -34,14 +29,12 @@ github.com/gogo/protobuf/sortkeys
 # github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.3.2
-## explicit
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/go-cmp v0.4.1
-## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -55,8 +48,6 @@ github.com/google/uuid
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/grpc-ecosystem/grpc-gateway v1.5.0
-## explicit
 # github.com/hashicorp/golang-lru v0.5.1
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -66,8 +57,7 @@ github.com/imdario/mergo
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/kubeflow/common v0.3.3-0.20210227095238-97658773cce1
-## explicit
+# github.com/kubeflow/common v0.3.3
 github.com/kubeflow/common/pkg/apis/common/v1
 github.com/kubeflow/common/pkg/controller.v1/common
 github.com/kubeflow/common/pkg/controller.v1/control
@@ -87,12 +77,8 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
 # github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
-## explicit
 github.com/onrik/logrus/filename
-# github.com/pkg/errors v0.9.1
-## explicit
 # github.com/prometheus/client_golang v1.5.1
-## explicit
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promauto
@@ -108,14 +94,9 @@ github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
 # github.com/sirupsen/logrus v1.4.2
-## explicit
 github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
-## explicit
-# go.uber.org/atomic v1.4.0
-## explicit
 # golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.2.0
@@ -146,7 +127,6 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 golang.org/x/time/rate
 # golang.org/x/tools v0.0.0-20200401192744-099440627f01
-## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/imports
 golang.org/x/tools/internal/fastwalk
@@ -196,8 +176,7 @@ google.golang.org/appengine/urlfetch
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.16.9 => k8s.io/api v0.16.9
-## explicit
+# k8s.io/api v0.16.15 => k8s.io/api v0.16.9
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -237,7 +216,6 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.16.9 => k8s.io/apiextensions-apiserver v0.16.9
-## explicit
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
@@ -245,8 +223,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-# k8s.io/apimachinery v0.16.10-beta.0 => k8s.io/apimachinery v0.16.10-beta.0
-## explicit
+# k8s.io/apimachinery v0.16.15 => k8s.io/apimachinery v0.16.10-beta.0
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -291,8 +268,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.16.9 => k8s.io/client-go v0.16.9
-## explicit
+# k8s.io/client-go v0.16.15 => k8s.io/client-go v0.16.9
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
@@ -456,8 +432,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.16.9 => k8s.io/code-generator v0.16.10-beta.0
-## explicit
+# k8s.io/code-generator v0.16.15 => k8s.io/code-generator v0.16.10-beta.0
 k8s.io/code-generator
 k8s.io/code-generator/cmd/client-gen
 k8s.io/code-generator/cmd/client-gen/args
@@ -491,8 +466,6 @@ k8s.io/code-generator/cmd/set-gen
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
 k8s.io/code-generator/third_party/forked/golang/reflect
-# k8s.io/component-base v0.18.2 => k8s.io/component-base v0.16.9
-## explicit
 # k8s.io/gengo v0.0.0-20190822140433-26a664648505
 k8s.io/gengo/args
 k8s.io/gengo/examples/deepcopy-gen/generators
@@ -505,10 +478,8 @@ k8s.io/gengo/namer
 k8s.io/gengo/parser
 k8s.io/gengo/types
 # k8s.io/klog v1.0.0
-## explicit
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31
-## explicit
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/generators
@@ -521,40 +492,14 @@ k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
 # sigs.k8s.io/yaml v1.2.0
-## explicit
 sigs.k8s.io/yaml
-# volcano.sh/volcano v0.4.0
-## explicit
-volcano.sh/volcano/pkg/apis/batch/v1alpha1
-volcano.sh/volcano/pkg/apis/bus/v1alpha1
-volcano.sh/volcano/pkg/apis/scheduling
-volcano.sh/volcano/pkg/apis/scheduling/v1beta1
-volcano.sh/volcano/pkg/client/clientset/versioned
-volcano.sh/volcano/pkg/client/clientset/versioned/scheme
-volcano.sh/volcano/pkg/client/clientset/versioned/typed/batch/v1alpha1
-volcano.sh/volcano/pkg/client/clientset/versioned/typed/bus/v1alpha1
-volcano.sh/volcano/pkg/client/clientset/versioned/typed/scheduling/v1beta1
-# k8s.io/api => k8s.io/api v0.16.9
-# k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
-# k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
-# k8s.io/apiserver => k8s.io/apiserver v0.16.9
-# k8s.io/cli-runtime => k8s.io/cli-runtime v0.16.9
-# k8s.io/client-go => k8s.io/client-go v0.16.9
-# k8s.io/cloud-provider => k8s.io/cloud-provider v0.16.9
-# k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.16.9
-# k8s.io/code-generator => k8s.io/code-generator v0.16.10-beta.0
-# k8s.io/component-base => k8s.io/component-base v0.16.9
-# k8s.io/cri-api => k8s.io/cri-api v0.16.10-beta.0
-# k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.16.9
-# k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.16.9
-# k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.16.9
-# k8s.io/kube-proxy => k8s.io/kube-proxy v0.16.9
-# k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.16.9
-# k8s.io/kubectl => k8s.io/kubectl v0.16.9
-# k8s.io/kubelet => k8s.io/kubelet v0.16.9
-# k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.16.9
-# k8s.io/metrics => k8s.io/metrics v0.16.9
-# k8s.io/node-api => k8s.io/node-api v0.16.9
-# k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.16.9
-# k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.16.9
-# k8s.io/sample-controller => k8s.io/sample-controller v0.16.9
+# volcano.sh/apis v1.2.0-k8s1.16.15
+volcano.sh/apis/pkg/apis/batch/v1alpha1
+volcano.sh/apis/pkg/apis/bus/v1alpha1
+volcano.sh/apis/pkg/apis/scheduling
+volcano.sh/apis/pkg/apis/scheduling/v1beta1
+volcano.sh/apis/pkg/client/clientset/versioned
+volcano.sh/apis/pkg/client/clientset/versioned/scheme
+volcano.sh/apis/pkg/client/clientset/versioned/typed/batch/v1alpha1
+volcano.sh/apis/pkg/client/clientset/versioned/typed/bus/v1alpha1
+volcano.sh/apis/pkg/client/clientset/versioned/typed/scheduling/v1beta1

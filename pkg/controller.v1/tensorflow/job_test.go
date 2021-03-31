@@ -23,8 +23,8 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+	batchv1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	common "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
