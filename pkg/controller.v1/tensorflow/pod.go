@@ -228,6 +228,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 			podTemplate.Annotations = map[string]string{}
 		}
 		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] = tfjob.GetName()
+		podTemplate.Annotations[volcanoTaskSpecKey] = rt
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)
