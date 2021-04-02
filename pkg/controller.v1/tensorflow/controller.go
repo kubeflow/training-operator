@@ -55,6 +55,8 @@ const (
 	labelGroupName      = "group-name"
 	// Deprecated label for backwards compatibility. Has to be removed
 	labelTFJobName = "tf-job-name"
+	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
+	volcanoTaskSpecKey = "volcano.sh/task-spec"
 )
 
 var (
