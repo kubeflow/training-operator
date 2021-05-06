@@ -36,6 +36,12 @@ rules:
   - deployments
   verbs:
   - '*'
+- apiGroups:
+  - scheduling.volcano.sh
+  resources:
+  - podgroups
+  verbs:
+  - '*'
 
 ---
 
