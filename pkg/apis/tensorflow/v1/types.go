@@ -63,7 +63,7 @@ type TFJobSpec struct {
 	//   }
 	TFReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"tfReplicaSpecs"`
 
-	// // A switch to enable dynamic worker
+	// A switch to enable dynamic worker
 	EnableDynamicWorker bool `json:"enableDynamicWorker,omitempty"`
 }
 
