@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 )
 
 func (jc *JobController) DeletePodsAndServices(runPolicy *apiv1.RunPolicy, job interface{}, pods []*v1.Pod) error {
@@ -70,7 +71,6 @@ func (jc *JobController) cleanupJobIfTTL(runPolicy *apiv1.RunPolicy, jobStatus a
 	jc.WorkQueue.AddRateLimited(key)
 	return nil
 }
-
 
 // recordAbnormalPods records the active pod whose latest condition is not in True status.
 func (jc *JobController) recordAbnormalPods(activePods []*v1.Pod, object runtime.Object) {
@@ -273,8 +273,41 @@ func (jc *JobController) ReconcileJobs(
 	} else {
 		// General cases which need to reconcile
 		if jc.Config.EnableGangScheduling {
-			minAvailableReplicas := totalReplicas
-			_, err := jc.SyncPodGroup(metaObject, minAvailableReplicas)
+			minMember := totalReplicas
+			queue := ""
+			priorityClass := ""
+			var minResources *v1.ResourceList
+
+			if runPolicy.SchedulingPolicy != nil {
+				if runPolicy.SchedulingPolicy.MinAvailable != nil {
+					minMember = *runPolicy.SchedulingPolicy.MinAvailable
+				}
+
+				if runPolicy.SchedulingPolicy.Queue != "" {
+					queue = runPolicy.SchedulingPolicy.Queue
+				}
+
+				if runPolicy.SchedulingPolicy.PriorityClass != "" {
+					priorityClass = runPolicy.SchedulingPolicy.PriorityClass
+				}
+
+				if runPolicy.SchedulingPolicy.MinResources != nil {
+					minResources = runPolicy.SchedulingPolicy.MinResources
+				}
+			}
+
+			if minResources == nil {
+				minResources = jc.calcPGMinResources(minMember, replicas)
+			}
+
+			pgSpec := v1beta1.PodGroupSpec{
+				MinMember:         minMember,
+				Queue:             queue,
+				PriorityClassName: priorityClass,
+				MinResources:      minResources,
+			}
+
+			_, err := jc.SyncPodGroup(metaObject, pgSpec)
 			if err != nil {
 				log.Warnf("Sync PodGroup %v: %v", jobKey, err)
 			}
@@ -385,4 +418,43 @@ func (jc *JobController) CleanupJob(runPolicy *apiv1.RunPolicy, jobStatus apiv1.
 	}
 	jc.WorkQueue.AddRateLimited(key)
 	return nil
+}
+
+func (jc *JobController) calcPGMinResources(minMember int32, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) *v1.ResourceList {
+	var replicasPriority ReplicasPriority
+	for t, replica := range replicas {
+		rp := ReplicaPriority{0, *replica}
+		pc := replica.Template.Spec.PriorityClassName
+
+		priorityClass, err := jc.PriorityClassLister.Get(pc)
+		if err != nil || priorityClass == nil {
+			log.Warnf("Ignore task %s priority class %s: %v", t, pc, err)
+		} else {
+			rp.priority = priorityClass.Value
+		}
+
+		replicasPriority = append(replicasPriority, rp)
+	}
+
+	sort.Sort(replicasPriority)
+
+	minAvailableTasksRes := v1.ResourceList{}
+	podCnt := int32(0)
+	for _, task := range replicasPriority {
+		if task.Replicas == nil {
+			continue
+		}
+
+		for i := int32(0); i < *task.Replicas; i++ {
+			if podCnt >= minMember {
+				break
+			}
+			podCnt++
+			for _, c := range task.Template.Spec.Containers {
+				AddResourceList(minAvailableTasksRes, c.Resources.Requests, c.Resources.Limits)
+			}
+		}
+	}
+
+	return &minAvailableTasksRes
 }

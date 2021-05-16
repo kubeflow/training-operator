@@ -18,8 +18,31 @@ import (
 	"fmt"
 	"strings"
 
+	apiv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// ReplicasPriority is a slice of ReplicaPriority.
+type ReplicasPriority []ReplicaPriority
+
+type ReplicaPriority struct {
+	priority int32
+
+	apiv1.ReplicaSpec
+}
+
+func (p ReplicasPriority) Len() int {
+	return len(p)
+}
+
+func (p ReplicasPriority) Less(i, j int) bool {
+	return p[i].priority > p[j].priority
+}
+
+func (p ReplicasPriority) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
 
 func GenGeneralName(jobName, rtype, index string) string {
 	n := jobName + "-" + rtype + "-" + index
@@ -48,4 +71,31 @@ func MaxInt(x, y int) int {
 		return y
 	}
 	return x
+}
+
+func AddResourceList(list, req, limit v1.ResourceList) {
+	for name, quantity := range req {
+
+		if value, ok := list[name]; !ok {
+			list[name] = quantity.DeepCopy()
+		} else {
+			value.Add(quantity)
+			list[name] = value
+		}
+	}
+
+	if req != nil {
+		return
+	}
+
+	// If Requests is omitted for a container,
+	// it defaults to Limits if that is explicitly specified.
+	for name, quantity := range limit {
+		if value, ok := list[name]; !ok {
+			list[name] = quantity.DeepCopy()
+		} else {
+			value.Add(quantity)
+			list[name] = value
+		}
+	}
 }
