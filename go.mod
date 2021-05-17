@@ -20,11 +20,3 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 	volcano.sh/apis v1.2.0-k8s1.16.15
 )
-
-replace (
-	k8s.io/api => k8s.io/api v0.16.9
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
-	k8s.io/client-go => k8s.io/client-go v0.16.9
-	k8s.io/code-generator => k8s.io/code-generator v0.16.10-beta.0
-)

@@ -185,7 +185,7 @@ google.golang.org/appengine/urlfetch
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.16.15 => k8s.io/api v0.16.9
+# k8s.io/api v0.16.15
 ## explicit
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -225,7 +225,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.16.9 => k8s.io/apiextensions-apiserver v0.16.9
+# k8s.io/apiextensions-apiserver v0.16.9
 ## explicit
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
@@ -234,7 +234,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-# k8s.io/apimachinery v0.16.15 => k8s.io/apimachinery v0.16.10-beta.0
+# k8s.io/apimachinery v0.16.15
 ## explicit
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -280,7 +280,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.16.15 => k8s.io/client-go v0.16.9
+# k8s.io/client-go v0.16.15
 ## explicit
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
@@ -445,7 +445,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.16.15 => k8s.io/code-generator v0.16.10-beta.0
+# k8s.io/code-generator v0.16.15
 ## explicit
 k8s.io/code-generator
 k8s.io/code-generator/cmd/client-gen
@@ -521,8 +521,3 @@ volcano.sh/apis/pkg/client/clientset/versioned/scheme
 volcano.sh/apis/pkg/client/clientset/versioned/typed/batch/v1alpha1
 volcano.sh/apis/pkg/client/clientset/versioned/typed/bus/v1alpha1
 volcano.sh/apis/pkg/client/clientset/versioned/typed/scheduling/v1beta1
-# k8s.io/api => k8s.io/api v0.16.9
-# k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.9
-# k8s.io/apimachinery => k8s.io/apimachinery v0.16.10-beta.0
-# k8s.io/client-go => k8s.io/client-go v0.16.9
-# k8s.io/code-generator => k8s.io/code-generator v0.16.10-beta.0
