@@ -453,7 +453,7 @@ func schema_pkg_apis_tensorflow_v1_TFJobSpec(ref common.ReferenceCallback) commo
 					},
 					"enableDynamicWorker": {
 						SchemaProps: spec.SchemaProps{
-							Description: "// A switch to enable dynamic worker",
+							Description: "A switch to enable dynamic worker",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
