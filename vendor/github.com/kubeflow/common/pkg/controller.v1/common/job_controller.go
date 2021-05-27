@@ -10,6 +10,7 @@ import (
 	kubeclientset "k8s.io/client-go/kubernetes"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	schedulinglisters "k8s.io/client-go/listers/scheduling/v1beta1"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -26,8 +27,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
 var (
@@ -103,11 +104,17 @@ type JobController struct {
 	// ServiceLister can list/get services from the shared informer's store.
 	ServiceLister corelisters.ServiceLister
 
+	// PriorityClassLister can list/get priorityClasses from the shared informer's store.
+	PriorityClassLister schedulinglisters.PriorityClassLister
+
 	// PodInformerSynced returns true if the pod store has been synced at least once.
 	PodInformerSynced cache.InformerSynced
 
 	// ServiceInformerSynced returns true if the service store has been synced at least once.
 	ServiceInformerSynced cache.InformerSynced
+
+	// PriorityClassInformerSynced returns true if the priority class store has been synced at least once.
+	PriorityClassInformerSynced cache.InformerSynced
 
 	// A TTLCache of pod/services creates/deletes each job expects to see
 	// We use Job namespace/name + ReplicaType + pods/services as an expectation key,
@@ -208,7 +215,7 @@ func (jc *JobController) GenLabels(jobName string) map[string]string {
 	}
 }
 
-func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas int32) (*v1beta1.PodGroup, error) {
+func (jc *JobController) SyncPodGroup(job metav1.Object, pgSpec v1beta1.PodGroupSpec) (*v1beta1.PodGroup, error) {
 
 	volcanoClientSet := jc.VolcanoClientSet
 	// Check whether podGroup exists or not
@@ -218,18 +225,16 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, minAvailableReplicas in
 	}
 
 	// create podGroup for gang scheduling by volcano
-	minAvailable := intstr.FromInt(int(minAvailableReplicas))
 	createPodGroup := &v1beta1.PodGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: job.GetName(),
+			Name:        job.GetName(),
+			Namespace:   job.GetNamespace(),
 			Annotations: job.GetAnnotations(),
 			OwnerReferences: []metav1.OwnerReference{
 				*jc.GenOwnerReference(job),
 			},
 		},
-		Spec: v1beta1.PodGroupSpec{
-			MinMember: minAvailable.IntVal,
-		},
+		Spec: pgSpec,
 	}
 	createdPodGroup, err := volcanoClientSet.SchedulingV1beta1().PodGroups(job.GetNamespace()).Create(createPodGroup)
 	if err != nil {

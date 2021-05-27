@@ -14,7 +14,7 @@
 package v1
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -197,5 +197,8 @@ type RunPolicy struct {
 // SchedulingPolicy encapsulates various scheduling policies of the distributed training
 // job, for example `minAvailable` for gang-scheduling.
 type SchedulingPolicy struct {
-	MinAvailable *int32 `json:"minAvailable,omitempty"`
+	MinAvailable  *int32           `json:"minAvailable,omitempty"`
+	Queue         string           `json:"queue,omitempty"`
+	MinResources  *v1.ResourceList `json:"minResources,omitempty"`
+	PriorityClass string           `json:"priorityClass,omitempty"`
 }

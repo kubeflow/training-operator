@@ -35,7 +35,7 @@ import (
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	"github.com/kubeflow/common/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
