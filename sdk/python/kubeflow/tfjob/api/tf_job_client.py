@@ -374,10 +374,10 @@ class TFJobClient(object):
     if namespace is None:
       namespace = utils.get_default_target_namespace()
 
-    pod_names = self.get_pod_names(name, namespace=namespace,
-                                   master=master,
-                                   replica_type=replica_type,
-                                   replica_index=replica_index)
+    pod_names = list(self.get_pod_names(name, namespace=namespace,
+                                        master=master,
+                                        replica_type=replica_type,
+                                        replica_index=replica_index))
 
     if pod_names:
       if follow:
