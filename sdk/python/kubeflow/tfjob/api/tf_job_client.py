@@ -184,12 +184,12 @@ class TFJobClient(object):
 
     try:
       return self.custom_api.delete_namespaced_custom_object(
-        constants.TFJOB_GROUP,
-        constants.TFJOB_VERSION,
-        namespace,
-        constants.TFJOB_PLURAL,
-        name,
-        client.V1DeleteOptions())
+        group=constants.TFJOB_GROUP,
+        version=constants.TFJOB_VERSION,
+        namespace=namespace,
+        plural=constants.TFJOB_PLURAL,
+        name=name,
+        body=client.V1DeleteOptions())
     except client.rest.ApiException as e:
       raise RuntimeError(
         "Exception when calling CustomObjectsApi->delete_namespaced_custom_object:\
