@@ -44,14 +44,20 @@ const (
 )
 
 var (
-	tfJobsSuccessCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_successful_total",
-		Help: "Counts number of TF jobs successful",
-	})
-	tfJobsFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_failed_total",
-		Help: "Counts number of TF jobs failed",
-	})
+	tfJobsSuccessCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_successful_total",
+			Help: "Counts number of TF jobs successful",
+		},
+		[]string{"job_namespace"},
+	)
+	tfJobsFailureCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_failed_total",
+			Help: "Counts number of TF jobs failed",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
@@ -137,7 +143,7 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsSuccessCount.Inc()
+					tfJobsSuccessCount.WithLabelValues(tfJob.Namespace).Inc()
 				}
 			}
 		} else {
@@ -159,7 +165,7 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsSuccessCount.Inc()
+					tfJobsSuccessCount.WithLabelValues(tfJob.Namespace).Inc()
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
@@ -184,7 +190,7 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 			if restart {
 				// job is restarting, no need to set it failed
 				// we know it because we update the status condition when reconciling the replicas
-				tfJobsFailureCount.Inc()
+				tfJobsFailureCount.WithLabelValues(tfJob.Namespace).Inc()
 			} else {
 				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
 					tfJob.Namespace, tfJob.Name, failed, rtype)
@@ -199,7 +205,7 @@ func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.R
 					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
-				tfJobsFailureCount.Inc()
+				tfJobsFailureCount.WithLabelValues(tfJob.Namespace).Inc()
 			}
 		}
 	}

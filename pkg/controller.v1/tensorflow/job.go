@@ -26,10 +26,13 @@ const (
 )
 
 var (
-	tfJobsCreatedCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_created_total",
-		Help: "Counts number of TF jobs created",
-	})
+	tfJobsCreatedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_created_total",
+			Help: "Counts number of TF jobs created",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // DeleteJob implements ControllerInterface interface.
@@ -128,7 +131,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		return
 	}
 	tc.enqueueTFJob(obj)
-	tfJobsCreatedCount.Inc()
+	tfJobsCreatedCount.WithLabelValues(tfJob.Namespace).Inc()
 }
 
 // updateTFJob enqueues the current tfjob.
