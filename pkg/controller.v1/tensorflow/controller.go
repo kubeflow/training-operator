@@ -248,7 +248,7 @@ func (tc *TFController) processNextWorkItem() bool {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
-			tfJobsDeletedCount.Inc()
+			tfJobsDeletedCount.WithLabelValues(tfJob.Namespace).Inc()
 			return true
 		}
 
@@ -311,7 +311,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
-			tfJobsDeletedCount.Inc()
+			tfJobsDeletedCount.WithLabelValues(namespace).Inc()
 			return true, nil
 		}
 		return false, err
