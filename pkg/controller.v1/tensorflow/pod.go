@@ -53,10 +53,13 @@ const (
 )
 
 var (
-	tfJobsRestartCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_restarted_total",
-		Help: "Counts number of TF jobs restarted",
-	})
+	tfJobsRestartCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_restarted_total",
+			Help: "Counts number of TF jobs restarted",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
@@ -149,7 +152,7 @@ func (tc *TFController) ReconcilePods(
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsRestartCount.Inc()
+					tfJobsRestartCount.WithLabelValues(tfJob.Namespace).Inc()
 				}
 			}
 

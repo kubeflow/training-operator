@@ -65,10 +65,13 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	tfJobsDeletedCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "tf_operator_jobs_deleted_total",
-		Help: "Counts number of TF jobs deleted",
-	})
+	tfJobsDeletedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_deleted_total",
+			Help: "Counts number of TF jobs deleted",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // TFController is the type for TFJob Controller, which manages
@@ -245,7 +248,7 @@ func (tc *TFController) processNextWorkItem() bool {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
-			tfJobsDeletedCount.Inc()
+			tfJobsDeletedCount.WithLabelValues(tfJob.Namespace).Inc()
 			return true
 		}
 
@@ -308,7 +311,7 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
-			tfJobsDeletedCount.Inc()
+			tfJobsDeletedCount.WithLabelValues(namespace).Inc()
 			return true, nil
 		}
 		return false, err
