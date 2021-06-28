@@ -14,6 +14,8 @@
 import multiprocessing
 import time
 import logging
+import threading
+import queue
 
 from kubernetes import client, config
 from kubernetes import watch as k8s_watch
@@ -26,8 +28,30 @@ from .tf_job_watch import watch as tfjob_watch
 logging.basicConfig(format='%(message)s')
 logging.getLogger().setLevel(logging.INFO)
 
-class TFJobClient(object):
 
+def wrap_log_stream(q, stream):
+    while True:
+      try:
+        logline = next(stream)
+        q.put(logline)
+      except StopIteration:
+        q.put(None)
+        return
+      except Exception as e:
+        raise RuntimeError(
+          "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+
+
+def get_log_queue_pool(streams):
+    pool = []
+    for stream in streams:
+        q = queue.Queue(maxsize=100)
+        pool.append(q)
+        threading.Thread(target=wrap_log_stream, args=(q, stream)).start()
+    return pool
+
+
+class TFJobClient(object):
   def __init__(self, config_file=None, context=None, # pylint: disable=too-many-arguments
                client_configuration=None, persist_config=True):
     """
@@ -353,7 +377,6 @@ class TFJobClient(object):
     else:
       return set(pod_names)
 
-
   def get_logs(self, name, namespace=None, master=True,
                replica_type=None, replica_index=None,
                follow=False):
@@ -374,11 +397,10 @@ class TFJobClient(object):
     if namespace is None:
       namespace = utils.get_default_target_namespace()
 
-    pod_names = self.get_pod_names(name, namespace=namespace,
-                                   master=master,
-                                   replica_type=replica_type,
-                                   replica_index=replica_index)
-
+    pod_names = list(self.get_pod_names(name, namespace=namespace,
+                                        master=master,
+                                        replica_type=replica_type,
+                                        replica_index=replica_index))
     if pod_names:
       if follow:
         log_streams = []
@@ -386,9 +408,13 @@ class TFJobClient(object):
           log_streams.append(k8s_watch.Watch().stream(self.core_api.read_namespaced_pod_log, 
                                                       name=pod, namespace=namespace))
         finished = [False for _ in log_streams]
-        # iterate over every watching pods' log
+        
+        # create thread and queue per stream, for non-blocking iteration
+        log_queue_pool = get_log_queue_pool(log_streams)
+
+        # iterate over every watching pods' log queue
         while True:
-          for index, stream in enumerate(log_streams):
+          for index, log_queue in enumerate(log_queue_pool):
             if all(finished):
               return
             if finished[index]:
@@ -396,10 +422,12 @@ class TFJobClient(object):
             # grouping the every 50 log lines of the same pod
             for _ in range(50):
               try:
-                logline = next(stream)
+                logline = log_queue.get(timeout=1)
+                if logline is None:
+                    finished[index] = True
+                    break
                 logging.info("[Pod %s]: %s", pod_names[index], logline)
-              except StopIteration:
-                finished[index] = True
+              except queue.Empty:
                 break
       else:
         for pod in pod_names:
