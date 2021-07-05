@@ -2,7 +2,7 @@
 # only so we exclude them.
 bin/
 /tf-operator
-
+vendor/
 .vscode/
 
 # Compiled python files.
