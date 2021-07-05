@@ -21,7 +21,8 @@ const (
 	// Kind is the kind name.
 	Kind = "XGBoostJob"
 	// GroupVersion is the version.
-	GroupVersion = "v1"
+	// This has been declared in groupversion_info.go
+	//GroupVersion = "v1"
 	// Plural is the Plural for XGBoostJob.
 	Plural = "xgboostjobs"
 	// Singular is the singular for XGBoostJob.

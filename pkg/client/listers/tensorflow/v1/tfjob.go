@@ -24,8 +24,10 @@ import (
 )
 
 // TFJobLister helps list TFJobs.
+// All objects returned here must be treated as read-only.
 type TFJobLister interface {
 	// List lists all TFJobs in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.TFJob, err error)
 	// TFJobs returns an object that can list and get TFJobs.
 	TFJobs(namespace string) TFJobNamespaceLister
@@ -56,10 +58,13 @@ func (s *tFJobLister) TFJobs(namespace string) TFJobNamespaceLister {
 }
 
 // TFJobNamespaceLister helps list and get TFJobs.
+// All objects returned here must be treated as read-only.
 type TFJobNamespaceLister interface {
 	// List lists all TFJobs in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.TFJob, err error)
 	// Get retrieves the TFJob from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.TFJob, error)
 	TFJobNamespaceListerExpansion
 }
