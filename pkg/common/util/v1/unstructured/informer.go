@@ -4,6 +4,7 @@
 package unstructured
 
 import (
+	"context"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,10 +51,10 @@ func newFilteredUnstructuredInformer(resource schema.GroupVersionResource, clien
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return client.Resource(resource).Namespace(namespace).List(options)
+				return client.Resource(resource).Namespace(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return client.Resource(resource).Namespace(namespace).Watch(options)
+				return client.Resource(resource).Namespace(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&unstructured.Unstructured{},
