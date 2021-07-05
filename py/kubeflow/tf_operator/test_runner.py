@@ -9,7 +9,6 @@ import uuid
 from importlib import import_module
 
 import retrying
-from google.cloud import storage  # pylint: disable=no-name-in-module
 from kubeflow.testing import test_util, util
 from kubeflow.tf_operator import util as tf_operator_util
 

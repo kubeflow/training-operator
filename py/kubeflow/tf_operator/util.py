@@ -18,7 +18,7 @@ import google.auth.transport
 import google.auth.transport.requests
 import requests
 import yaml
-from googleapiclient import errors
+#from googleapiclient import errors
 from kubeflow.testing import util
 from kubernetes import client as k8s_client
 from kubernetes.client import configuration as kubernetes_configuration

@@ -248,7 +248,12 @@ func (tc *TFController) processNextWorkItem() bool {
 	if err != nil {
 		if err == errNotExists {
 			logger.Infof("TFJob has been deleted: %v", key)
-			tfJobsDeletedCount.WithLabelValues(tfJob.Namespace).Inc()
+			namespace, _, keyerr := cache.SplitMetaNamespaceKey(key)
+			if keyerr == nil && len(namespace) != 0 {
+				tfJobsDeletedCount.WithLabelValues(namespace).Inc()
+			} else {
+				logger.Errorf("Invalid TFJob key %s: Namespace is missing %v", key, keyerr)
+			}
 			return true
 		}
 
