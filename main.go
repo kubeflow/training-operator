@@ -31,8 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
+	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -45,6 +46,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(xgboostv1.AddToScheme(scheme))
+	utilruntime.Must(pytorchv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -78,12 +80,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&xgboostcontroller.XGBoostJobReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("XGBoostJob"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
+	if err = pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PyTorchJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

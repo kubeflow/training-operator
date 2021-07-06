@@ -1,0 +1,20 @@
+# permissions for end users to view pytorchjobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pytorchjob-viewer-role
+rules:
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - pytorchjobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - pytorchjobs/status
+  verbs:
+  - get
