@@ -34,6 +34,7 @@ import (
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
+	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -80,8 +81,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO: We need a general manager. all rest reconciler addsToManager
+	// Based on the user configuration, we start different controllers
 	if err = pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PyTorchJob")
+		os.Exit(1)
+	}
+	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

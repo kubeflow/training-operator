@@ -1,7 +1,0 @@
-apiVersion: kubeflow.org/v1
-kind: XGBoostJob
-metadata:
-  name: xgboostjob-sample
-spec:
-  # Add fields here
-  foo: bar
