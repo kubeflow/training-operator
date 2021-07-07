@@ -1,0 +1,7 @@
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+  name: pytorchjob-sample
+spec:
+  # Add fields here
+  foo: bar
