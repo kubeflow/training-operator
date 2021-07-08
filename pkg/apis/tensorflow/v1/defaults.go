@@ -19,7 +19,6 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Int32 is a helper routine that allocates a new int32 value
@@ -28,9 +27,9 @@ func Int32(v int32) *int32 {
 	return &v
 }
 
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
+//func addDefaultingFuncs(scheme *runtime.Scheme) error {
+//	return RegisterDefaults(scheme)
+//}
 
 // setDefaultPort sets the default ports for tensorflow container.
 func setDefaultPort(spec *v1.PodSpec) {

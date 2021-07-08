@@ -22,6 +22,8 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjob
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
 
 // TFJob represents a TFJob resource.
 type TFJob struct {
@@ -93,6 +95,7 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjobs
+//+kubebuilder:object:root=true
 
 // TFJobList is a list of TFJobs.
 type TFJobList struct {

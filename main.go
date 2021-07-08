@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kubeflow/tf-operator/controllers"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -32,8 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
+    tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
 	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	//+kubebuilder:scaffold:imports
 )
@@ -48,6 +51,7 @@ func init() {
 
 	utilruntime.Must(xgboostv1.AddToScheme(scheme))
 	utilruntime.Must(pytorchv1.AddToScheme(scheme))
+	utilruntime.Must(tensorflowv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -89,6 +93,14 @@ func main() {
 	}
 	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
+		os.Exit(1)
+	}
+	if err = (&tensorflowcontroller.TFJobReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("TFJob"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "TFJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
