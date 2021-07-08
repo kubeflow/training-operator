@@ -157,7 +157,7 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *TFJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
 	tfjob := &tensorflowv1.TFJob{}
 	err := r.Get(context.Background(), types.NamespacedName{
-		namespace, name,
+		Namespace: namespace, Name: name,
 	}, tfjob)
 	return tfjob, err
 }

@@ -3,6 +3,9 @@
 bin/
 /tf-operator
 vendor/
+testbin/*
+
+# IDEs
 .vscode/
 
 # Compiled python files.
