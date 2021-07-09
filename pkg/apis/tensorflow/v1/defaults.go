@@ -27,10 +27,6 @@ func Int32(v int32) *int32 {
 	return &v
 }
 
-//func addDefaultingFuncs(scheme *runtime.Scheme) error {
-//	return RegisterDefaults(scheme)
-//}
-
 // setDefaultPort sets the default ports for tensorflow container.
 func setDefaultPort(spec *v1.PodSpec) {
 	index := 0

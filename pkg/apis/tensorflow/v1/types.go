@@ -109,3 +109,7 @@ type TFJobList struct {
 	// List of TFJobs.
 	Items []TFJob `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&TFJob{}, &TFJobList{})
+}

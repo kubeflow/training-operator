@@ -18,36 +18,27 @@ import (
 	"context"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	kubeclientset "k8s.io/client-go/kubernetes"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	"github.com/kubeflow/common/pkg/controller.v1/control"
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/common/pkg/controller.v1/control"
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
 const (
@@ -205,43 +196,49 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Create a new Controller
-	c, err := controller.New(ControllerName, mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
+	//// Create a new Controller
+	//c, err := controller.New(ControllerName, mgr, controller.Options{Reconciler: r})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//// Watch for changes to PyTorchJob
+	//err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
+	//	predicate.Funcs{CreateFunc: onOwnerCreateFunc(r)},
+	//)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////inject watching for pytorchjob related pod
+	//err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	//	IsController: true,
+	//	OwnerType:    &pytorchv1.PyTorchJob{},
+	//},
+	//	predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+	//)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////inject watching for xgboostjob related service
+	//err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+	//	IsController: true,
+	//	OwnerType:    &pytorchv1.PyTorchJob{},
+	//},
+	//	&predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+	//)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//return nil
 
-	// Watch for changes to PyTorchJob
-	err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc(r)},
-	)
-	if err != nil {
-		return err
-	}
-
-	//inject watching for pytorchjob related pod
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &pytorchv1.PyTorchJob{},
-	},
-		predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
-	)
-	if err != nil {
-		return err
-	}
-
-	//inject watching for xgboostjob related service
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &pytorchv1.PyTorchJob{},
-	},
-		&predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&pytorchv1.PyTorchJob{}).
+		Owns(&corev1.Pod{}).
+		Owns(&corev1.Service{}).
+		Complete(r)
 }
 
 func (r *PyTorchJobReconciler) ControllerName() string {

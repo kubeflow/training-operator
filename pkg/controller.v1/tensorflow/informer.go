@@ -38,7 +38,7 @@ func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace st
 
 	resource := schema.GroupVersionResource{
 		Group:    tfv1.GroupName,
-		Version:  tfv1.GroupVersion,
+		Version:  tfv1.Version,
 		Resource: tfv1.Plural,
 	}
 
