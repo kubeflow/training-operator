@@ -23,6 +23,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -91,7 +92,7 @@ func NewReconciler(mgr manager.Manager) *MXJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.Recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,

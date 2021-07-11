@@ -17,6 +17,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -127,7 +128,7 @@ func NewReconciler(mgr manager.Manager) *TFJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,

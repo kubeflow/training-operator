@@ -17,6 +17,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -62,7 +63,7 @@ func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,

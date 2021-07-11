@@ -20,6 +20,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +70,7 @@ func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
 		Expectations: expectation.NewControllerExpectations(),
 		// TODO: add batch scheduler check later.
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,
