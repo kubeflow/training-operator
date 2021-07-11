@@ -22,12 +22,6 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
-	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -35,6 +29,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	mxnetcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mxnet"
+	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
+	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
+	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -49,6 +52,7 @@ func init() {
 	utilruntime.Must(xgboostv1.AddToScheme(scheme))
 	utilruntime.Must(pytorchv1.AddToScheme(scheme))
 	utilruntime.Must(tensorflowv1.AddToScheme(scheme))
+	utilruntime.Must(mxnetv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -94,6 +98,10 @@ func main() {
 	}
 	if err = tensorflowcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TFJob")
+		os.Exit(1)
+	}
+	if err = mxnetcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MXJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
