@@ -38,7 +38,7 @@ func GetPortFromTFJob(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType) (int32, err
 			}
 		}
 	}
-	return -1, errPortNotFound
+	return tfv1.DefaultPort, nil
 }
 
 // ContainChieforMasterSpec returns true if the tfjob contains chief or master spec.

@@ -1,0 +1,20 @@
+# permissions for end users to view tfjobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tfjob-viewer-role
+rules:
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - tfjobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - tfjobs/status
+  verbs:
+  - get
