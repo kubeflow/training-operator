@@ -21,6 +21,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -178,7 +180,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// Watch for changes to PyTorchJob
 	err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc(r)},
+		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
 	)
 	if err != nil {
 		return err
@@ -189,7 +191,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		IsController: true,
 		OwnerType:    &mxjobv1.MXJob{},
 	},
-		predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+		predicate.Funcs{CreateFunc: util.OnDependentCreateFunc(r.Expectations), DeleteFunc: util.OnDependentDeleteFunc(r.Expectations)},
 	)
 	if err != nil {
 		return err
@@ -200,7 +202,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		IsController: true,
 		OwnerType:    &mxjobv1.MXJob{},
 	},
-		&predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+		&predicate.Funcs{CreateFunc: util.OnDependentCreateFunc(r.Expectations), DeleteFunc: util.OnDependentDeleteFunc(r.Expectations)},
 	)
 	if err != nil {
 		return err
@@ -293,3 +295,34 @@ func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*common
 	rtype commonv1.ReplicaType, index int) bool {
 	return string(rtype) == string(mxjobv1.MXReplicaTypeServer)
 }
+
+
+// onOwnerCreateFunc modify creation condition.
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
+	return func(e event.CreateEvent) bool {
+		mxjob, ok := e.Object.(*mxjobv1.MXJob)
+		if !ok {
+			return true
+		}
+
+		// TODO: check default setting
+		scheme.Scheme.Default(mxjob)
+		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
+		logrus.Info(msg)
+
+		// TODO: should we move defaulter somewhere else, like pass a default func here to call
+		//specific the run policy
+		if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
+			mxjob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
+			mxjob.Spec.RunPolicy.CleanPodPolicy = &defaultCleanPodPolicy
+		}
+
+		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
+			logrus.Error(err, "append job condition error")
+			return false
+		}
+		return true
+	}
+}
+
+

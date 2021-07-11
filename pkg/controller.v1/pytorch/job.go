@@ -10,10 +10,8 @@ import (
 
 	commonutil "github.com/kubeflow/common/pkg/util"
 	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
@@ -130,7 +128,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc(r reconcile.Reconciler) func(event.CreateEvent) bool {
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		pytorchjob, ok := e.Object.(*pytorchv1.PyTorchJob)
 		if !ok {
