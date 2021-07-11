@@ -73,7 +73,7 @@ func setTypeNamesToCamelCase(job *PyTorchJob) {
 }
 
 // setTypeNameToCamelCase sets the name of the replica type from any case to correct case.
-func setTypeNameToCamelCase(job *PyTorchJob, typ PyTorchReplicaType) {
+func setTypeNameToCamelCase(job *PyTorchJob, typ common.ReplicaType) {
 	for t := range job.Spec.PyTorchReplicaSpecs {
 		if strings.EqualFold(string(t), string(typ)) && t != typ {
 			spec := job.Spec.PyTorchReplicaSpecs[t]

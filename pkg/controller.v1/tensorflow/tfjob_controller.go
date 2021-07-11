@@ -17,6 +17,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -83,7 +84,13 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	tensorflowv1.SetDefaults_TFJob(tfjob)
 
 	// Check if reconciliation is needed
-	needReconcile := r.satisfiedExpectations(tfjob)
+	jobKey, err := common.KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", tfjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(tfjob.Spec.TFReplicaSpecs)
+	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needReconcile || tfjob.GetDeletionTimestamp() != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",
@@ -206,7 +213,6 @@ func (r *TFJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod, e
 	cm := control.NewPodControllerRefManager(r.PodControl, job, selector, r.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimPods(pods)
 }
-
 
 // GetServicesForJob returns the set of services that this job should manage.
 // It also reconciles ControllerRef by adopting/orphaning.

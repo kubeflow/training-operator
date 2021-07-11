@@ -378,4 +378,3 @@ func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commo
 	}
 	return worker0Completed, nil
 }
-

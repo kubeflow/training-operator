@@ -40,7 +40,6 @@ func (r *MXJobReconciler) GetPodsForJob(job interface{}) ([]*corev1.Pod, error) 
 	return util.ConvertPodList(podlist.Items), nil
 }
 
-
 func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
 	mxJob, ok := job.(*mxv1.MXJob)
 	if !ok {

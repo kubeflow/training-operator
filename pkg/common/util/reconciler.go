@@ -9,8 +9,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
+// SatisfiedExpectations returns true if the required adds/dels for the given mxjob have been observed.
+// Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
+// manager.
+func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobKey string, replicaTypes []commonv1.ReplicaType) bool {
+	satisfied := false
+	for _, rtype := range replicaTypes {
+		// Check the expectations of the pods.
+		expectationPodsKey := expectation.GenExpectationPodsKey(jobKey, string(rtype))
+		satisfied = satisfied || exp.SatisfiedExpectations(expectationPodsKey)
+		// Check the expectations of the services.
+		expectationServicesKey := expectation.GenExpectationServicesKey(jobKey, string(rtype))
+		satisfied = satisfied || exp.SatisfiedExpectations(expectationServicesKey)
+	}
 
-
+	return satisfied
+}
 
 // OnDependentCreateFunc modify expectations when dependent (pod/service) creation observed.
 func OnDependentCreateFunc(exp expectation.ControllerExpectationsInterface) func(event.CreateEvent) bool {

@@ -3,10 +3,10 @@ package mxnet
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 )
 
 func (r *MXJobReconciler) GetServicesForJob(job interface{}) ([]*corev1.Service, error) {

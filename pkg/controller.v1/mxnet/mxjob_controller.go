@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -134,7 +135,13 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// mxjobv1.SetDefaults(mxjob)
 
 	// Check if reconciliation is needed
-	needReconcile := r.satisfiedExpectations(mxjob)
+	jobKey, err := common.KeyFunc(mxjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", mxjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(mxjob.Spec.MXReplicaSpecs)
+	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needReconcile || mxjob.GetDeletionTimestamp() != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",
@@ -296,7 +303,6 @@ func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*common
 	return string(rtype) == string(mxjobv1.MXReplicaTypeServer)
 }
 
-
 // onOwnerCreateFunc modify creation condition.
 func onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
@@ -314,7 +320,7 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		//specific the run policy
 		if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
 			mxjob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			mxjob.Spec.RunPolicy.CleanPodPolicy = &defaultCleanPodPolicy
+			mxjob.Spec.RunPolicy.CleanPodPolicy = &DefaultCleanPodPolicy
 		}
 
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
@@ -324,5 +330,3 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		return true
 	}
 }
-
-

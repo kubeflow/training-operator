@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
@@ -101,7 +102,7 @@ func GenGeneralName(jobName, rtype, index string) string {
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func GetPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype pytorchv1.PyTorchReplicaType) (int32, error) {
+func GetPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == pytorchv1.DefaultContainerName {

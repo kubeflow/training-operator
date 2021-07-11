@@ -15,10 +15,10 @@ package xgboost
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 )
 
 // GetServicesForJob returns the services managed by the job. This can be achieved by selecting services using label key "job-name"
@@ -41,4 +41,3 @@ func (r *XGBoostJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 
 	return ret, nil
 }
-

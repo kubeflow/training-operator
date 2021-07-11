@@ -32,7 +32,6 @@ func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 	return ret, nil
 }
 
-
 // ReconcileServices checks and updates services for each given ReplicaSpec.
 // It will requeue the job in case of an error while creating/deleting services.
 func (r *PyTorchJobReconciler) ReconcileServices(

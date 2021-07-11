@@ -16,6 +16,7 @@ package xgboost
 
 import (
 	"context"
+	"fmt"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -41,7 +43,6 @@ import (
 const (
 	controllerName      = "xgboostjob-operator"
 	labelXGBoostJobRole = "xgboostjob-job-role"
-
 )
 
 var (
@@ -115,7 +116,13 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Check reconcile is required.
-	needSync := r.satisfiedExpectations(xgboostjob)
+	jobKey, err := common.KeyFunc(xgboostjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", xgboostjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(xgboostjob.Spec.XGBReplicaSpecs)
+	needSync := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needSync || xgboostjob.DeletionTimestamp != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",
