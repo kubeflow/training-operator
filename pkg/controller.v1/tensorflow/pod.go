@@ -328,7 +328,7 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *commonv1.Replic
 func (tc *TFController) getPodSlices(tfjob *tfv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
 	logger := commonutil.LoggerForReplica(tfjob, strings.ToLower(string(tfv1.TFReplicaTypeWorker)))
 
-	pods, err := tc.GetPodsForJob(tfjob)
+	pods, err := tc.Controller.GetPodsForJob(tfjob)
 	if err != nil {
 		commonutil.LoggerForJob(tfjob).Warnf("getPodsForTFJob error %v", err)
 		return nil, err

@@ -22,19 +22,19 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
+	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
+	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -48,6 +48,7 @@ func init() {
 
 	utilruntime.Must(xgboostv1.AddToScheme(scheme))
 	utilruntime.Must(pytorchv1.AddToScheme(scheme))
+	utilruntime.Must(tensorflowv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -83,12 +84,16 @@ func main() {
 
 	// TODO: We need a general manager. all rest reconciler addsToManager
 	// Based on the user configuration, we start different controllers
+	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
+		os.Exit(1)
+	}
 	if err = pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PyTorchJob")
 		os.Exit(1)
 	}
-	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
+	if err = tensorflowcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "TFJob")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
