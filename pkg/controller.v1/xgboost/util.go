@@ -59,7 +59,7 @@ func computeMasterAddr(jobName, rtype, index string) string {
 }
 
 // GetPortFromXGBoostJob gets the port of xgboost container.
-func GetPortFromXGBoostJob(job *xgboostv1.XGBoostJob, rtype xgboostv1.XGBoostJobReplicaType) (int32, error) {
+func GetPortFromXGBoostJob(job *xgboostv1.XGBoostJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.XGBReplicaSpecs[commonv1.ReplicaType(rtype)].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == xgboostv1.DefaultContainerName {
