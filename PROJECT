@@ -27,4 +27,12 @@ resources:
   kind: TFJob
   path: github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  group: kubeflow.org
+  kind: MXJob
+  path: github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1
+  version: v1
 version: "3"
