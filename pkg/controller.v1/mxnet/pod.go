@@ -6,6 +6,7 @@ import (
 	"fmt"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	mxv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,20 +37,9 @@ func (r *MXJobReconciler) GetPodsForJob(job interface{}) ([]*corev1.Pod, error) 
 	if err != nil {
 		return nil, err
 	}
-	return convertPodList(podlist.Items), nil
+	return util.ConvertPodList(podlist.Items), nil
 }
 
-// convertPodList convert pod list to pod pointer list
-func convertPodList(list []corev1.Pod) []*corev1.Pod {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Pod, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
-}
 
 func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
 	mxJob, ok := job.(*mxv1.MXJob)
