@@ -125,7 +125,7 @@ func NewTFController(
 	log.Info("Creating Job controller")
 
 	jc := common.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, volcanoClientSet, kubeInformerFactory, tfv1.Plural)
+		option.EnableGangScheduling, kubeClientSet, volcanoClientSet, kubeInformerFactory, "tfjobs")
 
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
@@ -358,11 +358,11 @@ func (tc *TFController) GetJobFromAPIClient(namespace, name string) (metav1.Obje
 }
 
 func (tc *TFController) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return tfv1.SchemeGroupVersionKind
+	return tfv1.GroupVersion.WithKind("TFJob")
 }
 
 func (tc *TFController) GetAPIGroupVersion() schema.GroupVersion {
-	return tfv1.SchemeGroupVersion
+	return tfv1.GroupVersion
 }
 
 func (tc *TFController) GetGroupNameLabelKey() string {
@@ -375,7 +375,7 @@ func (tc *TFController) GetJobNameLabelKey() string {
 }
 
 func (tc *TFController) GetGroupNameLabelValue() string {
-	return tfv1.GroupName
+	return tfv1.GroupVersion.Group
 }
 
 func (tc *TFController) GetReplicaTypeLabelKey() string {

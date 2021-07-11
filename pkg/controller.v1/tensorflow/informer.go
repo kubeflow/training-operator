@@ -37,9 +37,9 @@ func NewUnstructuredTFJobInformer(restConfig *restclientset.Config, namespace st
 	}
 
 	resource := schema.GroupVersionResource{
-		Group:    tfv1.GroupName,
-		Version:  tfv1.Version,
-		Resource: tfv1.Plural,
+		Group:    tfv1.GroupVersion.Group,
+		Version:  tfv1.GroupVersion.Version,
+		Resource: "tfjobs",
 	}
 
 	informer := unstructured.NewTFJobInformer(
@@ -87,7 +87,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1.TFJob, error) {
 	}
 	var tfjob tfv1.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
-	logger := tflogger.LoggerForUnstructured(un, tfv1.Kind)
+	logger := tflogger.LoggerForUnstructured(un, "TFJob")
 	if err != nil {
 		logger.Errorf(failedMarshalMsg, err)
 		return nil, errFailedMarshal

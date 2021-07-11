@@ -3,9 +3,6 @@ package v1
 import commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
 const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
-
 	// DefaultPortName is name of the port used to communicate between scheduler and
 	// servers & workers.
 	DefaultPortName = "mxjob-port"

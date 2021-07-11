@@ -148,7 +148,7 @@ func (r *XGBoostJobReconciler) ControllerName() string {
 }
 
 func (r *XGBoostJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return xgboostv1.SchemeBuilder.GroupVersion.WithKind(xgboostv1.Kind)
+	return xgboostv1.SchemeBuilder.GroupVersion.WithKind("XGBoostJob")
 }
 
 func (r *XGBoostJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
@@ -156,7 +156,7 @@ func (r *XGBoostJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
 }
 
 func (r *XGBoostJobReconciler) GetGroupNameLabelValue() string {
-	return xgboostv1.GroupName
+	return xgboostv1.GroupVersion.Group
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerName() string {
@@ -164,7 +164,7 @@ func (r *XGBoostJobReconciler) GetDefaultContainerName() string {
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerPortName() string {
-	return xgboostv1.DefaultContainerPortName
+	return xgboostv1.DefaultPortName
 }
 
 func (r *XGBoostJobReconciler) GetJobRoleKey() string {

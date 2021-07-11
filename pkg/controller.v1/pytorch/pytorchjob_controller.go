@@ -149,7 +149,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(pytorchv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues("pytorchjobs", req.NamespacedName)
 
 	pytorchjob := &pytorchv1.PyTorchJob{}
 	err := r.Get(ctx, req.NamespacedName, pytorchjob)
@@ -254,7 +254,7 @@ func (r *PyTorchJobReconciler) ControllerName() string {
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return pytorchv1.GroupVersion.WithKind(pytorchv1.Kind)
+	return pytorchv1.GroupVersion.WithKind("PyTorchJob")
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
@@ -262,7 +262,7 @@ func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
 }
 
 func (r *PyTorchJobReconciler) GetGroupNameLabelValue() string {
-	return pytorchv1.GroupName
+	return pytorchv1.GroupVersion.Group
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {

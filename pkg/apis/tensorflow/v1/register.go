@@ -18,29 +18,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const (
-	// GroupName is the group name use in this package.
-	GroupName = "kubeflow.org"
-	// Kind is the kind name.
-	Kind = "TFJob"
-	// Version is the version.
-	Version = "v1"
-	// Plural is the Plural for TFJob.
-	Plural = "tfjobs"
-	// Singular is the singular for TFJob.
-	Singular = "tfjob"
-	// TFCRD is the CRD name for TFJob.
-	TFCRD = "tfjobs.kubeflow.org"
-)
-
-var (
-	// SchemeGroupVersion is the group version used to register these objects.
-	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: Version}
-	// SchemeGroupVersionKind is the GroupVersionKind of the resource.
-	SchemeGroupVersionKind = SchemeGroupVersion.WithKind(Kind)
-)
+// SchemeGroupVersion is group version used to register these objects.
+var SchemeGroupVersion = GroupVersion
 
 // Resource takes an unqualified resource and returns a Group-qualified GroupResource.
 func Resource(resource string) schema.GroupResource {
-	return SchemeGroupVersion.WithResource(resource).GroupResource()
+	return GroupVersion.WithResource(resource).GroupResource()
 }

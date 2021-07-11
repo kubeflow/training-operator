@@ -113,7 +113,7 @@ func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy tfv1.SuccessPolicy)
 func NewTFJob(worker, ps int) *tfv1.TFJob {
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
-			Kind: tfv1.Kind,
+			Kind: TFJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestTFJobName,
@@ -148,7 +148,7 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 func NewTFJobV2(worker, ps, master, cheif, evaluator int) *tfv1.TFJob {
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
-			Kind: tfv1.Kind,
+			Kind: TFJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestTFJobName,

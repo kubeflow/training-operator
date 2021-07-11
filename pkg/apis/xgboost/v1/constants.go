@@ -15,22 +15,15 @@ limitations under the License.
 
 package v1
 
-const (
-	// GroupName is the group name use in this package.
-	GroupName = "kubeflow.org"
-	// Kind is the kind name.
-	Kind = "XGBoostJob"
-	// GroupVersion is the version.
-	// This has been declared in groupversion_info.go
-	//GroupVersion = "v1"
-	// Plural is the Plural for XGBoostJob.
-	Plural = "xgboostjobs"
-	// Singular is the singular for XGBoostJob.
-	Singular = "xgboostjob"
-	// XGBOOSTCRD is the CRD name for XGBoostJob.
-	XGBoostCRD = "xgboostjobs.kubeflow.org"
+import commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
-	DefaultContainerName     = "xgboostjob"
-	DefaultContainerPortName = "xgboostjob-port"
-	DefaultPort              = 9999
+const (
+	// DefaultPortName is name of the port used to communicate between Master and Workers.
+	DefaultPortName = "xgboostjob-port"
+	// DefaultContainerName is the name of the XGBoostJob container.
+	DefaultContainerName = "xgboost"
+	// DefaultPort is default value of the port.
+	DefaultPort = 9999
+	// DefaultRestartPolicy is default RestartPolicy for XGBReplicaSpecs.
+	DefaultRestartPolicy = commonv1.RestartPolicyNever
 )

@@ -123,7 +123,7 @@ type MXJobReconciler struct {
 
 func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(mxjobv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues("mxjobs", req.NamespacedName)
 
 	mxjob := &mxjobv1.MXJob{}
 	err := r.Get(ctx, req.NamespacedName, mxjob)
@@ -275,7 +275,7 @@ func (r *MXJobReconciler) ControllerName() string {
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mxjobv1.GroupVersion.WithKind(mxjobv1.Kind)
+	return mxjobv1.GroupVersion.WithKind("MXJob")
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersion() schema.GroupVersion {

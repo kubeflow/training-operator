@@ -59,7 +59,7 @@ func TestFailed(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -446,7 +446,7 @@ func TestStatus(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
