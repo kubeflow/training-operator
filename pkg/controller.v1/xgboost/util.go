@@ -19,7 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	restclientset "k8s.io/client-go/rest"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
@@ -114,20 +113,4 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 	}
 
 	return kubeClientSet, leaderElectionClientSet, volcanoClientSet, nil
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
-func isGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
-	for _, spec := range replicas {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName == gangSchedulerName {
-			return true
-		}
-	}
-	return false
 }

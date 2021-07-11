@@ -41,7 +41,7 @@ import (
 const (
 	controllerName      = "xgboostjob-operator"
 	labelXGBoostJobRole = "xgboostjob-job-role"
-	gangSchedulerName   = "volcano"
+
 )
 
 var (
