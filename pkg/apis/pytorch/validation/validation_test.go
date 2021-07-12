@@ -29,7 +29,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 			PyTorchReplicaSpecs: nil,
 		},
 		{
-			PyTorchReplicaSpecs: map[torchv1.PyTorchReplicaType]*commonv1.ReplicaSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -40,7 +40,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 			},
 		},
 		{
-			PyTorchReplicaSpecs: map[torchv1.PyTorchReplicaType]*commonv1.ReplicaSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -55,7 +55,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 			},
 		},
 		{
-			PyTorchReplicaSpecs: map[torchv1.PyTorchReplicaType]*commonv1.ReplicaSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
@@ -71,7 +71,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 			},
 		},
 		{
-			PyTorchReplicaSpecs: map[torchv1.PyTorchReplicaType]*commonv1.ReplicaSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				torchv1.PyTorchReplicaTypeMaster: &commonv1.ReplicaSpec{
 					Replicas: torchv1.Int32(2),
 					Template: v1.PodTemplateSpec{
@@ -88,7 +88,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 			},
 		},
 		{
-			PyTorchReplicaSpecs: map[torchv1.PyTorchReplicaType]*commonv1.ReplicaSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Replicas: torchv1.Int32(1),
 					Template: v1.PodTemplateSpec{

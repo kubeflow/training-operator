@@ -15,6 +15,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,19 +37,7 @@ func (r *XGBoostJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 	}
 
 	//TODO support adopting/orphaning
-	ret := convertServiceList(serviceList.Items)
+	ret := util.ConvertServiceList(serviceList.Items)
 
 	return ret, nil
-}
-
-// convertServiceList convert service list to service point list
-func convertServiceList(list []corev1.Service) []*corev1.Service {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Service, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
 }

@@ -17,6 +17,7 @@ package tensorflow
 
 import (
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
 
@@ -219,7 +220,7 @@ func (tc *TFController) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
 	if tc.Config.EnableGangScheduling {
-		if isNonGangSchedulerSet(replicas) {
+		if util.IsGangSchedulerSet(replicas, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			tc.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
@@ -376,13 +377,4 @@ func (tc *TFController) IsWorker0Completed(tfjob *tfv1.TFJob, replicas map[commo
 		}
 	}
 	return worker0Completed, nil
-}
-
-func isNonGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
-	for _, spec := range replicas {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
-			return true
-		}
-	}
-	return false
 }

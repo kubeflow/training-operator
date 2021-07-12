@@ -17,6 +17,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -62,7 +64,7 @@ func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,
@@ -158,7 +160,13 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
 
 	// Check if reconciliation is needed
-	needReconcile := r.satisfiedExpectations(pytorchjob)
+	jobKey, err := common.KeyFunc(pytorchjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", pytorchjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(pytorchjob.Spec.PyTorchReplicaSpecs)
+	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needReconcile || pytorchjob.GetDeletionTimestamp() != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",

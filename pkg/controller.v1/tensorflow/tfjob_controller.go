@@ -17,6 +17,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -48,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 )
 
 const (
@@ -82,7 +84,13 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	tensorflowv1.SetDefaults_TFJob(tfjob)
 
 	// Check if reconciliation is needed
-	needReconcile := r.satisfiedExpectations(tfjob)
+	jobKey, err := common.KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", tfjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(tfjob.Spec.TFReplicaSpecs)
+	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needReconcile || tfjob.GetDeletionTimestamp() != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",
@@ -127,7 +135,7 @@ func NewReconciler(mgr manager.Manager) *TFJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,
@@ -188,7 +196,7 @@ func (r *TFJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod, e
 		return nil, err
 	}
 
-	pods := convertPodList(podlist.Items)
+	pods := util.ConvertPodList(podlist.Items)
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing Pods (see #42639).
@@ -204,18 +212,6 @@ func (r *TFJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod, e
 	})
 	cm := control.NewPodControllerRefManager(r.PodControl, job, selector, r.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 	return cm.ClaimPods(pods)
-}
-
-// convertPodList convert pod list to pod point list
-func convertPodList(list []corev1.Pod) []*corev1.Pod {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Pod, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
 }
 
 // GetServicesForJob returns the set of services that this job should manage.
@@ -255,18 +251,6 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 	})
 	cm := control.NewServiceControllerRefManager(r.ServiceControl, job, selector, r.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
 
-	services := convertServiceList(svclist.Items)
+	services := util.ConvertServiceList(svclist.Items)
 	return cm.ClaimServices(services)
-}
-
-// convertServiceList convert service list to service point list
-func convertServiceList(list []corev1.Service) []*corev1.Service {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Service, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
 }

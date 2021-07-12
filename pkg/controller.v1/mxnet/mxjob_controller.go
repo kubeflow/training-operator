@@ -21,18 +21,22 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -91,7 +95,7 @@ func NewReconciler(mgr manager.Manager) *MXJobReconciler {
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
 		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &FakeWorkQueue{},
+		WorkQueue:        &util.FakeWorkQueue{},
 		Recorder:         r.Recorder,
 		KubeClientSet:    kubeClientSet,
 		VolcanoClientSet: volcanoClientSet,
@@ -131,7 +135,13 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// mxjobv1.SetDefaults(mxjob)
 
 	// Check if reconciliation is needed
-	needReconcile := r.satisfiedExpectations(mxjob)
+	jobKey, err := common.KeyFunc(mxjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", mxjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(mxjob.Spec.MXReplicaSpecs)
+	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
 
 	if !needReconcile || mxjob.GetDeletionTimestamp() != nil {
 		logger.Info("reconcile cancelled, job does not need to do reconcile or has been deleted",
@@ -177,7 +187,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// Watch for changes to PyTorchJob
 	err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc(r)},
+		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
 	)
 	if err != nil {
 		return err
@@ -188,7 +198,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		IsController: true,
 		OwnerType:    &mxjobv1.MXJob{},
 	},
-		predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+		predicate.Funcs{CreateFunc: util.OnDependentCreateFunc(r.Expectations), DeleteFunc: util.OnDependentDeleteFunc(r.Expectations)},
 	)
 	if err != nil {
 		return err
@@ -199,7 +209,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		IsController: true,
 		OwnerType:    &mxjobv1.MXJob{},
 	},
-		&predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
+		&predicate.Funcs{CreateFunc: util.OnDependentCreateFunc(r.Expectations), DeleteFunc: util.OnDependentDeleteFunc(r.Expectations)},
 	)
 	if err != nil {
 		return err
@@ -291,4 +301,32 @@ func (r *MXJobReconciler) GetJobRoleKey() string {
 func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
 	return string(rtype) == string(mxjobv1.MXReplicaTypeServer)
+}
+
+// onOwnerCreateFunc modify creation condition.
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
+	return func(e event.CreateEvent) bool {
+		mxjob, ok := e.Object.(*mxjobv1.MXJob)
+		if !ok {
+			return true
+		}
+
+		// TODO: check default setting
+		scheme.Scheme.Default(mxjob)
+		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
+		logrus.Info(msg)
+
+		// TODO: should we move defaulter somewhere else, like pass a default func here to call
+		//specific the run policy
+		if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
+			mxjob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
+			mxjob.Spec.RunPolicy.CleanPodPolicy = &DefaultCleanPodPolicy
+		}
+
+		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
+			logrus.Error(err, "append job condition error")
+			return false
+		}
+		return true
+	}
 }
