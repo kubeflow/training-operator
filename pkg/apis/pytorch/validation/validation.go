@@ -16,6 +16,7 @@ package validation
 
 import (
 	"fmt"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
 	torchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 )
@@ -30,7 +31,7 @@ func ValidateV1PyTorchJobSpec(c *torchv1.PyTorchJobSpec) error {
 			return fmt.Errorf("PyTorchJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		// Make sure the replica type is valid.
-		validReplicaTypes := []torchv1.PyTorchReplicaType{torchv1.PyTorchReplicaTypeMaster, torchv1.PyTorchReplicaTypeWorker}
+		validReplicaTypes := []commonv1.ReplicaType{torchv1.PyTorchReplicaTypeMaster, torchv1.PyTorchReplicaTypeWorker}
 
 		isValidReplicaType := false
 		for _, t := range validReplicaTypes {

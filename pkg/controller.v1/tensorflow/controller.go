@@ -18,6 +18,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -32,7 +33,6 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	tflogger "github.com/kubeflow/common/pkg/util"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
@@ -326,7 +326,13 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	tfjob := sharedTFJob.DeepCopy()
 
 	// Sync tfjob every time if EnableDynamicWorker is true
-	tfjobNeedsSync := tfjob.Spec.EnableDynamicWorker || tc.satisfiedExpectations(tfjob)
+	jobKey, err := common.KeyFunc(tfjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", tfjob, err))
+	}
+
+	replicaTypes := util.GetReplicaTypes(tfjob.Spec.TFReplicaSpecs)
+	tfjobNeedsSync := tfjob.Spec.EnableDynamicWorker || util.SatisfiedExpectations(tc.Expectations, jobKey, replicaTypes)
 
 	// Set default for the new tfjob.
 	scheme.Scheme.Default(tfjob)
@@ -341,30 +347,6 @@ func (tc *TFController) syncTFJob(key string) (bool, error) {
 	}
 
 	return true, err
-}
-
-// satisfiedExpectations returns true if the required adds/dels for the given tfjob have been observed.
-// Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
-// manager.
-func (tc *TFController) satisfiedExpectations(tfjob *tfv1.TFJob) bool {
-	satisfied := true
-	tfjobKey, err := KeyFunc(tfjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
-		return false
-	}
-
-	for rtype := range tfjob.Spec.TFReplicaSpecs {
-		// Check the expectations of the pods.
-		expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, string(rtype))
-		satisfied = satisfied && tc.Expectations.SatisfiedExpectations(expectationPodsKey)
-
-		// Check the expectations of the services.
-		expectationServicesKey := expectation.GenExpectationServicesKey(tfjobKey, string(rtype))
-		satisfied = satisfied && tc.Expectations.SatisfiedExpectations(expectationServicesKey)
-	}
-
-	return satisfied
 }
 
 func (tc *TFController) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {

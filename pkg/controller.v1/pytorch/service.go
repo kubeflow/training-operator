@@ -4,6 +4,7 @@ import (
 	"context"
 
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	apiv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,21 +27,9 @@ func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 		return nil, err
 	}
 
-	ret := convertServiceList(serviceList.Items)
+	ret := util.ConvertServiceList(serviceList.Items)
 
 	return ret, nil
-}
-
-// convertServiceList convert service list to service point list
-func convertServiceList(list []corev1.Service) []*corev1.Service {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Service, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
 }
 
 // ReconcileServices checks and updates services for each given ReplicaSpec.

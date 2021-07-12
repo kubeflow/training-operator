@@ -107,7 +107,7 @@ func (in *PyTorchJobSpec) DeepCopyInto(out *PyTorchJobSpec) {
 	}
 	if in.PyTorchReplicaSpecs != nil {
 		in, out := &in.PyTorchReplicaSpecs, &out.PyTorchReplicaSpecs
-		*out = make(map[PyTorchReplicaType]*commonv1.ReplicaSpec, len(*in))
+		*out = make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec, len(*in))
 		for key, val := range *in {
 			var outVal *commonv1.ReplicaSpec
 			if val == nil {

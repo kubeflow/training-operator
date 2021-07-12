@@ -70,18 +70,15 @@ type PyTorchJobSpec struct {
 	//     "Master": PyTorchReplicaSpec,
 	//     "Worker": PyTorchReplicaSpec,
 	//   }
-	PyTorchReplicaSpecs map[PyTorchReplicaType]*common.ReplicaSpec `json:"pytorchReplicaSpecs"`
+	PyTorchReplicaSpecs map[common.ReplicaType]*common.ReplicaSpec `json:"pytorchReplicaSpecs"`
 }
-
-// PyTorchReplicaType is the type for PyTorchReplica. Can be one of "Master" or "Worker".
-type PyTorchReplicaType common.ReplicaType
 
 const (
 	// PyTorchReplicaTypeMaster is the type of Master of distributed PyTorch
-	PyTorchReplicaTypeMaster PyTorchReplicaType = "Master"
+	PyTorchReplicaTypeMaster common.ReplicaType = "Master"
 
 	// PyTorchReplicaTypeWorker is the type for workers of distributed PyTorch.
-	PyTorchReplicaTypeWorker PyTorchReplicaType = "Worker"
+	PyTorchReplicaTypeWorker common.ReplicaType = "Worker"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
 
@@ -27,19 +29,7 @@ func (r *PyTorchJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 		return nil, err
 	}
 
-	return convertPodList(podlist.Items), nil
-}
-
-// convertPodList convert pod list to pod point list
-func convertPodList(list []corev1.Pod) []*corev1.Pod {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Pod, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
+	return util.ConvertPodList(podlist.Items), nil
 }
 
 func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
@@ -112,7 +102,7 @@ func GenGeneralName(jobName, rtype, index string) string {
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func GetPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype pytorchv1.PyTorchReplicaType) (int32, error) {
+func GetPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == pytorchv1.DefaultContainerName {

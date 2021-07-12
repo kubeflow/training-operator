@@ -15,6 +15,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
 
@@ -41,19 +42,7 @@ func (r *XGBoostJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 		return nil, err
 	}
 
-	return convertPodList(podlist.Items), nil
-}
-
-// convertPodList convert pod list to pod point list
-func convertPodList(list []corev1.Pod) []*corev1.Pod {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Pod, 0, len(list))
-	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
+	return util.ConvertPodList(podlist.Items), nil
 }
 
 // SetPodEnv sets the pod env set for:
