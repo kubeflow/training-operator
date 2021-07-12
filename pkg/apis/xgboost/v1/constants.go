@@ -26,4 +26,6 @@ const (
 	DefaultPort = 9999
 	// DefaultRestartPolicy is default RestartPolicy for XGBReplicaSpecs.
 	DefaultRestartPolicy = commonv1.RestartPolicyNever
+	// Kind is the kind name.
+	Kind = "XGBoostJob"
 )

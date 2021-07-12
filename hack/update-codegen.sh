@@ -68,6 +68,7 @@ ${CODEGEN_PKG}/generate-groups.sh "all" \
 #echo "Building defaulter-gen"
 #go build -o defaulter-gen ${CODEGEN_PKG}/cmd/defaulter-gen
 
+# ${GOPATH}/bin/defaulter-gen is automatically built from ${CODEGEN_PKG}/generate-groups.sh
 echo "Generating defaulters for tensorflow/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 \
  -O zz_generated.defaults \

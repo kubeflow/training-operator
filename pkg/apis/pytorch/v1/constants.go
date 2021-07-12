@@ -28,4 +28,6 @@ const (
 	DefaultPort = 23456
 	// DefaultRestartPolicy is default RestartPolicy for PyTorchReplicaSpec.
 	DefaultRestartPolicy = common.RestartPolicyOnFailure
+	// Kind is the kind name.
+	Kind = "PyTorchJob"
 )

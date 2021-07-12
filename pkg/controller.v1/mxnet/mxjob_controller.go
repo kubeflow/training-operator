@@ -275,7 +275,7 @@ func (r *MXJobReconciler) ControllerName() string {
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mxjobv1.GroupVersion.WithKind("MXJob")
+	return mxjobv1.GroupVersion.WithKind(mxjobv1.Kind)
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersion() schema.GroupVersion {

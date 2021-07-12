@@ -63,7 +63,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 		un, ok := obj.(*metav1unstructured.Unstructured)
 		logger := &log.Entry{}
 		if ok {
-			logger = commonutil.LoggerForUnstructured(un, "TFJob")
+			logger = commonutil.LoggerForUnstructured(un, tfv1.Kind)
 		}
 		logger.Errorf("Failed to convert the TFJob: %v", err)
 		// Log the failure to conditions.

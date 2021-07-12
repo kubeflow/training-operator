@@ -87,7 +87,7 @@ func tfJobFromUnstructured(obj interface{}) (*tfv1.TFJob, error) {
 	}
 	var tfjob tfv1.TFJob
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &tfjob)
-	logger := tflogger.LoggerForUnstructured(un, "TFJob")
+	logger := tflogger.LoggerForUnstructured(un, tfv1.Kind)
 	if err != nil {
 		logger.Errorf(failedMarshalMsg, err)
 		return nil, errFailedMarshal

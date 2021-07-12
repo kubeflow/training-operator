@@ -358,7 +358,7 @@ func (tc *TFController) GetJobFromAPIClient(namespace, name string) (metav1.Obje
 }
 
 func (tc *TFController) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return tfv1.GroupVersion.WithKind("TFJob")
+	return tfv1.GroupVersion.WithKind(tfv1.Kind)
 }
 
 func (tc *TFController) GetAPIGroupVersion() schema.GroupVersion {

@@ -28,4 +28,6 @@ const (
 	DefaultPort = 2222
 	// DefaultRestartPolicy is default RestartPolicy for TFReplicaSpec.
 	DefaultRestartPolicy = common.RestartPolicyNever
+	// Kind is the kind name.
+	Kind = "TFJob"
 )

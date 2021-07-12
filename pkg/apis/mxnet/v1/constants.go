@@ -12,4 +12,6 @@ const (
 	DefaultPort = 9091
 	// DefaultRestartPolicy is default RestartPolicy for MXReplicaSpec.
 	DefaultRestartPolicy = commonv1.RestartPolicyNever
+	// Kind is the kind name.
+	Kind = "MXJob"
 )

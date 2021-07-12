@@ -254,7 +254,7 @@ func (r *PyTorchJobReconciler) ControllerName() string {
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return pytorchv1.GroupVersion.WithKind("PyTorchJob")
+	return pytorchv1.GroupVersion.WithKind(pytorchv1.Kind)
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {

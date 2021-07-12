@@ -66,7 +66,7 @@ func TestConvertTFJobToUnstructured(t *testing.T) {
 	testUID := types.UID("test-UID")
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
-			Kind: "TFJob",
+			Kind: tfv1.Kind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testName,
