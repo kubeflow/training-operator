@@ -39,10 +39,10 @@ import (
 
 	"github.com/kubeflow/common/pkg/util/signals"
 	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
+	"github.com/kubeflow/tf-operator/pkg/common"
 	controller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
 	"github.com/kubeflow/tf-operator/pkg/version"
 )
@@ -75,7 +75,7 @@ func Run(opt *options.ServerOption) error {
 		version.PrintVersionAndExit(apiVersion)
 	}
 
-	namespace := os.Getenv(v1.EnvKubeflowNamespace)
+	namespace := os.Getenv(common.EnvKubeflowNamespace)
 	if len(namespace) == 0 {
 		log.Infof("EnvKubeflowNamespace not set, use default namespace %s",
 			metav1.NamespaceDefault)
@@ -232,7 +232,7 @@ func createClientSets(config *restclientset.Config) (
 func checkCRDExists(clientset apiextensionclientset.Interface, namespace string) bool {
 	crd, err := clientset.ApiextensionsV1beta1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), v1.TFCRD, metav1.GetOptions{})
+		Get(context.TODO(), "tfjobs.kubeflow.org", metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)

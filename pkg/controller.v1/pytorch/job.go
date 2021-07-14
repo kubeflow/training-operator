@@ -36,7 +36,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 	result := r.Update(context.Background(), pytorchjob)
 
 	if result != nil {
-		r.Log.WithValues(pytorchv1.Singular, types.NamespacedName{
+		r.Log.WithValues("pytorchjob", types.NamespacedName{
 			Namespace: pytorchjob.GetNamespace(),
 			Name:      pytorchjob.GetName(),
 		})

@@ -41,8 +41,8 @@ func TestGenOwnerReference(t *testing.T) {
 	if ref.Name != testName {
 		t.Errorf("Expected Name %s, got %s", testName, ref.Name)
 	}
-	if ref.APIVersion != tfv1.SchemeGroupVersion.String() {
-		t.Errorf("Expected APIVersion %s, got %s", tfv1.SchemeGroupVersion.String(), ref.APIVersion)
+	if ref.APIVersion != tfv1.GroupVersion.String() {
+		t.Errorf("Expected APIVersion %s, got %s", tfv1.GroupVersion.String(), ref.APIVersion)
 	}
 }
 
@@ -56,8 +56,8 @@ func TestGenLabels(t *testing.T) {
 	if labels[jobNamelabel] != expctedKey {
 		t.Errorf("Expected %s %s, got %s", jobNamelabel, expctedKey, jobNamelabel)
 	}
-	if labels[labelGroupName] != tfv1.GroupName {
-		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1.GroupName, labels[labelGroupName])
+	if labels[labelGroupName] != tfv1.GroupVersion.Group {
+		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1.GroupVersion.Group, labels[labelGroupName])
 	}
 }
 

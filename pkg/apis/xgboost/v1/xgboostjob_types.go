@@ -63,15 +63,12 @@ type XGBoostJobList struct {
 	Items           []XGBoostJob `json:"items"`
 }
 
-// XGBoostJobReplicaType is the type for XGBoostJobReplica.
-type XGBoostJobReplicaType commonv1.ReplicaType
-
 const (
 	// XGBoostReplicaTypeMaster is the type for master replica.
-	XGBoostReplicaTypeMaster XGBoostJobReplicaType = "Master"
+	XGBoostReplicaTypeMaster commonv1.ReplicaType = "Master"
 
 	// XGBoostReplicaTypeWorker is the type for worker replicas.
-	XGBoostReplicaTypeWorker XGBoostJobReplicaType = "Worker"
+	XGBoostReplicaTypeWorker commonv1.ReplicaType = "Worker"
 )
 
 func init() {

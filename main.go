@@ -89,19 +89,19 @@ func main() {
 	// TODO: We need a general manager. all rest reconciler addsToManager
 	// Based on the user configuration, we start different controllers
 	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "XGBoostJob")
+		setupLog.Error(err, "unable to create controller", "controller", xgboostv1.Kind)
 		os.Exit(1)
 	}
 	if err = pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PyTorchJob")
+		setupLog.Error(err, "unable to create controller", "controller", pytorchv1.Kind)
 		os.Exit(1)
 	}
 	if err = tensorflowcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "TFJob")
+		setupLog.Error(err, "unable to create controller", "controller", tensorflowv1.Kind)
 		os.Exit(1)
 	}
 	if err = mxnetcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MXJob")
+		setupLog.Error(err, "unable to create controller", "controller", mxnetv1.Kind)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

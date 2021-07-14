@@ -17,6 +17,11 @@
 # This shell is used to auto generate some useful tools for k8s, such as lister,
 # informer, deepcopy, defaulter and so on.
 
+# Ignore shellcheck for IDEs
+# shellcheck disable=SC2116
+# shellcheck disable=SC2046
+# shellcheck disable=SC2006
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -34,6 +39,17 @@ if [[ ! -d ${CODEGEN_PKG} ]]; then
 fi
 
 echo ">> Using ${CODEGEN_PKG}"
+
+# Grab openapi-gen version from go.mod
+OPENAPI_VERSION=$(grep 'k8s.io/kube-openapi' go.sum | awk '{print $2}' | sed 's/\/go.mod//g' | head -1)
+OPENAPI_PKG=$(echo `go env GOPATH`"/pkg/mod/k8s.io/kube-openapi@${OPENAPI_VERSION}")
+
+if [[ ! -d ${OPENAPI_PKG} ]]; then
+    echo "${OPENAPI_PKG} is missing. Running 'go mod download'."
+    go mod download
+fi
+
+echo ">> Using ${OPENAPI_PKG}"
 
 # code-generator does work with go.mod but makes assumptions about
 # the project living in `$GOPATH/src`. To work around this and support
@@ -60,7 +76,7 @@ cd ${SCRIPT_ROOT}
 ${CODEGEN_PKG}/generate-groups.sh "all" \
  github.com/kubeflow/tf-operator/pkg/client github.com/kubeflow/tf-operator/pkg/apis \
  tensorflow:v1 \
---output-base "${TEMP_DIR}" \
+ --output-base "${TEMP_DIR}" \
  --go-header-file hack/boilerplate/boilerplate.go.txt
 
 # Notice: The code in code-generator does not generate defaulter by default.
@@ -68,13 +84,66 @@ ${CODEGEN_PKG}/generate-groups.sh "all" \
 #echo "Building defaulter-gen"
 #go build -o defaulter-gen ${CODEGEN_PKG}/cmd/defaulter-gen
 
+# ${GOPATH}/bin/defaulter-gen is automatically built from ${CODEGEN_PKG}/generate-groups.sh
 echo "Generating defaulters for tensorflow/v1"
-${GOPATH}/bin/defaulter-gen  --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 -O zz_generated.defaults --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 \
+ -O zz_generated.defaults \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating defaulters for pytorch/v1"
+${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1 \
+ -O zz_generated.defaults \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating defaulters for mxnet/v1"
+${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1 \
+ -O zz_generated.defaults \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating defaulters for xgboost/v1"
+${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1 \
+ -O zz_generated.defaults \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
 cd - > /dev/null
 
+# Notice: The code in kube-openapi does not generate defaulter by default.
+# We need to build binary from pkg cmd folder.
+echo "Building openapi-gen"
+go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
+
 echo "Generating OpenAPI specification for tensorflow/v1"
-${GOPATH}/bin/openapi-gen --report-filename=hack/violation_exception.list --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+ --report-filename=hack/violation_exception.list \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating OpenAPI specification for pytorch/v1"
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+ --report-filename=hack/violation_exception.list \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating OpenAPI specification for mxnet/v1"
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+ --report-filename=hack/violation_exception.list \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
+echo "Generating OpenAPI specification for xgboost/v1"
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+ --report-filename=hack/violation_exception.list \
+ --output-package github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1 \
+ --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+
 cd - > /dev/null
 
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
+
+# Clean up binaries we build for update codegen
+rm ./openapi-gen

@@ -17,6 +17,8 @@ package mxnet
 import (
 	"context"
 	"fmt"
+	"time"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
@@ -42,7 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"time"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	"github.com/go-logr/logr"

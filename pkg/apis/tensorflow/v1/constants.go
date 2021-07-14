@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
-
 	// DefaultPortName is name of the port used to communicate between PS and
 	// workers.
 	DefaultPortName = "tfjob-port"
@@ -31,4 +28,10 @@ const (
 	DefaultPort = 2222
 	// DefaultRestartPolicy is default RestartPolicy for TFReplicaSpec.
 	DefaultRestartPolicy = common.RestartPolicyNever
+	// Kind is the kind name.
+	Kind = "TFJob"
+	// Plural is the Plural for TFJob.
+	Plural = "tfjobs"
+	// Singular is the singular for TFJob.
+	Singular = "tfjob"
 )

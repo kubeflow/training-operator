@@ -18,8 +18,9 @@ package tensorflow
 import (
 	"context"
 	"fmt"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"time"
+
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -358,11 +359,11 @@ func (tc *TFController) GetJobFromAPIClient(namespace, name string) (metav1.Obje
 }
 
 func (tc *TFController) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return tfv1.SchemeGroupVersionKind
+	return tfv1.GroupVersion.WithKind(tfv1.Kind)
 }
 
 func (tc *TFController) GetAPIGroupVersion() schema.GroupVersion {
-	return tfv1.SchemeGroupVersion
+	return tfv1.GroupVersion
 }
 
 func (tc *TFController) GetGroupNameLabelKey() string {
@@ -375,7 +376,7 @@ func (tc *TFController) GetJobNameLabelKey() string {
 }
 
 func (tc *TFController) GetGroupNameLabelValue() string {
-	return tfv1.GroupName
+	return tfv1.GroupVersion.Group
 }
 
 func (tc *TFController) GetReplicaTypeLabelKey() string {
