@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	controllerKind = tfv1.SchemeGroupVersionKind
+	controllerKind = tfv1.GroupVersion.WithKind(TFJobKind)
 )
 
 func NewBasePod(name string, tfJob *tfv1.TFJob) *v1.Pod {

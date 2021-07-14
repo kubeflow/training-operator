@@ -39,7 +39,7 @@ var (
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc        = cache.DeletionHandlingMetaNamespaceKeyFunc
-	GroupName      = tfv1.GroupName
+	GroupName      = tfv1.GroupVersion.Group
 	ControllerName = "tf-operator"
 )
 
@@ -54,8 +54,8 @@ func GenLabels(jobName string) map[string]string {
 func GenOwnerReference(tfjob *tfv1.TFJob) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
-		APIVersion:         tfv1.SchemeGroupVersion.String(),
-		Kind:               tfv1.Kind,
+		APIVersion:         tfv1.GroupVersion.Version,
+		Kind:               TFJobKind,
 		Name:               tfjob.Name,
 		UID:                tfjob.UID,
 		BlockOwnerDeletion: boolPtr(true),

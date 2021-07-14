@@ -57,7 +57,7 @@ func TestAddTFJob(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -124,7 +124,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -309,7 +309,7 @@ func TestDeletePodsAndServices(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -631,7 +631,7 @@ func TestActiveDeadlineSeconds(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -758,7 +758,7 @@ func TestBackoffForOnFailure(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)

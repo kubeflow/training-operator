@@ -1,10 +1,11 @@
 package validation
 
 import (
+	"testing"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	mxv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	v1 "k8s.io/api/core/v1"
-	"testing"
 )
 
 func TestValidateV1MXJobSpec(t *testing.T) {

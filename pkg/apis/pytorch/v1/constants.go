@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
-
 	// DefaultPortName is name of the port used to communicate between Master and
 	// workers.
 	DefaultPortName = "pytorchjob-port"
@@ -31,4 +28,10 @@ const (
 	DefaultPort = 23456
 	// DefaultRestartPolicy is default RestartPolicy for PyTorchReplicaSpec.
 	DefaultRestartPolicy = common.RestartPolicyOnFailure
+	// Kind is the kind name.
+	Kind = "PyTorchJob"
+	// Plural is the Plural for pytorchJob.
+	Plural = "pytorchjobs"
+	// Singular is the singular for pytorchJob.
+	Singular = "pytorchjob"
 )

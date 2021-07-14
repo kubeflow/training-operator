@@ -17,6 +17,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -262,7 +263,7 @@ func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
 }
 
 func (r *PyTorchJobReconciler) GetGroupNameLabelValue() string {
-	return pytorchv1.GroupName
+	return pytorchv1.GroupVersion.Group
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {

@@ -219,7 +219,7 @@ func TestNormalPath(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		option := options.ServerOption{}
@@ -269,7 +269,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		// Make sure the ControllerRefs are correct.
 		for _, controllerRef := range fakePodControl.ControllerRefs {
-			if got, want := controllerRef.APIVersion, tfv1.SchemeGroupVersion.String(); got != want {
+			if got, want := controllerRef.APIVersion, tfv1.GroupVersion.String(); got != want {
 				t.Errorf("controllerRef.APIVersion = %q, want %q", got, want)
 			}
 			if got, want := controllerRef.Kind, tfv1.Kind; got != want {
@@ -354,7 +354,7 @@ func TestRun(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)

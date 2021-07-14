@@ -17,6 +17,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
@@ -54,7 +55,7 @@ var (
 func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("XGBoostJob"),
+		Log:    ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
 		Scheme: mgr.GetScheme(),
 	}
 	r.recorder = mgr.GetEventRecorderFor(r.ControllerName())
@@ -101,7 +102,7 @@ type XGBoostJobReconciler struct {
 //+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/finalizers,verbs=update
 
 func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("xgboostjob", req.NamespacedName)
+	logger := r.Log.WithValues(xgboostv1.Singular, req.NamespacedName)
 
 	xgboostjob := &xgboostv1.XGBoostJob{}
 	err := r.Get(context.Background(), req.NamespacedName, xgboostjob)
@@ -156,7 +157,7 @@ func (r *XGBoostJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
 }
 
 func (r *XGBoostJobReconciler) GetGroupNameLabelValue() string {
-	return xgboostv1.GroupName
+	return xgboostv1.GroupVersion.Group
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerName() string {
@@ -164,7 +165,7 @@ func (r *XGBoostJobReconciler) GetDefaultContainerName() string {
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerPortName() string {
-	return xgboostv1.DefaultContainerPortName
+	return xgboostv1.DefaultPortName
 }
 
 func (r *XGBoostJobReconciler) GetJobRoleKey() string {

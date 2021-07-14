@@ -60,7 +60,7 @@ func TestAddPod(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -128,7 +128,7 @@ func TestExpectation(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -187,7 +187,7 @@ func TestExpectationWithError(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -301,7 +301,7 @@ func TestClusterSpec(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -461,7 +461,7 @@ func TestExitCode(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -549,7 +549,7 @@ func TestScaleDown(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -633,7 +633,7 @@ func TestScaleUp(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &tfv1.SchemeGroupVersion,
+			GroupVersion: &tfv1.GroupVersion,
 		},
 	}
 	tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
@@ -795,7 +795,7 @@ func TestIsWorker0Completed(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &tfv1.SchemeGroupVersion,
+				GroupVersion: &tfv1.GroupVersion,
 			},
 		}
 		tfJobClientSet := tfjobclientset.NewForConfigOrDie(config)
