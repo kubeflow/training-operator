@@ -100,7 +100,7 @@ func (tc *TFController) addTFJob(obj interface{}) {
 					logger.Errorf("Could not set nested field: %v", err1)
 				}
 				logger.Infof("Updating the job to: %+v", un.Object)
-				err = client.UpdateStatus(un, "tfjobs")
+				err = client.UpdateStatus(un, tfv1.Plural)
 				if err != nil {
 					logger.Errorf("Could not update the TFJob: %v", err)
 				}

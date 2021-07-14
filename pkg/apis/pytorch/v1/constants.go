@@ -30,4 +30,8 @@ const (
 	DefaultRestartPolicy = common.RestartPolicyOnFailure
 	// Kind is the kind name.
 	Kind = "PyTorchJob"
+	// Plural is the Plural for pytorchJob.
+	Plural = "pytorchjobs"
+	// Singular is the singular for pytorchJob.
+	Singular = "pytorchjob"
 )

@@ -28,4 +28,8 @@ const (
 	DefaultRestartPolicy = commonv1.RestartPolicyNever
 	// Kind is the kind name.
 	Kind = "XGBoostJob"
+	// Plural is the Plural for XGBoostJob.
+	Plural = "xgboostjobs"
+	// Singular is the singular for XGBoostJob.
+	Singular = "xgboostjob"
 )

@@ -17,6 +17,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
@@ -101,7 +102,7 @@ type XGBoostJobReconciler struct {
 //+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/finalizers,verbs=update
 
 func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("xgboostjob", req.NamespacedName)
+	logger := r.Log.WithValues(xgboostv1.Singular, req.NamespacedName)
 
 	xgboostjob := &xgboostv1.XGBoostJob{}
 	err := r.Get(context.Background(), req.NamespacedName, xgboostjob)

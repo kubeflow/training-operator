@@ -30,4 +30,8 @@ const (
 	DefaultRestartPolicy = common.RestartPolicyNever
 	// Kind is the kind name.
 	Kind = "TFJob"
+	// Plural is the Plural for TFJob.
+	Plural = "tfjobs"
+	// Singular is the singular for TFJob.
+	Singular = "tfjob"
 )

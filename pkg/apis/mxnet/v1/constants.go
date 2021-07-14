@@ -14,4 +14,8 @@ const (
 	DefaultRestartPolicy = commonv1.RestartPolicyNever
 	// Kind is the kind name.
 	Kind = "MXJob"
+	// Plural is the Plural for mxJob.
+	Plural = "mxjobs"
+	// Singular is the singular for mxJob.
+	Singular = "mxjob"
 )

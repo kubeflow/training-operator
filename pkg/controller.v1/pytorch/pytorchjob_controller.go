@@ -17,6 +17,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -149,7 +150,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues("pytorchjobs", req.NamespacedName)
+	logger := r.Log.WithValues(pytorchv1.Singular, req.NamespacedName)
 
 	pytorchjob := &pytorchv1.PyTorchJob{}
 	err := r.Get(ctx, req.NamespacedName, pytorchjob)

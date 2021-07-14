@@ -17,6 +17,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -73,7 +74,7 @@ type TFJobReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues("tfjobs", req.NamespacedName)
+	logger := r.Log.WithValues(tensorflowv1.Singular, req.NamespacedName)
 
 	tfjob := &tensorflowv1.TFJob{}
 	err := r.Get(ctx, req.NamespacedName, tfjob)

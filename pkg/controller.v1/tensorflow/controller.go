@@ -18,8 +18,9 @@ package tensorflow
 import (
 	"context"
 	"fmt"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"time"
+
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -125,7 +126,7 @@ func NewTFController(
 	log.Info("Creating Job controller")
 
 	jc := common.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, volcanoClientSet, kubeInformerFactory, "tfjobs")
+		option.EnableGangScheduling, kubeClientSet, volcanoClientSet, kubeInformerFactory, tfv1.Plural)
 
 	// Set sync handler.
 	tc.syncHandler = tc.syncTFJob
