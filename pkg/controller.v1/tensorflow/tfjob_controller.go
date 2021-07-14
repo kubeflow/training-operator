@@ -18,25 +18,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
+	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-
-	"github.com/kubeflow/tf-operator/cmd/tf-operator.v1/app/options"
-
-	tfjobclientset "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned"
-
-	kubeclientset "k8s.io/client-go/kubernetes"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/tools/record"
 
@@ -56,6 +51,46 @@ import (
 const (
 	jobOwnerKey = ".metadata.controller"
 )
+
+func NewReconciler(mgr manager.Manager) *TFJobReconciler {
+	r := &TFJobReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		recorder: mgr.GetEventRecorderFor(controllerName),
+		Log:      log.Log,
+	}
+
+	cfg := mgr.GetConfig()
+	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
+	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+	tfJobClientSet := tfjobclientset.NewForConfigOrDie(cfg)
+
+	opt := *options.NewServerOption()
+	opt.EnableGangScheduling = true
+
+	tc := TFController{
+		tfJobClientSet: tfJobClientSet,
+	}
+
+	jc := common.JobController{
+		Controller:       r,
+		Expectations:     expectation.NewControllerExpectations(),
+		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
+		WorkQueue:        &util.FakeWorkQueue{},
+		Recorder:         r.recorder,
+		KubeClientSet:    kubeClientSet,
+		VolcanoClientSet: volcanoClientSet,
+		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+	}
+
+	// Set sync handler.
+	tc.syncHandler = tc.syncTFJob
+	tc.JobController = jc
+	r.TFController = tc
+
+	return r
+}
 
 // TFJobReconciler reconciles a TFJob object
 type TFJobReconciler struct {
@@ -110,48 +145,6 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func NewReconciler(mgr manager.Manager) *TFJobReconciler {
-	r := &TFJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
-	}
-
-	cfg := mgr.GetConfig()
-	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
-	tfJobClientSet := tfjobclientset.NewForConfigOrDie(cfg)
-
-	opt := *options.NewServerOption()
-	opt.EnableGangScheduling = true
-
-	tc := TFController{
-		tfJobClientSet: tfJobClientSet,
-	}
-
-	jc := common.JobController{
-		Controller:       r,
-		Expectations:     expectation.NewControllerExpectations(),
-		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &util.FakeWorkQueue{},
-		Recorder:         r.recorder,
-		KubeClientSet:    kubeClientSet,
-		VolcanoClientSet: volcanoClientSet,
-		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
-		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
-	}
-
-	// Set sync handler.
-	tc.syncHandler = tc.syncTFJob
-
-	tc.JobController = jc
-
-	r.TFController = tc
-
-	return r
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -255,3 +248,5 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 	services := util.ConvertServiceList(svclist.Items)
 	return cm.ClaimServices(services)
 }
+
+// Seems TF is far away from others?

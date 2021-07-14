@@ -15,9 +15,10 @@
 package mxnet
 
 import (
-	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	"path/filepath"
 	"testing"
+
+	v1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
