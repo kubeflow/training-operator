@@ -1,36 +1,14 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func (r *PyTorchJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, error) {
-	job, err := meta.Accessor(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// List all pods to include those that don't match the selector anymore
-	// but have a ControllerRef pointing to this controller.
-	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
-	if err != nil {
-		return nil, err
-	}
-
-	return util.ConvertPodList(podlist.Items), nil
-}
 
 func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
@@ -45,12 +23,12 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 
 	totalReplicas := getTotalReplicas(pytorchjob)
 
-	masterPort, err := GetPortFromPyTorchJob(pytorchjob, pytorchv1.PyTorchReplicaTypeMaster)
+	masterPort, err := getPortFromPyTorchJob(pytorchjob, pytorchv1.PyTorchReplicaTypeMaster)
 	if err != nil {
 		return err
 	}
 
-	masterAddr := GenGeneralName(pytorchjob.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
+	masterAddr := genGeneralName(pytorchjob.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
 	if rtype == string(pytorchv1.PyTorchReplicaTypeMaster) {
 		if rank != 0 {
 			return fmt.Errorf("invalid config: There should be only a single master with index=0")
@@ -97,12 +75,12 @@ func getTotalReplicas(job *pytorchv1.PyTorchJob) int32 {
 	return jobReplicas
 }
 
-func GenGeneralName(jobName, rtype, index string) string {
+func genGeneralName(jobName, rtype, index string) string {
 	n := jobName + "-" + rtype + "-" + index
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func GetPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == pytorchv1.DefaultContainerName {
