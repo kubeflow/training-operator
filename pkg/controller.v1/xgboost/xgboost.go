@@ -1,49 +1,15 @@
-/*
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package xgboost
 
 import (
-	"context"
 	"fmt"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// GetPodsForJob returns the pods managed by the job. This can be achieved by selecting pods using label key "job-name"
-// i.e. all pods created by the job will come with label "job-name" = <this_job_name>
-func (r *XGBoostJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, error) {
-	job, err := meta.Accessor(obj)
-	if err != nil {
-		return nil, err
-	}
-	// List all pods to include those that don't match the selector anymore
-	// but have a ControllerRef pointing to this controller.
-	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
-	if err != nil {
-		return nil, err
-	}
-
-	return util.ConvertPodList(podlist.Items), nil
-}
 
 // SetPodEnv sets the pod env set for:
 // - XGBoost Rabit Tracker and worker
@@ -68,7 +34,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 
 	masterAddr := computeMasterAddr(xgboostjob.Name, strings.ToLower(string(xgboostv1.XGBoostReplicaTypeMaster)), strconv.Itoa(0))
 
-	masterPort, err := GetPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeMaster)
+	masterPort, err := getPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeMaster)
 	if err != nil {
 		return err
 	}
@@ -79,7 +45,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	var workerAddrs []string
 
 	if totalReplicas > 1 {
-		workerPortTemp, err := GetPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeWorker)
+		workerPortTemp, err := getPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeWorker)
 		if err != nil {
 			return err
 		}
@@ -128,4 +94,42 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	}
 
 	return nil
+}
+
+func computeMasterAddr(jobName, rtype, index string) string {
+	n := jobName + "-" + rtype + "-" + index
+	return strings.Replace(n, "/", "-", -1)
+}
+
+// getPortFromXGBoostJob gets the port of xgboost container.
+func getPortFromXGBoostJob(job *xgboostv1.XGBoostJob, rtype commonv1.ReplicaType) (int32, error) {
+	containers := job.Spec.XGBReplicaSpecs[commonv1.ReplicaType(rtype)].Template.Spec.Containers
+	for _, container := range containers {
+		if container.Name == xgboostv1.DefaultContainerName {
+			ports := container.Ports
+			for _, port := range ports {
+				if port.Name == xgboostv1.DefaultPortName {
+					return port.ContainerPort, nil
+				}
+			}
+		}
+	}
+	return -1, fmt.Errorf("failed to found the port")
+}
+
+func computeTotalReplicas(obj metav1.Object) int32 {
+	job := obj.(*xgboostv1.XGBoostJob)
+	jobReplicas := int32(0)
+
+	if job.Spec.XGBReplicaSpecs == nil || len(job.Spec.XGBReplicaSpecs) == 0 {
+		return jobReplicas
+	}
+	for _, r := range job.Spec.XGBReplicaSpecs {
+		if r.Replicas == nil {
+			continue
+		} else {
+			jobReplicas += *r.Replicas
+		}
+	}
+	return jobReplicas
 }

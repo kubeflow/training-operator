@@ -17,9 +17,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
+	commonutil "github.com/kubeflow/common/pkg/util"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"k8s.io/apimachinery/pkg/api/meta"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -45,7 +49,12 @@ import (
 )
 
 const (
-	ControllerName = "pytorchjob-operator"
+	controllerName = "pytorchjob-operator"
+)
+
+var (
+	jobOwnerKey           = ".metadata.controller"
+	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
@@ -53,14 +62,16 @@ func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
 	r := &PyTorchJobReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(ControllerName),
+		recorder: mgr.GetEventRecorderFor(controllerName),
 		Log:      log.Log,
 	}
 
+	// Create clients
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 
+	// Initialize common job controller
 	r.JobController = common.JobController{
 		Controller:       r,
 		Expectations:     expectation.NewControllerExpectations(),
@@ -81,56 +92,8 @@ type PyTorchJobReconciler struct {
 	common.JobController
 	client.Client
 	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
 	Log      logr.Logger
-}
-
-func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	job := &pytorchv1.PyTorchJob{}
-	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)
-		} else {
-			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
-		}
-		return nil, err
-	}
-	return job, nil
-}
-
-func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &pytorchv1.PyTorchJob{}
-
-	clientReader, err := getDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			logrus.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
-		} else {
-			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
-		}
-		return nil, err
-	}
-	return job, nil
-}
-
-func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
-	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
-	if !ok {
-		return fmt.Errorf("%+v is not a type of XGBoostJob", job)
-	}
-	if err := r.Delete(context.Background(), pytorchjob); err != nil {
-		r.recorder.Eventf(pytorchjob, corev1.EventTypeWarning, control.FailedDeletePodReason, "Error deleting: %v", err)
-		logrus.Error(err, "failed to delete job", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
-		return err
-	}
-	r.recorder.Eventf(pytorchjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", pytorchjob.Name)
-	logrus.Info("job deleted", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
-	return nil
+	recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=pytorchjobs,verbs=get;list;watch;create;update;patch;delete
@@ -141,7 +104,6 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
 // the PyTorchJob object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
@@ -178,12 +140,6 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	scheme.Scheme.Default(pytorchjob)
 
-	// Convert PyTorch.Spec.PyTorchReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
-	replicas := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
-	for k, v := range pytorchjob.Spec.PyTorchReplicaSpecs {
-		replicas[commonv1.ReplicaType(k)] = v
-	}
-
 	// Construct RunPolicy based on PyTorchJob.Spec
 	runPolicy := &commonv1.RunPolicy{
 		CleanPodPolicy:          pytorchjob.Spec.CleanPodPolicy,
@@ -194,7 +150,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(pytorchjob, replicas, pytorchjob.Status, runPolicy)
+	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, runPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile PyTorch Job error %v", err)
 		return ctrl.Result{}, err
@@ -205,43 +161,40 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	//// Create a new Controller
-	//c, err := controller.New(ControllerName, mgr, controller.Options{Reconciler: r})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// Watch for changes to PyTorchJob
-	//err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
-	//	predicate.Funcs{CreateFunc: onOwnerCreateFunc(r)},
-	//)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////inject watching for pytorchjob related pod
-	//err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-	//	IsController: true,
-	//	OwnerType:    &pytorchv1.PyTorchJob{},
-	//},
-	//	predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
-	//)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////inject watching for xgboostjob related service
-	//err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
-	//	IsController: true,
-	//	OwnerType:    &pytorchv1.PyTorchJob{},
-	//},
-	//	&predicate.Funcs{CreateFunc: onDependentCreateFunc(r), DeleteFunc: onDependentDeleteFunc(r)},
-	//)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return nil
+	// setup FieldIndexer to inform the manager that this controller owns pods and services,
+	// so that it will automatically call Reconcile on the underlying XGBoostJob when a Pod or Service changes, is deleted, etc.
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, jobOwnerKey, func(rawObj client.Object) []string {
+		pod := rawObj.(*corev1.Pod)
+		owner := metav1.GetControllerOf(pod)
+		if owner == nil {
+			return nil
+		}
+
+		// Make sure owner is XGBoostJob Controller.
+		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
+			return nil
+		}
+
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, jobOwnerKey, func(rawObj client.Object) []string {
+		svc := rawObj.(*corev1.Service)
+		owner := metav1.GetControllerOf(svc)
+		if owner == nil {
+			return nil
+		}
+
+		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
+			return nil
+		}
+
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pytorchv1.PyTorchJob{}).
@@ -251,7 +204,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *PyTorchJobReconciler) ControllerName() string {
-	return ControllerName
+	return controllerName
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
@@ -266,6 +219,201 @@ func (r *PyTorchJobReconciler) GetGroupNameLabelValue() string {
 	return pytorchv1.GroupVersion.Group
 }
 
+func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
+	job := &pytorchv1.PyTorchJob{}
+	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)
+		} else {
+			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
+		}
+		return nil, err
+	}
+	return job, nil
+}
+
+func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
+	job := &pytorchv1.PyTorchJob{}
+
+	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
+	if err != nil {
+		return nil, err
+	}
+	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			logrus.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
+		} else {
+			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
+		}
+		return nil, err
+	}
+	return job, nil
+}
+
+func (r *PyTorchJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, error) {
+	job, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	// List all pods to include those that don't match the selector anymore
+	// but have a ControllerRef pointing to this controller.
+	podlist := &corev1.PodList{}
+	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
+	if err != nil {
+		return nil, err
+	}
+
+	return util.ConvertPodList(podlist.Items), nil
+}
+
+func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Service, error) {
+	job, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	// List all pods to include those that don't match the selector anymore
+	// but have a ControllerRef pointing to this controller.
+	serviceList := &corev1.ServiceList{}
+	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())))
+	if err != nil {
+		return nil, err
+	}
+
+	ret := util.ConvertServiceList(serviceList.Items)
+	return ret, nil
+}
+
+func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
+	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
+	}
+	if err := r.Delete(context.Background(), pytorchjob); err != nil {
+		r.recorder.Eventf(pytorchjob, corev1.EventTypeWarning, control.FailedDeletePodReason, "Error deleting: %v", err)
+		logrus.Error(err, "failed to delete job", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
+		return err
+	}
+	r.recorder.Eventf(pytorchjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", pytorchjob.Name)
+	logrus.Info("job deleted", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
+	return nil
+}
+
+// UpdateJobStatus updates the job status and job conditions
+func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
+	}
+
+	for rtype, spec := range replicas {
+		status := jobStatus.ReplicaStatuses[rtype]
+
+		succeeded := status.Succeeded
+		expected := *(spec.Replicas) - succeeded
+		running := status.Active
+		failed := status.Failed
+
+		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
+			pytorchjob.Name, rtype, expected, running, succeeded, failed)
+
+		if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
+			if running > 0 {
+				msg := fmt.Sprintf("XGBoostJob %s is running.", pytorchjob.Name)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			}
+			// when master is succeed, the job is finished.
+			if expected == 0 {
+				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", pytorchjob.Name)
+				logrus.Info(msg)
+				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+				if jobStatus.CompletionTime == nil {
+					now := metav1.Now()
+					jobStatus.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+				return nil
+			}
+		}
+		if failed > 0 {
+			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			} else {
+				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
+				if pytorchjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					pytorchjob.Status.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			}
+		}
+	}
+
+	// Some workers are still running, leave a running condition.
+	msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
+	commonutil.LoggerForJob(pytorchjob).Infof(msg)
+
+	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
+		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update XGBoost Job conditions")
+		return err
+	}
+
+	return nil
+}
+
+// UpdateJobStatusInApiServer updates the job status in to cluster.
+func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
+	}
+
+	// Job status passed in differs with status in job, update in basis of the passed in one.
+	if !reflect.DeepEqual(&pytorchjob.Status, jobStatus) {
+		pytorchjob = pytorchjob.DeepCopy()
+		pytorchjob.Status = *jobStatus.DeepCopy()
+	}
+
+	result := r.Update(context.Background(), pytorchjob)
+
+	if result != nil {
+		r.Log.WithValues("pytorchjob", types.NamespacedName{
+			Namespace: pytorchjob.GetNamespace(),
+			Name:      pytorchjob.GetName(),
+		})
+		return result
+	}
+
+	return nil
+}
+
+// SetClusterSpec sets the cluster spec for the pod
+func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
+	return SetPodEnv(job, podTemplate, rtype, index)
+}
+
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
 	return pytorchv1.DefaultContainerName
 }
@@ -274,16 +422,32 @@ func (r *PyTorchJobReconciler) GetDefaultContainerPortName() string {
 	return pytorchv1.DefaultPortName
 }
 
-func (r *PyTorchJobReconciler) GetJobRoleKey() string {
-	return "pytorchjob-job-role"
-}
-
 func (r *PyTorchJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
 	return string(rtype) == string(pytorchv1.PyTorchReplicaTypeMaster)
 }
 
-// SetClusterSpec sets the cluster spec for the pod
-func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	return SetPodEnv(job, podTemplate, rtype, index)
+// onOwnerCreateFunc modify creation condition.
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
+	return func(e event.CreateEvent) bool {
+		pytorchjob, ok := e.Object.(*pytorchv1.PyTorchJob)
+		if !ok {
+			return true
+		}
+		scheme.Scheme.Default(pytorchjob)
+		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
+		logrus.Info(msg)
+		//specific the run policy
+
+		if pytorchjob.Spec.CleanPodPolicy == nil {
+			pytorchjob.Spec.CleanPodPolicy = new(commonv1.CleanPodPolicy)
+			pytorchjob.Spec.CleanPodPolicy = &defaultCleanPodPolicy
+		}
+
+		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
+			logrus.Error(err, "append job condition error")
+			return false
+		}
+		return true
+	}
 }

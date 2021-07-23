@@ -17,9 +17,10 @@ package tensorflow
 
 import (
 	"fmt"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"strconv"
 	"strings"
+
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
