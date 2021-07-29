@@ -18,6 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	"reflect"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -165,46 +171,46 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// setup FieldIndexer to inform the manager that this controller owns pods and services,
-	// so that it will automatically call Reconcile on the underlying XGBoostJob when a Pod or Service changes, is deleted, etc.
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, jobOwnerKey, func(rawObj client.Object) []string {
-		pod := rawObj.(*corev1.Pod)
-		owner := metav1.GetControllerOf(pod)
-		if owner == nil {
-			return nil
-		}
+	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
+		Reconciler: r,
+	})
 
-		// Make sure owner is XGBoostJob Controller.
-		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
-			return nil
-		}
+	if err != nil {
+		return err
+	}
 
-		return []string{owner.Name}
+	// using onOwnerCreateFunc is easier to set defaults
+	if err = c.Watch(&source.Kind{Type: &xgboostv1.XGBoostJob{}}, &handler.EnqueueRequestForObject{},
+		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related pod
+	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &xgboostv1.XGBoostJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, jobOwnerKey, func(rawObj client.Object) []string {
-		svc := rawObj.(*corev1.Service)
-		owner := metav1.GetControllerOf(svc)
-		if owner == nil {
-			return nil
-		}
-
-		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
-			return nil
-		}
-
-		return []string{owner.Name}
+	// inject watching for job related service
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &xgboostv1.XGBoostJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&xgboostv1.XGBoostJob{}).
-		Owns(&corev1.Pod{}).
-		Owns(&corev1.Service{}).
-		Complete(r)
+	return nil
 }
 
 func (r *XGBoostJobReconciler) ControllerName() string {
@@ -432,7 +438,7 @@ func (r *XGBoostJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*c
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc(r reconcile.Reconciler) func(event.CreateEvent) bool {
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		xgboostJob, ok := e.Object.(*xgboostv1.XGBoostJob)
 		if !ok {

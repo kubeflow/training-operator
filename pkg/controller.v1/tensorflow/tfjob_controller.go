@@ -21,6 +21,13 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	train_util "github.com/kubeflow/common/pkg/util/train"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -59,8 +66,8 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 )
 
-const (
-	jobOwnerKey = ".metadata.controller"
+var (
+	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 func NewReconciler(mgr manager.Manager) *TFJobReconciler {
@@ -149,11 +156,46 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&tensorflowv1.TFJob{}).
-		Owns(&corev1.Pod{}).
-		Owns(&corev1.Service{}).
-		Complete(r)
+	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
+		Reconciler: r,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// using onOwnerCreateFunc is easier to set defaults
+	if err = c.Watch(&source.Kind{Type: &tfv1.TFJob{}}, &handler.EnqueueRequestForObject{},
+		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related pod
+	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &tfv1.TFJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	// inject watching for job related service
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &tfv1.TFJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *TFJobReconciler) ControllerName() string {
@@ -785,4 +827,29 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 		return err
 	}
 	return nil
+}
+
+// onOwnerCreateFunc modify creation condition.
+func onOwnerCreateFunc() func(event.CreateEvent) bool {
+	return func(e event.CreateEvent) bool {
+		tfJob, ok := e.Object.(*tensorflowv1.TFJob)
+		if !ok {
+			return true
+		}
+		scheme.Scheme.Default(tfJob)
+		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
+		logrus.Info(msg)
+		//specific the run policy
+
+		if tfJob.Spec.RunPolicy.CleanPodPolicy == nil {
+			tfJob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
+			tfJob.Spec.RunPolicy.CleanPodPolicy = &defaultCleanPodPolicy
+		}
+
+		if err := commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, "TFJobCreated", msg); err != nil {
+			log.Log.Error(err, "append job condition error")
+			return false
+		}
+		return true
+	}
 }
