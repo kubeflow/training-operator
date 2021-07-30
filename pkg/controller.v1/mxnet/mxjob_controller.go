@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -136,7 +138,10 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	//mxjobv1.SetDefaults_MXJob(mxjob)
+	mxjobv1.SetDefaults_MXJob(mxjob)
+	if err = validation.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
+		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
+	}
 
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(mxjob)

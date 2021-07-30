@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
+
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -125,6 +127,9 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	tensorflowv1.SetDefaults_TFJob(tfjob)
+	if err = validation.ValidateV1TFJobSpec(&tfjob.Spec); err != nil {
+		logger.Info(err.Error(), "TFJob failed validation", req.NamespacedName.String())
+	}
 
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(tfjob)

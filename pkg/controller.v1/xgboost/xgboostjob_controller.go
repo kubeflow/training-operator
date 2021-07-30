@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
+
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -139,6 +141,11 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// Object not found, return.  Created objects are automatically garbage collected.
 		// For additional cleanup logic use finalizers.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	xgboostv1.SetDefaults_XGBoostJob(xgboostjob)
+	if err = validation.ValidateV1XGBoostJobSpec(&xgboostjob.Spec); err != nil {
+		logger.Info(err.Error(), "XGBoostJob failed validation", req.NamespacedName.String())
 	}
 
 	// Check reconcile is required.

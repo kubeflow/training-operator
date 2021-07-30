@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -126,6 +128,10 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
+
+	if err = validation.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
+		logger.Info(err.Error(), "PyTorchJob failed validation", req.NamespacedName.String())
+	}
 
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(pytorchjob)
