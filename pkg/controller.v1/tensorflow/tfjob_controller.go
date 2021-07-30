@@ -126,7 +126,7 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		logger.Info(err.Error(), "unable to fetch TFJob", req.NamespacedName.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	tensorflowv1.SetDefaults_TFJob(tfjob)
+
 	if err = validation.ValidateV1TFJobSpec(&tfjob.Spec); err != nil {
 		logger.Info(err.Error(), "TFJob failed validation", req.NamespacedName.String())
 	}
@@ -841,15 +841,11 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
+
+		tensorflowv1.SetDefaults_TFJob(tfJob)
 		scheme.Scheme.Default(tfJob)
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		//specific the run policy
-
-		if tfJob.Spec.RunPolicy.CleanPodPolicy == nil {
-			tfJob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			tfJob.Spec.RunPolicy.CleanPodPolicy = &defaultCleanPodPolicy
-		}
 
 		if err := commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, "TFJobCreated", msg); err != nil {
 			log.Log.Error(err, "append job condition error")

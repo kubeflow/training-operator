@@ -127,7 +127,6 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Info(err.Error(), "unable to fetch PyTorchJob", req.NamespacedName.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
 
 	if err = validation.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
 		logger.Info(err.Error(), "PyTorchJob failed validation", req.NamespacedName.String())
@@ -445,16 +444,10 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
+		pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
 		scheme.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		//specific the run policy
-
-		if pytorchjob.Spec.CleanPodPolicy == nil {
-			pytorchjob.Spec.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			pytorchjob.Spec.CleanPodPolicy = &defaultCleanPodPolicy
-		}
-
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

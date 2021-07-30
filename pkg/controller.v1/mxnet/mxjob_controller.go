@@ -17,6 +17,7 @@ package mxnet
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
@@ -25,8 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"reflect"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
@@ -138,7 +137,6 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	mxjobv1.SetDefaults_MXJob(mxjob)
 	if err = validation.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
 		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
 	}
@@ -458,16 +456,11 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		}
 
 		// TODO: check default setting
+		mxjobv1.SetDefaults_MXJob(mxjob)
+		// Use defaulters registered in scheme.
 		scheme.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-
-		// TODO: should we move defaulter somewhere else, like pass a default func here to call
-		//specific the run policy
-		if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
-			mxjob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			mxjob.Spec.RunPolicy.CleanPodPolicy = &DefaultCleanPodPolicy
-		}
 
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")

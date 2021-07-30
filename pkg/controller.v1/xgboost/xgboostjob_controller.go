@@ -143,7 +143,6 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	xgboostv1.SetDefaults_XGBoostJob(xgboostjob)
 	if err = validation.ValidateV1XGBoostJobSpec(&xgboostjob.Spec); err != nil {
 		logger.Info(err.Error(), "XGBoostJob failed validation", req.NamespacedName.String())
 	}
@@ -451,15 +450,11 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
+
+		xgboostv1.SetDefaults_XGBoostJob(xgboostJob)
 		scheme.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		//specific the run policy
-
-		if xgboostJob.Spec.RunPolicy.CleanPodPolicy == nil {
-			xgboostJob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			xgboostJob.Spec.RunPolicy.CleanPodPolicy = &defaultCleanPodPolicy
-		}
 
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status.JobStatus, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
