@@ -406,7 +406,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 		pytorchjob.Status = *jobStatus.DeepCopy()
 	}
 
-	result := r.Update(context.Background(), pytorchjob)
+	result := r.Status().Update(context.Background(), pytorchjob)
 
 	if result != nil {
 		r.Log.WithValues("pytorchjob", types.NamespacedName{

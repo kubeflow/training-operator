@@ -415,7 +415,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 		xgboostjob.Status.JobStatus = *jobStatus.DeepCopy()
 	}
 
-	result := r.Update(context.Background(), xgboostjob)
+	result := r.Status().Update(context.Background(), xgboostjob)
 
 	if result != nil {
 		logger.LoggerForJob(xgboostjob).Error(result, "failed to update XGBoost Job conditions in the API server")

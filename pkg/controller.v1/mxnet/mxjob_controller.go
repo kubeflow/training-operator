@@ -422,7 +422,7 @@ func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 		mxJob.Status = *jobStatus.DeepCopy()
 	}
 
-	if err := r.Update(context.Background(), mxJob); err != nil {
+	if err := r.Status().Update(context.Background(), mxJob); err != nil {
 		logrus.Error(err, " failed to update MxJob conditions in the API server")
 		return err
 	}

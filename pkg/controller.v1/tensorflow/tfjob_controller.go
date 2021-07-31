@@ -524,7 +524,7 @@ func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 	tfJob = tfJob.DeepCopy()
 	tfJob.Status = *jobStatus.DeepCopy()
 
-	result := r.Update(context.Background(), tfJob)
+	result := r.Status().Update(context.Background(), tfJob)
 
 	if result != nil {
 		r.Log.WithValues("tfjob", types.NamespacedName{
