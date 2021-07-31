@@ -112,6 +112,8 @@ func (tc *TFController) addTFJob(obj interface{}) {
 	}
 
 	// Set default for the new tfjob.
+	// TODO(Jeffwan): Consider to change to scheme https://github.com/kubeflow/tf-operator/issues/1317#issuecomment-890397705
+	tfv1.SetDefaults_TFJob(tfJob)
 	scheme.Scheme.Default(tfJob)
 
 	msg := fmt.Sprintf("TFJob %s is created.", tfJob.Name)
