@@ -30,7 +30,6 @@ type TFJob struct {
 	// Standard Kubernetes type metadata.
 	metav1.TypeMeta `json:",inline"`
 
-	// Standard Kubernetes object's metadata.
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
