@@ -51,7 +51,7 @@ func NewServerOption() *ServerOption {
 
 // AddFlags adds flags for a specific CMServer to the specified FlagSet.
 func (s *ServerOption) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&s.Kubeconfig, "kubeconfig", "", "The path of kubeconfig file")
+	//fs.StringVar(&s.Kubeconfig, "kubeconfig", "", "The path of kubeconfig file")
 
 	fs.StringVar(&s.MasterURL, "master", "",
 		`The url of the Kubernetes API server,

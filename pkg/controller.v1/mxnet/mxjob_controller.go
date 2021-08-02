@@ -17,9 +17,15 @@ package mxnet
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
-	"reflect"
+	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
@@ -127,11 +133,13 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	mxjob := &mxjobv1.MXJob{}
 	err := r.Get(ctx, req.NamespacedName, mxjob)
 	if err != nil {
-		logger.Info(err.Error(), "unable to fetch PyTorchJob", req.NamespacedName.String())
+		logger.Info(err.Error(), "unable to fetch MXJob", req.NamespacedName.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	//mxjobv1.SetDefaults_MXJob(mxjob)
+	if err = validation.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
+		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
+	}
 
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(mxjob)
@@ -178,46 +186,46 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// setup FieldIndexer to inform the manager that this controller owns pods and services,
-	// so that it will automatically call Reconcile on the underlying MXJob when a Pod or Service changes, is deleted, etc.
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, jobOwnerKey, func(rawObj client.Object) []string {
-		pod := rawObj.(*corev1.Pod)
-		owner := metav1.GetControllerOf(pod)
-		if owner == nil {
-			return nil
-		}
+	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
+		Reconciler: r,
+	})
 
-		// Make sure owner is XGBoostJob Controller.
-		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
-			return nil
-		}
+	if err != nil {
+		return err
+	}
 
-		return []string{owner.Name}
+	// using onOwnerCreateFunc is easier to set defaults
+	if err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
+		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related pod
+	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &mxjobv1.MXJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Service{}, jobOwnerKey, func(rawObj client.Object) []string {
-		svc := rawObj.(*corev1.Service)
-		owner := metav1.GetControllerOf(svc)
-		if owner == nil {
-			return nil
-		}
-
-		if owner.APIVersion != r.GetAPIGroupVersion().Version || owner.Kind != r.GetAPIGroupVersionKind().Kind {
-			return nil
-		}
-
-		return []string{owner.Name}
+	// inject watching for job related service
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &mxjobv1.MXJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&mxjobv1.MXJob{}).
-		Owns(&corev1.Pod{}).
-		Owns(&corev1.Service{}).
-		Complete(r)
+	return nil
 }
 
 // Below is ControllerInterface's implementation
@@ -414,7 +422,7 @@ func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 		mxJob.Status = *jobStatus.DeepCopy()
 	}
 
-	if err := r.Update(context.Background(), mxJob); err != nil {
+	if err := r.Status().Update(context.Background(), mxJob); err != nil {
 		logrus.Error(err, " failed to update MxJob conditions in the API server")
 		return err
 	}
@@ -448,16 +456,11 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		}
 
 		// TODO: check default setting
+		mxjobv1.SetDefaults_MXJob(mxjob)
+		// Use defaulters registered in scheme.
 		scheme.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-
-		// TODO: should we move defaulter somewhere else, like pass a default func here to call
-		//specific the run policy
-		if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
-			mxjob.Spec.RunPolicy.CleanPodPolicy = new(commonv1.CleanPodPolicy)
-			mxjob.Spec.RunPolicy.CleanPodPolicy = &DefaultCleanPodPolicy
-		}
 
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
