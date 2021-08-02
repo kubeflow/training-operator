@@ -11,6 +11,6 @@ resources:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: controller
+- name: kubeflow/training-operator
   newName: kubeflow/training-operator
   newTag: latest

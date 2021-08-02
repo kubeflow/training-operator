@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     control-plane: kubeflow-training-operator
-  name: system
+  name: kubeflow
 ---
 apiVersion: apps/v1
 kind: Deployment

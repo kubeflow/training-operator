@@ -29,6 +29,33 @@ workflows:
       registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
       tfJobVersion: v1
       testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
+  # Exact same test case against training operator
+  - app_dir: kubeflow/tf-operator/test/workflows_v2
+    component: workflows
+    name: v1
+    job_types:
+      - presubmit
+    include_dirs:
+      - build/*
+      - cmd/tf-operator.v1/*
+      - pkg/apis/common/v1/*
+      - pkg/apis/tensorflow/v1/*
+      - pkg/apis/tensorflow/validation/*
+      - pkg/common/*
+      - pkg/control/*
+      - pkg/controller.v1/*
+      - pkg/logger/*
+      - pkg/util/*
+      - pkg/version/*
+      - py/*
+      - test/*
+      - vendor/*
+      - sdk/*
+      - examples/*
+    params:
+      registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator"
+      tfJobVersion: v1
+      testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
   - app_dir: kubeflow/tf-operator/test/workflows
     component: workflows
     name: v1
