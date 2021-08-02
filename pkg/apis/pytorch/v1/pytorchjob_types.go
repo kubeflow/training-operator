@@ -30,7 +30,6 @@ type PyTorchJob struct {
 	// Standard Kubernetes type metadata.
 	metav1.TypeMeta `json:",inline"`
 
-	// Standard Kubernetes object's metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired state of the PyTorchJob.
