@@ -41,7 +41,7 @@ func TestGenOwnerReference(t *testing.T) {
 	if ref.Name != testName {
 		t.Errorf("Expected Name %s, got %s", testName, ref.Name)
 	}
-	if ref.APIVersion != tfv1.GroupVersion.String() {
+	if ref.APIVersion != tfv1.GroupVersion.Version {
 		t.Errorf("Expected APIVersion %s, got %s", tfv1.GroupVersion.String(), ref.APIVersion)
 	}
 }

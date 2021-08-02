@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kubeflow
+resources:
+- ../../base
+- namespace.yaml
+commonLabels:
+  app: tf-job-operator
+  kustomize.component: tf-job-operator
+  app.kubernetes.io/component: tfjob
+  app.kubernetes.io/name: tf-job-operator
+images:
+- name: public.ecr.aws/j1r0q0g6/training/tf-operator
+  newTag: cd2fc1ff397b1f349f68524f4abd5013a32e3033
+
