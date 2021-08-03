@@ -168,7 +168,7 @@
               "python",
               "-m",
               "kubeflow.tf_operator." + std.strReplace(test_name, "-", "_"),
-              "--app_dir=" + srcDir + "/test/workflows",
+              "--app_dir=" + srcDir + "/test/workflows_v2",
               "--params=name=" + test_name + "-" + params.tfJobVersion + ",namespace=kubeflow",
               "--tfjob_version=" + params.tfJobVersion,
               "--num_trials=" + num_trials,
