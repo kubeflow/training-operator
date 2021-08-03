@@ -43,26 +43,10 @@ type PyTorchJob struct {
 
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
 type PyTorchJobSpec struct {
-	// Specifies the duration (in seconds) since startTime during which the job can remain active
-	// before it is terminated. Must be a positive integer.
-	// This setting applies only to pods where restartPolicy is OnFailure or Always.
-	// +optional
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
-
-	// Number of retries before marking this job as failed.
-	// +optional
-	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
-
-	// Defines the policy for cleaning up pods after the PyTorchJob completes.
-	// Defaults to None.
-	CleanPodPolicy *common.CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
-
-	// Defines the TTL for cleaning up finished PyTorchJobs (temporary
-	// before Kubernetes adds the cleanup controller).
-	// It may take extra ReconcilePeriod seconds for the cleanup, since
-	// reconcile gets called periodically.
-	// Defaults to infinite.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
+	// RunPolicy encapsulates various runtime policies of the distributed training
+	// job, for example how to clean up resources and how long the job can stay
+	// active.
+	RunPolicy common.RunPolicy `json:"runPolicy"`
 
 	// A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.
 	// For example,
@@ -99,4 +83,5 @@ type PyTorchJobList struct {
 
 func init() {
 	SchemeBuilder.Register(&PyTorchJob{}, &PyTorchJobList{})
+	SchemeBuilder.SchemeBuilder.Register(addDefaultingFuncs)
 }

@@ -152,10 +152,10 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Construct RunPolicy based on PyTorchJob.Spec
 	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          pytorchjob.Spec.CleanPodPolicy,
-		TTLSecondsAfterFinished: pytorchjob.Spec.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   pytorchjob.Spec.ActiveDeadlineSeconds,
-		BackoffLimit:            pytorchjob.Spec.BackoffLimit,
+		CleanPodPolicy:          pytorchjob.Spec.RunPolicy.CleanPodPolicy,
+		TTLSecondsAfterFinished: pytorchjob.Spec.RunPolicy.TTLSecondsAfterFinished,
+		ActiveDeadlineSeconds:   pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds,
+		BackoffLimit:            pytorchjob.Spec.RunPolicy.BackoffLimit,
 		SchedulingPolicy:        nil,
 	}
 
@@ -444,7 +444,6 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
-		pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
 		scheme.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)

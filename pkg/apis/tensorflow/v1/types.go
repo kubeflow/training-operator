@@ -50,7 +50,7 @@ type TFJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
-	RunPolicy commonv1.RunPolicy `json:"runPolicy,inline"`
+	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
 
 	// SuccessPolicy defines the policy to mark the TFJob as succeeded.
 	// Default to "", using the default rules.
@@ -112,4 +112,5 @@ type TFJobList struct {
 
 func init() {
 	SchemeBuilder.Register(&TFJob{}, &TFJobList{})
+	SchemeBuilder.SchemeBuilder.Register(addDefaultingFuncs)
 }
