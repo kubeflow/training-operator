@@ -26,16 +26,9 @@ import (
 type XGBoostJobSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	RunPolicy commonv1.RunPolicy `json:",inline"`
+	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
 
 	XGBReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"xgbReplicaSpecs"`
-}
-
-// XGBoostJobStatus defines the observed state of XGBoostJob
-type XGBoostJobStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	commonv1.JobStatus `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
@@ -49,8 +42,8 @@ type XGBoostJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   XGBoostJobSpec   `json:"spec,omitempty"`
-	Status XGBoostJobStatus `json:"status,omitempty"`
+	Spec   XGBoostJobSpec     `json:"spec,omitempty"`
+	Status commonv1.JobStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -73,4 +66,5 @@ const (
 
 func init() {
 	SchemeBuilder.Register(&XGBoostJob{}, &XGBoostJobList{})
+	SchemeBuilder.SchemeBuilder.Register(addDefaultingFuncs)
 }

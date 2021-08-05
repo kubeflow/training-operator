@@ -24,7 +24,7 @@ type MXJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
-	RunPolicy common.RunPolicy `json:",inline"`
+	RunPolicy common.RunPolicy `json:"runPolicy"`
 
 	// JobMode specify the kind of MXjob to do. Different mode may have
 	// different MXReplicaSpecs request
@@ -110,4 +110,5 @@ type MXJobList struct {
 
 func init() {
 	SchemeBuilder.Register(&MXJob{}, &MXJobList{})
+	SchemeBuilder.SchemeBuilder.Register(addDefaultingFuncs)
 }

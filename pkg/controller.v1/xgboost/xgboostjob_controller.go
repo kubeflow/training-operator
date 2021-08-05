@@ -166,7 +166,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	scheme.Scheme.Default(xgboostjob)
 
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(xgboostjob, xgboostjob.Spec.XGBReplicaSpecs, xgboostjob.Status.JobStatus, &xgboostjob.Spec.RunPolicy)
+	err = r.ReconcileJobs(xgboostjob, xgboostjob.Spec.XGBReplicaSpecs, xgboostjob.Status, &xgboostjob.Spec.RunPolicy)
 	if err != nil {
 		logger.V(2).Error(err, "Reconcile XGBoost Job error")
 		return ctrl.Result{}, err
@@ -410,9 +410,9 @@ func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 	}
 
 	// Job status passed in differs with status in job, update in basis of the passed in one.
-	if !reflect.DeepEqual(&xgboostjob.Status.JobStatus, jobStatus) {
+	if !reflect.DeepEqual(&xgboostjob.Status, jobStatus) {
 		xgboostjob = xgboostjob.DeepCopy()
-		xgboostjob.Status.JobStatus = *jobStatus.DeepCopy()
+		xgboostjob.Status = *jobStatus.DeepCopy()
 	}
 
 	result := r.Status().Update(context.Background(), xgboostjob)
@@ -450,13 +450,11 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
-
-		xgboostv1.SetDefaults_XGBoostJob(xgboostJob)
 		scheme.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 
-		if err := commonutil.UpdateJobConditions(&xgboostJob.Status.JobStatus, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false
 		}
