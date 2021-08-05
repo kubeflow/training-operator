@@ -455,8 +455,6 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 			return true
 		}
 
-		// TODO: check default setting
-		mxjobv1.SetDefaults_MXJob(mxjob)
 		// Use defaulters registered in scheme.
 		scheme.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())

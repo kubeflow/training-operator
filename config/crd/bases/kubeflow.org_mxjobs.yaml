@@ -36,20 +36,6 @@ spec:
           spec:
             description: MXJobSpec defines the desired state of MXJob
             properties:
-              activeDeadlineSeconds:
-                description: Specifies the duration in seconds relative to the startTime
-                  that the job may be active before the system tries to terminate
-                  it; value must be positive integer.
-                format: int64
-                type: integer
-              backoffLimit:
-                description: Optional number of retries before marking this job failed.
-                format: int32
-                type: integer
-              cleanPodPolicy:
-                description: CleanPodPolicy defines the policy to kill pods after
-                  the job completes. Default to Running.
-                type: string
               jobMode:
                 description: JobMode specify the kind of MXjob to do. Different mode
                   may have different MXReplicaSpecs request
@@ -6773,34 +6759,55 @@ spec:
                   common.ReplicaSpec,     "Server": common.ReplicaSpec,     "Worker":
                   common.ReplicaSpec,   }'
                 type: object
-              schedulingPolicy:
-                description: SchedulingPolicy defines the policy related to scheduling,
-                  e.g. gang-scheduling
+              runPolicy:
+                description: RunPolicy encapsulates various runtime policies of the
+                  distributed training job, for example how to clean up resources
+                  and how long the job can stay active.
                 properties:
-                  minAvailable:
+                  activeDeadlineSeconds:
+                    description: Specifies the duration in seconds relative to the
+                      startTime that the job may be active before the system tries
+                      to terminate it; value must be positive integer.
+                    format: int64
+                    type: integer
+                  backoffLimit:
+                    description: Optional number of retries before marking this job
+                      failed.
                     format: int32
                     type: integer
-                  minResources:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: ResourceList is a set of (resource name, quantity)
-                      pairs.
+                  cleanPodPolicy:
+                    description: CleanPodPolicy defines the policy to kill pods after
+                      the job completes. Default to Running.
+                    type: string
+                  schedulingPolicy:
+                    description: SchedulingPolicy defines the policy related to scheduling,
+                      e.g. gang-scheduling
+                    properties:
+                      minAvailable:
+                        format: int32
+                        type: integer
+                      minResources:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
+                        type: object
+                      priorityClass:
+                        type: string
+                      queue:
+                        type: string
                     type: object
-                  priorityClass:
-                    type: string
-                  queue:
-                    type: string
+                  ttlSecondsAfterFinished:
+                    description: TTLSecondsAfterFinished is the TTL to clean up jobs.
+                      It may take extra ReconcilePeriod seconds for the cleanup, since
+                      reconcile gets called periodically. Default to infinite.
+                    format: int32
+                    type: integer
                 type: object
-              ttlSecondsAfterFinished:
-                description: TTLSecondsAfterFinished is the TTL to clean up jobs.
-                  It may take extra ReconcilePeriod seconds for the cleanup, since
-                  reconcile gets called periodically. Default to infinite.
-                format: int32
-                type: integer
             required:
             - jobMode
             - mxReplicaSpecs
