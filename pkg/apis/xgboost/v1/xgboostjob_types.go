@@ -26,6 +26,7 @@ import (
 type XGBoostJobSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	//+kubebuilder:validation:Optional
 	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
 
 	XGBReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"xgbReplicaSpecs"`

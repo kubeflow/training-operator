@@ -49,6 +49,7 @@ type TFJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
+	//+kubebuilder:validation:Optional
 	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
 
 	// SuccessPolicy defines the policy to mark the TFJob as succeeded.

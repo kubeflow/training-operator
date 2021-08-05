@@ -45,6 +45,7 @@ type PyTorchJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
+	//+kubebuilder:validation:Optional
 	RunPolicy common.RunPolicy `json:"runPolicy"`
 
 	// A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.
