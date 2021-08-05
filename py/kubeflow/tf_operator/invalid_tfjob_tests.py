@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import subprocess
 
 from kubeflow.testing import ks_util, test_util, util
 from kubeflow.tf_operator import test_runner, tf_job_client
@@ -29,48 +30,18 @@ class InvalidTfJobTests(test_util.TestCase):
 
     # Setup the ksonnet app
     tf_operator_util.setup_ks_app(self.app_dir, self.env, self.namespace, component,
-                         self.params)
+                                  self.params)
 
     # Create the TF job
     ks_cmd = ks_util.get_ksonnet_cmd(self.app_dir)
-    util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
-    logging.info("Created job %s in namespaces %s", self.name, self.namespace)
-
-    logging.info("Wait for conditions Failed")
-    results = tf_job_client.wait_for_condition(
-      api_client,
-      self.namespace,
-      self.name, ["Failed"],
-      version=self.tfjob_version,
-      status_callback=tf_job_client.log_status)
-
-    logging.info("Final TFJob:\n %s", json.dumps(results, indent=2))
-
-    last_condition = results.get("status", {}).get("conditions", [{}])[-1]
-    if last_condition.get("type", "").lower() != "failed":
-      self.failure = "Job {0} in namespace {1} did not fail; status {2}".format(
-        self.name, self.namespace, results.get("status", {}))
-      logging.error(self.failure)
-      return
-
-    pattern = ".*the spec is invalid.*"
-    condition_message = last_condition.get("message", "")
-    if not re.match(pattern, condition_message):
-      self.failure = "Condition message {0} did not match pattern {1}".format(
-        condition_message, pattern)
-      logging.error(self.failure)
-
-    # Delete the TFJob.
-    tf_job_client.delete_tf_job(
-      api_client, self.namespace, self.name, version=self.tfjob_version)
-    logging.info("Waiting for job %s in namespaces %s to be deleted.",
-                 self.name, self.namespace)
-    tf_job_client.wait_for_delete(
-      api_client,
-      self.namespace,
-      self.name,
-      self.tfjob_version,
-      status_callback=tf_job_client.log_status)
+    try:
+      util.run([ks_cmd, "apply", self.env, "-c", component], cwd=self.app_dir)
+    except subprocess.CalledProcessError as e:
+      if "invalid: spec.tfReplicaSpecs: Required value" in e.output:
+        logging.info("Created job failed which is expected. Reason %s", e.output)
+      else:
+        self.failure = "Job {0} in namespace {1} failed because {2}".format(self.name, self.namespace, e.output)
+        logging.error(self.failure)
 
 
 if __name__ == "__main__":
