@@ -25,7 +25,7 @@ set -o pipefail
 CLUSTER_NAME="${CLUSTER_NAME}"
 REGION="${AWS_REGION:-us-west-2}"
 REGISTRY="${ECR_REGISTRY:-public.ecr.aws/j1r0q0g6/training/tf-operator}"
-VERSION="${PULL_BASE_SHA}"
+VERSION="${PULL_PULL_SHA}"
 GO_DIR=${GOPATH}/src/github.com/${REPO_OWNER}/${REPO_NAME}
 
 echo "Configuring kubeconfig.."
