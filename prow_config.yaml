@@ -52,6 +52,6 @@ workflows:
     - sdk/*
     - examples/*
     params:
-      registry: "public.ecr.aws/j1r0q0g6/training/tf-operator"
+      registry: "public.ecr.aws/j1r0q0g6/training/training-operator"
       tfJobVersion: v1
       testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
