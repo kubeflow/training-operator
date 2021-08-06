@@ -18,7 +18,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+
+	controller_v1 "github.com/kubeflow/tf-operator/pkg/controller.v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -34,10 +37,6 @@ import (
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	mxnetcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mxnet"
-	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
-	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -60,11 +59,14 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var enabledSchemes controller_v1.EnabledSchemes
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
+		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -88,21 +90,20 @@ func main() {
 
 	// TODO: We need a general manager. all rest reconciler addsToManager
 	// Based on the user configuration, we start different controllers
-	if err = xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", xgboostv1.Kind)
-		os.Exit(1)
+	if enabledSchemes.Empty() {
+		enabledSchemes.FillAll()
 	}
-	if err = pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", pytorchv1.Kind)
-		os.Exit(1)
-	}
-	if err = tensorflowcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", tensorflowv1.Kind)
-		os.Exit(1)
-	}
-	if err = mxnetcontroller.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", mxnetv1.Kind)
-		os.Exit(1)
+	for _, s := range enabledSchemes {
+		setupFunc, supported := controller_v1.SupportedSchemeReconciler[s]
+		if !supported {
+			setupLog.Error(fmt.Errorf("cannot find %s in supportedSchemeReconciler", s),
+				"scheme not supported", "scheme", s)
+			os.Exit(1)
+		}
+		if err = setupFunc(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", s)
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 
