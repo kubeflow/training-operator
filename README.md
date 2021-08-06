@@ -50,7 +50,8 @@ This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://
 
 ## Contributing
 
-Please refer to the [developer_guide](developer_guide.md)
+Please refer to the [developer_guide](docs/development/developer_guide.md)
+
 
 ## Change Log
 
