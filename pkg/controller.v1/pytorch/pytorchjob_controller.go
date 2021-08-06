@@ -444,6 +444,8 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
+		pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
+		// TODO: figure out why default funcs are not registered successfully.
 		scheme.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)

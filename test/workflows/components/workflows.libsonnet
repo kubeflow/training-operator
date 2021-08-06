@@ -28,7 +28,7 @@
   // default parameters.
   defaultParams:: {
     // Default registry to use.
-    registry:: "809251082950.dkr.ecr.us-west-2.amazonaws.com/tf-operator",
+    registry:: "809251082950.dkr.ecr.us-west-2.amazonaws.com/training-operator",
 
     // The image tag to use.
     // Defaults to a value based on the name.
@@ -66,7 +66,7 @@
       local versionTag = if std.objectHas(params, "versionTag") && params.versionTag != "null" && std.length(params.versionTag) > 0 then
         params.versionTag
       else name;
-      local tfJobImage = params.registry + "/tf_operator:" + versionTag;
+      local tfJobImage = params.registry + "/training-operator:" + versionTag;
 
       // The test server image to use.
       local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
@@ -249,8 +249,8 @@
                 ],
                 [
                   {
-                    name: "setup-tf-operator",
-                    template: "setup-tf-operator",
+                    name: "setup-training-operator",
+                    template: "setup-training-operator",
                   },
                 ],
                 [
@@ -329,9 +329,9 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("build", "gcr.io/kaniko-project/executor:v1.5.1", [
               #"scripts/build.sh",
               "/kaniko/executor",
-              "--dockerfile=" + srcDir + "/build/images/tf_operator/Dockerfile",
+              "--dockerfile=" + srcDir + "/build/images/training-operator/Dockerfile",
               "--context=dir://" + srcDir,
-              "--destination=" + "$(ECR_REGISTRY):$(PULL_BASE_SHA)",
+              "--destination=" + "$(ECR_REGISTRY):$(PULL_PULL_SHA)",
             ],
             # need to add volume mounts and extra env.
             volume_mounts=[
@@ -361,9 +361,9 @@
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", testWorkerImage, [
               "/usr/local/bin/create-eks-cluster.sh",
             ]),  // setup cluster
-            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-tf-operator", testWorkerImage, [
-              "scripts/setup-tf-operator.sh",
-            ]),  // setup tf-operator
+            $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-training-operator", testWorkerImage, [
+              "scripts/setup-training-operator.sh",
+            ]),  // setup training-operator
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(
               "simple-tfjob-tests", 2),
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTestTemplate(

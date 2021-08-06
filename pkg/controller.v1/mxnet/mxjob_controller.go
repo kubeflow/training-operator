@@ -455,6 +455,8 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 			return true
 		}
 
+		mxjobv1.SetDefaults_MXJob(mxjob)
+		// TODO: figure out why default funcs are not registered successfully.
 		// Use defaulters registered in scheme.
 		scheme.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
