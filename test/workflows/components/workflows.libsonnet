@@ -331,7 +331,7 @@
               "/kaniko/executor",
               "--dockerfile=" + srcDir + "/build/images/training-operator/Dockerfile",
               "--context=dir://" + srcDir,
-              "--destination=" + "$(ECR_REGISTRY):$(PULL_BASE_SHA)",
+              "--destination=" + "$(ECR_REGISTRY):$(PULL_PULL_SHA)",
             ],
             # need to add volume mounts and extra env.
             volume_mounts=[

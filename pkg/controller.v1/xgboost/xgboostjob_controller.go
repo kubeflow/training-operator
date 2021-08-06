@@ -450,6 +450,8 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 		if !ok {
 			return true
 		}
+		xgboostv1.SetDefaults_XGBoostJob(xgboostJob)
+		// TODO: figure out why default funcs are not registered successfully.
 		scheme.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)

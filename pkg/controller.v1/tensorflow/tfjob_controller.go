@@ -842,6 +842,8 @@ func onOwnerCreateFunc() func(event.CreateEvent) bool {
 			return true
 		}
 
+		tensorflowv1.SetDefaults_TFJob(tfJob)
+		// TODO: figure out why default funcs are not registered successfully.
 		scheme.Scheme.Default(tfJob)
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
