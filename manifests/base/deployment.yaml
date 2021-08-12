@@ -2,13 +2,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tf-job-operator
+  name: training-operator
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        name: tf-job-operator
+        name: training-operator
       annotations:
         sidecar.istio.io/inject: "false"
     spec:
@@ -24,6 +24,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: public.ecr.aws/j1r0q0g6/training/tf-operator
-        name: tf-job-operator
-      serviceAccountName: tf-job-operator
+        image: public.ecr.aws/j1r0q0g6/training/training-operator
+        name: training-operator
+      serviceAccountName: training-operator

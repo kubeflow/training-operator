@@ -3,8 +3,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   labels:
-    app: tf-job-operator
-  name: tf-job-operator
+    app: training-operator
+  name: training-operator
 rules:
 - apiGroups:
   - kubeflow.org
@@ -48,13 +48,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubeflow-tfjobs-admin
+  name: kubeflow-training-admin
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-admin: "true"
 aggregationRule:
   clusterRoleSelectors:
   - matchLabels:
-      rbac.authorization.kubeflow.org/aggregate-to-kubeflow-tfjobs-admin: "true"
+      rbac.authorization.kubeflow.org/aggregate-to-kubeflow-training-admin: "true"
 rules: []
 
 ---
@@ -62,10 +62,10 @@ rules: []
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubeflow-tfjobs-edit
+  name: kubeflow-training-edit
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-edit: "true"
-    rbac.authorization.kubeflow.org/aggregate-to-kubeflow-tfjobs-admin: "true"
+    rbac.authorization.kubeflow.org/aggregate-to-kubeflow-training-admin: "true"
 rules:
 - apiGroups:
   - kubeflow.org
@@ -87,7 +87,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubeflow-tfjobs-view
+  name: kubeflow-training-view
   labels:
     rbac.authorization.kubeflow.org/aggregate-to-kubeflow-view: "true"
 rules:
