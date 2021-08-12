@@ -11,8 +11,3 @@ resources:
   - deployment.yaml
   - service-account.yaml
   - service.yaml
-commonLabels:
-  app: training-operator
-  kustomize.component: training-operator
-  app.kubernetes.io/component: kubeflow-training
-  app.kubernetes.io/name: training-operator

@@ -4,11 +4,7 @@ namespace: kubeflow
 resources:
   - ../../base
   - namespace.yaml
-commonLabels:
-  app: training-operator
-  kustomize.component: training-operator
-  app.kubernetes.io/component: kubeflow-training
-  app.kubernetes.io/name: training-operator
 images:
-  - name: public.ecr.aws/j1r0q0g6/training/training-operator
-    newTag: cd2fc1ff397b1f349f68524f4abd5013a32e3033
+  - name: kubeflow/training-operator:v1.0.0
+    newName: deepakmuley/kubeflow-training-operator
+    newTag: "1"

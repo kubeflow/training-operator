@@ -3,11 +3,6 @@ kind: Kustomization
 namespace: kubeflow
 resources:
   - ../../base
-commonLabels:
-  app: training-operator
-  kustomize.component: training-operator
-  app.kubernetes.io/component: kubeflow-training
-  app.kubernetes.io/name: training-operator
 images:
   - name: kubeflow/training-operator:v1.0.0
     newName: deepakmuley/kubeflow-training-operator
