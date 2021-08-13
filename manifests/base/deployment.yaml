@@ -19,7 +19,7 @@ spec:
       containers:
         - command:
             - /manager
-          image: kubeflow/training-operator:v1.0.0
+          image: kubeflow/training-operator
           name: training-operator
           env:
             - name: MY_POD_NAMESPACE
