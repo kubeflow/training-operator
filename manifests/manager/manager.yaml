@@ -15,8 +15,6 @@ spec:
       labels:
         control-plane: kubeflow-training-operator
     spec:
-      #      securityContext:
-      #        runAsNonRoot: true
       containers:
         - command:
             - /manager
@@ -46,5 +44,5 @@ spec:
             requests:
               cpu: 100m
               memory: 20Mi
-      serviceAccountName: training-operator-service-account
+      serviceAccountName: training-operator
       terminationGracePeriodSeconds: 10

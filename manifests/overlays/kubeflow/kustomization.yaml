@@ -4,7 +4,6 @@ namespace: kubeflow
 resources:
   - ../../base
   - ../../manager
-  - ../../rbac
   - kubeflow-training-roles.yaml
 images:
   - name: kubeflow/training-operator:v1.0.0
