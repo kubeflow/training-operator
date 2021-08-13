@@ -1,8 +1,8 @@
 # Changelog
 
-## [v1.1.1](https://github.com/kubeflow/tf-operator/tree/v1.1.1) (2021-08-03)
+## [v1.2.0](https://github.com/kubeflow/tf-operator/tree/v1.2.0) (2021-08-03)
 
-[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v1.1.0...v1.1.1)
+[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v1.1.0...v1.2.0)
 
 ## Features
 
