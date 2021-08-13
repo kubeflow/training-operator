@@ -7,13 +7,13 @@ metadata:
     prometheus.io/scrape: "true"
     prometheus.io/port: "8443"
   labels:
-    app: tf-job-operator
-  name: tf-job-operator
+    app: training-operator
+  name: training-operator
 spec:
   ports:
   - name: monitoring-port
     port: 8443
     targetPort: 8443
   selector:
-    name: tf-job-operator
+    name: training-operator
   type: ClusterIP
