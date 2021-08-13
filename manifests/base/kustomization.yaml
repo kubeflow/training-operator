@@ -10,3 +10,4 @@ resources:
   - cluster-role.yaml
   - service-account.yaml
   - service.yaml
+  - deployment.yaml
