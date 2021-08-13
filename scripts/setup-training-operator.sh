@@ -32,7 +32,7 @@ echo "Configuring kubeconfig.."
 aws eks update-kubeconfig --region=${REGION} --name=${CLUSTER_NAME}
 
 echo "Update training operator manifest with new name $REGISTRY and tag $VERSION"
-cd config/default
+cd manifests/overlays/standalone
 #kustomize edit set image public.ecr.aws/j1r0q0g6/training/training-operator=${REGISTRY}:${VERSION}
 kustomize edit set image kubeflow/training-operator=${REGISTRY}:${VERSION}
 

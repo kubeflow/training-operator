@@ -2,10 +2,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kubeflow
 resources:
-  - crd_tfjobs.yaml
-  - crd_mxjobs.yaml
-  - crd_pytorchjobs.yaml
-  - crd_xgboostjobs.yaml
+  - kubeflow.org_tfjobs.yaml
+  - kubeflow.org_mxjobs.yaml
+  - kubeflow.org_pytorchjobs.yaml
+  - kubeflow.org_xgboostjobs.yaml
   - cluster-role-binding.yaml
   - cluster-role.yaml
   - deployment.yaml
