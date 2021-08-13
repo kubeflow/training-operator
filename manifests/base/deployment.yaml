@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: training-operator
-  namespace: system
   labels:
     control-plane: kubeflow-training-operator
 spec:
@@ -14,17 +13,23 @@ spec:
     metadata:
       labels:
         control-plane: kubeflow-training-operator
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
-      #      securityContext:
-      #        runAsNonRoot: true
       containers:
         - command:
             - /manager
-          # disable leader-elect now
-          #        args:
-          #        - --leader-elect
-          image: kubeflow/training-operator:v1.0.0
-          name: manager
+          image: kubeflow/training-operator
+          name: training-operator
+          env:
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           securityContext:
             allowPrivilegeEscalation: false
           livenessProbe:
@@ -46,5 +51,5 @@ spec:
             requests:
               cpu: 100m
               memory: 20Mi
-      serviceAccountName: training-operator-service-account
+      serviceAccountName: training-operator
       terminationGracePeriodSeconds: 10

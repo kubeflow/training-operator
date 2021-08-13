@@ -3,10 +3,8 @@ kind: Kustomization
 namespace: kubeflow
 resources:
   - ../../base
-  - ../../manager
-  - ../../rbac
   - namespace.yaml
 images:
-  - name: kubeflow/training-operator:v1.0.0
-    newName: deepakmuley/kubeflow-training-operator
-    newTag: "1"
+  - name: kubeflow/training-operator
+    newName: kubeflow/training-operator
+    newTag: "46c586463e3c13b0d4f2d534aae84a46329dc4ef"
