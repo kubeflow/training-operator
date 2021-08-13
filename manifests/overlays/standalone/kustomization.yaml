@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: kubeflow
 resources:
   - ../../base
+  - ../../manager
+  - ../../rbac
   - namespace.yaml
 images:
   - name: kubeflow/training-operator:v1.0.0
