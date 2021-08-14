@@ -13,7 +13,7 @@ import (
 func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
 	if !ok {
-		return fmt.Errorf("%+v is not a type of XGBoostJob", obj)
+		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
 
 	rank, err := strconv.Atoi(index)
@@ -29,7 +29,7 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	}
 
 	masterAddr := genGeneralName(pytorchjob.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
-	if rtype == string(pytorchv1.PyTorchReplicaTypeMaster) {
+	if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)) {
 		if rank != 0 {
 			return fmt.Errorf("invalid config: There should be only a single master with index=0")
 		}
