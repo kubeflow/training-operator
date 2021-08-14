@@ -38,7 +38,6 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -148,7 +147,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Set default priorities to pytorch job
-	scheme.Scheme.Default(pytorchjob)
+	r.Scheme.Default(pytorchjob)
 
 	// Construct RunPolicy based on PyTorchJob.Spec
 	runPolicy := &commonv1.RunPolicy{
@@ -181,7 +180,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// using onOwnerCreateFunc is easier to set defaults
 	if err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
@@ -438,15 +437,13 @@ func (r *PyTorchJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*c
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc() func(event.CreateEvent) bool {
+func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		pytorchjob, ok := e.Object.(*pytorchv1.PyTorchJob)
 		if !ok {
 			return true
 		}
-		pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
-		// TODO: figure out why default funcs are not registered successfully.
-		scheme.Scheme.Default(pytorchjob)
+		r.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {

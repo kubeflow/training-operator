@@ -33,7 +33,6 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -157,7 +156,7 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// Set default priorities to mxnet job
-	scheme.Scheme.Default(mxjob)
+	r.Scheme.Default(mxjob)
 
 	// Convert PyTorch.Spec.PyTorchReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 	replicas := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
@@ -196,7 +195,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// using onOwnerCreateFunc is easier to set defaults
 	if err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
@@ -448,17 +447,15 @@ func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*common
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc() func(event.CreateEvent) bool {
+func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		mxjob, ok := e.Object.(*mxjobv1.MXJob)
 		if !ok {
 			return true
 		}
 
-		mxjobv1.SetDefaults_MXJob(mxjob)
-		// TODO: figure out why default funcs are not registered successfully.
 		// Use defaulters registered in scheme.
-		scheme.Scheme.Default(mxjob)
+		r.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 
