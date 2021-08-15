@@ -23,7 +23,10 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+<<<<<<< HEAD
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+=======
+>>>>>>> f09300a5... 1340: WIP: Added prometheus counters for all the jobs
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
