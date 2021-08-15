@@ -57,7 +57,7 @@ const (
 var (
 	tfJobsRestartCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_restarted_total",
+			Name: "training_operator_tfjobs_restarted_total",
 			Help: "Counts number of TF jobs restarted",
 		},
 		[]string{"job_namespace"},

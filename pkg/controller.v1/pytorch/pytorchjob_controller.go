@@ -20,6 +20,8 @@ import (
 	"reflect"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -61,6 +63,45 @@ const (
 var (
 	jobOwnerKey           = ".metadata.controller"
 	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
+)
+
+// Define all the prometheus counters for pytorchjobs
+var (
+	pytorchJobsCreatedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_pytorchjobs_created_total",
+			Help: "Counts number of pytorch jobs created",
+		},
+		[]string{"job_namespace"},
+	)
+	pytorchJobsDeletedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_pytorchjobs_deleted_total",
+			Help: "Counts number of pytorch jobs deleted",
+		},
+		[]string{"job_namespace"},
+	)
+	pytorchJobsSuccessCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_pytorchjobs_successful_total",
+			Help: "Counts number of pytorch jobs successful",
+		},
+		[]string{"job_namespace"},
+	)
+	pytorchJobsFailureCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_pytorchjobs_failed_total",
+			Help: "Counts number of pytorch jobs failed",
+		},
+		[]string{"job_namespace"},
+	)
+	pytorchJobsRestartCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_pytorchjobs_restarted_total",
+			Help: "Counts number of pytorch jobs restarted",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
@@ -308,6 +349,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(pytorchjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", pytorchjob.Name)
 	logrus.Info("job deleted", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
+	pytorchJobsDeletedCount.WithLabelValues(pytorchjob.Namespace).Inc()
 	return nil
 }
 

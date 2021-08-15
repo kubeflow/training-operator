@@ -43,7 +43,7 @@ const (
 var (
 	tfJobsCreatedCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_created_total",
+			Name: "training_operator_tfjobs_created_total",
 			Help: "Counts number of TF jobs created",
 		},
 		[]string{"job_namespace"},

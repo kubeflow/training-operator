@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -81,7 +83,46 @@ var (
 	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
-// NewReconciler creates a PyTorchJob Reconciler
+// Define all the prometheus counters for mxjobs
+var (
+	mxJobsCreatedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_mxjobs_created_total",
+			Help: "Counts number of mx jobs created",
+		},
+		[]string{"job_namespace"},
+	)
+	mxJobsDeletedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_mxjobs_deleted_total",
+			Help: "Counts number of mx jobs deleted",
+		},
+		[]string{"job_namespace"},
+	)
+	mxJobsSuccessCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_mxjobs_successful_total",
+			Help: "Counts number of mx jobs successful",
+		},
+		[]string{"job_namespace"},
+	)
+	mxJobsFailureCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_mxjobs_failed_total",
+			Help: "Counts number of mx jobs failed",
+		},
+		[]string{"job_namespace"},
+	)
+	mxJobsRestartCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_mxjobs_restarted_total",
+			Help: "Counts number of mx jobs restarted",
+		},
+		[]string{"job_namespace"},
+	)
+)
+
+// NewReconciler creates a MXJob Reconciler
 func NewReconciler(mgr manager.Manager) *MXJobReconciler {
 	r := &MXJobReconciler{
 		Client:   mgr.GetClient(),
@@ -158,13 +199,13 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Set default priorities to mxnet job
 	r.Scheme.Default(mxjob)
 
-	// Convert PyTorch.Spec.PyTorchReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
+	// Convert MX.Spec.MXReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 	replicas := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
 	for k, v := range mxjob.Spec.MXReplicaSpecs {
 		replicas[commonv1.ReplicaType(k)] = v
 	}
 
-	// Construct RunPolicy based on PyTorchJob.Spec
+	// Construct RunPolicy based on MXJob.Spec
 	runPolicy := &commonv1.RunPolicy{
 		CleanPodPolicy:          mxjob.Spec.RunPolicy.CleanPodPolicy,
 		TTLSecondsAfterFinished: mxjob.Spec.RunPolicy.TTLSecondsAfterFinished,
@@ -176,7 +217,7 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, runPolicy)
 	if err != nil {
-		logrus.Warnf("Reconcile PyTorch Job error %v", err)
+		logrus.Warnf("Reconcile MX Job error %v", err)
 		return ctrl.Result{}, err
 	}
 
@@ -322,6 +363,7 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
+	mxJobsDeletedCount.WithLabelValues(mxjob.Namespace).Inc()
 	return nil
 }
 
