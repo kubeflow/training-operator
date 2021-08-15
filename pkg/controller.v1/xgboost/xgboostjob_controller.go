@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -84,6 +86,46 @@ var (
 	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
+// Define all the prometheus counters for xgboostjobs
+var (
+	xgboostJobsCreatedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_xgboostjobs_created_total",
+			Help: "Counts number of xgboost jobs created",
+		},
+		[]string{"job_namespace"},
+	)
+	xgboostJobsDeletedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_xgboostjobs_deleted_total",
+			Help: "Counts number of xgboost jobs deleted",
+		},
+		[]string{"job_namespace"},
+	)
+	xgboostJobsSuccessCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_xgboostjobs_successful_total",
+			Help: "Counts number of xgboost jobs successful",
+		},
+		[]string{"job_namespace"},
+	)
+	xgboostJobsFailureCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_xgboostjobs_failed_total",
+			Help: "Counts number of xgboost jobs failed",
+		},
+		[]string{"job_namespace"},
+	)
+	xgboostJobsRestartCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "training_operator_xgboostjobs_restarted_total",
+			Help: "Counts number of xgboost jobs restarted",
+		},
+		[]string{"job_namespace"},
+	)
+)
+
+// NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
 		Client:   mgr.GetClient(),
@@ -318,6 +360,7 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(xgboostjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", xgboostjob.Name)
 	r.Log.Info("job deleted", "namespace", xgboostjob.Namespace, "name", xgboostjob.Name)
+	xgboostJobsDeletedCount.WithLabelValues(xgboostjob.Namespace).Inc()
 	return nil
 }
 

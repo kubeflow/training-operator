@@ -69,7 +69,7 @@ var (
 
 	tfJobsDeletedCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_deleted_total",
+			Name: "training_operator_tfjobs_deleted_total",
 			Help: "Counts number of TF jobs deleted",
 		},
 		[]string{"job_namespace"},

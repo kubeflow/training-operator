@@ -47,14 +47,14 @@ const (
 var (
 	tfJobsSuccessCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_successful_total",
+			Name: "training_operator_tfjobs_successful_total",
 			Help: "Counts number of TF jobs successful",
 		},
 		[]string{"job_namespace"},
 	)
 	tfJobsFailureCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_failed_total",
+			Name: "training_operator_tfjobs_failed_total",
 			Help: "Counts number of TF jobs failed",
 		},
 		[]string{"job_namespace"},
