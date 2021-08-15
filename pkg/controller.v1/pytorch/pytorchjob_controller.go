@@ -252,7 +252,7 @@ func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (meta
 	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logrus.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
+			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)
 		} else {
 			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
 		}
@@ -326,12 +326,12 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		running := status.Active
 		failed := status.Failed
 
-		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
+		logrus.Infof("PyTorchJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			pytorchjob.Name, rtype, expected, running, succeeded, failed)
 
 		if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
 			if running > 0 {
-				msg := fmt.Sprintf("XGBoostJob %s is running.", pytorchjob.Name)
+				msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
@@ -340,7 +340,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 			}
 			// when master is succeed, the job is finished.
 			if expected == 0 {
-				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", pytorchjob.Name)
+				msg := fmt.Sprintf("PyTorchJob %s is successfully completed.", pytorchjob.Name)
 				logrus.Info(msg)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
 				if jobStatus.CompletionTime == nil {
@@ -357,7 +357,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		}
 		if failed > 0 {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
 				if err != nil {
@@ -365,7 +365,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					return err
 				}
 			} else {
-				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
 				if pytorchjob.Status.CompletionTime == nil {
 					now := metav1.Now()
@@ -385,7 +385,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 	commonutil.LoggerForJob(pytorchjob).Infof(msg)
 
 	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
-		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update XGBoost Job conditions")
+		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update PyTorch Job conditions")
 		return err
 	}
 
