@@ -46,7 +46,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubeclientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -205,7 +204,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Set default priorities for xgboost job
-	scheme.Scheme.Default(xgboostjob)
+	r.Scheme.Default(xgboostjob)
 
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(xgboostjob, xgboostjob.Spec.XGBReplicaSpecs, xgboostjob.Status, &xgboostjob.Spec.RunPolicy)
@@ -229,7 +228,7 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// using onOwnerCreateFunc is easier to set defaults
 	if err = c.Watch(&source.Kind{Type: &xgboostv1.XGBoostJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
@@ -487,15 +486,13 @@ func (r *XGBoostJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*c
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc() func(event.CreateEvent) bool {
+func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		xgboostJob, ok := e.Object.(*xgboostv1.XGBoostJob)
 		if !ok {
 			return true
 		}
-		xgboostv1.SetDefaults_XGBoostJob(xgboostJob)
-		// TODO: figure out why default funcs are not registered successfully.
-		scheme.Scheme.Default(xgboostJob)
+		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 

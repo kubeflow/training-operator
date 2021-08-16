@@ -59,7 +59,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -147,7 +146,7 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// Set default priorities to tfjob
-	scheme.Scheme.Default(tfjob)
+	r.Scheme.Default(tfjob)
 
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(tfjob, tfjob.Spec.TFReplicaSpecs, tfjob.Status, &tfjob.Spec.RunPolicy)
@@ -171,7 +170,7 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// using onOwnerCreateFunc is easier to set defaults
 	if err = c.Watch(&source.Kind{Type: &tfv1.TFJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
@@ -835,16 +834,14 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc() func(event.CreateEvent) bool {
+func (r *TFJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		tfJob, ok := e.Object.(*tensorflowv1.TFJob)
 		if !ok {
 			return true
 		}
 
-		tensorflowv1.SetDefaults_TFJob(tfJob)
-		// TODO: figure out why default funcs are not registered successfully.
-		scheme.Scheme.Default(tfJob)
+		r.Scheme.Default(tfJob)
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 
