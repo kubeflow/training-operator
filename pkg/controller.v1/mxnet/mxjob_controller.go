@@ -431,6 +431,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				logrus.Infof("Append mxjob condition error: %v", err)
 				return err
 			}
+			mxJobsSuccessCount.WithLabelValues(mxjob.Namespace).Inc()
 		}
 
 		if failed > 0 {
@@ -442,6 +443,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
+				mxJobsRestartCount.WithLabelValues(mxjob.Namespace).Inc()
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -454,6 +456,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
+				mxJobsFailureCount.WithLabelValues(mxjob.Namespace).Inc()
 			}
 		}
 	}
@@ -508,9 +511,9 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 
 		// Use defaulters registered in scheme.
 		r.Scheme.Default(mxjob)
-		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
+		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-
+		mxJobsCreatedCount.WithLabelValues(mxjob.Namespace).Inc()
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

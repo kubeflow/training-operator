@@ -414,6 +414,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				xgboostJobsSuccessCount.WithLabelValues(xgboostJob.Namespace).Inc()
 				return nil
 			}
 		}
@@ -426,6 +427,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				xgboostJobsRestartCount.WithLabelValues(xgboostJob.Namespace).Inc()
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobFailedReason, msg)
@@ -438,6 +440,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				xgboostJobsFailureCount.WithLabelValues(xgboostJob.Namespace).Inc()
 			}
 		}
 	}
@@ -505,7 +508,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-
+		xgboostJobsCreatedCount.WithLabelValues(xgboostJob.Namespace).Inc()
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

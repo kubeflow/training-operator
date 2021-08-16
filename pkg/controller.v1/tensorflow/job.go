@@ -24,14 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	"github.com/kubeflow/common/pkg/util/k8sutil"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -40,21 +37,6 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 )
-
-var (
-	tfJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_created_total",
-			Help: "Counts number of TF jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(tfJobsCreatedCount)
-}
 
 // DeleteJob implements ControllerInterface interface.
 func (tc *TFController) DeleteJob(job interface{}) error {

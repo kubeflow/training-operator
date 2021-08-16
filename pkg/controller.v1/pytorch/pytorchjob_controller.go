@@ -404,6 +404,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				pytorchJobsSuccessCount.WithLabelValues(pytorchjob.Namespace).Inc()
 				return nil
 			}
 		}
@@ -416,6 +417,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				pytorchJobsRestartCount.WithLabelValues(pytorchjob.Namespace).Inc()
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
@@ -428,6 +430,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
+				pytorchJobsFailureCount.WithLabelValues(pytorchjob.Namespace).Inc()
 			}
 		}
 	}
@@ -498,6 +501,7 @@ func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
+		pytorchJobsCreatedCount.WithLabelValues(pytorchjob.Namespace).Inc()
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

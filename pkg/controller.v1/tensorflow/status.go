@@ -23,13 +23,10 @@ import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 const (
@@ -44,28 +41,6 @@ const (
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
 )
-
-var (
-	tfJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_successful_total",
-			Help: "Counts number of TF jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_failed_total",
-			Help: "Counts number of TF jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(tfJobsSuccessCount, tfJobsFailureCount)
-}
 
 func (tc *TFController) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
 	tfJob, ok := job.(*tfv1.TFJob)
