@@ -21,6 +21,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -123,6 +124,15 @@ var (
 		[]string{"job_namespace"},
 	)
 )
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(xgboostJobsCreatedCount,
+		xgboostJobsDeletedCount,
+		xgboostJobsSuccessCount,
+		xgboostJobsFailureCount,
+		xgboostJobsRestartCount)
+}
 
 // NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {

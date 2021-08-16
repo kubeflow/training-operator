@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -63,6 +64,11 @@ var (
 		[]string{"job_namespace"},
 	)
 )
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(tfJobsRestartCount)
+}
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.

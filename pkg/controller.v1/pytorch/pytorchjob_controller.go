@@ -22,6 +22,7 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -103,6 +104,15 @@ var (
 		[]string{"job_namespace"},
 	)
 )
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(pytorchJobsCreatedCount,
+		pytorchJobsDeletedCount,
+		pytorchJobsSuccessCount,
+		pytorchJobsFailureCount,
+		pytorchJobsRestartCount)
+}
 
 // NewReconciler creates a PyTorchJob Reconciler
 func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {

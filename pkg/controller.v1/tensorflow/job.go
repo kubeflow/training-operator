@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	commonutil "github.com/kubeflow/common/pkg/util"
@@ -49,6 +50,11 @@ var (
 		[]string{"job_namespace"},
 	)
 )
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(tfJobsCreatedCount)
+}
 
 // DeleteJob implements ControllerInterface interface.
 func (tc *TFController) DeleteJob(job interface{}) error {

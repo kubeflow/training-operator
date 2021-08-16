@@ -45,6 +45,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
@@ -75,6 +76,11 @@ var (
 		[]string{"job_namespace"},
 	)
 )
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(tfJobsDeletedCount)
+}
 
 // TFController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.
