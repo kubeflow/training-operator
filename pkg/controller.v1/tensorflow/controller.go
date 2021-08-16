@@ -42,10 +42,7 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
@@ -67,20 +64,7 @@ var (
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
-
-	tfJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_deleted_total",
-			Help: "Counts number of TF jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
 )
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(tfJobsDeletedCount)
-}
 
 // TFController is the type for TFJob Controller, which manages
 // the lifecycle of TFJobs.

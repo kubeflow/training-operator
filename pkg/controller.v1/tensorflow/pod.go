@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/kubeflow/tf-operator/pkg/common/util"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -34,8 +33,6 @@ import (
 	commonutil "github.com/kubeflow/common/pkg/util"
 	train_util "github.com/kubeflow/common/pkg/util/train"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -54,21 +51,6 @@ const (
 	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
 	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 )
-
-var (
-	tfJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_restarted_total",
-			Help: "Counts number of TF jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(tfJobsRestartCount)
-}
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
