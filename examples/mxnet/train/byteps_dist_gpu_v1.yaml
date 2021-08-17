@@ -1,0 +1,47 @@
+apiVersion: "kubeflow.org/v1"
+kind: "MXJob"
+metadata:
+  name: "byteps-mxnet-job"
+spec:
+  jobMode: MXTrain
+  runPolicy:
+    cleanPodPolicy: Running
+  mxReplicaSpecs:
+    Scheduler:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: mxnet
+              image: bytepsimage/mxnet
+              command: ["bpslaunch"]
+    Server:
+      replicas: 2
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: mxnet
+              image: bytepsimage/mxnet
+              command: ["bpslaunch"]
+    Worker:
+      replicas: 2
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: mxnet
+              image: bytepsimage/mxnet
+              command: ["bpslaunch"]
+              args: ["python3", "/usr/local/byteps/example/mxnet/train_imagenet_byteps.py", "--benchmark", "1", "--batch-size=32"]
+              volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              resources:
+                limits:
+                  nvidia.com/gpu: 8
+          volumes:
+          - name: dshm
+            emptyDir: 
+              medium: Memory

@@ -1,9 +1,9 @@
-IMG = gcr.io/kubeflow-examples/tf_smoke
+IMG = gcr.io/kubeflow-examples/distributed_worker
 
 # List any changed  files. We only include files in the notebooks directory.
 # because that is the code in the docker image.
 # In particular we exclude changes to the ksonnet configs.
-CHANGED_FILES := $(shell git diff-files --relative=examples/tf_sample)
+CHANGED_FILES := $(shell git diff-files --relative=tensorflow/tf_sample)
 
 ifeq ($(strip $(CHANGED_FILES)),)
 # Changed files is empty; not dirty
