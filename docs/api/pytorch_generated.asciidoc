@@ -1,0 +1,84 @@
+// Generated documentation. Please do not edit.
+:anchor_prefix: k8s-api
+
+[id="{p}-api-reference"]
+= API Reference
+
+.Packages
+- xref:{anchor_prefix}-kubeflow-org-v1[$$kubeflow.org/v1$$]
+
+
+[id="{anchor_prefix}-kubeflow-org-v1"]
+== kubeflow.org/v1
+
+Package v1 is the v1 version of the API.
+
+Package v1 contains API Schema definitions for the kubeflow.org v1 API group
+
+.Resource Types
+- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjob[$$PyTorchJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjoblist[$$PyTorchJobList$$]
+
+
+=== Definitions
+
+[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjob"]
+==== PyTorchJob 
+
+PyTorchJob Represents a PyTorchJob resource.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjoblist[$$PyTorchJobList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `PyTorchJob`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjobspec[$$PyTorchJobSpec$$]__ | Specification of the desired state of the PyTorchJob.
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PyTorchJob. Read-only (modified by the system).
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjoblist"]
+==== PyTorchJobList 
+
+PyTorchJobList is a list of PyTorchJobs.
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `PyTorchJobList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjob[$$PyTorchJob$$]__ | List of PyTorchJobs.
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjobspec"]
+==== PyTorchJobSpec 
+
+PyTorchJobSpec is a desired state description of the PyTorchJob.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-pytorch-v1-pytorchjob[$$PyTorchJob$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`pytorchReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,   {     "Master": PyTorchReplicaSpec,     "Worker": PyTorchReplicaSpec,   }
+|===
+
+
