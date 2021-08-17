@@ -1,4 +1,4 @@
-// Copyright YEAR The Kubeflow Authors
+// Copyright 2021 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -148,7 +147,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Set default priorities to pytorch job
-	scheme.Scheme.Default(pytorchjob)
+	r.Scheme.Default(pytorchjob)
 
 	// Construct RunPolicy based on PyTorchJob.Spec
 	runPolicy := &commonv1.RunPolicy{
@@ -181,7 +180,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// using onOwnerCreateFunc is easier to set defaults
 	if err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: onOwnerCreateFunc()},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
@@ -253,7 +252,7 @@ func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (meta
 	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logrus.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
+			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)
 		} else {
 			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
 		}
@@ -327,12 +326,12 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		running := status.Active
 		failed := status.Failed
 
-		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
+		logrus.Infof("PyTorchJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			pytorchjob.Name, rtype, expected, running, succeeded, failed)
 
 		if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
 			if running > 0 {
-				msg := fmt.Sprintf("XGBoostJob %s is running.", pytorchjob.Name)
+				msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
@@ -341,7 +340,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 			}
 			// when master is succeed, the job is finished.
 			if expected == 0 {
-				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", pytorchjob.Name)
+				msg := fmt.Sprintf("PyTorchJob %s is successfully completed.", pytorchjob.Name)
 				logrus.Info(msg)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
 				if jobStatus.CompletionTime == nil {
@@ -358,7 +357,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		}
 		if failed > 0 {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
 				if err != nil {
@@ -366,7 +365,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					return err
 				}
 			} else {
-				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
+				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
 				if pytorchjob.Status.CompletionTime == nil {
 					now := metav1.Now()
@@ -386,7 +385,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 	commonutil.LoggerForJob(pytorchjob).Infof(msg)
 
 	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
-		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update XGBoost Job conditions")
+		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update PyTorch Job conditions")
 		return err
 	}
 
@@ -438,15 +437,13 @@ func (r *PyTorchJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*c
 }
 
 // onOwnerCreateFunc modify creation condition.
-func onOwnerCreateFunc() func(event.CreateEvent) bool {
+func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
 		pytorchjob, ok := e.Object.(*pytorchv1.PyTorchJob)
 		if !ok {
 			return true
 		}
-		pytorchv1.SetDefaults_PyTorchJob(pytorchjob)
-		// TODO: figure out why default funcs are not registered successfully.
-		scheme.Scheme.Default(pytorchjob)
+		r.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {

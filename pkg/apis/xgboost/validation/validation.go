@@ -20,8 +20,6 @@ import (
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-
-	torchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 )
 
 func ValidateV1XGBoostJobSpec(c *xgboostv1.XGBoostJobSpec) error {
@@ -59,9 +57,9 @@ func ValidateV1XGBoostJobSpec(c *xgboostv1.XGBoostJobSpec) error {
 				defaultContainerPresent = true
 			}
 		}
-		//Make sure there has at least one container named "pytorch"
+		//Make sure there has at least one container named "xgboost"
 		if !defaultContainerPresent {
-			msg := fmt.Sprintf("XGBoostReplicaType is not valid: There is no container named %s in %v", torchv1.DefaultContainerName, rType)
+			msg := fmt.Sprintf("XGBoostReplicaType is not valid: There is no container named %s in %v", xgboostv1.DefaultContainerName, rType)
 			return fmt.Errorf(msg)
 		}
 		if rType == xgboostv1.XGBoostReplicaTypeMaster {

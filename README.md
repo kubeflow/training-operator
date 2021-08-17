@@ -22,13 +22,13 @@ run distributed or non-distributed TensorFlow jobs on Kubernetes.
 ### Master Branch
 
 ```bash
-kustomize build "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=master" | kubectl apply -f -
+kubectl kustomize "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=master" | kubectl apply -f -
 ```
 
 ### Specific Release
 
 ```bash
-kustomize build "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=v1.1.0" | kubectl apply -f -
+kubectl kustomize "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=v1.1.0" | kubectl apply -f -
 ```
 
 ## Quick Start

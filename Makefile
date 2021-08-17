@@ -38,7 +38,7 @@ help: ## Display this help.
 ##@ Development
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/..." output:crd:artifacts:config=manifests/base
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/..." output:crd:artifacts:config=manifests/base/crds
 
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/..."
@@ -72,17 +72,17 @@ docker-push: ## Push docker image with the manager.
 ##@ Deployment
 
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build manifests/base/crds | kubectl apply -f -
 
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+	$(KUSTOMIZE) build manifests/base/crds | kubectl delete -f -
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	cd manifests/overlays/standalone && $(KUSTOMIZE) edit set image kubeflow/training-operator=${IMG}
+	$(KUSTOMIZE) build manifests/overlays/standalone | kubectl apply -f -
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+	$(KUSTOMIZE) build manifests/overlays/standalone | kubectl delete -f -
 
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen

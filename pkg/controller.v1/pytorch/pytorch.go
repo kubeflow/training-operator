@@ -1,3 +1,17 @@
+// Copyright 2021 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License
+
 package controllers
 
 import (
@@ -13,7 +27,7 @@ import (
 func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
 	if !ok {
-		return fmt.Errorf("%+v is not a type of XGBoostJob", obj)
+		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
 
 	rank, err := strconv.Atoi(index)
@@ -29,7 +43,7 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	}
 
 	masterAddr := genGeneralName(pytorchjob.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
-	if rtype == string(pytorchv1.PyTorchReplicaTypeMaster) {
+	if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)) {
 		if rank != 0 {
 			return fmt.Errorf("invalid config: There should be only a single master with index=0")
 		}
