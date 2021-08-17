@@ -1,2 +1,2 @@
 render:
-  kubernetesVersion: "1.16"
+  kubernetesVersion: "1.19"
