@@ -31,4 +31,6 @@ const (
 	Plural = "xgboostjobs"
 	// Singular is the singular for XGBoostJob.
 	Singular = "xgboostjob"
+	// FrameworkName is the name of the ML Framework
+	FrameworkName = "xgboost"
 )

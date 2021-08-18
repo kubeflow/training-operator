@@ -34,4 +34,6 @@ const (
 	Plural = "pytorchjobs"
 	// Singular is the singular for pytorchJob.
 	Singular = "pytorchjob"
+	// FrameworkName is the name of the ML Framework
+	FrameworkName = "pytorch"
 )

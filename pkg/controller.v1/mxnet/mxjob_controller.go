@@ -58,7 +58,6 @@ import (
 
 const (
 	controllerName = "mxnet-operator"
-	frameworkName  = "mxnet"
 
 	// mxJobCreatedReason is added in a mxjob when it is created.
 	mxJobCreatedReason = "MXJobCreated"
@@ -324,7 +323,7 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, frameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 	return nil
 }
 
@@ -382,7 +381,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				logrus.Infof("Append mxjob condition error: %v", err)
 				return err
 			}
-			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, frameworkName)
+			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 		}
 
 		if failed > 0 {
@@ -394,7 +393,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, frameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -407,7 +406,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, frameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 			}
 		}
 	}
@@ -464,7 +463,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		r.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, frameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

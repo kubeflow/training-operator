@@ -62,7 +62,6 @@ import (
 
 const (
 	controllerName = "xgboostjob-operator"
-	frameworkName  = "xgboost"
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"
@@ -320,7 +319,7 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(xgboostjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", xgboostjob.Name)
 	r.Log.Info("job deleted", "namespace", xgboostjob.Namespace, "name", xgboostjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, frameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, xgboostv1.FrameworkName)
 	return nil
 }
 
@@ -365,7 +364,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, frameworkName)
+				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
 				return nil
 			}
 		}
@@ -378,7 +377,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, frameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobFailedReason, msg)
@@ -391,7 +390,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, frameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
 			}
 		}
 	}
@@ -459,7 +458,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, frameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

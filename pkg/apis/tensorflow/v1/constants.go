@@ -34,4 +34,6 @@ const (
 	Plural = "tfjobs"
 	// Singular is the singular for TFJob.
 	Singular = "tfjob"
+	// FrameworkName is the name of the ML Framework
+	FrameworkName = "tensorflow"
 )
