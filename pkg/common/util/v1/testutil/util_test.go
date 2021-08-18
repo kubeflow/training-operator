@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tensorflow
+package testutil
 
 import (
 	"testing"
 
+	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/util/v1/testutil"
 )
 
 func TestGenOwnerReference(t *testing.T) {
@@ -34,7 +32,7 @@ func TestGenOwnerReference(t *testing.T) {
 		},
 	}
 
-	ref := testutil.GenOwnerReference(tfJob)
+	ref := GenOwnerReference(tfJob)
 	if ref.UID != testUID {
 		t.Errorf("Expected UID %s, got %s", testUID, ref.UID)
 	}
@@ -50,14 +48,14 @@ func TestGenLabels(t *testing.T) {
 	testKey := "test/key"
 	expctedKey := "test-key"
 
-	labels := testutil.GenLabels(testKey)
-	jobNamelabel := testutil.JobNameLabel
+	labels := GenLabels(testKey)
+	jobNamelabel := JobNameLabel
 
 	if labels[jobNamelabel] != expctedKey {
 		t.Errorf("Expected %s %s, got %s", jobNamelabel, expctedKey, jobNamelabel)
 	}
-	if labels[labelGroupName] != tfv1.GroupVersion.Group {
-		t.Errorf("Expected %s %s, got %s", labelGroupName, tfv1.GroupVersion.Group, labels[labelGroupName])
+	if labels[LabelGroupName] != tfv1.GroupVersion.Group {
+		t.Errorf("Expected %s %s, got %s", LabelGroupName, tfv1.GroupVersion.Group, labels[LabelGroupName])
 	}
 }
 
@@ -74,7 +72,7 @@ func TestConvertTFJobToUnstructured(t *testing.T) {
 		},
 	}
 
-	_, err := testutil.ConvertTFJobToUnstructured(tfJob)
+	_, err := ConvertTFJobToUnstructured(tfJob)
 	if err != nil {
 		t.Errorf("Expected error to be nil while got %v", err)
 	}
