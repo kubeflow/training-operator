@@ -1,0 +1,36 @@
+apiVersion: "kubeflow.org/v1"
+kind: "PyTorchJob"
+metadata:
+  name: "pytorch-dist-mnist-nccl"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers:
+            - name: pytorch
+              image: gcr.io/<your_project>/pytorch_dist_mnist:latest
+              args: ["--backend", "nccl"]
+              resources: 
+                limits:
+                  nvidia.com/gpu: 1
+    Worker:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers: 
+            - name: pytorch
+              image: gcr.io/<your_project>/pytorch_dist_mnist:latest
+              args: ["--backend", "nccl"]
+              resources: 
+                limits:
+                  nvidia.com/gpu: 1

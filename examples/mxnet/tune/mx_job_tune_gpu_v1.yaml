@@ -1,0 +1,41 @@
+apiVersion: "kubeflow.org/v1"
+kind: "MXJob"
+metadata:
+  name: "auto-tuning-job"
+spec:
+  jobMode: MXTune
+  mxReplicaSpecs:
+    TunerTracker:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/scripts/start-job.py"]
+    TunerServer:
+      label: 2080ti
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/scripts/start-job.py"]
+            resources:
+              limits:
+                nvidia.com/gpu: 1
+    Tuner:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/scripts/start-job.py"]
