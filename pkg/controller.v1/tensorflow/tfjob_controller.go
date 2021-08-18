@@ -22,11 +22,8 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -67,59 +64,17 @@ import (
 
 	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+)
+
+const (
+	frameworkName = "tensorflow"
 )
 
 var (
 	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
-
-var (
-	tfJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_created_total",
-			Help: "Counts number of TF jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_deleted_total",
-			Help: "Counts number of TF jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_successful_total",
-			Help: "Counts number of TF jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_failed_total",
-			Help: "Counts number of TF jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_tfjobs_restarted_total",
-			Help: "Counts number of TF jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(tfJobsCreatedCount,
-		tfJobsDeletedCount,
-		tfJobsSuccessCount,
-		tfJobsFailureCount,
-		tfJobsRestartCount)
-}
 
 func NewReconciler(mgr manager.Manager) *TFJobReconciler {
 	r := &TFJobReconciler{
@@ -395,7 +350,7 @@ func (r *TFJobReconciler) DeleteJob(job interface{}) error {
 
 	r.recorder.Eventf(tfJob, v1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", tfJob.Name)
 	log.Infof("job %s/%s has been deleted", tfJob.Namespace, tfJob.Name)
-	tfJobsDeletedCount.WithLabelValues(tfJob.Namespace).Inc()
+	trainingoperatorcommon.DeletedJobsCounterInc(tfJob.Namespace, frameworkName)
 	return nil
 }
 
@@ -483,7 +438,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsSuccessCount.WithLabelValues(tfJob.Namespace).Inc()
+					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, frameworkName)
 				}
 			}
 		} else {
@@ -505,7 +460,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsSuccessCount.WithLabelValues(tfJob.Namespace).Inc()
+					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, frameworkName)
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
@@ -530,7 +485,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			if restart {
 				// job is restarting, no need to set it failed
 				// we know it because we update the status condition when reconciling the replicas
-				tfJobsRestartCount.WithLabelValues(tfJob.Namespace).Inc()
+				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, frameworkName)
 			} else {
 				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
 					tfJob.Namespace, tfJob.Name, failed, rtype)
@@ -545,7 +500,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
-				tfJobsFailureCount.WithLabelValues(tfJob.Namespace).Inc()
+				trainingoperatorcommon.FailedJobsCounterInc(tfJob.Namespace, frameworkName)
 			}
 		}
 	}
@@ -780,7 +735,7 @@ func (r *TFJobReconciler) ReconcilePods(
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					tfJobsRestartCount.WithLabelValues(tfJob.Namespace).Inc()
+					trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, frameworkName)
 				}
 			}
 
@@ -895,7 +850,7 @@ func (r *TFJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		r.Scheme.Default(tfJob)
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		tfJobsCreatedCount.WithLabelValues(tfJob.Namespace).Inc()
+		trainingoperatorcommon.CreatedJobsCounterInc(tfJob.Namespace, frameworkName)
 		if err := commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, "TFJobCreated", msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

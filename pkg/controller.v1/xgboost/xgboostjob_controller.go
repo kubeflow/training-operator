@@ -19,9 +19,6 @@ import (
 	"fmt"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -60,10 +57,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 )
 
 const (
 	controllerName = "xgboostjob-operator"
+	frameworkName  = "xgboost"
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"
@@ -85,54 +84,6 @@ var (
 	defaultTTLSeconds     = int32(100)
 	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
-
-// Define all the prometheus counters for xgboostjobs
-var (
-	xgboostJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_xgboostjobs_created_total",
-			Help: "Counts number of xgboost jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-	xgboostJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_xgboostjobs_deleted_total",
-			Help: "Counts number of xgboost jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
-	xgboostJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_xgboostjobs_successful_total",
-			Help: "Counts number of xgboost jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	xgboostJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_xgboostjobs_failed_total",
-			Help: "Counts number of xgboost jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-	xgboostJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_xgboostjobs_restarted_total",
-			Help: "Counts number of xgboost jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(xgboostJobsCreatedCount,
-		xgboostJobsDeletedCount,
-		xgboostJobsSuccessCount,
-		xgboostJobsFailureCount,
-		xgboostJobsRestartCount)
-}
 
 // NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
@@ -369,7 +320,7 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(xgboostjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", xgboostjob.Name)
 	r.Log.Info("job deleted", "namespace", xgboostjob.Namespace, "name", xgboostjob.Name)
-	xgboostJobsDeletedCount.WithLabelValues(xgboostjob.Namespace).Inc()
+	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, frameworkName)
 	return nil
 }
 
@@ -414,7 +365,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				xgboostJobsSuccessCount.WithLabelValues(xgboostJob.Namespace).Inc()
+				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, frameworkName)
 				return nil
 			}
 		}
@@ -427,7 +378,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				xgboostJobsRestartCount.WithLabelValues(xgboostJob.Namespace).Inc()
+				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, frameworkName)
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobFailedReason, msg)
@@ -440,7 +391,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				xgboostJobsFailureCount.WithLabelValues(xgboostJob.Namespace).Inc()
+				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, frameworkName)
 			}
 		}
 	}
@@ -508,7 +459,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		xgboostJobsCreatedCount.WithLabelValues(xgboostJob.Namespace).Inc()
+		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, frameworkName)
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

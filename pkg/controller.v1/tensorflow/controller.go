@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -64,6 +66,14 @@ var (
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+
+	tfJobsDeletedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_deleted_total",
+			Help: "Counts number of TF jobs deleted",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // TFController is the type for TFJob Controller, which manages

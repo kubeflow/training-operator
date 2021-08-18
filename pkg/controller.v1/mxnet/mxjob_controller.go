@@ -21,9 +21,6 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -36,6 +33,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -60,6 +58,7 @@ import (
 
 const (
 	controllerName = "mxnet-operator"
+	frameworkName  = "mxnet"
 
 	// mxJobCreatedReason is added in a mxjob when it is created.
 	mxJobCreatedReason = "MXJobCreated"
@@ -83,54 +82,6 @@ var (
 	// DefaultCleanPodPolicy is the default clean pod policy controller assign the new Job if not exist
 	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
-
-// Define all the prometheus counters for mxjobs
-var (
-	mxJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_mxjobs_created_total",
-			Help: "Counts number of mx jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-	mxJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_mxjobs_deleted_total",
-			Help: "Counts number of mx jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
-	mxJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_mxjobs_successful_total",
-			Help: "Counts number of mx jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	mxJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_mxjobs_failed_total",
-			Help: "Counts number of mx jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-	mxJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_mxjobs_restarted_total",
-			Help: "Counts number of mx jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(mxJobsCreatedCount,
-		mxJobsDeletedCount,
-		mxJobsSuccessCount,
-		mxJobsFailureCount,
-		mxJobsRestartCount)
-}
 
 // NewReconciler creates a MXJob Reconciler
 func NewReconciler(mgr manager.Manager) *MXJobReconciler {
@@ -373,7 +324,7 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
-	mxJobsDeletedCount.WithLabelValues(mxjob.Namespace).Inc()
+	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, frameworkName)
 	return nil
 }
 
@@ -431,7 +382,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				logrus.Infof("Append mxjob condition error: %v", err)
 				return err
 			}
-			mxJobsSuccessCount.WithLabelValues(mxjob.Namespace).Inc()
+			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, frameworkName)
 		}
 
 		if failed > 0 {
@@ -443,7 +394,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				mxJobsRestartCount.WithLabelValues(mxjob.Namespace).Inc()
+				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, frameworkName)
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -456,7 +407,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				mxJobsFailureCount.WithLabelValues(mxjob.Namespace).Inc()
+				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, frameworkName)
 			}
 		}
 	}
@@ -513,7 +464,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		r.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		mxJobsCreatedCount.WithLabelValues(mxjob.Namespace).Inc()
+		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, frameworkName)
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

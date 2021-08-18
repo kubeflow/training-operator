@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -50,6 +52,16 @@ const (
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
 	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
+)
+
+var (
+	tfJobsRestartCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_restarted_total",
+			Help: "Counts number of TF jobs restarted",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // reconcilePods checks and updates pods for each given TFReplicaSpec.

@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +38,16 @@ const (
 	failedMarshalTFJobReason  = "InvalidTFJobSpec"
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
+)
+
+var (
+	tfJobsCreatedCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tf_operator_jobs_created_total",
+			Help: "Counts number of TF jobs created",
+		},
+		[]string{"job_namespace"},
+	)
 )
 
 // DeleteJob implements ControllerInterface interface.

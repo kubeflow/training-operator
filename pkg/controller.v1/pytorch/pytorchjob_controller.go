@@ -20,9 +20,6 @@ import (
 	"reflect"
 
 	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -30,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	commonutil "github.com/kubeflow/common/pkg/util"
+	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -59,60 +57,13 @@ import (
 
 const (
 	controllerName = "pytorchjob-operator"
+	frameworkName  = "pytorch"
 )
 
 var (
 	jobOwnerKey           = ".metadata.controller"
 	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
-
-// Define all the prometheus counters for pytorchjobs
-var (
-	pytorchJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_pytorchjobs_created_total",
-			Help: "Counts number of pytorch jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-	pytorchJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_pytorchjobs_deleted_total",
-			Help: "Counts number of pytorch jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
-	pytorchJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_pytorchjobs_successful_total",
-			Help: "Counts number of pytorch jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	pytorchJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_pytorchjobs_failed_total",
-			Help: "Counts number of pytorch jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-	pytorchJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "training_operator_pytorchjobs_restarted_total",
-			Help: "Counts number of pytorch jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
-)
-
-func init() {
-	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(pytorchJobsCreatedCount,
-		pytorchJobsDeletedCount,
-		pytorchJobsSuccessCount,
-		pytorchJobsFailureCount,
-		pytorchJobsRestartCount)
-}
 
 // NewReconciler creates a PyTorchJob Reconciler
 func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
@@ -359,7 +310,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(pytorchjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", pytorchjob.Name)
 	logrus.Info("job deleted", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
-	pytorchJobsDeletedCount.WithLabelValues(pytorchjob.Namespace).Inc()
+	trainingoperatorcommon.DeletedJobsCounterInc(pytorchjob.Namespace, frameworkName)
 	return nil
 }
 
@@ -404,7 +355,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				pytorchJobsSuccessCount.WithLabelValues(pytorchjob.Namespace).Inc()
+				trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, frameworkName)
 				return nil
 			}
 		}
@@ -417,7 +368,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				pytorchJobsRestartCount.WithLabelValues(pytorchjob.Namespace).Inc()
+				trainingoperatorcommon.RestartedJobsCounterInc(pytorchjob.Namespace, frameworkName)
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
@@ -430,7 +381,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				pytorchJobsFailureCount.WithLabelValues(pytorchjob.Namespace).Inc()
+				trainingoperatorcommon.FailedJobsCounterInc(pytorchjob.Namespace, frameworkName)
 			}
 		}
 	}
@@ -501,7 +452,7 @@ func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		pytorchJobsCreatedCount.WithLabelValues(pytorchjob.Namespace).Inc()
+		trainingoperatorcommon.CreatedJobsCounterInc(pytorchjob.Namespace, frameworkName)
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
