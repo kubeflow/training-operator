@@ -33,6 +33,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -81,7 +82,7 @@ var (
 	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
-// NewReconciler creates a PyTorchJob Reconciler
+// NewReconciler creates a MXJob Reconciler
 func NewReconciler(mgr manager.Manager) *MXJobReconciler {
 	r := &MXJobReconciler{
 		Client:   mgr.GetClient(),
@@ -158,13 +159,13 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Set default priorities to mxnet job
 	r.Scheme.Default(mxjob)
 
-	// Convert PyTorch.Spec.PyTorchReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
+	// Convert MX.Spec.MXReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 	replicas := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
 	for k, v := range mxjob.Spec.MXReplicaSpecs {
 		replicas[commonv1.ReplicaType(k)] = v
 	}
 
-	// Construct RunPolicy based on PyTorchJob.Spec
+	// Construct RunPolicy based on MXJob.Spec
 	runPolicy := &commonv1.RunPolicy{
 		CleanPodPolicy:          mxjob.Spec.RunPolicy.CleanPodPolicy,
 		TTLSecondsAfterFinished: mxjob.Spec.RunPolicy.TTLSecondsAfterFinished,
@@ -176,7 +177,7 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, runPolicy)
 	if err != nil {
-		logrus.Warnf("Reconcile PyTorch Job error %v", err)
+		logrus.Warnf("Reconcile MX Job error %v", err)
 		return ctrl.Result{}, err
 	}
 
@@ -322,6 +323,7 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
+	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 	return nil
 }
 
@@ -379,6 +381,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				logrus.Infof("Append mxjob condition error: %v", err)
 				return err
 			}
+			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 		}
 
 		if failed > 0 {
@@ -390,6 +393,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
+				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -402,6 +406,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
+				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 			}
 		}
 	}
@@ -456,9 +461,9 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 
 		// Use defaulters registered in scheme.
 		r.Scheme.Default(mxjob)
-		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
+		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-
+		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

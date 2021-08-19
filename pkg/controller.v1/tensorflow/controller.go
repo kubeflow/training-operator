@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -42,8 +44,6 @@ import (
 	tfjobinformers "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions"
 	tfjobinformersv1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
 	tfjoblisters "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )

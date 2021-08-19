@@ -32,4 +32,6 @@ const (
 	Plural = "mxjobs"
 	// Singular is the singular for mxJob.
 	Singular = "mxjob"
+	// FrameworkName is the name of the ML Framework
+	FrameworkName = "mxnet"
 )
