@@ -22,7 +22,7 @@ GO111MODULE="on" go mod vendor
 Build it
 
 ```sh
-go install github.com/kubeflow/tf-operator/cmd/tf-operator.v1
+go install github.com/kubeflow/tf-operator/cmd/training-operator.v1
 ```
 
 ## Running the Operator Locally
@@ -57,7 +57,10 @@ export KUBEFLOW_NAMESPACE=$(your_namespace)
 After the cluster is up, the TFJob CRD should be created on the cluster.
 
 ```bash
-kubectl create -f ./examples/crd/crd-v1.yaml
+kubectl create -f ./manifests/base/kubeflow.org_mxjobs.yaml
+kubectl create -f ./manifests/base/kubeflow.org_pytorchjobs.yaml
+kubectl create -f ./manifests/base/kubeflow.org_tfjobs.yaml
+kubectl create -f ./manifests/base/kubeflow.org_xgboostjobs.yaml
 ```
 
 ### Run Operator
@@ -65,7 +68,7 @@ kubectl create -f ./examples/crd/crd-v1.yaml
 Now we are ready to run operator locally:
 
 ```sh
-tf-operator
+training-operator.v1
 ```
 
 To verify local operator is working, create an example job and you should see jobs created by it.
