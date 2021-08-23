@@ -33,8 +33,6 @@ import (
 	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -103,41 +101,6 @@ const (
 )
 
 var (
-	tfJobsSuccessCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_successful_total",
-			Help: "Counts number of TF jobs successful",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsFailureCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_failed_total",
-			Help: "Counts number of TF jobs failed",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsCreatedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_created_total",
-			Help: "Counts number of TF jobs created",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsDeletedCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_deleted_total",
-			Help: "Counts number of TF jobs deleted",
-		},
-		[]string{"job_namespace"},
-	)
-	tfJobsRestartCount = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "tf_operator_jobs_restarted_total",
-			Help: "Counts number of TF jobs restarted",
-		},
-		[]string{"job_namespace"},
-	)
 	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
