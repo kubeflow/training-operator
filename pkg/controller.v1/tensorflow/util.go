@@ -46,6 +46,7 @@ func ContainsChiefOrMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.Repli
 	return false
 }
 
+// originally from pkg/controller.v1/tensorflow/pod.go (deleted)
 func getContainerExitCode(pod *corev1.Pod) int32 {
 	var exitCode int32 = 0xbeef // magic number
 	for _, status := range pod.Status.ContainerStatuses {
@@ -57,6 +58,7 @@ func getContainerExitCode(pod *corev1.Pod) int32 {
 	return exitCode
 }
 
+// originally from pkg/controller.v1/tensorflow/pod.go (deleted)
 func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.ReplicaSpec) {
 	// This is necessary since restartPolicyExitCode is not supported in v1.PodTemplateSpec
 	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
@@ -68,6 +70,7 @@ func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.Re
 
 // isDistributed returns if the TFJob is a distributed training job.
 // Ref https://github.com/kubeflow/tf-operator/issues/1078.
+// originally from pkg/controller.v1/tensorflow/pod.go (deleted)
 func isDistributed(tfjob *tfv1.TFJob) bool {
 	replicas := tfjob.Spec.TFReplicaSpecs
 	distributionCount := 0
@@ -92,6 +95,7 @@ func isDistributed(tfjob *tfv1.TFJob) bool {
 }
 
 // initializeReplicaStatuses initializes the ReplicaStatuses for replica.
+// originally from pkg/controller.v1/tensorflow/status.go (deleted)
 func initializeReplicaStatuses(jobStatus *commonv1.JobStatus, rtype commonv1.ReplicaType) {
 	if jobStatus.ReplicaStatuses == nil {
 		jobStatus.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
@@ -101,6 +105,7 @@ func initializeReplicaStatuses(jobStatus *commonv1.JobStatus, rtype commonv1.Rep
 }
 
 // updateJobReplicaStatuses updates the JobReplicaStatuses according to the pod.
+// originally from pkg/controller.v1/tensorflow/status.go (deleted)
 func updateJobReplicaStatuses(jobStatus *commonv1.JobStatus, rtype commonv1.ReplicaType, pod *corev1.Pod) {
 	switch pod.Status.Phase {
 	case corev1.PodRunning:

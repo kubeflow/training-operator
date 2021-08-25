@@ -43,7 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubeclientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -98,13 +97,6 @@ const (
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
 	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
-)
-
-var (
-	// KeyFunc is the short name to DeletionHandlingMetaNamespaceKeyFunc.
-	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-	// key function but it should be just fine for non delete events.
-	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
 
 func NewReconciler(mgr manager.Manager) *TFJobReconciler {
@@ -391,7 +383,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
 
-	tfJobKey, err := KeyFunc(tfJob)
+	tfJobKey, err := common.KeyFunc(tfJob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfJob, err))
 		return err
@@ -777,7 +769,7 @@ func (r *TFJobReconciler) ReconcilePods(
 func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 
-	tfjobKey, err := KeyFunc(tfjob)
+	tfjobKey, err := common.KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
