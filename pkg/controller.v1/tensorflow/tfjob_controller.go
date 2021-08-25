@@ -57,8 +57,6 @@ import (
 )
 
 const (
-	// tfJobCreatedReason is added in a tfjob when it is created.
-	tfJobCreatedReason = "TFJobCreated"
 	// tfJobSucceededReason is added in a tfjob when it is succeeded.
 	tfJobSucceededReason = "TFJobSucceeded"
 	// tfJobRunningReason is added in a tfjob when it is running.
@@ -68,7 +66,6 @@ const (
 	// tfJobRestarting is added in a tfjob when it is restarting.
 	tfJobRestartingReason = "TFJobRestarting"
 
-	failedMarshalTFJobReason  = "InvalidTFJobSpec"
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
@@ -77,9 +74,6 @@ const (
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "replica-type"
 	tfReplicaIndexLabel = "replica-index"
-	labelGroupName      = "group-name"
-	// Deprecated label for backwards compatibility. Has to be removed
-	labelTFJobName = "tf-job-name"
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
 
