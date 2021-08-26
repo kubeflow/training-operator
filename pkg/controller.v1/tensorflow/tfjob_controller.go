@@ -69,7 +69,7 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
-	controllerName = "tfjob-operator"
+	controllerName = "tfjob-controller"
 
 	// labels for pods and servers.
 	tfReplicaTypeLabel  = "replica-type"

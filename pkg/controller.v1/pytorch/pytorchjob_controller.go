@@ -56,7 +56,7 @@ import (
 )
 
 const (
-	controllerName = "pytorchjob-operator"
+	controllerName = "pytorchjob-controller"
 )
 
 var (

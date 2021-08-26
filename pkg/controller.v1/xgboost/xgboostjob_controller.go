@@ -61,7 +61,7 @@ import (
 )
 
 const (
-	controllerName = "xgboostjob-operator"
+	controllerName = "xgboostjob-controller"
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"

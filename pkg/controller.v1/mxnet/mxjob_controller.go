@@ -57,7 +57,7 @@ import (
 )
 
 const (
-	controllerName = "mxnet-operator"
+	controllerName = "mxjob-controller"
 
 	// mxJobCreatedReason is added in a mxjob when it is created.
 	mxJobCreatedReason = "MXJobCreated"
@@ -73,7 +73,7 @@ const (
 
 var (
 	jobOwnerKey = ".metadata.controller"
-	// DefaultMXControllerConfiguration is the suggested mxnet-operator configuration for production.
+	// DefaultMXControllerConfiguration is the suggested mxnetjob-controller configuration for production.
 	DefaultMXControllerConfiguration = common.JobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 		EnableGangScheduling:     false,
