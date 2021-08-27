@@ -174,10 +174,14 @@ func NewTFController(
 		DeleteFunc: jc.DeleteService,
 	})
 
-	// tc.ServiceLister = serviceInformer.Lister()
-	// tc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
 	jc.ServiceLister = serviceInformer.Lister()
 	jc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
+
+	// Create PodPriorityClass informer.
+	priorityClassInformer := kubeInformerFactory.Scheduling().V1beta1().PriorityClasses()
+
+	jc.PriorityClassLister = priorityClassInformer.Lister()
+	jc.PriorityClassInformerSynced = priorityClassInformer.Informer().HasSynced
 
 	tc.JobController = jc
 
