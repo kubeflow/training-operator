@@ -21,55 +21,76 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	train_util "github.com/kubeflow/common/pkg/util/train"
-
+	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	commonutil "github.com/kubeflow/common/pkg/util"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kubeclientset "k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/client-go/tools/record"
-
-	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
+	train_util "github.com/kubeflow/common/pkg/util/train"
 	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
 	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
 	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
-var (
-	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
+const (
+	// tfJobSucceededReason is added in a tfjob when it is succeeded.
+	tfJobSucceededReason = "TFJobSucceeded"
+	// tfJobRunningReason is added in a tfjob when it is running.
+	tfJobRunningReason = "TFJobRunning"
+	// tfJobFailedReason is added in a tfjob when it is failed.
+	tfJobFailedReason = "TFJobFailed"
+	// tfJobRestarting is added in a tfjob when it is restarting.
+	tfJobRestartingReason = "TFJobRestarting"
+
+	FailedDeleteJobReason     = "FailedDeleteJob"
+	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
+
+	controllerName = "tfjob-controller"
+
+	// labels for pods and servers.
+	tfReplicaTypeLabel  = "replica-type"
+	tfReplicaIndexLabel = "replica-index"
+	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
+	volcanoTaskSpecKey = "volcano.sh/task-spec"
+
+	// gang scheduler name.
+	gangSchedulerName = "volcano"
+	// tfConfig is the environment variable name of TensorFlow cluster spec.
+	tfConfig = "TF_CONFIG"
+	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
+	exitedWithCodeReason = "ExitedWithCode"
+	// podTemplateRestartPolicyReason is the warning reason when the restart
+	// policy is set in pod template.
+	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
+	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
+	// in pod templates with gang-scheduling enabled
+	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
+	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
+	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 )
 
 func NewReconciler(mgr manager.Manager) *TFJobReconciler {
@@ -356,7 +377,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
 
-	tfJobKey, err := KeyFunc(tfJob)
+	tfJobKey, err := common.KeyFunc(tfJob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfJob, err))
 		return err
@@ -407,7 +428,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 
 		// If the TFJob contains Chief or Master spec, then we will update the status
 		// according to the Chief/Master spec.
-		if ContainChieforMasterSpec(tfJob.Spec.TFReplicaSpecs) {
+		if ContainsChiefOrMasterSpec(tfJob.Spec.TFReplicaSpecs) {
 			if tensorflowv1.IsChieforMaster(rtype) {
 				if running > 0 {
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
@@ -574,28 +595,24 @@ func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 	return nil
 }
 
-// Same as (tc *TFController) GetDefaultContainerName(..) in controller.go
 func (r *TFJobReconciler) GetDefaultContainerName() string {
 	return tensorflowv1.DefaultContainerName
 }
 
-// Same as (tc *TFController) GetDefaultContainerPortName(..) in controller.go
 func (r *TFJobReconciler) GetDefaultContainerPortName() string {
 	return tensorflowv1.DefaultPortName
 }
 
-// Same as (tc *TFController) IsMasterRole(..) in controller.go
 func (r *TFJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	if ContainChieforMasterSpec(replicas) {
+	if ContainsChiefOrMasterSpec(replicas) {
 		return rtype == tensorflowv1.TFReplicaTypeChief || rtype == tensorflowv1.TFReplicaTypeMaster
 	}
 	// else check if it is worker with index 0
 	return rtype == tensorflowv1.TFReplicaTypeWorker && index == 0
 }
 
-// Following are replicatef from TFController
-// IsWorker0Completed return true if pod of worker0 succeeded and exited with 0
+// IsWorker0Completed returns true if pod of worker0 succeeded and exited with 0
 func (r *TFJobReconciler) IsWorker0Completed(tfjob *tensorflowv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
 	worker0Completed := false
 	_, ok := replicas[tensorflowv1.TFReplicaTypeWorker]
@@ -746,7 +763,7 @@ func (r *TFJobReconciler) ReconcilePods(
 func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 
-	tfjobKey, err := KeyFunc(tfjob)
+	tfjobKey, err := common.KeyFunc(tfjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
