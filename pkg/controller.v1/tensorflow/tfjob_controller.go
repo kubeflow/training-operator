@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/client-go/informers"
+
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
@@ -93,7 +95,7 @@ const (
 	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 )
 
-func NewReconciler(mgr manager.Manager) *TFJobReconciler {
+func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconciler {
 	r := &TFJobReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -104,17 +106,21 @@ func NewReconciler(mgr manager.Manager) *TFJobReconciler {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
+	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	r.JobController = common.JobController{
-		Controller:       r,
-		Expectations:     expectation.NewControllerExpectations(),
-		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &util.FakeWorkQueue{},
-		Recorder:         r.recorder,
-		KubeClientSet:    kubeClientSet,
-		VolcanoClientSet: volcanoClientSet,
-		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
-		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		Controller:                  r,
+		Expectations:                expectation.NewControllerExpectations(),
+		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
+		WorkQueue:                   &util.FakeWorkQueue{},
+		Recorder:                    r.recorder,
+		KubeClientSet:               kubeClientSet,
+		VolcanoClientSet:            volcanoClientSet,
+		PriorityClassLister:         priorityClassInformer.Lister(),
+		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
+		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
 
 	return r
@@ -758,7 +764,6 @@ func (r *TFJobReconciler) ReconcilePods(
 	return nil
 }
 
-// TODO (Jeffwan@): it touches too many low level objects like expectations etc
 // createNewPod creates a new pod for the given index and type.
 func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
@@ -814,9 +819,9 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 
 	// if gang-scheduling is enabled:
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
-	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
+	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
 	if r.Config.EnableGangScheduling {
-		if util.IsGangSchedulerSet(replicas, gangSchedulerName) {
+		if !util.IsGangSchedulerSet(replicas, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			r.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)

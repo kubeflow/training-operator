@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/informers"
+
 	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -85,7 +87,7 @@ var (
 )
 
 // NewReconciler creates a XGBoostJob Reconciler
-func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
+func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -97,18 +99,22 @@ func NewReconciler(mgr manager.Manager) *XGBoostJobReconciler {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
+	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
-		Controller:       r,
-		Expectations:     expectation.NewControllerExpectations(),
-		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &util.FakeWorkQueue{},
-		Recorder:         r.recorder,
-		KubeClientSet:    kubeClientSet,
-		VolcanoClientSet: volcanoClientSet,
-		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
-		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		Controller:                  r,
+		Expectations:                expectation.NewControllerExpectations(),
+		Config:                      common.JobControllerConfiguration{EnableGangScheduling: false},
+		WorkQueue:                   &util.FakeWorkQueue{},
+		Recorder:                    r.recorder,
+		KubeClientSet:               kubeClientSet,
+		VolcanoClientSet:            volcanoClientSet,
+		PriorityClassLister:         priorityClassInformer.Lister(),
+		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
+		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
 
 	return r
