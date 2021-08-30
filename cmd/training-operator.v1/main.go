@@ -60,6 +60,7 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var enabledSchemes controller_v1.EnabledSchemes
+	var enableGangScheduling bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -67,6 +68,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
+	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -100,7 +102,7 @@ func main() {
 				"scheme not supported", "scheme", s)
 			os.Exit(1)
 		}
-		if err = setupFunc(mgr); err != nil {
+		if err = setupFunc(mgr, enableGangScheduling); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", s)
 			os.Exit(1)
 		}

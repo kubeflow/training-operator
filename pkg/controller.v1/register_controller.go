@@ -31,20 +31,20 @@ import (
 
 const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"
 
-type ReconcilerSetupFunc func(manager2 manager.Manager) error
+type ReconcilerSetupFunc func(manager manager.Manager, enableGangScheduling bool) error
 
 var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
-	tensorflowv1.Kind: func(mgr manager.Manager) error {
-		return tensorflowcontroller.NewReconciler(mgr).SetupWithManager(mgr)
+	tensorflowv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return tensorflowcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	pytorchv1.Kind: func(mgr manager.Manager) error {
-		return pytorchcontroller.NewReconciler(mgr).SetupWithManager(mgr)
+	pytorchv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return pytorchcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	mxnetv1.Kind: func(mgr manager.Manager) error {
-		return mxnetcontroller.NewReconciler(mgr).SetupWithManager(mgr)
+	mxnetv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return mxnetcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	xgboostv1.Kind: func(mgr manager.Manager) error {
-		return xgboostcontroller.NewReconciler(mgr).SetupWithManager(mgr)
+	xgboostv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
 }
 

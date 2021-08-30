@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"time"
 
+	"k8s.io/client-go/informers"
+
 	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -73,17 +75,12 @@ const (
 
 var (
 	jobOwnerKey = ".metadata.controller"
-	// DefaultMXControllerConfiguration is the suggested mxnetjob-controller configuration for production.
-	DefaultMXControllerConfiguration = common.JobControllerConfiguration{
-		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
-		EnableGangScheduling:     false,
-	}
 	// DefaultCleanPodPolicy is the default clean pod policy controller assign the new Job if not exist
 	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a MXJob Reconciler
-func NewReconciler(mgr manager.Manager) *MXJobReconciler {
+func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MXJobReconciler {
 	r := &MXJobReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -95,18 +92,22 @@ func NewReconciler(mgr manager.Manager) *MXJobReconciler {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
+	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
-		Controller:       r,
-		Expectations:     expectation.NewControllerExpectations(),
-		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &util.FakeWorkQueue{},
-		Recorder:         r.Recorder,
-		KubeClientSet:    kubeClientSet,
-		VolcanoClientSet: volcanoClientSet,
-		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.Recorder},
-		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.Recorder},
+		Controller:                  r,
+		Expectations:                expectation.NewControllerExpectations(),
+		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
+		WorkQueue:                   &util.FakeWorkQueue{},
+		Recorder:                    r.Recorder,
+		KubeClientSet:               kubeClientSet,
+		VolcanoClientSet:            volcanoClientSet,
+		PriorityClassLister:         priorityClassInformer.Lister(),
+		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
+		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.Recorder},
+		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.Recorder},
 	}
 
 	return r

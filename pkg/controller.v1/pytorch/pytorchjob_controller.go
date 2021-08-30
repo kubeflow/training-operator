@@ -46,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,7 +66,7 @@ var (
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
-func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
+func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobReconciler {
 	r := &PyTorchJobReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -77,18 +78,22 @@ func NewReconciler(mgr manager.Manager) *PyTorchJobReconciler {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
+	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
-		Controller:       r,
-		Expectations:     expectation.NewControllerExpectations(),
-		Config:           common.JobControllerConfiguration{EnableGangScheduling: false},
-		WorkQueue:        &util.FakeWorkQueue{},
-		Recorder:         r.recorder,
-		KubeClientSet:    kubeClientSet,
-		VolcanoClientSet: volcanoClientSet,
-		PodControl:       control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
-		ServiceControl:   control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		Controller:                  r,
+		Expectations:                expectation.NewControllerExpectations(),
+		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
+		WorkQueue:                   &util.FakeWorkQueue{},
+		Recorder:                    r.recorder,
+		KubeClientSet:               kubeClientSet,
+		VolcanoClientSet:            volcanoClientSet,
+		PriorityClassLister:         priorityClassInformer.Lister(),
+		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
+		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
+		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
 
 	return r
