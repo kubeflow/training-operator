@@ -20,6 +20,8 @@ workflows:
       - sdk/*
       - test/*
       - prow_config.yaml
+      - go.mod
+      - go.sum
     params:
       registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/training-operator"
       tfJobVersion: v1
