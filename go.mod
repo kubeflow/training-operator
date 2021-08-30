@@ -5,8 +5,7 @@ go 1.14
 require (
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/spec v0.20.3
-	github.com/kubeflow/common v0.3.4
-	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
+	github.com/kubeflow/common v0.3.7-0.20210830184722-95689adcf984
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
 	github.com/prometheus/client_golang v1.10.0
