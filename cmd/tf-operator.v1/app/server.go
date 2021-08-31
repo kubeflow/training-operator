@@ -232,7 +232,7 @@ func createClientSets(config *restclientset.Config) (
 func checkCRDExists(clientset apiextensionclientset.Interface, namespace string) bool {
 	crd, err := clientset.ApiextensionsV1beta1().
 		CustomResourceDefinitions().
-		Get(v1.TFCRD, metav1.GetOptions{})
+		Get(context.TODO(), v1.TFCRD, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)

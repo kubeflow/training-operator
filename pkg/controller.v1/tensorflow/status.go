@@ -16,6 +16,7 @@
 package tensorflow
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -235,7 +236,8 @@ func (tc *TFController) UpdateJobStatusInApiServer(job interface{}, jobStatus *c
 	tfJob = tfJob.DeepCopy()
 	tfJob.Status = *jobStatus.DeepCopy()
 
-	_, err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).UpdateStatus(tfJob)
+	_, err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).UpdateStatus(
+		context.TODO(), tfJob, metav1.UpdateOptions{})
 	return err
 }
 
