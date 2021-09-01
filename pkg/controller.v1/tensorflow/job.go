@@ -1,6 +1,7 @@
 package tensorflow
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -43,7 +44,8 @@ func (tc *TFController) DeleteJob(job interface{}) error {
 	}
 
 	log := commonutil.LoggerForJob(tfJob)
-	if err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).Delete(tfJob.Name, &metav1.DeleteOptions{}); err != nil {
+	if err := tc.tfJobClientSet.KubeflowV1().TFJobs(tfJob.Namespace).
+		Delete(context.TODO(), tfJob.Name, metav1.DeleteOptions{}); err != nil {
 		tc.JobController.Recorder.Eventf(tfJob, v1.EventTypeWarning, FailedDeleteJobReason, "Error deleting: %v", err)
 		log.Errorf("failed to delete job %s/%s, %v", tfJob.Namespace, tfJob.Name, err)
 		return err
