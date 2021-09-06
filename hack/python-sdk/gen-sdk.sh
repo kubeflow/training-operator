@@ -38,12 +38,23 @@ wget -O ${SWAGGER_CODEGEN_JAR} ${SWAGGER_JAR_URL}
 
 for FRAMEWORK in ${FRAMEWORKS[@]}; do
     SWAGGER_CODEGEN_FILE="pkg/apis/${FRAMEWORK}/v1/swagger.json"
-
     echo "Generating swagger file for ${FRAMEWORK} ..."
     go run hack/python-sdk/main.go ${FRAMEWORK} ${VERSION} > ${SWAGGER_CODEGEN_FILE}
-    
-    echo "Generating Python SDK for ${FRAMEWORK} ..."
-    java -jar ${SWAGGER_CODEGEN_JAR} generate -i ${SWAGGER_CODEGEN_FILE} -g python -o ${SDK_OUTPUT_PATH} -c ${SWAGGER_CODEGEN_CONF}
 done
 
+echo "Merging swagger files from different frameworks into one"
+download_url=$(curl -s https://api.github.com/repos/go-swagger/go-swagger/releases/latest | \
+  jq -r '.assets[] | select(.name | contains("'"$(uname | tr '[:upper:]' '[:lower:]')"'_amd64")) | .browser_download_url')
+curl -o /tmp/swagger -L'#' "$download_url"
+chmod +x /tmp/swagger
+
+# it will report warning like 'v1.SchedulingPolicy' already exists in primary or higher priority mixin, skipping
+# error code is not 0 but t's acceptable.
+/tmp/swagger mixin pkg/apis/tensorflow/v1/swagger.json pkg/apis/pytorch/v1/swagger.json pkg/apis/mxnet/v1/swagger.json pkg/apis/xgboost/v1/swagger.json \
+--output hack/python-sdk/swagger.json --quiet || true
+
+echo "Generating Python SDK for ${FRAMEWORK} ..."
+java -jar ${SWAGGER_CODEGEN_JAR} generate -i hack/python-sdk/swagger.json -g python -o ${SDK_OUTPUT_PATH} -c ${SWAGGER_CODEGEN_CONF}
+
 echo "Kubeflow Training Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
+rm /tmp/swagger
