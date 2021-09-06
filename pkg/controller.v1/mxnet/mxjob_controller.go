@@ -435,8 +435,8 @@ func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 	return nil
 }
 
-func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	return SetPodEnv(job, podTemplate, rtype, index)
+func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype commonv1.ReplicaType, index string) error {
+	return SetPodEnv(job, podTemplate, string(rtype), index)
 }
 
 func (r *MXJobReconciler) GetDefaultContainerName() string {

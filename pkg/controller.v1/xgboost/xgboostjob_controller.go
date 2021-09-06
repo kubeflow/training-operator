@@ -437,8 +437,8 @@ func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 }
 
 // SetClusterSpec sets the cluster spec for the pod
-func (r *XGBoostJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	return SetPodEnv(job, podTemplate, rtype, index)
+func (r *XGBoostJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype commonv1.ReplicaType, index string) error {
+	return SetPodEnv(job, podTemplate, string(rtype), index)
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerName() string {

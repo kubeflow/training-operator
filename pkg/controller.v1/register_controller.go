@@ -18,10 +18,12 @@ import (
 	"fmt"
 	"strings"
 
+	genericv1 "github.com/kubeflow/tf-operator/pkg/apis/generic/v1"
 	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	genericcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/generic"
 	mxnetcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mxnet"
 	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
@@ -45,6 +47,9 @@ var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
 	},
 	xgboostv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	},
+	genericv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return genericcontroller.NewReonciler(mgr, enableGangScheduling).SetupWithManager(mgr, &genericv1.GenericJob{})
 	},
 }
 

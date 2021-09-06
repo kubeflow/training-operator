@@ -566,7 +566,7 @@ func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 }
 
 // Same as Func (tc *TFController) SetClusterSpec(...) in pod.go
-func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
+func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype commonv1.ReplicaType, index string) error {
 	tfjob, ok := job.(*tensorflowv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfjob)
@@ -577,7 +577,7 @@ func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 		return nil
 	}
 	// Generate TF_CONFIG JSON string.
-	tfConfigStr, err := genTFConfigJSONStr(tfjob, rtype, index)
+	tfConfigStr, err := genTFConfigJSONStr(tfjob, string(rtype), index)
 	if err != nil {
 		return err
 	}
@@ -644,7 +644,7 @@ func (r *TFJobReconciler) IsWorker0Completed(tfjob *tensorflowv1.TFJob, replicas
 // getPodSlices returns a slice, which element is the slice of pod.
 // It gives enough information to caller to make decision to up/down scale resources.
 func (r *TFJobReconciler) getPodSlices(tfjob *tensorflowv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
-	logger := commonutil.LoggerForReplica(tfjob, strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker)))
+	logger := commonutil.LoggerForReplica(tfjob, commonv1.ReplicaType(strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker))))
 
 	pods, err := r.GetPodsForJob(tfjob)
 	if err != nil {
@@ -653,7 +653,7 @@ func (r *TFJobReconciler) getPodSlices(tfjob *tensorflowv1.TFJob, replicasNum *i
 	}
 
 	// Get all pods for the type rt.
-	pods, err = r.JobController.FilterPodsForReplicaType(pods, strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker)))
+	pods, err = r.JobController.FilterPodsForReplicaType(pods, commonv1.ReplicaType(strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker))))
 	if err != nil {
 		return nil, err
 	}
@@ -684,7 +684,7 @@ func (r *TFJobReconciler) ReconcilePods(
 	rt := strings.ToLower(string(rtype))
 	logger := commonutil.LoggerForJob(tfJob)
 	// Get all pods for the type rt.
-	pods, err := r.FilterPodsForReplicaType(pods, rt)
+	pods, err := r.FilterPodsForReplicaType(pods, commonv1.ReplicaType(rt))
 	if err != nil {
 		return err
 	}
@@ -773,12 +773,12 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for tfjob object %#v: %v", tfjob, err))
 		return err
 	}
-	expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, rt)
+	expectationPodsKey := expectation.GenExpectationPodsKey(tfjobKey, commonv1.ReplicaType(rt))
 	err = r.Expectations.ExpectCreations(expectationPodsKey, 1)
 	if err != nil {
 		return err
 	}
-	logger := commonutil.LoggerForReplica(tfjob, rt)
+	logger := commonutil.LoggerForReplica(tfjob, commonv1.ReplicaType(rt))
 	// Create OwnerReference.
 	controllerRef := r.GenOwnerReference(tfjob)
 
@@ -794,7 +794,7 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 	podTemplate := spec.Template.DeepCopy()
 
 	// Set name for the template.
-	podTemplate.Name = common.GenGeneralName(tfjob.Name, rt, index)
+	podTemplate.Name = common.GenGeneralName(tfjob.Name, commonv1.ReplicaType(rt), index)
 
 	if podTemplate.Labels == nil {
 		podTemplate.Labels = make(map[string]string)
@@ -804,7 +804,7 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 		podTemplate.Labels[key] = value
 	}
 
-	if err := r.SetClusterSpec(tfjob, podTemplate, rt, index); err != nil {
+	if err := r.SetClusterSpec(tfjob, podTemplate, commonv1.ReplicaType(rt), index); err != nil {
 		return err
 	}
 
