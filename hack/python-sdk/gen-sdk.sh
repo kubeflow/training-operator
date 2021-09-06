@@ -18,33 +18,32 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SWAGGER_JAR_URL="http://search.maven.org/maven2/io/swagger/swagger-codegen-cli/2.4.6/swagger-codegen-cli-2.4.6.jar"
-SWAGGER_CODEGEN_JAR="hack/python-sdk/swagger-codegen-cli.jar"
+SWAGGER_JAR_URL="https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.3.1/openapi-generator-cli-4.3.1.jar"
+SWAGGER_CODEGEN_JAR="hack/python-sdk/openapi-generator-cli.jar"
 SWAGGER_CODEGEN_CONF="hack/python-sdk/swagger_config.json"
-SWAGGER_CODEGEN_FILE="pkg/apis/tensorflow/v1/swagger.json"
-SDK_OUTPUT_PATH="sdk/python"
+SDK_OUTPUT_PATH="/tmp/sdk/python"
+FRAMEWORKS=(tensorflow pytorch mxnet xgboost)
+VERSION=1.3.0
 
 if [ -z "${GOPATH:-}" ]; then
     export GOPATH=$(go env GOPATH)
 fi
 
-# TBD (@jinchihe) This is not consistent with current generation in hack/update-codegen.sh.
-# Need to confirm current one is useful. To aviod breaking current one, backup and rollback.
-mv pkg/apis/tensorflow/v1/openapi_generated.go pkg/apis/tensorflow/v1/openapi_generated.go.backup
-
 echo "Generating OpenAPI specification ..."
-go run vendor/k8s.io/code-generator/cmd/openapi-gen/main.go --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/job_controller/api/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt
-
-echo "Generating swagger file ..."
-go run hack/python-sdk/main.go 0.1 > ${SWAGGER_CODEGEN_FILE}
+echo "./hack/update-codegen.sh already help us generate openapi specs ..."
 
 echo "Downloading the swagger-codegen JAR package ..."
 wget -O ${SWAGGER_CODEGEN_JAR} ${SWAGGER_JAR_URL}
 
-echo "Generating Python SDK for Kubeflow TF-Operator ..."
-java -jar ${SWAGGER_CODEGEN_JAR} generate -i ${SWAGGER_CODEGEN_FILE} -l python -o ${SDK_OUTPUT_PATH} -c ${SWAGGER_CODEGEN_CONF}
 
-# Rollback the current openapi_generated.go
-mv pkg/apis/tensorflow/v1/openapi_generated.go.backup pkg/apis/tensorflow/v1/openapi_generated.go
+for FRAMEWORK in ${FRAMEWORKS[@]}; do
+    SWAGGER_CODEGEN_FILE="pkg/apis/${FRAMEWORK}/v1/swagger.json"
 
-echo "Kubeflow TF-Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
+    echo "Generating swagger file for ${FRAMEWORK} ..."
+    go run hack/python-sdk/main.go ${FRAMEWORK} ${VERSION} > ${SWAGGER_CODEGEN_FILE}
+    
+    echo "Generating Python SDK for ${FRAMEWORK} ..."
+    java -jar ${SWAGGER_CODEGEN_JAR} generate -i ${SWAGGER_CODEGEN_FILE} -g python -o ${SDK_OUTPUT_PATH} -c ${SWAGGER_CODEGEN_CONF}
+done
+
+echo "Kubeflow Training Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
