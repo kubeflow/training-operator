@@ -3,7 +3,8 @@ kind: TFJob
 metadata:
   name: multi-worker
 spec:
-  cleanPodPolicy: None
+  runPolicy:
+    cleanPodPolicy: None
   tfReplicaSpecs:
     Worker:
       replicas: 2
