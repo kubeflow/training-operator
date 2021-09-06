@@ -4,7 +4,8 @@ metadata:
   name: "distributed-training"
   namespace: "kf-latest"
 spec:
-  cleanPodPolicy: None
+  runPolicy:
+    cleanPodPolicy: None
   tfReplicaSpecs:
     Worker:
       replicas: 3

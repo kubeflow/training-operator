@@ -4,7 +4,8 @@ metadata:
   name: "mnist"
   namespace: kubeflow 
 spec:
-  cleanPodPolicy: None 
+  runPolicy:
+    cleanPodPolicy: None
   tfReplicaSpecs:
     Worker:
       replicas: 1 
