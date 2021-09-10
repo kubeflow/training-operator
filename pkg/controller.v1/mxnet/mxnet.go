@@ -176,7 +176,7 @@ func genClusterSpec(mxjob *mxnetv1.MXJob) (ClusterSpec, error) {
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
 			host := UrlPort{
-				Url:  common.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", i)),
+				Url:  common.GenGeneralName(mxjob.Name, commonv1.ReplicaType(rt), fmt.Sprintf("%d", i)),
 				Port: int(port),
 			}
 			replicaNames = append(replicaNames, host)

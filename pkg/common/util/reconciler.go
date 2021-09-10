@@ -38,10 +38,10 @@ func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobK
 	satisfied := false
 	for _, rtype := range replicaTypes {
 		// Check the expectations of the pods.
-		expectationPodsKey := expectation.GenExpectationPodsKey(jobKey, string(rtype))
+		expectationPodsKey := expectation.GenExpectationPodsKey(jobKey, (rtype))
 		satisfied = satisfied || exp.SatisfiedExpectations(expectationPodsKey)
 		// Check the expectations of the services.
-		expectationServicesKey := expectation.GenExpectationServicesKey(jobKey, string(rtype))
+		expectationServicesKey := expectation.GenExpectationServicesKey(jobKey, (rtype))
 		satisfied = satisfied || exp.SatisfiedExpectations(expectationServicesKey)
 	}
 
@@ -61,11 +61,11 @@ func OnDependentCreateFunc(exp expectation.ControllerExpectationsInterface) func
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
 			var expectKey string
 			if _, ok := e.Object.(*corev1.Pod); ok {
-				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
+				expectKey = expectation.GenExpectationPodsKey(jobKey, commonv1.ReplicaType(rtype))
 			}
 
 			if _, ok := e.Object.(*corev1.Service); ok {
-				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
+				expectKey = expectation.GenExpectationServicesKey(jobKey, commonv1.ReplicaType(rtype))
 			}
 			exp.CreationObserved(expectKey)
 			return true
@@ -155,11 +155,11 @@ func OnDependentDeleteFunc(exp expectation.ControllerExpectationsInterface) func
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
 			var expectKey string
 			if _, ok := e.Object.(*corev1.Pod); ok {
-				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
+				expectKey = expectation.GenExpectationPodsKey(jobKey, commonv1.ReplicaType(rtype))
 			}
 
 			if _, ok := e.Object.(*corev1.Service); ok {
-				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
+				expectKey = expectation.GenExpectationServicesKey(jobKey, commonv1.ReplicaType(rtype))
 			}
 
 			exp.DeletionObserved(expectKey)

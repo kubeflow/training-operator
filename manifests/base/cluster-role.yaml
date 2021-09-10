@@ -13,10 +13,12 @@ rules:
       - mxjobs
       - pytorchjobs
       - xgboostjobs
+      - genericjobs
       - tfjobs/status
       - pytorchjobs/status
       - mxjobs/status
       - xgboostjobs/status
+      - genericjobs/status
     verbs:
       - create
       - delete

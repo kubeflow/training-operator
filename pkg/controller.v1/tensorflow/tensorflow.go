@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 )
@@ -155,7 +157,7 @@ func genClusterSpec(tfjob *tfv1.TFJob) (ClusterSpec, error) {
 			// Headless service assigned a DNS A record for a name of the form "my-svc.my-namespace.svc.cluster.local".
 			// And the last part "svc.cluster.local" is called cluster domain
 			// which maybe different between kubernetes clusters.
-			hostName := common.GenGeneralName(tfjob.Name, rt, fmt.Sprintf("%d", i))
+			hostName := common.GenGeneralName(tfjob.Name, commonv1.ReplicaType(rt), fmt.Sprintf("%d", i))
 			svcName := hostName + "." + tfjob.Namespace + "." + "svc"
 			clusterDomain := os.Getenv(EnvCustomClusterDomain)
 			if len(clusterDomain) > 0 {
