@@ -7,7 +7,7 @@ metadata:
     prometheus.io/scrape: "true"
     prometheus.io/port: "8443"
   labels:
-    control-plane: kubeflow-training-operator
+    app: training-operator
   name: training-operator
 spec:
   ports:
@@ -15,5 +15,5 @@ spec:
     port: 8443
     targetPort: 8443
   selector:
-    name: training-operator
+    control-plane: kubeflow-training-operator
   type: ClusterIP
