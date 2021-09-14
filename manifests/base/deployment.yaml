@@ -21,6 +21,8 @@ spec:
             - /manager
           image: kubeflow/training-operator
           name: training-operator
+          ports:
+            - containerPort: 8080
           env:
             - name: MY_POD_NAMESPACE
               valueFrom:

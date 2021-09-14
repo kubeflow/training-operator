@@ -12,8 +12,8 @@ metadata:
 spec:
   ports:
   - name: monitoring-port
-    port: 8443
-    targetPort: 8443
+    port: 8080
+    targetPort: 8080
   selector:
     control-plane: kubeflow-training-operator
   type: ClusterIP
