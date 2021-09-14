@@ -5,15 +5,15 @@ metadata:
   annotations:
     prometheus.io/path: /metrics
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8443"
+    prometheus.io/port: "8080"
   labels:
     app: training-operator
   name: training-operator
 spec:
   ports:
   - name: monitoring-port
-    port: 8443
-    targetPort: 8443
+    port: 8080
+    targetPort: 8080
   selector:
     name: training-operator
   type: ClusterIP
