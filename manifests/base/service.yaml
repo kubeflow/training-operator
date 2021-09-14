@@ -5,7 +5,7 @@ metadata:
   annotations:
     prometheus.io/path: /metrics
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8443"
+    prometheus.io/port: "8080"
   labels:
     app: training-operator
   name: training-operator
