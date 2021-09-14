@@ -15,5 +15,5 @@ spec:
     port: 8080
     targetPort: 8080
   selector:
-    name: training-operator
+    control-plane: kubeflow-training-operator
   type: ClusterIP
