@@ -363,6 +363,8 @@ github.com/kubeflow/common v0.3.4 h1:Ag2L8Cns7q6jSnDfqbaLf2Vxc9M+nDCe2BJ69Y+Tye4
 github.com/kubeflow/common v0.3.4/go.mod h1:8Y4M5/L0LkmoovGUwa9ZHQ0hqK0wj3dffF/WpLYGN7o=
 github.com/kubeflow/common v0.3.7 h1:LMZrBc/DKBOEX2qIFB+jOwcIqg2hZc2/vRm5kGVcQcw=
 github.com/kubeflow/common v0.3.7/go.mod h1:X15/dRQQoB77wrqrPwVn4GqG2ubgk8xR24A80i61d/4=
+github.com/kubeflow/common v0.4.1-0.20210919082510-fa99a6e8706a h1:LBcdCKgiTVrvwt7S2JBlNcOuI0xm/1h/4mCO/BKYYfY=
+github.com/kubeflow/common v0.4.1-0.20210919082510-fa99a6e8706a/go.mod h1:J1cQhvedpOJfXf+nqIJCUB14ctBxtYpm40xOYzI7DqE=
 github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-bc2310a04743/go.mod h1:qklhhLq1aX+mtWk9cPHPzaBjWImj5ULL6C7HFJtXQMM=
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
