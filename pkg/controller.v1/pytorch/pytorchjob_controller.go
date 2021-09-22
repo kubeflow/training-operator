@@ -53,6 +53,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	podgroupv1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 )
 
@@ -155,13 +156,18 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	r.Scheme.Default(pytorchjob)
 
+	// parse Queue from pytorchjob Annotation
+	schedulingPolicy := &commonv1.SchedulingPolicy{
+		Queue: pytorchjob.Annotations[podgroupv1beta1.QueueNameAnnotationKey],
+	}
+
 	// Construct RunPolicy based on PyTorchJob.Spec
 	runPolicy := &commonv1.RunPolicy{
 		CleanPodPolicy:          pytorchjob.Spec.RunPolicy.CleanPodPolicy,
 		TTLSecondsAfterFinished: pytorchjob.Spec.RunPolicy.TTLSecondsAfterFinished,
 		ActiveDeadlineSeconds:   pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds,
 		BackoffLimit:            pytorchjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        nil,
+		SchedulingPolicy:        schedulingPolicy,
 	}
 
 	// Use common to reconcile the job related pod and service
