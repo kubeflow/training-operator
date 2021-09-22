@@ -156,7 +156,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	r.Scheme.Default(pytorchjob)
 
-	// parse Queue from pytorchjob Annotation
+	// parse volcano Queue from pytorchjob Annotation
 	schedulingPolicy := &commonv1.SchedulingPolicy{
 		Queue: pytorchjob.Annotations[podgroupv1beta1.QueueNameAnnotationKey],
 	}
