@@ -1,5 +1,5 @@
-# Kubeflow TFJob SDK
-Python SDK for TF-Operator
+# Kubeflow Training SDK
+Python SDK for Training Operator
 
 ## Requirements.
 
@@ -9,12 +9,12 @@ Python 2.7 and 3.5+
 ### pip install
 
 ```sh
-pip install kubeflow-tfjob
+pip install kubeflow-training
 ```
 
 Then import the package:
 ```python
-from kubeflow import tfjob 
+from kubeflow import training 
 ```
 
 ### Setuptools
@@ -46,14 +46,37 @@ Class | Method | Description
 [TFJobClient](docs/TFJobClient.md) | [is_job_succeeded](docs/TFJobClient.md#is_job_succeeded) | Check if the TFJob status is Succeeded |
 [TFJobClient](docs/TFJobClient.md) | [get_pod_names](docs/TFJobClient.md#get_pod_names) | Get pod names of TFJob |
 [TFJobClient](docs/TFJobClient.md) | [get_logs](docs/TFJobClient.md#get_logs) | Get training logs of the TFJob |
+[PyTorchJobClient](docs/PyTorchJobClient.md) | [create](docs/PyTorchJobClient.md#create) | Create PyTorchJob|
+[PyTorchJobClient](docs/PyTorchJobClient.md) | [get](docs/PyTorchJobClient.md#get)    | Get the specified PyTorchJob or all PyTorchJob in the namespace |
+[PyTorchJobClient](docs/PyTorchJobClient.md) | [patch](docs/PyTorchJobClient.md#patch)  | Patch the specified PyTorchJob|
+[PyTorchJobClient](docs/PyTorchJobClient.md) | [delete](docs/PyTorchJobClient.md#delete) | Delete the specified PyTorchJob |
+[PyTorchJobClient](docs/PyTorchJobClient.md)  | [wait_for_job](docs/PyTorchJobClient.md#wait_for_job) | Wait for the specified job to finish |
+[PyTorchJobClient](docs/PyTorchJobClient.md)  | [wait_for_condition](docs/PyTorchJobClient.md#wait_for_condition) | Waits until any of the specified conditions occur |
+[PyTorchJobClient](docs/PyTorchJobClient.md)  | [get_job_status](docs/PyTorchJobClient.md#get_job_status) | Get the PyTorchJob status|
+[PyTorchJobClient](docs/PyTorchJobClient.md)  | [is_job_running](docs/PyTorchJobClient.md#is_job_running) | Check if the PyTorchJob running |
+[PyTorchJobClient](docs/PyTorchJobClient.md)  | [is_job_succeeded](docs/PyTorchJobClient.md#is_job_succeeded) | Check if the PyTorchJob Succeeded |
+[PyTorchJobClient](docs/PyTorchJobClient.md) | [get_pod_names](docs/PyTorchJobClient.md#get_pod_names) | Get pod names of PyTorchJob |
+[PyTorchJobClient](docs/PyTorchJobClient.md)| [get_logs](docs/PyTorchJobClient.md#get_logs) | Get training logs of the PyTorchJob |
+## Documentation For Models
 
 ## Documentation For Models
 
  - [V1JobCondition](docs/V1JobCondition.md)
  - [V1JobStatus](docs/V1JobStatus.md)
+ - [V1MXJob](docs/V1MXJob.md)
+ - [V1MXJobList](docs/V1MXJobList.md)
+ - [V1MXJobSpec](docs/V1MXJobSpec.md)
+ - [V1PyTorchJob](docs/V1PyTorchJob.md)
+ - [V1PyTorchJobList](docs/V1PyTorchJobList.md)
+ - [V1PyTorchJobSpec](docs/V1PyTorchJobSpec.md)
  - [V1ReplicaSpec](docs/V1ReplicaSpec.md)
  - [V1ReplicaStatus](docs/V1ReplicaStatus.md)
+ - [V1RunPolicy](docs/V1RunPolicy.md)
+ - [V1SchedulingPolicy](docs/V1SchedulingPolicy.md)
  - [V1TFJob](docs/V1TFJob.md)
  - [V1TFJobList](docs/V1TFJobList.md)
  - [V1TFJobSpec](docs/V1TFJobSpec.md)
+ - [V1XGBoostJob](docs/V1XGBoostJob.md)
+ - [V1XGBoostJobList](docs/V1XGBoostJobList.md)
+ - [V1XGBoostJobSpec](docs/V1XGBoostJobSpec.md)
 

@@ -24,14 +24,14 @@ with open('requirements.txt') as f:
   REQUIRES = f.readlines()
 
 setuptools.setup(
-  name='kubeflow-tfjob',
-  version='0.1.4',
+  name='kubeflow-training',
+  version='1.3.0',
   author="Kubeflow Authors",
   author_email='hejinchi@cn.ibm.com',
   license="Apache License Version 2.0",
   url="https://github.com/kubeflow/tf-operator/sdk/python",
-  description="TFJob Python SDK",
-  long_description="TFJob Python SDK",
+  description="Training Operator Python SDK",
+  long_description="Training Operator Python SDK",
   packages=setuptools.find_packages(
     include=("kubeflow*")),
   package_data={},
