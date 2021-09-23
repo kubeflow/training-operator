@@ -11,6 +11,7 @@ This page contains a list of organizations who are using Kubeflow Training Opera
 | [Atrio](https://www.atrio.io/) | [César Gómez](https://github.com/cesargomez) |
 | [Bloomberg](https://www.bloomberg.com/) | [Chengjian Zheng](https://github.com/czheng94) and [Dan Sun](https://github.com/yuzisun) |
 | [Bytedance](https://www.bytedance.com/) | [Jiaxin Shan](https://github.com/Jeffwan) |
+| [Cisco](https://www.cisco.com/) | [Andrey Velichkevich](https://github.com/andreyvelich) and [Ramdoot Kumar](https://github.com/ramdootp) |
 | [Huawei](https://www.huawei.com/) | [Lei Su](https://github.com/suleisl2000) and [Fei Xu](https://github.com/fisherxu) |
 | [Iguazio](https://www.iguazio.com/) | [Yaron Haviv](https://github.com/yaronha) |
 | [Mellanox Technologies](https://www.mellanox.com/) | [Vitaliy Razinkov](https://github.com/vtlrazin) |
