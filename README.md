@@ -6,8 +6,8 @@
 
 ## Overview
 
-Before v1.2 release, tensorflow-operator can only support TFJob on Kubernetes.
-Starting from v1.3, Training Operator provides Kubernetes custom resources that makes it easy to
+Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
+Starting from v1.3, this operator provides Kubernetes custom resources that makes it easy to
 run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kubernetes.
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
@@ -88,3 +88,12 @@ The following table lists the most recent few versions of the operator.
 | `v1.2.x`| `v1` | 1.16+ |
 | `v1.3.x`| `v1` | 1.18+ |
 | `latest` (master HEAD) | `v1` | 1.18+ |
+
+## Acknowledgement
+
+This project was originally started as a distributed training operator for TensorFlow and later we merged efforts from other Kubeflow training operators to provide a unified and simplified experience for both users and developers. We are very grateful to all who filed issues or helped resolve them, asked and answered questions, and were part of inspiring discussions. We'd also like to thank everyone who's contributed to and maintained the original operators.
+
+* PyTorch Operator: [list of contributors](https://github.com/kubeflow/pytorch-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/pytorch-operator/blob/master/OWNERS).
+* MPI Operator: [list of contributors](https://github.com/kubeflow/mpi-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mpi-operator/blob/master/OWNERS).
+* XGBoost Operator: [list of contributors](https://github.com/kubeflow/xgboost-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/xgboost-operator/blob/master/OWNERS).
+* MXNet Operator: [list of contributors](https://github.com/kubeflow/mxnet-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mxnet-operator/blob/master/OWNERS).
