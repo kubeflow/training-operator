@@ -155,17 +155,8 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	r.Scheme.Default(pytorchjob)
 
-	// Construct RunPolicy based on PyTorchJob.Spec
-	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          pytorchjob.Spec.RunPolicy.CleanPodPolicy,
-		TTLSecondsAfterFinished: pytorchjob.Spec.RunPolicy.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds,
-		BackoffLimit:            pytorchjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        pytorchjob.Spec.RunPolicy.SchedulingPolicy,
-	}
-
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, runPolicy)
+	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, &pytorchjob.Spec.RunPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile PyTorch Job error %v", err)
 		return ctrl.Result{}, err
