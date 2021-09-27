@@ -17,58 +17,100 @@ package generic
 import (
 	"context"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/go-logr/logr"
 	"github.com/kubeflow/common/pkg/reconciler.v1/common"
+	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	corev1 "k8s.io/api/core/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-type GenericJobReconciler struct {
-	common.KubeflowReconciler
+type KubeflowReconciler struct {
+	common.ReconcilerUtil
+	common.ServiceReconciler
+	common.PodReconciler
+	common.JobReconciler
+	common.VolcanoReconciler
+
 	client.Client
 }
 
-func NewReonciler(mgr manager.Manager, enableGangScheduling bool) *GenericJobReconciler {
-	baseKubeflowReconciler := common.BareKubeflowReconciler()
-	// Generate Bare Components
-	jobInter := common.BareKubeflowJobReconciler(mgr.GetClient())
-	podInter := common.BareKubeflowPodReconciler(mgr.GetClient())
-	svcInter := common.BareKubeflowServiceReconciler(mgr.GetClient())
-	gangInter := common.BareVolcanoReconciler(mgr.GetClient(), nil, enableGangScheduling)
-	utilInter := common.BareUtilReconciler(nil, logr.FromContext(context.Background()), mgr.GetScheme())
+func NewReonciler(mgr manager.Manager, enableGangScheduling bool) *KubeflowReconciler {
+	r := &KubeflowReconciler{Client: mgr.GetClient()}
 
-	// Assign interfaces for jobInterface
-	jobInter.PodInterface = podInter
-	jobInter.ServiceInterface = svcInter
-	jobInter.GangSchedulingInterface = gangInter
-	jobInter.ReconcilerUtilInterface = utilInter
+	jobR := common.BareJobReconciler(mgr.GetClient())
+	jobR.OverrideForJobInterface(r, r, r, r)
 
-	// Assign interfaces for podInterface
-	podInter.JobInterface = jobInter
-	podInter.GangSchedulingInterface = gangInter
-	podInter.ReconcilerUtilInterface = utilInter
+	podR := common.BarePodReconciler(mgr.GetClient())
+	podR.OverrideForPodInterface(r, r, r)
 
-	// Assign interfaces for svcInterface
-	svcInter.PodInterface = podInter
-	svcInter.JobInterface = jobInter
-	svcInter.ReconcilerUtilInterface = utilInter
+	svcR := common.BareServiceReconciler(mgr.GetClient())
+	svcR.OverrideForServiceInterface(r, r, r)
 
-	// Assign interfaces for gangInterface
-	gangInter.ReconcilerUtilInterface = utilInter
+	gangR := common.BareVolcanoReconciler(mgr.GetClient(), nil, enableGangScheduling)
+	gangR.OverrideForGangSchedulingInterface(r)
 
-	// Prepare KubeflowReconciler
-	baseKubeflowReconciler.JobInterface = jobInter
-	baseKubeflowReconciler.PodInterface = podInter
-	baseKubeflowReconciler.ServiceInterface = svcInter
-	baseKubeflowReconciler.GangSchedulingInterface = gangInter
-	baseKubeflowReconciler.ReconcilerUtilInterface = utilInter
+	utilR := common.BareUtilReconciler(mgr.GetEventRecorderFor(r.GetReconcilerName()), mgr.GetLogger(), mgr.GetScheme())
 
-	reconciler := &GenericJobReconciler{
-		KubeflowReconciler: *baseKubeflowReconciler,
-		Client:             mgr.GetClient(),
+	r.JobReconciler = *jobR
+	r.PodReconciler = *podR
+	r.ServiceReconciler = *svcR
+	r.VolcanoReconciler = *gangR
+	r.ReconcilerUtil = *utilR
+
+	return r
+}
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+func (r *KubeflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = log.FromContext(ctx)
+
+	job, err := r.GetJob(ctx, req)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
-	reconciler.OverrideForKubeflowReconcilerInterface(reconciler, reconciler, reconciler, reconciler, reconciler)
 
-	return reconciler
+	logger := r.GetLogger(job)
+
+	if job.GetDeletionTimestamp() != nil {
+		logger.Info(common.MsgReconcileCancelled, common.ReasonKey, common.ReasonJobDeleted)
+		return ctrl.Result{}, nil
+	}
+
+	scheme.Scheme.Default(job)
+
+	// Get rid of SatisfiedExpectation
+	replicasSpec, err := r.ExtractReplicasSpec(job)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	runPolicy, err := r.ExtractRunPolicy(job)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	status, err := r.ExtractJobStatus(job)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	err = r.ReconcileJob(ctx, job, replicasSpec, status, runPolicy)
+	if err != nil {
+		logger.Info("Reconcile Generic Job error %v", err)
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *KubeflowReconciler) SetupWithManager(mgr ctrl.Manager, obj client.Object) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(obj).
+		Owns(&corev1.Pod{}).
+		Owns(&corev1.Service{}).
+		Complete(r)
 }

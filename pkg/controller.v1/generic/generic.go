@@ -27,13 +27,18 @@ import (
 
 const ErrFailedConvertToGenericJob = "failed to convert client.Object to *GenericJob"
 
-func (r *GenericJobReconciler) GetJob(ctx context.Context, req ctrl.Request) (client.Object, error) {
+// GetReconcilerName returns the name of this reconciler, which is "Kubeflow Reconciler"
+func (r *KubeflowReconciler) GetReconcilerName() string {
+	return "generic-job-reconciler"
+}
+
+func (r *KubeflowReconciler) GetJob(ctx context.Context, req ctrl.Request) (client.Object, error) {
 	job := &genericv1.GenericJob{}
 	err := r.Get(ctx, req.NamespacedName, job)
 	return job, err
 }
 
-func (r *GenericJobReconciler) ExtractReplicasSpec(job client.Object) (map[commonv1.ReplicaType]*commonv1.ReplicaSpec, error) {
+func (r *KubeflowReconciler) ExtractReplicasSpec(job client.Object) (map[commonv1.ReplicaType]*commonv1.ReplicaSpec, error) {
 	realJob, ok := job.(*genericv1.GenericJob)
 	if !ok {
 		return nil, fmt.Errorf(ErrFailedConvertToGenericJob)
@@ -41,7 +46,7 @@ func (r *GenericJobReconciler) ExtractReplicasSpec(job client.Object) (map[commo
 	return realJob.Spec.ReplicaSpecs, nil
 }
 
-func (r *GenericJobReconciler) ExtractRunPolicy(job client.Object) (*commonv1.RunPolicy, error) {
+func (r *KubeflowReconciler) ExtractRunPolicy(job client.Object) (*commonv1.RunPolicy, error) {
 	realJob, ok := job.(*genericv1.GenericJob)
 	if !ok {
 		return nil, fmt.Errorf(ErrFailedConvertToGenericJob)
@@ -49,7 +54,7 @@ func (r *GenericJobReconciler) ExtractRunPolicy(job client.Object) (*commonv1.Ru
 	return &realJob.Spec.RunPolicy, nil
 }
 
-func (r *GenericJobReconciler) ExtractJobStatus(job client.Object) (*commonv1.JobStatus, error) {
+func (r *KubeflowReconciler) ExtractJobStatus(job client.Object) (*commonv1.JobStatus, error) {
 	realJob, ok := job.(*genericv1.GenericJob)
 	if !ok {
 		return nil, fmt.Errorf(ErrFailedConvertToGenericJob)
@@ -57,6 +62,6 @@ func (r *GenericJobReconciler) ExtractJobStatus(job client.Object) (*commonv1.Jo
 	return &realJob.Status, nil
 }
 
-func (r *GenericJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool {
+func (r *KubeflowReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool {
 	return false
 }

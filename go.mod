@@ -22,4 +22,4 @@ require (
 	volcano.sh/apis v1.2.0-k8s1.19.6
 )
 
-replace github.com/kubeflow/common => github.com/zw0610/common v0.3.5-0.20210906092935-d6976e973043
+replace github.com/kubeflow/common v0.3.7 => github.com/zw0610/common v0.3.5-0.20210927113313-745a8cf79137
