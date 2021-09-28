@@ -9,12 +9,16 @@ spec:
       template:
         spec:
           containers:
-            - name: ps
+            - name: kubeflow
               image: nginx:perl
+              ports:
+              - containerPort: 443
     Worker:
       replicas: 3
       template:
         spec:
           containers:
-            - name: worker
+            - name: kubeflow
               image: nginx:perl
+              ports:
+              - containerPort: 80

@@ -99,7 +99,8 @@ func (r *KubeflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	err = r.ReconcileJob(ctx, job, replicasSpec, status, runPolicy)
 	if err != nil {
-		logger.Info("Reconcile Generic Job error %v", err)
+		logger.Info("Reconcile Generic Job failed",
+			"job", req.NamespacedName.String(), "error", err.Error())
 		return ctrl.Result{}, err
 	}
 
