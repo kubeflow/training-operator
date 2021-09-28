@@ -37,6 +37,6 @@ examples/.ipynb_checkpoints/
 
 **/.ipynb_checkpoints
 
-# swagger-codegen tools and auto generated files but useless
-hack/python-sdk/swagger-codegen-cli.jar
+# openapi-codegen tools and auto generated files but useless
+hack/python-sdk/openapi-generator-cli.jar
 

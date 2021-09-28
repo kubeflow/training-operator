@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "Python SDK for tensorflow",
-    "title": "tensorflow",
+    "description": "Python SDK for pytorch",
+    "title": "pytorch",
     "version": "v1.3.0"
   },
   "paths": {},
@@ -74,6 +74,80 @@
         "startTime": {
           "description": "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
+    "v1.PyTorchJob": {
+      "description": "PyTorchJob Represents a PyTorchJob resource.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "description": "Specification of the desired state of the PyTorchJob.",
+          "$ref": "#/definitions/v1.PyTorchJobSpec"
+        },
+        "status": {
+          "description": "Most recently observed status of the PyTorchJob. Read-only (modified by the system).",
+          "$ref": "#/definitions/v1.JobStatus"
+        }
+      }
+    },
+    "v1.PyTorchJobList": {
+      "description": "PyTorchJobList is a list of PyTorchJobs.",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "description": "List of PyTorchJobs.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1.PyTorchJob"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Standard list metadata.",
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "v1.PyTorchJobSpec": {
+      "description": "PyTorchJobSpec is a desired state description of the PyTorchJob.",
+      "type": "object",
+      "required": [
+        "runPolicy",
+        "pytorchReplicaSpecs"
+      ],
+      "properties": {
+        "pytorchReplicaSpecs": {
+          "description": "A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,\n  {\n    \"Master\": PyTorchReplicaSpec,\n    \"Worker\": PyTorchReplicaSpec,\n  }",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1.ReplicaSpec"
+          }
+        },
+        "runPolicy": {
+          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "$ref": "#/definitions/v1.RunPolicy"
         }
       }
     },
@@ -165,88 +239,6 @@
         },
         "queue": {
           "type": "string"
-        }
-      }
-    },
-    "v1.TFJob": {
-      "description": "TFJob represents a TFJob resource.",
-      "type": "object",
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-        },
-        "spec": {
-          "description": "Specification of the desired state of the TFJob.",
-          "$ref": "#/definitions/v1.TFJobSpec"
-        },
-        "status": {
-          "description": "Most recently observed status of the TFJob. Populated by the system. Read-only.",
-          "$ref": "#/definitions/v1.JobStatus"
-        }
-      }
-    },
-    "v1.TFJobList": {
-      "description": "TFJobList is a list of TFJobs.",
-      "type": "object",
-      "required": [
-        "items"
-      ],
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "items": {
-          "description": "List of TFJobs.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1.TFJob"
-          }
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "description": "Standard list metadata.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
-        }
-      }
-    },
-    "v1.TFJobSpec": {
-      "description": "TFJobSpec is a desired state description of the TFJob.",
-      "type": "object",
-      "required": [
-        "runPolicy",
-        "tfReplicaSpecs"
-      ],
-      "properties": {
-        "enableDynamicWorker": {
-          "description": "A switch to enable dynamic worker",
-          "type": "boolean"
-        },
-        "runPolicy": {
-          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
-          "$ref": "#/definitions/v1.RunPolicy"
-        },
-        "successPolicy": {
-          "description": "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
-          "type": "string"
-        },
-        "tfReplicaSpecs": {
-          "description": "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/v1.ReplicaSpec"
-          }
         }
       }
     }
