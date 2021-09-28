@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "Python SDK for tensorflow",
-    "title": "tensorflow",
+    "description": "Python SDK for xgboost",
+    "title": "xgboost",
     "version": "v1.3.0"
   },
   "paths": {},
@@ -168,8 +168,8 @@
         }
       }
     },
-    "v1.TFJob": {
-      "description": "TFJob represents a TFJob resource.",
+    "v1.XGBoostJob": {
+      "description": "XGBoostJob is the Schema for the xgboostjobs API",
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -184,17 +184,15 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "description": "Specification of the desired state of the TFJob.",
-          "$ref": "#/definitions/v1.TFJobSpec"
+          "$ref": "#/definitions/v1.XGBoostJobSpec"
         },
         "status": {
-          "description": "Most recently observed status of the TFJob. Populated by the system. Read-only.",
           "$ref": "#/definitions/v1.JobStatus"
         }
       }
     },
-    "v1.TFJobList": {
-      "description": "TFJobList is a list of TFJobs.",
+    "v1.XGBoostJobList": {
+      "description": "XGBoostJobList contains a list of XGBoostJob",
       "type": "object",
       "required": [
         "items"
@@ -205,10 +203,9 @@
           "type": "string"
         },
         "items": {
-          "description": "List of TFJobs.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1.TFJob"
+            "$ref": "#/definitions/v1.XGBoostJob"
           }
         },
         "kind": {
@@ -216,33 +213,23 @@
           "type": "string"
         },
         "metadata": {
-          "description": "Standard list metadata.",
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
         }
       }
     },
-    "v1.TFJobSpec": {
-      "description": "TFJobSpec is a desired state description of the TFJob.",
+    "v1.XGBoostJobSpec": {
+      "description": "XGBoostJobSpec defines the desired state of XGBoostJob",
       "type": "object",
       "required": [
         "runPolicy",
-        "tfReplicaSpecs"
+        "xgbReplicaSpecs"
       ],
       "properties": {
-        "enableDynamicWorker": {
-          "description": "A switch to enable dynamic worker",
-          "type": "boolean"
-        },
         "runPolicy": {
-          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "description": "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"make\" to regenerate code after modifying this file",
           "$ref": "#/definitions/v1.RunPolicy"
         },
-        "successPolicy": {
-          "description": "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
-          "type": "string"
-        },
-        "tfReplicaSpecs": {
-          "description": "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
+        "xgbReplicaSpecs": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/v1.ReplicaSpec"

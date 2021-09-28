@@ -117,25 +117,25 @@ echo "Building openapi-gen"
 go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
 
 echo "Generating OpenAPI specification for tensorflow/v1"
-./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
  --report-filename=hack/violation_exception.list \
  --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 
 echo "Generating OpenAPI specification for pytorch/v1"
-./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
  --report-filename=hack/violation_exception.list \
  --output-package github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 
 echo "Generating OpenAPI specification for mxnet/v1"
-./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
  --report-filename=hack/violation_exception.list \
  --output-package github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
 
 echo "Generating OpenAPI specification for xgboost/v1"
-./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1,k8s.io/api/core/v1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version \
+./openapi-gen --input-dirs github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
  --report-filename=hack/violation_exception.list \
  --output-package github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1 \
  --go-header-file hack/boilerplate/boilerplate.go.txt "$@"

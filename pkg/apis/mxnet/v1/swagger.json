@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "Python SDK for tensorflow",
-    "title": "tensorflow",
+    "description": "Python SDK for mxnet",
+    "title": "mxnet",
     "version": "v1.3.0"
   },
   "paths": {},
@@ -76,6 +76,85 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
+    },
+    "v1.MXJob": {
+      "description": "MXJob is the Schema for the mxjobs API",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1.MXJobSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/v1.JobStatus"
+        }
+      }
+    },
+    "v1.MXJobList": {
+      "description": "MXJobList contains a list of MXJob",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1.MXJob"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "v1.MXJobSpec": {
+      "description": "MXJobSpec defines the desired state of MXJob",
+      "type": "object",
+      "required": [
+        "runPolicy",
+        "jobMode",
+        "mxReplicaSpecs"
+      ],
+      "properties": {
+        "jobMode": {
+          "description": "JobMode specify the kind of MXjob to do. Different mode may have different MXReplicaSpecs request",
+          "type": "string"
+        },
+        "mxReplicaSpecs": {
+          "description": "MXReplicaSpecs is map of common.ReplicaType and common.ReplicaSpec specifies the MX replicas to run. For example,\n  {\n    \"Scheduler\": common.ReplicaSpec,\n    \"Server\": common.ReplicaSpec,\n    \"Worker\": common.ReplicaSpec,\n  }",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1.ReplicaSpec"
+          }
+        },
+        "runPolicy": {
+          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "$ref": "#/definitions/v1.RunPolicy"
+        }
+      }
+    },
+    "v1.MXJobStatus": {
+      "description": "MXJobStatus defines the observed state of MXJob",
+      "type": "object"
     },
     "v1.ReplicaSpec": {
       "description": "ReplicaSpec is a description of the replica",
@@ -165,88 +244,6 @@
         },
         "queue": {
           "type": "string"
-        }
-      }
-    },
-    "v1.TFJob": {
-      "description": "TFJob represents a TFJob resource.",
-      "type": "object",
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-        },
-        "spec": {
-          "description": "Specification of the desired state of the TFJob.",
-          "$ref": "#/definitions/v1.TFJobSpec"
-        },
-        "status": {
-          "description": "Most recently observed status of the TFJob. Populated by the system. Read-only.",
-          "$ref": "#/definitions/v1.JobStatus"
-        }
-      }
-    },
-    "v1.TFJobList": {
-      "description": "TFJobList is a list of TFJobs.",
-      "type": "object",
-      "required": [
-        "items"
-      ],
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "items": {
-          "description": "List of TFJobs.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1.TFJob"
-          }
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "description": "Standard list metadata.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
-        }
-      }
-    },
-    "v1.TFJobSpec": {
-      "description": "TFJobSpec is a desired state description of the TFJob.",
-      "type": "object",
-      "required": [
-        "runPolicy",
-        "tfReplicaSpecs"
-      ],
-      "properties": {
-        "enableDynamicWorker": {
-          "description": "A switch to enable dynamic worker",
-          "type": "boolean"
-        },
-        "runPolicy": {
-          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
-          "$ref": "#/definitions/v1.RunPolicy"
-        },
-        "successPolicy": {
-          "description": "SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to \"\", using the default rules.",
-          "type": "string"
-        },
-        "tfReplicaSpecs": {
-          "description": "A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,\n  {\n    \"PS\": ReplicaSpec,\n    \"Worker\": ReplicaSpec,\n  }",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/v1.ReplicaSpec"
-          }
         }
       }
     }
