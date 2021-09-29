@@ -34,7 +34,7 @@ class V1SchedulingPolicy(object):
     """
     openapi_types = {
         'min_available': 'int',
-        'min_resources': 'dict(str, K8sIoApimachineryPkgApiResourceQuantity)',
+        'min_resources': 'dict(str, Quantity)',
         'priority_class': 'str',
         'queue': 'str'
     }
@@ -94,7 +94,7 @@ class V1SchedulingPolicy(object):
 
 
         :return: The min_resources of this V1SchedulingPolicy.  # noqa: E501
-        :rtype: dict(str, K8sIoApimachineryPkgApiResourceQuantity)
+        :rtype: dict(str, Quantity)
         """
         return self._min_resources
 
@@ -104,7 +104,7 @@ class V1SchedulingPolicy(object):
 
 
         :param min_resources: The min_resources of this V1SchedulingPolicy.  # noqa: E501
-        :type: dict(str, K8sIoApimachineryPkgApiResourceQuantity)
+        :type: dict(str, Quantity)
         """
 
         self._min_resources = min_resources

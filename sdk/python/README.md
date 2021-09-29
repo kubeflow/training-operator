@@ -57,7 +57,6 @@ Class | Method | Description
 [PyTorchJobClient](docs/PyTorchJobClient.md)  | [is_job_succeeded](docs/PyTorchJobClient.md#is_job_succeeded) | Check if the PyTorchJob Succeeded |
 [PyTorchJobClient](docs/PyTorchJobClient.md) | [get_pod_names](docs/PyTorchJobClient.md#get_pod_names) | Get pod names of PyTorchJob |
 [PyTorchJobClient](docs/PyTorchJobClient.md)| [get_logs](docs/PyTorchJobClient.md#get_logs) | Get training logs of the PyTorchJob |
-## Documentation For Models
 
 ## Documentation For Models
 

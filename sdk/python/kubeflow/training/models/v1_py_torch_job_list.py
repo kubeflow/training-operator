@@ -36,7 +36,7 @@ class V1PyTorchJobList(object):
         'api_version': 'str',
         'items': 'list[V1PyTorchJob]',
         'kind': 'str',
-        'metadata': 'K8sIoApimachineryPkgApisMetaV1ListMeta'
+        'metadata': 'V1ListMeta'
     }
 
     attribute_map = {
@@ -143,7 +143,7 @@ class V1PyTorchJobList(object):
 
 
         :return: The metadata of this V1PyTorchJobList.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1ListMeta
+        :rtype: V1ListMeta
         """
         return self._metadata
 
@@ -153,7 +153,7 @@ class V1PyTorchJobList(object):
 
 
         :param metadata: The metadata of this V1PyTorchJobList.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1ListMeta
+        :type: V1ListMeta
         """
 
         self._metadata = metadata

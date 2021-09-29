@@ -5,7 +5,7 @@ SchedulingPolicy encapsulates various scheduling policies of the distributed tra
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **min_available** | **int** |  | [optional] 
-**min_resources** | [**dict(str, K8sIoApimachineryPkgApiResourceQuantity)**](K8sIoApimachineryPkgApiResourceQuantity.md) |  | [optional] 
+**min_resources** | [**dict(str, Quantity)**](Quantity.md) |  | [optional] 
 **priority_class** | **str** |  | [optional] 
 **queue** | **str** |  | [optional] 
 

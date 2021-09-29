@@ -35,7 +35,7 @@ class V1XGBoostJob(object):
     openapi_types = {
         'api_version': 'str',
         'kind': 'str',
-        'metadata': 'K8sIoApimachineryPkgApisMetaV1ObjectMeta',
+        'metadata': 'V1ObjectMeta',
         'spec': 'V1XGBoostJobSpec',
         'status': 'V1JobStatus'
     }
@@ -124,7 +124,7 @@ class V1XGBoostJob(object):
 
 
         :return: The metadata of this V1XGBoostJob.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1ObjectMeta
+        :rtype: V1ObjectMeta
         """
         return self._metadata
 
@@ -134,7 +134,7 @@ class V1XGBoostJob(object):
 
 
         :param metadata: The metadata of this V1XGBoostJob.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1ObjectMeta
+        :type: V1ObjectMeta
         """
 
         self._metadata = metadata

@@ -33,11 +33,11 @@ class V1JobStatus(object):
                             and the value is json key in definition.
     """
     openapi_types = {
-        'completion_time': 'K8sIoApimachineryPkgApisMetaV1Time',
+        'completion_time': 'V1Time',
         'conditions': 'list[V1JobCondition]',
-        'last_reconcile_time': 'K8sIoApimachineryPkgApisMetaV1Time',
+        'last_reconcile_time': 'V1Time',
         'replica_statuses': 'dict(str, V1ReplicaStatus)',
-        'start_time': 'K8sIoApimachineryPkgApisMetaV1Time'
+        'start_time': 'V1Time'
     }
 
     attribute_map = {
@@ -76,7 +76,7 @@ class V1JobStatus(object):
 
 
         :return: The completion_time of this V1JobStatus.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1Time
+        :rtype: V1Time
         """
         return self._completion_time
 
@@ -86,7 +86,7 @@ class V1JobStatus(object):
 
 
         :param completion_time: The completion_time of this V1JobStatus.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1Time
+        :type: V1Time
         """
 
         self._completion_time = completion_time
@@ -122,7 +122,7 @@ class V1JobStatus(object):
 
 
         :return: The last_reconcile_time of this V1JobStatus.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1Time
+        :rtype: V1Time
         """
         return self._last_reconcile_time
 
@@ -132,7 +132,7 @@ class V1JobStatus(object):
 
 
         :param last_reconcile_time: The last_reconcile_time of this V1JobStatus.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1Time
+        :type: V1Time
         """
 
         self._last_reconcile_time = last_reconcile_time
@@ -168,7 +168,7 @@ class V1JobStatus(object):
 
 
         :return: The start_time of this V1JobStatus.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1Time
+        :rtype: V1Time
         """
         return self._start_time
 
@@ -178,7 +178,7 @@ class V1JobStatus(object):
 
 
         :param start_time: The start_time of this V1JobStatus.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1Time
+        :type: V1Time
         """
 
         self._start_time = start_time

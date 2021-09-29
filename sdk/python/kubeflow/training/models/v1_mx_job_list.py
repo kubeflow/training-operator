@@ -36,7 +36,7 @@ class V1MXJobList(object):
         'api_version': 'str',
         'items': 'list[V1MXJob]',
         'kind': 'str',
-        'metadata': 'K8sIoApimachineryPkgApisMetaV1ListMeta'
+        'metadata': 'V1ListMeta'
     }
 
     attribute_map = {
@@ -141,7 +141,7 @@ class V1MXJobList(object):
 
 
         :return: The metadata of this V1MXJobList.  # noqa: E501
-        :rtype: K8sIoApimachineryPkgApisMetaV1ListMeta
+        :rtype: V1ListMeta
         """
         return self._metadata
 
@@ -151,7 +151,7 @@ class V1MXJobList(object):
 
 
         :param metadata: The metadata of this V1MXJobList.  # noqa: E501
-        :type: K8sIoApimachineryPkgApisMetaV1ListMeta
+        :type: V1ListMeta
         """
 
         self._metadata = metadata

@@ -35,7 +35,7 @@ class V1ReplicaSpec(object):
     openapi_types = {
         'replicas': 'int',
         'restart_policy': 'str',
-        'template': 'K8sIoApiCoreV1PodTemplateSpec'
+        'template': 'V1PodTemplateSpec'
     }
 
     attribute_map = {
@@ -114,7 +114,7 @@ class V1ReplicaSpec(object):
 
 
         :return: The template of this V1ReplicaSpec.  # noqa: E501
-        :rtype: K8sIoApiCoreV1PodTemplateSpec
+        :rtype: V1PodTemplateSpec
         """
         return self._template
 
@@ -124,7 +124,7 @@ class V1ReplicaSpec(object):
 
 
         :param template: The template of this V1ReplicaSpec.  # noqa: E501
-        :type: K8sIoApiCoreV1PodTemplateSpec
+        :type: V1PodTemplateSpec
         """
 
         self._template = template
