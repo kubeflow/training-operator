@@ -183,12 +183,12 @@ class PyTorchJobClient(object):
 
         try:
             return self.custom_api.delete_namespaced_custom_object(
-                constants.PYTORCHJOB_GROUP,
-                constants.PYTORCHJOB_VERSION,
-                namespace,
-                constants.PYTORCHJOB_PLURAL,
-                name,
-                client.V1DeleteOptions())
+                group=constants.PYTORCHJOB_GROUP,
+                version=constants.PYTORCHJOB_VERSION,
+                namespace=namespace,
+                plural=constants.PYTORCHJOB_PLURAL,
+                name=name,
+                body=client.V1DeleteOptions())
         except client.rest.ApiException as e:
             raise RuntimeError(
                 "Exception when calling CustomObjectsApi->delete_namespaced_custom_object:\
@@ -347,10 +347,11 @@ class PyTorchJobClient(object):
 
     def get_logs(self, name, namespace=None, master=True,
                  replica_type=None, replica_index=None,
-                 follow=False):
+                 follow=False, container="pytorch"):
         """
         Get training logs of the PyTorchJob.
         By default only get the logs of Pod that has labels 'job-role: master'.
+        :param container: container name
         :param name: PyTorchJob name
         :param namespace: defaults to current or default namespace.
         :param master: By default get pod with label 'job-role: master' pod if True.
@@ -374,7 +375,7 @@ class PyTorchJobClient(object):
             for pod in pod_names:
                 try:
                     pod_logs = self.core_api.read_namespaced_pod_log(
-                        pod, namespace, follow=follow)
+                        pod, namespace, follow=follow, container=container)
                     logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
                 except client.rest.ApiException as e:
                     raise RuntimeError(

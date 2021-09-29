@@ -371,10 +371,11 @@ class TFJobClient(object):
 
     def get_logs(self, name, namespace=None, master=True,
                  replica_type=None, replica_index=None,
-                 follow=False):
+                 follow=False, container="tensorflow"):
         """
         Get training logs of the TFJob.
         By default only get the logs of Pod that has labels 'job-role: master'.
+        :param container: container name
         :param name: tfjob name
         :param namespace: defaults to current or default namespace.
         :param master: By default get pod with label 'job-role: master' pod if True.
@@ -398,7 +399,7 @@ class TFJobClient(object):
                 log_streams = []
                 for pod in pod_names:
                     log_streams.append(k8s_watch.Watch().stream(self.core_api.read_namespaced_pod_log,
-                                                                name=pod, namespace=namespace))
+                                                                name=pod, namespace=namespace, container=container))
                 finished = [False for _ in log_streams]
 
                 # create thread and queue per stream, for non-blocking iteration
@@ -424,7 +425,7 @@ class TFJobClient(object):
             else:
                 for pod in pod_names:
                     try:
-                        pod_logs = self.core_api.read_namespaced_pod_log(pod, namespace)
+                        pod_logs = self.core_api.read_namespaced_pod_log(pod, namespace, container=container)
                         logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
                     except client.rest.ApiException as e:
                         raise RuntimeError(
