@@ -80,6 +80,21 @@ kubectl create -f ./tf_job_mnist.yaml
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
 
+## Generate Python SDK
+
+To generate Python SDK for the operator, run:
+```
+.hack/python-sdk/gen-sdk.sh
+```
+This command will re-generate the api and model files together with the documentation and model tests.
+The following files/folders in `sdk/python` are auto-generated and should not be modified directly:
+```
+docs
+kubeflow/training/models
+kubeflow/training/*.py
+test/*.py
+```
+
 ## Code Style
 
 ### Python
