@@ -44,55 +44,28 @@ def set_pytorchjob_namespace(pytorchjob):
     return namespace
 
 
-def get_tfjob_labels(name, master=False, replica_type=None, replica_index=None):
+def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     """
-    Get labels according to speficed flags.
-    :param name: tfjob name
+    Get labels according to specified flags.
+    :param name: job name
     :param master: if need include label 'job-role: master'.
-    :param replica_type: User can specify one of 'worker, ps, chief to only' get one type pods.
-    :param replica_index: Can specfy replica index to get one pod of TFJob.
+    :param replica_type: Replica type according to the job type (master, worker, chief, ps etc).
+    :param replica_index: Can specify replica index to get one pod of the job.
     :return: Dict: Labels
     """
     labels = {
-        constants.TFJOB_GROUP_LABEL: 'kubeflow.org',
-        constants.TFJOB_NAME_LABEL: name,
+        constants.JOB_GROUP_LABEL: 'kubeflow.org',
+        constants.JOB_NAME_LABEL: name,
     }
 
     if master:
-        labels[constants.TFJOB_ROLE_LABEL] = 'master'
+        labels[constants.JOB_ROLE_LABEL] = 'master'
 
     if replica_type:
-        labels[constants.TFJOB_TYPE_LABEL] = str.lower(replica_type)
+        labels[constants.JOB_TYPE_LABEL] = str.lower(replica_type)
 
     if replica_index:
-        labels[constants.TFJOB_INDEX_LABEL] = replica_index
-
-    return labels
-
-
-def get_pytorchjob_labels(name, master=False, replica_type=None, replica_index=None):
-    """
-    Get labels according to speficed flags.
-    :param name: PyTorchJob name
-    :param master: if need include label 'job-role: master'.
-    :param replica_type: User can specify one of 'worker, ps, chief to only' get one type pods.
-    :param replica_index: Can specfy replica index to get one pod of PyTorchJob.
-    :return: Dict: Labels
-    """
-    labels = {
-        constants.PYTORCHJOB_GROUP_LABEL: 'kubeflow.org',
-        constants.PYTORCHJOB_CONTROLLER_LABEL: 'pytorch-operator',
-        constants.PYTORCHJOB_NAME_LABEL: name,
-    }
-
-    if master:
-        labels[constants.PYTORCHJOB_ROLE_LABEL] = 'master'
-
-    if replica_type:
-        labels[constants.PYTORCHJOB_TYPE_LABEL] = str.lower(replica_type)
-
-    if replica_index:
-        labels[constants.PYTORCHJOB_INDEX_LABEL] = replica_index
+        labels[constants.JOB_INDEX_LABEL] = replica_index
 
     return labels
 

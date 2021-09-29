@@ -26,12 +26,12 @@ TFJOB_VERSION = os.environ.get('TFJOB_VERSION', 'v1')
 
 TFJOB_LOGLEVEL = os.environ.get('TFJOB_LOGLEVEL', 'INFO').upper()
 
-# TFJob Label Names
-TFJOB_GROUP_LABEL = 'group-name'
-TFJOB_NAME_LABEL = 'job-name'
-TFJOB_TYPE_LABEL = 'replica-type'
-TFJOB_INDEX_LABEL = 'replica-index'
-TFJOB_ROLE_LABEL = 'job-role'
+# Job Label Names
+JOB_GROUP_LABEL = 'group-name'
+JOB_NAME_LABEL = 'job-name'
+JOB_TYPE_LABEL = 'replica-type'
+JOB_INDEX_LABEL = 'replica-index'
+JOB_ROLE_LABEL = 'job-role'
 
 # PyTorchJob K8S constants
 PYTORCHJOB_GROUP = 'kubeflow.org'
@@ -40,11 +40,3 @@ PYTORCHJOB_PLURAL = 'pytorchjobs'
 PYTORCHJOB_VERSION = os.environ.get('PYTORCHJOB_VERSION', 'v1')
 
 PYTORCH_LOGLEVEL = os.environ.get('PYTORCHJOB_LOGLEVEL', 'INFO').upper()
-
-# PyTorchJob Label Names
-PYTORCHJOB_CONTROLLER_LABEL = 'controller-name'
-PYTORCHJOB_GROUP_LABEL = 'group-name'
-PYTORCHJOB_NAME_LABEL = 'pytorch-job-name'
-PYTORCHJOB_TYPE_LABEL = 'pytorch-replica-type'
-PYTORCHJOB_INDEX_LABEL = 'pytorch-replica-index'
-PYTORCHJOB_ROLE_LABEL = 'job-role'

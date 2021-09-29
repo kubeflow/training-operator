@@ -348,9 +348,9 @@ class TFJobClient(object):
         if namespace is None:
             namespace = utils.get_default_target_namespace()
 
-        labels = utils.get_tfjob_labels(name, master=master,
-                                        replica_type=replica_type,
-                                        replica_index=replica_index)
+        labels = utils.get_job_labels(name, master=master,
+                                      replica_type=replica_type,
+                                      replica_index=replica_index)
 
         try:
             resp = self.core_api.list_namespaced_pod(

@@ -324,7 +324,7 @@ class PyTorchJobClient(object):
         if namespace is None:
             namespace = utils.get_default_target_namespace()
 
-        labels = utils.get_pytorchjob_labels(name, master=master,
+        labels = utils.get_job_labels(name, master=master,
                                              replica_type=replica_type,
                                              replica_index=replica_index)
 
