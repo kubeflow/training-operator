@@ -19,11 +19,11 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training.api.tf_job_client import TFJobClient
-from kubeflow.training.models.v1_replica_spec import V1ReplicaSpec
-from kubeflow.training.models.v1_run_policy import V1RunPolicy
-from kubeflow.training.models.v1_tf_job import V1TFJob
-from kubeflow.training.models.v1_tf_job_spec import V1TFJobSpec
+from kubeflow.training import TFJobClient
+from kubeflow.training import V1ReplicaSpec
+from kubeflow.training import V1RunPolicy
+from kubeflow.training import V1TFJob
+from kubeflow.training import V1TFJobSpec
 
 TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
 SDK_TEST_NAMESPACE = 'kubeflow'

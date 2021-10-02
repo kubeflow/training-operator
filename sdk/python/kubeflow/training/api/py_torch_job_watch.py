@@ -1,4 +1,4 @@
-# Copyright 2020 The Kubeflow Authors.
+# Copyright 2021 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,5 +56,5 @@ def watch(name=None, namespace=None, timeout_seconds=600):
             tbl(pytorchjob_name, status, update_time)
 
             if name == pytorchjob_name:
-                if status == 'Succeeded' or status == 'Failed':
+                if status in [constants.JOB_STATUS_SUCCEEDED, constants.JOB_STATUS_FAILED]:
                     break

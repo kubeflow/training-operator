@@ -56,5 +56,5 @@ def watch(name=None, namespace=None, timeout_seconds=600):
             tbl(tfjob_name, status, update_time)
 
             if name == tfjob_name:
-                if status == 'Succeeded' or status == 'Failed':
+                if status in [constants.JOB_STATUS_SUCCEEDED, constants.JOB_STATUS_FAILED]:
                     break

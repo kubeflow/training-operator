@@ -1,4 +1,4 @@
-# Copyright 2019 The Kubeflow Authors.
+# Copyright 2021 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -296,7 +296,7 @@ class PyTorchJobClient(object):
         :return: True or False
         """
         pytorchjob_status = self.get_job_status(name, namespace=namespace)
-        return pytorchjob_status.lower() == "running"
+        return pytorchjob_status == constants.JOB_STATUS_RUNNING
 
     def is_job_succeeded(self, name, namespace=None):
         """Returns true if the PyTorchJob succeeded; false otherwise.
@@ -306,7 +306,7 @@ class PyTorchJobClient(object):
         :return: True or False
         """
         pytorchjob_status = self.get_job_status(name, namespace=namespace)
-        return pytorchjob_status.lower() == "succeeded"
+        return pytorchjob_status == constants.JOB_STATUS_SUCCEEDED
 
     def get_pod_names(self, name, namespace=None, master=False,  # pylint: disable=inconsistent-return-statements
                       replica_type=None, replica_index=None):

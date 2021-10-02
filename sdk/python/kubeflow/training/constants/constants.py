@@ -33,6 +33,10 @@ JOB_TYPE_LABEL = 'replica-type'
 JOB_INDEX_LABEL = 'replica-index'
 JOB_ROLE_LABEL = 'job-role'
 
+JOB_STATUS_SUCCEEDED = 'Succeeded'
+JOB_STATUS_FAILED = 'Failed'
+JOB_STATUS_RUNNING = 'Running'
+
 # PyTorchJob K8S constants
 PYTORCHJOB_GROUP = 'kubeflow.org'
 PYTORCHJOB_KIND = 'PyTorchJob'

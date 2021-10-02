@@ -19,11 +19,11 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training.api.py_torch_job_client import PyTorchJobClient
-from kubeflow.training.models.v1_replica_spec import V1ReplicaSpec
-from kubeflow.training.models.v1_py_torch_job import V1PyTorchJob
-from kubeflow.training.models.v1_py_torch_job_spec import V1PyTorchJobSpec
-from kubeflow.training.models.v1_run_policy import V1RunPolicy
+from kubeflow.training import PyTorchJobClient
+from kubeflow.training import V1ReplicaSpec
+from kubeflow.training import V1PyTorchJob
+from kubeflow.training import V1PyTorchJobSpec
+from kubeflow.training import V1RunPolicy
 
 PYTORCH_CLIENT = PyTorchJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
 SDK_TEST_NAMESPACE = 'default'
