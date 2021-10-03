@@ -166,17 +166,8 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		replicas[commonv1.ReplicaType(k)] = v
 	}
 
-	// Construct RunPolicy based on MXJob.Spec
-	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          mxjob.Spec.RunPolicy.CleanPodPolicy,
-		TTLSecondsAfterFinished: mxjob.Spec.RunPolicy.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   mxjob.Spec.RunPolicy.ActiveDeadlineSeconds,
-		BackoffLimit:            mxjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        nil,
-	}
-
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, runPolicy)
+	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, &mxjob.Spec.RunPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile MX Job error %v", err)
 		return ctrl.Result{}, err
