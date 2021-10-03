@@ -17,11 +17,11 @@
       "properties": {
         "lastTransitionTime": {
           "description": "Last time the condition transitioned from one status to another.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+          "$ref": "#/definitions/v1.Time"
         },
         "lastUpdateTime": {
           "description": "The last time this condition was updated.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+          "$ref": "#/definitions/v1.Time"
         },
         "message": {
           "description": "A human readable message indicating details about the transition.",
@@ -51,7 +51,7 @@
       "properties": {
         "completionTime": {
           "description": "Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+          "$ref": "#/definitions/v1.Time"
         },
         "conditions": {
           "description": "Conditions is an array of current observed job conditions.",
@@ -62,7 +62,7 @@
         },
         "lastReconcileTime": {
           "description": "Represents last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+          "$ref": "#/definitions/v1.Time"
         },
         "replicaStatuses": {
           "description": "ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.",
@@ -73,7 +73,7 @@
         },
         "startTime": {
           "description": "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time"
+          "$ref": "#/definitions/v1.Time"
         }
       }
     },
@@ -90,7 +90,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+          "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "$ref": "#/definitions/v1.MXJobSpec"
@@ -122,7 +122,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+          "$ref": "#/definitions/v1.ListMeta"
         }
       }
     },
@@ -169,7 +169,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+          "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "description": "Specification of the desired state of the PyTorchJob.",
@@ -205,7 +205,7 @@
         },
         "metadata": {
           "description": "Standard list metadata.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+          "$ref": "#/definitions/v1.ListMeta"
         }
       }
     },
@@ -245,7 +245,7 @@
         },
         "template": {
           "description": "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodTemplateSpec"
+          "$ref": "#/definitions/v1.PodTemplateSpec"
         }
       }
     },
@@ -310,7 +310,7 @@
         "minResources": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+            "$ref": "#/definitions/.Quantity"
           }
         },
         "priorityClass": {
@@ -334,7 +334,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+          "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "description": "Specification of the desired state of the TFJob.",
@@ -370,7 +370,7 @@
         },
         "metadata": {
           "description": "Standard list metadata.",
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+          "$ref": "#/definitions/v1.ListMeta"
         }
       }
     },
@@ -416,7 +416,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+          "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "$ref": "#/definitions/v1.XGBoostJobSpec"
@@ -448,7 +448,7 @@
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+          "$ref": "#/definitions/v1.ListMeta"
         }
       }
     },

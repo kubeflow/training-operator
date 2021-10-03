@@ -47,6 +47,15 @@ For users who prefer to use original tensorflow controllers, please checkout v1.
 kubectl apply -k "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=v1.2.0"
 ```
 
+### Python SDK for Kubeflow Training Operator
+
+Training Operator provides Python SDK for the custom resources. More docs are available in [sdk/python](sdk/python) folder.
+
+Use `pip install` command to install the latest release of the SDK:
+```
+pip install kubeflow-training
+```
+
 ## Quick Start
 
 Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow Training User Guide](https://www.kubeflow.org/docs/guides/components/tftraining/) for more information.

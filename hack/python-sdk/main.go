@@ -90,6 +90,9 @@ func main() {
 func swaggify(name, framework string) string {
 	name = strings.Replace(name, fmt.Sprintf("github.com/kubeflow/tf-operator/pkg/apis/%s/", framework), "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/", "", -1)
+	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
+	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)
+	name = strings.Replace(name, "k8s.io/apimachinery/pkg/api/resource", "", -1)
 	name = strings.Replace(name, "/", ".", -1)
 	return name
 }
