@@ -6,9 +6,10 @@
 
 ## Overview
 
-Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
-Starting from v1.3, this operator provides Kubernetes custom resources that makes it easy to
+Starting from v1.3, this training operator provides Kubernetes custom resources that makes it easy to
 run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kubernetes.
+
+> Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
   - [Tensorflow API Definition](pkg/apis/tensorflow/v1/types.go)
@@ -30,13 +31,13 @@ run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kube
 ### Master Branch
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=master"
+kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone"
 ```
 
-### Specific Release
+### Stable Release
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=v1.3.0"
+kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?ref=v1.3.0"
 ```
 
 ### Tensorflow Release Only
@@ -44,7 +45,7 @@ kubectl apply -k "github.com/kubeflow/tf-operator.git/manifests/overlays/standal
 For users who prefer to use original tensorflow controllers, please checkout v1.2-branch, we will maintain the bug fix in this branch.
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator.git/manifests/overlays/standalone?ref=v1.2.0"
+kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?ref=v1.2.0"
 ```
 
 ### Python SDK for Kubeflow Training Operator
