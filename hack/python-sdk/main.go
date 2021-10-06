@@ -1,5 +1,5 @@
 /*
-Copyright 2019 kubeflow.org.
+Copyright 2021 kubeflow.org.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,52 +19,52 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	"os"
 	"strings"
 
 	"github.com/go-openapi/spec"
-	mxJob "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
 	pytorchJob "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
 	tfjob "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboostJob "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	"k8s.io/klog"
 	"k8s.io/kube-openapi/pkg/common"
 )
 
-// Generate OpenAPI spec definitions for TFJob Resource
+// Generate OpenAPI spec definitions for API resources
 func main() {
-	if len(os.Args) <= 2 {
-		klog.Fatal("Supply a framework and version")
+	if len(os.Args) <= 1 {
+		klog.Fatal("Supply a version")
 	}
-	framework := os.Args[1]
-	version := os.Args[2]
+	version := os.Args[1]
 	if !strings.HasPrefix(version, "v") {
 		version = "v" + version
 	}
-	var oAPIDefs map[string]common.OpenAPIDefinition
+	var oAPIDefs = map[string]common.OpenAPIDefinition{}
+	defs := spec.Definitions{}
 
-	switch framework {
-	case "tensorflow":
-		oAPIDefs = tfjob.GetOpenAPIDefinitions(func(name string) spec.Ref {
-			return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name, framework)))
-		})
-	case "pytorch":
-		oAPIDefs = pytorchJob.GetOpenAPIDefinitions(func(name string) spec.Ref {
-			return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name, framework)))
-		})
-	case "mxnet":
-		oAPIDefs = mxJob.GetOpenAPIDefinitions(func(name string) spec.Ref {
-			return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name, framework)))
-		})
-	case "xgboost":
-		oAPIDefs = xgboostJob.GetOpenAPIDefinitions(func(name string) spec.Ref {
-			return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name, framework)))
-		})
+	refCallback := func(name string) spec.Ref {
+		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	}
 
-	defs := spec.Definitions{}
+	for k, v := range tfjob.GetOpenAPIDefinitions(refCallback) {
+		oAPIDefs[k] = v
+	}
+
+	for k, v := range pytorchJob.GetOpenAPIDefinitions(refCallback) {
+		oAPIDefs[k] = v
+	}
+
+	for k, v := range mxjobv1.GetOpenAPIDefinitions(refCallback) {
+		oAPIDefs[k] = v
+	}
+
+	for k, v := range xgboostv1.GetOpenAPIDefinitions(refCallback) {
+		oAPIDefs[k] = v
+	}
+
 	for defName, val := range oAPIDefs {
-		defs[swaggify(defName, framework)] = val.Schema
+		defs[swaggify(defName)] = val.Schema
 	}
 	swagger := spec.Swagger{
 		SwaggerProps: spec.SwaggerProps{
@@ -73,8 +73,8 @@ func main() {
 			Paths:       &spec.Paths{Paths: map[string]spec.PathItem{}},
 			Info: &spec.Info{
 				InfoProps: spec.InfoProps{
-					Title:       framework,
-					Description: fmt.Sprintf("Python SDK for %v", framework),
+					Title:       "Kubeflow Training SDK",
+					Description: "Python SDK for Kubeflow Training",
 					Version:     version,
 				},
 			},
@@ -87,8 +87,11 @@ func main() {
 	fmt.Println(string(jsonBytes))
 }
 
-func swaggify(name, framework string) string {
-	name = strings.Replace(name, fmt.Sprintf("github.com/kubeflow/tf-operator/pkg/apis/%s/", framework), "", -1)
+func swaggify(name string) string {
+	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/pytorch/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/mxnet/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/xgboost/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/", "", -1)
 	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
 	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)
