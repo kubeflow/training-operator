@@ -28,15 +28,15 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":         schema_pkg_apis_common_v1_JobCondition(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":            schema_pkg_apis_common_v1_JobStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":          schema_pkg_apis_common_v1_ReplicaSpec(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":        schema_pkg_apis_common_v1_ReplicaStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":            schema_pkg_apis_common_v1_RunPolicy(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":     schema_pkg_apis_common_v1_SchedulingPolicy(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJob":     schema_pkg_apis_xgboost_v1_XGBoostJob(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJobList": schema_pkg_apis_xgboost_v1_XGBoostJobList(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJobSpec": schema_pkg_apis_xgboost_v1_XGBoostJobSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":               schema_pkg_apis_common_v1_JobCondition(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":                  schema_pkg_apis_common_v1_JobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":                schema_pkg_apis_common_v1_ReplicaSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":              schema_pkg_apis_common_v1_ReplicaStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                  schema_pkg_apis_common_v1_RunPolicy(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":           schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJob":     schema_pkg_apis_xgboost_v1_XGBoostJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobList": schema_pkg_apis_xgboost_v1_XGBoostJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobSpec": schema_pkg_apis_xgboost_v1_XGBoostJobSpec(ref),
 	}
 }
 
@@ -349,7 +349,7 @@ func schema_pkg_apis_xgboost_v1_XGBoostJob(ref common.ReferenceCallback) common.
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJobSpec"),
+							Ref: ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobSpec"),
 						},
 					},
 					"status": {
@@ -361,7 +361,7 @@ func schema_pkg_apis_xgboost_v1_XGBoostJob(ref common.ReferenceCallback) common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -397,7 +397,7 @@ func schema_pkg_apis_xgboost_v1_XGBoostJobList(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJob"),
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJob"),
 									},
 								},
 							},
@@ -408,7 +408,7 @@ func schema_pkg_apis_xgboost_v1_XGBoostJobList(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1.XGBoostJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

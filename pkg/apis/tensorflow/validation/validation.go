@@ -20,7 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 // ValidateV1TFJobSpec checks that the v1.TFJobSpec is valid.

@@ -28,15 +28,15 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":       schema_pkg_apis_common_v1_JobCondition(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":          schema_pkg_apis_common_v1_JobStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":        schema_pkg_apis_common_v1_ReplicaSpec(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":      schema_pkg_apis_common_v1_ReplicaStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":          schema_pkg_apis_common_v1_RunPolicy(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":   schema_pkg_apis_common_v1_SchedulingPolicy(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob":     schema_pkg_apis_tensorflow_v1_TFJob(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobList": schema_pkg_apis_tensorflow_v1_TFJobList(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec": schema_pkg_apis_tensorflow_v1_TFJobSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":             schema_pkg_apis_common_v1_JobCondition(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":                schema_pkg_apis_common_v1_JobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":              schema_pkg_apis_common_v1_ReplicaSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":            schema_pkg_apis_common_v1_ReplicaStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                schema_pkg_apis_common_v1_RunPolicy(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":         schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJob":     schema_pkg_apis_tensorflow_v1_TFJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJobList": schema_pkg_apis_tensorflow_v1_TFJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJobSpec": schema_pkg_apis_tensorflow_v1_TFJobSpec(ref),
 	}
 }
 
@@ -350,7 +350,7 @@ func schema_pkg_apis_tensorflow_v1_TFJob(ref common.ReferenceCallback) common.Op
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired state of the TFJob.",
-							Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJobSpec"),
 						},
 					},
 					"status": {
@@ -363,7 +363,7 @@ func schema_pkg_apis_tensorflow_v1_TFJob(ref common.ReferenceCallback) common.Op
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -401,7 +401,7 @@ func schema_pkg_apis_tensorflow_v1_TFJobList(ref common.ReferenceCallback) commo
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob"),
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJob"),
 									},
 								},
 							},
@@ -412,7 +412,7 @@ func schema_pkg_apis_tensorflow_v1_TFJobList(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1.TFJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1.TFJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

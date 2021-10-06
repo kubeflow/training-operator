@@ -16,20 +16,20 @@ Package v1 is the v1 version of the API.
 Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 .Resource Types
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjoblist[$$XGBoostJobList$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjoblist[$$XGBoostJobList$$]
 
 
 === Definitions
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjob"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob"]
 ==== XGBoostJob 
 
 XGBoostJob is the Schema for the xgboostjobs API
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjoblist[$$XGBoostJobList$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjoblist[$$XGBoostJobList$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -40,12 +40,12 @@ XGBoostJob is the Schema for the xgboostjobs API
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjobspec[$$XGBoostJobSpec$$]__ | 
+| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjobspec[$$XGBoostJobSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-jobstatus[$$JobStatus$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjoblist"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjoblist"]
 ==== XGBoostJobList 
 
 XGBoostJobList contains a list of XGBoostJob
@@ -60,18 +60,18 @@ XGBoostJobList contains a list of XGBoostJob
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjobspec"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjobspec"]
 ==== XGBoostJobSpec 
 
 XGBoostJobSpec defines the desired state of XGBoostJob
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]
 ****
 
 [cols="25a,75a", options="header"]

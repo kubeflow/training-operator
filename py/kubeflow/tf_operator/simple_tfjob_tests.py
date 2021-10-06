@@ -67,7 +67,7 @@ class SimpleTfJobTests(test_util.TestCase):
       api_client, self.namespace, results)
     if creation_failures:
       # TODO(jlewi): Starting with
-      # https://github.com/kubeflow/tf-operator/pull/646 the number of events
+      # https://github.com/kubeflow/training-operator/pull/646 the number of events
       # no longer seems to match the expected; it looks like maybe events
       # are being combined? For now we just log a warning rather than an
       # error.

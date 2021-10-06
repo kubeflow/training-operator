@@ -21,7 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	mxv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	mxv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 )
 
 // ValidateV1MXJobSpec checks that the v1.MXJobSpec is valid.

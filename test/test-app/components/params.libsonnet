@@ -21,7 +21,7 @@
       tfAmbassadorImage: "quay.io/datawire/ambassador:0.30.1",
       tfAmbassadorServiceType: "ClusterIP",
       tfDefaultImage: "null",
-      tfJobImage: "gcr.io/kubeflow-images-public/tf_operator:kubeflow-tf-operator-postsubmit-v2-70cafb1-271-1911",
+      tfJobImage: "gcr.io/kubeflow-images-public/tf_operator:kubeflow-training-operator-postsubmit-v2-70cafb1-271-1911",
       tfJobUiServiceType: "ClusterIP",
       tfStatsdImage: "quay.io/datawire/statsd:0.30.1",
       usageId: "unknown_cluster",

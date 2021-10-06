@@ -24,7 +24,7 @@ from kubeflow.tf_operator import build_and_push_image, util
 # on PROW. But we choose sensible defaults so that we can run locally without
 # setting defaults.
 REPO_ORG = os.getenv("REPO_OWNER", "kubeflow")
-REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
+REPO_NAME = os.getenv("REPO_NAME", "training-operator")
 
 RESULTS_BUCKET = "kubeflow-ci-results"
 JOB_NAME = "tf-k8s-postsubmit"
@@ -145,16 +145,16 @@ def build_operator_image(root_dir,
   commit = build_and_push_image.GetGitHash(root_dir)
 
   targets = [
-    "github.com/kubeflow/tf-operator/cmd/training-operator.v1",
+    "github.com/kubeflow/training-operator/cmd/training-operator.v1",
   ]
   for t in targets:
     if t in [
-        "github.com/kubeflow/tf-operator/cmd/training-operator.v1"
+        "github.com/kubeflow/training-operator/cmd/training-operator.v1"
     ]:
       util.run([
         "go", "install", "-ldflags",
-        '''-X github.com/kubeflow/tf-operator/pkg/version.GitSHA={}
-          -X github.com/kubeflow/tf-operator/pkg/version.Version={}'''.format(
+        '''-X github.com/kubeflow/training-operator/pkg/version.GitSHA={}
+          -X github.com/kubeflow/training-operator/pkg/version.Version={}'''.format(
           commit, version_tag), t
       ])
       continue
@@ -405,7 +405,7 @@ def clone_postsubmit(args):
 
 
 # TODO(jlewi): Delete this function once
-# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
+# https://github.com/kubeflow/training-operator/issues/189 is fixed.
 def build_commit(args, branches):
   top_dir = args.src_dir or tempfile.mkdtemp(prefix="tmpTFJobSrc")
   logging.info("Top level directory for source: %s", top_dir)
@@ -428,14 +428,14 @@ def build_commit(args, branches):
 
 
 # TODO(jlewi): Delete this function once
-# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
+# https://github.com/kubeflow/training-operator/issues/189 is fixed.
 def build_postsubmit(args):
   """Build the artifacts from a postsubmit."""
   build_commit(args, None)
 
 
 # TODO(jlewi): Delete this function once
-# https://github.com/kubeflow/tf-operator/issues/189 is fixed.
+# https://github.com/kubeflow/training-operator/issues/189 is fixed.
 def build_pr(args):
   """Build the artifacts from a postsubmit."""
   branches = ["pull/{0}/head:pr".format(args.pr)]

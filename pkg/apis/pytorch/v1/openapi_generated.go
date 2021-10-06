@@ -28,15 +28,15 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":         schema_pkg_apis_common_v1_JobCondition(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":            schema_pkg_apis_common_v1_JobStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":          schema_pkg_apis_common_v1_ReplicaSpec(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":        schema_pkg_apis_common_v1_ReplicaStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":            schema_pkg_apis_common_v1_RunPolicy(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":     schema_pkg_apis_common_v1_SchedulingPolicy(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJob":     schema_pkg_apis_pytorch_v1_PyTorchJob(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJobList": schema_pkg_apis_pytorch_v1_PyTorchJobList(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJobSpec": schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":               schema_pkg_apis_common_v1_JobCondition(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":                  schema_pkg_apis_common_v1_JobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":                schema_pkg_apis_common_v1_ReplicaSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":              schema_pkg_apis_common_v1_ReplicaStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                  schema_pkg_apis_common_v1_RunPolicy(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":           schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob":     schema_pkg_apis_pytorch_v1_PyTorchJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobList": schema_pkg_apis_pytorch_v1_PyTorchJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobSpec": schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref),
 	}
 }
 
@@ -350,7 +350,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJob(ref common.ReferenceCallback) common.
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired state of the PyTorchJob.",
-							Ref:         ref("github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJobSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobSpec"),
 						},
 					},
 					"status": {
@@ -363,7 +363,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJob(ref common.ReferenceCallback) common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -401,7 +401,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobList(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJob"),
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob"),
 									},
 								},
 							},
@@ -412,7 +412,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobList(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1.PyTorchJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

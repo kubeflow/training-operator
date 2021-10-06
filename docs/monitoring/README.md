@@ -58,7 +58,7 @@ tf_operator_is_leader
 
 ### Report TFJob metrics:
 
-*Note*: If you are using release v1 tf-operator, these TFJob metrics don't have suffix `total`. So you have to use metric name like `tf_operator_jobs_created` to get your metrics. See [PR](https://github.com/kubeflow/tf-operator/pull/1055) to get more information.
+*Note*: If you are using release v1 tf-operator, these TFJob metrics don't have suffix `total`. So you have to use metric name like `tf_operator_jobs_created` to get your metrics. See [PR](https://github.com/kubeflow/training-operator/pull/1055) to get more information.
 
 **Job Creation**
 ```

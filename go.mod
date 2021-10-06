@@ -1,4 +1,4 @@
-module github.com/kubeflow/tf-operator
+module github.com/kubeflow/training-operator
 
 go 1.17
 
@@ -82,7 +82,12 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+<<<<<<< HEAD
 	k8s.io/component-base v0.19.9 // indirect
+=======
+	k8s.io/apiextensions-apiserver v0.19.2 // indirect
+	k8s.io/component-base v0.19.6 // indirect
+>>>>>>> 948d6cfd (Update links and corresponding files for training-operator repository)
 	k8s.io/gengo v0.0.0-20200428234225-8167cfdcfc14 // indirect
 	k8s.io/klog/v2 v2.2.0 // indirect
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800 // indirect

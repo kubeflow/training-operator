@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	common "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -40,7 +40,7 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc        = cache.DeletionHandlingMetaNamespaceKeyFunc
 	GroupName      = tfv1.GroupVersion.Group
-	ControllerName = "tf-operator"
+	ControllerName = "training-operator"
 )
 
 func GenLabels(jobName string) map[string]string {

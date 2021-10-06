@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	v1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

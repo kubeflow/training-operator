@@ -1,4 +1,4 @@
-kubeflow/tf-operator
+kubeflow/training-operator
 GoogleCloudPlatform/gcloud-golang
 PuerkitoBio/purell
 PuerkitoBio/urlesc
