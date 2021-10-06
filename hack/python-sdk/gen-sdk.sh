@@ -54,7 +54,7 @@ chmod +x /tmp/swagger
 
 # it will report warning like 'v1.SchedulingPolicy' already exists in primary or higher priority mixin, skipping
 # error code is not 0 but t's acceptable.
-/tmp/swagger mixin "${repo_root}"/pkg/apis/tensorflow/v1/swagger.json "${repo_root}"/pkg/apis/pytorch/v1/swagger.json \
+/tmp/swagger mixin "${repo_root}"/hack/python-sdk/swagger_base.json "${repo_root}"/pkg/apis/tensorflow/v1/swagger.json "${repo_root}"/pkg/apis/pytorch/v1/swagger.json \
   "${repo_root}"/pkg/apis/mxnet/v1/swagger.json "${repo_root}"/pkg/apis/xgboost/v1/swagger.json \
   --output "${repo_root}"/hack/python-sdk/swagger.json --quiet || true
 

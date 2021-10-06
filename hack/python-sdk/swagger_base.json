@@ -1,0 +1,9 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Python SDK for Kubeflow Training",
+    "title": "Kubeflow Training SDK"
+  },
+  "paths": { },
+  "definitions": { }
+}
