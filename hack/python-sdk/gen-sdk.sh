@@ -25,7 +25,7 @@ SWAGGER_CODEGEN_JAR="${repo_root}/hack/python-sdk/openapi-generator-cli.jar"
 SWAGGER_CODEGEN_CONF="${repo_root}/hack/python-sdk/swagger_config.json"
 SDK_OUTPUT_PATH="${repo_root}/sdk/python"
 VERSION=1.3.0
-SWAGGER_CODEGEN_FILE="hack/python-sdk/swagger.json"
+SWAGGER_CODEGEN_FILE="${repo_root}/hack/python-sdk/swagger.json"
 
 if [ -z "${GOPATH:-}" ]; then
     export GOPATH=$(go env GOPATH)
