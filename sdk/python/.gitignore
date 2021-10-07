@@ -67,7 +67,6 @@ target/
 tox.ini
 test-requirements.txt
 git_push.sh
-.travis.yml
 .swagger-codegen
 .swagger-codegen-ignore
 
