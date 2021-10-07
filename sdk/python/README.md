@@ -9,7 +9,8 @@ Python 2.7 and 3.5+
 ### pip install
 
 ```sh
-pip install kubeflow-training
+python -m pip install git+https://github.com/kubeflow/training-operator#subdirectory=sdk/python
+```
 ```
 
 Then import the package:

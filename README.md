@@ -52,9 +52,9 @@ kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?
 
 Training Operator provides Python SDK for the custom resources. More docs are available in [sdk/python](sdk/python) folder.
 
-Use `pip install` command to install the latest release of the SDK:
+Use the following command to install the Python SDK:
 ```
-pip install kubeflow-training
+python -m pip install git+https://github.com/kubeflow/training-operator#subdirectory=sdk/python
 ```
 
 ## Quick Start
