@@ -19,14 +19,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	mxnet "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	pytorch "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	tensorflow "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	xgboost "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	"os"
 	"strings"
 
 	"github.com/go-openapi/spec"
-	pytorchJob "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tfjob "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
 	"k8s.io/klog"
 	"k8s.io/kube-openapi/pkg/common"
 )
@@ -47,19 +47,19 @@ func main() {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	}
 
-	for k, v := range tfjob.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range tensorflow.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 
-	for k, v := range pytorchJob.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range pytorch.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 
-	for k, v := range mxjobv1.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range mxnet.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 
-	for k, v := range xgboostv1.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range xgboost.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 
