@@ -50,5 +50,5 @@ jobs:
       - name: Coveralls report
         uses: shogo82148/actions-goveralls@v1
         with:
-          path-to-profile: coverage.out
+          path-to-profile: cover.out
           working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
