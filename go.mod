@@ -6,13 +6,12 @@ require (
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/spec v0.20.3
 	github.com/kubeflow/common v0.3.7
-	github.com/onrik/logrus v0.2.2-0.20181225141908-a09d5cdcdc62
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
 	github.com/prometheus/client_golang v1.10.0
 	github.com/sirupsen/logrus v1.6.0
 	k8s.io/api v0.19.9
-	k8s.io/apiextensions-apiserver v0.19.9
+	k8s.io/apiextensions-apiserver v0.19.9 // indirect
 	k8s.io/apimachinery v0.19.9
 	k8s.io/client-go v0.19.9
 	k8s.io/code-generator v0.19.9
