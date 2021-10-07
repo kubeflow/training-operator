@@ -60,11 +60,6 @@ const (
 	controllerName = "pytorchjob-controller"
 )
 
-var (
-	jobOwnerKey           = ".metadata.controller"
-	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
-)
-
 // NewReconciler creates a PyTorchJob Reconciler
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobReconciler {
 	r := &PyTorchJobReconciler{

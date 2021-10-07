@@ -339,6 +339,9 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 	svclist := &corev1.ServiceList{}
 	err = r.List(context.Background(), svclist,
 		client.MatchingLabelsSelector{Selector: selector}, client.InNamespace(job.GetNamespace()))
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get Service: %v", err)
+	}
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing services (see #42639).

@@ -56,7 +56,7 @@ func (es *EnabledSchemes) String() string {
 
 func (es *EnabledSchemes) Set(kind string) error {
 	kind = strings.ToLower(kind)
-	for supportedKind, _ := range SupportedSchemeReconciler {
+	for supportedKind := range SupportedSchemeReconciler {
 		if strings.ToLower(supportedKind) == kind {
 			*es = append(*es, supportedKind)
 			return nil
@@ -66,7 +66,7 @@ func (es *EnabledSchemes) Set(kind string) error {
 }
 
 func (es *EnabledSchemes) FillAll() {
-	for supportedKind, _ := range SupportedSchemeReconciler {
+	for supportedKind := range SupportedSchemeReconciler {
 		*es = append(*es, supportedKind)
 	}
 }
