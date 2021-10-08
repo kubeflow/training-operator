@@ -3,7 +3,7 @@
 #
 # The testWorkerImage should be the same for all workflows.
 workflows:
-  - app_dir: kubeflow/tf-operator/test/workflows
+  - app_dir: kubeflow/training-operator/test/workflows
     component: workflows
     name: v1
     job_types:
@@ -25,7 +25,7 @@ workflows:
       registry: "809251082950.dkr.ecr.us-west-2.amazonaws.com/training-operator"
       tfJobVersion: v1
       testWorkerImage: public.ecr.aws/j1r0q0g6/kubeflow-testing:latest
-  - app_dir: kubeflow/tf-operator/test/workflows
+  - app_dir: kubeflow/training-operator/test/workflows
     component: workflows
     name: v1
     job_types:
