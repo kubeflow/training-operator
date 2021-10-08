@@ -69,7 +69,7 @@
       local tfJobImage = params.registry + "/training-operator:" + versionTag;
 
       // The test server image to use.
-      local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
+      // local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
