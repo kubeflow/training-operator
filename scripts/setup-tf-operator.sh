@@ -30,11 +30,11 @@ GO_DIR=${GOPATH}/src/github.com/${REPO_OWNER}/${REPO_NAME}
 echo "Configuring kubeconfig.."
 aws eks update-kubeconfig --region=${REGION} --name=${CLUSTER_NAME}
 
-echo "Update tf operator manifest with new name $REGISTRY and tag $VERSION"
+echo "Update Training Operator manifest with new name $REGISTRY and tag $VERSION"
 cd manifests/overlays/standalone
 kustomize edit set image public.ecr.aws/j1r0q0g6/training/training-operator=${REGISTRY}:${VERSION}
 
-echo "Installing tf operator manifests"
+echo "Installing Training Operator manifests"
 kustomize build . | kubectl apply -f -
 
 TIMEOUT=30
