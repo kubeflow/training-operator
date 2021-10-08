@@ -1,6 +1,6 @@
 # Developer Guide
 
-Tf-operator is currently at v1.
+Kubeflow Training Operator is currently at v1.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ mkdir -p ${go env GOPATH}/src/github.com/kubeflow
 ln -sf ${GIT_TRAINING} ${go env GOPATH}/src/github.com/kubeflow/training-operator
 ```
 
-* GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/training-operator
+- GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/training-operator
 
 Install dependencies
 
@@ -54,7 +54,7 @@ export KUBECONFIG=$(echo ~/.kube/config)
 export KUBEFLOW_NAMESPACE=$(your_namespace)
 ```
 
-* KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
+- KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
 
 ### Create the TFJob CRD
 
@@ -87,11 +87,14 @@ On ubuntu the default go package appears to be gccgo-go which has problems see [
 ## Generate Python SDK
 
 To generate Python SDK for the operator, run:
+
 ```
 ./hack/python-sdk/gen-sdk.sh
 ```
+
 This command will re-generate the api and model files together with the documentation and model tests.
 The following files/folders in `sdk/python` are auto-generated and should not be modified directly:
+
 ```
 docs
 kubeflow/training/models
@@ -103,15 +106,15 @@ test/*.py
 
 ### Python
 
-* Use [yapf](https://github.com/google/yapf) to format Python code
-* `yapf` style is configured in `.style.yapf` file
-* To autoformat code
+- Use [yapf](https://github.com/google/yapf) to format Python code
+- `yapf` style is configured in `.style.yapf` file
+- To autoformat code
 
   ```sh
   yapf -i py/**/*.py
   ```
 
-* To sort imports
+- To sort imports
 
   ```sh
   isort path/to/module.py
