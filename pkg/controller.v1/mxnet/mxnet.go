@@ -245,18 +245,3 @@ func addBytePSEnv(c *corev1.Container, rtype, index string) {
 		})
 	}
 }
-
-func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.ReplicaSpec) {
-	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-		podTemplateSpec.Spec.RestartPolicy = corev1.RestartPolicyNever
-	} else {
-		podTemplateSpec.Spec.RestartPolicy = corev1.RestartPolicy(spec.RestartPolicy)
-	}
-}
-
-func ContainSchedulerSpec(mxJob *mxnetv1.MXJob) bool {
-	if _, ok := mxJob.Spec.MXReplicaSpecs[mxnetv1.MXReplicaTypeScheduler]; ok {
-		return true
-	}
-	return false
-}
