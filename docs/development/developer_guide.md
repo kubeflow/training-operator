@@ -2,6 +2,10 @@
 
 Tf-operator is currently at v1.
 
+## Requirements
+
+- [Go](https://golang.org/) (1.17 or later)
+
 ## Building the operator
 
 Create a symbolic link inside your GOPATH to the location you checked out the code
@@ -16,7 +20,7 @@ ln -sf ${GIT_TRAINING} ${go env GOPATH}/src/github.com/kubeflow/tf-operator
 Install dependencies
 
 ```sh
-GO111MODULE="on" go mod vendor
+go mod vendor
 ```
 
 Build it
