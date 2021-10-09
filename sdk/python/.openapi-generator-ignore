@@ -30,3 +30,4 @@ setup.py
 .gitlab-ci.yml
 setup.cfg
 git_push.sh
+.travis.yml
