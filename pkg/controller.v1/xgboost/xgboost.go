@@ -40,7 +40,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	}
 
 	// Add master offset for worker pods
-	if strings.ToLower(rtype) == strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker)) {
+	if strings.EqualFold(strings.ToLower(rtype), strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker))) {
 		masterSpec := xgboostjob.Spec.XGBReplicaSpecs[commonv1.ReplicaType(xgboostv1.XGBoostReplicaTypeMaster)]
 		masterReplicas := int(*masterSpec.Replicas)
 		rank += masterReplicas

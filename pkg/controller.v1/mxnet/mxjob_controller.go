@@ -61,8 +61,6 @@ import (
 const (
 	controllerName = "mxjob-controller"
 
-	// mxJobCreatedReason is added in a mxjob when it is created.
-	mxJobCreatedReason = "MXJobCreated"
 	// mxJobSucceededReason is added in a mxjob when it is succeeded.
 	mxJobSucceededReason = "MXJobSucceeded"
 	// mxJobRunningReason is added in a mxjob when it is running.
@@ -71,12 +69,6 @@ const (
 	mxJobFailedReason = "MXJobFailed"
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
-)
-
-var (
-	jobOwnerKey = ".metadata.controller"
-	// DefaultCleanPodPolicy is the default clean pod policy controller assign the new Job if not exist
-	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a MXJob Reconciler

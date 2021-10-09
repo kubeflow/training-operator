@@ -4,6 +4,7 @@ bin/
 /tf-operator
 vendor/
 testbin/*
+cover.out
 
 # IDEs
 .vscode/

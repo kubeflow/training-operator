@@ -80,12 +80,6 @@ const (
 	xgboostJobRestartingReason = "XGBoostJobRestarting"
 )
 
-var (
-	jobOwnerKey           = ".metadata.controller"
-	defaultTTLSeconds     = int32(100)
-	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
-)
-
 // NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
@@ -263,6 +257,9 @@ func (r *XGBoostJobReconciler) GetJobFromAPIClient(namespace, name string) (meta
 	job := &xgboostv1.XGBoostJob{}
 
 	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
+	if err != nil {
+		return nil, err
+	}
 	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
