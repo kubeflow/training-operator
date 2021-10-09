@@ -32,7 +32,7 @@ The input from the K8s team that developed CRDs and various controllers is that 
 ## TFJob Resource
 
 The TFJob CRD defines a TFJob resource for K8s.
-The [TFJob](https://github.com/kubeflow/tf-operator/blob/master/pkg/spec/tf_job.go#L55)
+The [TFJob](https://github.com/kubeflow/training-operator/blob/master/pkg/apis/tensorflow/v1/types.go#L29)
 resource is a collection of TfReplicas. Each TfReplica corresponds to a
 set of TensorFlow processes performing a role in the job;
 e.g. master, parameter server or worker. The set of replica types can be expanded (it is just an enum) to support new TF patterns such as eval workers. Figure 1. shows an example yaml spec for a distributed job.
@@ -76,14 +76,14 @@ As illustrated by Fig 1, I made an explicit decision not to try to hide or repla
 
 The controller can be used to configure defaults for TFJob to create a simpler user experience. The most common use for this right now is supporting GPUs. To use GPUs, the NVIDIA drivers and libraries need to be mounted from the host into the container. This step should become unnecessary with Kubernetes 1.8. The TFJob controller will automatically add these volume mounts based on configuration specified when the controller is started. This prevents users from having to specify them for each job. Instead, only the cluster administrator who deploys the TFJob controller needs to know how the volumes should be configured.
 
-Another use case is minimizing the boilerplate users have to write to run standard processes (e.g. [Parameter Servers](https://github.com/kubeflow/tf-operator/pull/36#discussion_r141135711)) using official TF Docker images.
+Another use case is minimizing the boilerplate users have to write to run standard processes (e.g. [Parameter Servers](https://github.com/kubeflow/training-operator/pull/36#discussion_r141135711)) using official TF Docker images.
 
 
 ## Controller
 
 The controller manages a distributed TFJob by creating a series of Job controllers Fig 2. The TFJob controller sets the environment variable TF_CONFIG to make the TensorFlow cluster spec and replica type (PS, WORKER, MASTER) and replica index available to TensorFlow code. The Job controller takes care of restarting TensorFlow processes that terminate due to an error. Additional logic in the TFJob controller looks at exit codes and fails the job if a TF process exits with an exit code indicating a permanent error. The TFJob controller treats exit codes of 1-127 as permanent errors; this is an arbitrary convention.
 
-When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/kubeflow/tf-operator/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TFJob is deleted. This allows the logs to be fetched via kubectl logs.
+When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/kubeflow/training-operator/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TFJob is deleted. This allows the logs to be fetched via kubectl logs.
 
 ![Resources for TFJob](docs/diagrams/tfjob_k8s_resources.svg)
 

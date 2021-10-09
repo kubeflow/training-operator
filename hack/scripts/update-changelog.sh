@@ -35,7 +35,7 @@ then
     exit 1
 fi
 
-github_changelog_generator -t ${GITHUB_TOKEN} -u kubeflow -p tf-operator \
+github_changelog_generator -t ${GITHUB_TOKEN} -u kubeflow -p training-operator \
 	--exclude-labels community/discussion,cmmunity/question,duplicate,question,invalid,wontfix \
 	--bug-labels kind/bug,problems/bug \
 	--enhancement-labels improvement/optimization,kind/enhancement,improvement/enhancement,addition/feature,kind/feature \

@@ -15,7 +15,7 @@
 
 ### Release Process
 
-1. Make sure the last commit you want to release past `kubeflow-tf-operator-postsubmit` testing.
+1. Make sure the last commit you want to release past `kubeflow-training-operator-postsubmit` testing.
 
 1. Check out that commit (in this example, we'll use `6214e560`). 
 
@@ -90,14 +90,14 @@
     8d179f70 Fix: Remove Github CD workflow (#1263)
     '''
 
-    g = ChangelogGenerator("kubeflow/tf-operator")
+    g = ChangelogGenerator("kubeflow/training-operator")
     for pr_match in re.finditer(r"#(\d+)", payload):
         pr_id = int(pr_match.group(1))
         print("* {}".format(g.generate(pr_id)))
     ```
 
 1. Cut release from tags and copy results from last step. You can group commits into `Features`, `Bugs` etc. 
-See example [v1.2.0 release](https://github.com/kubeflow/tf-operator/releases/tag/v1.2.0)
+See example [v1.2.0 release](https://github.com/kubeflow/training-operator/releases/tag/v1.2.0)
 
 1. Send a PR to update [CHANGELOG.md](../../CHANGELOG.md)
  

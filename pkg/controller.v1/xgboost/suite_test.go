@@ -27,7 +27,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	//+kubebuilder:scaffold:imports
 )
 

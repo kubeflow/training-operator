@@ -15,7 +15,7 @@
 # Requirements:
 #   https://github.com/mattrobenolt/jinja2-cli
 #   pip install jinja2-clie
-IMG = gcr.io/kubeflow-images-staging/tf-operator-test-server
+IMG = gcr.io/kubeflow-images-staging/training-operator-test-server
 
 DIR := ${CURDIR}
 

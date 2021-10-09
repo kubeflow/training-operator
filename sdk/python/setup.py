@@ -29,7 +29,7 @@ setuptools.setup(
   author="Kubeflow Authors",
   author_email='hejinchi@cn.ibm.com',
   license="Apache License Version 2.0",
-  url="https://github.com/kubeflow/tf-operator/sdk/python",
+  url="https://github.com/kubeflow/training-operator/sdk/python",
   description="Training Operator Python SDK",
   long_description="Training Operator Python SDK",
   packages=setuptools.find_packages(

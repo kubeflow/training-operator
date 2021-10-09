@@ -17,31 +17,30 @@
 # This shell script is used to build a cluster and create a namespace from our
 # argo workflow
 
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
 CLUSTER_NAME="${CLUSTER_NAME}"
 REGION="${AWS_REGION:-us-west-2}"
-REGISTRY="${ECR_REGISTRY:-public.ecr.aws/j1r0q0g6/training/tf-operator}"
+REGISTRY="${ECR_REGISTRY:-public.ecr.aws/j1r0q0g6/training/training-operator}"
 VERSION="${PULL_BASE_SHA}"
 GO_DIR=${GOPATH}/src/github.com/${REPO_OWNER}/${REPO_NAME}
 
 echo "Configuring kubeconfig.."
 aws eks update-kubeconfig --region=${REGION} --name=${CLUSTER_NAME}
 
-echo "Update tf operator manifest with new name $REGISTRY and tag $VERSION"
+echo "Update Training Operator manifest with new name $REGISTRY and tag $VERSION"
 cd manifests/overlays/standalone
-kustomize edit set image public.ecr.aws/j1r0q0g6/training/tf-operator=${REGISTRY}:${VERSION}
+kustomize edit set image public.ecr.aws/j1r0q0g6/training/training-operator=${REGISTRY}:${VERSION}
 
-echo "Installing tf operator manifests"
+echo "Installing Training Operator manifests"
 kustomize build . | kubectl apply -f -
 
 TIMEOUT=30
 until kubectl get pods -n kubeflow | grep tf-job-operator | grep 1/1 || [[ $TIMEOUT -eq 1 ]]; do
   sleep 10
-  TIMEOUT=$(( TIMEOUT - 1 ))
+  TIMEOUT=$((TIMEOUT - 1))
 done
 kubectl describe all -n kubeflow
 kubectl describe pods -n kubeflow

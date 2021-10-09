@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-repo_root="$(realpath "$(dirname "$0")/../..")"
+repo_root="$(dirname ${BASH_SOURCE})/../.."
 
 SWAGGER_JAR_URL="https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.3.1/openapi-generator-cli-4.3.1.jar"
 SWAGGER_CODEGEN_JAR="${repo_root}/hack/python-sdk/openapi-generator-cli.jar"
@@ -28,7 +28,7 @@ VERSION=1.3.0
 SWAGGER_CODEGEN_FILE="${repo_root}/hack/python-sdk/swagger.json"
 
 if [ -z "${GOPATH:-}" ]; then
-    export GOPATH=$(go env GOPATH)
+  export GOPATH=$(go env GOPATH)
 fi
 
 echo "Generating OpenAPI specification ..."
@@ -40,7 +40,7 @@ if [[ ! -f "$SWAGGER_CODEGEN_JAR" ]]; then
 fi
 
 echo "Generating swagger file ..."
-go run "${repo_root}"/hack/python-sdk/main.go ${VERSION} > "${SWAGGER_CODEGEN_FILE}"
+go run "${repo_root}"/hack/python-sdk/main.go ${VERSION} >"${SWAGGER_CODEGEN_FILE}"
 
 echo "Removing previously generated files ..."
 rm -rf "${SDK_OUTPUT_PATH}"/docs/V1*.md "${SDK_OUTPUT_PATH}"/kubeflow/training/models "${SDK_OUTPUT_PATH}"/kubeflow/training/*.py "${SDK_OUTPUT_PATH}"/test/*.py

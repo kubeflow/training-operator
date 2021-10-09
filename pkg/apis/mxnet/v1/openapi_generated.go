@@ -28,16 +28,16 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":     schema_pkg_apis_common_v1_JobCondition(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":        schema_pkg_apis_common_v1_JobStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":      schema_pkg_apis_common_v1_ReplicaSpec(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":    schema_pkg_apis_common_v1_ReplicaStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":        schema_pkg_apis_common_v1_RunPolicy(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy": schema_pkg_apis_common_v1_SchedulingPolicy(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJob":        schema_pkg_apis_mxnet_v1_MXJob(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJobList":    schema_pkg_apis_mxnet_v1_MXJobList(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJobSpec":    schema_pkg_apis_mxnet_v1_MXJobSpec(ref),
-		"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJobStatus":  schema_pkg_apis_mxnet_v1_MXJobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":          schema_pkg_apis_common_v1_JobCondition(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":             schema_pkg_apis_common_v1_JobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":           schema_pkg_apis_common_v1_ReplicaSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":         schema_pkg_apis_common_v1_ReplicaStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":             schema_pkg_apis_common_v1_RunPolicy(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":      schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJob":       schema_pkg_apis_mxnet_v1_MXJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJobList":   schema_pkg_apis_mxnet_v1_MXJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJobSpec":   schema_pkg_apis_mxnet_v1_MXJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJobStatus": schema_pkg_apis_mxnet_v1_MXJobStatus(ref),
 	}
 }
 
@@ -350,7 +350,7 @@ func schema_pkg_apis_mxnet_v1_MXJob(ref common.ReferenceCallback) common.OpenAPI
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJobSpec"),
+							Ref: ref("github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJobSpec"),
 						},
 					},
 					"status": {
@@ -362,7 +362,7 @@ func schema_pkg_apis_mxnet_v1_MXJob(ref common.ReferenceCallback) common.OpenAPI
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -398,7 +398,7 @@ func schema_pkg_apis_mxnet_v1_MXJobList(ref common.ReferenceCallback) common.Ope
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJob"),
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJob"),
 									},
 								},
 							},
@@ -409,7 +409,7 @@ func schema_pkg_apis_mxnet_v1_MXJobList(ref common.ReferenceCallback) common.Ope
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1.MXJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/mxnet/v1.MXJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

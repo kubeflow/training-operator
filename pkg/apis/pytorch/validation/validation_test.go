@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	torchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	torchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 
 	v1 "k8s.io/api/core/v1"
 )

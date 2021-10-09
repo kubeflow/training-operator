@@ -20,7 +20,7 @@ import (
 
 	"k8s.io/client-go/informers"
 
-	"github.com/kubeflow/tf-operator/pkg/apis/xgboost/validation"
+	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -36,7 +36,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	logger "github.com/kubeflow/common/pkg/util"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -58,8 +58,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 )
 
 const (

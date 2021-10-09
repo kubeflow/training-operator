@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/informers"
 
-	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
+	"github.com/kubeflow/training-operator/pkg/apis/mxnet/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -34,9 +34,9 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
-	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	mxjobv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

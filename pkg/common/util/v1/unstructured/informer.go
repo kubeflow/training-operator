@@ -14,7 +14,7 @@
 
 // Package unstructured is the package for unstructured informer,
 // which is from https://github.com/argoproj/argo/blob/master/util/unstructured/unstructured.go
-// This is a temporary solution for https://github.com/kubeflow/tf-operator/issues/561
+// This is a temporary solution for https://github.com/kubeflow/training-operator/issues/561
 package unstructured
 
 import (
@@ -29,8 +29,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 
-	informer "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
-	lister "github.com/kubeflow/tf-operator/pkg/client/listers/tensorflow/v1"
+	informer "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/tensorflow/v1"
+	lister "github.com/kubeflow/training-operator/pkg/client/listers/tensorflow/v1"
 )
 
 type UnstructuredInformer struct {

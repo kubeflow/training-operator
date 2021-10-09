@@ -18,14 +18,14 @@ import (
 	"fmt"
 	"strings"
 
-	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	mxnetcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mxnet"
-	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
-	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
+	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
+	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
+	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	controller_v1 "github.com/kubeflow/tf-operator/pkg/controller.v1"
+	controller_v1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -33,10 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	//+kubebuilder:scaffold:imports
 )
 

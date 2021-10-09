@@ -19,14 +19,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	mxnet "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	pytorch "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tensorflow "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboost "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
 	"os"
 	"strings"
 
 	"github.com/go-openapi/spec"
+	mxnet "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	pytorch "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	tensorflow "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	xgboost "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	"k8s.io/klog"
 	"k8s.io/kube-openapi/pkg/common"
 )
@@ -88,10 +88,10 @@ func main() {
 }
 
 func swaggify(name string) string {
-	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/pytorch/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/mxnet/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/tf-operator/pkg/apis/xgboost/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/tensorflow/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/pytorch/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/mxnet/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/xgboost/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/", "", -1)
 	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
 	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)

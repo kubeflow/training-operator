@@ -1,7 +1,7 @@
 # Kubeflow Training Operator
 
 [![Build Status](https://github.com/kubeflow/training-operator/actions/workflows/test-go.yaml/badge.svg?branch=master)](https://github.com/kubeflow/training-operator/actions/workflows/test-go.yaml?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/kubeflow/training-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/tf-operator?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/kubeflow/training-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/training-operator?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/training-operator)](https://goreportcard.com/report/github.com/kubeflow/training-operator)
 
 ## Overview
@@ -22,22 +22,22 @@ run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kube
 
 ## Prerequisites
 
-* Version >= 1.16 of Kubernetes
-* Version >= 3.x of Kustomize
-* Version >= 1.21.x of Kubectl
+- Version >= 1.16 of Kubernetes
+- Version >= 3.x of Kustomize
+- Version >= 1.21.x of Kubectl
 
 ## Installation
 
 ### Master Branch
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone"
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
 ```
 
 ### Stable Release
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?ref=v1.3.0"
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.3.0"
 ```
 
 ### Tensorflow Release Only
@@ -45,7 +45,7 @@ kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?
 For users who prefer to use original tensorflow controllers, please checkout v1.2-branch, we will maintain the bug fix in this branch.
 
 ```bash
-kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?ref=v1.2.0"
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.2.0"
 ```
 
 ### Python SDK for Kubeflow Training Operator
@@ -53,6 +53,7 @@ kubectl apply -k "github.com/kubeflow/tf-operator/manifests/overlays/standalone?
 Training Operator provides Python SDK for the custom resources. More docs are available in [sdk/python](sdk/python) folder.
 
 Use `pip install` command to install the latest release of the SDK:
+
 ```
 pip install kubeflow-training
 ```
@@ -64,6 +65,7 @@ Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow Tr
 ## API Documentation
 
 Please refer to API Documentation.
+
 - [Tensorflow API Documentation](docs/api/tensorflow_generated.asciidoc)
 - [PyTorch API Documentation](docs/api/pytorch_generated.asciidoc)
 - [MXNet API Documentation](docs/api/mxnet_generated.asciidoc)
@@ -82,7 +84,6 @@ This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://
 
 Please refer to the [DEVELOPMENT](docs/development/developer_guide.md)
 
-
 ## Change Log
 
 Please refer to [CHANGELOG](CHANGELOG.md)
@@ -91,19 +92,19 @@ Please refer to [CHANGELOG](CHANGELOG.md)
 
 The following table lists the most recent few versions of the operator.
 
-| Operator Version | API Version | Kubernetes Version |
-| ------------- | ------------- | ------------- |
-| `v1.0.x`| `v1` | 1.16+ |
-| `v1.1.x`| `v1` | 1.16+ |
-| `v1.2.x`| `v1` | 1.16+ |
-| `v1.3.x`| `v1` | 1.18+ |
-| `latest` (master HEAD) | `v1` | 1.18+ |
+| Operator Version       | API Version | Kubernetes Version |
+| ---------------------- | ----------- | ------------------ |
+| `v1.0.x`               | `v1`        | 1.16+              |
+| `v1.1.x`               | `v1`        | 1.16+              |
+| `v1.2.x`               | `v1`        | 1.16+              |
+| `v1.3.x`               | `v1`        | 1.18+              |
+| `latest` (master HEAD) | `v1`        | 1.18+              |
 
 ## Acknowledgement
 
 This project was originally started as a distributed training operator for TensorFlow and later we merged efforts from other Kubeflow training operators to provide a unified and simplified experience for both users and developers. We are very grateful to all who filed issues or helped resolve them, asked and answered questions, and were part of inspiring discussions. We'd also like to thank everyone who's contributed to and maintained the original operators.
 
-* PyTorch Operator: [list of contributors](https://github.com/kubeflow/pytorch-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/pytorch-operator/blob/master/OWNERS).
-* MPI Operator: [list of contributors](https://github.com/kubeflow/mpi-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mpi-operator/blob/master/OWNERS).
-* XGBoost Operator: [list of contributors](https://github.com/kubeflow/xgboost-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/xgboost-operator/blob/master/OWNERS).
-* MXNet Operator: [list of contributors](https://github.com/kubeflow/mxnet-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mxnet-operator/blob/master/OWNERS).
+- PyTorch Operator: [list of contributors](https://github.com/kubeflow/pytorch-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/pytorch-operator/blob/master/OWNERS).
+- MPI Operator: [list of contributors](https://github.com/kubeflow/mpi-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mpi-operator/blob/master/OWNERS).
+- XGBoost Operator: [list of contributors](https://github.com/kubeflow/xgboost-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/xgboost-operator/blob/master/OWNERS).
+- MXNet Operator: [list of contributors](https://github.com/kubeflow/mxnet-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mxnet-operator/blob/master/OWNERS).
