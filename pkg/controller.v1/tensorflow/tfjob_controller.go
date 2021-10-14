@@ -824,7 +824,7 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
 	if r.Config.EnableGangScheduling {
-		if !util.IsGangSchedulerSet(replicas, gangSchedulerName) {
+		if util.IsGangSchedulerSet(replicas, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			r.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
