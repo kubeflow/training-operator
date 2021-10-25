@@ -24,6 +24,8 @@ import (
 // +resource:path=tfjob
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // TFJob represents a TFJob resource.
 type TFJob struct {
