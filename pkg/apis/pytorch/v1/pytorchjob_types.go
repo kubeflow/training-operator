@@ -24,6 +24,8 @@ import (
 // +resource:path=pytorchjob
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // PyTorchJob Represents a PyTorchJob resource.
 type PyTorchJob struct {
