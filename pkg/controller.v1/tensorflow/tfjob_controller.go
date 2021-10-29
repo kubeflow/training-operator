@@ -513,6 +513,11 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				// we know it because we update the status condition when reconciling the replicas
 				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
 			} else {
+				if tfJob.Spec.EnableDynamicWorker && rtype == tensorflowv1.TFReplicaTypeWorker {
+					commonutil.LoggerForJob(tfJob).Infof("TFJob %s/%s continues regardless %d Worker replica(s) failed as enableDynamicWorker is set true.",
+						tfJob.Namespace, tfJob.Name, failed)
+					continue
+				}
 				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
 					tfJob.Namespace, tfJob.Name, failed, rtype)
 				r.recorder.Event(tfJob, corev1.EventTypeNormal, tfJobFailedReason, msg)
