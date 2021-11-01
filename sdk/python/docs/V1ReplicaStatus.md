@@ -1,5 +1,6 @@
 # V1ReplicaStatus
 
+ReplicaStatus represents the current observed state of the replica.
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------

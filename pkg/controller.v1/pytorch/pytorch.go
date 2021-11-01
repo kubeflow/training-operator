@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

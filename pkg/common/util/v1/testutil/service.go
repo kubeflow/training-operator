@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 func NewBaseService(name string, tfJob *tfv1.TFJob, t *testing.T) *v1.Service {

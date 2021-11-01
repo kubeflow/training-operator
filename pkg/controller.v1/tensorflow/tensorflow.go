@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/kubeflow/common/pkg/controller.v1/common"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 const (

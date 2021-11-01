@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	mpiv1 "github.com/kubeflow/tf-operator/pkg/apis/mpi/v1"
+	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 )
 
 const (

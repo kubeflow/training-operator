@@ -51,8 +51,8 @@
       local goDir = testDir + "/go";
       // Source directory where all repos should be checked out
       local srcRootDir = testDir + "/src";
-      // The directory containing the kubeflow/tf-operator repo
-      local srcDir = srcRootDir + "/kubeflow/tf-operator";
+      // The directory containing the kubeflow/training-operator repo
+      local srcDir = srcRootDir + "/kubeflow/training-operator";
       local testWorkerImage = "public.ecr.aws/j1r0q0g6/kubeflow-testing:latest";
 
       // value of KUBECONFIG environment variable. This should be  a full path.
@@ -69,7 +69,7 @@
       local tfJobImage = params.registry + "/training-operator:" + versionTag;
 
       // The test server image to use.
-      local testServerImage = "gcr.io/kubeflow-images-staging/tf-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
+      // local testServerImage = "gcr.io/kubeflow-images-staging/training-operator-test-server:v20180613-e06fc0bb-dirty-5ef291";
 
       // The namespace on the cluster we spin up to deploy into.
       local deployNamespace = "kubeflow";
@@ -78,8 +78,8 @@
       // py scripts to use.
       local k8sPy = srcDir;
       local kubeflowPyTesting = srcRootDir + "/kubeflow/testing/py";
-      local kubeflowPyTFJob = srcRootDir + "/kubeflow/tf-operator/py";
-      local TFJobSDK = srcRootDir + "/kubeflow/tf-operator/sdk/python";
+      local kubeflowPyTFJob = srcRootDir + "/kubeflow/training-operator/py";
+      local TFJobSDK = srcRootDir + "/kubeflow/training-operator/sdk/python";
 
       local project = params.project;
       

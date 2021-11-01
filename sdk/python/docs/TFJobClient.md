@@ -42,13 +42,13 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.tfjob import constants
-from kubeflow.tfjob import utils
-from kubeflow.tfjob import V1ReplicaSpec
-from kubeflow.tfjob import V1TFJob
-from kubeflow.tfjob import V1TFJobList
-from kubeflow.tfjob import V1TFJobSpec
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import constants
+from kubeflow.training import utils
+from kubeflow.training import V1ReplicaSpec
+from kubeflow.training import V1TFJob
+from kubeflow.training import V1TFJobList
+from kubeflow.training import V1TFJobSpec
+from kubeflow.training import TFJobClient
 
 
 container = V1Container(
@@ -106,7 +106,7 @@ Get the created tfjob in the specified namespace
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.get('mnist', namespace='kubeflow')
@@ -163,7 +163,7 @@ Delete the created tfjob in the specified namespace
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.delete('mnist', namespace='kubeflow')
@@ -192,7 +192,7 @@ Wait for the specified job to finish.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.wait_for_job('mnist', namespace='kubeflow')
@@ -234,7 +234,7 @@ Waits until any of the specified conditions occur.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.wait_for_condition('mnist', expected_condition=["Succeeded", "Failed"], namespace='kubeflow')
@@ -261,7 +261,7 @@ Returns TFJob status, such as Running, Failed or Succeeded.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.get_job_status('mnist', namespace='kubeflow')
@@ -284,7 +284,7 @@ Returns True if the TFJob running; false otherwise.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.is_job_running('mnist', namespace='kubeflow')
@@ -307,7 +307,7 @@ Returns True if the TFJob succeeded; false otherwise.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.is_job_succeeded('mnist', namespace='kubeflow')
@@ -331,7 +331,7 @@ Get pod names of the TFJob.
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.get_pod_names('mnist', namespace='kubeflow')
@@ -358,7 +358,7 @@ Get training logs of the TFJob. By default only get the logs of Pod that has lab
 ### Example
 
 ```python
-from kubeflow.tfjob import TFJobClient
+from kubeflow.training import TFJobClient
 
 tfjob_client = TFJobClient()
 tfjob_client.get_logs('mnist', namespace='kubeflow')

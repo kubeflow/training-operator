@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
+	"github.com/kubeflow/training-operator/pkg/apis/pytorch/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -27,8 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	commonutil "github.com/kubeflow/common/pkg/util"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -38,7 +38,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -58,11 +58,6 @@ import (
 
 const (
 	controllerName = "pytorchjob-controller"
-)
-
-var (
-	jobOwnerKey           = ".metadata.controller"
-	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
@@ -155,17 +150,8 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	r.Scheme.Default(pytorchjob)
 
-	// Construct RunPolicy based on PyTorchJob.Spec
-	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          pytorchjob.Spec.RunPolicy.CleanPodPolicy,
-		TTLSecondsAfterFinished: pytorchjob.Spec.RunPolicy.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds,
-		BackoffLimit:            pytorchjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        nil,
-	}
-
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, runPolicy)
+	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, &pytorchjob.Spec.RunPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile PyTorch Job error %v", err)
 		return ctrl.Result{}, err

@@ -1,4 +1,4 @@
-kubeflow/tf-operator
+kubeflow/training-operator
 cloud.google.com/go
 github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc

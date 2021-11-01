@@ -16,20 +16,20 @@ Package v1 is the v1 version of the API.
 Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 .Resource Types
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjoblist[$$TFJobList$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjoblist[$$TFJobList$$]
 
 
 === Definitions
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjob"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjob"]
 ==== TFJob 
 
 TFJob represents a TFJob resource.
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjoblist[$$TFJobList$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjoblist[$$TFJobList$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -40,12 +40,12 @@ TFJob represents a TFJob resource.
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjobspec[$$TFJobSpec$$]__ | Specification of the desired state of the TFJob.
+| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjobspec[$$TFJobSpec$$]__ | Specification of the desired state of the TFJob.
 | *`status`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the TFJob. Populated by the system. Read-only.
 |===
 
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjoblist"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjoblist"]
 ==== TFJobList 
 
 TFJobList is a list of TFJobs.
@@ -60,18 +60,18 @@ TFJobList is a list of TFJobs.
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]__ | List of TFJobs.
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]__ | List of TFJobs.
 |===
 
 
-[id="{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjobspec"]
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjobspec"]
 ==== TFJobSpec 
 
 TFJobSpec is a desired state description of the TFJob.
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-kubeflow-tf-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-tensorflow-v1-tfjob[$$TFJob$$]
 ****
 
 [cols="25a,75a", options="header"]

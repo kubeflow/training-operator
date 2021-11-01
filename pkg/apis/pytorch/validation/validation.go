@@ -19,7 +19,7 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
-	torchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	torchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 )
 
 func ValidateV1PyTorchJobSpec(c *torchv1.PyTorchJobSpec) error {

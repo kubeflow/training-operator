@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *tfv1.TFJob {

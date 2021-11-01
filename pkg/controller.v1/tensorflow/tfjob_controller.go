@@ -30,11 +30,11 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	train_util "github.com/kubeflow/common/pkg/util/train"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	"github.com/kubeflow/training-operator/pkg/apis/tensorflow/validation"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -339,6 +339,9 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 	svclist := &corev1.ServiceList{}
 	err = r.List(context.Background(), svclist,
 		client.MatchingLabelsSelector{Selector: selector}, client.InNamespace(job.GetNamespace()))
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get Service: %v", err)
+	}
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing services (see #42639).

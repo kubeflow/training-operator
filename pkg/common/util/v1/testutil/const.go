@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	TestImageName = "test-image-for-kubeflow-tf-operator:latest"
+	TestImageName = "test-image-for-kubeflow-training-operator:latest"
 	TestTFJobName = "test-tfjob"
 	LabelWorker   = "worker"
 	LabelPS       = "ps"

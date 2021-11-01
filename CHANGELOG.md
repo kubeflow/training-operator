@@ -1,5 +1,88 @@
 # Changelog
 
+## [v1.3.0](https://github.com/kubeflow/tf-operator/tree/v1.3.0) (2021-10-03)
+
+[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v1.2.0...v1.3.0)
+
+## Features
+
+* Feature/support pytorchjob set queue of volcano ([#1415](https://github.com/kubeflow/tf-operator/pull/1415), @qiankunli)
+* Bump controller-tools to 0.6.0 and enable GenerateEmbeddedObjectMeta ([#1409](https://github.com/kubeflow/tf-operator/pull/1409), @Jeffwan)
+* add api-doc for all frameworks ([#1370](https://github.com/kubeflow/tf-operator/pull/1370), @DeliangFan)
+* Update training operator release process ([#1347](https://github.com/kubeflow/tf-operator/pull/1347), @Jeffwan)
+* add option to enable schemes ([#1342](https://github.com/kubeflow/tf-operator/pull/1342), @zw0610)
+* Don't use inline for runPolicy and register defaulter function ([#1330](https://github.com/kubeflow/tf-operator/pull/1330), @Jeffwan)
+* Use low-level controller and handlers in SetupWithManager ([#1315](https://github.com/kubeflow/tf-operator/pull/1315), @Jeffwan)
+* Reorganize controllers code structure ([#1302](https://github.com/kubeflow/tf-operator/pull/1302), @Jeffwan)
+* Unify code structure of training job api ([#1300](https://github.com/kubeflow/tf-operator/pull/1300), @Jeffwan)
+* Extract reusable codes to common utility ([#1297](https://github.com/kubeflow/tf-operator/pull/1297), @Jeffwan)
+* Add MXJob v1 api and controller ([#1296](https://github.com/kubeflow/tf-operator/pull/1296), @Jeffwan)
+* add tf reconciler to the unified operator ([#1295](https://github.com/kubeflow/tf-operator/pull/1295), @zw0610)
+* Add XGBoost controller ([#1293](https://github.com/kubeflow/tf-operator/pull/1293), @Jeffwan)
+* add pytorch API and controller ([#1294](https://github.com/kubeflow/tf-operator/pull/1294), @zw0610)
+* Generate tfjob 1.19.x compatible clientset ([#1290](https://github.com/kubeflow/tf-operator/pull/1290), @Jeffwan)
+* add XGBoostJob api ([#1286](https://github.com/kubeflow/tf-operator/pull/1286), @zw0610)
+
+## Bug fixes
+
+* fix hyperlinks in the 'overview' section ([#1418](https://github.com/kubeflow/tf-operator/pull/1418), @pramodrj07)
+* 2010: fix to expose correct monitoring port  [#1405](https://github.com/kubeflow/tf-operator/pull/1405) ([deepak-muley](https://github.com/deepak-muley))
+* Fix 1399: added pod matching label in service selector [#1404](https://github.com/kubeflow/tf-operator/pull/1404) ([deepak-muley](https://github.com/deepak-muley))
+* fix: runPolicy validation error in the examples [#1401](https://github.com/kubeflow/tf-operator/pull/1401) ([Jeffwan](https://github.com/Jeffwan))
+* fix: volcano pod group creation issue ([#1390](https://github.com/kubeflow/tf-operator/pull/1390), @Jeffwan)
+* Fix 1340 prometheus counters ([#1375](https://github.com/kubeflow/tf-operator/pull/1375), @deepak-muley)
+* fix makefile to store crds in a separate folder ([#1368](https://github.com/kubeflow/tf-operator/pull/1368), @deepak-muley)
+* Fix copyright header for some files ([#1371](https://github.com/kubeflow/tf-operator/pull/1371), @DeliangFan)
+* fix incorrect torch env population ([#1361](https://github.com/kubeflow/tf-operator/pull/1361), @Jeffwan)
+* fix: Resolve scheme registration issue for defaulters ([#1360](https://github.com/kubeflow/tf-operator/pull/1360), @Jeffwan)
+* Fix XGBoost container name in log message ([#1362](https://github.com/kubeflow/tf-operator/pull/1362), @andreyvelich)
+* Fix postsubmit job using PULL_BASE_SHA ([#1344](https://github.com/kubeflow/tf-operator/pull/1344), @Jeffwan)
+* Fix all client request that needs contexts ([#1292](https://github.com/kubeflow/tf-operator/pull/1292), @Jeffwan)
+
+## Misc
+
+* Update manifests with  latest image tag [#1406](https://github.com/kubeflow/tf-operator/pull/1406) ([johnugeorge](https://github.com/johnugeorge))
+* Add simple verification jobs ([#1391](https://github.com/kubeflow/tf-operator/pull/1391), @Jeffwan)
+* chore: Bump kubeflow/common version to 0.3.7 ([#1388](https://github.com/kubeflow/tf-operator/pull/1388), @Jeffwan)
+* chore(doc): Update README.md ([#1387](https://github.com/kubeflow/tf-operator/pull/1387), @Jeffwan)
+* Remove lagacy tf-operator from the codebase ([#1378](https://github.com/kubeflow/tf-operator/pull/1378), @thunderboltsid)
+* chore: Update manifest image tag ([#1364](https://github.com/kubeflow/tf-operator/pull/1364), @Jeffwan)
+* add example for mxnet and pytorch ([#1373](https://github.com/kubeflow/tf-operator/pull/1373), @DeliangFan)
+* docs: Update to use kubectl kustomize in instructions ([#1356](https://github.com/kubeflow/tf-operator/pull/1356), @terrytangyuan)
+* Clean up manifests and remove unused files ([#1349](https://github.com/kubeflow/tf-operator/pull/1349), @Jeffwan)
+* 1322: Modified manifests to use all-in-one training-operator ([#1346](https://github.com/kubeflow/tf-operator/pull/1346), @deepak-muley)
+* chore: Update changelog.md ([#1339](https://github.com/kubeflow/tf-operator/pull/1339), @Jeffwan)
+* Move root level docs to docs folder ([#1338](https://github.com/kubeflow/tf-operator/pull/1338), @Jeffwan)
+* Temporarily add Jeffwan@ to OWNERS ([#1287](https://github.com/kubeflow/tf-operator/pull/1287), @Jeffwan)
+
+## Testing
+
+* Update include dirs in prow config ([#1374](https://github.com/kubeflow/tf-operator/pull/1374), @andreyvelich)
+* Enable e2e test against universal operator  ([#1336](https://github.com/kubeflow/tf-operator/pull/1336), @Jeffwan)
+* Use PULL_PULL_SHA for image ([#1334](https://github.com/kubeflow/tf-operator/pull/1334), @PatrickXYS)
+
+
+## [v1.2.1](https://github.com/kubeflow/tf-operator/tree/v1.2.1) (2021-08-27)
+
+[Full Changelog](https://github.com/kubeflow/tf-operator/compare/v1.3.0-alpha.2...v1.2.1)
+
+**Closed issues:**
+
+- volcano scheduler with customized queue [\#1377](https://github.com/kubeflow/tf-operator/issues/1377)
+- \[chore\] Delete the all-in-one branch [\#1372](https://github.com/kubeflow/tf-operator/issues/1372)
+- Fix scheme registration issue [\#1359](https://github.com/kubeflow/tf-operator/issues/1359)
+- Distributive Gloo PyTorchJob example doesn't work [\#1358](https://github.com/kubeflow/tf-operator/issues/1358)
+- Enable CI pipeline against v1.2-branch [\#1355](https://github.com/kubeflow/tf-operator/issues/1355)
+- Generate API Documentation for all frameworks [\#1341](https://github.com/kubeflow/tf-operator/issues/1341)
+- make test failed due to invalid crd schema [\#1324](https://github.com/kubeflow/tf-operator/issues/1324)
+- Cut 1.2.0 tag and release a stable version of master [\#1321](https://github.com/kubeflow/tf-operator/issues/1321)
+- Copyright header is not correctly generated [\#1309](https://github.com/kubeflow/tf-operator/issues/1309)
+
+**Merged pull requests:**
+
+- fix\(init\): Fix crash problem when enabling gang scheduling [\#1384](https://github.com/kubeflow/tf-operator/pull/1384) ([gaocegege](https://github.com/gaocegege))
+
+
 ## [v1.2.0](https://github.com/kubeflow/tf-operator/tree/v1.2.0) (2021-08-03)
 
 [Full Changelog](https://github.com/kubeflow/tf-operator/compare/v1.1.0...v1.2.0)

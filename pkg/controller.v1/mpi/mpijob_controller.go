@@ -30,6 +30,7 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
+	"github.com/kubeflow/tf-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -55,9 +56,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
-	mpiv1 "github.com/kubeflow/tf-operator/pkg/apis/mpi/v1"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
+	"github.com/kubeflow/training-operator/pkg/apis/mpi/validation"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 )
 
 const (
@@ -127,9 +128,9 @@ func (r *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// if err = validation.ValidateV1TFJobSpec(&mpiv1.Spec); err != nil {
-	// 	logger.Info(err.Error(), "MPIJob failed validation", req.NamespacedName.String())
-	// }
+	if err = validation.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
+		logger.Info(err.Error(), "MPIJob failed validation", req.NamespacedName.String())
+	}
 
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(mpijob)
@@ -147,7 +148,6 @@ func (r *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	r.Scheme.Default(mpijob)
 
 	// Use common to reconcile the job related pod and service
-	//err = r.reconcileJobsForMpi(jobKey, mpijob, mpijob.Spec.MPIReplicaSpecs, mpijob.Status, mpijob.Spec.RunPolicy)
 	//mpijob not need service
 	err = r.ReconcileJobs(mpijob, mpijob.Spec.MPIReplicaSpecs, mpijob.Status, &mpijob.Spec.RunPolicy)
 	if err != nil {
@@ -202,6 +202,7 @@ func (r *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
+//mpijob not need delete services
 func (r *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, job interface{}, pods []*corev1.Pod) error {
 	if len(pods) == 0 {
 		return nil
@@ -288,7 +289,7 @@ func (r *MPIJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		}
 
 		r.Scheme.Default(mpiJob)
-		msg := fmt.Sprintf("MPIJob %s is created.", e.Object.GetName())
+		msg := fmt.Sprintf("MPIJob %s/%s is created.", mpiJob.Namespace, e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
 		if err := commonutil.UpdateJobConditions(&mpiJob.Status, commonv1.JobCreated, "MPIJobCreated", msg); err != nil {
@@ -606,19 +607,98 @@ func (r *MPIJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.S
 }
 
 func (r *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+	mpiJob, ok := job.(*mpiv1.MPIJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of MPIJob", job)
+	}
+
+	for rtype, spec := range replicas {
+		status := jobStatus.ReplicaStatuses[rtype]
+
+		succeeded := status.Succeeded
+		expected := *(spec.Replicas) - succeeded
+		running := status.Active
+		failed := status.Failed
+
+		logrus.Infof("MPIJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
+			mpiJob.Name, rtype, expected, running, succeeded, failed)
+
+		if rtype == commonv1.ReplicaType(mpiv1.MPIReplicaTypeLauncher) {
+			if running > 0 {
+				msg := fmt.Sprintf("MPIJob %s is running.", mpiJob.Name)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			}
+			// when master is succeed, the job is finished.
+			if expected == 0 {
+				msg := fmt.Sprintf("MPIJob %s is successfully completed.", mpiJob.Name)
+				logrus.Info(msg)
+				r.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+				if jobStatus.CompletionTime == nil {
+					now := metav1.Now()
+					jobStatus.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.SuccessfulJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+				return nil
+			}
+		}
+		if failed > 0 {
+			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+				msg := fmt.Sprintf("MPIJob %s is restarting because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
+				r.Recorder.Event(mpiJob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+			} else {
+				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
+				r.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
+				if mpiJob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					mpiJob.Status.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.FailedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+			}
+		}
+	}
+
+	// Some workers are still running, leave a running condition.
+	msg := fmt.Sprintf("PyTorchJob %s is running.", mpiJob.Name)
+	commonutil.LoggerForJob(mpiJob).Infof(msg)
+
+	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
+		commonutil.LoggerForJob(mpiJob).Error(err, "failed to update PyTorch Job conditions")
+		return err
+	}
+
 	return nil
 }
 
 func (r *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	mpiJob, ok := job.(*mpiv1.MPIJob)
 	if !ok {
-		return fmt.Errorf("%v is not a type of TFJob", mpiJob)
+		return fmt.Errorf("%v is not a type of MpiJob", mpiJob)
 	}
 
 	startTime := time.Now()
 	logger := commonutil.LoggerForJob(mpiJob)
 	defer func() {
-		logger.Infof("Finished updating TFJobs Status %q (%v)",
+		logger.Infof("Finished updating MpiJobs Status %q (%v)",
 			mpiJob.Name, time.Since(startTime))
 	}()
 
@@ -628,7 +708,7 @@ func (r *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus
 	result := r.Status().Update(context.Background(), mpiJob)
 
 	if result != nil {
-		r.Log.WithValues("tfjob", types.NamespacedName{
+		r.Log.WithValues("mpijob", types.NamespacedName{
 			Namespace: mpiJob.GetNamespace(),
 			Name:      mpiJob.GetName(),
 		})
@@ -643,7 +723,6 @@ func (r *MPIJobReconciler) getLauncherJob(mpiJob *mpiv1.MPIJob) (*corev1.Pod, er
 	launcher := &corev1.Pod{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
 	err := r.Get(context.Background(), NamespacedName, launcher)
-	//launcher, err := r.PodLister.Pods(mpiJob.Namespace).Get(mpiJob.Name + launcherSuffix)
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -864,7 +943,6 @@ func (r *MPIJobReconciler) getOrCreateWorker(mpiJob *mpiv1.MPIJob) ([]*corev1.Po
 		pod := &corev1.Pod{}
 		NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: name}
 		err := r.Get(context.Background(), NamespacedName, pod)
-		//pod, err := r.PodLister.Pods(mpiJob.Namespace).Get(name)
 
 		// If the worker Pod doesn't exist, we'll create it.
 		if errors.IsNotFound(err) {

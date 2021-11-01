@@ -18,16 +18,16 @@ import (
 	"fmt"
 	"strings"
 
-	mpiv1 "github.com/kubeflow/tf-operator/pkg/apis/mpi/v1"
-	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
-	mpicontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mpi"
-	mxnetcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/mxnet"
-	pytorchcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/pytorch"
-	tensorflowcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/tensorflow"
-	xgboostcontroller "github.com/kubeflow/tf-operator/pkg/controller.v1/xgboost"
+	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
+	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
+	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
+	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
+	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -61,7 +61,7 @@ func (es *EnabledSchemes) String() string {
 
 func (es *EnabledSchemes) Set(kind string) error {
 	kind = strings.ToLower(kind)
-	for supportedKind, _ := range SupportedSchemeReconciler {
+	for supportedKind := range SupportedSchemeReconciler {
 		if strings.ToLower(supportedKind) == kind {
 			*es = append(*es, supportedKind)
 			return nil
@@ -71,7 +71,7 @@ func (es *EnabledSchemes) Set(kind string) error {
 }
 
 func (es *EnabledSchemes) FillAll() {
-	for supportedKind, _ := range SupportedSchemeReconciler {
+	for supportedKind := range SupportedSchemeReconciler {
 		*es = append(*es, supportedKind)
 	}
 }

@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +40,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	}
 
 	// Add master offset for worker pods
-	if strings.ToLower(rtype) == strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker)) {
+	if strings.EqualFold(strings.ToLower(rtype), strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker))) {
 		masterSpec := xgboostjob.Spec.XGBReplicaSpecs[commonv1.ReplicaType(xgboostv1.XGBoostReplicaTypeMaster)]
 		masterReplicas := int(*masterSpec.Replicas)
 		rank += masterReplicas

@@ -17,8 +17,8 @@
 package tensorflow
 
 import (
-	internalinterfaces "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/kubeflow/tf-operator/pkg/client/informers/externalversions/tensorflow/v1"
+	internalinterfaces "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/tensorflow/v1"
 )
 
 // Interface provides access to each of this group's versions.

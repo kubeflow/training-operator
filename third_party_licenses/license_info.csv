@@ -1,4 +1,4 @@
-kubeflow/tf-operator,https://github.com/kubeflow/tf-operator/blob/master/LICENSE,Apache License 2.0,https://raw.githubusercontent.com/kubeflow/tf-operator/master/LICENSE
+kubeflow/training-operator,https://github.com/kubeflow/training-operator/blob/master/LICENSE,Apache License 2.0,https://raw.githubusercontent.com/kubeflow/training-operator/master/LICENSE
 GoogleCloudPlatform/gcloud-golang,https://github.com/googleapis/google-cloud-go/blob/master/LICENSE,Apache License 2.0,https://raw.githubusercontent.com/googleapis/google-cloud-go/master/LICENSE
 PuerkitoBio/purell,https://github.com/PuerkitoBio/purell/blob/master/LICENSE,BSD 3-Clause "New" or "Revised" License,https://raw.githubusercontent.com/PuerkitoBio/purell/master/LICENSE
 PuerkitoBio/urlesc,https://github.com/PuerkitoBio/urlesc/blob/master/LICENSE,BSD 3-Clause "New" or "Revised" License,https://raw.githubusercontent.com/PuerkitoBio/urlesc/master/LICENSE
