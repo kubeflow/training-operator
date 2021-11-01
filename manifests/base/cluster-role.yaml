@@ -9,10 +9,12 @@ rules:
   - apiGroups:
       - kubeflow.org
     resources:
+      - mpijobs
       - tfjobs
       - mxjobs
       - pytorchjobs
       - xgboostjobs
+      - mpijobs/status
       - tfjobs/status
       - pytorchjobs/status
       - mxjobs/status
@@ -41,6 +43,66 @@ rules:
       - deployments
     verbs:
       - "*"
+  # This is needed for the launcher Role.
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - endpoints
+    verbs:
+      - create
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+      - rolebindings
+    verbs:
+      - create
+      - list
+      - watch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+    - configmaps
+    - secrets
+    - services
+    - serviceaccounts
+    verbs:
+      - create
+      - list
+      - watch
+      - update
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - create
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - create
+      - get
   - apiGroups:
       - scheduling.volcano.sh
     resources:
