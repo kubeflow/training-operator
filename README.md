@@ -13,9 +13,9 @@ run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kube
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
   - [Tensorflow API Definition](pkg/apis/tensorflow/v1/types.go)
-  - [PyTorch API Definition](pkg/apis/pytorch/v1/pytorchjob_types.go)
-  - [MXNet API Definition](pkg/apis/mxnet/v1/mxjob_types.go)
-  - [XGBoost API Definition](pkg/apis/xgboost/v1/xgboostjob_types.go)
+  - [PyTorch API Definition](pkg/apis/pytorch/v1/types.go)
+  - [MXNet API Definition](pkg/apis/mxnet/v1/types.go)
+  - [XGBoost API Definition](pkg/apis/xgboost/v1/types.go)
 - For details on API design, please refer to the [v1alpha2 design doc](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 - For details of all-in-one operator design, please refer to the [All-in-one Kubeflow Training Operator](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit#heading=h.e33ufidnl8z6)
 - For details on its observability, please refer to the [monitoring design doc](docs/monitoring/README.md).
