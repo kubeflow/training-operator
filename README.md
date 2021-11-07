@@ -7,14 +7,14 @@
 ## Overview
 
 Starting from v1.3, this training operator provides Kubernetes custom resources that makes it easy to
-run distributed or non-distributed TensorFlow/PyTorch/MXNet/XGBoost jobs on Kubernetes.
+run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost jobs on Kubernetes.
 
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
-  - [Tensorflow API Definition](pkg/apis/tensorflow/v1/types.go)
+  - [TensorFlow API Definition](pkg/apis/tensorflow/v1/types.go)
   - [PyTorch API Definition](pkg/apis/pytorch/v1/types.go)
-  - [MXNet API Definition](pkg/apis/mxnet/v1/types.go)
+  - [Apache MXNet API Definition](pkg/apis/mxnet/v1/types.go)
   - [XGBoost API Definition](pkg/apis/xgboost/v1/types.go)
 - For details on API design, please refer to the [v1alpha2 design doc](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 - For details of all-in-one operator design, please refer to the [All-in-one Kubeflow Training Operator](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit#heading=h.e33ufidnl8z6)
@@ -40,9 +40,9 @@ kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/stand
 kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.3.0"
 ```
 
-### Tensorflow Release Only
+### TensorFlow Release Only
 
-For users who prefer to use original tensorflow controllers, please checkout v1.2-branch, we will maintain the bug fix in this branch.
+For users who prefer to use original TensorFlow controllers, please checkout `v1.2-branch`, patches for bug fixes will still be accepted to this branch.
 
 ```bash
 kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.2.0"
@@ -64,11 +64,11 @@ Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow Tr
 
 ## API Documentation
 
-Please refer to API Documentation.
+Please refer to following API Documentation:
 
-- [Tensorflow API Documentation](docs/api/tensorflow_generated.asciidoc)
+- [TensorFlow API Documentation](docs/api/tensorflow_generated.asciidoc)
 - [PyTorch API Documentation](docs/api/pytorch_generated.asciidoc)
-- [MXNet API Documentation](docs/api/mxnet_generated.asciidoc)
+- [Apache MXNet API Documentation](docs/api/mxnet_generated.asciidoc)
 - [XGBoost API Documentation](docs/api/xgboost_generated.asciidoc)
 
 ## Community
