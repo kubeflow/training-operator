@@ -22,6 +22,29 @@ Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 === Definitions
 
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-elasticpolicy"]
+==== ElasticPolicy 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-pytorchjobspec[$$PyTorchJobSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`backend`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-rdzvbackend[$$RDZVBackend$$]__ | 
+| *`rdzvPort`* __integer__ | 
+| *`rdzvHost`* __string__ | 
+| *`rdzvId`* __string__ | 
+| *`rdzvConf`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-rdzvconf[$$RDZVConf$$] array__ | RDZVConf contains additional rendezvous configuration (<key1>=<value1>,<key2>=<value2>,...).
+| *`standalone`* __boolean__ | Start a local standalone rendezvous backend that is represented by a C10d TCP store on port 29400. Useful when launching single-node, multi-worker job. If specified --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values are ignored.
+| *`nProcPerNode`* __integer__ | Number of workers per node; supported values: [auto, cpu, gpu, int].
+|===
+
+
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-pytorchjob"]
 ==== PyTorchJob 
 
@@ -78,7 +101,38 @@ PyTorchJobSpec is a desired state description of the PyTorchJob.
 |===
 | Field | Description
 | *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`elasticPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-elasticpolicy[$$ElasticPolicy$$]__ | 
 | *`pytorchReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,   {     "Master": PyTorchReplicaSpec,     "Worker": PyTorchReplicaSpec,   }
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-rdzvbackend"]
+==== RDZVBackend (string) 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-elasticpolicy[$$ElasticPolicy$$]
+****
+
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-rdzvconf"]
+==== RDZVConf 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-pytorch-v1-elasticpolicy[$$ElasticPolicy$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`key`* __string__ | 
+| *`value`* __string__ | 
 |===
 
 
