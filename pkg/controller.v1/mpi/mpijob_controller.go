@@ -639,11 +639,11 @@ func (r *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv
 	}
 
 	// Some workers are still running, leave a running condition.
-	msg := fmt.Sprintf("PyTorchJob %s is running.", mpiJob.Name)
+	msg := fmt.Sprintf("MPIJob %s is running.", mpiJob.Name)
 	commonutil.LoggerForJob(mpiJob).Infof(msg)
 
 	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
-		commonutil.LoggerForJob(mpiJob).Error(err, "failed to update PyTorch Job conditions")
+		commonutil.LoggerForJob(mpiJob).Error(err, "failed to update MPIJob conditions")
 		return err
 	}
 
