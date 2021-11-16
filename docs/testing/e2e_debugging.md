@@ -34,7 +34,7 @@ kubectl set image deployment.v1.apps/training-operator training-operator=kubeflo
 
 1. Set environments
 ```
-export KUBEFLOW_PATH=/home/jiaxin.shan/go/src/github.com/kubeflow
+export KUBEFLOW_PATH=$GOPATH/src/github.com/kubeflow
 export KUBEFLOW_TRAINING_REPO=$KUBEFLOW_PATH/training-operator
 export KUBEFLOW_TESTING_REPO=$KUBEFLOW_PATH/testing
 export PYTHONPATH=$KUBEFLOW_TRAINING_REPO:$KUBEFLOW_TRAINING_REPO/py:$KUBEFLOW_TESTING_REPO/py:$KUBEFLOW_TRAINING_REPO/sdk/python
