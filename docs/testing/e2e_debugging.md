@@ -1,6 +1,6 @@
 # How to debug an E2E test for Kubeflow Training Operator
 
-[E2E Testing](./e2e_testing.md) gives an overview of writing e2e tests. This guidance concentrateso more on the e2e failure debugging.
+[E2E Testing](./e2e_testing.md) gives an overview of writing e2e tests. This guidance concentrates more on the e2e failure debugging.
 
 
 ## Prerequsite
