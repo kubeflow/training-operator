@@ -4,7 +4,7 @@ The E2E tests for Kubeflow Training operator are implemented as Argo workflows. 
 about Argo (not required for understanding the rest of this document), please take a look at
 [this link](https://github.com/kubeflow/testing/blob/master/README.md).
 
-Test results can be monitored at the [Prow dashboard](https://prow.k8s.io/?repo=kubeflow%2Ftraining-operator).
+Test results can be monitored at the [Prow dashboard](http://prow.kubeflow-testing.com/?repo=kubeflow%2Ftraining-operator).
 
 At a high level, the E2E test suites are structured as Python test classes. Each test class contains
 one or more tests. A test typically runs the following:
