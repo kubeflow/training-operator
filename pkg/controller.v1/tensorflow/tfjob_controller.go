@@ -794,6 +794,8 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 	labels := r.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
+	labels[commonv1.ReplicaTypeLabel] = rt
+	labels[commonv1.ReplicaIndexLabel] = index
 
 	if masterRole {
 		labels[commonv1.JobRoleLabel] = "master"
