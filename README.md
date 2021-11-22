@@ -7,7 +7,7 @@
 ## Overview
 
 Starting from v1.3, this training operator provides Kubernetes custom resources that makes it easy to
-run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost jobs on Kubernetes.
+run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost/MPI jobs on Kubernetes.
 
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
