@@ -16,6 +16,7 @@ run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost jobs 
   - [PyTorch API Definition](pkg/apis/pytorch/v1/types.go)
   - [Apache MXNet API Definition](pkg/apis/mxnet/v1/types.go)
   - [XGBoost API Definition](pkg/apis/xgboost/v1/types.go)
+  - [MPI API Definition](pkg/apis/mpi/v1/types.go)
 - For details on API design, please refer to the [v1alpha2 design doc](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 - For details of all-in-one operator design, please refer to the [All-in-one Kubeflow Training Operator](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit#heading=h.e33ufidnl8z6)
 - For details on its observability, please refer to the [monitoring design doc](docs/monitoring/README.md).
@@ -70,6 +71,7 @@ Please refer to following API Documentation:
 - [PyTorch API Documentation](docs/api/pytorch_generated.asciidoc)
 - [Apache MXNet API Documentation](docs/api/mxnet_generated.asciidoc)
 - [XGBoost API Documentation](docs/api/xgboost_generated.asciidoc)
+- [MPI API Documentation](docs/api/mpi_generated.asciidoc)
 
 ## Community
 
