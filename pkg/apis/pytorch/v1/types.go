@@ -16,6 +16,7 @@ package v1
 
 import (
 	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,6 +27,7 @@ import (
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
 //+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:subresource:scale:specpath=.spec.pytorchReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Active,selectorpath=.status.labelSelector
 
 // PyTorchJob Represents a PyTorchJob resource.
 type PyTorchJob struct {
@@ -50,6 +52,8 @@ type PyTorchJobSpec struct {
 	//+kubebuilder:validation:Optional
 	RunPolicy common.RunPolicy `json:"runPolicy"`
 
+	ElasticPolicy *ElasticPolicy `json:"elasticPolicy,omitempty"`
+
 	// A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.
 	// For example,
 	//   {
@@ -59,12 +63,62 @@ type PyTorchJobSpec struct {
 	PyTorchReplicaSpecs map[common.ReplicaType]*common.ReplicaSpec `json:"pytorchReplicaSpecs"`
 }
 
+type ElasticPolicy struct {
+	// minReplicas is the lower limit for the number of replicas to which the training job
+	// can scale down.  It defaults to null.
+	// +optional
+	MinReplicas *int32 `json:"minReplicas,omitempty"`
+	// upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.
+	// +optional
+	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
+
+	RDZVBackend *RDZVBackend `json:"rdzvBackend,omitempty"`
+	RDZVPort    *int32       `json:"rdzvPort,omitempty"`
+	RDZVHost    *string      `json:"rdzvHost,omitempty"`
+	RDZVID      *string      `json:"rdzvId,omitempty"`
+	// RDZVConf contains additional rendezvous configuration (<key1>=<value1>,<key2>=<value2>,...).
+	RDZVConf []RDZVConf `json:"rdzvConf,omitempty"`
+	// Start a local standalone rendezvous backend that is represented by a C10d TCP store
+	// on port 29400. Useful when launching single-node, multi-worker job. If specified
+	// --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values
+	// are ignored.
+	Standalone *bool `json:"standalone,omitempty"`
+	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
+
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
+
+	// metrics contains the specifications for which to use to calculate the
+	// desired replica count (the maximum replica count across all metrics will
+	// be used).  The desired replica count is calculated multiplying the
+	// ratio between the target value and the current value by the current
+	// number of pods.  Ergo, metrics used must decrease as the pod count is
+	// increased, and vice-versa.  See the individual metric source types for
+	// more information about how each type of metric must respond.
+	// If not set, the default metric will be set to 80% average CPU utilization.
+	// +optional
+	Metrics []autoscalingv2beta2.MetricSpec `json:"metrics,omitempty"`
+}
+
+type RDZVConf struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type RDZVBackend string
+
 const (
+	// BackendC10D is the rendezvous backend type for C10d.
+	BackendC10D RDZVBackend = "c10d"
+	// BackendETCD is the rendezvous backend type for ETCD.
+	BackendETCD = "etcd"
+	// BackendETCDV2 is the rendezvous backend type for ETCD v2.
+	BackendETCDV2 = "etcd-v2"
+
 	// PyTorchReplicaTypeMaster is the type of Master of distributed PyTorch
 	PyTorchReplicaTypeMaster common.ReplicaType = "Master"
-
 	// PyTorchReplicaTypeWorker is the type for workers of distributed PyTorch.
-	PyTorchReplicaTypeWorker common.ReplicaType = "Worker"
+	PyTorchReplicaTypeWorker = "Worker"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -220,9 +220,17 @@ func schema_pkg_apis_common_v1_ReplicaStatus(ref common.ReferenceCallback) commo
 							Format:      "int32",
 						},
 					},
+					"labelSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 

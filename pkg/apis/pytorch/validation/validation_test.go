@@ -30,7 +30,7 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 		},
 		{
 			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
+				torchv1.PyTorchReplicaTypeWorker: {
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{},
@@ -41,11 +41,11 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 		},
 		{
 			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
+				torchv1.PyTorchReplicaTypeWorker: {
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
-								v1.Container{
+								{
 									Image: "",
 								},
 							},
@@ -56,11 +56,11 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 		},
 		{
 			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
+				torchv1.PyTorchReplicaTypeWorker: {
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
-								v1.Container{
+								{
 									Name:  "",
 									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
 								},
@@ -72,29 +72,12 @@ func TestValidateV1PyTorchJobSpec(t *testing.T) {
 		},
 		{
 			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				torchv1.PyTorchReplicaTypeMaster: &commonv1.ReplicaSpec{
+				torchv1.PyTorchReplicaTypeMaster: {
 					Replicas: torchv1.Int32(2),
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
-								v1.Container{
-									Name:  "pytorch",
-									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				torchv1.PyTorchReplicaTypeWorker: &commonv1.ReplicaSpec{
-					Replicas: torchv1.Int32(1),
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
+								{
 									Name:  "pytorch",
 									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
 								},
