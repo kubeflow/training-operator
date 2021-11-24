@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/spec v0.20.3
-	github.com/kubeflow/common v0.3.7
+	github.com/kubeflow/common v0.4.1-0.20211124072447-26a6cece18dd
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
 	github.com/prometheus/client_golang v1.10.0
@@ -19,8 +19,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.7.2
 	volcano.sh/apis v1.2.0-k8s1.19.6
 )
-
-replace github.com/kubeflow/common v0.3.7 => github.com/gaocegege/common v0.0.0-20211108040227-6ddf8b59f7bf
 
 require (
 	cloud.google.com/go v0.51.0 // indirect
