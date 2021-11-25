@@ -43,28 +43,13 @@ rules:
       - deployments
     verbs:
       - "*"
-  # This is needed for the launcher Role.
+  # This is needed for the launcher role of the MPI operator.
   - apiGroups:
       - ""
     resources:
       - pods/exec
     verbs:
       - create
-  - apiGroups:
-      - ""
-    resources:
-      - endpoints
-    verbs:
-      - create
-      - get
-      - update
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
@@ -80,29 +65,12 @@ rules:
     resources:
     - configmaps
     - secrets
-    - services
     - serviceaccounts
     verbs:
       - create
       - list
       - watch
       - update
-  - apiGroups:
-      - policy
-    resources:
-      - poddisruptionbudgets
-    verbs:
-      - create
-      - list
-      - update
-      - watch
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - create
-      - get
   - apiGroups:
       - scheduling.volcano.sh
     resources:

@@ -360,13 +360,6 @@ func (r *MPIJobReconciler) ReconcilePods(
 			return err
 		}
 
-		// Get the PodGroup for this MPIJob
-		// if c.gangSchedulerName != "" {
-		// 	if podgroup, err := c.getOrCreatePodGroups(mpiJob, workerReplicas+1); podgroup == nil || err != nil {
-		// 		return err
-		// 	}
-		// }
-
 		worker, err = r.getOrCreateWorker(mpiJob)
 		if err != nil {
 			return err
@@ -393,7 +386,6 @@ func (r *MPIJobReconciler) ReconcilePods(
 }
 
 func (r *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *corev1.Pod, worker []*corev1.Pod) error {
-	//oldStatus := mpiJob.Status.DeepCopy()
 	if launcher != nil {
 		initializeMPIJobStatuses(mpiJob, mpiv1.MPIReplicaTypeLauncher)
 		if isPodSucceeded(launcher) {
@@ -439,7 +431,6 @@ func (r *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *co
 	)
 
 	initializeMPIJobStatuses(mpiJob, mpiv1.MPIReplicaTypeWorker)
-	//spec := mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeWorker]
 	for i := 0; i < len(worker); i++ {
 		switch worker[i].Status.Phase {
 		case corev1.PodFailed:
@@ -470,11 +461,6 @@ func (r *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *co
 		}
 		r.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, "MPIJobRunning", "MPIJob %s/%s is running", mpiJob.Namespace, mpiJob.Name)
 	}
-
-	// no need to update the mpijob if the status hasn't changed since last time.
-	// if !reflect.DeepEqual(*oldStatus, mpiJob.Status) {
-	// 	return r.UpdateJobStatusInApiServer(mpiJob, mpiJob.Status)
-	// }
 	return nil
 }
 
@@ -593,7 +579,7 @@ func (r *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv
 					return err
 				}
 			}
-			// when master is succeed, the job is finished.
+			// when launcher is succeed, the job is finished.
 			if expected == 0 {
 				msg := fmt.Sprintf("MPIJob %s is successfully completed.", mpiJob.Name)
 				logrus.Info(msg)
@@ -713,8 +699,6 @@ func (r *MPIJobReconciler) getOrCreateConfigMap(mpiJob *mpiv1.MPIJob, workerRepl
 		return nil, err
 	}
 	updateDiscoverHostsInConfigMap(newCM, mpiJob, podList, isGPULauncher)
-
-	//cm, err := r.configMapLister.ConfigMaps(mpiJob.Namespace).Get(mpiJob.Name + configSuffix)
 
 	cm := &corev1.ConfigMap{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + configSuffix}
