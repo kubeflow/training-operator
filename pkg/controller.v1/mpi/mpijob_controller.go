@@ -40,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -130,15 +129,12 @@ func (r *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if err = validation.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
 		logger.Info(err.Error(), "MPIJob failed validation", req.NamespacedName.String())
+		return ctrl.Result{}, err
 	}
 
-	// Check if reconciliation is needed
-	jobKey, err := common.KeyFunc(mpijob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("couldn't get jobKey for job object %#v: %v", mpijob, err))
-	}
-	replicaTypes := util.GetReplicaTypes(mpijob.Spec.MPIReplicaSpecs)
-	needReconcile := util.SatisfiedExpectations(r.Expectations, jobKey, replicaTypes)
+	// In the new reconcile mode, we will always proceed the reconciling and let each `createOrUpdate` function
+	// to determine if updating/creating is needed
+	needReconcile := true
 
 	if !needReconcile || mpijob.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
@@ -187,14 +183,50 @@ func (r *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// inject watching for job related service
-	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+	// inject watching for job related ConfigMap
+	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &mpiv1.MPIJob{},
 	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	// inject watching for job related Role
+	if err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &mpiv1.MPIJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	// inject watching for job related RoleBinding
+	if err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &mpiv1.MPIJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	// inject watching for job related ServiceAccount
+	if err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &mpiv1.MPIJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 	}); err != nil {
 		return err
 	}
@@ -202,7 +234,7 @@ func (r *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-//mpijob not need delete services
+// DeletePodsAndServices is overridden because mpi-reconciler.v1 needs not deleting services
 func (r *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, job interface{}, pods []*corev1.Pod) error {
 	if len(pods) == 0 {
 		return nil
@@ -227,9 +259,7 @@ func (r *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, 
 	return nil
 }
 
-// reconcileServices checks and updates services for each given ReplicaSpec.
-// It will requeue the job in case of an error while creating/deleting services.
-// mpijob not need services
+// ReconcileServices  is overridden because mpi-reconciler.v1 needs not reconciling services
 func (jc *MPIJobReconciler) ReconcileServices(
 	job metav1.Object,
 	services []*corev1.Service,
@@ -254,7 +284,7 @@ func (r *MPIJobReconciler) GetGroupNameLabelValue() string {
 	return mpiv1.GroupVersion.Group
 }
 
-// Same as Func (tc *TFController) SetClusterSpec(...) in pod.go
+// SetClusterSpec is overridden because there is no cluster spec is needed for MPIJob
 func (r *MPIJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
 	return nil
 }
