@@ -16,7 +16,7 @@ spec:
         spec:
           containers:
             - name: pytorch
-              image: gaocegege/pytorch-elastic-example-imagenet:1.0.0-sigterm
+              image: kubeflow/pytorch-elastic-example-imagenet:1.0.0-sigterm
               imagePullPolicy: IfNotPresent
               env:
               - name: LOGLEVEL

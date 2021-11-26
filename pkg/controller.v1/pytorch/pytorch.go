@@ -53,11 +53,7 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			if err != nil {
 				return err
 			}
-			if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)) {
-				if rank != 0 {
-					return fmt.Errorf("invalid config: There should be only a single master with index=0")
-				}
-			} else {
+			if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeWorker)) {
 				rank = rank + 1
 			}
 

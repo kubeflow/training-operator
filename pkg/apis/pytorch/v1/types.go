@@ -88,14 +88,14 @@ type ElasticPolicy struct {
 
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
 
-	// metrics contains the specifications for which to use to calculate the
+	// Metrics contains the specifications which are used to calculate the
 	// desired replica count (the maximum replica count across all metrics will
-	// be used).  The desired replica count is calculated multiplying the
+	// be used).  The desired replica count is calculated with multiplying the
 	// ratio between the target value and the current value by the current
-	// number of pods.  Ergo, metrics used must decrease as the pod count is
+	// number of pods. Ergo, metrics used must decrease as the pod count is
 	// increased, and vice-versa.  See the individual metric source types for
 	// more information about how each type of metric must respond.
-	// If not set, the default metric will be set to 80% average CPU utilization.
+	// If not set, the HPA will not be created.
 	// +optional
 	Metrics []autoscalingv2beta2.MetricSpec `json:"metrics,omitempty"`
 }
@@ -111,14 +111,14 @@ const (
 	// BackendC10D is the rendezvous backend type for C10d.
 	BackendC10D RDZVBackend = "c10d"
 	// BackendETCD is the rendezvous backend type for ETCD.
-	BackendETCD = "etcd"
+	BackendETCD RDZVBackend = "etcd"
 	// BackendETCDV2 is the rendezvous backend type for ETCD v2.
-	BackendETCDV2 = "etcd-v2"
+	BackendETCDV2 RDZVBackend = "etcd-v2"
 
 	// PyTorchReplicaTypeMaster is the type of Master of distributed PyTorch
 	PyTorchReplicaTypeMaster common.ReplicaType = "Master"
 	// PyTorchReplicaTypeWorker is the type for workers of distributed PyTorch.
-	PyTorchReplicaTypeWorker = "Worker"
+	PyTorchReplicaTypeWorker common.ReplicaType = "Worker"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

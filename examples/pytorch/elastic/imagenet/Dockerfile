@@ -2,7 +2,7 @@ ARG BASE_IMAGE=pytorch/pytorch:1.10.0-cuda11.3-cudnn8-runtime
 FROM $BASE_IMAGE
 
 # install utilities and dependencies
-RUN pip install -i https://mirror.sjtu.edu.cn/pypi/web/simple classy-vision
+RUN pip install classy-vision
 
 WORKDIR /workspace
 

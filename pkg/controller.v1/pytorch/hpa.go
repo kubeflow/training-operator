@@ -31,40 +31,40 @@ import (
 func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) error {
 	logger := r.Log.WithValues(pytorchv1.Singular, pytorhcjob.Name)
 
-	if pytorhcjob.Spec.ElasticPolicy == nil {
-		logger.V(1).Info("No ElasicPolicy is specified, skipping HPA reconciling process")
+	if pytorhcjob.Spec.ElasticPolicy == nil || pytorhcjob.Spec.ElasticPolicy.Metrics == nil {
+		logger.V(1).Info(
+			"No ElasicPolicy or Metric is specified, skipping HPA reconciling process")
 		return nil
 	}
 
-	// Create or update HPA
-	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{}
-	err := r.Get(context.TODO(), types.NamespacedName{Name: pytorhcjob.Name, Namespace: pytorhcjob.Namespace}, hpa)
+	current := &autoscalingv2beta2.HorizontalPodAutoscaler{}
+
+	// Get the exepected HPA.
+	expected, err := desiredHPA(pytorhcjob, r.Scheme)
 	if err != nil {
+		return err
+	}
+
+	if err := r.Get(context.TODO(), types.NamespacedName{
+		Name:      pytorhcjob.Name,
+		Namespace: pytorhcjob.Namespace,
+	}, current); err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
 
 		// Create the new HPA.
-		hpa, err = desiredHPA(pytorhcjob, r.Scheme)
-		if err != nil {
-			return err
-		}
-		logger.V(1).Info("Creating HPA", "HPA.Namespace", hpa.Namespace, "HPA.Name", hpa.Name)
-		err = r.Create(context.TODO(), hpa)
+		logger.V(1).Info("Creating HPA", "namespace", expected.Namespace, "name", expected.Name)
+		err = r.Create(context.TODO(), expected)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 
-	// Update HPA
-	expected, err := desiredHPA(pytorhcjob, r.Scheme)
-	if err != nil {
-		return err
-	}
-	if !equality.Semantic.DeepEqual(expected.Spec, hpa.Spec) {
-		logger.V(1).Info("Updating HPA", "HPA.Namespace", hpa.Namespace, "HPA.Name", hpa.Name)
-		expected.ResourceVersion = hpa.ResourceVersion
+	if !equality.Semantic.DeepEqual(expected.Spec, current.Spec) {
+		logger.V(1).Info("Updating HPA", "namespace", current.Namespace, "name", current.Name)
+		expected.ResourceVersion = current.ResourceVersion
 		err = r.Update(context.TODO(), expected)
 		if err != nil {
 			return err

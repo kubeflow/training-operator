@@ -113,7 +113,6 @@ cd - >/dev/null
 # Notice: The code in kube-openapi does not generate defaulter by default.
 # We need to build binary from pkg cmd folder.
 echo "Building openapi-gen"
-echo ${OPENAPI_PKG}
 go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
 
 echo "Generating OpenAPI specification for tensorflow/v1"

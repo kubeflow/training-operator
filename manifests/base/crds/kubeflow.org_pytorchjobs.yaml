@@ -55,15 +55,15 @@ spec:
                     format: int32
                     type: integer
                   metrics:
-                    description: metrics contains the specifications for which to
-                      use to calculate the desired replica count (the maximum replica
+                    description: Metrics contains the specifications which are used
+                      to calculate the desired replica count (the maximum replica
                       count across all metrics will be used).  The desired replica
-                      count is calculated multiplying the ratio between the target
-                      value and the current value by the current number of pods.  Ergo,
+                      count is calculated with multiplying the ratio between the target
+                      value and the current value by the current number of pods. Ergo,
                       metrics used must decrease as the pod count is increased, and
                       vice-versa.  See the individual metric source types for more
                       information about how each type of metric must respond. If not
-                      set, the default metric will be set to 80% average CPU utilization.
+                      set, the HPA will not be created.
                     items:
                       description: MetricSpec specifies how to scale based on a single
                         metric (only `type` and one other matching field should be

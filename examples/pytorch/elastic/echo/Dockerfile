@@ -1,6 +1,6 @@
 FROM python:3.8-buster
 WORKDIR /workspace
-RUN pip install -i https://mirror.sjtu.edu.cn/pypi/web/simple torch==1.10.0 numpy
+RUN pip install torch==1.10.0 numpy
 # TODO Replace this with the PIP version when available
 ADD echo.py echo.py
 ENV PYTHONPATH /workspace
