@@ -8,6 +8,7 @@ cover.out
 
 # IDEs
 .vscode/
+__debug_bin
 
 # Compiled python files.
 *.pyc
@@ -43,3 +44,7 @@ hack/python-sdk/openapi-generator-cli.jar
 
 # Coverage
 cover.out
+
+/training-operator
+
+data/

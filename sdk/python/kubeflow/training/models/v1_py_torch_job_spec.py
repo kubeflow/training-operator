@@ -33,27 +33,53 @@ class V1PyTorchJobSpec(object):
                             and the value is json key in definition.
     """
     openapi_types = {
+        'elastic_policy': 'V1ElasticPolicy',
         'pytorch_replica_specs': 'dict(str, V1ReplicaSpec)',
         'run_policy': 'V1RunPolicy'
     }
 
     attribute_map = {
+        'elastic_policy': 'elasticPolicy',
         'pytorch_replica_specs': 'pytorchReplicaSpecs',
         'run_policy': 'runPolicy'
     }
 
-    def __init__(self, pytorch_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, elastic_policy=None, pytorch_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
         """V1PyTorchJobSpec - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
         self.local_vars_configuration = local_vars_configuration
 
+        self._elastic_policy = None
         self._pytorch_replica_specs = None
         self._run_policy = None
         self.discriminator = None
 
+        if elastic_policy is not None:
+            self.elastic_policy = elastic_policy
         self.pytorch_replica_specs = pytorch_replica_specs
         self.run_policy = run_policy
+
+    @property
+    def elastic_policy(self):
+        """Gets the elastic_policy of this V1PyTorchJobSpec.  # noqa: E501
+
+
+        :return: The elastic_policy of this V1PyTorchJobSpec.  # noqa: E501
+        :rtype: V1ElasticPolicy
+        """
+        return self._elastic_policy
+
+    @elastic_policy.setter
+    def elastic_policy(self, elastic_policy):
+        """Sets the elastic_policy of this V1PyTorchJobSpec.
+
+
+        :param elastic_policy: The elastic_policy of this V1PyTorchJobSpec.  # noqa: E501
+        :type: V1ElasticPolicy
+        """
+
+        self._elastic_policy = elastic_policy
 
     @property
     def pytorch_replica_specs(self):

@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 # import models into model package
+from kubeflow.training.models.v1_elastic_policy import V1ElasticPolicy
 from kubeflow.training.models.v1_job_condition import V1JobCondition
 from kubeflow.training.models.v1_job_status import V1JobStatus
 from kubeflow.training.models.v1_mx_job import V1MXJob
@@ -22,6 +23,7 @@ from kubeflow.training.models.v1_mx_job_spec import V1MXJobSpec
 from kubeflow.training.models.v1_py_torch_job import V1PyTorchJob
 from kubeflow.training.models.v1_py_torch_job_list import V1PyTorchJobList
 from kubeflow.training.models.v1_py_torch_job_spec import V1PyTorchJobSpec
+from kubeflow.training.models.v1_rdzv_conf import V1RDZVConf
 from kubeflow.training.models.v1_replica_spec import V1ReplicaSpec
 from kubeflow.training.models.v1_replica_status import V1ReplicaStatus
 from kubeflow.training.models.v1_run_policy import V1RunPolicy

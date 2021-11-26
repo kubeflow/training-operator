@@ -51,6 +51,7 @@ class TestV1JobStatus(unittest.TestCase):
                     'key' : V1ReplicaStatus(
                         active = 56, 
                         failed = 56, 
+                        label_selector = None, 
                         succeeded = 56, )
                     }, 
                 start_time = None
@@ -70,6 +71,7 @@ class TestV1JobStatus(unittest.TestCase):
                     'key' : V1ReplicaStatus(
                         active = 56, 
                         failed = 56, 
+                        label_selector = None, 
                         succeeded = 56, )
                     },
         )

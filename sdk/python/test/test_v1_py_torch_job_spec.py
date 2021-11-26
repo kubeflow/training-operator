@@ -36,6 +36,24 @@ class TestV1PyTorchJobSpec(unittest.TestCase):
         # model = kubeflow.training.models.v1_py_torch_job_spec.V1PyTorchJobSpec()  # noqa: E501
         if include_optional :
             return V1PyTorchJobSpec(
+                elastic_policy = V1ElasticPolicy(
+                    max_replicas = 56, 
+                    max_restarts = 56, 
+                    metrics = [
+                        None
+                        ], 
+                    min_replicas = 56, 
+                    n_proc_per_node = 56, 
+                    rdzv_backend = '0', 
+                    rdzv_conf = [
+                        V1RDZVConf(
+                            key = '0', 
+                            value = '0', )
+                        ], 
+                    rdzv_host = '0', 
+                    rdzv_id = '0', 
+                    rdzv_port = 56, 
+                    standalone = True, ), 
                 pytorch_replica_specs = {
                     'key' : V1ReplicaSpec(
                         replicas = 56, 

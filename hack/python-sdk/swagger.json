@@ -7,6 +7,61 @@
   },
   "paths": {},
   "definitions": {
+    "v1.ElasticPolicy": {
+      "type": "object",
+      "properties": {
+        "maxReplicas": {
+          "description": "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxRestarts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "metrics": {
+          "description": "metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/k8s.io.api.autoscaling.v2beta2.MetricSpec"
+          }
+        },
+        "minReplicas": {
+          "description": "minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "nProcPerNode": {
+          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int].",
+          "type": "integer",
+          "format": "int32"
+        },
+        "rdzvBackend": {
+          "type": "string"
+        },
+        "rdzvConf": {
+          "description": "RDZVConf contains additional rendezvous configuration (\u003ckey1\u003e=\u003cvalue1\u003e,\u003ckey2\u003e=\u003cvalue2\u003e,...).",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1.RDZVConf"
+          }
+        },
+        "rdzvHost": {
+          "type": "string"
+        },
+        "rdzvId": {
+          "type": "string"
+        },
+        "rdzvPort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "standalone": {
+          "description": "Start a local standalone rendezvous backend that is represented by a C10d TCP store on port 29400. Useful when launching single-node, multi-worker job. If specified --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values are ignored.",
+          "type": "boolean"
+        }
+      }
+    },
     "v1.JobCondition": {
       "description": "JobCondition describes the state of the job at a certain point.",
       "type": "object",
@@ -217,6 +272,9 @@
         "pytorchReplicaSpecs"
       ],
       "properties": {
+        "elasticPolicy": {
+          "$ref": "#/definitions/v1.ElasticPolicy"
+        },
         "pytorchReplicaSpecs": {
           "description": "A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,\n  {\n    \"Master\": PyTorchReplicaSpec,\n    \"Worker\": PyTorchReplicaSpec,\n  }",
           "type": "object",
@@ -227,6 +285,17 @@
         "runPolicy": {
           "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
           "$ref": "#/definitions/v1.RunPolicy"
+        }
+      }
+    },
+    "v1.RDZVConf": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
         }
       }
     },
@@ -262,6 +331,10 @@
           "description": "The number of pods which reached phase Failed.",
           "type": "integer",
           "format": "int32"
+        },
+        "labelSelector": {
+          "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+          "$ref": "#/definitions/v1.LabelSelector"
         },
         "succeeded": {
           "description": "The number of pods which reached phase Succeeded.",

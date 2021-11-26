@@ -34,9 +34,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":              schema_pkg_apis_common_v1_ReplicaStatus(ref),
 		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                  schema_pkg_apis_common_v1_RunPolicy(ref),
 		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":           schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.ElasticPolicy":  schema_pkg_apis_pytorch_v1_ElasticPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob":     schema_pkg_apis_pytorch_v1_PyTorchJob(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobList": schema_pkg_apis_pytorch_v1_PyTorchJobList(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobSpec": schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.RDZVConf":       schema_pkg_apis_pytorch_v1_RDZVConf(ref),
 	}
 }
 
@@ -220,9 +222,17 @@ func schema_pkg_apis_common_v1_ReplicaStatus(ref common.ReferenceCallback) commo
 							Format:      "int32",
 						},
 					},
+					"labelSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 
@@ -318,6 +328,104 @@ func schema_pkg_apis_common_v1_SchedulingPolicy(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/api/resource.Quantity"},
+	}
+}
+
+func schema_pkg_apis_pytorch_v1_ElasticPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"minReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"maxReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"rdzvBackend": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rdzvPort": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"rdzvHost": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rdzvId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"rdzvConf": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RDZVConf contains additional rendezvous configuration (<key1>=<value1>,<key2>=<value2>,...).",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.RDZVConf"),
+									},
+								},
+							},
+						},
+					},
+					"standalone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Start a local standalone rendezvous backend that is represented by a C10d TCP store on port 29400. Useful when launching single-node, multi-worker job. If specified --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values are ignored.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"nProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int].",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"maxRestarts": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"metrics": {
+						SchemaProps: spec.SchemaProps{
+							Description: "metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.RDZVConf", "k8s.io/api/autoscaling/v2beta2.MetricSpec"},
 	}
 }
 
@@ -429,6 +537,11 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy"),
 						},
 					},
+					"elasticPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.ElasticPolicy"),
+						},
+					},
 					"pytorchReplicaSpecs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,\n  {\n    \"Master\": PyTorchReplicaSpec,\n    \"Worker\": PyTorchReplicaSpec,\n  }",
@@ -448,6 +561,30 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec", "github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy"},
+			"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec", "github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy", "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.ElasticPolicy"},
+	}
+}
+
+func schema_pkg_apis_pytorch_v1_RDZVConf(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
 	}
 }

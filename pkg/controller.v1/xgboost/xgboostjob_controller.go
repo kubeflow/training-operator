@@ -169,7 +169,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(xgboostjob, xgboostjob.Spec.XGBReplicaSpecs, xgboostjob.Status, &xgboostjob.Spec.RunPolicy)
 	if err != nil {
-		logger.V(2).Error(err, "Reconcile XGBoost Job error")
+		logger.V(1).Error(err, "Reconcile XGBoost Job error")
 		return ctrl.Result{}, err
 	}
 

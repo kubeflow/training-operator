@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License
 
-package controllers
+package pytorch
 
 import (
 	"fmt"
@@ -30,52 +30,53 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
 
-	rank, err := strconv.Atoi(index)
-	if err != nil {
-		return err
-	}
-
-	totalReplicas := getTotalReplicas(pytorchjob)
-
-	masterPort, err := getPortFromPyTorchJob(pytorchjob, pytorchv1.PyTorchReplicaTypeMaster)
-	if err != nil {
-		return err
-	}
-
-	masterAddr := genGeneralName(pytorchjob.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
-	if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)) {
-		if rank != 0 {
-			return fmt.Errorf("invalid config: There should be only a single master with index=0")
-		}
-		masterAddr = "localhost"
-	} else {
-		rank = rank + 1
-	}
-
 	for i := range podTemplateSpec.Spec.Containers {
 		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
 			podTemplateSpec.Spec.Containers[i].Env = make([]corev1.EnvVar, 0)
 		}
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  "MASTER_PORT",
-			Value: strconv.Itoa(int(masterPort)),
-		})
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  "MASTER_ADDR",
-			Value: masterAddr,
-		})
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  "WORLD_SIZE",
-			Value: strconv.Itoa(int(totalReplicas)),
-		})
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  "RANK",
-			Value: strconv.Itoa(rank),
-		})
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  "PYTHONUNBUFFERED",
 			Value: "0",
 		})
+
+		if pytorchjob.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeMaster] != nil {
+			envVars, err := GetMasterEnvVarGenerator().Generate(pytorchjob)
+			if err != nil {
+				return err
+			}
+			// Set master related environment variables.
+			podTemplateSpec.Spec.Containers[i].Env = append(
+				podTemplateSpec.Spec.Containers[i].Env, envVars...)
+
+			// Set world size and rank.
+			rank, err := strconv.Atoi(index)
+			if err != nil {
+				return err
+			}
+			if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeWorker)) {
+				rank = rank + 1
+			}
+
+			totalReplicas := getTotalReplicas(pytorchjob)
+
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  "WORLD_SIZE",
+				Value: strconv.Itoa(int(totalReplicas)),
+			})
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  "RANK",
+				Value: strconv.Itoa(rank),
+			})
+		}
+
+		envVars, err := GetElasticEnvVarGenerator().Generate(pytorchjob)
+		if err != nil {
+			return err
+		}
+		// Set elastic related environment variables.
+		podTemplateSpec.Spec.Containers[i].Env = append(
+			podTemplateSpec.Spec.Containers[i].Env, envVars...)
+
 	}
 
 	return nil

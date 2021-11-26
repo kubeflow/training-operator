@@ -35,16 +35,18 @@ class V1ReplicaStatus(object):
     openapi_types = {
         'active': 'int',
         'failed': 'int',
+        'label_selector': 'V1LabelSelector',
         'succeeded': 'int'
     }
 
     attribute_map = {
         'active': 'active',
         'failed': 'failed',
+        'label_selector': 'labelSelector',
         'succeeded': 'succeeded'
     }
 
-    def __init__(self, active=None, failed=None, succeeded=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, active=None, failed=None, label_selector=None, succeeded=None, local_vars_configuration=None):  # noqa: E501
         """V1ReplicaStatus - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -52,6 +54,7 @@ class V1ReplicaStatus(object):
 
         self._active = None
         self._failed = None
+        self._label_selector = None
         self._succeeded = None
         self.discriminator = None
 
@@ -59,6 +62,8 @@ class V1ReplicaStatus(object):
             self.active = active
         if failed is not None:
             self.failed = failed
+        if label_selector is not None:
+            self.label_selector = label_selector
         if succeeded is not None:
             self.succeeded = succeeded
 
@@ -107,6 +112,27 @@ class V1ReplicaStatus(object):
         """
 
         self._failed = failed
+
+    @property
+    def label_selector(self):
+        """Gets the label_selector of this V1ReplicaStatus.  # noqa: E501
+
+
+        :return: The label_selector of this V1ReplicaStatus.  # noqa: E501
+        :rtype: V1LabelSelector
+        """
+        return self._label_selector
+
+    @label_selector.setter
+    def label_selector(self, label_selector):
+        """Sets the label_selector of this V1ReplicaStatus.
+
+
+        :param label_selector: The label_selector of this V1ReplicaStatus.  # noqa: E501
+        :type: V1LabelSelector
+        """
+
+        self._label_selector = label_selector
 
     @property
     def succeeded(self):
