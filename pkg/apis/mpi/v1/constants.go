@@ -21,7 +21,7 @@ const (
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 	// DefaultPortName is name of the port used to communicate between Master and Workers.
 	DefaultPortName = "mpi-port"
-	// DefaultContainerName is the name of the XGBoostJob container.
+	// DefaultContainerName is the name of the MPIJob container.
 	DefaultContainerName = "mpi"
 	// DefaultPort is default value of the port.
 	DefaultPort = 9999

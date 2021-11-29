@@ -1,4 +1,4 @@
-// Copyright 2018 The Kubeflow Authors
+// Copyright 2021 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,31 +41,25 @@ func ValidateV1MpiJobSpec(c *mpiv1.MPIJobSpec) error {
 				break
 			}
 		}
-
 		if !isValidReplicaType {
 			return fmt.Errorf("MPIReplicaType is %v but must be one of %v", rType, validReplicaTypes)
 		}
 
-		//Make sure the image is defined in the container
-		//defaultContainerPresent := false
 		for _, container := range value.Template.Spec.Containers {
 			if container.Image == "" {
 				msg := fmt.Sprintf("MPIReplicaSpec is not valid: Image is undefined in the container of %v", rType)
 				return fmt.Errorf(msg)
 			}
-			// if container.Name == mpiv1.DefaultContainerName {
-			// 	defaultContainerPresent = true
-			// }
+
+			if container.Name == "" {
+				msg := fmt.Sprintf("MPIReplicaSpec is not valid: ImageName is undefined in the container of %v", rType)
+				return fmt.Errorf(msg)
+			}
 		}
-		//Make sure there has at least one container named "mpi"
-		// if !defaultContainerPresent {
-		// 	msg := fmt.Sprintf("MPIReplicaSpec is not valid: There is no container named %s in %v", mpiv1.DefaultContainerName, rType)
-		// 	return fmt.Errorf(msg)
-		// }
 		if rType == mpiv1.MPIReplicaTypeLauncher {
 			launcherExists = true
 			if value.Replicas != nil && int(*value.Replicas) != 1 {
-				return fmt.Errorf("MPIReplicaSpec is not valid: There must be only 1 master replica")
+				return fmt.Errorf("MPIReplicaSpec is not valid: There must be only 1 launcher replica")
 			}
 		}
 
