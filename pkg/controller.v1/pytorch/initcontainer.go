@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
@@ -100,7 +99,7 @@ func getInitContainerTemplateOrDefault(file string) string {
 	return initContainerTemplate
 }
 
-func setInitContainer(obj interface{}, podTemplate *corev1.PodTemplateSpec,
+func setInitContainer(obj interface{}, podTemplate *v1.PodTemplateSpec,
 	rtype, index string, log logr.Logger) error {
 	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
 	if !ok {
