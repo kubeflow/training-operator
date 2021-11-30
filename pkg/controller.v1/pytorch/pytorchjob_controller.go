@@ -465,9 +465,15 @@ func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 	return nil
 }
 
-// SetClusterSpec sets the cluster spec for the pod
+// SetClusterSpec sets the cluster spec and init container for the pod
 func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	return SetPodEnv(job, podTemplate, rtype, index)
+	if err := setPodEnv(job, podTemplate, rtype, index); err != nil {
+		return err
+	}
+	if err := setInitContainer(job, podTemplate, rtype, index, r.Log); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
