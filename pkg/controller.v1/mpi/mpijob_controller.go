@@ -474,7 +474,7 @@ func (r *MPIJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.O
 	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logrus.Error(err, "tensorflow job not found", "namespace", namespace, "name", name)
+			logrus.Error(err, "MPIJob not found", "namespace", namespace, "name", name)
 		} else {
 			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
 		}
