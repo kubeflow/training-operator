@@ -60,10 +60,7 @@ var (
 	onceElastic      sync.Once
 )
 
-type EnvVarGenerator interface {
-	Generate(job *pytorchv1.PyTorchJob) ([]corev1.EnvVar, error)
-}
-
+// ElasticEnvVarGenerator is the environment variable generator for Elastic related arguments.
 type ElasticEnvVarGenerator struct{}
 
 func GetElasticEnvVarGenerator() EnvVarGenerator {

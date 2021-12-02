@@ -24,21 +24,31 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
+// EnvVarGenerator is the environment variable generator interface.
+type EnvVarGenerator interface {
+	Generate(job *pytorchv1.PyTorchJob) ([]corev1.EnvVar, error)
+}
+
+func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
 
 	for i := range podTemplateSpec.Spec.Containers {
+		// Initialize the environment variables.
 		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
 			podTemplateSpec.Spec.Containers[i].Env = make([]corev1.EnvVar, 0)
 		}
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  "PYTHONUNBUFFERED",
-			Value: "0",
-		})
+		// Set PYTHONUNBUFFERED to true, to disable output buffering.
+		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
+		podTemplateSpec.Spec.Containers[i].Env = append(
+			podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  "PYTHONUNBUFFERED",
+				Value: "0",
+			})
 
+		// If the master is not null, then we need to set the MASTER_ADDR and RANK.
 		if pytorchjob.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeMaster] != nil {
 			envVars, err := GetMasterEnvVarGenerator().Generate(pytorchjob)
 			if err != nil {
@@ -69,14 +79,16 @@ func SetPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			})
 		}
 
-		envVars, err := GetElasticEnvVarGenerator().Generate(pytorchjob)
-		if err != nil {
-			return err
+		// Set the elastic environment variables if the elasticPolicy is not null.
+		if pytorchjob.Spec.ElasticPolicy != nil {
+			envVars, err := GetElasticEnvVarGenerator().Generate(pytorchjob)
+			if err != nil {
+				return err
+			}
+			// Set elastic related environment variables.
+			podTemplateSpec.Spec.Containers[i].Env = append(
+				podTemplateSpec.Spec.Containers[i].Env, envVars...)
 		}
-		// Set elastic related environment variables.
-		podTemplateSpec.Spec.Containers[i].Env = append(
-			podTemplateSpec.Spec.Containers[i].Env, envVars...)
-
 	}
 
 	return nil

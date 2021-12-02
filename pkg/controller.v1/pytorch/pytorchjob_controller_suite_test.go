@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	"github.com/kubeflow/training-operator/pkg/config"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -69,6 +70,10 @@ var _ = BeforeSuite(func() {
 
 	err = v1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Set default config.
+	config.Config.PyTorchInitContainerImage = config.PyTorchInitContainerImageDefault
+	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
 
 	//+kubebuilder:scaffold:scheme
 

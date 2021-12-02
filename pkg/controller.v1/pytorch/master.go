@@ -11,16 +11,17 @@ import (
 
 var (
 	masterGenerator EnvVarGenerator
-	once            sync.Once
+	onceMaster      sync.Once
 	EnvMasterPort   = "MASTER_PORT"
 	EnvMasterAddr   = "MASTER_ADDR"
 )
 
+// MasterEnvVarGenerator is the environment variable generator for Master related arguments.
 type MasterEnvVarGenerator struct {
 }
 
 func GetMasterEnvVarGenerator() EnvVarGenerator {
-	once.Do(func() {
+	onceMaster.Do(func() {
 		masterGenerator = &MasterEnvVarGenerator{}
 	})
 	return masterGenerator

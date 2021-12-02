@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kubeflow/training-operator/pkg/config"
 	controller_v1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -70,6 +71,13 @@ func main() {
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
 	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
+
+	// PyTorch related flags
+	flag.StringVar(&config.Config.PyTorchInitContainerImage, "pytorch-init-container-image",
+		config.PyTorchInitContainerImageDefault, "The image for pytorch init container")
+	flag.StringVar(&config.Config.PyTorchInitContainerTemplateFile, "pytorch-init-container-template-file",
+		config.PyTorchInitContainerTemplateFileDefault, "The template file for pytorch init container")
+
 	opts := zap.Options{
 		Development: true,
 	}
