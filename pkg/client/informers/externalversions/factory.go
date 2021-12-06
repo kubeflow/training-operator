@@ -23,6 +23,7 @@ import (
 
 	versioned "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/internalinterfaces"
+	pytorch "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/pytorch"
 	tensorflow "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/tensorflow"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -170,7 +171,12 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Kubeflow() pytorch.Interface
 	Kubeflow() tensorflow.Interface
+}
+
+func (f *sharedInformerFactory) Kubeflow() pytorch.Interface {
+	return pytorch.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Kubeflow() tensorflow.Interface {
