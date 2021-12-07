@@ -26,8 +26,8 @@ type FakeKubeflowV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeflowV1) TFJobs(namespace string) v1.TFJobInterface {
-	return &FakeTFJobs{c, namespace}
+func (c *FakeKubeflowV1) XGBoostJobs(namespace string) v1.XGBoostJobInterface {
+	return &FakeXGBoostJobs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -17,14 +17,14 @@
 package v1
 
 import (
-	v1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	"github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
 type KubeflowV1Interface interface {
 	RESTClient() rest.Interface
-	TFJobsGetter
+	XGBoostJobsGetter
 }
 
 // KubeflowV1Client is used to interact with features provided by the kubeflow.org group.
@@ -32,8 +32,8 @@ type KubeflowV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeflowV1Client) TFJobs(namespace string) TFJobInterface {
-	return newTFJobs(c, namespace)
+func (c *KubeflowV1Client) XGBoostJobs(namespace string) XGBoostJobInterface {
+	return newXGBoostJobs(c, namespace)
 }
 
 // NewForConfig creates a new KubeflowV1Client for the given config.

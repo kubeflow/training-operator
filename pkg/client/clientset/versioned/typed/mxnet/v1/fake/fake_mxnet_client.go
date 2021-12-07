@@ -17,7 +17,7 @@
 package fake
 
 import (
-	v1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mxnet/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
