@@ -153,6 +153,20 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(err, "Reconcile PyTorchJob HPA error")
 		return ctrl.Result{}, err
 	}
+	if pytorchjob.Spec.ElasticPolicy != nil {
+		elasticPolicy := pytorchjob.Spec.ElasticPolicy
+		schedulingPolicy := pytorchjob.Spec.RunPolicy.SchedulingPolicy
+		if schedulingPolicy != nil {
+			schedulingPolicy.MinAvailable = elasticPolicy.MinReplicas
+		} else {
+			schedulingPolicy = &commonv1.SchedulingPolicy{
+				MinAvailable: elasticPolicy.MinReplicas,
+			}
+			pytorchjob.Spec.RunPolicy.SchedulingPolicy = schedulingPolicy
+		}
+		replicaSpec := pytorchjob.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeWorker]
+		replicaSpec.Replicas = elasticPolicy.MaxReplicas
+	}
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, &pytorchjob.Spec.RunPolicy)
 	if err != nil {
@@ -471,6 +485,9 @@ func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 		return err
 	}
 	if err := setInitContainer(job, podTemplate, rtype, index, r.Log); err != nil {
+		return err
+	}
+	if err := setPodLabel(job, podTemplate, rtype, index); err != nil {
 		return err
 	}
 	return nil
