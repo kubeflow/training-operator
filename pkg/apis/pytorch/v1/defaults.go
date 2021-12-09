@@ -106,13 +106,21 @@ func setTypeNameToCamelCase(job *PyTorchJob, typ common.ReplicaType) {
 	}
 }
 
-// SetDefaults_PyTorchJob sets any unspecified values to defaults.
-func SetDefaults_PyTorchJob(job *PyTorchJob) {
+func SetDefaultRunPolicy(job *PyTorchJob) {
 	// Set default cleanpod policy to None.
 	if job.Spec.RunPolicy.CleanPodPolicy == nil {
 		policy := common.CleanPodPolicyNone
 		job.Spec.RunPolicy.CleanPodPolicy = &policy
 	}
+	if job.Spec.SuccessPolicy == nil {
+		policy := SuccessPolicyDefault
+		job.Spec.SuccessPolicy = &policy
+	}
+}
+
+// SetDefaults_PyTorchJob sets any unspecified values to defaults.
+func SetDefaults_PyTorchJob(job *PyTorchJob) {
+	SetDefaultRunPolicy(job)
 
 	// Update the key of PyTorchReplicaSpecs to camel case.
 	setTypeNamesToCamelCase(job)

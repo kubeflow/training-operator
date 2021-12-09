@@ -58,3 +58,15 @@ func GetSchedulerName(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) s
 	}
 	return ""
 }
+
+// GetContainerExitCode gets the container exit code from the given pod.
+func GetContainerExitCode(pod *corev1.Pod, name string) int32 {
+	var exitCode int32 = 0xbeef // magic number
+	for _, status := range pod.Status.ContainerStatuses {
+		state := status.State
+		if status.Name == name && state.Terminated != nil {
+			exitCode = state.Terminated.ExitCode
+		}
+	}
+	return exitCode
+}

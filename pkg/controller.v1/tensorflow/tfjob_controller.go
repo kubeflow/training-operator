@@ -394,12 +394,6 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 
 	logger := commonutil.LoggerForJob(tfJob)
 
-	worker0Completed, err := r.IsWorker0Completed(tfJob, replicas)
-	if err != nil {
-		logger.Warnf("check if worker 0 completed error %v", err)
-		return err
-	}
-
 	// Set StartTime.
 	if jobStatus.StartTime == nil {
 		now := metav1.Now()
@@ -469,6 +463,12 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			}
 		} else {
 			if rtype == tensorflowv1.TFReplicaTypeWorker {
+				worker0Completed, err := r.IsWorker0Completed(tfJob, replicas)
+				if err != nil {
+					logger.Warnf("check if worker 0 completed error %v", err)
+					return err
+				}
+
 				// Leave a succeeded condition for the following two cases:
 				// 1. If default success policy is used and worker 0 has completed.
 				// 2. If `SuccessPolicyAllWorkers` success policy is used and all workers are succeeded.
@@ -640,7 +640,7 @@ func (r *TFJobReconciler) IsWorker0Completed(tfjob *tensorflowv1.TFJob, replicas
 	for index, podSlice := range podSlices {
 		if len(podSlice) == 1 {
 			pod := podSlice[0]
-			exitCode := getContainerExitCode(pod)
+			exitCode := util.GetContainerExitCode(pod, tfv1.DefaultContainerName)
 			if index == 0 && exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
 				worker0Completed = true
 			}

@@ -52,6 +52,8 @@ type PyTorchJobSpec struct {
 	//+kubebuilder:validation:Optional
 	RunPolicy common.RunPolicy `json:"runPolicy"`
 
+	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
+
 	ElasticPolicy *ElasticPolicy `json:"elasticPolicy,omitempty"`
 
 	// A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.

@@ -191,7 +191,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			}
 			job.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 				pytorchv1.PyTorchReplicaTypeWorker: {
-					Replicas: int32Ptr(1),
+					Replicas: int32Ptr(2),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -275,8 +275,15 @@ var _ = Describe("PyTorchJob controller", func() {
 				BlockOwnerDeletion: &trueVal,
 			}))
 
-			// Test job status.
+			// Set the worker 0 succeeded.
 			pod.Status.Phase = corev1.PodSucceeded
+			pod.Status.ContainerStatuses = make([]corev1.ContainerStatus, 1)
+			pod.Status.ContainerStatuses[0].Name = pytorchv1.DefaultContainerName
+			pod.Status.ContainerStatuses[0].State = corev1.ContainerState{
+				Terminated: &corev1.ContainerStateTerminated{
+					ExitCode: 0,
+				},
+			}
 			pod.ResourceVersion = ""
 			Expect(testK8sClient.Status().Update(ctx, pod)).Should(Succeed())
 			Eventually(func() bool {
@@ -289,6 +296,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			}, timeout, interval).Should(BeTrue())
 			// Check if the job is succeeded.
 			cond := getCondition(created.Status, commonv1.JobSucceeded)
+			Expect(cond).NotTo(BeNil())
 			Expect(cond.Status).To(Equal(corev1.ConditionTrue))
 			By("Deleting the PyTorchJob")
 			Expect(testK8sClient.Delete(ctx, job)).Should(Succeed())

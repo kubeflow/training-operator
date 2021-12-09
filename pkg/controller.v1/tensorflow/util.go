@@ -47,18 +47,6 @@ func ContainsChiefOrMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.Repli
 }
 
 // originally from pkg/controller.v1/tensorflow/pod.go (deleted)
-func getContainerExitCode(pod *corev1.Pod) int32 {
-	var exitCode int32 = 0xbeef // magic number
-	for _, status := range pod.Status.ContainerStatuses {
-		state := status.State
-		if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
-			exitCode = state.Terminated.ExitCode
-		}
-	}
-	return exitCode
-}
-
-// originally from pkg/controller.v1/tensorflow/pod.go (deleted)
 func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.ReplicaSpec) {
 	// This is necessary since restartPolicyExitCode is not supported in v1.PodTemplateSpec
 	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
