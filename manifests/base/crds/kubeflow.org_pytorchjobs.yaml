@@ -7324,6 +7324,9 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              successPolicy:
+                description: SuccessPolicy is the success policy.
+                type: string
             required:
             - pytorchReplicaSpecs
             type: object
