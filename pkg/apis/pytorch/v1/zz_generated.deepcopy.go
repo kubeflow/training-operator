@@ -160,6 +160,11 @@ func (in *PyTorchJobList) DeepCopyObject() runtime.Object {
 func (in *PyTorchJobSpec) DeepCopyInto(out *PyTorchJobSpec) {
 	*out = *in
 	in.RunPolicy.DeepCopyInto(&out.RunPolicy)
+	if in.SuccessPolicy != nil {
+		in, out := &in.SuccessPolicy, &out.SuccessPolicy
+		*out = new(SuccessPolicy)
+		**out = **in
+	}
 	if in.ElasticPolicy != nil {
 		in, out := &in.ElasticPolicy, &out.ElasticPolicy
 		*out = new(ElasticPolicy)
