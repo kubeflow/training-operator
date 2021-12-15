@@ -259,7 +259,7 @@ func (r *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, 
 	return nil
 }
 
-// ReconcileServices  is overridden because mpi-reconciler.v1 needs not reconciling services
+// ReconcileServices is overridden because mpi-reconciler.v1 does not need to reconcile services
 func (jc *MPIJobReconciler) ReconcileServices(
 	job metav1.Object,
 	services []*corev1.Service,
