@@ -284,7 +284,7 @@ func (r *MPIJobReconciler) GetGroupNameLabelValue() string {
 	return mpiv1.GroupVersion.Group
 }
 
-// SetClusterSpec is overridden because there is no cluster spec is needed for MPIJob
+// SetClusterSpec is overridden because no cluster spec is needed for MPIJob
 func (r *MPIJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
 	return nil
 }
