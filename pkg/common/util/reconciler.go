@@ -18,14 +18,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/sirupsen/logrus"
-
-	commonutil "github.com/kubeflow/common/pkg/util"
-
-	"github.com/kubeflow/common/pkg/controller.v1/common"
-
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
