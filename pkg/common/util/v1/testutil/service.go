@@ -15,48 +15,72 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
-	"testing"
 
-	v1 "k8s.io/api/core/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
-
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewBaseService(name string, tfJob *tfv1.TFJob, t *testing.T) *v1.Service {
-	return &v1.Service{
+const (
+	DummyPortName       = "dummy"
+	DummyPort     int32 = 1221
+)
+
+func NewBaseService(name string, job metav1.Object, refs []metav1.OwnerReference) *corev1.Service {
+	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Labels:          GenLabels(tfJob.Name),
-			Namespace:       tfJob.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(tfJob, controllerKind)},
+			Labels:          map[string]string{},
+			Namespace:       job.GetNamespace(),
+			OwnerReferences: refs,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name: DummyPortName,
+					Port: DummyPort,
+				},
+			},
 		},
 	}
 }
 
-func NewService(tfJob *tfv1.TFJob, typ string, index int, t *testing.T) *v1.Service {
-	service := NewBaseService(fmt.Sprintf("%s-%d", typ, index), tfJob, t)
-	service.Labels[tfReplicaTypeLabel] = typ
-	service.Labels[tfReplicaIndexLabel] = fmt.Sprintf("%d", index)
-	return service
+func NewService(job metav1.Object, typ string, index int, refs []metav1.OwnerReference) *corev1.Service {
+	svc := NewBaseService(fmt.Sprintf("%s-%s-%d", job.GetName(), typ, index), job, refs)
+	svc.Labels[commonv1.ReplicaTypeLabelDeprecated] = typ
+	svc.Labels[commonv1.ReplicaTypeLabel] = typ
+	svc.Labels[commonv1.ReplicaIndexLabelDeprecated] = fmt.Sprintf("%d", index)
+	svc.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	return svc
 }
 
 // NewServiceList creates count pods with the given phase for the given tfJob
-func NewServiceList(count int32, tfJob *tfv1.TFJob, typ string, t *testing.T) []*v1.Service {
-	services := []*v1.Service{}
+func NewServiceList(count int32, job metav1.Object, typ string, refs []metav1.OwnerReference) []*corev1.Service {
+	services := []*corev1.Service{}
 	for i := int32(0); i < count; i++ {
-		newService := NewService(tfJob, typ, int(i), t)
+		newService := NewService(job, typ, int(i), refs)
 		services = append(services, newService)
 	}
 	return services
 }
 
-func SetServices(serviceIndexer cache.Indexer, tfJob *tfv1.TFJob, typ string, activeWorkerServices int32, t *testing.T) {
-	for _, service := range NewServiceList(activeWorkerServices, tfJob, typ, t) {
-		if err := serviceIndexer.Add(service); err != nil {
-			t.Errorf("unexpected error when adding service %v", err)
+func SetServicesV2(client client.Client, job metav1.Object, typ string, activeWorkerServices int32,
+	refs []metav1.OwnerReference, basicLabels map[string]string) {
+	ctx := context.Background()
+	for _, svc := range NewServiceList(activeWorkerServices, job, typ, refs) {
+		for k, v := range basicLabels {
+			svc.Labels[k] = v
+		}
+		err := client.Create(ctx, svc)
+		if errors.IsAlreadyExists(err) {
+			return
+		} else {
+			Expect(err).To(BeNil())
 		}
 	}
 }

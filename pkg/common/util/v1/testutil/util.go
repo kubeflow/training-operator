@@ -15,16 +15,16 @@
 package testutil
 
 import (
-	"strings"
 	"testing"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
+
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 const (
@@ -43,21 +43,13 @@ var (
 	ControllerName = "training-operator"
 )
 
-func GenLabels(jobName string) map[string]string {
-	return map[string]string{
-		LabelGroupName:           GroupName,
-		JobNameLabel:             strings.Replace(jobName, "/", "-", -1),
-		DeprecatedLabelTFJobName: strings.Replace(jobName, "/", "-", -1),
-	}
-}
-
-func GenOwnerReference(tfjob *tfv1.TFJob) *metav1.OwnerReference {
+func GenOwnerReference(job metav1.Object, apiVersion string, kind string) *metav1.OwnerReference {
 	boolPtr := func(b bool) *bool { return &b }
 	controllerRef := &metav1.OwnerReference{
-		APIVersion:         tfv1.GroupVersion.Version,
-		Kind:               TFJobKind,
-		Name:               tfjob.Name,
-		UID:                tfjob.UID,
+		APIVersion:         apiVersion,
+		Kind:               kind,
+		Name:               job.GetName(),
+		UID:                job.GetUID(),
 		BlockOwnerDeletion: boolPtr(true),
 		Controller:         boolPtr(true),
 	}
@@ -85,7 +77,7 @@ func GetKey(tfJob *tfv1.TFJob, t *testing.T) string {
 	return key
 }
 
-func CheckCondition(tfJob *tfv1.TFJob, condition common.JobConditionType, reason string) bool {
+func CheckCondition(tfJob *tfv1.TFJob, condition commonv1.JobConditionType, reason string) bool {
 	for _, v := range tfJob.Status.Conditions {
 		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
 			return true
