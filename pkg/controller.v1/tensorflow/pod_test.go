@@ -236,14 +236,17 @@ var _ = Describe("TFJob controller", func() {
 			for k, v := range basicLabels {
 				pod.Labels[k] = v
 			}
+			pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
+				Name:  tfv1.DefaultContainerName,
+				Image: testutil.DummyContainerImage,
+			})
 			Expect(testK8sClient.Create(ctx, pod)).Should(Succeed())
 
-			po := &corev1.Pod{}
+			created := &corev1.Pod{}
 			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: pod.GetName()}
-			Expect(testK8sClient.Get(ctx, key, po)).Should(Succeed())
-			po.Status.Phase = corev1.PodFailed
-			po.Spec.Containers = append(po.Spec.Containers, corev1.Container{})
-			po.Status.ContainerStatuses = append(po.Status.ContainerStatuses, corev1.ContainerStatus{
+			Expect(testK8sClient.Get(ctx, key, created)).Should(Succeed())
+			created.Status.Phase = corev1.PodFailed
+			created.Status.ContainerStatuses = append(created.Status.ContainerStatuses, corev1.ContainerStatus{
 				Name: tfv1.DefaultContainerName,
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{
@@ -251,7 +254,19 @@ var _ = Describe("TFJob controller", func() {
 					},
 				},
 			})
-			Expect(testK8sClient.Status().Update(ctx, po))
+			Expect(testK8sClient.Status().Update(ctx, created))
+
+			// Make sure the version of pod created is updated with desired status
+			Eventually(func() error {
+				updated := &corev1.Pod{}
+				if err := testK8sClient.Get(ctx, key, updated); err != nil {
+					return err
+				}
+				if updated.Status.Phase != corev1.PodFailed {
+					return fmt.Errorf("pod status is not Failed")
+				}
+				return nil
+			}, timeout, interval).Should(BeNil())
 
 			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 

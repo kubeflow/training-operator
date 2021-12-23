@@ -31,12 +31,6 @@ import (
 )
 
 var _ = Describe("TFJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
-	//const (
-	//	timeout  = 10 * time.Second
-	//	interval = 1000 * time.Millisecond
-	//)
-
 	Context("Test Normal Path", func() {
 		It("should create desired Pods and Services", func() {
 			var (

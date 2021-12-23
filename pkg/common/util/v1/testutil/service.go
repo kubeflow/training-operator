@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	DummyPortName       = "dummy"
-	DummyPort     int32 = 1221
+	DummyPortName string = "dummy"
+	DummyPort     int32  = 1221
 )
 
 func NewBaseService(name string, job metav1.Object, refs []metav1.OwnerReference) *corev1.Service {
