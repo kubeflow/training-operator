@@ -27,7 +27,6 @@ import (
 	commonutil "github.com/kubeflow/common/pkg/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -459,7 +458,7 @@ func (p *PyTorchJobReconciler) IsWorker0Completed(job *pytorchv1.PyTorchJob,
 		if len(podSlice) == 1 {
 			pod := podSlice[0]
 			exitCode := util.GetContainerExitCode(pod, pytorchv1.DefaultContainerName)
-			if index == 0 && exitCode == 0 && pod.Status.Phase == v1.PodSucceeded {
+			if index == 0 && exitCode == 0 && pod.Status.Phase == corev1.PodSucceeded {
 				worker0Completed = true
 			}
 		}
