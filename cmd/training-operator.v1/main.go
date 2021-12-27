@@ -24,6 +24,7 @@ import (
 	"github.com/kubeflow/training-operator/pkg/config"
 	controller_v1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 
+	"go.uber.org/zap/zapcore"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	"k8s.io/apimachinery/pkg/runtime"
@@ -79,7 +80,8 @@ func main() {
 		config.PyTorchInitContainerTemplateFileDefault, "The template file for pytorch init container")
 
 	opts := zap.Options{
-		Development: true,
+		Development:     true,
+		StacktraceLevel: zapcore.DPanicLevel,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
