@@ -470,7 +470,7 @@ func (p *PyTorchJobReconciler) IsWorker0Completed(job *pytorchv1.PyTorchJob,
 // getPodSlices returns a slice, which element is the slice of pod.
 // It gives enough information to caller to make decision to up/down scale resources.
 func (p *PyTorchJobReconciler) getPodSlices(
-	job *pytorchv1.PyTorchJob, replicasNum *int32) ([][]*v1.Pod, error) {
+	job *pytorchv1.PyTorchJob, replicasNum *int32) ([][]*corev1.Pod, error) {
 	logger := commonutil.LoggerForReplica(job, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeWorker)))
 
 	pods, err := p.GetPodsForJob(job)
