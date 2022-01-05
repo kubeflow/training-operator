@@ -72,7 +72,7 @@ func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ stri
 	return pods
 }
 
-func SetPodsStatusesV2(client client.Client, job metav1.Object, typ string,
+func SetPodsStatuses(client client.Client, job metav1.Object, typ string,
 	pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
 	timeout := 10 * time.Second

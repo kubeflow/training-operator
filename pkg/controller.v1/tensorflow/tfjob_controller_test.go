@@ -184,8 +184,8 @@ var _ = Describe("TFJob controller", func() {
 				refs := []metav1.OwnerReference{*reconciler.GenOwnerReference(tfJob)}
 				basicLabels := reconciler.GenLabels(tfJob.GetName())
 
-				testutil.SetPodsStatusesV2(testK8sClient, tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, refs, basicLabels)
-				testutil.SetPodsStatusesV2(testK8sClient, tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, refs, basicLabels)
+				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, refs, basicLabels)
+				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, refs, basicLabels)
 
 				testutil.SetServicesV2(testK8sClient, tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
 				testutil.SetServicesV2(testK8sClient, tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)

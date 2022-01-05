@@ -261,10 +261,10 @@ var _ = Describe("TFJob controller", func() {
 				}
 
 				By("creating Services and Pods with designed phases")
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelWorker,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelWorker,
 					tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods,
 					nil, refs, basicLabels)
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelPS,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelPS,
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					nil, refs, basicLabels)
 
@@ -378,10 +378,10 @@ var _ = Describe("TFJob controller", func() {
 				}
 
 				By("creating Services and Pods with designed phases")
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelWorker,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelWorker,
 					tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods,
 					nil, refs, basicLabels)
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelPS,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelPS,
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					nil, refs, basicLabels)
 
@@ -490,10 +490,10 @@ var _ = Describe("TFJob controller", func() {
 				}
 
 				By("creating Services and Pods with designed phases")
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelWorker,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelWorker,
 					tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods,
 					tc.restartCounts, refs, basicLabels)
-				testutil.SetPodsStatusesV2(testK8sClient, tc.tfJob, testutil.LabelPS,
+				testutil.SetPodsStatuses(testK8sClient, tc.tfJob, testutil.LabelPS,
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					tc.restartCounts, refs, basicLabels)
 
