@@ -30,6 +30,13 @@ const (
 	ThreadCount   = 1
 )
 
+const (
+	TestMXJobName = "test-mxjob"
+
+	LabelScheduler = "scheduler"
+	LabelServer    = "server"
+)
+
 var (
 	AlwaysReady = func() bool { return true }
 )

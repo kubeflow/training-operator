@@ -15,10 +15,15 @@
 package mxnet
 
 import (
+	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
-	v1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	corev1 "k8s.io/api/core/v1"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,14 +33,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	v1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var k8sClient client.Client
-var testEnv *envtest.Environment
+var (
+	testK8sClient client.Client
+	testEnv       *envtest.Environment
+	testCtx       context.Context
+	testCancel    context.CancelFunc
+	reconciler    *MXJobReconciler
+)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -46,7 +58,14 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	const (
+		timeout  = 10 * time.Second
+		interval = 1000 * time.Millisecond
+	)
+
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+
+	testCtx, testCancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -63,14 +82,41 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	testK8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(testK8sClient).NotTo(BeNil())
 
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		MetricsBindAddress: "0",
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	reconciler = NewReconciler(mgr, false)
+	Expect(reconciler.SetupWithManager(mgr)).NotTo(HaveOccurred())
+
+	go func() {
+		defer GinkgoRecover()
+		err = mgr.Start(testCtx)
+		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
+
+	// This step is introduced to make sure cache starts before running any tests
+	Eventually(func() error {
+		nsList := &corev1.NamespaceList{}
+		if err := testK8sClient.List(context.Background(), nsList); err != nil {
+			return err
+		} else if len(nsList.Items) < 1 {
+			return fmt.Errorf("cannot get at lease one namespace, got %d", len(nsList.Items))
+		}
+		return nil
+	}, timeout, interval).Should(BeNil())
 }, 60)
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	testCancel()
+	// Give 5 seconds to stop all tests
+	time.Sleep(5 * time.Second)
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
