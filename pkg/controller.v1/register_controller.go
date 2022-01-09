@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
@@ -28,7 +30,6 @@ import (
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
 	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"

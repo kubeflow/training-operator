@@ -268,8 +268,8 @@ var _ = Describe("TFJob controller", func() {
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					nil, refs, basicLabels)
 
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
 
 				podList := &corev1.PodList{}
 				Expect(testK8sClient.List(ctx, podList, listOpt)).Should(Succeed())
@@ -385,8 +385,8 @@ var _ = Describe("TFJob controller", func() {
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					nil, refs, basicLabels)
 
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
 
 				podList := &corev1.PodList{}
 				Expect(testK8sClient.List(ctx, podList, listOpt)).Should(Succeed())
@@ -497,8 +497,8 @@ var _ = Describe("TFJob controller", func() {
 					tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods,
 					tc.restartCounts, refs, basicLabels)
 
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
-				testutil.SetServicesV2(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tc.tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
 
 				podList := &corev1.PodList{}
 				Expect(testK8sClient.List(ctx, podList, listOpt)).Should(Succeed())
