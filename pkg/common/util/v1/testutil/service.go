@@ -69,7 +69,7 @@ func NewServiceList(count int32, job metav1.Object, typ string, refs []metav1.Ow
 	return services
 }
 
-func SetServicesV2(client client.Client, job metav1.Object, typ string, activeWorkerServices int32,
+func SetServices(client client.Client, job metav1.Object, typ string, activeWorkerServices int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
 	ctx := context.Background()
 	for _, svc := range NewServiceList(activeWorkerServices, job, typ, refs) {

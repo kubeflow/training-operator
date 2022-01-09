@@ -187,8 +187,8 @@ var _ = Describe("TFJob controller", func() {
 				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, refs, basicLabels)
 				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, refs, basicLabels)
 
-				testutil.SetServicesV2(testK8sClient, tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
-				testutil.SetServicesV2(testK8sClient, tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
+				testutil.SetServices(testK8sClient, tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
 
 				totalPodNumber := int(tc.pendingWorkerPods + tc.activeWorkerPods + tc.succeededWorkerPods + tc.failedWorkerPods + tc.pendingPSPods + tc.activePSPods + tc.succeededPSPods + tc.failedPSPods)
 				totalServiceNumber := int(tc.activeWorkerServices + tc.activePSServices)

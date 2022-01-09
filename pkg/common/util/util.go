@@ -50,11 +50,3 @@ func GetReplicaTypes(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) []com
 	}
 	return keys
 }
-func GetSchedulerName(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) string {
-	for _, spec := range replicas {
-		if len(spec.Template.Spec.SchedulerName) > 0 {
-			return spec.Template.Spec.SchedulerName
-		}
-	}
-	return ""
-}
