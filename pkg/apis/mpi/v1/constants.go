@@ -17,8 +17,6 @@ package v1
 import common "github.com/kubeflow/common/pkg/apis/common/v1"
 
 const (
-	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 	// DefaultPortName is name of the port used to communicate between Master and Workers.
 	DefaultPortName = "mpi-port"
 	// DefaultContainerName is the name of the MPIJob container.

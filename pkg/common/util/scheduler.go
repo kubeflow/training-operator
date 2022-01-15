@@ -33,3 +33,12 @@ func IsGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 
 	return false
 }
+
+func GetSchedulerName(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) string {
+	for _, spec := range replicas {
+		if len(spec.Template.Spec.SchedulerName) > 0 {
+			return spec.Template.Spec.SchedulerName
+		}
+	}
+	return ""
+}

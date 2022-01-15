@@ -488,6 +488,8 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 	default:
 		fmt.Println("wrong type")
 	}
+	Expect(typ).ShouldNot(Equal(""))
+
 	refs := []metav1.OwnerReference{
 		*reconciler.GenOwnerReference(tfJob),
 	}
@@ -500,9 +502,11 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 			pod.Labels[k] = v
 		}
 		po := &corev1.Pod{}
-		_ = client.Create(ctx, pod)
+		Expect(client.Create(ctx, pod)).Should(Succeed())
+
 		key := genKeyFromJob(pod)
 		Eventually(func() error {
+			po = &corev1.Pod{}
 			if err := client.Get(ctx, key, po); err != nil {
 				return err
 			}
@@ -511,7 +515,7 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 			if worker0Completed == true && rtype == tfv1.TFReplicaTypeWorker && index == 0 {
 				po.Status.ContainerStatuses = []corev1.ContainerStatus{
 					{
-						Name: tfv1.DefaultContainerName,
+						Name: reconciler.GetDefaultContainerName(),
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
 								ExitCode: int32(0), // exit with 0
@@ -528,16 +532,18 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 
 		index++
 	}
+
 	for i = 0; i < failed; i++ {
 		pod := testutil.NewPod(tfJob, typ, index, refs)
 		for k, v := range basicLabels {
 			pod.Labels[k] = v
 		}
 		po := &corev1.Pod{}
-		_ = client.Create(ctx, pod)
+		Expect(client.Create(ctx, pod)).Should(Succeed())
+
 		key := genKeyFromJob(pod)
 		Eventually(func() error {
-
+			po = &corev1.Pod{}
 			if err := client.Get(ctx, key, po); err != nil {
 				return err
 			}
@@ -547,7 +553,7 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 				if po.Status.ContainerStatuses == nil {
 					po.Status.ContainerStatuses = []corev1.ContainerStatus{
 						{
-							Name: tfv1.DefaultContainerName,
+							Name: reconciler.GetDefaultContainerName(),
 							State: corev1.ContainerState{
 								Terminated: &corev1.ContainerStateTerminated{
 									ExitCode: int32(130), // 130 is a retryable code
@@ -564,6 +570,7 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 		updateJobReplicaStatuses(&tfJob.Status, rtype, po)
 		index++
 	}
+
 	for i = 0; i < active; i++ {
 		pod := testutil.NewPod(tfJob, typ, index, refs)
 		for k, v := range basicLabels {
@@ -571,8 +578,10 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 		}
 		po := &corev1.Pod{}
 		Expect(client.Create(ctx, pod)).Should(Succeed())
+
 		key := genKeyFromJob(pod)
 		Eventually(func() error {
+			po = &corev1.Pod{}
 			if err := client.Get(ctx, key, po); err != nil {
 				return err
 			}
