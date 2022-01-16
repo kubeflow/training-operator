@@ -21,12 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubeflow/training-operator/pkg/config"
-	controller_v1 "github.com/kubeflow/training-operator/pkg/controller.v1"
-
 	"go.uber.org/zap/zapcore"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -35,11 +30,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	commonutil "github.com/kubeflow/common/pkg/util"
 	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	"github.com/kubeflow/training-operator/pkg/config"
+	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -62,8 +60,11 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
-	var enabledSchemes controller_v1.EnabledSchemes
+	var enabledSchemes controllerv1.EnabledSchemes
 	var enableGangScheduling bool
+	var gangSchedulerName string
+	var namespace string
+	var monitoringPort int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -72,6 +73,11 @@ func main() {
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
 	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
+	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule kubeflow jobs, defaults to volcano")
+	flag.StringVar(&namespace, "namespace", os.Getenv(commonutil.EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
+		"If set, it only monitors kubeflow jobs in the given namespace.")
+	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
+		"It can be set to \"0\" to disable the metrics serving.")
 
 	// PyTorch related flags
 	flag.StringVar(&config.Config.PyTorchInitContainerImage, "pytorch-init-container-image",
@@ -91,10 +97,11 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Port:                   monitoringPort,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "1ca428e5.",
+		Namespace:              namespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -107,7 +114,7 @@ func main() {
 		enabledSchemes.FillAll()
 	}
 	for _, s := range enabledSchemes {
-		setupFunc, supported := controller_v1.SupportedSchemeReconciler[s]
+		setupFunc, supported := controllerv1.SupportedSchemeReconciler[s]
 		if !supported {
 			setupLog.Error(fmt.Errorf("cannot find %s in supportedSchemeReconciler", s),
 				"scheme not supported", "scheme", s)
