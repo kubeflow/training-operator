@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-kubeflow/tf-operator  Apache License 2.0  https://github.com/kubeflow/tf-operator/blob/master/LICENSE
+kubeflow/training-operator  Apache License 2.0  https://github.com/kubeflow/training-operator/blob/master/LICENSE
 --------------------------------------------------------------------------------
                                  Apache License
                            Version 2.0, January 2004

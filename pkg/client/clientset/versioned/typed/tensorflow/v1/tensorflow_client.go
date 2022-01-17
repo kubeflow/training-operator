@@ -17,8 +17,8 @@
 package v1
 
 import (
-	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	"github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

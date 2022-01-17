@@ -17,7 +17,7 @@ package validation
 import (
 	"fmt"
 
-	xgboostv1 "github.com/kubeflow/tf-operator/pkg/apis/xgboost/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )

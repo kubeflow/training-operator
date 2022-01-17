@@ -37,7 +37,7 @@ faf34868 fix: Remove the dup comment tag (#1274)
 8d179f70 Fix: Remove Github CD workflow (#1263)
 '''
 
-g = ChangelogGenerator("kubeflow/tf-operator")
+g = ChangelogGenerator("kubeflow/training-operator")
 for pr_match in re.finditer(r"#(\d+)", payload):
     pr_id = int(pr_match.group(1))
     print("* {}".format(g.generate(pr_id)))

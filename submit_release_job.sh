@@ -10,23 +10,22 @@ set -ex
 
 COMMIT=$1
 
-ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-JOB_NAME="tf-operator-release"
-JOB_TYPE=tf-operator-release
+JOB_NAME="training-operator-release"
+JOB_TYPE=training-operator-release
 BUILD_NUMBER=$(uuidgen)
 BUILD_NUMBER=${BUILD_NUMBER:0:4}
 REPO_OWNER=kubeflow
-REPO_NAME=tf-operator
+REPO_NAME=training-operator
 ENV=test
-DATE=`date +%Y%m%d`
+DATE=$(date +%Y%m%d)
 PULL_BASE_SHA=${COMMIT:0:8}
 VERSION_TAG="v${DATE}-${PULL_BASE_SHA}"
 
-
 PROW_VAR="JOB_NAME=${JOB_NAME},JOB_TYPE=${JOB_TYPE},REPO_NAME=${REPO_NAME}"
-PROW_VAR="${PROW_VAR},REPO_OWNER=${REPO_OWNER},BUILD_NUMBER=${BUILD_NUMBER}" 
-PROW_VAR="${PROW_VAR},PULL_BASE_SHA=${PULL_BASE_SHA}" 
+PROW_VAR="${PROW_VAR},REPO_OWNER=${REPO_OWNER},BUILD_NUMBER=${BUILD_NUMBER}"
+PROW_VAR="${PROW_VAR},PULL_BASE_SHA=${PULL_BASE_SHA}"
 
 cd ${ROOT}/test/workflows
 

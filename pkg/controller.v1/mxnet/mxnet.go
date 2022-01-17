@@ -22,7 +22,7 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
-	mxnetv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -244,19 +244,4 @@ func addBytePSEnv(c *corev1.Container, rtype, index string) {
 			Value: index,
 		})
 	}
-}
-
-func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.ReplicaSpec) {
-	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-		podTemplateSpec.Spec.RestartPolicy = corev1.RestartPolicyNever
-	} else {
-		podTemplateSpec.Spec.RestartPolicy = corev1.RestartPolicy(spec.RestartPolicy)
-	}
-}
-
-func ContainSchedulerSpec(mxJob *mxnetv1.MXJob) bool {
-	if _, ok := mxJob.Spec.MXReplicaSpecs[mxnetv1.MXReplicaTypeScheduler]; ok {
-		return true
-	}
-	return false
 }

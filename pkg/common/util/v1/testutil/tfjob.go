@@ -17,11 +17,11 @@ package testutil
 import (
 	"time"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 )
 
 func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *tfv1.TFJob {
@@ -145,7 +145,7 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 	return tfJob
 }
 
-func NewTFJobV2(worker, ps, master, cheif, evaluator int) *tfv1.TFJob {
+func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 	tfJob := &tfv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: TFJobKind,
@@ -187,13 +187,13 @@ func NewTFJobV2(worker, ps, master, cheif, evaluator int) *tfv1.TFJob {
 		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeMaster] = masterReplicaSpec
 	}
 
-	if cheif > 0 {
-		cheif := int32(cheif)
-		cheifReplicaSpec := &commonv1.ReplicaSpec{
-			Replicas: &cheif,
+	if chief > 0 {
+		chief := int32(chief)
+		chiefReplicaSpec := &commonv1.ReplicaSpec{
+			Replicas: &chief,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = cheifReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = chiefReplicaSpec
 	}
 
 	if evaluator > 0 {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The Kubeflow Authors.
+# Copyright 2021 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,33 +18,36 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SWAGGER_JAR_URL="http://search.maven.org/maven2/io/swagger/swagger-codegen-cli/2.4.6/swagger-codegen-cli-2.4.6.jar"
-SWAGGER_CODEGEN_JAR="hack/python-sdk/swagger-codegen-cli.jar"
-SWAGGER_CODEGEN_CONF="hack/python-sdk/swagger_config.json"
-SWAGGER_CODEGEN_FILE="pkg/apis/tensorflow/v1/swagger.json"
-SDK_OUTPUT_PATH="sdk/python"
+repo_root="$(dirname ${BASH_SOURCE})/../.."
+
+SWAGGER_JAR_URL="https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.3.1/openapi-generator-cli-4.3.1.jar"
+SWAGGER_CODEGEN_JAR="${repo_root}/hack/python-sdk/openapi-generator-cli.jar"
+SWAGGER_CODEGEN_CONF="${repo_root}/hack/python-sdk/swagger_config.json"
+SDK_OUTPUT_PATH="${repo_root}/sdk/python"
+VERSION=1.3.0
+SWAGGER_CODEGEN_FILE="${repo_root}/hack/python-sdk/swagger.json"
 
 if [ -z "${GOPATH:-}" ]; then
-    export GOPATH=$(go env GOPATH)
+  export GOPATH=$(go env GOPATH)
 fi
 
-# TBD (@jinchihe) This is not consistent with current generation in hack/update-codegen.sh.
-# Need to confirm current one is useful. To aviod breaking current one, backup and rollback.
-mv pkg/apis/tensorflow/v1/openapi_generated.go pkg/apis/tensorflow/v1/openapi_generated.go.backup
-
 echo "Generating OpenAPI specification ..."
-go run vendor/k8s.io/code-generator/cmd/openapi-gen/main.go --input-dirs github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/job_controller/api/v1 --output-package github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1 --go-header-file hack/boilerplate/boilerplate.go.txt
+echo "./hack/update-codegen.sh already help us generate openapi specs ..."
+
+if [[ ! -f "$SWAGGER_CODEGEN_JAR" ]]; then
+  echo "Downloading the swagger-codegen JAR package ..."
+  wget -O "${SWAGGER_CODEGEN_JAR}" ${SWAGGER_JAR_URL}
+fi
 
 echo "Generating swagger file ..."
-go run hack/python-sdk/main.go 0.1 > ${SWAGGER_CODEGEN_FILE}
+go run "${repo_root}"/hack/python-sdk/main.go ${VERSION} >"${SWAGGER_CODEGEN_FILE}"
 
-echo "Downloading the swagger-codegen JAR package ..."
-wget -O ${SWAGGER_CODEGEN_JAR} ${SWAGGER_JAR_URL}
+echo "Removing previously generated files ..."
+rm -rf "${SDK_OUTPUT_PATH}"/docs/V1*.md "${SDK_OUTPUT_PATH}"/kubeflow/training/models "${SDK_OUTPUT_PATH}"/kubeflow/training/*.py "${SDK_OUTPUT_PATH}"/test/*.py
+echo "Generating Python SDK for Training Operator ..."
+java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${repo_root}"/hack/python-sdk/swagger.json -g python -o "${SDK_OUTPUT_PATH}" -c "${SWAGGER_CODEGEN_CONF}"
 
-echo "Generating Python SDK for Kubeflow TF-Operator ..."
-java -jar ${SWAGGER_CODEGEN_JAR} generate -i ${SWAGGER_CODEGEN_FILE} -l python -o ${SDK_OUTPUT_PATH} -c ${SWAGGER_CODEGEN_CONF}
+echo "Kubeflow Training Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
 
-# Rollback the current openapi_generated.go
-mv pkg/apis/tensorflow/v1/openapi_generated.go.backup pkg/apis/tensorflow/v1/openapi_generated.go
-
-echo "Kubeflow TF-Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
+echo "Running post-generation script ..."
+"${repo_root}"/hack/python-sdk/post_gen.py

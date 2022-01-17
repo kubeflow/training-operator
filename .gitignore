@@ -4,9 +4,11 @@ bin/
 /tf-operator
 vendor/
 testbin/*
+cover.out
 
 # IDEs
 .vscode/
+__debug_bin
 
 # Compiled python files.
 *.pyc
@@ -37,6 +39,12 @@ examples/.ipynb_checkpoints/
 
 **/.ipynb_checkpoints
 
-# swagger-codegen tools and auto generated files but useless
-hack/python-sdk/swagger-codegen-cli.jar
+# openapi-codegen tools and auto generated files but useless
+hack/python-sdk/openapi-generator-cli.jar
 
+# Coverage
+cover.out
+
+/training-operator
+
+data/

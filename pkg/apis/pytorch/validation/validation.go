@@ -19,14 +19,13 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
-	torchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	torchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 )
 
 func ValidateV1PyTorchJobSpec(c *torchv1.PyTorchJobSpec) error {
 	if c.PyTorchReplicaSpecs == nil {
 		return fmt.Errorf("PyTorchJobSpec is not valid")
 	}
-	masterExists := false
 	for rType, value := range c.PyTorchReplicaSpecs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("PyTorchJobSpec is not valid: containers definition expected in %v", rType)
@@ -63,7 +62,6 @@ func ValidateV1PyTorchJobSpec(c *torchv1.PyTorchJobSpec) error {
 			return fmt.Errorf(msg)
 		}
 		if rType == torchv1.PyTorchReplicaTypeMaster {
-			masterExists = true
 			if value.Replicas != nil && int(*value.Replicas) != 1 {
 				return fmt.Errorf("PyTorchJobSpec is not valid: There must be only 1 master replica")
 			}
@@ -71,9 +69,6 @@ func ValidateV1PyTorchJobSpec(c *torchv1.PyTorchJobSpec) error {
 
 	}
 
-	if !masterExists {
-		return fmt.Errorf("PyTorchJobSpec is not valid: Master ReplicaSpec must be present")
-	}
 	return nil
 
 }

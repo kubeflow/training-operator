@@ -30,7 +30,7 @@ from kubernetes.config import kube_config
 # We default to environment variables so that it can be set correctly when
 # running under prow.
 MASTER_REPO_OWNER = os.getenv("REPO_OWNER", "kubeflow")
-MASTER_REPO_NAME = os.getenv("REPO_NAME", "tf-operator")
+MASTER_REPO_NAME = os.getenv("REPO_NAME", "training-operator")
 
 
 # TODO(jlewi): Should we stream the output by polling the subprocess?

@@ -17,17 +17,17 @@ class ReleaseTest(unittest.TestCase):
       _mock_makedirs):
     # Make sure REPO_OWNER and REPO_NAME aren't changed by the environment
     release.REPO_ORG = "kubeflow"
-    release.REPO_NAME = "tf-operator"
+    release.REPO_NAME = "training-operator"
 
     parser = release.build_parser()
     args = parser.parse_args(["postsubmit", "--src_dir=/top/src_dir"])
     release.build_postsubmit(args)
 
     mock_build_and_push.assert_called_once_with(
-      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/training-operator',
       mock.ANY)
     mock_clone.assert_called_once_with('/top/src_dir/git_tensorflow_k8s',
-                                       'kubeflow', 'tf-operator', None, None)
+                                       'kubeflow', 'training-operator', None, None)
 
   @mock.patch("kubeflow.tf_operator.release.os.makedirs")
   @mock.patch("kubeflow.tf_operator.release.os.symlink")
@@ -43,10 +43,10 @@ class ReleaseTest(unittest.TestCase):
     release.build_pr(args)
 
     mock_build_and_push.assert_called_once_with(
-      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/tf-operator',
+      '/top/src_dir/go', '/top/src_dir/go/src/github.com/kubeflow/training-operator',
       mock.ANY)
     mock_clone.assert_called_once_with("/top/src_dir/git_tensorflow_k8s",
-                                       "kubeflow", "tf-operator", "22",
+                                       "kubeflow", "training-operator", "22",
                                        ["pull/10/head:pr"])
 
   def test_update_values(self):

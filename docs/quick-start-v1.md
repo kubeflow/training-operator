@@ -1,6 +1,7 @@
 # Testing v1
 
-Tf-operator is currently in v1. The quick start shows an example of v1 of TF operator. For more details please refer to [developer_guide.md](../developer_guide.md).
+TFJob is currently in v1. The quick start shows an example of TFJob.
+For more details please refer to [developer_guide.md](../developer_guide.md).
 
 ## Create a TFJob
 
@@ -38,12 +39,12 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: kubeflow/tf-dist-mnist-test:1.0
-            name: tensorflow
-            ports:
-            - containerPort: 2222
-              name: tfjob-port
-            resources: {}
+            - image: kubeflow/tf-dist-mnist-test:1.0
+              name: tensorflow
+              ports:
+                - containerPort: 2222
+                  name: tfjob-port
+              resources: {}
     Worker:
       replicas: 4
       restartPolicy: Never
@@ -52,26 +53,26 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: kubeflow/tf-dist-mnist-test:1.0
-            name: tensorflow
-            ports:
-            - containerPort: 2222
-              name: tfjob-port
-            resources: {}
+            - image: kubeflow/tf-dist-mnist-test:1.0
+              name: tensorflow
+              ports:
+                - containerPort: 2222
+                  name: tfjob-port
+              resources: {}
 status:
   conditions:
-  - lastTransitionTime: 2019-03-06T09:50:36Z
-    lastUpdateTime: 2019-03-06T09:50:36Z
-    message: TFJob dist-mnist-for-e2e-test is created.
-    reason: TFJobCreated
-    status: "True"
-    type: Created
-  - lastTransitionTime: 2019-03-06T09:50:57Z
-    lastUpdateTime: 2019-03-06T09:50:57Z
-    message: TFJob dist-mnist-for-e2e-test is running.
-    reason: TFJobRunning
-    status: "True"
-    type: Running
+    - lastTransitionTime: 2019-03-06T09:50:36Z
+      lastUpdateTime: 2019-03-06T09:50:36Z
+      message: TFJob dist-mnist-for-e2e-test is created.
+      reason: TFJobCreated
+      status: "True"
+      type: Created
+    - lastTransitionTime: 2019-03-06T09:50:57Z
+      lastUpdateTime: 2019-03-06T09:50:57Z
+      message: TFJob dist-mnist-for-e2e-test is running.
+      reason: TFJobRunning
+      status: "True"
+      type: Running
   replicaStatuses:
     PS:
       active: 2

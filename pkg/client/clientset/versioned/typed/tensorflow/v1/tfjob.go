@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	v1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	scheme "github.com/kubeflow/tf-operator/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

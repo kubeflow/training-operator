@@ -30,11 +30,11 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	train_util "github.com/kubeflow/common/pkg/util/train"
-	tensorflowv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/tf-operator/pkg/apis/tensorflow/validation"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	"github.com/kubeflow/training-operator/pkg/apis/tensorflow/validation"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -339,6 +339,9 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 	svclist := &corev1.ServiceList{}
 	err = r.List(context.Background(), svclist,
 		client.MatchingLabelsSelector{Selector: selector}, client.InNamespace(job.GetNamespace()))
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get Service: %v", err)
+	}
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing services (see #42639).
@@ -510,6 +513,11 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				// we know it because we update the status condition when reconciling the replicas
 				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
 			} else {
+				if tfJob.Spec.EnableDynamicWorker && rtype == tensorflowv1.TFReplicaTypeWorker {
+					commonutil.LoggerForJob(tfJob).Infof("TFJob %s/%s continues regardless %d Worker replica(s) failed as enableDynamicWorker is set true.",
+						tfJob.Namespace, tfJob.Name, failed)
+					continue
+				}
 				msg := fmt.Sprintf("TFJob %s/%s has failed because %d %s replica(s) failed.",
 					tfJob.Namespace, tfJob.Name, failed, rtype)
 				r.recorder.Event(tfJob, corev1.EventTypeNormal, tfJobFailedReason, msg)
@@ -786,6 +794,8 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 	labels := r.GenLabels(tfjob.Name)
 	labels[tfReplicaTypeLabel] = rt
 	labels[tfReplicaIndexLabel] = index
+	labels[commonv1.ReplicaTypeLabel] = rt
+	labels[commonv1.ReplicaIndexLabel] = index
 
 	if masterRole {
 		labels[commonv1.JobRoleLabel] = "master"
@@ -821,12 +831,13 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
 	if r.Config.EnableGangScheduling {
-		if !util.IsGangSchedulerSet(replicas, gangSchedulerName) {
+		podSchedulerName := util.GetSchedulerName(replicas)
+		if len(podSchedulerName) == 0 {
+			podTemplate.Spec.SchedulerName = gangSchedulerName
+		} else if strings.Compare(podSchedulerName, gangSchedulerName) != 0 {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			r.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
-		} else {
-			podTemplate.Spec.SchedulerName = gangSchedulerName
 		}
 
 		if podTemplate.Annotations == nil {

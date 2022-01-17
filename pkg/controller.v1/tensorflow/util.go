@@ -16,7 +16,7 @@ package tensorflow
 
 import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/tf-operator/pkg/apis/tensorflow/v1"
+	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -69,7 +69,7 @@ func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.Re
 }
 
 // isDistributed returns if the TFJob is a distributed training job.
-// Ref https://github.com/kubeflow/tf-operator/issues/1078.
+// Ref https://github.com/kubeflow/training-operator/issues/1078.
 // originally from pkg/controller.v1/tensorflow/pod.go (deleted)
 func isDistributed(tfjob *tfv1.TFJob) bool {
 	replicas := tfjob.Spec.TFReplicaSpecs

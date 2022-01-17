@@ -12,57 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controllers
+package pytorch
 
 import (
 	"context"
 	"fmt"
-	"reflect"
-
-	"github.com/kubeflow/tf-operator/pkg/apis/pytorch/validation"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	commonutil "github.com/kubeflow/common/pkg/util"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
-	"k8s.io/apimachinery/pkg/api/meta"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-	pytorchv1 "github.com/kubeflow/tf-operator/pkg/apis/pytorch/v1"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
+
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	"github.com/kubeflow/training-operator/pkg/apis/pytorch/validation"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
 	controllerName = "pytorchjob-controller"
-)
-
-var (
-	jobOwnerKey           = ".metadata.controller"
-	defaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
@@ -155,19 +148,15 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Set default priorities to pytorch job
 	r.Scheme.Default(pytorchjob)
 
-	// Construct RunPolicy based on PyTorchJob.Spec
-	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          pytorchjob.Spec.RunPolicy.CleanPodPolicy,
-		TTLSecondsAfterFinished: pytorchjob.Spec.RunPolicy.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds,
-		BackoffLimit:            pytorchjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        nil,
-	}
-
-	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, runPolicy)
+	err = r.ReconcileHPA(pytorchjob)
 	if err != nil {
-		logrus.Warnf("Reconcile PyTorch Job error %v", err)
+		logger.Error(err, "Reconcile PyTorchJob HPA error")
+		return ctrl.Result{}, err
+	}
+	// Use common to reconcile the job related pod and service
+	err = r.ReconcileJobs(pytorchjob, pytorchjob.Spec.PyTorchReplicaSpecs, pytorchjob.Status, &pytorchjob.Spec.RunPolicy)
+	if err != nil {
+		logger.Error(err, "Reconcile PyTorchJob error")
 		return ctrl.Result{}, err
 	}
 
@@ -318,8 +307,20 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 	return nil
 }
 
+func (jc *PyTorchJobReconciler) GenLabelSelector(jobName string,
+	rtype commonv1.ReplicaType) *metav1.LabelSelector {
+	labels := jc.GenLabels(jobName)
+	labels[commonv1.ReplicaTypeLabel] = string(rtype)
+
+	return &metav1.LabelSelector{
+		MatchLabels: labels,
+	}
+}
+
 // UpdateJobStatus updates the job status and job conditions
-func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
+	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
+	jobStatus *commonv1.JobStatus) error {
 	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
@@ -327,6 +328,10 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
+		if status.LabelSelector == nil {
+			// Generate the label selector.
+			status.LabelSelector = r.GenLabelSelector(pytorchjob.Name, rtype)
+		}
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded
@@ -336,33 +341,65 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		logrus.Infof("PyTorchJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			pytorchjob.Name, rtype, expected, running, succeeded, failed)
 
-		if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
-			if running > 0 {
-				msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
-				if err != nil {
-					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
-					return err
+		if ContainsMasterSpec(replicas) {
+			if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
+				if running > 0 {
+					msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
+					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+						return err
+					}
+				}
+				// when master is succeed, the job is finished.
+				if expected == 0 {
+					msg := fmt.Sprintf("PyTorchJob %s is successfully completed.", pytorchjob.Name)
+					logrus.Info(msg)
+					r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+					if jobStatus.CompletionTime == nil {
+						now := metav1.Now()
+						jobStatus.CompletionTime = &now
+					}
+					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
+						return err
+					}
+					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+					return nil
 				}
 			}
-			// when master is succeed, the job is finished.
-			if expected == 0 {
-				msg := fmt.Sprintf("PyTorchJob %s is successfully completed.", pytorchjob.Name)
-				logrus.Info(msg)
-				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
-				if jobStatus.CompletionTime == nil {
-					now := metav1.Now()
-					jobStatus.CompletionTime = &now
+		} else {
+			if rtype == pytorchv1.PyTorchReplicaTypeWorker {
+				// TODO(gaocegege): Support SuccessPolicy
+				if expected == 0 {
+					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+						pytorchjob.Namespace, pytorchjob.Name)
+					r.recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+					if jobStatus.CompletionTime == nil {
+						now := metav1.Now()
+						jobStatus.CompletionTime = &now
+					}
+					err := commonutil.UpdateJobConditions(jobStatus,
+						commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(pytorchjob).Infof("Append tfjob condition error: %v", err)
+						return err
+					}
+					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+				} else if running > 0 {
+					// Some workers are still running, leave a running condition.
+					msg := fmt.Sprintf("TFJob %s/%s is running.",
+						pytorchjob.Namespace, pytorchjob.Name)
+					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+					if err != nil {
+						commonutil.LoggerForJob(pytorchjob).Infof("Append tfjob condition error: %v", err)
+						return err
+					}
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
-				if err != nil {
-					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
-					return err
-				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
-				return nil
 			}
 		}
+
 		if failed > 0 {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
@@ -390,27 +427,27 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		}
 	}
 
-	// Some workers are still running, leave a running condition.
-	msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
-	commonutil.LoggerForJob(pytorchjob).Infof(msg)
-
-	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
-		commonutil.LoggerForJob(pytorchjob).Error(err, "failed to update PyTorch Job conditions")
-		return err
-	}
-
 	return nil
+}
+
+// ContainsMasterSpec returns true if the tfjob contains master spec.
+func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
+	if _, ok := replicas[pytorchv1.PyTorchReplicaTypeMaster]; ok {
+		return true
+	}
+	return false
 }
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	trainingoperatorcommon.ClearGeneratedFields(&pytorchjob.ObjectMeta)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
 	}
 
 	// Job status passed in differs with status in job, update in basis of the passed in one.
-	if !reflect.DeepEqual(&pytorchjob.Status, jobStatus) {
+	if !equality.Semantic.DeepEqual(&pytorchjob.Status, jobStatus) {
 		pytorchjob = pytorchjob.DeepCopy()
 		pytorchjob.Status = *jobStatus.DeepCopy()
 	}
@@ -428,9 +465,15 @@ func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 	return nil
 }
 
-// SetClusterSpec sets the cluster spec for the pod
+// SetClusterSpec sets the cluster spec and init container for the pod
 func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	return SetPodEnv(job, podTemplate, rtype, index)
+	if err := setPodEnv(job, podTemplate, rtype, index); err != nil {
+		return err
+	}
+	if err := setInitContainer(job, podTemplate, rtype, index, r.Log); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {

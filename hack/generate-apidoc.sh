@@ -53,4 +53,11 @@ crd-ref-docs --log-level DEBUG\
 		--output-path ./docs/api/xgboost_generated.asciidoc \
 		--max-depth 30
 
+crd-ref-docs --log-level DEBUG\
+    --source-path ./pkg/apis/mpi/v1 \
+		--config ./docs/api/autogen/config.yaml \
+		--templates-dir ./docs/api/autogen/templates \
+		--output-path ./docs/api/mpi_generated.asciidoc \
+		--max-depth 30
+
 cd - > /dev/null

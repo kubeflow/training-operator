@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/informers"
 
-	"github.com/kubeflow/tf-operator/pkg/apis/mxnet/validation"
+	"github.com/kubeflow/training-operator/pkg/apis/mxnet/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -34,9 +34,9 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
-	mxjobv1 "github.com/kubeflow/tf-operator/pkg/apis/mxnet/v1"
-	trainingoperatorcommon "github.com/kubeflow/tf-operator/pkg/common"
-	"github.com/kubeflow/tf-operator/pkg/common/util"
+	mxjobv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -61,8 +61,6 @@ import (
 const (
 	controllerName = "mxjob-controller"
 
-	// mxJobCreatedReason is added in a mxjob when it is created.
-	mxJobCreatedReason = "MXJobCreated"
 	// mxJobSucceededReason is added in a mxjob when it is succeeded.
 	mxJobSucceededReason = "MXJobSucceeded"
 	// mxJobRunningReason is added in a mxjob when it is running.
@@ -71,12 +69,6 @@ const (
 	mxJobFailedReason = "MXJobFailed"
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
-)
-
-var (
-	jobOwnerKey = ".metadata.controller"
-	// DefaultCleanPodPolicy is the default clean pod policy controller assign the new Job if not exist
-	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // NewReconciler creates a MXJob Reconciler
@@ -166,17 +158,8 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		replicas[commonv1.ReplicaType(k)] = v
 	}
 
-	// Construct RunPolicy based on MXJob.Spec
-	runPolicy := &commonv1.RunPolicy{
-		CleanPodPolicy:          mxjob.Spec.RunPolicy.CleanPodPolicy,
-		TTLSecondsAfterFinished: mxjob.Spec.RunPolicy.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   mxjob.Spec.RunPolicy.ActiveDeadlineSeconds,
-		BackoffLimit:            mxjob.Spec.RunPolicy.BackoffLimit,
-		SchedulingPolicy:        nil,
-	}
-
 	// Use common to reconcile the job related pod and service
-	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, runPolicy)
+	err = r.ReconcileJobs(mxjob, replicas, mxjob.Status, &mxjob.Spec.RunPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile MX Job error %v", err)
 		return ctrl.Result{}, err

@@ -137,9 +137,9 @@ def list_pods(client, namespace, label_selector):
     return pods
   except rest.ApiException as e:
     message = ""
-    if e.message:
+    if hasattr(e, "message"):
       message = e.message
-    if e.body:
+    if hasattr(e, "body"):
       try:
         body = json.loads(e.body)
       except ValueError:

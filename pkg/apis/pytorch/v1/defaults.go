@@ -57,10 +57,32 @@ func setDefaultPort(spec *v1.PodSpec) {
 	}
 }
 
+func setElasticPolicy(job *PyTorchJob) {
+	if job.Spec.ElasticPolicy != nil {
+		if job.Spec.ElasticPolicy.MaxReplicas != nil &&
+			job.Spec.ElasticPolicy.MinReplicas != nil {
+			return
+		} else if job.Spec.ElasticPolicy.MaxReplicas != nil {
+			// Set MinRepliacs to elasticPolicy.MaxReplicas.
+			job.Spec.ElasticPolicy.MinReplicas = job.Spec.ElasticPolicy.MaxReplicas
+		} else if job.Spec.ElasticPolicy.MinReplicas != nil {
+			job.Spec.ElasticPolicy.MaxReplicas = job.Spec.ElasticPolicy.MinReplicas
+		} else {
+			workerReplicas := job.Spec.PyTorchReplicaSpecs[PyTorchReplicaTypeWorker].Replicas
+			// Set Min and Max to worker.spec.Replicas.
+			job.Spec.ElasticPolicy.MaxReplicas = workerReplicas
+			job.Spec.ElasticPolicy.MinReplicas = workerReplicas
+		}
+	}
+}
+
 func setDefaultReplicas(spec *common.ReplicaSpec) {
 	if spec.Replicas == nil {
 		spec.Replicas = Int32(1)
 	}
+}
+
+func setDefaultRestartPolicy(spec *common.ReplicaSpec) {
 	if spec.RestartPolicy == "" {
 		spec.RestartPolicy = DefaultRestartPolicy
 	}
@@ -95,12 +117,11 @@ func SetDefaults_PyTorchJob(job *PyTorchJob) {
 	// Update the key of PyTorchReplicaSpecs to camel case.
 	setTypeNamesToCamelCase(job)
 
-	for rType, spec := range job.Spec.PyTorchReplicaSpecs {
-		// Set default replicas to 1.
+	for _, spec := range job.Spec.PyTorchReplicaSpecs {
 		setDefaultReplicas(spec)
-		if rType == PyTorchReplicaTypeMaster {
-			// Set default port to pytorch container of Master.
-			setDefaultPort(&spec.Template.Spec)
-		}
+		setDefaultRestartPolicy(spec)
+		setDefaultPort(&spec.Template.Spec)
 	}
+	// Set default elastic policy.
+	setElasticPolicy(job)
 }
