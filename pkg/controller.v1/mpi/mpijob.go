@@ -75,8 +75,6 @@ const (
 	// gang scheduler name.
 	gangSchedulerName = "volcano"
 
-	kubectlDeliveryImage = "mpioperator/kubectl-delivery:latest"
-
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"

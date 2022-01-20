@@ -18,6 +18,7 @@ package config
 var Config struct {
 	PyTorchInitContainerTemplateFile string
 	PyTorchInitContainerImage        string
+	MPIKubectlDeliveryImage          string
 }
 
 const (
@@ -27,4 +28,6 @@ const (
 	// PyTorchInitContainerTemplateFileDefault is the default template file for
 	// the pytorch init container.
 	PyTorchInitContainerTemplateFileDefault = "/etc/config/initContainer.yaml"
+	// MPIKubectlDeliveryImageDefault is the default image for launcher pod in MPIJob init container.
+	MPIKubectlDeliveryImageDefault = "mpioperator/kubectl-delivery:latest"
 )
