@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/kubeflow/training-operator/pkg/config"
+
 	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -68,6 +70,9 @@ var _ = BeforeSuite(func() {
 
 	err = mpiv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Set Default kubectl delivery image
+	config.Config.MPIKubectlDeliveryImage = config.MPIKubectlDeliveryImageDefault
 
 	//+kubebuilder:scaffold:scheme
 

@@ -58,6 +58,7 @@ import (
 	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	"github.com/kubeflow/training-operator/pkg/apis/mpi/validation"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	ctlrconfig "github.com/kubeflow/training-operator/pkg/config"
 )
 
 const (
@@ -396,7 +397,7 @@ func (r *MPIJobReconciler) ReconcilePods(
 		}
 
 		if launcher == nil {
-			launcher, err = r.KubeClientSet.CoreV1().Pods(mpiJob.Namespace).Create(context.Background(), r.newLauncher(mpiJob, kubectlDeliveryImage, isGPULauncher), metav1.CreateOptions{})
+			launcher, err = r.KubeClientSet.CoreV1().Pods(mpiJob.Namespace).Create(context.Background(), r.newLauncher(mpiJob, ctlrconfig.Config.MPIKubectlDeliveryImage, isGPULauncher), metav1.CreateOptions{})
 			if err != nil {
 				r.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, mpiJobFailedReason, "launcher pod created failed: %v", err)
 				return err
