@@ -85,6 +85,10 @@ func main() {
 	flag.StringVar(&config.Config.PyTorchInitContainerTemplateFile, "pytorch-init-container-template-file",
 		config.PyTorchInitContainerTemplateFileDefault, "The template file for pytorch init container")
 
+	// MPI related flags
+	flag.StringVar(&config.Config.MPIKubectlDeliveryImage, "mpi-kubectl-delivery-image",
+		config.MPIKubectlDeliveryImageDefault, "The image for mpi launcher init container")
+
 	opts := zap.Options{
 		Development:     true,
 		StacktraceLevel: zapcore.DPanicLevel,
