@@ -7,4 +7,4 @@ resources:
 images:
   - name: kubeflow/training-operator
     newName: public.ecr.aws/j1r0q0g6/training/training-operator
-    newTag: "a1a0c188de17e0914bd7adfa79d16052276bffb1"
+    newTag: "174e8813666951ded505daf334a37f60fd50c18d"
