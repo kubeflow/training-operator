@@ -39,6 +39,7 @@ github_changelog_generator -t ${GITHUB_TOKEN} -u kubeflow -p training-operator \
 	--exclude-labels community/discussion,cmmunity/question,duplicate,question,invalid,wontfix \
 	--bug-labels kind/bug,problems/bug \
 	--enhancement-labels improvement/optimization,kind/enhancement,improvement/enhancement,addition/feature,kind/feature \
-	--enhancement-label "**Features and improvements:**"
+	--enhancement-label "**Features and improvements:**" \
+	--max-issues=100
 
 cd - > /dev/null
