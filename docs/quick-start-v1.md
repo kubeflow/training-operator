@@ -5,7 +5,7 @@ For more details please refer to [developer_guide.md](development/developer_guid
 
 ## Create a TFJob
 
-Please see the [example](../examples/v1/dist-mnist/README.md) to create a TFJob.
+Please see the [example](../examples/tensorflow/dist-mnist/README.md) to create a TFJob.
 
 ## Monitor your job
 
