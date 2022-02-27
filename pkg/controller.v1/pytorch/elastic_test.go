@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
