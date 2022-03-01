@@ -1,11 +1,11 @@
 # Testing v1
 
 TFJob is currently in v1. The quick start shows an example of TFJob.
-For more details please refer to [developer_guide.md](../developer_guide.md).
+For more details please refer to [developer_guide.md](development/developer_guide.md).
 
 ## Create a TFJob
 
-Please see the [example](../examples/v1/dist-mnist/README.md) to create a TFJob.
+Please see the [example](../examples/tensorflow/dist-mnist/README.md) to create a TFJob.
 
 ## Monitor your job
 
