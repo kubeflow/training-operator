@@ -25,7 +25,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
   name='kubeflow-training',
-  version='1.3.0',
+  version='1.4.0',
   author="Kubeflow Authors",
   author_email='hejinchi@cn.ibm.com',
   license="Apache License Version 2.0",
