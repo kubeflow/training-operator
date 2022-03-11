@@ -15,15 +15,13 @@
 import retrying
 from kubernetes import client
 from kubernetes import watch as k8s_watch
-from table_logger import TableLogger
 
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
-tbl = TableLogger(
-    columns='NAME,STATE,TIME',
-    colwidth={'NAME': 30, 'STATE': 20, 'TIME': 30},
-    border=False)
+tbl = utils.TableLogger(
+    header="{:<30.30} {:<20.20} {:<30.30}".format('NAME', 'STATE', 'TIME'),
+    column_format="{:<30.30} {:<20.20} {:<30.30}")
 
 
 @retrying.retry(wait_fixed=1000, stop_max_attempt_number=20)

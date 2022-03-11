@@ -79,3 +79,16 @@ def to_selector(labels):
         parts.append("{0}={1}".format(key, labels[key]))
 
     return ",".join(parts)
+
+
+class TableLogger:
+    def __init__(self, header, column_format):
+        self.header = header
+        self.column_format = column_format
+        self.first_call = True
+
+    def __call__(self, *values):
+        if self.first_call:
+            print(self.header)
+            self.first_call = False
+        print(self.column_format.format(*values))
