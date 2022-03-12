@@ -282,7 +282,7 @@ func (r *XGBoostJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (r *XGBoostJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	serviceList := &corev1.ServiceList{}
-	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}

@@ -270,7 +270,7 @@ func (r *MXJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, error) 
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (r *MXJobReconciler) GetServicesForJob(job interface{}) ([]*corev1.Service,
 	// List all services to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	serviceList := &corev1.ServiceList{}
-	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(mxJob.GetName())))
+	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(mxJob.GetName())), client.InNamespace(mxJob.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
