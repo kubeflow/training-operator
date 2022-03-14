@@ -42,7 +42,6 @@ const (
 	workerSuffix            = "-worker"
 	gpuResourceNameSuffix   = ".com/gpu"
 	gpuResourceNamePattern  = "gpu"
-	labelGroupName          = "group-name"
 	labelMPIJobName         = "mpi-job-name"
 	labelMPIRoleType        = "mpi-job-role"
 	initContainerCpu        = "100m"
@@ -228,9 +227,12 @@ func isGPULauncher(mpiJob *mpiv1.MPIJob) bool {
 
 func defaultWorkerLabels(mpiJobName string) map[string]string {
 	return map[string]string{
-		labelGroupName:   "kubeflow.org",
-		labelMPIJobName:  mpiJobName,
-		labelMPIRoleType: worker,
+		labelMPIJobName:                   mpiJobName,
+		labelMPIRoleType:                  worker,
+		commonv1.OperatorNameLabel:        controllerName,
+		commonv1.GroupNameLabelDeprecated: "kubeflow.org",
+		commonv1.JobNameLabel:             mpiJobName,
+		commonv1.JobNameLabelDeprecated:   mpiJobName,
 	}
 }
 

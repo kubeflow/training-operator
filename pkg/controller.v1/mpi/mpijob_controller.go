@@ -1053,9 +1053,12 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryImage string, isGPULauncher bool) *corev1.Pod {
 	launcherName := mpiJob.Name + launcherSuffix
 	labels := map[string]string{
-		labelGroupName:   "kubeflow.org",
-		labelMPIJobName:  mpiJob.Name,
-		labelMPIRoleType: launcher,
+		labelMPIJobName:                   mpiJob.Name,
+		labelMPIRoleType:                  launcher,
+		commonv1.OperatorNameLabel:        controllerName,
+		commonv1.GroupNameLabelDeprecated: "kubeflow.org",
+		commonv1.JobNameLabel:             mpiJob.Name,
+		commonv1.JobNameLabelDeprecated:   mpiJob.Name,
 	}
 
 	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher].Template.DeepCopy()
