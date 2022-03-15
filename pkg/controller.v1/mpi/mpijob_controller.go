@@ -242,7 +242,7 @@ func (jc *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy,
 	}
 
 	// Delete nothing when the cleanPodPolicy is None.
-	if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyNone {
+	if runPolicy == nil || *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyNone {
 		return nil
 	}
 
