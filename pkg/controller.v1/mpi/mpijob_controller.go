@@ -668,6 +668,10 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 }
 
 func (jc *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	mpiJob, ok := job.(*mpiv1.MPIJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MpiJob", mpiJob)

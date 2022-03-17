@@ -545,6 +545,10 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 }
 
 func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	tfJob, ok := job.(*tensorflowv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)

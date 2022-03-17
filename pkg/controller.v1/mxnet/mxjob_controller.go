@@ -400,6 +400,10 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 
 // UpdateJobStatusInApiServer updates the status of the given MXJob.
 func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	mxJob, ok := job.(*mxjobv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxJob)
