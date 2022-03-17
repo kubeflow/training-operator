@@ -412,6 +412,10 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	xgboostjob, ok := job.(*xgboostv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", xgboostjob)

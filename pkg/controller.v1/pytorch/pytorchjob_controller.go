@@ -440,6 +440,10 @@ func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec)
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
 	trainingoperatorcommon.ClearGeneratedFields(&pytorchjob.ObjectMeta)
 	if !ok {
