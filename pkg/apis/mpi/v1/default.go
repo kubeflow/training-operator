@@ -50,6 +50,11 @@ func SetDefaults_MPIJob(mpiJob *MPIJob) {
 		mpiJob.Spec.CleanPodPolicy = &none
 	}
 
+	if mpiJob.Spec.RunPolicy.CleanPodPolicy == nil {
+		none := common.CleanPodPolicyNone
+		mpiJob.Spec.RunPolicy.CleanPodPolicy = &none
+	}
+
 	// set default to Launcher
 	setDefaultsTypeLauncher(mpiJob.Spec.MPIReplicaSpecs[MPIReplicaTypeLauncher])
 
