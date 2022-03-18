@@ -44,14 +44,10 @@ func setDefaultsTypeWorker(spec *common.ReplicaSpec) {
 }
 
 func SetDefaults_MPIJob(mpiJob *MPIJob) {
-	// Set default cleanpod policy to None.
-	if mpiJob.Spec.CleanPodPolicy == nil {
+	// Set default CleanPodPolicy to None when neither fields specified.
+	if mpiJob.Spec.CleanPodPolicy == nil && mpiJob.Spec.RunPolicy.CleanPodPolicy == nil {
 		none := common.CleanPodPolicyNone
 		mpiJob.Spec.CleanPodPolicy = &none
-	}
-
-	if mpiJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		none := common.CleanPodPolicyNone
 		mpiJob.Spec.RunPolicy.CleanPodPolicy = &none
 	}
 
