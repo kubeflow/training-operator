@@ -61,10 +61,11 @@ const (
 // NewReconciler creates a PyTorchJob Reconciler
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobReconciler {
 	r := &PyTorchJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	// Create clients
@@ -96,9 +97,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobRe
 type PyTorchJobReconciler struct {
 	common.JobController
 	client.Client
-	Scheme   *runtime.Scheme
-	Log      logr.Logger
-	recorder record.EventRecorder
+	Scheme    *runtime.Scheme
+	Log       logr.Logger
+	recorder  record.EventRecorder
+	apiReader client.Reader
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=pytorchjobs,verbs=get;list;watch;create;update;patch;delete
@@ -240,11 +242,7 @@ func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (
 func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &pytorchv1.PyTorchJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)

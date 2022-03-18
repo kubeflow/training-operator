@@ -69,10 +69,11 @@ const (
 
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconciler {
 	r := &MPIJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	cfg := mgr.GetConfig()
@@ -101,9 +102,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconc
 type MPIJobReconciler struct {
 	common.JobController
 	client.Client
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
-	Log      logr.Logger
+	Scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	apiReader client.Reader
+	Log       logr.Logger
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=mpijobs,verbs=get;list;watch;create;update;patch;delete
@@ -498,11 +500,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 func (jc *MPIJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &mpiv1.MPIJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(jc.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := jc.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "MPIJob not found", "namespace", namespace, "name", name)

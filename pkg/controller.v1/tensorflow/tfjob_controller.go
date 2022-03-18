@@ -97,10 +97,11 @@ const (
 
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconciler {
 	r := &TFJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	cfg := mgr.GetConfig()
@@ -130,9 +131,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconci
 type TFJobReconciler struct {
 	common.JobController
 	client.Client
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
-	Log      logr.Logger
+	Scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	apiReader client.Reader
+	Log       logr.Logger
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=tfjobs,verbs=get;list;watch;create;update;patch;delete
@@ -257,11 +259,7 @@ func (r *TFJobReconciler) GetJobFromInformerCache(namespace, name string) (metav
 func (r *TFJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &tensorflowv1.TFJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "tensorflow job not found", "namespace", namespace, "name", name)

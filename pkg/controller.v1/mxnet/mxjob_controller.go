@@ -74,10 +74,11 @@ const (
 // NewReconciler creates a MXJob Reconciler
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MXJobReconciler {
 	r := &MXJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		Recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	// Create clients.
@@ -109,9 +110,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MXJobReconci
 type MXJobReconciler struct {
 	common.JobController
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Log       logr.Logger
+	Recorder  record.EventRecorder
+	apiReader client.Reader
+	Scheme    *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs,verbs=get;list;watch;create;update;patch;delete
@@ -246,11 +248,7 @@ func (r *MXJobReconciler) GetJobFromInformerCache(namespace, name string) (metav
 func (r *MXJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &mxjobv1.MXJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
