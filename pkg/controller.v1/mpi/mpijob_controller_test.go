@@ -47,7 +47,10 @@ func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubef
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: kubeflow.MPIJobSpec{
-			CleanPodPolicy: &cleanPodPolicyAll,
+			//CleanPodPolicy: &cleanPodPolicyAll,
+			RunPolicy: common.RunPolicy{
+				CleanPodPolicy: &cleanPodPolicyAll,
+			},
 			MPIReplicaSpecs: map[common.ReplicaType]*common.ReplicaSpec{
 				kubeflow.MPIReplicaTypeWorker: {
 					Template: corev1.PodTemplateSpec{
