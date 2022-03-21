@@ -17,7 +17,6 @@ package xgboost
 import (
 	"context"
 	"fmt"
-
 	"k8s.io/client-go/informers"
 
 	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
@@ -83,10 +82,11 @@ const (
 // NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
 	}
 
 	// Create clients
@@ -118,9 +118,10 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 type XGBoostJobReconciler struct {
 	common.JobController
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	apiReader client.Reader
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs,verbs=get;list;watch;create;update;patch;delete
@@ -256,11 +257,7 @@ func (r *XGBoostJobReconciler) GetJobFromInformerCache(namespace, name string) (
 func (r *XGBoostJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &xgboostv1.XGBoostJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			r.Log.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
