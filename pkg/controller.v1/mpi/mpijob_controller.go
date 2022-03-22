@@ -237,31 +237,6 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-// DeletePodsAndServices is overridden because mpi-reconciler.v1 needs not deleting services
-func (jc *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, job interface{}, pods []*corev1.Pod) error {
-	if len(pods) == 0 {
-		return nil
-	}
-
-	// Delete nothing when the cleanPodPolicy is None.
-	if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyNone {
-		return nil
-	}
-
-	for _, pod := range pods {
-		// Note that pending pod will turn into running once schedulable,
-		// not cleaning it may leave orphan running pod in the future,
-		// we should treat it equivalent to running phase here.
-		if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyRunning && pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending {
-			continue
-		}
-		if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, job.(runtime.Object)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // ReconcileServices is overridden because mpi-reconciler.v1 does not need to reconcile services
 func (jc *MPIJobReconciler) ReconcileServices(
 	job metav1.Object,
