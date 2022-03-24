@@ -69,6 +69,8 @@ const (
 	mxJobFailedReason = "MXJobFailed"
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
+
+	FailedValidateJobReason = "FailedValidateMXJob"
 )
 
 // NewReconciler creates a MXJob Reconciler
@@ -134,6 +136,8 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err = validation.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
 		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
+		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, FailedValidateJobReason, "Failed validation: %v", err)
+		return ctrl.Result{}, err
 	}
 
 	// Check if reconciliation is needed
