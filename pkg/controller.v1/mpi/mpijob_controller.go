@@ -67,6 +67,7 @@ const (
 
 	controllerName  = "mpijob-controller"
 	labelMPIJobName = "mpi-job-name"
+	FailedValidateJobReason   = "FailedValidateMPIJob"
 )
 
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconciler {
@@ -134,6 +135,7 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err = validation.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
 		logger.Info(err.Error(), "MPIJob failed validation", req.NamespacedName.String())
+		jc.recorder.Eventf(mpijob, corev1.EventTypeWarning, FailedValidateJobReason, "Failed validation: %v", err)
 		return ctrl.Result{}, err
 	}
 

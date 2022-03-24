@@ -56,7 +56,8 @@ import (
 )
 
 const (
-	controllerName = "pytorchjob-controller"
+	controllerName          = "pytorchjob-controller"
+	FailedValidateJobReason = "FailedValidatePyTorchJob"
 )
 
 // NewReconciler creates a PyTorchJob Reconciler
@@ -131,6 +132,8 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err = validation.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
 		logger.Info(err.Error(), "PyTorchJob failed validation", req.NamespacedName.String())
+		r.Recorder.Eventf(pytorchjob, corev1.EventTypeWarning, FailedValidateJobReason, "Failed validation: %v", err)
+		return ctrl.Result{}, err
 	}
 
 	// Check if reconciliation is needed

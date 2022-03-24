@@ -71,6 +71,8 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
+	FailedValidateJobReason = "FailedValidateTFJob"
+
 	controllerName = "tfjob-controller"
 
 	// labels for pods and servers.
@@ -158,6 +160,8 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err = validation.ValidateV1TFJobSpec(&tfjob.Spec); err != nil {
 		logger.Info(err.Error(), "TFJob failed validation", req.NamespacedName.String())
+		r.recorder.Eventf(tfjob, v1.EventTypeWarning, FailedValidateJobReason, "Failed validation: %v", err)
+		return ctrl.Result{}, err
 	}
 
 	// Check if reconciliation is needed

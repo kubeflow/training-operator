@@ -67,6 +67,7 @@ const (
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"
+	FailedValidateJobReason   = "FailedValidateXGBoostJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 	// xgboostJobCreatedReason is added in a job when it is created.
 	xgboostJobCreatedReason = "XGBoostJobCreated"
@@ -148,6 +149,8 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err = validation.ValidateV1XGBoostJobSpec(&xgboostjob.Spec); err != nil {
 		logger.Info(err.Error(), "XGBoostJob failed validation", req.NamespacedName.String())
+		r.recorder.Eventf(xgboostjob, corev1.EventTypeWarning, FailedValidateJobReason, "Failed validation: %v", err)
+		return ctrl.Result{}, err
 	}
 
 	// Check reconcile is required.
