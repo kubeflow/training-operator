@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -294,6 +296,30 @@ var _ = Describe("PyTorchJob controller", func() {
 			Expect(testK8sClient.Delete(ctx, job)).Should(Succeed())
 		})
 	})
+
+	Context("Test PyTorchjob with Invalid Job Spec", func() {
+		It("Should return error", func() {
+			By("Calling Reconcile method")
+			ctx := context.Background()
+
+			jobName := "test-invalid-job-spec"
+
+			pytorchJob := newInvalidPyTorchJobWithNoContainerNamedForTest(jobName, metav1.NamespaceDefault)
+			Expect(testK8sClient.Create(ctx, pytorchJob)).Should(Succeed())
+
+			req := ctrl.Request{NamespacedName: types.NamespacedName{
+				Namespace: metav1.NamespaceDefault,
+				Name:      pytorchJob.GetName(),
+			}}
+
+			expectedErr := fmt.Errorf("PyTorchJobSpec is not valid: There is no container named pytorch in Worker")
+			Eventually(func() error {
+				_, err := reconciler.Reconcile(ctx, req)
+				return err
+			}, timeout, interval).Should(MatchError(expectedErr))
+
+		})
+	})
 })
 
 func newPyTorchJobForTest(name, namespace string) *pytorchv1.PyTorchJob {
@@ -313,4 +339,29 @@ func getCondition(status commonv1.JobStatus, condType commonv1.JobConditionType)
 		}
 	}
 	return nil
+}
+
+func newInvalidPyTorchJobWithNoContainerNamedForTest(name, namespace string) *pytorchv1.PyTorchJob {
+	return &pytorchv1.PyTorchJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: pytorchv1.PyTorchJobSpec{
+			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				pytorchv1.PyTorchReplicaTypeWorker: {
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Name:  "",
+									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

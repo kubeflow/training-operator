@@ -43,6 +43,7 @@ var (
 	testEnv       *envtest.Environment
 	testCtx       context.Context
 	testCancel    context.CancelFunc
+	reconciler    *PyTorchJobReconciler
 )
 
 func TestAPIs(t *testing.T) {
@@ -86,9 +87,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(gomega.HaveOccurred())
 
-	r := NewReconciler(mgr, false)
-
-	Expect(r.SetupWithManager(mgr)).NotTo(gomega.HaveOccurred())
+	reconciler = NewReconciler(mgr, false)
+	Expect(reconciler.SetupWithManager(mgr)).NotTo(gomega.HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()

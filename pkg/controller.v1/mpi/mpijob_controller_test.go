@@ -128,6 +128,37 @@ func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, re
 	return mpiJob
 }
 
+func newInvalidMPIJobWithUndefinedContainerName(name string) *kubeflow.MPIJob {
+	cleanPodPolicyAll := common.CleanPodPolicyAll
+	mpiJob := &kubeflow.MPIJob{
+		TypeMeta: metav1.TypeMeta{APIVersion: kubeflow.SchemeGroupVersion.String()},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: metav1.NamespaceDefault,
+		},
+		Spec: kubeflow.MPIJobSpec{
+			RunPolicy: common.RunPolicy{
+				CleanPodPolicy: &cleanPodPolicyAll,
+			},
+			MPIReplicaSpecs: map[common.ReplicaType]*common.ReplicaSpec{
+				kubeflow.MPIReplicaTypeLauncher: &common.ReplicaSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								corev1.Container{
+									Name:  "",
+									Image: "kubeflow/tf-dist-mnist-test:1.0",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return mpiJob
+}
+
 var _ = Describe("MPIJob controller", func() {
 	// Define utility constants for object names and testing timeouts/durations and intervals.
 	const (
@@ -709,6 +740,29 @@ var _ = Describe("MPIJob controller", func() {
 		})
 	})
 
+	Context("Test MPIJob with Invalid Job Spec", func() {
+		It("Should return error", func() {
+			By("Calling Reconcile method")
+			ctx := context.Background()
+
+			jobName := "test-invalid-job-spec"
+
+			mpiJob := newInvalidMPIJobWithUndefinedContainerName(jobName)
+			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
+
+			req := ctrl.Request{NamespacedName: types.NamespacedName{
+				Namespace: metav1.NamespaceDefault,
+				Name:      mpiJob.GetName(),
+			}}
+
+			expectedErr := fmt.Errorf("MPIReplicaSpec is not valid: ImageName is undefined in the container of Launcher")
+			Eventually(func() error {
+				_, err := reconciler.Reconcile(ctx, req)
+				return err
+			}, timeout, interval).Should(MatchError(expectedErr))
+
+		})
+	})
 })
 
 func ReplicaStatusMatch(replicaStatuses map[common.ReplicaType]*common.ReplicaStatus,
