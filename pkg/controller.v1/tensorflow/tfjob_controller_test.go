@@ -18,6 +18,9 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -317,6 +320,30 @@ var _ = Describe("TFJob controller", func() {
 					Expect(testutil.CheckCondition(tfJob, *tc.expectedCondition, tc.expectedConditionReason)).Should(BeTrue())
 				}
 			}
+		})
+	})
+
+	Context("Test TFJob with Invalid Job Spec", func() {
+		It("Should return error", func() {
+			By("Calling Reconcile method")
+			ctx := context.Background()
+
+			jobName := "test-invalid-job-spec"
+
+			tfJob := testutil.NewInvalidTFJobWithNoContainerNamedTensorflow(jobName)
+			Expect(testK8sClient.Create(ctx, tfJob)).Should(Succeed())
+
+			req := ctrl.Request{NamespacedName: types.NamespacedName{
+				Namespace: metav1.NamespaceDefault,
+				Name:      tfJob.GetName(),
+			}}
+
+			expectedErr := fmt.Errorf("TFJobSpec is not valid: There is no container named tensorflow in Worker")
+			Eventually(func() error {
+				_, err := reconciler.Reconcile(ctx, req)
+				return err
+			}).Should(MatchError(expectedErr))
+
 		})
 	})
 })
