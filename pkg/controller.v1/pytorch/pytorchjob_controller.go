@@ -56,7 +56,7 @@ import (
 
 const (
 	controllerName          = "pytorchjob-controller"
-	FailedValidateJobReason = "FailedValidatePyTorchJob"
+	FailedValidateJobReason = "FailedValidateJob"
 )
 
 // NewReconciler creates a PyTorchJob Reconciler

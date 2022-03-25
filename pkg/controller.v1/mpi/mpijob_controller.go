@@ -64,7 +64,7 @@ import (
 const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
-	FailedValidateJobReason   = "FailedValidateMPIJob"
+	FailedValidateJobReason   = "FailedValidateJob"
 	controllerName            = "mpijob-controller"
 )
 

@@ -17,6 +17,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/client-go/informers"
 
 	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
@@ -66,7 +67,7 @@ const (
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"
-	FailedValidateJobReason   = "FailedValidateXGBoostJob"
+	FailedValidateJobReason   = "FailedValidateJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 	// xgboostJobCreatedReason is added in a job when it is created.
 	xgboostJobCreatedReason = "XGBoostJobCreated"
