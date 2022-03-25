@@ -70,7 +70,7 @@ const (
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
 
-	FailedValidateJobReason = "FailedValidateMXJob"
+	FailedValidateJobReason = "MXJobValidationFailed"
 )
 
 // NewReconciler creates a MXJob Reconciler

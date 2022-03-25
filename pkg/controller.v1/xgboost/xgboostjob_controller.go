@@ -17,6 +17,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/client-go/informers"
 	"time"
 
@@ -67,7 +68,7 @@ const (
 
 	// Reasons for job events.
 	FailedDeleteJobReason     = "FailedDeleteJob"
-	FailedValidateJobReason   = "FailedValidateXGBoostJob"
+	FailedValidateJobReason   = "FailedValidateJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 	// xgboostJobCreatedReason is added in a job when it is created.
 	xgboostJobCreatedReason = "XGBoostJobCreated"

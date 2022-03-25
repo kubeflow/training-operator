@@ -71,7 +71,7 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
-	FailedValidateJobReason = "FailedValidateTFJob"
+	FailedValidateJobReason = "FailedValidateJob"
 
 	controllerName = "tfjob-controller"
 
