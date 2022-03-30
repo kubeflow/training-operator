@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"k8s.io/client-go/informers"
+	"time"
 
 	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
 
@@ -328,6 +329,23 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 	xgboostJob, ok := job.(*xgboostv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of xgboostJob", xgboostJob)
+	}
+
+	xgboostJobKey, err := common.KeyFunc(xgboostJob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for xgboostjob object %#v: %v", xgboostJob, err))
+		return err
+	}
+
+	// Set StartTime.
+	if jobStatus.StartTime == nil {
+		now := metav1.Now()
+		jobStatus.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+			logger.LoggerForJob(xgboostJob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds)
+			r.WorkQueue.AddAfter(xgboostJobKey, time.Duration(*xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	for rtype, spec := range replicas {
