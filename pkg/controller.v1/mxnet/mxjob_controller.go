@@ -70,7 +70,9 @@ const (
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
 
-	FailedValidateJobReason = "MXJobValidationFailed"
+	FailedDeleteJobReason     = "FailedDeleteJob"
+	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
+	FailedValidateJobReason = "FailedValidateJob"
 )
 
 // NewReconciler creates a MXJob Reconciler
@@ -303,11 +305,11 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", job)
 	}
 	if err := r.Delete(context.Background(), mxjob); err != nil {
-		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, control.FailedDeletePodReason, "Error deleting: %v", err)
+		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, FailedDeleteJobReason, "Error deleting: %v", err)
 		logrus.Error(err, "failed to delete job", "namespace", mxjob.Namespace, "name", mxjob.Name)
 		return err
 	}
-	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
+	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
 	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
 	return nil
