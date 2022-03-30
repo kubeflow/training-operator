@@ -72,7 +72,7 @@ const (
 
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
-	FailedValidateJobReason = "FailedValidateJob"
+	FailedValidateJobReason   = "FailedValidateJob"
 )
 
 // NewReconciler creates a MXJob Reconciler
