@@ -65,6 +65,7 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
+
 	controllerName  = "mpijob-controller"
 	labelMPIJobName = "mpi-job-name"
 	FailedValidateJobReason   = "FailedValidateJob"
