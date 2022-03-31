@@ -40,13 +40,14 @@ spec:
               port: 8081
             initialDelaySeconds: 15
             periodSeconds: 20
-            timeoutSeconds: 5
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /readyz
               port: 8081
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
           resources:
             limits:
               cpu: 100m
