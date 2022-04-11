@@ -443,6 +443,18 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 							},
 						},
 					},
+					"successPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"failurePolicy": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},

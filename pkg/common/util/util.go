@@ -99,3 +99,15 @@ func DurationUntilExpireTime(runPolicy *commonv1.RunPolicy, jobStatus commonv1.J
 		return expireTime.Sub(currentTime), nil
 	}
 }
+
+// GetContainerExitCode gets the container exit code from the given pod.
+func GetContainerExitCode(pod *corev1.Pod, name string) int32 {
+	var exitCode int32 = 0xbeef // magic number
+	for _, status := range pod.Status.ContainerStatuses {
+		state := status.State
+		if status.Name == name && state.Terminated != nil {
+			exitCode = state.Terminated.ExitCode
+		}
+	}
+	return exitCode
+}

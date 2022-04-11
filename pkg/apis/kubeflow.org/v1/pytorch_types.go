@@ -122,7 +122,24 @@ type ElasticPolicy struct {
 	// If not set, the HPA will not be created.
 	// +optional
 	Metrics []autoscalingv2beta2.MetricSpec `json:"metrics,omitempty"`
+
+	SuccessPolicy *PyTorchSuccessPolicy `json:"successPolicy,omitempty"`
+	FailurePolicy *PyTorchFailurePolicy `json:"failurePolicy,omitempty"`
 }
+
+type PyTorchSuccessPolicy string
+
+const (
+	PyTorchSuccessPolicyDefault    PyTorchSuccessPolicy = ""           // if worker0 is success, the job is set to be success
+	PyTorchSuccessPolicyAllWorkers PyTorchSuccessPolicy = "AllWorkers" // only if all pods is success, the job is set to be success
+)
+
+type PyTorchFailurePolicy string
+
+const (
+	PyTorchFailurePolicyDefault       PyTorchFailurePolicy = ""              // if one pods fails, the job is set to be fail
+	PyTorchFailurePolicyByMinReplicas PyTorchFailurePolicy = "ByMinReplicas" // only if running pods is less than MinReplicas, the job is set to be fail
+)
 
 type RDZVConf struct {
 	Key   string `json:"key,omitempty"`

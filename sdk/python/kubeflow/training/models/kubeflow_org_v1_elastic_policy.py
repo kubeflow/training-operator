@@ -33,6 +33,7 @@ class KubeflowOrgV1ElasticPolicy(object):
                             and the value is json key in definition.
     """
     openapi_types = {
+        'failure_policy': 'str',
         'max_replicas': 'int',
         'max_restarts': 'int',
         'metrics': 'list[K8sIoApiAutoscalingV2beta2MetricSpec]',
@@ -43,10 +44,12 @@ class KubeflowOrgV1ElasticPolicy(object):
         'rdzv_host': 'str',
         'rdzv_id': 'str',
         'rdzv_port': 'int',
-        'standalone': 'bool'
+        'standalone': 'bool',
+        'success_policy': 'str'
     }
 
     attribute_map = {
+        'failure_policy': 'failurePolicy',
         'max_replicas': 'maxReplicas',
         'max_restarts': 'maxRestarts',
         'metrics': 'metrics',
@@ -57,15 +60,17 @@ class KubeflowOrgV1ElasticPolicy(object):
         'rdzv_host': 'rdzvHost',
         'rdzv_id': 'rdzvId',
         'rdzv_port': 'rdzvPort',
-        'standalone': 'standalone'
+        'standalone': 'standalone',
+        'success_policy': 'successPolicy'
     }
 
-    def __init__(self, max_replicas=None, max_restarts=None, metrics=None, min_replicas=None, n_proc_per_node=None, rdzv_backend=None, rdzv_conf=None, rdzv_host=None, rdzv_id=None, rdzv_port=None, standalone=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, failure_policy=None, max_replicas=None, max_restarts=None, metrics=None, min_replicas=None, n_proc_per_node=None, rdzv_backend=None, rdzv_conf=None, rdzv_host=None, rdzv_id=None, rdzv_port=None, standalone=None, success_policy=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV1ElasticPolicy - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
         self.local_vars_configuration = local_vars_configuration
 
+        self._failure_policy = None
         self._max_replicas = None
         self._max_restarts = None
         self._metrics = None
@@ -77,8 +82,11 @@ class KubeflowOrgV1ElasticPolicy(object):
         self._rdzv_id = None
         self._rdzv_port = None
         self._standalone = None
+        self._success_policy = None
         self.discriminator = None
 
+        if failure_policy is not None:
+            self.failure_policy = failure_policy
         if max_replicas is not None:
             self.max_replicas = max_replicas
         if max_restarts is not None:
@@ -101,6 +109,29 @@ class KubeflowOrgV1ElasticPolicy(object):
             self.rdzv_port = rdzv_port
         if standalone is not None:
             self.standalone = standalone
+        if success_policy is not None:
+            self.success_policy = success_policy
+
+    @property
+    def failure_policy(self):
+        """Gets the failure_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+
+
+        :return: The failure_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :rtype: str
+        """
+        return self._failure_policy
+
+    @failure_policy.setter
+    def failure_policy(self, failure_policy):
+        """Sets the failure_policy of this KubeflowOrgV1ElasticPolicy.
+
+
+        :param failure_policy: The failure_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :type: str
+        """
+
+        self._failure_policy = failure_policy
 
     @property
     def max_replicas(self):
@@ -344,6 +375,27 @@ class KubeflowOrgV1ElasticPolicy(object):
         """
 
         self._standalone = standalone
+
+    @property
+    def success_policy(self):
+        """Gets the success_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+
+
+        :return: The success_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :rtype: str
+        """
+        return self._success_policy
+
+    @success_policy.setter
+    def success_policy(self, success_policy):
+        """Sets the success_policy of this KubeflowOrgV1ElasticPolicy.
+
+
+        :param success_policy: The success_policy of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :type: str
+        """
+
+        self._success_policy = success_policy
 
     def to_dict(self):
         """Returns the model properties as a dict"""

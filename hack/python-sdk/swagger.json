@@ -10,6 +10,9 @@
     "kubeflow.org.v1.ElasticPolicy": {
       "type": "object",
       "properties": {
+        "failurePolicy": {
+          "type": "string"
+        },
         "maxReplicas": {
           "description": "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.",
           "type": "integer",
@@ -61,6 +64,9 @@
         "standalone": {
           "description": "Start a local standalone rendezvous backend that is represented by a C10d TCP store on port 29400. Useful when launching single-node, multi-worker job. If specified --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values are ignored.",
           "type": "boolean"
+        },
+        "successPolicy": {
+          "type": "string"
         }
       }
     },

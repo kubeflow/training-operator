@@ -45,6 +45,8 @@ spec:
             properties:
               elasticPolicy:
                 properties:
+                  failurePolicy:
+                    type: string
                   maxReplicas:
                     description: upper limit for the number of pods that can be set
                       by the autoscaler; cannot be smaller than MinReplicas, defaults
@@ -583,6 +585,8 @@ spec:
                       --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly
                       set values are ignored.
                     type: boolean
+                  successPolicy:
+                    type: string
                 type: object
               pytorchReplicaSpecs:
                 additionalProperties:

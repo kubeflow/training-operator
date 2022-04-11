@@ -37,6 +37,7 @@ class TestKubeflowOrgV1PyTorchJobSpec(unittest.TestCase):
         if include_optional :
             return KubeflowOrgV1PyTorchJobSpec(
                 elastic_policy = kubeflow_org_v1_elastic_policy.KubeflowOrgV1ElasticPolicy(
+                    failure_policy = '0', 
                     max_replicas = 56, 
                     max_restarts = 56, 
                     metrics = [
@@ -53,7 +54,8 @@ class TestKubeflowOrgV1PyTorchJobSpec(unittest.TestCase):
                     rdzv_host = '0', 
                     rdzv_id = '0', 
                     rdzv_port = 56, 
-                    standalone = True, ), 
+                    standalone = True, 
+                    success_policy = '0', ), 
                 pytorch_replica_specs = {
                     'key' : V1ReplicaSpec(
                         replicas = 56, 

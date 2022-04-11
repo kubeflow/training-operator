@@ -49,6 +49,14 @@ func setElasticPolicy(pytorchJob *PyTorchJob) {
 			pytorchJob.Spec.ElasticPolicy.MaxReplicas = workerReplicas
 			pytorchJob.Spec.ElasticPolicy.MinReplicas = workerReplicas
 		}
+		if pytorchJob.Spec.ElasticPolicy.SuccessPolicy == nil {
+			policy := PyTorchSuccessPolicyDefault
+			pytorchJob.Spec.ElasticPolicy.SuccessPolicy = &policy
+		}
+		if pytorchJob.Spec.ElasticPolicy.FailurePolicy == nil {
+			policy := PyTorchFailurePolicyDefault
+			pytorchJob.Spec.ElasticPolicy.FailurePolicy = &policy
+		}
 	}
 }
 

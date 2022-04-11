@@ -36,6 +36,7 @@ class TestKubeflowOrgV1ElasticPolicy(unittest.TestCase):
         # model = kubeflow.training.models.kubeflow_org_v1_elastic_policy.KubeflowOrgV1ElasticPolicy()  # noqa: E501
         if include_optional :
             return KubeflowOrgV1ElasticPolicy(
+                failure_policy = '0', 
                 max_replicas = 56, 
                 max_restarts = 56, 
                 metrics = [
@@ -52,7 +53,8 @@ class TestKubeflowOrgV1ElasticPolicy(unittest.TestCase):
                 rdzv_host = '0', 
                 rdzv_id = '0', 
                 rdzv_port = 56, 
-                standalone = True
+                standalone = True, 
+                success_policy = '0'
             )
         else :
             return KubeflowOrgV1ElasticPolicy(

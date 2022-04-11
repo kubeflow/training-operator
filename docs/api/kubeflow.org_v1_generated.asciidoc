@@ -54,6 +54,8 @@ Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 | *`nProcPerNode`* __integer__ | Number of workers per node; supported values: [auto, cpu, gpu, int].
 | *`maxRestarts`* __integer__ | 
 | *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2beta2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.
+| *`successPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchsuccesspolicy[$$PyTorchSuccessPolicy$$]__ | 
+| *`failurePolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchfailurepolicy[$$PyTorchFailurePolicy$$]__ | 
 |===
 
 
@@ -195,6 +197,18 @@ MXJobSpec defines the desired state of MXJob
 
 
 
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchfailurepolicy"]
+==== PyTorchFailurePolicy (string) 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-elasticpolicy[$$ElasticPolicy$$]
+****
+
+
+
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjob"]
 ==== PyTorchJob 
 
@@ -254,6 +268,18 @@ PyTorchJobSpec is a desired state description of the PyTorchJob.
 | *`elasticPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-elasticpolicy[$$ElasticPolicy$$]__ | 
 | *`pytorchReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,   {     "Master": PyTorchReplicaSpec,     "Worker": PyTorchReplicaSpec,   }
 |===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchsuccesspolicy"]
+==== PyTorchSuccessPolicy (string) 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-elasticpolicy[$$ElasticPolicy$$]
+****
+
 
 
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-rdzvbackend"]
