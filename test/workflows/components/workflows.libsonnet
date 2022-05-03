@@ -360,7 +360,15 @@
             ]),  // py lint
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-cluster", testWorkerImage, [
               "/usr/local/bin/create-eks-cluster.sh",
-            ]),  // setup cluster
+            ],
+            # need to specify kubernetes version to be created in AWS EKS
+            env_vars=[
+              {
+                name: "EKS_CLUSTER_VERSION",
+                value: "1.19",
+              },
+            ]
+            ),  // setup cluster
             $.parts(namespace, name, overrides).e2e(prow_env, bucket).buildTemplate("setup-training-operator", testWorkerImage, [
               "scripts/setup-training-operator.sh",
             ]),  // setup training-operator
