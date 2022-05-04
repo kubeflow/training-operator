@@ -91,7 +91,7 @@ func OnDependentUpdateFuncGeneric(jc *common.JobController) func(updateEvent eve
 
 		if controllerRefChanged && oldControllerRef != nil {
 			// The ControllerRef was changed. Sync the old controller, if any.
-			if job := resolveControllerRef(jc, oldObj.GetName(), oldControllerRef); job != nil {
+			if job := resolveControllerRef(jc, oldObj.GetNamespace(), oldControllerRef); job != nil {
 				logger.Infof("%s controller ref updated: %v, %v", kind, newObj, oldObj)
 				return true
 			}
