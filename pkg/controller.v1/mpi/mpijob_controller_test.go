@@ -128,37 +128,6 @@ func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, re
 	return mpiJob
 }
 
-func newInvalidMPIJobWithUndefinedContainerName(name string) *kubeflow.MPIJob {
-	cleanPodPolicyAll := common.CleanPodPolicyAll
-	mpiJob := &kubeflow.MPIJob{
-		TypeMeta: metav1.TypeMeta{APIVersion: kubeflow.SchemeGroupVersion.String()},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: kubeflow.MPIJobSpec{
-			RunPolicy: common.RunPolicy{
-				CleanPodPolicy: &cleanPodPolicyAll,
-			},
-			MPIReplicaSpecs: map[common.ReplicaType]*common.ReplicaSpec{
-				kubeflow.MPIReplicaTypeLauncher: &common.ReplicaSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								corev1.Container{
-									Name:  "",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	return mpiJob
-}
-
 var _ = Describe("MPIJob controller", func() {
 	// Define utility constants for object names and testing timeouts/durations and intervals.
 	const (
@@ -744,10 +713,14 @@ var _ = Describe("MPIJob controller", func() {
 		It("Should return error", func() {
 			By("Calling Reconcile method")
 			ctx := context.Background()
+			startTime := metav1.Now()
+			completionTime := metav1.Now()
 
 			jobName := "test-invalid-job-spec"
+			mpiJob := newMPIJobWithLauncher(jobName, int32Ptr(1), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeLauncher].Template.Spec.Containers[0].Name = ""
+			mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeWorker].Template.Spec.Containers[0].Name = ""
 
-			mpiJob := newInvalidMPIJobWithUndefinedContainerName(jobName)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			req := ctrl.Request{NamespacedName: types.NamespacedName{

@@ -245,29 +245,3 @@ func SetTFJobCompletionTime(tfJob *tfv1.TFJob) {
 	now := metav1.Time{Time: time.Now()}
 	tfJob.Status.CompletionTime = &now
 }
-
-func NewInvalidTFJobWithNoContainerNamedTensorflow(name string) *tfv1.TFJob {
-	tfJob := &tfv1.TFJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: tfv1.TFJobSpec{
-			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				tfv1.TFReplicaTypeWorker: {
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "",
-									Image: "kubeflow/tf-dist-mnist-test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	return tfJob
-}

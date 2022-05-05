@@ -328,9 +328,12 @@ var _ = Describe("TFJob controller", func() {
 			By("Calling Reconcile method")
 			ctx := context.Background()
 
-			jobName := "test-invalid-job-spec"
+			workerNum, psNum := 1, 1
+			tfJob := testutil.NewTFJob(workerNum, psNum)
+			tfJob.Name = "test-invalid-job-spec"
+			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS].Template.Spec.Containers[0].Name = ""
+			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template.Spec.Containers[0].Name = ""
 
-			tfJob := testutil.NewInvalidTFJobWithNoContainerNamedTensorflow(jobName)
 			Expect(testK8sClient.Create(ctx, tfJob)).Should(Succeed())
 
 			req := ctrl.Request{NamespacedName: types.NamespacedName{
