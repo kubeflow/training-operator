@@ -19,7 +19,11 @@ package versioned
 import (
 	"fmt"
 
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	mpiv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mpi/v1"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mxnet/v1"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/pytorch/v1"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/xgboost/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,19 +31,47 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	KubeflowV1() kubeflowv1.KubeflowV1Interface
+	MpiV1() mpiv1.MpiV1Interface
+	MxnetV1() mxnetv1.MxnetV1Interface
+	PytorchV1() pytorchv1.PytorchV1Interface
+	TensorflowV1() tensorflowv1.TensorflowV1Interface
+	XgboostV1() xgboostv1.XgboostV1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	kubeflowV1 *kubeflowv1.KubeflowV1Client
+	mpiV1        *mpiv1.MpiV1Client
+	mxnetV1      *mxnetv1.MxnetV1Client
+	pytorchV1    *pytorchv1.PytorchV1Client
+	tensorflowV1 *tensorflowv1.TensorflowV1Client
+	xgboostV1    *xgboostv1.XgboostV1Client
 }
 
-// KubeflowV1 retrieves the KubeflowV1Client
-func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
-	return c.kubeflowV1
+// MpiV1 retrieves the MpiV1Client
+func (c *Clientset) MpiV1() mpiv1.MpiV1Interface {
+	return c.mpiV1
+}
+
+// MxnetV1 retrieves the MxnetV1Client
+func (c *Clientset) MxnetV1() mxnetv1.MxnetV1Interface {
+	return c.mxnetV1
+}
+
+// PytorchV1 retrieves the PytorchV1Client
+func (c *Clientset) PytorchV1() pytorchv1.PytorchV1Interface {
+	return c.pytorchV1
+}
+
+// TensorflowV1 retrieves the TensorflowV1Client
+func (c *Clientset) TensorflowV1() tensorflowv1.TensorflowV1Interface {
+	return c.tensorflowV1
+}
+
+// XgboostV1 retrieves the XgboostV1Client
+func (c *Clientset) XgboostV1() xgboostv1.XgboostV1Interface {
+	return c.xgboostV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -63,7 +95,23 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.kubeflowV1, err = kubeflowv1.NewForConfig(&configShallowCopy)
+	cs.mpiV1, err = mpiv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.mxnetV1, err = mxnetv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.pytorchV1, err = pytorchv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.tensorflowV1, err = tensorflowv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.xgboostV1, err = xgboostv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +127,11 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.kubeflowV1 = kubeflowv1.NewForConfigOrDie(c)
+	cs.mpiV1 = mpiv1.NewForConfigOrDie(c)
+	cs.mxnetV1 = mxnetv1.NewForConfigOrDie(c)
+	cs.pytorchV1 = pytorchv1.NewForConfigOrDie(c)
+	cs.tensorflowV1 = tensorflowv1.NewForConfigOrDie(c)
+	cs.xgboostV1 = xgboostv1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -88,7 +140,11 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.kubeflowV1 = kubeflowv1.New(c)
+	cs.mpiV1 = mpiv1.New(c)
+	cs.mxnetV1 = mxnetv1.New(c)
+	cs.pytorchV1 = pytorchv1.New(c)
+	cs.tensorflowV1 = tensorflowv1.New(c)
+	cs.xgboostV1 = xgboostv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

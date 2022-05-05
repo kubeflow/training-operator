@@ -74,7 +74,7 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 cd ${SCRIPT_ROOT}
 ${CODEGEN_PKG}/generate-groups.sh "all" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
-    tensorflow:v1 \
+    "tensorflow:v1 pytorch:v1 xgboost:v1 mpi:v1 mxnet:v1" \
     --output-base "${TEMP_DIR}" \
     --go-header-file hack/boilerplate/boilerplate.go.txt
 

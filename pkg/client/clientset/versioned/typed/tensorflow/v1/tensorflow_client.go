@@ -22,22 +22,22 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type KubeflowV1Interface interface {
+type TensorflowV1Interface interface {
 	RESTClient() rest.Interface
 	TFJobsGetter
 }
 
-// KubeflowV1Client is used to interact with features provided by the kubeflow.org group.
-type KubeflowV1Client struct {
+// TensorflowV1Client is used to interact with features provided by the tensorflow.kubeflow.org group.
+type TensorflowV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeflowV1Client) TFJobs(namespace string) TFJobInterface {
+func (c *TensorflowV1Client) TFJobs(namespace string) TFJobInterface {
 	return newTFJobs(c, namespace)
 }
 
-// NewForConfig creates a new KubeflowV1Client for the given config.
-func NewForConfig(c *rest.Config) (*KubeflowV1Client, error) {
+// NewForConfig creates a new TensorflowV1Client for the given config.
+func NewForConfig(c *rest.Config) (*TensorflowV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -46,12 +46,12 @@ func NewForConfig(c *rest.Config) (*KubeflowV1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KubeflowV1Client{client}, nil
+	return &TensorflowV1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new KubeflowV1Client for the given config and
+// NewForConfigOrDie creates a new TensorflowV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *KubeflowV1Client {
+func NewForConfigOrDie(c *rest.Config) *TensorflowV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -59,9 +59,9 @@ func NewForConfigOrDie(c *rest.Config) *KubeflowV1Client {
 	return client
 }
 
-// New creates a new KubeflowV1Client for the given RESTClient.
-func New(c rest.Interface) *KubeflowV1Client {
-	return &KubeflowV1Client{c}
+// New creates a new TensorflowV1Client for the given RESTClient.
+func New(c rest.Interface) *TensorflowV1Client {
+	return &TensorflowV1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -79,7 +79,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *KubeflowV1Client) RESTClient() rest.Interface {
+func (c *TensorflowV1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

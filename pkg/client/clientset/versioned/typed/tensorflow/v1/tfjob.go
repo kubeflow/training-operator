@@ -55,7 +55,7 @@ type tFJobs struct {
 }
 
 // newTFJobs returns a TFJobs
-func newTFJobs(c *KubeflowV1Client, namespace string) *tFJobs {
+func newTFJobs(c *TensorflowV1Client, namespace string) *tFJobs {
 	return &tFJobs{
 		client: c.RESTClient(),
 		ns:     namespace,

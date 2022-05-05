@@ -23,7 +23,10 @@ import (
 
 	versioned "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/internalinterfaces"
+	mpi "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/mpi"
+	pytorch "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/pytorch"
 	tensorflow "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/tensorflow"
+	xgboost "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/xgboost"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -170,9 +173,24 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Kubeflow() tensorflow.Interface
+	Mpi() mpi.Interface
+	Pytorch() pytorch.Interface
+	Tensorflow() tensorflow.Interface
+	Xgboost() xgboost.Interface
 }
 
-func (f *sharedInformerFactory) Kubeflow() tensorflow.Interface {
+func (f *sharedInformerFactory) Mpi() mpi.Interface {
+	return mpi.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Pytorch() pytorch.Interface {
+	return pytorch.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Tensorflow() tensorflow.Interface {
 	return tensorflow.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Xgboost() xgboost.Interface {
+	return xgboost.New(f, f.namespace, f.tweakListOptions)
 }

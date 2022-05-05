@@ -18,8 +18,16 @@ package fake
 
 import (
 	clientset "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
-	fakekubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake"
+	mpiv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mpi/v1"
+	fakempiv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mpi/v1/fake"
+	mxnetv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mxnet/v1"
+	fakemxnetv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/mxnet/v1/fake"
+	pytorchv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/pytorch/v1"
+	fakepytorchv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/pytorch/v1/fake"
+	tensorflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	faketensorflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake"
+	xgboostv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/xgboost/v1"
+	fakexgboostv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/xgboost/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -74,7 +82,27 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// KubeflowV1 retrieves the KubeflowV1Client
-func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
-	return &fakekubeflowv1.FakeKubeflowV1{Fake: &c.Fake}
+// MpiV1 retrieves the MpiV1Client
+func (c *Clientset) MpiV1() mpiv1.MpiV1Interface {
+	return &fakempiv1.FakeMpiV1{Fake: &c.Fake}
+}
+
+// MxnetV1 retrieves the MxnetV1Client
+func (c *Clientset) MxnetV1() mxnetv1.MxnetV1Interface {
+	return &fakemxnetv1.FakeMxnetV1{Fake: &c.Fake}
+}
+
+// PytorchV1 retrieves the PytorchV1Client
+func (c *Clientset) PytorchV1() pytorchv1.PytorchV1Interface {
+	return &fakepytorchv1.FakePytorchV1{Fake: &c.Fake}
+}
+
+// TensorflowV1 retrieves the TensorflowV1Client
+func (c *Clientset) TensorflowV1() tensorflowv1.TensorflowV1Interface {
+	return &faketensorflowv1.FakeTensorflowV1{Fake: &c.Fake}
+}
+
+// XgboostV1 retrieves the XgboostV1Client
+func (c *Clientset) XgboostV1() xgboostv1.XgboostV1Interface {
+	return &fakexgboostv1.FakeXgboostV1{Fake: &c.Fake}
 }

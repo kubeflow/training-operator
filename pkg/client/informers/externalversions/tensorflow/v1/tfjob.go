@@ -60,13 +60,13 @@ func NewFilteredTFJobInformer(client versioned.Interface, namespace string, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeflowV1().TFJobs(namespace).List(context.TODO(), options)
+				return client.TensorflowV1().TFJobs(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeflowV1().TFJobs(namespace).Watch(context.TODO(), options)
+				return client.TensorflowV1().TFJobs(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&tensorflowv1.TFJob{},
