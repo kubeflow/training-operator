@@ -31,7 +31,7 @@ JOB_GROUP_LABEL = 'group-name'
 JOB_NAME_LABEL = 'job-name'
 JOB_TYPE_LABEL = 'replica-type'
 JOB_INDEX_LABEL = 'replica-index'
-JOB_ROLE_LABEL = 'job-role'
+JOB_ROLE_LABEL = 'training.kubeflow.org/job-role'
 
 JOB_STATUS_SUCCEEDED = 'Succeeded'
 JOB_STATUS_FAILED = 'Failed'
