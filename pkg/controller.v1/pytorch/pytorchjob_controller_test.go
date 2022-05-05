@@ -304,7 +304,30 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			jobName := "test-invalid-job-spec"
 
-			pytorchJob := newInvalidPyTorchJobWithNoContainerNamedForTest(jobName, metav1.NamespaceDefault)
+			pytorchJob := newPyTorchJobForTest(jobName, metav1.NamespaceDefault)
+			pytorchJob.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				pytorchv1.PyTorchReplicaTypeWorker: {
+					Replicas: int32Ptr(1),
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Image: "test-image",
+									Name:  "",
+									Ports: []corev1.ContainerPort{
+										{
+											Name:          pytorchv1.DefaultPortName,
+											ContainerPort: expectedPort,
+											Protocol:      corev1.ProtocolTCP,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
 			Expect(testK8sClient.Create(ctx, pytorchJob)).Should(Succeed())
 
 			req := ctrl.Request{NamespacedName: types.NamespacedName{
@@ -339,29 +362,4 @@ func getCondition(status commonv1.JobStatus, condType commonv1.JobConditionType)
 		}
 	}
 	return nil
-}
-
-func newInvalidPyTorchJobWithNoContainerNamedForTest(name, namespace string) *pytorchv1.PyTorchJob {
-	return &pytorchv1.PyTorchJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: pytorchv1.PyTorchJobSpec{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				pytorchv1.PyTorchReplicaTypeWorker: {
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Name:  "",
-									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 }
