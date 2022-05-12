@@ -85,7 +85,7 @@ The controller manages a distributed TFJob by creating a series of Job controlle
 
 When the master exits successfully or with a permanent error the job is considered finished. There is an open issue([issues/61](https://github.com/kubeflow/training-operator/issues/61)) to make the changes necessary to support evaluation with the Estimator API in 1.4.  The pods aren't deleted until the TFJob is deleted. This allows the logs to be fetched via kubectl logs.
 
-![Resources for TFJob](docs/diagrams/tfjob_k8s_resources.svg)
+![Resources for TFJob](./../diagrams/tfjob_k8s_resources.svg)
 
 
 ## Non-distributed training
