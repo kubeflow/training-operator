@@ -2,7 +2,7 @@
 # see https://github.com/kubeflow/testing/blob/master/py/kubeflow/testing/run_e2e_workflow.py
 #
 # The testWorkerImage should be the same for all workflows.
-# workflows:
+workflows: []
 #   - app_dir: kubeflow/training-operator/test/workflows
 #     component: workflows
 #     name: v1
