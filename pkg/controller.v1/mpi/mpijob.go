@@ -42,9 +42,6 @@ const (
 	workerSuffix            = "-worker"
 	gpuResourceNameSuffix   = ".com/gpu"
 	gpuResourceNamePattern  = "gpu"
-	labelGroupName          = "group-name"
-	labelMPIJobName         = "mpi-job-name"
-	labelMPIRoleType        = "mpi-job-role"
 	initContainerCpu        = "100m"
 	initContainerEphStorage = "5Gi"
 	initContainerMem        = "512Mi"
@@ -226,16 +223,26 @@ func isGPULauncher(mpiJob *mpiv1.MPIJob) bool {
 	return false
 }
 
-func defaultWorkerLabels(mpiJobName string) map[string]string {
-	return map[string]string{
-		labelGroupName:   "kubeflow.org",
-		labelMPIJobName:  mpiJobName,
-		labelMPIRoleType: worker,
+func defaultReplicaLabels(genericLabels map[string]string, roleLabelVal string) map[string]string {
+	replicaLabels := map[string]string{}
+	for k, v := range genericLabels {
+		replicaLabels[k] = v
 	}
+
+	replicaLabels[commonv1.ReplicaTypeLabel] = roleLabelVal
+	return replicaLabels
 }
 
-func workerSelector(mpiJobName string) (labels.Selector, error) {
-	labels := defaultWorkerLabels(mpiJobName)
+func defaultWorkerLabels(genericLabels map[string]string) map[string]string {
+	return defaultReplicaLabels(genericLabels, worker)
+}
+
+func defaultLauncherLabels(genericLabels map[string]string) map[string]string {
+	return defaultReplicaLabels(genericLabels, launcher)
+}
+
+func workerSelector(genericLabels map[string]string) (labels.Selector, error) {
+	labels := defaultWorkerLabels(genericLabels)
 
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: labels,

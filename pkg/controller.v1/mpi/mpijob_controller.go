@@ -64,15 +64,18 @@ import (
 const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
-	controllerName            = "mpijob-controller"
+
+	controllerName  = "mpijob-controller"
+	labelMPIJobName = "mpi-job-name"
 )
 
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconciler {
 	r := &MPIJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	cfg := mgr.GetConfig()
@@ -101,9 +104,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconc
 type MPIJobReconciler struct {
 	common.JobController
 	client.Client
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
-	Log      logr.Logger
+	Scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	apiReader client.Reader
+	Log       logr.Logger
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=mpijobs,verbs=get;list;watch;create;update;patch;delete
@@ -133,19 +137,26 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// In the new reconcile mode, we will always proceed the reconciling and let each `createOrUpdate` function
-	// to determine if updating/creating is needed
-	needReconcile := true
-
-	if !needReconcile || mpijob.GetDeletionTimestamp() != nil {
+	// skip for MPIJob that is being deleted
+	if mpijob.GetDeletionTimestamp() != nil {
 		return ctrl.Result{}, nil
 	}
 
-	// Set default priorities to mpijob
+	// Set default priorities to MPIJob
 	jc.Scheme.Default(mpijob)
 
+	// 1) validation rules out CleanPolicy with contradicting value
+	// 2) if both fields leave empty, Default function fills with None
+	// 3) if only one field set, sync value
+	cleanPolicyDefined := mpijob.Spec.CleanPodPolicy
+	if mpijob.Spec.RunPolicy.CleanPodPolicy != nil {
+		cleanPolicyDefined = mpijob.Spec.RunPolicy.CleanPodPolicy
+	}
+	mpijob.Spec.CleanPodPolicy = cleanPolicyDefined
+	mpijob.Spec.RunPolicy.CleanPodPolicy = cleanPolicyDefined
+
 	// Use common to reconcile the job related pod and service
-	//mpijob not need service
+	// MPIJob needs not service
 	err = jc.ReconcileJobs(mpijob, mpijob.Spec.MPIReplicaSpecs, mpijob.Status, &mpijob.Spec.RunPolicy)
 	if err != nil {
 		logrus.Warnf("Reconcile MPIJob error %v", err)
@@ -184,15 +195,18 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// Create generic predicates
+	predicates := predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
+		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
+		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
+	}
+
 	// inject watching for job related ConfigMap
 	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &mpiv1.MPIJob{},
-	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
-	}); err != nil {
+	}, predicates); err != nil {
 		return err
 	}
 
@@ -200,11 +214,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &mpiv1.MPIJob{},
-	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
-	}); err != nil {
+	}, predicates); err != nil {
 		return err
 	}
 
@@ -212,11 +222,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &mpiv1.MPIJob{},
-	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
-	}); err != nil {
+	}, predicates); err != nil {
 		return err
 	}
 
@@ -224,39 +230,10 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &mpiv1.MPIJob{},
-	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
-	}); err != nil {
+	}, predicates); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// DeletePodsAndServices is overridden because mpi-reconciler.v1 needs not deleting services
-func (jc *MPIJobReconciler) DeletePodsAndServices(runPolicy *commonv1.RunPolicy, job interface{}, pods []*corev1.Pod) error {
-	if len(pods) == 0 {
-		return nil
-	}
-
-	// Delete nothing when the cleanPodPolicy is None.
-	if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyNone {
-		return nil
-	}
-
-	for _, pod := range pods {
-		// Note that pending pod will turn into running once schedulable,
-		// not cleaning it may leave orphan running pod in the future,
-		// we should treat it equivalent to running phase here.
-		if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyRunning && pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending {
-			continue
-		}
-		if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, job.(runtime.Object)); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -271,6 +248,20 @@ func (jc *MPIJobReconciler) ReconcileServices(
 
 func (jc *MPIJobReconciler) ControllerName() string {
 	return controllerName
+}
+
+// GenLabels is overridden for backward compatibility
+// TODO(zw0610): remove this overriding method when backward compatibility is dropped
+func (jc *MPIJobReconciler) GenLabels(jobName string) map[string]string {
+	// Generate basic labels from kubeflow/common
+	basicLabels := jc.JobController.GenLabels(jobName)
+
+	// add "mpi-job-name" label for backward compatibility
+	basicLabels[labelMPIJobName] = basicLabels[commonv1.JobNameLabel]
+	// remove "job-name" as MPIJob never uses
+	delete(basicLabels, commonv1.JobNameLabelDeprecated)
+
+	return basicLabels
 }
 
 func (jc *MPIJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
@@ -498,11 +489,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 func (jc *MPIJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &mpiv1.MPIJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(jc.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := jc.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "MPIJob not found", "namespace", namespace, "name", name)
@@ -540,22 +527,11 @@ func (jc *MPIJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod,
 		return nil, err
 	}
 
-	pods := util.ConvertPodList(podlist.Items)
+	var filter util.ObjectFilterFunction = func(obj metav1.Object) bool {
+		return metav1.IsControlledBy(obj, job)
+	}
 
-	// If any adoptions are attempted, we should first recheck for deletion
-	// with an uncached quorum read sometime after listing Pods (see #42639).
-	canAdoptFunc := common.RecheckDeletionTimestamp(func() (metav1.Object, error) {
-		fresh, err := jc.Controller.GetJobFromAPIClient(job.GetNamespace(), job.GetName())
-		if err != nil {
-			return nil, err
-		}
-		if fresh.GetUID() != job.GetUID() {
-			return nil, fmt.Errorf("original Job %v/%v is gone: got uid %v, wanted %v", job.GetNamespace(), job.GetName(), fresh.GetUID(), job.GetUID())
-		}
-		return fresh, nil
-	})
-	cm := control.NewPodControllerRefManager(jc.PodControl, job, selector, jc.Controller.GetAPIGroupVersionKind(), canAdoptFunc)
-	return cm.ClaimPods(pods)
+	return util.ConvertPodListWithFilter(podlist.Items, filter), nil
 }
 
 func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
@@ -668,7 +644,12 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 }
 
 func (jc *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	mpiJob, ok := job.(*mpiv1.MPIJob)
+	trainingoperatorcommon.ClearGeneratedFields(&mpiJob.ObjectMeta)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MpiJob", mpiJob)
 	}
@@ -884,7 +865,8 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *mpiv1.MPIJob) ([]*corev1.P
 	}
 
 	// Remove Pods when replicas are scaled down
-	selector, err := workerSelector(mpiJob.Name)
+	genericLabels := jc.GenLabels(mpiJob.GetName())
+	selector, err := workerSelector(genericLabels)
 	if err != nil {
 		return nil, err
 	}
@@ -963,7 +945,8 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *mpiv1.MPIJob) ([]*corev1.P
 // sets the appropriate OwnerReferences on the resource so handleObject can
 // discover the MPIJob resource that 'owns' it.
 func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1.Pod {
-	labels := defaultWorkerLabels(mpiJob.Name)
+	genericLabels := jc.GenLabels(mpiJob.GetName())
+	labels := defaultWorkerLabels(genericLabels)
 
 	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeWorker].Template.DeepCopy()
 
@@ -1018,7 +1001,7 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
 	if jc.Config.EnableGangScheduling {
-		if !util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
+		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
@@ -1052,11 +1035,9 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 // the MPIJob resource that 'owns' it.
 func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryImage string, isGPULauncher bool) *corev1.Pod {
 	launcherName := mpiJob.Name + launcherSuffix
-	labels := map[string]string{
-		labelGroupName:   "kubeflow.org",
-		labelMPIJobName:  mpiJob.Name,
-		labelMPIRoleType: launcher,
-	}
+
+	genericLabels := jc.GenLabels(mpiJob.GetName())
+	labels := defaultLauncherLabels(genericLabels)
 
 	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher].Template.DeepCopy()
 	// copy the labels and annotations to pod from PodTemplate
@@ -1070,7 +1051,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(mpiv1.MPIReplicaTypeLauncher)))
 	// add SchedulerName to podSpec
 	if jc.Config.EnableGangScheduling {
-		if !util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
+		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
@@ -1228,7 +1209,8 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 
 // getRunningWorkerPods get all worker Pods with Running phase controlled by this MPIJob.
 func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *mpiv1.MPIJob) ([]*corev1.Pod, error) {
-	selector, err := workerSelector(mpiJob.Name)
+	genericLabels := jc.GenLabels(mpiJob.GetName())
+	selector, err := workerSelector(genericLabels)
 	if err != nil {
 		return nil, err
 	}
@@ -1247,7 +1229,11 @@ func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *mpiv1.MPIJob) ([]*corev
 		}
 	}
 
-	return util.ConvertPodList(podList), nil
+	var filter util.ObjectFilterFunction = func(obj metav1.Object) bool {
+		return metav1.IsControlledBy(obj, mpiJob)
+	}
+
+	return util.ConvertPodListWithFilter(podList, filter), nil
 }
 
 // newConfigMap creates a new ConfigMap containing configurations for an MPIJob

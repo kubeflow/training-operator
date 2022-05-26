@@ -17,8 +17,8 @@ package xgboost
 import (
 	"context"
 	"fmt"
-
 	"k8s.io/client-go/informers"
+	"time"
 
 	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
 
@@ -83,10 +83,11 @@ const (
 // NewReconciler creates a XGBoostJob Reconciler
 func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
 	}
 
 	// Create clients
@@ -118,9 +119,10 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 type XGBoostJobReconciler struct {
 	common.JobController
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	recorder record.EventRecorder
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	recorder  record.EventRecorder
+	apiReader client.Reader
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs,verbs=get;list;watch;create;update;patch;delete
@@ -256,11 +258,7 @@ func (r *XGBoostJobReconciler) GetJobFromInformerCache(namespace, name string) (
 func (r *XGBoostJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &xgboostv1.XGBoostJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			r.Log.Error(err, "xgboost job not found", "namespace", namespace, "name", name)
@@ -282,7 +280,7 @@ func (r *XGBoostJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +298,7 @@ func (r *XGBoostJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	serviceList := &corev1.ServiceList{}
-	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -331,6 +329,23 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 	xgboostJob, ok := job.(*xgboostv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of xgboostJob", xgboostJob)
+	}
+
+	xgboostJobKey, err := common.KeyFunc(xgboostJob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for xgboostjob object %#v: %v", xgboostJob, err))
+		return err
+	}
+
+	// Set StartTime.
+	if jobStatus.StartTime == nil {
+		now := metav1.Now()
+		jobStatus.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+			logger.LoggerForJob(xgboostJob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds)
+			r.WorkQueue.AddAfter(xgboostJobKey, time.Duration(*xgboostJob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	for rtype, spec := range replicas {
@@ -412,6 +427,10 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	xgboostjob, ok := job.(*xgboostv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", xgboostjob)

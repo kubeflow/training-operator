@@ -17,6 +17,7 @@ package pytorch
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -61,10 +62,11 @@ const (
 // NewReconciler creates a PyTorchJob Reconciler
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobReconciler {
 	r := &PyTorchJobReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor(controllerName),
-		Log:      log.Log,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		recorder:  mgr.GetEventRecorderFor(controllerName),
+		apiReader: mgr.GetAPIReader(),
+		Log:       log.Log,
 	}
 
 	// Create clients
@@ -96,9 +98,10 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PyTorchJobRe
 type PyTorchJobReconciler struct {
 	common.JobController
 	client.Client
-	Scheme   *runtime.Scheme
-	Log      logr.Logger
-	recorder record.EventRecorder
+	Scheme    *runtime.Scheme
+	Log       logr.Logger
+	recorder  record.EventRecorder
+	apiReader client.Reader
 }
 
 //+kubebuilder:rbac:groups=kubeflow.org,resources=pytorchjobs,verbs=get;list;watch;create;update;patch;delete
@@ -240,11 +243,7 @@ func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (
 func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
 	job := &pytorchv1.PyTorchJob{}
 
-	clientReader, err := util.GetDelegatingClientFromClient(r.Client)
-	if err != nil {
-		return nil, err
-	}
-	err = clientReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
+	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logrus.Error(err, "pytorch job not found", "namespace", namespace, "name", name)
@@ -265,7 +264,7 @@ func (r *PyTorchJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	podlist := &corev1.PodList{}
-	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), podlist, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +281,7 @@ func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 	// List all pods to include those that don't match the selector anymore
 	// but have a ControllerRef pointing to this controller.
 	serviceList := &corev1.ServiceList{}
-	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())))
+	err = r.List(context.Background(), serviceList, client.MatchingLabels(r.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
 	if err != nil {
 		return nil, err
 	}
@@ -324,6 +323,25 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
+	}
+
+	pytorchjobKey, err := common.KeyFunc(pytorchjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for pytorchjob object %#v: %v", pytorchjob, err))
+		return err
+	}
+
+	logger := commonutil.LoggerForJob(pytorchjob)
+
+	// Set StartTime.
+	if jobStatus.StartTime == nil {
+		now := metav1.Now()
+		jobStatus.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+			logger.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds)
+			r.WorkQueue.AddAfter(pytorchjobKey, time.Duration(*pytorchjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	for rtype, spec := range replicas {
@@ -440,6 +458,10 @@ func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec)
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	if jobStatus.ReplicaStatuses == nil {
+		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+	}
+
 	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
 	trainingoperatorcommon.ClearGeneratedFields(&pytorchjob.ObjectMeta)
 	if !ok {

@@ -50,7 +50,7 @@ const (
 	// Worker/node size related arguments.
 
 	// EnvNProcPerNode is the environment variable name for the number of processes per node.
-	EnvNProcPerNode = "PET_N_PROC_PER_NODE"
+	EnvNProcPerNode = "PET_NPROC_PER_NODE"
 	// EnvNNodes is the environment variable name for the number of nodes.
 	EnvNNodes = "PET_NNODES"
 )

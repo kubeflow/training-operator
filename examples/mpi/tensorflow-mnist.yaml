@@ -2,7 +2,6 @@ apiVersion: kubeflow.org/v1
 kind: MPIJob
 metadata:
   name: tensorflow-mnist
-  namespace: kubeflow
 spec:
   slotsPerWorker: 1
   runPolicy:

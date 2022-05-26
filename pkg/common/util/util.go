@@ -17,7 +17,10 @@ package util
 import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type ObjectFilterFunction func(obj metav1.Object) bool
 
 // ConvertServiceList convert service list to service point list
 func ConvertServiceList(list []corev1.Service) []*corev1.Service {
@@ -39,6 +42,25 @@ func ConvertPodList(list []corev1.Pod) []*corev1.Pod {
 	ret := make([]*corev1.Pod, 0, len(list))
 	for i := range list {
 		ret = append(ret, &list[i])
+	}
+	return ret
+}
+
+// ConvertPodListWithFilter converts pod list to pod pointer list with ObjectFilterFunction
+func ConvertPodListWithFilter(list []corev1.Pod, pass ObjectFilterFunction) []*corev1.Pod {
+	if list == nil {
+		return nil
+	}
+	ret := make([]*corev1.Pod, 0, len(list))
+	for i := range list {
+		obj := &list[i]
+		if pass != nil {
+			if pass(obj) {
+				ret = append(ret, obj)
+			}
+		} else {
+			ret = append(ret, obj)
+		}
 	}
 	return ret
 }
