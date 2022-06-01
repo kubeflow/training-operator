@@ -26,7 +26,7 @@ from kubeflow.training import V1TFJob
 from kubeflow.training import V1TFJobSpec
 
 TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
-SDK_TEST_NAMESPACE = 'kubeflow'
+SDK_TEST_NAMESPACE = 'default'
 
 
 def test_sdk_e2e():
