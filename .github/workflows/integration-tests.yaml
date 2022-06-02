@@ -1,0 +1,35 @@
+name: integration test
+on:
+  - pull_request
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.2.0
+        with:
+          node_image: kindest/node:v1.22.7@sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166
+          cluster_name: training-operator-cluster
+
+      - name: Build training-operator
+        run: |
+          ./scripts/gha/build-image.sh
+        env:
+          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+    
+      - name: Deploy training operator
+        run: |
+          ./scripts/gha/setup-training-operator.sh
+        env:
+          KIND_CLUSTER: training-operator-cluster
+          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+
+      - name: Run tests
+        run: |
+          pip install pytest
+          python3 -m pip install -r sdk/python/requirements.txt; pytest sdk/python/test --log-cli-level=info
