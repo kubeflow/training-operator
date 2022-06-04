@@ -22,8 +22,8 @@
 package v1
 
 import (
-	spec "github.com/go-openapi/spec"
 	common "k8s.io/kube-openapi/pkg/common"
+	spec "k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
@@ -50,6 +50,7 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"type": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Type of job condition.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -57,6 +58,7 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -78,12 +80,14 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"lastUpdateTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The last time this condition was updated.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Last time the condition transitioned from one status to another.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -110,7 +114,8 @@ func schema_pkg_apis_common_v1_JobStatus(ref common.ReferenceCallback) common.Op
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/common/pkg/apis/common/v1.JobCondition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/common/pkg/apis/common/v1.JobCondition"),
 									},
 								},
 							},
@@ -174,6 +179,7 @@ func schema_pkg_apis_common_v1_ReplicaSpec(ref common.ReferenceCallback) common.
 					"template": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.PodTemplateSpec"),
 						},
 					},
@@ -309,7 +315,8 @@ func schema_pkg_apis_common_v1_SchedulingPolicy(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 									},
 								},
 							},
@@ -352,17 +359,20 @@ func schema_pkg_apis_xgboost_v1_XGBoostJob(ref common.ReferenceCallback) common.
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobSpec"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJobSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubeflow/common/pkg/apis/common/v1.JobStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kubeflow/common/pkg/apis/common/v1.JobStatus"),
 						},
 					},
 				},
@@ -396,7 +406,8 @@ func schema_pkg_apis_xgboost_v1_XGBoostJobList(ref common.ReferenceCallback) com
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
 					"items": {
@@ -405,7 +416,8 @@ func schema_pkg_apis_xgboost_v1_XGBoostJobList(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJob"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/xgboost/v1.XGBoostJob"),
 									},
 								},
 							},
@@ -430,6 +442,7 @@ func schema_pkg_apis_xgboost_v1_XGBoostJobSpec(ref common.ReferenceCallback) com
 					"runPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"make\" to regenerate code after modifying this file",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy"),
 						},
 					},

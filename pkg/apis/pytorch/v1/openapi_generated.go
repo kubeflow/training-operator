@@ -22,8 +22,8 @@
 package v1
 
 import (
-	spec "github.com/go-openapi/spec"
 	common "k8s.io/kube-openapi/pkg/common"
+	spec "k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
@@ -52,6 +52,7 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"type": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Type of job condition.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -59,6 +60,7 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -80,12 +82,14 @@ func schema_pkg_apis_common_v1_JobCondition(ref common.ReferenceCallback) common
 					"lastUpdateTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The last time this condition was updated.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 					"lastTransitionTime": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Last time the condition transitioned from one status to another.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
@@ -112,7 +116,8 @@ func schema_pkg_apis_common_v1_JobStatus(ref common.ReferenceCallback) common.Op
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/common/pkg/apis/common/v1.JobCondition"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/common/pkg/apis/common/v1.JobCondition"),
 									},
 								},
 							},
@@ -176,6 +181,7 @@ func schema_pkg_apis_common_v1_ReplicaSpec(ref common.ReferenceCallback) common.
 					"template": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.PodTemplateSpec"),
 						},
 					},
@@ -311,7 +317,8 @@ func schema_pkg_apis_common_v1_SchedulingPolicy(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
 									},
 								},
 							},
@@ -382,7 +389,8 @@ func schema_pkg_apis_pytorch_v1_ElasticPolicy(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.RDZVConf"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.RDZVConf"),
 									},
 								},
 							},
@@ -410,12 +418,13 @@ func schema_pkg_apis_pytorch_v1_ElasticPolicy(ref common.ReferenceCallback) comm
 					},
 					"metrics": {
 						SchemaProps: spec.SchemaProps{
-							Description: "metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.",
+							Description: "Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
 									},
 								},
 							},
@@ -452,18 +461,21 @@ func schema_pkg_apis_pytorch_v1_PyTorchJob(ref common.ReferenceCallback) common.
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired state of the PyTorchJob.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJobSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Most recently observed status of the PyTorchJob. Read-only (modified by the system).",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.JobStatus"),
 						},
 					},
@@ -499,6 +511,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobList(ref common.ReferenceCallback) com
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Standard list metadata.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
@@ -509,7 +522,8 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobList(ref common.ReferenceCallback) com
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/pytorch/v1.PyTorchJob"),
 									},
 								},
 							},
@@ -534,6 +548,7 @@ func schema_pkg_apis_pytorch_v1_PyTorchJobSpec(ref common.ReferenceCallback) com
 					"runPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy"),
 						},
 					},

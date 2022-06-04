@@ -150,7 +150,7 @@ class V1ElasticPolicy(object):
     def metrics(self):
         """Gets the metrics of this V1ElasticPolicy.  # noqa: E501
 
-        metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.  # noqa: E501
+        Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.  # noqa: E501
 
         :return: The metrics of this V1ElasticPolicy.  # noqa: E501
         :rtype: list[K8sIoApiAutoscalingV2beta2MetricSpec]
@@ -161,7 +161,7 @@ class V1ElasticPolicy(object):
     def metrics(self, metrics):
         """Sets the metrics of this V1ElasticPolicy.
 
-        metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.  # noqa: E501
+        Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.  # noqa: E501
 
         :param metrics: The metrics of this V1ElasticPolicy.  # noqa: E501
         :type: list[K8sIoApiAutoscalingV2beta2MetricSpec]
