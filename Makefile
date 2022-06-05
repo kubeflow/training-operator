@@ -57,19 +57,27 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	golangci-lint run --timeout 5m ./...
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-KUBERNETES_VERSION ?= 1.22.0
-ENVTEST = $(shell pwd)/bin/setup-envtest
-test: manifests generate fmt vet golangci-lint ## Run tests.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
-	$(ENVTEST) use -p path $(KUBERNETES_VERSION)
-	source <($(ENVTEST) use -i -p env $(KUBERNETES_VERSION))
-	go test ./... -coverprofile cover.out
+#ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+ENVTEST_K8S_VERSION ?= 1.22
+HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
+test: manifests generate fmt vet golangci-lint envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	#$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	#$(ENVTEST) use -p path $(KUBERNETES_VERSION)
+	#source <($(ENVTEST) use -i -p env $(KUBERNETES_VERSION))
+	#go test ./... -coverprofile cover.out
 	#mkdir -p ${ENVTEST_ASSETS_DIR}
 	#test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	#source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
 ##@ Build
+
+envtest:
+ifndef HAS_SETUP_ENVTEST
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@c48baad70c539a2efb8dfe8850434ecc721c1ee1 # v0.10.0
+	echo "setup-envtest has been installed"
+endif
+	echo "setup-envtest has already installed"
 
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/training-operator.v1/main.go
