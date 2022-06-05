@@ -39,6 +39,8 @@ until kubectl get pods -n kubeflow | grep training-operator | grep 1/1 || [[ $TI
   sleep 10
   TIMEOUT=$(( TIMEOUT - 1 ))
 done
-kubectl describe all -n kubeflow
+kubectl version
+kubectl cluster-info
+kubectl get nodes
+kubectl get pods -n kubeflow
 kubectl describe pods -n kubeflow
-kubectl get pods -n kubeflow -o yaml
