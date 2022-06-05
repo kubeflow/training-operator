@@ -5,7 +5,10 @@ on:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes-version: ["v1.20.15", "v1.21.12", "v1.22.9", "v1.23.6"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -13,7 +16,7 @@ jobs:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.2.0
         with:
-          node_image: kindest/node:v1.22.7@sha256:1dfd72d193bf7da64765fd2f2898f78663b9ba366c2aa74be1fd7498a1873166
+          node_image: kindest/node:${{ matrix.kubernetes-version }}
           cluster_name: training-operator-cluster
 
       - name: Build training-operator
