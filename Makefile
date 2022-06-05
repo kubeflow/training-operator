@@ -61,7 +61,7 @@ ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 KUBERNETES_VERSION ?= 1.22.0
 ENVTEST = $(shell pwd)/bin/setup-envtest
 test: manifests generate fmt vet golangci-lint ## Run tests.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.12)
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 	$(ENVTEST) use -p path $(KUBERNETES_VERSION)
 	source <($(ENVTEST) use -i -p env $(KUBERNETES_VERSION))
 	go test ./... -coverprofile cover.out
