@@ -33,9 +33,6 @@ jobs:
       - name: Run Go test
         run: |
           make test ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
-          #./scripts/gha/goenvtest.sh 
-          #env:
-            #KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
 
       - name: Coveralls report
         uses: shogo82148/actions-goveralls@v1
