@@ -31,7 +31,10 @@ jobs:
           go-version: 1.17.2
 
       - name: Run Go test
-        run: make test KUBERNETES_VERSION=${{ matrix.kubernetes-version }}
+        run: |
+          ./scripts/gha/goenvtest.sh 
+        env:
+          KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
 
       - name: Coveralls report
         uses: shogo82148/actions-goveralls@v1
