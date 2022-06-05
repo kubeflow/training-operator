@@ -45,6 +45,6 @@ jobs:
         run: |
           make vet && git add pkg cmd &&
           git diff --cached --exit-code || (echo 'Please run "make vet" to verify govet' && exit 1);
-      - name: Verify golinit
+      - name: Verify golint
         run: |
           make golangci-lint

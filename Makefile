@@ -57,7 +57,6 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	golangci-lint run --timeout 5m ./...
 
-#ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 ENVTEST_K8S_VERSION ?= 1.22
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 

@@ -22,7 +22,6 @@ import (
 // It is used to avoid problems like "the object has been modified; please apply your
 // changes to the latest version and try again".
 func ClearGeneratedFields(objmeta *metav1.ObjectMeta) {
-	//objmeta.SelfLink = ""
 	objmeta.UID = ""
 	objmeta.CreationTimestamp = metav1.Time{}
 }
