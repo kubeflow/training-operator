@@ -115,7 +115,7 @@ func (c *FakeTFJobs) UpdateStatus(ctx context.Context, tFJob *tensorflowv1.TFJob
 // Delete takes name of the tFJob and deletes it. Returns an error if one occurs.
 func (c *FakeTFJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(tfjobsResource, c.ns, name), &tensorflowv1.TFJob{})
+		Invokes(testing.NewDeleteActionWithOptions(tfjobsResource, c.ns, name, opts), &tensorflowv1.TFJob{})
 
 	return err
 }

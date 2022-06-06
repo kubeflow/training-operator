@@ -88,31 +88,36 @@ echo "Generating defaulters for tensorflow/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating defaulters for pytorch/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating defaulters for mxnet/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating defaulters for xgboost/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating defaulters for mpi/v1"
 ${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mpi/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/mpi/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 cd - >/dev/null
 
@@ -125,31 +130,36 @@ echo "Generating OpenAPI specification for tensorflow/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating OpenAPI specification for pytorch/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/pytorch/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating OpenAPI specification for mxnet/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mxnet/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating OpenAPI specification for xgboost/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/xgboost/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 echo "Generating OpenAPI specification for mpi/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mpi/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/mpi/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 cd - >/dev/null
 

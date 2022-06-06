@@ -22,13 +22,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-openapi/spec"
 	mxnet "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	pytorch "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 	tensorflow "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	xgboost "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	"k8s.io/klog"
 	"k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 // Generate OpenAPI spec definitions for API resources

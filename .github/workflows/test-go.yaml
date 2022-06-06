@@ -1,4 +1,4 @@
-name: Go Test
+name: Go generate Test
 
 on:
   - push
@@ -45,10 +45,6 @@ jobs:
         run: |
           make vet && git add pkg cmd &&
           git diff --cached --exit-code || (echo 'Please run "make vet" to verify govet' && exit 1);
-      - name: Run Go test
-        run: make test
-      - name: Coveralls report
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: cover.out
-          working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+      - name: Verify golint
+        run: |
+          make golangci-lint

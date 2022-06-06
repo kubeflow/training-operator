@@ -1,0 +1,41 @@
+name: Go Test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}/go
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes-version: ["1.21.4", "1.22.1", "1.23.5"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.2
+
+      - name: Run Go test
+        run: |
+          make test ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
+
+      - name: Coveralls report
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: cover.out
+          working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
