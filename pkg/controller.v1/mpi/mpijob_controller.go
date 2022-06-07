@@ -65,10 +65,9 @@ const (
 	FailedDeleteJobReason     = "FailedDeleteJob"
 	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 
-
-	controllerName  = "mpijob-controller"
-	labelMPIJobName = "mpi-job-name"
-	FailedValidateJobReason   = "FailedValidateJob"
+	controllerName          = "mpijob-controller"
+	labelMPIJobName         = "mpi-job-name"
+	FailedValidateJobReason = "FailedValidateJob"
 )
 
 func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconciler {
