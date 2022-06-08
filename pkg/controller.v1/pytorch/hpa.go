@@ -33,7 +33,7 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) er
 
 	if pytorhcjob.Spec.ElasticPolicy == nil || pytorhcjob.Spec.ElasticPolicy.Metrics == nil {
 		logger.V(1).Info(
-			"No ElasicPolicy or Metric is specified, skipping HPA reconciling process")
+			"No ElasticPolicy or Metric is specified, skipping HPA reconciling process")
 		return nil
 	}
 
