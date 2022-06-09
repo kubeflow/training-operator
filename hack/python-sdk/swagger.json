@@ -167,7 +167,6 @@
     "v1.MPIJobList": {
       "type": "object",
       "required": [
-        "metadata",
         "items"
       ],
       "properties": {
