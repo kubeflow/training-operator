@@ -44,3 +44,11 @@ PYTORCHJOB_PLURAL = 'pytorchjobs'
 PYTORCHJOB_VERSION = os.environ.get('PYTORCHJOB_VERSION', 'v1')
 
 PYTORCH_LOGLEVEL = os.environ.get('PYTORCHJOB_LOGLEVEL', 'INFO').upper()
+
+# XGBoostJob K8S constants
+XGBOOSTJOB_GROUP = 'kubeflow.org'
+XGBOOSTJOB_KIND = 'XGBoostJob'
+XGBOOSTJOB_PLURAL = 'xgboostjobs'
+XGBOOSTJOB_VERSION = os.environ.get('XGBOOSTJOB_VERSION', 'v1')
+
+XGBOOST_LOGLEVEL = os.environ.get('XGBOOSTJOB_LOGLEVEL', 'INFO').upper()

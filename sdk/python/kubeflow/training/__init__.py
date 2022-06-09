@@ -53,3 +53,4 @@ from kubeflow.training.models.v1_xg_boost_job_spec import V1XGBoostJobSpec
 
 from kubeflow.training.api.tf_job_client import TFJobClient
 from kubeflow.training.api.py_torch_job_client import PyTorchJobClient
+from kubeflow.training.api.xgboost_job_client import XGBoostJobClient

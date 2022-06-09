@@ -53,6 +53,7 @@ def add_imports() -> None:
     with open(os.path.join(sdk_dir, "kubeflow/training/__init__.py"), "a") as init_file:
         init_file.write("from kubeflow.training.api.tf_job_client import TFJobClient\n")
         init_file.write("from kubeflow.training.api.py_torch_job_client import PyTorchJobClient\n")
+        init_file.write("from kubeflow.training.api.xgboost_job_client import XGBoostJobClient\n")
     with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as init_file:
         init_file.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
 
