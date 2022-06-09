@@ -138,7 +138,6 @@ class TestV1MPIJobList(unittest.TestCase):
                                 }, 
                             start_time = None, ), )
                     ],
-                metadata = None,
         )
 
     def testV1MPIJobList(self):

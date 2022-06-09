@@ -73,7 +73,7 @@ const (
 
 type MPIJobList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []MPIJob `json:"items"`
 }
 

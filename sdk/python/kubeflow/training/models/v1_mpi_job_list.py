@@ -63,7 +63,8 @@ class V1MPIJobList(object):
         self.items = items
         if kind is not None:
             self.kind = kind
-        self.metadata = metadata
+        if metadata is not None:
+            self.metadata = metadata
 
     @property
     def api_version(self):
@@ -152,8 +153,6 @@ class V1MPIJobList(object):
         :param metadata: The metadata of this V1MPIJobList.  # noqa: E501
         :type: V1ListMeta
         """
-        if self.local_vars_configuration.client_side_validation and metadata is None:  # noqa: E501
-            raise ValueError("Invalid value for `metadata`, must not be `None`")  # noqa: E501
 
         self._metadata = metadata
 
