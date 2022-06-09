@@ -43,6 +43,10 @@ def set_pytorchjob_namespace(pytorchjob):
     namespace = pytorchjob_namespace or get_default_target_namespace()
     return namespace
 
+def set_xgboostjob_namespace(xgboostjob):
+    xgboostjob_namespace = xgboostjob.metadata.namespace
+    namespace = xgboostjob_namespace or get_default_target_namespace()
+    return namespace
 
 def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     """
