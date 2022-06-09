@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	mpi "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	mxnet "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	pytorch "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 	tensorflow "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
@@ -63,6 +64,10 @@ func main() {
 		oAPIDefs[k] = v
 	}
 
+	for k, v := range mpi.GetOpenAPIDefinitions(refCallback) {
+		oAPIDefs[k] = v
+	}
+
 	for defName, val := range oAPIDefs {
 		defs[swaggify(defName)] = val.Schema
 	}
@@ -92,6 +97,7 @@ func swaggify(name string) string {
 	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/pytorch/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/mxnet/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/xgboost/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/mpi/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/", "", -1)
 	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
 	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)
