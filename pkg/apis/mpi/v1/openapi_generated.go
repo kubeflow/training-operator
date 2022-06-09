@@ -422,7 +422,7 @@ func schema_pkg_apis_mpi_v1_MPIJobList(ref common.ReferenceCallback) common.Open
 						},
 					},
 				},
-				Required: []string{"metadata", "items"},
+				Required: []string{"items"},
 			},
 		},
 		Dependencies: []string{
