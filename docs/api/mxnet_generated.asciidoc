@@ -72,7 +72,7 @@ MXJobList contains a list of MXJob
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-mxnet-v1-mxjob[$$MXJob$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-mxnet-v1-mxjob[$$MXJob$$] array__ | 
 |===
 
 
@@ -91,7 +91,7 @@ MXJobSpec defines the desired state of MXJob
 | Field | Description
 | *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
 | *`jobMode`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-mxnet-v1-jobmodetype[$$JobModeType$$]__ | JobMode specify the kind of MXjob to do. Different mode may have different MXReplicaSpecs request
-| *`mxReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | MXReplicaSpecs is map of common.ReplicaType and common.ReplicaSpec specifies the MX replicas to run. For example,   {     "Scheduler": common.ReplicaSpec,     "Server": common.ReplicaSpec,     "Worker": common.ReplicaSpec,   }
+| *`mxReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | MXReplicaSpecs is map of common.ReplicaType and common.ReplicaSpec specifies the MX replicas to run. For example, { "Scheduler": common.ReplicaSpec, "Server": common.ReplicaSpec, "Worker": common.ReplicaSpec, }
 |===
 
 

@@ -25,6 +25,9 @@ SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
 
 cd ${SCRIPT_ROOT}
 
+CRD_REF_GEN_VERSION=v0.0.8
+go get -u github.com/elastic/crd-ref-docs@${CRD_REF_GEN_VERSION}
+
 crd-ref-docs --log-level DEBUG\
     --source-path ./pkg/apis/tensorflow/v1 \
 		--config ./docs/api/autogen/config.yaml \
