@@ -60,7 +60,7 @@ XGBoostJobList contains a list of XGBoostJob
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-xgboost-v1-xgboostjob[$$XGBoostJob$$] array__ | 
 |===
 
 

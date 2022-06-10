@@ -35,7 +35,7 @@ jobs:
           git diff --cached --exit-code || (echo 'Please run "make manifests" to generate manifests' && exit 1);
       - name: Check auto-generated codes
         run: |
-          make generate && git add pkg/apis &&
+          make generate && git add pkg docs sdk &&
           git diff --cached --exit-code || (echo 'Please run "make generate" to generate Go codes' && exit 1);
       - name: Verify gofmt
         run: |
