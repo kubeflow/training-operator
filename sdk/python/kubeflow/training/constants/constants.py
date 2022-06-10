@@ -28,9 +28,9 @@ TFJOB_LOGLEVEL = os.environ.get('TFJOB_LOGLEVEL', 'INFO').upper()
 
 # Job Label Names
 JOB_GROUP_LABEL = 'group-name'
-JOB_NAME_LABEL = 'job-name'
-JOB_TYPE_LABEL = 'replica-type'
-JOB_INDEX_LABEL = 'replica-index'
+JOB_NAME_LABEL = 'training.kubeflow.org/job-name'
+JOB_TYPE_LABEL = 'training.kubeflow.org/replica-type'
+JOB_INDEX_LABEL = 'training.kubeflow.org/replica-index'
 JOB_ROLE_LABEL = 'training.kubeflow.org/job-role'
 
 JOB_STATUS_SUCCEEDED = 'Succeeded'
@@ -52,3 +52,11 @@ XGBOOSTJOB_PLURAL = 'xgboostjobs'
 XGBOOSTJOB_VERSION = os.environ.get('XGBOOSTJOB_VERSION', 'v1')
 
 XGBOOST_LOGLEVEL = os.environ.get('XGBOOSTJOB_LOGLEVEL', 'INFO').upper()
+
+# MPIJob K8S constants
+MPIJOB_GROUP = 'kubeflow.org'
+MPIJOB_KIND = 'MPIJob'
+MPIJOB_PLURAL = 'mpijobs'
+MPIJOB_VERSION = os.environ.get('MPIJOB_VERSION', 'v1')
+
+MPI_LOGLEVEL = os.environ.get('MPIJOB_LOGLEVEL', 'INFO').upper()

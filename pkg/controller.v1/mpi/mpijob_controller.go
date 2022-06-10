@@ -291,7 +291,7 @@ func (jc *MPIJobReconciler) GetDefaultContainerPortName() string {
 
 func (jc *MPIJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return false
+	return string(rtype) == string(mpiv1.MPIReplicaTypeLauncher)
 }
 
 func (jc *MPIJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
@@ -1039,6 +1039,10 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 	genericLabels := jc.GenLabels(mpiJob.GetName())
 	labels := defaultLauncherLabels(genericLabels)
 
+	masterRole := jc.IsMasterRole(mpiJob.Spec.MPIReplicaSpecs, mpiv1.MPIReplicaTypeLauncher, 0)
+	if masterRole {
+		labels[commonv1.JobRoleLabel] = "master"
+	}
 	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher].Template.DeepCopy()
 	// copy the labels and annotations to pod from PodTemplate
 	if len(podSpec.Labels) == 0 {
