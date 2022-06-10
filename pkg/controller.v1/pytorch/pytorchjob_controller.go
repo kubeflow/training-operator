@@ -355,9 +355,10 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 		expected := *(spec.Replicas) - succeeded
 		running := status.Active
 		failed := status.Failed
+		specReplicas := *spec.Replicas
 
-		logrus.Infof("PyTorchJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
-			pytorchjob.Name, rtype, expected, running, succeeded, failed)
+		logrus.Infof("PyTorchJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d, failed=%d, Replicas=%d",
+			pytorchjob.Name, rtype, expected, running, succeeded, failed, specReplicas)
 
 		if ContainsMasterSpec(replicas) {
 			if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
@@ -418,7 +419,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			}
 		}
 
-		if failed > 0 {
+		if failed > 0 && (specReplicas > succeeded+running) {
 			if spec.RestartPolicy != commonv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
