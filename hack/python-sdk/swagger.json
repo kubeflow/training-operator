@@ -20,9 +20,10 @@
           "format": "int32"
         },
         "metrics": {
-          "description": "metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.  Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the default metric will be set to 80% average CPU utilization.",
+          "description": "Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.",
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/k8s.io.api.autoscaling.v2beta2.MetricSpec"
           }
         },
@@ -43,6 +44,7 @@
           "description": "RDZVConf contains additional rendezvous configuration (\u003ckey1\u003e=\u003cvalue1\u003e,\u003ckey2\u003e=\u003cvalue2\u003e,...).",
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.RDZVConf"
           }
         },
@@ -72,10 +74,12 @@
       "properties": {
         "lastTransitionTime": {
           "description": "Last time the condition transitioned from one status to another.",
+          "default": {},
           "$ref": "#/definitions/v1.Time"
         },
         "lastUpdateTime": {
           "description": "The last time this condition was updated.",
+          "default": {},
           "$ref": "#/definitions/v1.Time"
         },
         "message": {
@@ -88,11 +92,13 @@
         },
         "status": {
           "description": "Status of the condition, one of True, False, Unknown.",
-          "type": "string"
+          "type": "string",
+          "default": ""
         },
         "type": {
           "description": "Type of job condition.",
-          "type": "string"
+          "type": "string",
+          "default": ""
         }
       }
     },
@@ -112,6 +118,7 @@
           "description": "Conditions is an array of current observed job conditions.",
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.JobCondition"
           }
         },
@@ -132,6 +139,91 @@
         }
       }
     },
+    "v1.MPIJob": {
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/v1.ObjectMeta"
+        },
+        "spec": {
+          "default": {},
+          "$ref": "#/definitions/v1.MPIJobSpec"
+        },
+        "status": {
+          "default": {},
+          "$ref": "#/definitions/v1.JobStatus"
+        }
+      }
+    },
+    "v1.MPIJobList": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1.MPIJob"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/v1.ListMeta"
+        }
+      }
+    },
+    "v1.MPIJobSpec": {
+      "type": "object",
+      "required": [
+        "mpiReplicaSpecs"
+      ],
+      "properties": {
+        "cleanPodPolicy": {
+          "description": "CleanPodPolicy defines the policy that whether to kill pods after the job completes. Defaults to None.",
+          "type": "string"
+        },
+        "mainContainer": {
+          "description": "MainContainer specifies name of the main container which executes the MPI code.",
+          "type": "string"
+        },
+        "mpiReplicaSpecs": {
+          "description": "`MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that specify the MPI replicas to run.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1.ReplicaSpec"
+          }
+        },
+        "runPolicy": {
+          "description": "`RunPolicy` encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
+          "$ref": "#/definitions/v1.RunPolicy"
+        },
+        "slotsPerWorker": {
+          "description": "Specifies the number of slots per worker used in hostfile. Defaults to 1.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "v1.MXJob": {
       "description": "MXJob is the Schema for the mxjobs API",
       "type": "object",
@@ -145,12 +237,15 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
+          "default": {},
           "$ref": "#/definitions/v1.MXJobSpec"
         },
         "status": {
+          "default": {},
           "$ref": "#/definitions/v1.JobStatus"
         }
       }
@@ -169,6 +264,7 @@
         "items": {
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.MXJob"
           }
         },
@@ -177,6 +273,7 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ListMeta"
         }
       }
@@ -192,7 +289,8 @@
       "properties": {
         "jobMode": {
           "description": "JobMode specify the kind of MXjob to do. Different mode may have different MXReplicaSpecs request",
-          "type": "string"
+          "type": "string",
+          "default": ""
         },
         "mxReplicaSpecs": {
           "description": "MXReplicaSpecs is map of common.ReplicaType and common.ReplicaSpec specifies the MX replicas to run. For example,\n  {\n    \"Scheduler\": common.ReplicaSpec,\n    \"Server\": common.ReplicaSpec,\n    \"Worker\": common.ReplicaSpec,\n  }",
@@ -203,6 +301,7 @@
         },
         "runPolicy": {
           "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
           "$ref": "#/definitions/v1.RunPolicy"
         }
       }
@@ -224,14 +323,17 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "description": "Specification of the desired state of the PyTorchJob.",
+          "default": {},
           "$ref": "#/definitions/v1.PyTorchJobSpec"
         },
         "status": {
           "description": "Most recently observed status of the PyTorchJob. Read-only (modified by the system).",
+          "default": {},
           "$ref": "#/definitions/v1.JobStatus"
         }
       }
@@ -251,6 +353,7 @@
           "description": "List of PyTorchJobs.",
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.PyTorchJob"
           }
         },
@@ -260,6 +363,7 @@
         },
         "metadata": {
           "description": "Standard list metadata.",
+          "default": {},
           "$ref": "#/definitions/v1.ListMeta"
         }
       }
@@ -284,6 +388,7 @@
         },
         "runPolicy": {
           "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
           "$ref": "#/definitions/v1.RunPolicy"
         }
       }
@@ -314,6 +419,7 @@
         },
         "template": {
           "description": "Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec",
+          "default": {},
           "$ref": "#/definitions/v1.PodTemplateSpec"
         }
       }
@@ -383,6 +489,7 @@
         "minResources": {
           "type": "object",
           "additionalProperties": {
+            "default": {},
             "$ref": "#/definitions/.Quantity"
           }
         },
@@ -407,14 +514,17 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
           "description": "Specification of the desired state of the TFJob.",
+          "default": {},
           "$ref": "#/definitions/v1.TFJobSpec"
         },
         "status": {
           "description": "Most recently observed status of the TFJob. Populated by the system. Read-only.",
+          "default": {},
           "$ref": "#/definitions/v1.JobStatus"
         }
       }
@@ -434,6 +544,7 @@
           "description": "List of TFJobs.",
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.TFJob"
           }
         },
@@ -443,6 +554,7 @@
         },
         "metadata": {
           "description": "Standard list metadata.",
+          "default": {},
           "$ref": "#/definitions/v1.ListMeta"
         }
       }
@@ -461,6 +573,7 @@
         },
         "runPolicy": {
           "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
           "$ref": "#/definitions/v1.RunPolicy"
         },
         "successPolicy": {
@@ -489,12 +602,15 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ObjectMeta"
         },
         "spec": {
+          "default": {},
           "$ref": "#/definitions/v1.XGBoostJobSpec"
         },
         "status": {
+          "default": {},
           "$ref": "#/definitions/v1.JobStatus"
         }
       }
@@ -513,6 +629,7 @@
         "items": {
           "type": "array",
           "items": {
+            "default": {},
             "$ref": "#/definitions/v1.XGBoostJob"
           }
         },
@@ -521,6 +638,7 @@
           "type": "string"
         },
         "metadata": {
+          "default": {},
           "$ref": "#/definitions/v1.ListMeta"
         }
       }
@@ -535,6 +653,7 @@
       "properties": {
         "runPolicy": {
           "description": "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"make\" to regenerate code after modifying this file",
+          "default": {},
           "$ref": "#/definitions/v1.RunPolicy"
         },
         "xgbReplicaSpecs": {

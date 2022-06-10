@@ -30,6 +30,9 @@ from kubeflow.training.exceptions import ApiException
 from kubeflow.training.models.v1_elastic_policy import V1ElasticPolicy
 from kubeflow.training.models.v1_job_condition import V1JobCondition
 from kubeflow.training.models.v1_job_status import V1JobStatus
+from kubeflow.training.models.v1_mpi_job import V1MPIJob
+from kubeflow.training.models.v1_mpi_job_list import V1MPIJobList
+from kubeflow.training.models.v1_mpi_job_spec import V1MPIJobSpec
 from kubeflow.training.models.v1_mx_job import V1MXJob
 from kubeflow.training.models.v1_mx_job_list import V1MXJobList
 from kubeflow.training.models.v1_mx_job_spec import V1MXJobSpec
@@ -50,3 +53,4 @@ from kubeflow.training.models.v1_xg_boost_job_spec import V1XGBoostJobSpec
 
 from kubeflow.training.api.tf_job_client import TFJobClient
 from kubeflow.training.api.py_torch_job_client import PyTorchJobClient
+from kubeflow.training.api.xgboost_job_client import XGBoostJobClient

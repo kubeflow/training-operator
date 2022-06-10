@@ -44,7 +44,7 @@ class V1MXJobSpec(object):
         'run_policy': 'runPolicy'
     }
 
-    def __init__(self, job_mode=None, mx_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, job_mode='', mx_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
         """V1MXJobSpec - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
