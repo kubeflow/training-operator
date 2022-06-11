@@ -16,31 +16,32 @@ package tensorflow
 
 import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 // GetPortFromTFJob gets the port of tensorflow container.
-func GetPortFromTFJob(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType) (int32, error) {
+func GetPortFromTFJob(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := tfJob.Spec.TFReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
-		if container.Name == tfv1.DefaultContainerName {
+		if container.Name == kubeflowv1.TFJobDefaultContainerName {
 			ports := container.Ports
 			for _, port := range ports {
-				if port.Name == tfv1.DefaultPortName {
+				if port.Name == kubeflowv1.TFJobDefaultPortName {
 					return port.ContainerPort, nil
 				}
 			}
 		}
 	}
-	return tfv1.DefaultPort, nil
+	return kubeflowv1.TFJobDefaultPort, nil
 }
 
 // ContainsChiefOrMasterSpec returns true if the tfjob contains chief or master spec.
 func ContainsChiefOrMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
-	if _, ok := replicas[tfv1.TFReplicaTypeChief]; ok {
+	if _, ok := replicas[kubeflowv1.TFJobReplicaTypeChief]; ok {
 		return true
-	} else if _, ok := replicas[tfv1.TFReplicaTypeMaster]; ok {
+	} else if _, ok := replicas[kubeflowv1.TFJobReplicaTypeMaster]; ok {
 		return true
 	}
 	return false
@@ -51,7 +52,7 @@ func getContainerExitCode(pod *corev1.Pod) int32 {
 	var exitCode int32 = 0xbeef // magic number
 	for _, status := range pod.Status.ContainerStatuses {
 		state := status.State
-		if status.Name == tfv1.DefaultContainerName && state.Terminated != nil {
+		if status.Name == kubeflowv1.TFJobDefaultContainerName && state.Terminated != nil {
 			exitCode = state.Terminated.ExitCode
 		}
 	}
@@ -71,15 +72,15 @@ func setRestartPolicy(podTemplateSpec *corev1.PodTemplateSpec, spec *commonv1.Re
 // isDistributed returns if the TFJob is a distributed training job.
 // Ref https://github.com/kubeflow/training-operator/issues/1078.
 // originally from pkg/controller.v1/tensorflow/pod.go (deleted)
-func isDistributed(tfjob *tfv1.TFJob) bool {
+func isDistributed(tfjob *kubeflowv1.TFJob) bool {
 	replicas := tfjob.Spec.TFReplicaSpecs
 	distributionCount := 0
 	allTypes := []commonv1.ReplicaType{
-		tfv1.TFReplicaTypeChief,
-		tfv1.TFReplicaTypeEval,
-		tfv1.TFReplicaTypeMaster,
-		tfv1.TFReplicaTypePS,
-		tfv1.TFReplicaTypeWorker,
+		kubeflowv1.TFJobReplicaTypeChief,
+		kubeflowv1.TFJobReplicaTypeEval,
+		kubeflowv1.TFJobReplicaTypeMaster,
+		kubeflowv1.TFJobReplicaTypePS,
+		kubeflowv1.TFJobReplicaTypeWorker,
 	}
 	// Check if there is only one replica.
 	for _, typ := range allTypes {

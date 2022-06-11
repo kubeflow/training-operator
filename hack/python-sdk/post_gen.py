@@ -24,7 +24,9 @@ import re
 
 __replacements = [
     ("import kubeflow.training", "from kubeflow.training.models import *"),
-    ("kubeflow.training.models.v1\/.*.v1.", "V1")
+    ("kubeflow.training.models.v1\/.*.v1.", "V1"),
+    ("kubeflow.training.models.kubeflow/org/v1/", "kubeflow_org_v1_"),
+    ("\.kubeflow.org.v1\.", ".KubeflowOrgV1"),
 ]
 
 sdk_dir = os.path.abspath(os.path.join(__file__, "../../..", "sdk/python"))

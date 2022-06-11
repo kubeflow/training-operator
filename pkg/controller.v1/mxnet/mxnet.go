@@ -22,8 +22,9 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
-	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -67,7 +68,7 @@ type TaskSpec struct {
 }
 
 func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	mxJob, ok := job.(*mxnetv1.MXJob)
+	mxJob, ok := job.(*kubeflowv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxJob)
 	}
@@ -99,22 +100,22 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 		// We get these envs from MX_COFING to make them stay identical
 		c.Env = append(c.Env, corev1.EnvVar{
 			Name:  "DMLC_PS_ROOT_PORT",
-			Value: strconv.Itoa(getConfigAddr(&mxConfigData, mxnetv1.MXReplicaTypeScheduler, 0).Port),
+			Value: strconv.Itoa(getConfigAddr(&mxConfigData, kubeflowv1.MXJobReplicaTypeScheduler, 0).Port),
 		})
 
 		c.Env = append(c.Env, corev1.EnvVar{
 			Name:  "DMLC_PS_ROOT_URI",
-			Value: getConfigAddr(&mxConfigData, mxnetv1.MXReplicaTypeScheduler, 0).Url,
+			Value: getConfigAddr(&mxConfigData, kubeflowv1.MXJobReplicaTypeScheduler, 0).Url,
 		})
 
 		c.Env = append(c.Env, corev1.EnvVar{
 			Name:  "DMLC_NUM_SERVER",
-			Value: strconv.Itoa(getConfigReplica(&mxConfigData, mxnetv1.MXReplicaTypeServer)),
+			Value: strconv.Itoa(getConfigReplica(&mxConfigData, kubeflowv1.MXJobReplicaTypeServer)),
 		})
 
 		c.Env = append(c.Env, corev1.EnvVar{
 			Name:  "DMLC_NUM_WORKER",
-			Value: strconv.Itoa(getConfigReplica(&mxConfigData, mxnetv1.MXReplicaTypeWorker)),
+			Value: strconv.Itoa(getConfigReplica(&mxConfigData, kubeflowv1.MXJobReplicaTypeWorker)),
 		})
 
 		c.Env = append(c.Env, corev1.EnvVar{
@@ -133,7 +134,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	return nil
 }
 
-func genMXConfig(mxjob *mxnetv1.MXJob, rtype, index string) (MXConfig, error) {
+func genMXConfig(mxjob *kubeflowv1.MXJob, rtype, index string) (MXConfig, error) {
 	// Configure the MXCONFIG environment variable.
 	i, err := strconv.ParseInt(index, 0, 32)
 	if err != nil {
@@ -163,7 +164,7 @@ func genMXConfig(mxjob *mxnetv1.MXJob, rtype, index string) (MXConfig, error) {
 }
 
 // genClusterSpec will generate ClusterSpec.
-func genClusterSpec(mxjob *mxnetv1.MXJob) (ClusterSpec, error) {
+func genClusterSpec(mxjob *kubeflowv1.MXJob) (ClusterSpec, error) {
 	clusterSpec := make(ClusterSpec)
 
 	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
@@ -189,7 +190,7 @@ func genClusterSpec(mxjob *mxnetv1.MXJob) (ClusterSpec, error) {
 }
 
 // genLabelsSpec will generate LabelsSpec.
-func genLabelsSpec(mxjob *mxnetv1.MXJob) (LabelsSpec, error) {
+func genLabelsSpec(mxjob *kubeflowv1.MXJob) (LabelsSpec, error) {
 	labelsSpec := make(LabelsSpec)
 
 	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
@@ -203,17 +204,17 @@ func genLabelsSpec(mxjob *mxnetv1.MXJob) (LabelsSpec, error) {
 
 func getConfigAddr(mxConfigData *MXConfig, rtype commonv1.ReplicaType, index int) UrlPort {
 	rt := strings.ToLower(string(rtype))
-	var url_port UrlPort
+	var urlPort UrlPort
 	if len(mxConfigData.Cluster[rt]) <= index {
 		// index out of range, maybe this url doen't exist
-		url_port = UrlPort{
+		urlPort = UrlPort{
 			Url:  "",
 			Port: 0,
 		}
 	} else {
-		url_port = mxConfigData.Cluster[rt][index]
+		urlPort = mxConfigData.Cluster[rt][index]
 	}
-	return url_port
+	return urlPort
 }
 
 func getConfigReplica(mxConfigData *MXConfig, rtype commonv1.ReplicaType) int {
@@ -222,13 +223,13 @@ func getConfigReplica(mxConfigData *MXConfig, rtype commonv1.ReplicaType) int {
 }
 
 // getPortFromMXJob gets the port of mxnet container.
-func getPortFromMXJob(mxJob *mxnetv1.MXJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromMXJob(mxJob *kubeflowv1.MXJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := mxJob.Spec.MXReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
-		if container.Name == mxnetv1.DefaultContainerName {
+		if container.Name == kubeflowv1.MXJobDefaultContainerName {
 			ports := container.Ports
 			for _, port := range ports {
-				if port.Name == mxnetv1.DefaultPortName {
+				if port.Name == kubeflowv1.MXJobDefaultPortName {
 					return port.ContainerPort, nil
 				}
 			}
@@ -238,7 +239,7 @@ func getPortFromMXJob(mxJob *mxnetv1.MXJob, rtype commonv1.ReplicaType) (int32, 
 }
 
 func addBytePSEnv(c *corev1.Container, rtype, index string) {
-	if rtype == strings.ToLower(string(mxnetv1.MXReplicaTypeWorker)) {
+	if rtype == strings.ToLower(string(kubeflowv1.MXJobReplicaTypeWorker)) {
 		c.Env = append(c.Env, corev1.EnvVar{
 			Name:  "DMLC_WORKER_ID",
 			Value: index,

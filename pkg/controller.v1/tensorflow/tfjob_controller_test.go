@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
 )
 
@@ -248,11 +248,11 @@ var _ = Describe("TFJob controller", func() {
 					// check controller references for all pods
 					for _, p := range podList.Items {
 						for _, ref := range p.GetOwnerReferences() {
-							if ref.APIVersion != tfv1.SchemeGroupVersion.String() {
-								return fmt.Errorf("controllerRef.APIVersion = %q, want %q", ref.APIVersion, tfv1.SchemeGroupVersion.String())
+							if ref.APIVersion != kubeflowv1.SchemeGroupVersion.String() {
+								return fmt.Errorf("controllerRef.APIVersion = %q, want %q", ref.APIVersion, kubeflowv1.SchemeGroupVersion.String())
 							}
-							if ref.Kind != tfv1.Kind {
-								return fmt.Errorf("controllerRef.Kind = %q, want %q", ref.Kind, tfv1.Kind)
+							if ref.Kind != kubeflowv1.TFJobKind {
+								return fmt.Errorf("controllerRef.MPIKind = %q, want %q", ref.Kind, kubeflowv1.TFJobKind)
 							}
 							if ref.Name != tfJob.GetName() {
 								return fmt.Errorf("controllerRef.Name = %q, want %q", ref.Name, tfJob.GetName())
@@ -277,11 +277,11 @@ var _ = Describe("TFJob controller", func() {
 					// check controller reference for all services
 					for _, s := range svcList.Items {
 						for _, ref := range s.GetOwnerReferences() {
-							if ref.APIVersion != tfv1.SchemeGroupVersion.String() {
-								return fmt.Errorf("controllerRef.APIVersion = %q, want %q", ref.APIVersion, tfv1.SchemeGroupVersion.String())
+							if ref.APIVersion != kubeflowv1.SchemeGroupVersion.String() {
+								return fmt.Errorf("controllerRef.APIVersion = %q, want %q", ref.APIVersion, kubeflowv1.SchemeGroupVersion.String())
 							}
-							if ref.Kind != tfv1.Kind {
-								return fmt.Errorf("controllerRef.Kind = %q, want %q", ref.Kind, tfv1.Kind)
+							if ref.Kind != kubeflowv1.TFJobKind {
+								return fmt.Errorf("controllerRef.MPIKind = %q, want %q", ref.Kind, kubeflowv1.TFJobKind)
 							}
 							if ref.Name != tfJob.GetName() {
 								return fmt.Errorf("controllerRef.Name = %q, want %q", ref.Name, tfJob.GetName())
@@ -295,16 +295,16 @@ var _ = Describe("TFJob controller", func() {
 				}).Should(BeNil())
 
 				// Validate Worker status
-				if tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypeWorker] != nil {
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypeWorker].Active).To(Equal(tc.expectedActiveWorkerPods))
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypeWorker].Succeeded).To(Equal(tc.expectedSucceededWorkerPods))
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypeWorker].Failed).To(Equal(tc.expectedFailedWorkerPods))
+				if tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker] != nil {
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker].Active).To(Equal(tc.expectedActiveWorkerPods))
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker].Succeeded).To(Equal(tc.expectedSucceededWorkerPods))
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker].Failed).To(Equal(tc.expectedFailedWorkerPods))
 				}
 				// Validate PS status
-				if tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypePS] != nil {
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypePS].Active).To(Equal(tc.expectedActivePSPods))
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypePS].Succeeded).To(Equal(tc.expectedSucceededPSPods))
-					Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypePS].Failed).To(Equal(tc.expectedFailedPSPods))
+				if tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypePS] != nil {
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypePS].Active).To(Equal(tc.expectedActivePSPods))
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypePS].Succeeded).To(Equal(tc.expectedSucceededPSPods))
+					Expect(tfJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypePS].Failed).To(Equal(tc.expectedFailedPSPods))
 				}
 
 				// Validate StartTime

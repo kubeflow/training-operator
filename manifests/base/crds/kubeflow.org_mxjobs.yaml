@@ -7727,10 +7727,10 @@ spec:
                           type: object
                       type: object
                   type: object
-                description: 'MXReplicaSpecs is map of common.ReplicaType and common.ReplicaSpec
+                description: 'MXReplicaSpecs is map of commonv1.ReplicaType and commonv1.ReplicaSpec
                   specifies the MX replicas to run. For example,   {     "Scheduler":
-                  common.ReplicaSpec,     "Server": common.ReplicaSpec,     "Worker":
-                  common.ReplicaSpec,   }'
+                  commonv1.ReplicaSpec,     "Server": commonv1.ReplicaSpec,     "Worker":
+                  commonv1.ReplicaSpec,   }'
                 type: object
               runPolicy:
                 description: RunPolicy encapsulates various runtime policies of the

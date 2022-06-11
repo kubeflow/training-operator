@@ -20,11 +20,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
 	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
@@ -37,19 +33,19 @@ const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"
 type ReconcilerSetupFunc func(manager manager.Manager, enableGangScheduling bool) error
 
 var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
-	tensorflowv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	kubeflowv1.TFJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return tensorflowcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	pytorchv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	kubeflowv1.PytorchJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return pytorchcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	mxnetv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	kubeflowv1.MXJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return mxnetcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	xgboostv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	kubeflowv1.XGBoostJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	mpiv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	kubeflowv1.MPIJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return mpicontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
 }

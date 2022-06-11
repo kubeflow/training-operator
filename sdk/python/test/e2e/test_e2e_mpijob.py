@@ -21,8 +21,8 @@ from kubernetes.client import V1Container
 
 from kubeflow.training import MPIJobClient
 from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1MPIJob
-from kubeflow.training import V1MPIJobSpec
+from kubeflow.training import KubeflowOrgV1MPIJob
+from kubeflow.training import KubeflowOrgV1MPIJobSpec
 from kubeflow.training import V1RunPolicy
 
 MPI_CLIENT = MPIJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
@@ -73,11 +73,11 @@ def test_sdk_e2e():
         )
     )
 
-    mpijob = V1MPIJob(
+    mpijob = KubeflowOrgV1MPIJob(
         api_version="kubeflow.org/v1",
         kind="MPIJob",
         metadata=V1ObjectMeta(name="mpijob-mxnet-ci-test", namespace=SDK_TEST_NAMESPACE),
-        spec=V1MPIJobSpec(
+        spec=KubeflowOrgV1MPIJobSpec(
             slots_per_worker=1,
             run_policy=V1RunPolicy(
                 clean_pod_policy="None",
