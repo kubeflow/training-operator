@@ -25,8 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
 )
 
 var _ = Describe("PyTorchJob controller", func() {
@@ -47,17 +48,17 @@ var _ = Describe("PyTorchJob controller", func() {
 			ctx := context.Background()
 			job := newPyTorchJobForTest(name, namespace)
 			job.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				pytorchv1.PyTorchReplicaTypeMaster: {
+				trainingv1.PyTorchReplicaTypeMaster: {
 					Replicas: int32Ptr(1),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  pytorchv1.DefaultContainerName,
+									Name:  trainingv1.PyTorchDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          pytorchv1.DefaultPortName,
+											Name:          trainingv1.PyTorchDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -67,17 +68,17 @@ var _ = Describe("PyTorchJob controller", func() {
 						},
 					},
 				},
-				pytorchv1.PyTorchReplicaTypeWorker: {
+				trainingv1.PyTorchReplicaTypeWorker: {
 					Replicas: int32Ptr(2),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  pytorchv1.DefaultContainerName,
+									Name:  trainingv1.PyTorchDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          pytorchv1.DefaultPortName,
+											Name:          trainingv1.PyTorchDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -92,7 +93,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			key := types.NamespacedName{Name: name, Namespace: namespace}
-			created := &pytorchv1.PyTorchJob{}
+			created := &trainingv1.PyTorchJob{}
 
 			// We'll need to retry getting this newly created PyTorchJob, given that creation may not immediately happen.
 			Eventually(func() bool {
@@ -115,7 +116,7 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			// Check the pod port.
 			Expect(masterPod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
-				Name:          pytorchv1.DefaultPortName,
+				Name:          trainingv1.PyTorchDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
 			// Check MASTER_PORT and MASTER_ADDR env variable
@@ -131,16 +132,16 @@ var _ = Describe("PyTorchJob controller", func() {
 			// Check owner reference.
 			trueVal := true
 			Expect(masterPod.OwnerReferences).To(ContainElement(metav1.OwnerReference{
-				APIVersion:         pytorchv1.SchemeGroupVersion.String(),
-				Kind:               pytorchv1.Kind,
+				APIVersion:         trainingv1.SchemeGroupVersion.String(),
+				Kind:               trainingv1.PyTorchKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
 				BlockOwnerDeletion: &trueVal,
 			}))
 			Expect(masterSvc.OwnerReferences).To(ContainElement(metav1.OwnerReference{
-				APIVersion:         pytorchv1.SchemeGroupVersion.String(),
-				Kind:               pytorchv1.Kind,
+				APIVersion:         trainingv1.SchemeGroupVersion.String(),
+				Kind:               trainingv1.PyTorchKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
@@ -157,7 +158,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					return false
 				}
 				return created.Status.ReplicaStatuses != nil && created.Status.
-					ReplicaStatuses[pytorchv1.PyTorchReplicaTypeMaster].Succeeded == 1
+					ReplicaStatuses[trainingv1.PyTorchReplicaTypeMaster].Succeeded == 1
 			}, timeout, interval).Should(BeTrue())
 			// Check if the job is succeeded.
 			cond := getCondition(created.Status, commonv1.JobSucceeded)
@@ -172,7 +173,7 @@ var _ = Describe("PyTorchJob controller", func() {
 		It("Should get the corresponding resources successfully", func() {
 			// Define the expected elastic policy.
 			var (
-				backendC10D = pytorchv1.BackendC10D
+				backendC10D = trainingv1.BackendC10D
 				minReplicas = int32Ptr(1)
 				maxReplicas = int32Ptr(3)
 				maxRestarts = int32Ptr(3)
@@ -183,24 +184,24 @@ var _ = Describe("PyTorchJob controller", func() {
 			By("By creating a new PyTorchJob")
 			ctx := context.Background()
 			job := newPyTorchJobForTest(name, namespace)
-			job.Spec.ElasticPolicy = &pytorchv1.ElasticPolicy{
+			job.Spec.ElasticPolicy = &trainingv1.ElasticPolicy{
 				RDZVBackend: &backendC10D,
 				MaxReplicas: maxReplicas,
 				MinReplicas: minReplicas,
 				MaxRestarts: maxRestarts,
 			}
 			job.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				pytorchv1.PyTorchReplicaTypeWorker: {
+				trainingv1.PyTorchReplicaTypeWorker: {
 					Replicas: int32Ptr(1),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  pytorchv1.DefaultContainerName,
+									Name:  trainingv1.PyTorchDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          pytorchv1.DefaultPortName,
+											Name:          trainingv1.PyTorchDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -215,7 +216,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			key := types.NamespacedName{Name: name, Namespace: namespace}
-			created := &pytorchv1.PyTorchJob{}
+			created := &trainingv1.PyTorchJob{}
 
 			// We'll need to retry getting this newly created PyTorchJob, given that creation may not immediately happen.
 			Eventually(func() bool {
@@ -238,7 +239,7 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			// Check pod port.
 			Expect(pod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
-				Name:          pytorchv1.DefaultPortName,
+				Name:          trainingv1.PyTorchDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
 			// Check environment variables.
@@ -259,16 +260,16 @@ var _ = Describe("PyTorchJob controller", func() {
 			// Check owner references.
 			trueVal := true
 			Expect(pod.OwnerReferences).To(ContainElement(metav1.OwnerReference{
-				APIVersion:         pytorchv1.SchemeGroupVersion.String(),
-				Kind:               pytorchv1.Kind,
+				APIVersion:         trainingv1.SchemeGroupVersion.String(),
+				Kind:               trainingv1.PyTorchKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
 				BlockOwnerDeletion: &trueVal,
 			}))
 			Expect(svc.OwnerReferences).To(ContainElement(metav1.OwnerReference{
-				APIVersion:         pytorchv1.SchemeGroupVersion.String(),
-				Kind:               pytorchv1.Kind,
+				APIVersion:         trainingv1.SchemeGroupVersion.String(),
+				Kind:               trainingv1.PyTorchKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
@@ -285,7 +286,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					return false
 				}
 				return created.Status.ReplicaStatuses != nil && created.Status.
-					ReplicaStatuses[pytorchv1.PyTorchReplicaTypeWorker].Succeeded == 1
+					ReplicaStatuses[trainingv1.PyTorchReplicaTypeWorker].Succeeded == 1
 			}, timeout, interval).Should(BeTrue())
 			// Check if the job is succeeded.
 			cond := getCondition(created.Status, commonv1.JobSucceeded)
@@ -296,8 +297,8 @@ var _ = Describe("PyTorchJob controller", func() {
 	})
 })
 
-func newPyTorchJobForTest(name, namespace string) *pytorchv1.PyTorchJob {
-	return &pytorchv1.PyTorchJob{
+func newPyTorchJobForTest(name, namespace string) *trainingv1.PyTorchJob {
+	return &trainingv1.PyTorchJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,

@@ -20,7 +20,8 @@ import (
 	"strings"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +30,7 @@ import (
 // - XGBoost Rabit Tracker and worker
 // - LightGBM master and workers
 func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	xgboostjob, ok := job.(*xgboostv1.XGBoostJob)
+	xgboostjob, ok := job.(*trainingv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", xgboostjob)
 	}
@@ -40,15 +41,15 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	}
 
 	// Add master offset for worker pods
-	if strings.EqualFold(strings.ToLower(rtype), strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker))) {
-		masterSpec := xgboostjob.Spec.XGBReplicaSpecs[commonv1.ReplicaType(xgboostv1.XGBoostReplicaTypeMaster)]
+	if strings.EqualFold(strings.ToLower(rtype), strings.ToLower(string(trainingv1.XGBoostReplicaTypeWorker))) {
+		masterSpec := xgboostjob.Spec.XGBReplicaSpecs[commonv1.ReplicaType(trainingv1.XGBoostReplicaTypeMaster)]
 		masterReplicas := int(*masterSpec.Replicas)
 		rank += masterReplicas
 	}
 
-	masterAddr := computeMasterAddr(xgboostjob.Name, strings.ToLower(string(xgboostv1.XGBoostReplicaTypeMaster)), strconv.Itoa(0))
+	masterAddr := computeMasterAddr(xgboostjob.Name, strings.ToLower(string(trainingv1.XGBoostReplicaTypeMaster)), strconv.Itoa(0))
 
-	masterPort, err := getPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeMaster)
+	masterPort, err := getPortFromXGBoostJob(xgboostjob, trainingv1.XGBoostReplicaTypeMaster)
 	if err != nil {
 		return err
 	}
@@ -59,14 +60,14 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	var workerAddrs []string
 
 	if totalReplicas > 1 {
-		workerPortTemp, err := getPortFromXGBoostJob(xgboostjob, xgboostv1.XGBoostReplicaTypeWorker)
+		workerPortTemp, err := getPortFromXGBoostJob(xgboostjob, trainingv1.XGBoostReplicaTypeWorker)
 		if err != nil {
 			return err
 		}
 		workerPort = workerPortTemp
 		workerAddrs = make([]string, totalReplicas-1)
 		for i := range workerAddrs {
-			workerAddrs[i] = computeMasterAddr(xgboostjob.Name, strings.ToLower(string(xgboostv1.XGBoostReplicaTypeWorker)), strconv.Itoa(i))
+			workerAddrs[i] = computeMasterAddr(xgboostjob.Name, strings.ToLower(string(trainingv1.XGBoostReplicaTypeWorker)), strconv.Itoa(i))
 		}
 	}
 
@@ -116,13 +117,13 @@ func computeMasterAddr(jobName, rtype, index string) string {
 }
 
 // getPortFromXGBoostJob gets the port of xgboost container.
-func getPortFromXGBoostJob(job *xgboostv1.XGBoostJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromXGBoostJob(job *trainingv1.XGBoostJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.XGBReplicaSpecs[commonv1.ReplicaType(rtype)].Template.Spec.Containers
 	for _, container := range containers {
-		if container.Name == xgboostv1.DefaultContainerName {
+		if container.Name == trainingv1.XGBoostDefaultContainerName {
 			ports := container.Ports
 			for _, port := range ports {
-				if port.Name == xgboostv1.DefaultPortName {
+				if port.Name == trainingv1.XGBoostDefaultPortName {
 					return port.ContainerPort, nil
 				}
 			}
@@ -132,7 +133,7 @@ func getPortFromXGBoostJob(job *xgboostv1.XGBoostJob, rtype commonv1.ReplicaType
 }
 
 func computeTotalReplicas(obj metav1.Object) int32 {
-	job := obj.(*xgboostv1.XGBoostJob)
+	job := obj.(*trainingv1.XGBoostJob)
 	jobReplicas := int32(0)
 
 	if job.Spec.XGBReplicaSpecs == nil || len(job.Spec.XGBReplicaSpecs) == 0 {

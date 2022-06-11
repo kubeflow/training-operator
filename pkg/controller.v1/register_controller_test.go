@@ -15,8 +15,8 @@
 package controller_v1
 
 import (
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"testing"
 )
 
@@ -36,12 +36,12 @@ func TestEnabledSchemes(t *testing.T) {
 	} else {
 		stored := false
 		for _, kind := range testES {
-			if kind == tfv1.Kind {
+			if kind == trainingv1.TFKind {
 				stored = true
 			}
 		}
 		if !stored {
-			t.Errorf("%s not successfully registered", tfv1.Kind)
+			t.Errorf("%s not successfully registered", trainingv1.TFKind)
 		}
 	}
 
@@ -50,12 +50,12 @@ func TestEnabledSchemes(t *testing.T) {
 	} else {
 		stored := false
 		for _, kind := range testES {
-			if kind == mpiv1.Kind {
+			if kind == trainingv1.MPIKind {
 				stored = true
 			}
 		}
 		if !stored {
-			t.Errorf("%s not successfully registered", mpiv1.Kind)
+			t.Errorf("%s not successfully registered", trainingv1.MPIKind)
 		}
 	}
 

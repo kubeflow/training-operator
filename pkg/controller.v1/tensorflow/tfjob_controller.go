@@ -30,9 +30,11 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	train_util "github.com/kubeflow/common/pkg/util/train"
-	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	"github.com/kubeflow/training-operator/pkg/apis/tensorflow/validation"
+
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
+	"github.com/kubeflow/training-operator/pkg/apis/training/validation"
+
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
@@ -147,9 +149,9 @@ type TFJobReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(tensorflowv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues(trainingv1.TFSingular, req.NamespacedName)
 
-	tfjob := &tensorflowv1.TFJob{}
+	tfjob := &trainingv1.TFJob{}
 	err := r.Get(ctx, req.NamespacedName, tfjob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch TFJob", req.NamespacedName.String())
@@ -199,7 +201,7 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &tfv1.TFJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &trainingv1.TFJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -208,7 +210,7 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &tfv1.TFJob{},
+		OwnerType:    &trainingv1.TFJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -220,7 +222,7 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related service
 	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &tfv1.TFJob{},
+		OwnerType:    &trainingv1.TFJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -237,19 +239,19 @@ func (r *TFJobReconciler) ControllerName() string {
 }
 
 func (r *TFJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return tensorflowv1.GroupVersion.WithKind(tensorflowv1.Kind)
+	return trainingv1.GroupVersion.WithKind(trainingv1.TFKind)
 }
 
 func (r *TFJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return tensorflowv1.GroupVersion
+	return trainingv1.GroupVersion
 }
 
 func (r *TFJobReconciler) GetGroupNameLabelValue() string {
-	return tensorflowv1.GroupVersion.Group
+	return trainingv1.GroupVersion.Group
 }
 
 func (r *TFJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	tfjob := &tensorflowv1.TFJob{}
+	tfjob := &trainingv1.TFJob{}
 	err := r.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace, Name: name,
 	}, tfjob)
@@ -257,7 +259,7 @@ func (r *TFJobReconciler) GetJobFromInformerCache(namespace, name string) (metav
 }
 
 func (r *TFJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &tensorflowv1.TFJob{}
+	job := &trainingv1.TFJob{}
 
 	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -360,7 +362,7 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 }
 
 func (r *TFJobReconciler) DeleteJob(job interface{}) error {
-	tfJob, ok := job.(*tensorflowv1.TFJob)
+	tfJob, ok := job.(*trainingv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
@@ -374,12 +376,12 @@ func (r *TFJobReconciler) DeleteJob(job interface{}) error {
 
 	r.recorder.Eventf(tfJob, v1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", tfJob.Name)
 	log.Infof("job %s/%s has been deleted", tfJob.Namespace, tfJob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 	return nil
 }
 
 func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
-	tfJob, ok := job.(*tensorflowv1.TFJob)
+	tfJob, ok := job.(*trainingv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
@@ -411,11 +413,11 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 	}
 	// iterate the replica spec based on this order
 	allTypes := []commonv1.ReplicaType{
-		tensorflowv1.TFReplicaTypeChief,
-		tensorflowv1.TFReplicaTypeEval,
-		tensorflowv1.TFReplicaTypeMaster,
-		tensorflowv1.TFReplicaTypePS,
-		tensorflowv1.TFReplicaTypeWorker,
+		trainingv1.TFReplicaTypeChief,
+		trainingv1.TFReplicaTypeEval,
+		trainingv1.TFReplicaTypeMaster,
+		trainingv1.TFReplicaTypePS,
+		trainingv1.TFReplicaTypeWorker,
 	}
 	for _, rtype := range allTypes {
 		if replicas[rtype] == nil {
@@ -436,7 +438,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		// If the TFJob contains Chief or Master spec, then we will update the status
 		// according to the Chief/Master spec.
 		if ContainsChiefOrMasterSpec(tfJob.Spec.TFReplicaSpecs) {
-			if tensorflowv1.IsChieforMaster(rtype) {
+			if trainingv1.IsChieforMaster(rtype) {
 				if running > 0 {
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
 						tfJob.Namespace, tfJob.Name)
@@ -462,15 +464,15 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 				}
 			}
 		} else {
-			if rtype == tensorflowv1.TFReplicaTypeWorker {
+			if rtype == trainingv1.TFReplicaTypeWorker {
 				// Leave a succeeded condition for the following two cases:
 				// 1. If default success policy is used and worker 0 has completed.
 				// 2. If `SuccessPolicyAllWorkers` success policy is used and all workers are succeeded.
-				if expected == 0 || (worker0Completed && *tfJob.Spec.SuccessPolicy != tensorflowv1.SuccessPolicyAllWorkers) {
+				if expected == 0 || (worker0Completed && *tfJob.Spec.SuccessPolicy != trainingv1.SuccessPolicyAllWorkers) {
 					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
 						tfJob.Namespace, tfJob.Name)
 					r.recorder.Event(tfJob, corev1.EventTypeNormal, tfJobSucceededReason, msg)
@@ -484,7 +486,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
@@ -509,9 +511,9 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			if restart {
 				// job is restarting, no need to set it failed
 				// we know it because we update the status condition when reconciling the replicas
-				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 			} else {
-				if tfJob.Spec.EnableDynamicWorker && rtype == tensorflowv1.TFReplicaTypeWorker {
+				if tfJob.Spec.EnableDynamicWorker && rtype == trainingv1.TFReplicaTypeWorker {
 					commonutil.LoggerForJob(tfJob).Infof("TFJob %s/%s continues regardless %d Worker replica(s) failed as enableDynamicWorker is set true.",
 						tfJob.Namespace, tfJob.Name, failed)
 					continue
@@ -529,7 +531,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 			}
 		}
 	}
@@ -547,7 +549,7 @@ func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	tfJob, ok := job.(*tensorflowv1.TFJob)
+	tfJob, ok := job.(*trainingv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
@@ -577,7 +579,7 @@ func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 
 // Same as Func (tc *TFController) SetClusterSpec(...) in pod.go
 func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
-	tfjob, ok := job.(*tensorflowv1.TFJob)
+	tfjob, ok := job.(*trainingv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfjob)
 	}
@@ -597,7 +599,7 @@ func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 	}
 	// Add TF_CONFIG environment variable to tensorflow container in the pod.
 	for i := range podTemplate.Spec.Containers {
-		if podTemplate.Spec.Containers[i].Name == tensorflowv1.DefaultContainerName {
+		if podTemplate.Spec.Containers[i].Name == trainingv1.TFDefaultContainerName {
 			if len(podTemplate.Spec.Containers[i].Env) == 0 {
 				podTemplate.Spec.Containers[i].Env = make([]corev1.EnvVar, 0)
 			}
@@ -612,30 +614,30 @@ func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 }
 
 func (r *TFJobReconciler) GetDefaultContainerName() string {
-	return tensorflowv1.DefaultContainerName
+	return trainingv1.TFDefaultContainerName
 }
 
 func (r *TFJobReconciler) GetDefaultContainerPortName() string {
-	return tensorflowv1.DefaultPortName
+	return trainingv1.TFDefaultPortName
 }
 
 func (r *TFJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
 	if ContainsChiefOrMasterSpec(replicas) {
-		return rtype == tensorflowv1.TFReplicaTypeChief || rtype == tensorflowv1.TFReplicaTypeMaster
+		return rtype == trainingv1.TFReplicaTypeChief || rtype == trainingv1.TFReplicaTypeMaster
 	}
 	// else check if it is worker with index 0
-	return rtype == tensorflowv1.TFReplicaTypeWorker && index == 0
+	return rtype == trainingv1.TFReplicaTypeWorker && index == 0
 }
 
 // IsWorker0Completed returns true if pod of worker0 succeeded and exited with 0
-func (r *TFJobReconciler) IsWorker0Completed(tfjob *tensorflowv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
+func (r *TFJobReconciler) IsWorker0Completed(tfjob *trainingv1.TFJob, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) (bool, error) {
 	worker0Completed := false
-	_, ok := replicas[tensorflowv1.TFReplicaTypeWorker]
+	_, ok := replicas[trainingv1.TFReplicaTypeWorker]
 	if !ok {
 		return true, nil
 	}
-	podSlices, err := r.getPodSlices(tfjob, replicas[tensorflowv1.TFReplicaTypeWorker].Replicas)
+	podSlices, err := r.getPodSlices(tfjob, replicas[trainingv1.TFReplicaTypeWorker].Replicas)
 	if err != nil {
 		return false, err
 	}
@@ -653,8 +655,8 @@ func (r *TFJobReconciler) IsWorker0Completed(tfjob *tensorflowv1.TFJob, replicas
 
 // getPodSlices returns a slice, which element is the slice of pod.
 // It gives enough information to caller to make decision to up/down scale resources.
-func (r *TFJobReconciler) getPodSlices(tfjob *tensorflowv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
-	logger := commonutil.LoggerForReplica(tfjob, strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker)))
+func (r *TFJobReconciler) getPodSlices(tfjob *trainingv1.TFJob, replicasNum *int32) ([][]*v1.Pod, error) {
+	logger := commonutil.LoggerForReplica(tfjob, strings.ToLower(string(trainingv1.TFReplicaTypeWorker)))
 
 	pods, err := r.GetPodsForJob(tfjob)
 	if err != nil {
@@ -663,7 +665,7 @@ func (r *TFJobReconciler) getPodSlices(tfjob *tensorflowv1.TFJob, replicasNum *i
 	}
 
 	// Get all pods for the type rt.
-	pods, err = r.JobController.FilterPodsForReplicaType(pods, strings.ToLower(string(tensorflowv1.TFReplicaTypeWorker)))
+	pods, err = r.JobController.FilterPodsForReplicaType(pods, strings.ToLower(string(trainingv1.TFReplicaTypeWorker)))
 	if err != nil {
 		return nil, err
 	}
@@ -685,7 +687,7 @@ func (r *TFJobReconciler) ReconcilePods(
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 ) error {
 
-	tfJob, ok := job.(*tfv1.TFJob)
+	tfJob, ok := job.(*trainingv1.TFJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", tfJob)
 	}
@@ -764,7 +766,7 @@ func (r *TFJobReconciler) ReconcilePods(
 						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+					trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 				}
 			}
 
@@ -775,7 +777,7 @@ func (r *TFJobReconciler) ReconcilePods(
 }
 
 // createNewPod creates a new pod for the given index and type.
-func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
+func (r *TFJobReconciler) createNewPod(tfjob *trainingv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 
 	tfjobKey, err := common.KeyFunc(tfjob)
@@ -873,7 +875,7 @@ func (r *TFJobReconciler) createNewPod(tfjob *tfv1.TFJob, rt, index string, spec
 // onOwnerCreateFunc modify creation condition.
 func (r *TFJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		tfJob, ok := e.Object.(*tensorflowv1.TFJob)
+		tfJob, ok := e.Object.(*trainingv1.TFJob)
 		if !ok {
 			return true
 		}
@@ -881,7 +883,7 @@ func (r *TFJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		r.Scheme.Default(tfJob)
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(tfJob.Namespace, tensorflowv1.FrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(tfJob.Namespace, trainingv1.TFFrameworkName)
 		if err := commonutil.UpdateJobConditions(&tfJob.Status, commonv1.JobCreated, "TFJobCreated", msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

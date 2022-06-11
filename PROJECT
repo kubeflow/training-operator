@@ -9,7 +9,7 @@ resources:
   controller: true
   group: kubeflow.org
   kind: XGBoostJob
-  path: github.com/kubeflow/training-operator/pkg/apis/xgboost/v1
+  path: github.com/kubeflow/training-operator/pkg/apis/training/v1
   version: v1
 - api:
     crdVersion: v1
@@ -17,7 +17,7 @@ resources:
   controller: true
   group: kubeflow.org
   kind: PyTorchJob
-  path: github.com/kubeflow/training-operator/pkg/apis/pytorch/v1
+  path: github.com/kubeflow/training-operator/pkg/apis/training/v1
   version: v1
 - api:
     crdVersion: v1
@@ -25,7 +25,7 @@ resources:
   controller: true
   group: kubeflow.org
   kind: TFJob
-  path: github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1
+  path: github.com/kubeflow/training-operator/pkg/apis/training/v1
   version: v1
 - api:
     crdVersion: v1
@@ -33,6 +33,6 @@ resources:
   controller: true
   group: kubeflow.org
   kind: MXJob
-  path: github.com/kubeflow/training-operator/pkg/apis/mxnet/v1
+  path: github.com/kubeflow/training-operator/pkg/apis/training/v1
   version: v1
 version: "3"

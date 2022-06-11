@@ -29,38 +29,11 @@ CRD_REF_GEN_VERSION=v0.0.8
 go get -u github.com/elastic/crd-ref-docs@${CRD_REF_GEN_VERSION}
 
 crd-ref-docs --log-level DEBUG\
-    --source-path ./pkg/apis/tensorflow/v1 \
+    --source-path ./pkg/apis/training/v1 \
 		--config ./docs/api/autogen/config.yaml \
 		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/tensorflow_generated.asciidoc \
+		--output-path ./docs/api/training_generated.asciidoc \
 		--max-depth 30
 
-crd-ref-docs --log-level DEBUG\
-    --source-path ./pkg/apis/pytorch/v1 \
-		--config ./docs/api/autogen/config.yaml \
-		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/pytorch_generated.asciidoc \
-		--max-depth 30
-
-crd-ref-docs --log-level DEBUG\
-    --source-path ./pkg/apis/mxnet/v1 \
-		--config ./docs/api/autogen/config.yaml \
-		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/mxnet_generated.asciidoc \
-		--max-depth 30
-
-crd-ref-docs --log-level DEBUG\
-    --source-path ./pkg/apis/xgboost/v1 \
-		--config ./docs/api/autogen/config.yaml \
-		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/xgboost_generated.asciidoc \
-		--max-depth 30
-
-crd-ref-docs --log-level DEBUG\
-    --source-path ./pkg/apis/mpi/v1 \
-		--config ./docs/api/autogen/config.yaml \
-		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/mpi_generated.asciidoc \
-		--max-depth 30
 
 cd - > /dev/null

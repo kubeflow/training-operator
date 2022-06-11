@@ -55,8 +55,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	"github.com/kubeflow/training-operator/pkg/apis/mpi/validation"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
+	"github.com/kubeflow/training-operator/pkg/apis/training/validation"
+
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	ctlrconfig "github.com/kubeflow/training-operator/pkg/config"
 )
@@ -123,9 +125,9 @@ type MPIJobReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := jc.Log.WithValues(mpiv1.Singular, req.NamespacedName)
+	logger := jc.Log.WithValues(trainingv1.MPISingular, req.NamespacedName)
 
-	mpijob := &mpiv1.MPIJob{}
+	mpijob := &trainingv1.MPIJob{}
 	err := jc.Get(ctx, req.NamespacedName, mpijob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch MPIJob", req.NamespacedName.String())
@@ -177,7 +179,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &mpiv1.MPIJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &trainingv1.MPIJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: jc.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -186,7 +188,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mpiv1.MPIJob{},
+		OwnerType:    &trainingv1.MPIJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(jc.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&jc.JobController),
@@ -205,7 +207,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related ConfigMap
 	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mpiv1.MPIJob{},
+		OwnerType:    &trainingv1.MPIJob{},
 	}, predicates); err != nil {
 		return err
 	}
@@ -213,7 +215,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related Role
 	if err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mpiv1.MPIJob{},
+		OwnerType:    &trainingv1.MPIJob{},
 	}, predicates); err != nil {
 		return err
 	}
@@ -221,7 +223,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related RoleBinding
 	if err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mpiv1.MPIJob{},
+		OwnerType:    &trainingv1.MPIJob{},
 	}, predicates); err != nil {
 		return err
 	}
@@ -229,7 +231,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related ServiceAccount
 	if err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mpiv1.MPIJob{},
+		OwnerType:    &trainingv1.MPIJob{},
 	}, predicates); err != nil {
 		return err
 	}
@@ -265,15 +267,15 @@ func (jc *MPIJobReconciler) GenLabels(jobName string) map[string]string {
 }
 
 func (jc *MPIJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mpiv1.GroupVersion.WithKind(mpiv1.Kind)
+	return trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)
 }
 
 func (jc *MPIJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return mpiv1.GroupVersion
+	return trainingv1.GroupVersion
 }
 
 func (jc *MPIJobReconciler) GetGroupNameLabelValue() string {
-	return mpiv1.GroupVersion.Group
+	return trainingv1.GroupVersion.Group
 }
 
 // SetClusterSpec is overridden because no cluster spec is needed for MPIJob
@@ -282,20 +284,20 @@ func (jc *MPIJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.
 }
 
 func (jc *MPIJobReconciler) GetDefaultContainerName() string {
-	return mpiv1.DefaultContainerName
+	return trainingv1.MPIDefaultContainerName
 }
 
 func (jc *MPIJobReconciler) GetDefaultContainerPortName() string {
-	return mpiv1.DefaultPortName
+	return trainingv1.MPIDefaultPortName
 }
 
 func (jc *MPIJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return string(rtype) == string(mpiv1.MPIReplicaTypeLauncher)
+	return string(rtype) == string(trainingv1.MPIReplicaTypeLauncher)
 }
 
 func (jc *MPIJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	mpijob := &mpiv1.MPIJob{}
+	mpijob := &trainingv1.MPIJob{}
 	err := jc.Get(context.Background(), types.NamespacedName{
 		Namespace: namespace, Name: name,
 	}, mpijob)
@@ -305,7 +307,7 @@ func (jc *MPIJobReconciler) GetJobFromInformerCache(namespace, name string) (met
 // onOwnerCreateFunc modify creation condition.
 func (jc *MPIJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		mpiJob, ok := e.Object.(*mpiv1.MPIJob)
+		mpiJob, ok := e.Object.(*trainingv1.MPIJob)
 		if !ok {
 			return true
 		}
@@ -313,7 +315,7 @@ func (jc *MPIJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		jc.Scheme.Default(mpiJob)
 		msg := fmt.Sprintf("MPIJob %s/%s is created.", mpiJob.Namespace, e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, trainingv1.MPIFrameworkName)
 		if err := commonutil.UpdateJobConditions(&mpiJob.Status, commonv1.JobCreated, mpiJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false
@@ -331,7 +333,7 @@ func (jc *MPIJobReconciler) ReconcilePods(
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 ) error {
 
-	mpiJob, ok := job.(*mpiv1.MPIJob)
+	mpiJob, ok := job.(*trainingv1.MPIJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MPIJob", mpiJob)
 	}
@@ -355,7 +357,7 @@ func (jc *MPIJobReconciler) ReconcilePods(
 	done := launcher != nil && isPodFinished(launcher)
 
 	if !done {
-		workerSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeWorker]
+		workerSpec := mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeWorker]
 		workerReplicas := int32(0)
 		if workerSpec != nil && workerSpec.Replicas != nil {
 			workerReplicas = *workerSpec.Replicas
@@ -407,11 +409,11 @@ func (jc *MPIJobReconciler) ReconcilePods(
 	return nil
 }
 
-func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *corev1.Pod, worker []*corev1.Pod) error {
+func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *trainingv1.MPIJob, launcher *corev1.Pod, worker []*corev1.Pod) error {
 	if launcher != nil {
-		initializeMPIJobStatuses(mpiJob, mpiv1.MPIReplicaTypeLauncher)
+		initializeMPIJobStatuses(mpiJob, trainingv1.MPIReplicaTypeLauncher)
 		if isPodSucceeded(launcher) {
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeLauncher].Succeeded = 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeLauncher].Succeeded = 1
 			msg := fmt.Sprintf("MPIJob %s/%s successfully completed.", mpiJob.Namespace, mpiJob.Name)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, mpiJobSucceededReason, msg)
 			if mpiJob.Status.CompletionTime == nil {
@@ -423,7 +425,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 				return err
 			}
 		} else if isPodFailed(launcher) {
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeLauncher].Failed = 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeLauncher].Failed = 1
 			msg := fmt.Sprintf("MPIJob %s/%s has failed", mpiJob.Namespace, mpiJob.Name)
 			reason := launcher.Status.Reason
 			if reason == "" {
@@ -443,7 +445,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 			}
 
 		} else if isPodRunning(launcher) {
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeLauncher].Active = 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeLauncher].Active = 1
 		}
 	}
 
@@ -452,19 +454,19 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 		evict   = 0
 	)
 
-	initializeMPIJobStatuses(mpiJob, mpiv1.MPIReplicaTypeWorker)
+	initializeMPIJobStatuses(mpiJob, trainingv1.MPIReplicaTypeWorker)
 	for i := 0; i < len(worker); i++ {
 		switch worker[i].Status.Phase {
 		case corev1.PodFailed:
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeWorker].Failed += 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeWorker].Failed += 1
 			if worker[i].Status.Reason == "Evicted" {
 				evict += 1
 			}
 		case corev1.PodSucceeded:
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeWorker].Succeeded += 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeWorker].Succeeded += 1
 		case corev1.PodRunning:
 			running += 1
-			mpiJob.Status.ReplicaStatuses[mpiv1.MPIReplicaTypeWorker].Active += 1
+			mpiJob.Status.ReplicaStatuses[trainingv1.MPIReplicaTypeWorker].Active += 1
 		}
 	}
 	if evict > 0 {
@@ -487,7 +489,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *mpiv1.MPIJob, launcher *c
 }
 
 func (jc *MPIJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &mpiv1.MPIJob{}
+	job := &trainingv1.MPIJob{}
 
 	err := jc.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -535,7 +537,7 @@ func (jc *MPIJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod,
 }
 
 func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
-	mpiJob, ok := job.(*mpiv1.MPIJob)
+	mpiJob, ok := job.(*trainingv1.MPIJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of TFJob", mpiJob)
 	}
@@ -549,7 +551,7 @@ func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
 
 	jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", mpiJob.Name)
 	log.Infof("job %s/%s has been deleted", mpiJob.Namespace, mpiJob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(mpiJob.Namespace, trainingv1.MPIFrameworkName)
 	return nil
 }
 
@@ -561,7 +563,7 @@ func (jc *MPIJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.
 }
 
 func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
-	mpiJob, ok := job.(*mpiv1.MPIJob)
+	mpiJob, ok := job.(*trainingv1.MPIJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of MPIJob", job)
 	}
@@ -577,7 +579,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 		logrus.Infof("MPIJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			mpiJob.Name, rtype, expected, running, succeeded, failed)
 
-		if rtype == mpiv1.MPIReplicaTypeLauncher {
+		if rtype == trainingv1.MPIReplicaTypeLauncher {
 			if running > 0 {
 				msg := fmt.Sprintf("MPIJob %s is running.", mpiJob.Name)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
@@ -600,7 +602,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+				trainingoperatorcommon.SuccessfulJobsCounterInc(mpiJob.Namespace, trainingv1.MPIFrameworkName)
 				return nil
 			}
 		}
@@ -613,7 +615,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, trainingv1.MPIFrameworkName)
 			} else {
 				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
 				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
@@ -626,7 +628,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(mpiJob.Namespace, mpiv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(mpiJob.Namespace, trainingv1.MPIFrameworkName)
 			}
 		}
 	}
@@ -648,7 +650,7 @@ func (jc *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatu
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	mpiJob, ok := job.(*mpiv1.MPIJob)
+	mpiJob, ok := job.(*trainingv1.MPIJob)
 	trainingoperatorcommon.ClearGeneratedFields(&mpiJob.ObjectMeta)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MpiJob", mpiJob)
@@ -678,7 +680,7 @@ func (jc *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatu
 }
 
 // getLauncherJob gets the launcher Job controlled by this MPIJob.
-func (jc *MPIJobReconciler) getLauncherJob(mpiJob *mpiv1.MPIJob) (*corev1.Pod, error) {
+func (jc *MPIJobReconciler) getLauncherJob(mpiJob *trainingv1.MPIJob) (*corev1.Pod, error) {
 	launcher := &corev1.Pod{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
 	err := jc.Get(context.Background(), NamespacedName, launcher)
@@ -704,7 +706,7 @@ func (jc *MPIJobReconciler) getLauncherJob(mpiJob *mpiv1.MPIJob) (*corev1.Pod, e
 
 // getOrCreateConfigMap gets the ConfigMap controlled by this MPIJob, or creates
 // one if it doesn't exist.
-func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *mpiv1.MPIJob, workerReplicas int32, isGPULauncher bool) (*corev1.ConfigMap, error) {
+func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *trainingv1.MPIJob, workerReplicas int32, isGPULauncher bool) (*corev1.ConfigMap, error) {
 	newCM := newConfigMap(mpiJob, workerReplicas, isGPULauncher)
 	podList, err := jc.getRunningWorkerPods(mpiJob)
 	if err != nil {
@@ -748,7 +750,7 @@ func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *mpiv1.MPIJob, workerRep
 
 // getOrCreateLauncherServiceAccount gets the launcher ServiceAccount controlled
 // by this MPIJob, or creates one if it doesn't exist.
-func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *mpiv1.MPIJob) (*corev1.ServiceAccount, error) {
+func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *trainingv1.MPIJob) (*corev1.ServiceAccount, error) {
 
 	sa := &corev1.ServiceAccount{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
@@ -779,7 +781,7 @@ func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *mpiv1.MPIJ
 }
 
 // getOrCreateLauncherRole gets the launcher Role controlled by this MPIJob.
-func (jc *MPIJobReconciler) getOrCreateLauncherRole(mpiJob *mpiv1.MPIJob, workerReplicas int32) (*rbacv1.Role, error) {
+func (jc *MPIJobReconciler) getOrCreateLauncherRole(mpiJob *trainingv1.MPIJob, workerReplicas int32) (*rbacv1.Role, error) {
 	role := &rbacv1.Role{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
 	err := jc.Get(context.Background(), NamespacedName, role)
@@ -819,7 +821,7 @@ func (jc *MPIJobReconciler) getOrCreateLauncherRole(mpiJob *mpiv1.MPIJob, worker
 
 // getLauncherRoleBinding gets the launcher RoleBinding controlled by this
 // MPIJob, or creates one if it doesn't exist.
-func (jc *MPIJobReconciler) getLauncherRoleBinding(mpiJob *mpiv1.MPIJob) (*rbacv1.RoleBinding, error) {
+func (jc *MPIJobReconciler) getLauncherRoleBinding(mpiJob *trainingv1.MPIJob) (*rbacv1.RoleBinding, error) {
 	rb := &rbacv1.RoleBinding{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
 	err := jc.Get(context.Background(), NamespacedName, rb)
@@ -851,14 +853,14 @@ func (jc *MPIJobReconciler) getLauncherRoleBinding(mpiJob *mpiv1.MPIJob) (*rbacv
 
 // getOrCreateWorker gets the worker Pod controlled by this
 // MPIJob, or creates one if it doesn't exist.
-func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *mpiv1.MPIJob) ([]*corev1.Pod, error) {
+func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *trainingv1.MPIJob) ([]*corev1.Pod, error) {
 	var (
 		workerPrefix   string        = mpiJob.Name + workerSuffix
 		workerPods     []*corev1.Pod = []*corev1.Pod{}
 		i              int32         = 0
 		workerReplicas *int32
 	)
-	if worker, ok := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeWorker]; ok && worker != nil {
+	if worker, ok := mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeWorker]; ok && worker != nil {
 		workerReplicas = worker.Replicas
 	} else {
 		return workerPods, nil
@@ -944,11 +946,11 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *mpiv1.MPIJob) ([]*corev1.P
 // newWorker creates a new worker Pod for an MPIJob resource. It also
 // sets the appropriate OwnerReferences on the resource so handleObject can
 // discover the MPIJob resource that 'owns' it.
-func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1.Pod {
+func (jc *MPIJobReconciler) newWorker(mpiJob *trainingv1.MPIJob, name string) *corev1.Pod {
 	genericLabels := jc.GenLabels(mpiJob.GetName())
 	labels := defaultWorkerLabels(genericLabels)
 
-	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeWorker].Template.DeepCopy()
+	podSpec := mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeWorker].Template.DeepCopy()
 
 	// keep the labels which are set in PodTemplate
 	if len(podSpec.Labels) == 0 {
@@ -958,8 +960,8 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 	for key, value := range labels {
 		podSpec.Labels[key] = value
 	}
-	setRestartPolicy(podSpec, mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeWorker])
-	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(mpiv1.MPIReplicaTypeLauncher)))
+	setRestartPolicy(podSpec, mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeWorker])
+	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(trainingv1.MPIReplicaTypeLauncher)))
 	if len(podSpec.Spec.Containers) == 0 {
 		klog.Errorln("Worker pod does not have any containers in its spec")
 		return nil
@@ -1013,7 +1015,7 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 			podSpec.Annotations = map[string]string{}
 		}
 		podSpec.Annotations[gangSchedulingPodGroupAnnotation] = mpiJob.GetName()
-		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(mpiv1.MPIReplicaTypeWorker))
+		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(trainingv1.MPIReplicaTypeWorker))
 	}
 
 	return &corev1.Pod{
@@ -1023,7 +1025,7 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 			Labels:      podSpec.Labels,
 			Annotations: podSpec.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 		Spec: podSpec.Spec,
@@ -1033,17 +1035,17 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *mpiv1.MPIJob, name string) *corev1
 // newLauncher creates a new launcher Job for an MPIJob resource. It also sets
 // the appropriate OwnerReferences on the resource so handleObject can discover
 // the MPIJob resource that 'owns' it.
-func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryImage string, isGPULauncher bool) *corev1.Pod {
+func (jc *MPIJobReconciler) newLauncher(mpiJob *trainingv1.MPIJob, kubectlDeliveryImage string, isGPULauncher bool) *corev1.Pod {
 	launcherName := mpiJob.Name + launcherSuffix
 
 	genericLabels := jc.GenLabels(mpiJob.GetName())
 	labels := defaultLauncherLabels(genericLabels)
 
-	masterRole := jc.IsMasterRole(mpiJob.Spec.MPIReplicaSpecs, mpiv1.MPIReplicaTypeLauncher, 0)
+	masterRole := jc.IsMasterRole(mpiJob.Spec.MPIReplicaSpecs, trainingv1.MPIReplicaTypeLauncher, 0)
 	if masterRole {
 		labels[commonv1.JobRoleLabel] = "master"
 	}
-	podSpec := mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher].Template.DeepCopy()
+	podSpec := mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeLauncher].Template.DeepCopy()
 	// copy the labels and annotations to pod from PodTemplate
 	if len(podSpec.Labels) == 0 {
 		podSpec.Labels = make(map[string]string)
@@ -1052,7 +1054,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 		podSpec.Labels[key] = value
 	}
 
-	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(mpiv1.MPIReplicaTypeLauncher)))
+	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(trainingv1.MPIReplicaTypeLauncher)))
 	// add SchedulerName to podSpec
 	if jc.Config.EnableGangScheduling {
 		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
@@ -1067,7 +1069,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 			podSpec.Annotations = map[string]string{}
 		}
 		podSpec.Annotations[gangSchedulingPodGroupAnnotation] = mpiJob.GetName()
-		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(mpiv1.MPIReplicaTypeLauncher))
+		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(trainingv1.MPIReplicaTypeLauncher))
 	}
 
 	podSpec.Spec.ServiceAccountName = launcherName
@@ -1159,7 +1161,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 		klog.Warning(errMsg)
 		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, podTemplateRestartPolicyReason, errMsg)
 	}
-	setRestartPolicy(podSpec, mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher])
+	setRestartPolicy(podSpec, mpiJob.Spec.MPIReplicaSpecs[trainingv1.MPIReplicaTypeLauncher])
 
 	scriptsMode := int32(0555)
 	hostfileMode := int32(0444)
@@ -1204,7 +1206,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 			Labels:      podSpec.Labels,
 			Annotations: podSpec.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 		Spec: podSpec.Spec,
@@ -1212,7 +1214,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *mpiv1.MPIJob, kubectlDeliveryIma
 }
 
 // getRunningWorkerPods get all worker Pods with Running phase controlled by this MPIJob.
-func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *mpiv1.MPIJob) ([]*corev1.Pod, error) {
+func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *trainingv1.MPIJob) ([]*corev1.Pod, error) {
 	genericLabels := jc.GenLabels(mpiJob.GetName())
 	selector, err := workerSelector(genericLabels)
 	if err != nil {
@@ -1243,7 +1245,7 @@ func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *mpiv1.MPIJob) ([]*corev
 // newConfigMap creates a new ConfigMap containing configurations for an MPIJob
 // resource. It also sets the appropriate OwnerReferences on the resource so
 // handleObject can discover the MPIJob resource that 'owns' it.
-func newConfigMap(mpiJob *mpiv1.MPIJob, workerReplicas int32, isGPULauncher bool) *corev1.ConfigMap {
+func newConfigMap(mpiJob *trainingv1.MPIJob, workerReplicas int32, isGPULauncher bool) *corev1.ConfigMap {
 	kubexec := fmt.Sprintf(`#!/bin/sh
 set -x
 POD_NAME=$1
@@ -1275,7 +1277,7 @@ shift
 				"app": mpiJob.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 		Data: map[string]string{
@@ -1286,7 +1288,7 @@ shift
 }
 
 // updateDiscoverHostsInConfigMap updates the ConfigMap if the content of `discover_hosts.sh` changes.
-func updateDiscoverHostsInConfigMap(configMap *corev1.ConfigMap, mpiJob *mpiv1.MPIJob, runningPods []*corev1.Pod, isGPULauncher bool) {
+func updateDiscoverHostsInConfigMap(configMap *corev1.ConfigMap, mpiJob *trainingv1.MPIJob, runningPods []*corev1.Pod, isGPULauncher bool) {
 	slots := 1
 	if mpiJob.Spec.SlotsPerWorker != nil {
 		slots = int(*mpiJob.Spec.SlotsPerWorker)
@@ -1317,7 +1319,7 @@ func updateDiscoverHostsInConfigMap(configMap *corev1.ConfigMap, mpiJob *mpiv1.M
 // newLauncherServiceAccount creates a new launcher ServiceAccount for an MPIJob
 // resource. It also sets the appropriate OwnerReferences on the resource so
 // handleObject can discover the MPIJob resource that 'owns' it.
-func newLauncherServiceAccount(mpiJob *mpiv1.MPIJob) *corev1.ServiceAccount {
+func newLauncherServiceAccount(mpiJob *trainingv1.MPIJob) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mpiJob.Name + launcherSuffix,
@@ -1326,7 +1328,7 @@ func newLauncherServiceAccount(mpiJob *mpiv1.MPIJob) *corev1.ServiceAccount {
 				"app": mpiJob.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.SchemeGroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 	}
@@ -1335,7 +1337,7 @@ func newLauncherServiceAccount(mpiJob *mpiv1.MPIJob) *corev1.ServiceAccount {
 // newLauncherRole creates a new launcher Role for an MPIJob resource. It also
 // sets the appropriate OwnerReferences on the resource so handleObject can
 // discover the MPIJob resource that 'owns' it.
-func newLauncherRole(mpiJob *mpiv1.MPIJob, workerReplicas int32) *rbacv1.Role {
+func newLauncherRole(mpiJob *trainingv1.MPIJob, workerReplicas int32) *rbacv1.Role {
 	var podNames []string
 	for i := 0; i < int(workerReplicas); i++ {
 		podNames = append(podNames, fmt.Sprintf("%s%s-%d", mpiJob.Name, workerSuffix, i))
@@ -1348,7 +1350,7 @@ func newLauncherRole(mpiJob *mpiv1.MPIJob, workerReplicas int32) *rbacv1.Role {
 				"app": mpiJob.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -1370,7 +1372,7 @@ func newLauncherRole(mpiJob *mpiv1.MPIJob, workerReplicas int32) *rbacv1.Role {
 // newLauncherRoleBinding creates a new launcher RoleBinding for an MPIJob
 // resource. It also sets the appropriate OwnerReferences on the resource so
 // handleObject can discover the MPIJob resource that 'owns' it.
-func newLauncherRoleBinding(mpiJob *mpiv1.MPIJob) *rbacv1.RoleBinding {
+func newLauncherRoleBinding(mpiJob *trainingv1.MPIJob) *rbacv1.RoleBinding {
 	launcherName := mpiJob.Name + launcherSuffix
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1380,7 +1382,7 @@ func newLauncherRoleBinding(mpiJob *mpiv1.MPIJob) *rbacv1.RoleBinding {
 				"app": mpiJob.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(mpiJob, mpiv1.SchemeGroupVersionKind),
+				*metav1.NewControllerRef(mpiJob, trainingv1.GroupVersion.WithKind(trainingv1.MPIKind)),
 			},
 		},
 		Subjects: []rbacv1.Subject{

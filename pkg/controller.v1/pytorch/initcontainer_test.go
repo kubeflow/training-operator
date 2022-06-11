@@ -23,7 +23,8 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"github.com/kubeflow/training-operator/pkg/config"
 )
 
@@ -35,59 +36,59 @@ func TestInitContainer(t *testing.T) {
 	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
 
 	testCases := []struct {
-		job         *pytorchv1.PyTorchJob
+		job         *trainingv1.PyTorchJob
 		rtype       commonv1.ReplicaType
 		index       string
 		expected    int
 		exepctedErr error
 	}{
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &trainingv1.PyTorchJob{
+				Spec: trainingv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
+						trainingv1.PyTorchReplicaTypeWorker: {
 							Replicas: int32Ptr(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeWorker,
+			rtype:       trainingv1.PyTorchReplicaTypeWorker,
 			index:       "0",
 			expected:    0,
 			exepctedErr: nil,
 		},
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &trainingv1.PyTorchJob{
+				Spec: trainingv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
+						trainingv1.PyTorchReplicaTypeWorker: {
 							Replicas: int32Ptr(1),
 						},
-						pytorchv1.PyTorchReplicaTypeMaster: {
+						trainingv1.PyTorchReplicaTypeMaster: {
 							Replicas: int32Ptr(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeWorker,
+			rtype:       trainingv1.PyTorchReplicaTypeWorker,
 			index:       "0",
 			expected:    1,
 			exepctedErr: nil,
 		},
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &trainingv1.PyTorchJob{
+				Spec: trainingv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
+						trainingv1.PyTorchReplicaTypeWorker: {
 							Replicas: int32Ptr(1),
 						},
-						pytorchv1.PyTorchReplicaTypeMaster: {
+						trainingv1.PyTorchReplicaTypeMaster: {
 							Replicas: int32Ptr(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeMaster,
+			rtype:       trainingv1.PyTorchReplicaTypeMaster,
 			index:       "0",
 			expected:    0,
 			exepctedErr: nil,

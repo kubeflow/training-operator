@@ -12,11 +12,11 @@ run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost/MPI j
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
-  - [TensorFlow API Definition](pkg/apis/tensorflow/v1/types.go)
-  - [PyTorch API Definition](pkg/apis/pytorch/v1/types.go)
-  - [Apache MXNet API Definition](pkg/apis/mxnet/v1/types.go)
-  - [XGBoost API Definition](pkg/apis/xgboost/v1/types.go)
-  - [MPI API Definition](pkg/apis/mpi/v1/types.go)
+  - [TensorFlow API Definition](pkg/apis/traning/v1/tensorflow_types.go)
+  - [PyTorch API Definition](pkg/apis/training/v1/pytorch_types.go)
+  - [Apache MXNet API Definition](pkg/apis/training/v1/mxnet_types.go)
+  - [XGBoost API Definition](pkg/apis/training/v1/xgboost_types.go)
+  - [MPI API Definition](pkg/apis/training/v1/mpi_types.go)
 - For details on API design, please refer to the [v1alpha2 design doc](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 - For details of all-in-one operator design, please refer to the [All-in-one Kubeflow Training Operator](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit#heading=h.e33ufidnl8z6)
 - For details on its observability, please refer to the [monitoring design doc](docs/monitoring/README.md).
@@ -67,11 +67,7 @@ Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow Tr
 
 Please refer to following API Documentation:
 
-- [TensorFlow API Documentation](docs/api/tensorflow_generated.asciidoc)
-- [PyTorch API Documentation](docs/api/pytorch_generated.asciidoc)
-- [Apache MXNet API Documentation](docs/api/mxnet_generated.asciidoc)
-- [XGBoost API Documentation](docs/api/xgboost_generated.asciidoc)
-- [MPI API Documentation](docs/api/mpi_generated.asciidoc)
+- [API Documentation](docs/api/training_generated.asciidoc)
 
 ## Community
 

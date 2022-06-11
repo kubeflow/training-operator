@@ -28,7 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"github.com/kubeflow/training-operator/pkg/config"
 )
 
@@ -101,27 +102,27 @@ func getInitContainerTemplateOrDefault(file string) string {
 
 func setInitContainer(obj interface{}, podTemplate *v1.PodTemplateSpec,
 	rtype, index string, log logr.Logger) error {
-	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
+	pytorchjob, ok := obj.(*trainingv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
-	logger := log.WithValues(pytorchv1.Singular, types.NamespacedName{
+	logger := log.WithValues(trainingv1.PyTorchSingular, types.NamespacedName{
 		Namespace: pytorchjob.Namespace,
 		Name:      pytorchjob.Name,
 	})
 
 	// There is no need to set init container if no master is specified.
-	if pytorchjob.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeMaster] == nil {
+	if pytorchjob.Spec.PyTorchReplicaSpecs[trainingv1.PyTorchReplicaTypeMaster] == nil {
 		logger.V(1).Info("No master is specified, skip setting init container")
 		return nil
 	}
 
 	// Set the init container only if the master is specified and the current
 	// rtype is worker.
-	if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeWorker)) {
+	if rtype == strings.ToLower(string(trainingv1.PyTorchReplicaTypeWorker)) {
 		g := getInitContainerGenerator()
 		initContainers, err := g.GetInitContainer(genGeneralName(pytorchjob.Name,
-			strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0)))
+			strings.ToLower(string(trainingv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0)))
 		if err != nil {
 			return err
 		}

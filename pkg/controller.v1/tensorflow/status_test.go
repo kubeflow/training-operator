@@ -30,7 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
 )
 
@@ -45,7 +46,7 @@ var _ = Describe("TFJob controller", func() {
 		It("should update TFJob with failed status", func() {
 			By("creating a TFJob with replicaStatues initialized")
 			tfJob := testutil.NewTFJob(3, 0)
-			initializeReplicaStatuses(&tfJob.Status, tfv1.TFReplicaTypeWorker)
+			initializeReplicaStatuses(&tfJob.Status, trainingv1.TFReplicaTypeWorker)
 
 			By("prepare pod")
 			refs := []metav1.OwnerReference{
@@ -55,8 +56,8 @@ var _ = Describe("TFJob controller", func() {
 			pod.Status.Phase = v1.PodFailed
 
 			By("update job replica statuses")
-			updateJobReplicaStatuses(&tfJob.Status, tfv1.TFReplicaTypeWorker, pod)
-			Expect(tfJob.Status.ReplicaStatuses[tfv1.TFReplicaTypeWorker].Failed).Should(Equal(int32(1)))
+			updateJobReplicaStatuses(&tfJob.Status, trainingv1.TFReplicaTypeWorker, pod)
+			Expect(tfJob.Status.ReplicaStatuses[trainingv1.TFReplicaTypeWorker].Failed).Should(Equal(int32(1)))
 
 			By("update job status")
 			Expect(reconciler.UpdateJobStatus(tfJob, tfJob.Spec.TFReplicaSpecs, &tfJob.Status)).To(Succeed())
@@ -76,7 +77,7 @@ var _ = Describe("TFJob controller", func() {
 		It("should update TFJob with desired status", func() {
 			type testCase struct {
 				description string
-				tfJob       *tfv1.TFJob
+				tfJob       *trainingv1.TFJob
 
 				expectedFailedPS    int32
 				expectedSucceededPS int32
@@ -259,7 +260,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 are succeeded, 3 workers are active",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, trainingv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -275,7 +276,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) 4 workers are succeeded",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, trainingv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -291,7 +292,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, tfv1.SuccessPolicyAllWorkers),
+					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, trainingv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -409,13 +410,13 @@ var _ = Describe("TFJob controller", func() {
 				c.tfJob.SetName(fmt.Sprintf(jobNameTemplate, i))
 				c.tfJob.SetUID(uuid.NewUUID())
 
-				initializeReplicaStatuses(&c.tfJob.Status, tfv1.TFReplicaTypeWorker)
-				initializeReplicaStatuses(&c.tfJob.Status, tfv1.TFReplicaTypeChief)
-				initializeReplicaStatuses(&c.tfJob.Status, tfv1.TFReplicaTypePS)
+				initializeReplicaStatuses(&c.tfJob.Status, trainingv1.TFReplicaTypeWorker)
+				initializeReplicaStatuses(&c.tfJob.Status, trainingv1.TFReplicaTypeChief)
+				initializeReplicaStatuses(&c.tfJob.Status, trainingv1.TFReplicaTypePS)
 
-				setStatusForTest(c.tfJob, tfv1.TFReplicaTypePS, c.expectedFailedPS, c.expectedSucceededPS, c.expectedActivePS, c.restart, c.worker0Completed, testK8sClient)
-				setStatusForTest(c.tfJob, tfv1.TFReplicaTypeWorker, c.expectedFailedWorker, c.expectedSucceededWorker, c.expectedActiveWorker, c.restart, c.worker0Completed, testK8sClient)
-				setStatusForTest(c.tfJob, tfv1.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, c.restart, c.worker0Completed, testK8sClient)
+				setStatusForTest(c.tfJob, trainingv1.TFReplicaTypePS, c.expectedFailedPS, c.expectedSucceededPS, c.expectedActivePS, c.restart, c.worker0Completed, testK8sClient)
+				setStatusForTest(c.tfJob, trainingv1.TFReplicaTypeWorker, c.expectedFailedWorker, c.expectedSucceededWorker, c.expectedActiveWorker, c.restart, c.worker0Completed, testK8sClient)
+				setStatusForTest(c.tfJob, trainingv1.TFReplicaTypeChief, c.expectedFailedChief, c.expectedSucceededChief, c.expectedActiveChief, c.restart, c.worker0Completed, testK8sClient)
 
 				// Adding this section to make sure all pods are created and cached
 				Eventually(func() error {
@@ -463,7 +464,7 @@ var _ = Describe("TFJob controller", func() {
 	})
 })
 
-func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, succeeded, active int32, restart bool, worker0Completed bool, client client.Client) {
+func setStatusForTest(tfJob *trainingv1.TFJob, rtype commonv1.ReplicaType, failed, succeeded, active int32, restart bool, worker0Completed bool, client client.Client) {
 	if restart == true {
 		tfJob.Spec.TFReplicaSpecs[rtype].RestartPolicy = commonv1.RestartPolicyExitCode
 	}
@@ -479,11 +480,11 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 
 	var typ string
 	switch rtype {
-	case tfv1.TFReplicaTypeWorker:
+	case trainingv1.TFReplicaTypeWorker:
 		typ = testutil.LabelWorker
-	case tfv1.TFReplicaTypePS:
+	case trainingv1.TFReplicaTypePS:
 		typ = testutil.LabelPS
-	case tfv1.TFReplicaTypeChief:
+	case trainingv1.TFReplicaTypeChief:
 		typ = testutil.LabelChief
 	default:
 		fmt.Println("wrong type")
@@ -512,7 +513,7 @@ func setStatusForTest(tfJob *tfv1.TFJob, rtype commonv1.ReplicaType, failed, suc
 			}
 
 			po.Status.Phase = corev1.PodSucceeded
-			if worker0Completed == true && rtype == tfv1.TFReplicaTypeWorker && index == 0 {
+			if worker0Completed == true && rtype == trainingv1.TFReplicaTypeWorker && index == 0 {
 				po.Status.ContainerStatuses = []corev1.ContainerStatus{
 					{
 						Name: reconciler.GetDefaultContainerName(),

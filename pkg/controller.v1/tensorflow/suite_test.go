@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = tensorflowv1.AddToScheme(scheme.Scheme)
+	err = trainingv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme

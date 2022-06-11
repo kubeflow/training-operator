@@ -25,11 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 )
 
-func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) error {
-	logger := r.Log.WithValues(pytorchv1.Singular, pytorhcjob.Name)
+func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *trainingv1.PyTorchJob) error {
+	logger := r.Log.WithValues(trainingv1.PyTorchSingular, pytorhcjob.Name)
 
 	if pytorhcjob.Spec.ElasticPolicy == nil || pytorhcjob.Spec.ElasticPolicy.Metrics == nil {
 		logger.V(1).Info(
@@ -73,7 +73,7 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) er
 	return nil
 }
 
-func desiredHPA(pytorchjob *pytorchv1.PyTorchJob, scheme *runtime.Scheme) (
+func desiredHPA(pytorchjob *trainingv1.PyTorchJob, scheme *runtime.Scheme) (
 	*autoscalingv2beta2.HorizontalPodAutoscaler, error) {
 	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{

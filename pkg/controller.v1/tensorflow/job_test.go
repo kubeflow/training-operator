@@ -30,7 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
 )
 
@@ -68,7 +69,7 @@ var _ = Describe("TFJob controller", func() {
 				Name:      testJobName,
 			}
 			Eventually(func() error {
-				job := &tfv1.TFJob{}
+				job := &trainingv1.TFJob{}
 				return reconciler.Get(ctx, key, job)
 			}, timeout, interval).Should(BeNil())
 
@@ -94,8 +95,8 @@ var _ = Describe("TFJob controller", func() {
 			labels := map[string]string{
 				testLabelKey: testLabelVal,
 			}
-			tfjob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template.Labels = labels
-			tfjob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template.Annotations = annotations
+			tfjob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].Template.Labels = labels
+			tfjob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].Template.Annotations = annotations
 
 			By("submitting an TFJob with specific labels and annotations")
 			Expect(testK8sClient.Create(ctx, tfjob)).Should(Succeed())
@@ -142,7 +143,7 @@ var _ = Describe("TFJob controller", func() {
 		It("it should clean associated Pods and Services according to clean policy", func() {
 			type testCase struct {
 				description string
-				tfJob       *tfv1.TFJob
+				tfJob       *trainingv1.TFJob
 
 				pendingWorkerPods   int32
 				activeWorkerPods    int32
@@ -297,7 +298,7 @@ var _ = Describe("TFJob controller", func() {
 		It("clean desired Pods and Services according to TFJob config", func() {
 			type testCase struct {
 				description string
-				tfJob       *tfv1.TFJob
+				tfJob       *trainingv1.TFJob
 
 				pendingWorkerPods   int32
 				activeWorkerPods    int32
@@ -423,7 +424,7 @@ var _ = Describe("TFJob controller", func() {
 		It("clean desired Pods and Services according to TFJob config", func() {
 			type testCase struct {
 				description string
-				tfJob       *tfv1.TFJob
+				tfJob       *trainingv1.TFJob
 
 				pendingWorkerPods   int32
 				activeWorkerPods    int32

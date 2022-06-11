@@ -21,13 +21,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 )
 
 func TestGenOwnerReference(t *testing.T) {
 	testName := "test-tfjob"
 	testUID := uuid.NewUUID()
-	tfJob := &tfv1.TFJob{
+	tfJob := &trainingv1.TFJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testName,
 			UID:  testUID,
@@ -41,8 +41,8 @@ func TestGenOwnerReference(t *testing.T) {
 	if ref.Name != testName {
 		t.Errorf("Expected Name %s, got %s", testName, ref.Name)
 	}
-	if ref.APIVersion != tfv1.SchemeGroupVersion.String() {
-		t.Errorf("Expected APIVersion %s, got %s", tfv1.SchemeGroupVersion.String(), ref.APIVersion)
+	if ref.APIVersion != trainingv1.SchemeGroupVersion.String() {
+		t.Errorf("Expected APIVersion %s, got %s", trainingv1.SchemeGroupVersion.String(), ref.APIVersion)
 	}
 }
 
@@ -62,8 +62,8 @@ func TestGenLabels(t *testing.T) {
 		t.Errorf("Expected %s %s, got %s", JobNameLabelDeprecated, expctedVal, JobNameLabelDeprecated)
 	}
 
-	if labels[commonv1.GroupNameLabelDeprecated] != tfv1.GroupVersion.Group {
-		t.Errorf("Expected %s %s, got %s", commonv1.GroupNameLabelDeprecated, tfv1.GroupVersion.Group,
+	if labels[commonv1.GroupNameLabelDeprecated] != trainingv1.GroupVersion.Group {
+		t.Errorf("Expected %s %s, got %s", commonv1.GroupNameLabelDeprecated, trainingv1.GroupVersion.Group,
 			labels[commonv1.GroupNameLabelDeprecated])
 	}
 

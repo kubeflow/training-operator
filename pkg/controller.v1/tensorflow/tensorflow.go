@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/kubeflow/common/pkg/controller.v1/common"
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 )
 
 const (
@@ -73,10 +73,10 @@ type SparseTFConfig struct {
 
 func convertClusterSpecToSparseClusterSpec(clusterSpec ClusterSpec, rtype string, index int32) SparseClusterSpec {
 	sparseClusterSpec := SparseClusterSpec{Worker: map[int32]string{}, PS: []string{}}
-	if rtype == strings.ToLower(string(tfv1.TFReplicaTypePS)) {
+	if rtype == strings.ToLower(string(trainingv1.TFReplicaTypePS)) {
 		sparseClusterSpec.PS = append(sparseClusterSpec.PS, clusterSpec[rtype][index])
-	} else if rtype == strings.ToLower(string(tfv1.TFReplicaTypeWorker)) {
-		sparseClusterSpec.PS = clusterSpec[strings.ToLower(string(tfv1.TFReplicaTypePS))]
+	} else if rtype == strings.ToLower(string(trainingv1.TFReplicaTypeWorker)) {
+		sparseClusterSpec.PS = clusterSpec[strings.ToLower(string(trainingv1.TFReplicaTypePS))]
 		sparseClusterSpec.Worker[index] = clusterSpec[rtype][index]
 	}
 	return sparseClusterSpec
@@ -94,7 +94,7 @@ func convertClusterSpecToSparseClusterSpec(clusterSpec ClusterSpec, rtype string
 //         },
 //     }
 // }
-func genTFConfigJSONStr(tfjob *tfv1.TFJob, rtype, index string) (string, error) {
+func genTFConfigJSONStr(tfjob *trainingv1.TFJob, rtype, index string) (string, error) {
 	// Configure the TFCONFIG environment variable.
 	i, err := strconv.ParseInt(index, 0, 32)
 	if err != nil {
@@ -139,7 +139,7 @@ func genTFConfigJSONStr(tfjob *tfv1.TFJob, rtype, index string) (string, error) 
 }
 
 // genClusterSpec will generate ClusterSpec.
-func genClusterSpec(tfjob *tfv1.TFJob) (ClusterSpec, error) {
+func genClusterSpec(tfjob *trainingv1.TFJob) (ClusterSpec, error) {
 	clusterSpec := make(ClusterSpec)
 
 	for rtype, spec := range tfjob.Spec.TFReplicaSpecs {

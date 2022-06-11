@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/informers"
 
-	"github.com/kubeflow/training-operator/pkg/apis/mxnet/validation"
+	"github.com/kubeflow/training-operator/pkg/apis/training/validation"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -34,7 +34,8 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
-	mxjobv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
@@ -123,9 +124,9 @@ type MXJobReconciler struct {
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
 func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(mxjobv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues(trainingv1.MXSingular, req.NamespacedName)
 
-	mxjob := &mxjobv1.MXJob{}
+	mxjob := &trainingv1.MXJob{}
 	err := r.Get(ctx, req.NamespacedName, mxjob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch MXJob", req.NamespacedName.String())
@@ -181,7 +182,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &trainingv1.MXJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -190,7 +191,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mxjobv1.MXJob{},
+		OwnerType:    &trainingv1.MXJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -202,7 +203,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related service
 	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mxjobv1.MXJob{},
+		OwnerType:    &trainingv1.MXJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -220,19 +221,19 @@ func (r *MXJobReconciler) ControllerName() string {
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mxjobv1.GroupVersion.WithKind(mxjobv1.Kind)
+	return trainingv1.GroupVersion.WithKind(trainingv1.MXKind)
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return mxjobv1.GroupVersion
+	return trainingv1.GroupVersion
 }
 
 func (r *MXJobReconciler) GetGroupNameLabelValue() string {
-	return mxjobv1.GroupVersion.Group
+	return trainingv1.GroupVersion.Group
 }
 
 func (r *MXJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	job := &mxjobv1.MXJob{}
+	job := &trainingv1.MXJob{}
 	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -246,7 +247,7 @@ func (r *MXJobReconciler) GetJobFromInformerCache(namespace, name string) (metav
 }
 
 func (r *MXJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &mxjobv1.MXJob{}
+	job := &trainingv1.MXJob{}
 
 	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -294,7 +295,7 @@ func (r *MXJobReconciler) GetServicesForJob(job interface{}) ([]*corev1.Service,
 }
 
 func (r *MXJobReconciler) DeleteJob(job interface{}) error {
-	mxjob, ok := job.(*mxjobv1.MXJob)
+	mxjob, ok := job.(*trainingv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", job)
 	}
@@ -305,12 +306,12 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, trainingv1.MXFrameworkName)
 	return nil
 }
 
 func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
-	mxjob, ok := job.(*mxjobv1.MXJob)
+	mxjob, ok := job.(*trainingv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxjob)
 	}
@@ -363,7 +364,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 				logrus.Infof("Append mxjob condition error: %v", err)
 				return err
 			}
-			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, trainingv1.MXFrameworkName)
 		}
 
 		if failed > 0 {
@@ -375,7 +376,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, trainingv1.MXFrameworkName)
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -388,7 +389,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, trainingv1.MXFrameworkName)
 			}
 		}
 	}
@@ -402,7 +403,7 @@ func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	mxJob, ok := job.(*mxjobv1.MXJob)
+	mxJob, ok := job.(*trainingv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxJob)
 	}
@@ -425,22 +426,22 @@ func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 }
 
 func (r *MXJobReconciler) GetDefaultContainerName() string {
-	return mxjobv1.DefaultContainerName
+	return trainingv1.MXDefaultContainerName
 }
 
 func (r *MXJobReconciler) GetDefaultContainerPortName() string {
-	return mxjobv1.DefaultPortName
+	return trainingv1.MXDefaultPortName
 }
 
 func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return string(rtype) == string(mxjobv1.MXReplicaTypeServer)
+	return string(rtype) == string(trainingv1.MXReplicaTypeServer)
 }
 
 // onOwnerCreateFunc modify creation condition.
 func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		mxjob, ok := e.Object.(*mxjobv1.MXJob)
+		mxjob, ok := e.Object.(*trainingv1.MXJob)
 		if !ok {
 			return true
 		}
@@ -449,7 +450,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		r.Scheme.Default(mxjob)
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, trainingv1.MXFrameworkName)
 		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

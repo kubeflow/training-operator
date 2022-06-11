@@ -22,27 +22,27 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 )
 
 func TestElasticGenerate(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	defer ginkgo.GinkgoRecover()
 
-	backendC10D := pytorchv1.BackendC10D
+	backendC10D := trainingv1.BackendC10D
 
 	tests := []struct {
 		name        string
-		job         *pytorchv1.PyTorchJob
+		job         *trainingv1.PyTorchJob
 		expectedErr error
 		expected    []corev1.EnvVar
 	}{
 		{
 			name: "Without ElasticPolicy",
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &trainingv1.PyTorchJob{
+				Spec: trainingv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
+						trainingv1.PyTorchReplicaTypeWorker: {
 							Replicas: int32Ptr(1),
 						},
 					},
@@ -53,16 +53,16 @@ func TestElasticGenerate(t *testing.T) {
 		},
 		{
 			name: "With ElasticPolicy",
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
-					ElasticPolicy: &pytorchv1.ElasticPolicy{
+			job: &trainingv1.PyTorchJob{
+				Spec: trainingv1.PyTorchJobSpec{
+					ElasticPolicy: &trainingv1.ElasticPolicy{
 						MinReplicas: int32Ptr(1),
 						MaxReplicas: int32Ptr(3),
 						RDZVBackend: &backendC10D,
 						RDZVPort:    int32Ptr(1234),
 						RDZVHost:    strPtr("localhost"),
 						RDZVID:      strPtr("rdzv-id"),
-						RDZVConf: []pytorchv1.RDZVConf{
+						RDZVConf: []trainingv1.RDZVConf{
 							{
 								Key:   "rdzv-conf-name",
 								Value: "rdzv-conf-value",
@@ -76,7 +76,7 @@ func TestElasticGenerate(t *testing.T) {
 						MaxRestarts:  int32Ptr(3),
 					},
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
+						trainingv1.PyTorchReplicaTypeWorker: {
 							Replicas: int32Ptr(1),
 						},
 					},

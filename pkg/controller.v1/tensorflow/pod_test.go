@@ -22,6 +22,7 @@ import (
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/core"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -31,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
 	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
 )
 
@@ -44,7 +44,7 @@ var _ = Describe("TFJob controller", func() {
 	Context("Test ClusterSpec", func() {
 		It("should generate desired cluster spec", func() {
 			type tc struct {
-				tfJob               *tfv1.TFJob
+				tfJob               *trainingv1.TFJob
 				rt                  string
 				index               string
 				customClusterDomain string
@@ -101,7 +101,7 @@ var _ = Describe("TFJob controller", func() {
 				c.tfJob.SetUID(uuid.NewUUID())
 				_ = os.Setenv(EnvCustomClusterDomain, c.customClusterDomain)
 
-				podTemplate := c.tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].Template.DeepCopy()
+				podTemplate := c.tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].Template.DeepCopy()
 
 				podTemplate.Name = core.GenGeneralName(c.tfJob.GetName(), c.rt, c.index)
 
@@ -132,7 +132,7 @@ var _ = Describe("TFJob controller", func() {
 	Context("Test IsDistributed", func() {
 		It("should returns correctly", func() {
 			type tc struct {
-				tfJob    *tfv1.TFJob
+				tfJob    *trainingv1.TFJob
 				expected bool
 			}
 			testCase := []tc{
@@ -162,7 +162,7 @@ var _ = Describe("TFJob controller", func() {
 	Context("Test Restart Policy", func() {
 		It("should assign proper restart policy to pod", func() {
 			type tc struct {
-				tfJob                 *tfv1.TFJob
+				tfJob                 *trainingv1.TFJob
 				expectedRestartPolicy corev1.RestartPolicy
 				expectedType          commonv1.ReplicaType
 			}
@@ -170,41 +170,41 @@ var _ = Describe("TFJob controller", func() {
 				func() tc {
 					tfJob := testutil.NewTFJob(1, 0)
 					specRestartPolicy := commonv1.RestartPolicyExitCode
-					tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+					tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
 						expectedRestartPolicy: corev1.RestartPolicyNever,
-						expectedType:          tfv1.TFReplicaTypeWorker,
+						expectedType:          trainingv1.TFReplicaTypeWorker,
 					}
 				}(),
 				func() tc {
 					tfJob := testutil.NewTFJob(1, 0)
 					specRestartPolicy := commonv1.RestartPolicyNever
-					tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+					tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
 						expectedRestartPolicy: corev1.RestartPolicyNever,
-						expectedType:          tfv1.TFReplicaTypeWorker,
+						expectedType:          trainingv1.TFReplicaTypeWorker,
 					}
 				}(),
 				func() tc {
 					tfJob := testutil.NewTFJob(1, 0)
 					specRestartPolicy := commonv1.RestartPolicyAlways
-					tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+					tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
 						expectedRestartPolicy: corev1.RestartPolicyAlways,
-						expectedType:          tfv1.TFReplicaTypeWorker,
+						expectedType:          trainingv1.TFReplicaTypeWorker,
 					}
 				}(),
 				func() tc {
 					tfJob := testutil.NewTFJob(1, 0)
 					specRestartPolicy := commonv1.RestartPolicyOnFailure
-					tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
+					tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
 						expectedRestartPolicy: corev1.RestartPolicyOnFailure,
-						expectedType:          tfv1.TFReplicaTypeWorker,
+						expectedType:          trainingv1.TFReplicaTypeWorker,
 					}
 				}(),
 			}
@@ -225,7 +225,7 @@ var _ = Describe("TFJob controller", func() {
 			tfJob := testutil.NewTFJob(1, 0)
 			tfJob.SetName("test-exit-code")
 			tfJob.SetUID(uuid.NewUUID())
-			tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker].RestartPolicy = commonv1.RestartPolicyExitCode
+			tfJob.Spec.TFReplicaSpecs[trainingv1.TFReplicaTypeWorker].RestartPolicy = commonv1.RestartPolicyExitCode
 
 			refs := []metav1.OwnerReference{
 				*reconciler.GenOwnerReference(tfJob),
@@ -237,7 +237,7 @@ var _ = Describe("TFJob controller", func() {
 				pod.Labels[k] = v
 			}
 			pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
-				Name:  tfv1.DefaultContainerName,
+				Name:  trainingv1.TFDefaultContainerName,
 				Image: testutil.DummyContainerImage,
 			})
 			Expect(testK8sClient.Create(ctx, pod)).Should(Succeed())
@@ -247,7 +247,7 @@ var _ = Describe("TFJob controller", func() {
 			Expect(testK8sClient.Get(ctx, key, created)).Should(Succeed())
 			created.Status.Phase = corev1.PodFailed
 			created.Status.ContainerStatuses = append(created.Status.ContainerStatuses, corev1.ContainerStatus{
-				Name: tfv1.DefaultContainerName,
+				Name: trainingv1.TFDefaultContainerName,
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{
 						ExitCode: 130,
@@ -426,7 +426,7 @@ var _ = Describe("TFJob controller", func() {
 			tests := []struct {
 				// worker failed, succeeded, running num
 				workers     [3]int32
-				tfJob       *tfv1.TFJob
+				tfJob       *trainingv1.TFJob
 				replicas    map[commonv1.ReplicaType]*commonv1.ReplicaSpec
 				expected    bool
 				expectedErr bool
@@ -437,11 +437,11 @@ var _ = Describe("TFJob controller", func() {
 					expected:    false,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeWorker: {
+						trainingv1.TFReplicaTypeWorker: {
 							Replicas: newInt32(1),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
-						tfv1.TFReplicaTypePS: {
+						trainingv1.TFReplicaTypePS: {
 							Replicas: newInt32(1),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -453,7 +453,7 @@ var _ = Describe("TFJob controller", func() {
 					expected:    true,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeWorker: {
+						trainingv1.TFReplicaTypeWorker: {
 							Replicas: newInt32(1),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -465,7 +465,7 @@ var _ = Describe("TFJob controller", func() {
 					expected:    true,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeMaster: {
+						trainingv1.TFReplicaTypeMaster: {
 							Replicas: newInt32(1),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -477,7 +477,7 @@ var _ = Describe("TFJob controller", func() {
 					expected:    true,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeChief: {
+						trainingv1.TFReplicaTypeChief: {
 							Replicas: newInt32(1),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -489,7 +489,7 @@ var _ = Describe("TFJob controller", func() {
 					expected:    true,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeWorker: {
+						trainingv1.TFReplicaTypeWorker: {
 							Replicas: newInt32(2),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -501,7 +501,7 @@ var _ = Describe("TFJob controller", func() {
 					expected:    false,
 					expectedErr: false,
 					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						tfv1.TFReplicaTypeWorker: {
+						trainingv1.TFReplicaTypeWorker: {
 							Replicas: newInt32(2),
 							Template: testutil.NewTFReplicaSpecTemplate(),
 						},
@@ -514,9 +514,9 @@ var _ = Describe("TFJob controller", func() {
 				tt.tfJob.SetName(fmt.Sprintf(jobNameTemplate, i))
 				tt.tfJob.SetUID(uuid.NewUUID())
 				// only related to worker status
-				initializeReplicaStatuses(&tt.tfJob.Status, tfv1.TFReplicaTypeWorker)
+				initializeReplicaStatuses(&tt.tfJob.Status, trainingv1.TFReplicaTypeWorker)
 				// set status and add pod to indexer
-				setStatusForTest(tt.tfJob, tfv1.TFReplicaTypeWorker, tt.workers[0], tt.workers[1], tt.workers[2], false, true, testK8sClient)
+				setStatusForTest(tt.tfJob, trainingv1.TFReplicaTypeWorker, tt.workers[0], tt.workers[1], tt.workers[2], false, true, testK8sClient)
 
 				// Adding this section to make sure all pods are created and cached
 				Eventually(func() error {

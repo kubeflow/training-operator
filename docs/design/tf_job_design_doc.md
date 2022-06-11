@@ -32,7 +32,7 @@ The input from the K8s team that developed CRDs and various controllers is that 
 ## TFJob Resource
 
 The TFJob CRD defines a TFJob resource for K8s.
-The [TFJob](https://github.com/kubeflow/training-operator/blob/master/pkg/apis/tensorflow/v1/types.go#L29)
+The [TFJob](https://github.com/kubeflow/training-operator/blob/master/pkg/apis/training/v1/tensorflow_types.go#L30)
 resource is a collection of TfReplicas. Each TfReplica corresponds to a
 set of TensorFlow processes performing a role in the job;
 e.g. master, parameter server or worker. The set of replica types can be expanded (it is just an enum) to support new TF patterns such as eval workers. Figure 1. shows an example yaml spec for a distributed job.

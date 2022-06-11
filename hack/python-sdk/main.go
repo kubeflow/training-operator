@@ -22,11 +22,8 @@ import (
 	"os"
 	"strings"
 
-	mpi "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	mxnet "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
-	pytorch "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
-	tensorflow "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	xgboost "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	"k8s.io/klog"
 	"k8s.io/kube-openapi/pkg/common"
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -48,23 +45,7 @@ func main() {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	}
 
-	for k, v := range tensorflow.GetOpenAPIDefinitions(refCallback) {
-		oAPIDefs[k] = v
-	}
-
-	for k, v := range pytorch.GetOpenAPIDefinitions(refCallback) {
-		oAPIDefs[k] = v
-	}
-
-	for k, v := range mxnet.GetOpenAPIDefinitions(refCallback) {
-		oAPIDefs[k] = v
-	}
-
-	for k, v := range xgboost.GetOpenAPIDefinitions(refCallback) {
-		oAPIDefs[k] = v
-	}
-
-	for k, v := range mpi.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range trainingv1.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 
@@ -93,11 +74,7 @@ func main() {
 }
 
 func swaggify(name string) string {
-	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/tensorflow/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/pytorch/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/mxnet/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/xgboost/", "", -1)
-	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/mpi/", "", -1)
+	name = strings.Replace(name, "github.com/kubeflow/training-operator/pkg/apis/training/v1/", "", -1)
 	name = strings.Replace(name, "github.com/kubeflow/common/pkg/apis/common/", "", -1)
 	name = strings.Replace(name, "k8s.io/api/core/", "", -1)
 	name = strings.Replace(name, "k8s.io/apimachinery/pkg/apis/meta/", "", -1)

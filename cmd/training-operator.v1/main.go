@@ -31,11 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	commonutil "github.com/kubeflow/common/pkg/util"
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 	//+kubebuilder:scaffold:imports
@@ -48,11 +44,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(xgboostv1.AddToScheme(scheme))
-	utilruntime.Must(pytorchv1.AddToScheme(scheme))
-	utilruntime.Must(tensorflowv1.AddToScheme(scheme))
-	utilruntime.Must(mxnetv1.AddToScheme(scheme))
-	utilruntime.Must(mpiv1.AddToScheme(scheme))
+	utilruntime.Must(trainingv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

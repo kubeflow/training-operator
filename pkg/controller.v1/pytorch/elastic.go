@@ -21,7 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 )
 
 const (
@@ -71,7 +71,7 @@ func GetElasticEnvVarGenerator() EnvVarGenerator {
 }
 
 func (e ElasticEnvVarGenerator) Generate(
-	job *pytorchv1.PyTorchJob) ([]corev1.EnvVar, error) {
+	job *trainingv1.PyTorchJob) ([]corev1.EnvVar, error) {
 	envVars := []corev1.EnvVar{}
 
 	elasticPolicy := job.Spec.ElasticPolicy
@@ -126,17 +126,17 @@ func (e ElasticEnvVarGenerator) Generate(
 	return envVars, nil
 }
 
-func (e ElasticEnvVarGenerator) generateEnvNNodes(job *pytorchv1.PyTorchJob) (*corev1.EnvVar, error) {
+func (e ElasticEnvVarGenerator) generateEnvNNodes(job *trainingv1.PyTorchJob) (*corev1.EnvVar, error) {
 	// Return worker.replicas if there is no max and min replicas specified.
 	if job.Spec.ElasticPolicy.MinReplicas == nil &&
 		job.Spec.ElasticPolicy.MaxReplicas == nil {
-		if job.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeWorker] == nil {
+		if job.Spec.PyTorchReplicaSpecs[trainingv1.PyTorchReplicaTypeWorker] == nil {
 			return nil, fmt.Errorf("cannot find the worker spec")
 		}
 		return &corev1.EnvVar{
 			Name: EnvNNodes,
 			Value: strconv.Itoa(
-				int(*job.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeWorker].
+				int(*job.Spec.PyTorchReplicaSpecs[trainingv1.PyTorchReplicaTypeWorker].
 					Replicas)),
 		}, nil
 	}
@@ -148,7 +148,7 @@ func (e ElasticEnvVarGenerator) generateEnvNNodes(job *pytorchv1.PyTorchJob) (*c
 	}, nil
 }
 
-func (e ElasticEnvVarGenerator) generateEnvRDZVEndpoint(job *pytorchv1.PyTorchJob) (*corev1.EnvVar, error) {
+func (e ElasticEnvVarGenerator) generateEnvRDZVEndpoint(job *trainingv1.PyTorchJob) (*corev1.EnvVar, error) {
 	var err error
 	host := ""
 	if job.Spec.ElasticPolicy.RDZVHost == nil {
@@ -160,7 +160,7 @@ func (e ElasticEnvVarGenerator) generateEnvRDZVEndpoint(job *pytorchv1.PyTorchJo
 	var port int32
 	if job.Spec.ElasticPolicy.RDZVPort == nil {
 		// Generate RDZV_Endpoint.
-		port, err = getPortFromPyTorchJob(job, pytorchv1.PyTorchReplicaTypeWorker)
+		port, err = getPortFromPyTorchJob(job, trainingv1.PyTorchReplicaTypeWorker)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +173,7 @@ func (e ElasticEnvVarGenerator) generateEnvRDZVEndpoint(job *pytorchv1.PyTorchJo
 	}, nil
 }
 
-func (e ElasticEnvVarGenerator) generateEnvRDZVConf(elasticPolicy *pytorchv1.ElasticPolicy) *corev1.EnvVar {
+func (e ElasticEnvVarGenerator) generateEnvRDZVConf(elasticPolicy *trainingv1.ElasticPolicy) *corev1.EnvVar {
 	if elasticPolicy.RDZVConf == nil {
 		return nil
 	}
@@ -188,7 +188,7 @@ func (e ElasticEnvVarGenerator) generateEnvRDZVConf(elasticPolicy *pytorchv1.Ela
 	}
 }
 
-func (e ElasticEnvVarGenerator) generateEnvBackend(elasticPolicy *pytorchv1.ElasticPolicy) corev1.EnvVar {
+func (e ElasticEnvVarGenerator) generateEnvBackend(elasticPolicy *trainingv1.ElasticPolicy) corev1.EnvVar {
 	if elasticPolicy.RDZVBackend != nil {
 		return corev1.EnvVar{
 			Name:  EnvRDZVBackend,
@@ -197,6 +197,6 @@ func (e ElasticEnvVarGenerator) generateEnvBackend(elasticPolicy *pytorchv1.Elas
 	}
 	return corev1.EnvVar{
 		Name:  EnvRDZVBackend,
-		Value: string(pytorchv1.BackendC10D),
+		Value: string(trainingv1.BackendC10D),
 	}
 }

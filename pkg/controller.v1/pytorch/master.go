@@ -5,7 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -28,15 +29,15 @@ func GetMasterEnvVarGenerator() EnvVarGenerator {
 }
 
 func (e MasterEnvVarGenerator) Generate(
-	job *pytorchv1.PyTorchJob) ([]corev1.EnvVar, error) {
+	job *trainingv1.PyTorchJob) ([]corev1.EnvVar, error) {
 	envVars := []corev1.EnvVar{}
-	if job.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeMaster] != nil {
-		masterPort, err := getPortFromPyTorchJob(job, pytorchv1.PyTorchReplicaTypeMaster)
+	if job.Spec.PyTorchReplicaSpecs[trainingv1.PyTorchReplicaTypeMaster] != nil {
+		masterPort, err := getPortFromPyTorchJob(job, trainingv1.PyTorchReplicaTypeMaster)
 		if err != nil {
 			return nil, err
 		}
 
-		masterAddr := genGeneralName(job.Name, strings.ToLower(string(pytorchv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
+		masterAddr := genGeneralName(job.Name, strings.ToLower(string(trainingv1.PyTorchReplicaTypeMaster)), strconv.Itoa(0))
 
 		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvMasterPort,

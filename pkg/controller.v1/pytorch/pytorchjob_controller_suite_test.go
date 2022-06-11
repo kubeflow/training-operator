@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	v1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 
 	. "github.com/onsi/ginkgo"
@@ -68,7 +68,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = v1.AddToScheme(scheme.Scheme)
+	err = trainingv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set default config.

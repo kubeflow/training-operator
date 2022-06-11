@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/training/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

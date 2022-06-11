@@ -20,17 +20,18 @@ import (
 	"strings"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
 // EnvVarGenerator is the environment variable generator interface.
 type EnvVarGenerator interface {
-	Generate(job *pytorchv1.PyTorchJob) ([]corev1.EnvVar, error)
+	Generate(job *trainingv1.PyTorchJob) ([]corev1.EnvVar, error)
 }
 
 func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
-	pytorchjob, ok := obj.(*pytorchv1.PyTorchJob)
+	pytorchjob, ok := obj.(*trainingv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
@@ -49,7 +50,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			})
 
 		// If the master is not null, then we need to set the MASTER_ADDR and RANK.
-		if pytorchjob.Spec.PyTorchReplicaSpecs[pytorchv1.PyTorchReplicaTypeMaster] != nil {
+		if pytorchjob.Spec.PyTorchReplicaSpecs[trainingv1.PyTorchReplicaTypeMaster] != nil {
 			envVars, err := GetMasterEnvVarGenerator().Generate(pytorchjob)
 			if err != nil {
 				return err
@@ -63,7 +64,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			if err != nil {
 				return err
 			}
-			if rtype == strings.ToLower(string(pytorchv1.PyTorchReplicaTypeWorker)) {
+			if rtype == strings.ToLower(string(trainingv1.PyTorchReplicaTypeWorker)) {
 				rank = rank + 1
 			}
 
@@ -94,7 +95,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	return nil
 }
 
-func getTotalReplicas(job *pytorchv1.PyTorchJob) int32 {
+func getTotalReplicas(job *trainingv1.PyTorchJob) int32 {
 	jobReplicas := int32(0)
 	for _, r := range job.Spec.PyTorchReplicaSpecs {
 		jobReplicas += *r.Replicas
@@ -107,13 +108,13 @@ func genGeneralName(jobName, rtype, index string) string {
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func getPortFromPyTorchJob(job *pytorchv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromPyTorchJob(job *trainingv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
-		if container.Name == pytorchv1.DefaultContainerName {
+		if container.Name == trainingv1.PyTorchDefaultContainerName {
 			ports := container.Ports
 			for _, port := range ports {
-				if port.Name == pytorchv1.DefaultPortName {
+				if port.Name == trainingv1.PyTorchDefaultPortName {
 					return port.ContainerPort, nil
 				}
 			}

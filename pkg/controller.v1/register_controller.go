@@ -18,18 +18,14 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	trainingv1 "github.com/kubeflow/training-operator/pkg/apis/training/v1"
 
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	mxnetv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
-	tensorflowv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
-	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
 	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
 	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
 	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"
@@ -37,19 +33,19 @@ const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"
 type ReconcilerSetupFunc func(manager manager.Manager, enableGangScheduling bool) error
 
 var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
-	tensorflowv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	trainingv1.TFKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return tensorflowcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	pytorchv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	trainingv1.PyTorchKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return pytorchcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	mxnetv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	trainingv1.MXKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return mxnetcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	xgboostv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	trainingv1.XGBoostKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
-	mpiv1.Kind: func(mgr manager.Manager, enableGangScheduling bool) error {
+	trainingv1.MPIKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return mpicontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
 }
