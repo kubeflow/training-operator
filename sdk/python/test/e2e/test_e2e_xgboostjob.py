@@ -21,8 +21,8 @@ from kubernetes.client import V1Container
 
 from kubeflow.training import XGBoostJobClient
 from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1XGBoostJob
-from kubeflow.training import V1XGBoostJobSpec
+from kubeflow.training import KubeflowOrgV1XGBoostJob
+from kubeflow.training import KubeflowOrgV1XGBoostJobSpec
 from kubeflow.training import V1RunPolicy
 
 XGBOOST_CLIENT = XGBoostJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
@@ -61,11 +61,11 @@ def test_sdk_e2e():
         )
     )
 
-    xgboostjob = V1XGBoostJob(
+    xgboostjob = KubeflowOrgV1XGBoostJob(
         api_version="kubeflow.org/v1",
         kind="XGBoostJob",
         metadata=V1ObjectMeta(name="xgboostjob-iris-ci-test", namespace=SDK_TEST_NAMESPACE),
-        spec=V1XGBoostJobSpec(
+        spec=KubeflowOrgV1XGBoostJobSpec(
             run_policy=V1RunPolicy(
                 clean_pod_policy="None",
             ),

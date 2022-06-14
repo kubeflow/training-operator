@@ -25,13 +25,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) error {
-	logger := r.Log.WithValues(pytorchv1.Singular, pytorhcjob.Name)
+func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) error {
+	logger := r.Log.WithValues(kubeflowv1.PytorchJobSingular, pytorchJob.Name)
 
-	if pytorhcjob.Spec.ElasticPolicy == nil || pytorhcjob.Spec.ElasticPolicy.Metrics == nil {
+	if pytorchJob.Spec.ElasticPolicy == nil || pytorchJob.Spec.ElasticPolicy.Metrics == nil {
 		logger.V(1).Info(
 			"No ElasicPolicy or Metric is specified, skipping HPA reconciling process")
 		return nil
@@ -40,14 +40,14 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) er
 	current := &autoscalingv2beta2.HorizontalPodAutoscaler{}
 
 	// Get the exepected HPA.
-	expected, err := desiredHPA(pytorhcjob, r.Scheme)
+	expected, err := desiredHPA(pytorchJob, r.Scheme)
 	if err != nil {
 		return err
 	}
 
 	if err := r.Get(context.TODO(), types.NamespacedName{
-		Name:      pytorhcjob.Name,
-		Namespace: pytorhcjob.Namespace,
+		Name:      pytorchJob.Name,
+		Namespace: pytorchJob.Namespace,
 	}, current); err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -73,24 +73,24 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorhcjob *pytorchv1.PyTorchJob) er
 	return nil
 }
 
-func desiredHPA(pytorchjob *pytorchv1.PyTorchJob, scheme *runtime.Scheme) (
+func desiredHPA(pytorchJob *kubeflowv1.PyTorchJob, scheme *runtime.Scheme) (
 	*autoscalingv2beta2.HorizontalPodAutoscaler, error) {
 	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pytorchjob.Name,
-			Namespace: pytorchjob.Namespace,
+			Name:      pytorchJob.Name,
+			Namespace: pytorchJob.Namespace,
 		},
 		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
-				Kind: pytorchjob.Kind,
-				Name: pytorchjob.Name,
+				Kind: pytorchJob.Kind,
+				Name: pytorchJob.Name,
 			},
-			MinReplicas: pytorchjob.Spec.ElasticPolicy.MinReplicas,
-			MaxReplicas: *pytorchjob.Spec.ElasticPolicy.MaxReplicas,
-			Metrics:     pytorchjob.Spec.ElasticPolicy.Metrics,
+			MinReplicas: pytorchJob.Spec.ElasticPolicy.MinReplicas,
+			MaxReplicas: *pytorchJob.Spec.ElasticPolicy.MaxReplicas,
+			Metrics:     pytorchJob.Spec.ElasticPolicy.Metrics,
 		},
 	}
-	if err := controllerruntime.SetControllerReference(pytorchjob, hpa, scheme); err != nil {
+	if err := controllerruntime.SetControllerReference(pytorchJob, hpa, scheme); err != nil {
 		return nil, err
 	}
 	return hpa, nil

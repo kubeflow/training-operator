@@ -45,8 +45,8 @@ from kubernetes.client import V1ResourceRequirements
 from kubeflow.training import constants
 from kubeflow.training import utils
 from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1PyTorchJob
-from kubeflow.training import V1PyTorchJobSpec
+from kubeflow.training import KubeflowOrgV1PyTorchJob
+from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
 from kubeflow.training import PyTorchJobClient
 
   container = V1Container(
@@ -75,11 +75,11 @@ from kubeflow.training import PyTorchJobClient
     )
   )
 
-  pytorchjob = V1PyTorchJob(
+  pytorchjob = KubeflowOrgV1PyTorchJob(
     api_version="kubeflow.org/v1",
     kind="PyTorchJob",
     metadata=V1ObjectMeta(name="mnist", namespace='default'),
-    spec=V1PyTorchJobSpec(
+    spec=KubeflowOrgV1PyTorchJobSpec(
       clean_pod_policy="None",
       pytorch_replica_specs={"Master": master,
                              "Worker": worker}
@@ -95,7 +95,7 @@ pytorchjob_client.create(pytorchjob)
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-pytorchjob  | [V1PyTorchJob](V1PyTorchJob.md) | pytorchjob defination| Required |
+pytorchjob  | [KubeflowOrgV1PyTorchJob](KubeflowOrgV1PyTorchJob.md) | pytorchjob defination| Required |
 namespace | str | Namespace for pytorchjob deploying to. If the `namespace` is not defined, will align with pytorchjob definition, or use current or default namespace if namespace is not specified in pytorchjob definition.  | Optional |
 
 ### Return type
@@ -139,7 +139,7 @@ Note that if you want to set the field from existing value to `None`, `patch` AP
 
 ```python
 
-pytorchjob = V1PyTorchJob(
+pytorchjob = KubeflowOrgV1PyTorchJob(
     api_version="kubeflow.org/v1",
     ... #update something in PyTorchJob spec
 )
@@ -152,7 +152,7 @@ pytorchjob_client.patch('mnist', isvc)
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-pytorchjob  | [V1PyTorchJob](V1PyTorchJob.md) | pytorchjob defination| Required |
+pytorchjob  | [KubeflowOrgV1PyTorchJob](KubeflowOrgV1PyTorchJob.md) | pytorchjob defination| Required |
 namespace | str | The pytorchjob's namespace for patching. If the `namespace` is not defined, will align with pytorchjob definition, or use current or default namespace if namespace is not specified in pytorchjob definition. | Optional|
 
 ### Return type

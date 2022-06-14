@@ -49,8 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
-	"github.com/kubeflow/training-operator/pkg/apis/pytorch/validation"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
 )
@@ -120,16 +119,16 @@ type PyTorchJobReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(pytorchv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues(kubeflowv1.PytorchJobSingular, req.NamespacedName)
 
-	pytorchjob := &pytorchv1.PyTorchJob{}
+	pytorchjob := &kubeflowv1.PyTorchJob{}
 	err := r.Get(ctx, req.NamespacedName, pytorchjob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch PyTorchJob", req.NamespacedName.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = validation.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
+	if err = kubeflowv1.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
 		logger.Info(err.Error(), "PyTorchJob failed validation", req.NamespacedName.String())
 	}
 
@@ -177,7 +176,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &pytorchv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &kubeflowv1.PyTorchJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -186,7 +185,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &pytorchv1.PyTorchJob{},
+		OwnerType:    &kubeflowv1.PyTorchJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -198,7 +197,7 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related service
 	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &pytorchv1.PyTorchJob{},
+		OwnerType:    &kubeflowv1.PyTorchJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -215,19 +214,19 @@ func (r *PyTorchJobReconciler) ControllerName() string {
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return pytorchv1.GroupVersion.WithKind(pytorchv1.Kind)
+	return kubeflowv1.GroupVersion.WithKind(kubeflowv1.PytorchJobKind)
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return pytorchv1.GroupVersion
+	return kubeflowv1.GroupVersion
 }
 
 func (r *PyTorchJobReconciler) GetGroupNameLabelValue() string {
-	return pytorchv1.GroupVersion.Group
+	return kubeflowv1.GroupVersion.Group
 }
 
 func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	job := &pytorchv1.PyTorchJob{}
+	job := &kubeflowv1.PyTorchJob{}
 	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -241,7 +240,7 @@ func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (
 }
 
 func (r *PyTorchJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &pytorchv1.PyTorchJob{}
+	job := &kubeflowv1.PyTorchJob{}
 
 	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -291,7 +290,7 @@ func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 }
 
 func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
-	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	pytorchjob, ok := job.(*kubeflowv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
 	}
@@ -302,7 +301,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(pytorchjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", pytorchjob.Name)
 	logrus.Info("job deleted", "namespace", pytorchjob.Namespace, "name", pytorchjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 	return nil
 }
 
@@ -320,7 +319,7 @@ func (jc *PyTorchJobReconciler) GenLabelSelector(jobName string,
 func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	jobStatus *commonv1.JobStatus) error {
-	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	pytorchjob, ok := job.(*kubeflowv1.PyTorchJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
 	}
@@ -361,7 +360,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			pytorchjob.Name, rtype, expected, running, succeeded, failed, specReplicas)
 
 		if ContainsMasterSpec(replicas) {
-			if rtype == commonv1.ReplicaType(pytorchv1.PyTorchReplicaTypeMaster) {
+			if rtype == commonv1.ReplicaType(kubeflowv1.PyTorchJobReplicaTypeMaster) {
 				if running > 0 {
 					msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
 					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
@@ -384,12 +383,12 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 						commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 						return err
 					}
-					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 					return nil
 				}
 			}
 		} else {
-			if rtype == pytorchv1.PyTorchReplicaTypeWorker {
+			if rtype == kubeflowv1.PyTorchJobReplicaTypeWorker {
 				// TODO(gaocegege): Support SuccessPolicy
 				if expected == 0 {
 					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
@@ -405,7 +404,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 						commonutil.LoggerForJob(pytorchjob).Infof("Append tfjob condition error: %v", err)
 						return err
 					}
-					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("TFJob %s/%s is running.",
@@ -428,7 +427,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
@@ -441,7 +440,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 			}
 		}
 	}
@@ -451,7 +450,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 
 // ContainsMasterSpec returns true if the tfjob contains master spec.
 func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
-	if _, ok := replicas[pytorchv1.PyTorchReplicaTypeMaster]; ok {
+	if _, ok := replicas[kubeflowv1.PyTorchJobReplicaTypeMaster]; ok {
 		return true
 	}
 	return false
@@ -463,7 +462,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	pytorchjob, ok := job.(*pytorchv1.PyTorchJob)
+	pytorchjob, ok := job.(*kubeflowv1.PyTorchJob)
 	trainingoperatorcommon.ClearGeneratedFields(&pytorchjob.ObjectMeta)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
@@ -500,29 +499,29 @@ func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
-	return pytorchv1.DefaultContainerName
+	return kubeflowv1.PytorchJobDefaultContainerName
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerPortName() string {
-	return pytorchv1.DefaultPortName
+	return kubeflowv1.PytorchJobDefaultPortName
 }
 
 func (r *PyTorchJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return string(rtype) == string(pytorchv1.PyTorchReplicaTypeMaster)
+	return string(rtype) == string(kubeflowv1.PyTorchJobReplicaTypeMaster)
 }
 
 // onOwnerCreateFunc modify creation condition.
 func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		pytorchjob, ok := e.Object.(*pytorchv1.PyTorchJob)
+		pytorchjob, ok := e.Object.(*kubeflowv1.PyTorchJob)
 		if !ok {
 			return true
 		}
 		r.Scheme.Default(pytorchjob)
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(pytorchjob.Namespace, pytorchv1.FrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, commonv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false

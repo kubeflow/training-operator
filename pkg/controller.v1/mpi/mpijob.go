@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 
 	// MessageResourceExists is the message used for Events when a resource
 	// fails to sync due to dependent resources already existing.
-	MessageResourceExists = "Resource %q of Kind %q already exists and is not managed by MPIJob"
+	MessageResourceExists = "Resource %q of MPIJobKind %q already exists and is not managed by MPIJob"
 
 	// ErrResourceDoesNotExist is used as part of the Event 'reason' when some
 	// resource is missing in yaml
@@ -96,7 +96,7 @@ const (
 )
 
 // initializeMPIJobStatuses initializes the ReplicaStatuses for MPIJob.
-func initializeMPIJobStatuses(mpiJob *mpiv1.MPIJob, mtype commonv1.ReplicaType) {
+func initializeMPIJobStatuses(mpiJob *kubeflowv1.MPIJob, mtype commonv1.ReplicaType) {
 	replicaType := commonv1.ReplicaType(mtype)
 	if mpiJob.Status.ReplicaStatuses == nil {
 		mpiJob.Status.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
@@ -106,7 +106,7 @@ func initializeMPIJobStatuses(mpiJob *mpiv1.MPIJob, mtype commonv1.ReplicaType) 
 }
 
 // updateMPIJobConditions updates the conditions of the given mpiJob.
-func updateMPIJobConditions(mpiJob *mpiv1.MPIJob, conditionType commonv1.JobConditionType, reason, message string) error {
+func updateMPIJobConditions(mpiJob *kubeflowv1.MPIJob, conditionType commonv1.JobConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&mpiJob.Status, condition)
 	return nil
@@ -209,8 +209,8 @@ func isPodRunning(p *corev1.Pod) bool {
 }
 
 // isGPULauncher checks whether the launcher needs GPU.
-func isGPULauncher(mpiJob *mpiv1.MPIJob) bool {
-	for _, container := range mpiJob.Spec.MPIReplicaSpecs[mpiv1.MPIReplicaTypeLauncher].Template.Spec.Containers {
+func isGPULauncher(mpiJob *kubeflowv1.MPIJob) bool {
+	for _, container := range mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.Containers {
 		for key := range container.Resources.Limits {
 			if strings.HasSuffix(string(key), gpuResourceNameSuffix) {
 				return true

@@ -1,4 +1,3 @@
-
 # Image URL to use all building/pushing image targets
 IMG ?= kubeflow/training-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -45,6 +44,7 @@ generate: controller-gen ## Generate apidoc, sdk and code containing DeepCopy, D
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/..."
 	hack/update-codegen.sh
 	hack/python-sdk/gen-sdk.sh
+	$(MAKE) apidoc
 
 apidoc:
 	hack/generate-apidoc.sh
@@ -69,7 +69,7 @@ HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
 
 test: envtest
-	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST

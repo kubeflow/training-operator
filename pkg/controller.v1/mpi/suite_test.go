@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 
-	mpiv1 "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -68,7 +68,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = mpiv1.AddToScheme(scheme.Scheme)
+	err = kubeflowv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set Default kubectl delivery image
