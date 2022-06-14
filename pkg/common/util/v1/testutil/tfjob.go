@@ -21,10 +21,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *tfv1.TFJob {
+func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *kubeflowv1.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
@@ -35,7 +35,7 @@ func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPoli
 	return tfJob
 }
 
-func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *tfv1.TFJob {
+func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *kubeflowv1.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
@@ -50,7 +50,7 @@ func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *tfv1.TFJob 
 	return tfJob
 }
 
-func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *tfv1.TFJob {
+func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *kubeflowv1.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
@@ -65,7 +65,7 @@ func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *tfv1.
 	return tfJob
 }
 
-func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *tfv1.TFJob {
+func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *kubeflowv1.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.BackoffLimit = backoffLimit
@@ -82,21 +82,21 @@ func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *tfv1.
 	return tfJob
 }
 
-func NewTFJobWithChief(worker, ps int) *tfv1.TFJob {
+func NewTFJobWithChief(worker, ps int) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	chief := int32(1)
-	tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = &commonv1.ReplicaSpec{
+	tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeChief] = &commonv1.ReplicaSpec{
 		Replicas: &chief,
 		Template: NewTFReplicaSpecTemplate(),
 	}
 	return tfJob
 }
 
-func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1.TFJob {
+func NewTFJobWithEvaluator(worker, ps, evaluator int) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	if evaluator > 0 {
 		evaluator := int32(evaluator)
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeEval] = &commonv1.ReplicaSpec{
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeEval] = &commonv1.ReplicaSpec{
 			Replicas: &evaluator,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -104,14 +104,14 @@ func NewTFJobWithEvaluator(worker, ps, evaluator int) *tfv1.TFJob {
 	return tfJob
 }
 
-func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy tfv1.SuccessPolicy) *tfv1.TFJob {
+func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy kubeflowv1.SuccessPolicy) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.SuccessPolicy = &successPolicy
 	return tfJob
 }
 
-func NewTFJob(worker, ps int) *tfv1.TFJob {
-	tfJob := &tfv1.TFJob{
+func NewTFJob(worker, ps int) *kubeflowv1.TFJob {
+	tfJob := &kubeflowv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: TFJobKind,
 		},
@@ -119,11 +119,11 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 			Name:      TestTFJobName,
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: tfv1.TFJobSpec{
+		Spec: kubeflowv1.TFJobSpec{
 			TFReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
 		},
 	}
-	tfv1.SetObjectDefaults_TFJob(tfJob)
+	kubeflowv1.SetObjectDefaults_TFJob(tfJob)
 
 	if worker > 0 {
 		worker := int32(worker)
@@ -131,7 +131,7 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 			Replicas: &worker,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] = workerReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker] = workerReplicaSpec
 	}
 
 	if ps > 0 {
@@ -140,13 +140,13 @@ func NewTFJob(worker, ps int) *tfv1.TFJob {
 			Replicas: &ps,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] = psReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypePS] = psReplicaSpec
 	}
 	return tfJob
 }
 
-func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
-	tfJob := &tfv1.TFJob{
+func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
+	tfJob := &kubeflowv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: TFJobKind,
 		},
@@ -154,11 +154,11 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Name:      TestTFJobName,
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: tfv1.TFJobSpec{
+		Spec: kubeflowv1.TFJobSpec{
 			TFReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
 		},
 	}
-	tfv1.SetObjectDefaults_TFJob(tfJob)
+	kubeflowv1.SetObjectDefaults_TFJob(tfJob)
 
 	if worker > 0 {
 		worker := int32(worker)
@@ -166,7 +166,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Replicas: &worker,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeWorker] = workerReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker] = workerReplicaSpec
 	}
 
 	if ps > 0 {
@@ -175,7 +175,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Replicas: &ps,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypePS] = psReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypePS] = psReplicaSpec
 	}
 
 	if master > 0 {
@@ -184,7 +184,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Replicas: &master,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeMaster] = masterReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeMaster] = masterReplicaSpec
 	}
 
 	if chief > 0 {
@@ -193,7 +193,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Replicas: &chief,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = chiefReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeChief] = chiefReplicaSpec
 	}
 
 	if evaluator > 0 {
@@ -202,19 +202,19 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *tfv1.TFJob {
 			Replicas: &evaluator,
 			Template: NewTFReplicaSpecTemplate(),
 		}
-		tfJob.Spec.TFReplicaSpecs[tfv1.TFReplicaTypeChief] = evaluatorReplicaSpec
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeChief] = evaluatorReplicaSpec
 	}
 	return tfJob
 }
 
-func NewTFJobWithNamespace(worker, ps int, ns string) *tfv1.TFJob {
+func NewTFJobWithNamespace(worker, ps int, ns string) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Namespace = ns
 
 	return tfJob
 }
 
-func NewTFJobWithEvaluatorAndNamespace(worker, ps, evaluator int, ns string) *tfv1.TFJob {
+func NewTFJobWithEvaluatorAndNamespace(worker, ps, evaluator int, ns string) *kubeflowv1.TFJob {
 	tfJob := NewTFJobWithEvaluator(worker, ps, evaluator)
 	tfJob.Namespace = ns
 
@@ -226,13 +226,13 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				v1.Container{
-					Name:  tfv1.DefaultContainerName,
+					Name:  kubeflowv1.TFJobDefaultContainerName,
 					Image: TestImageName,
 					Args:  []string{"Fake", "Fake"},
 					Ports: []v1.ContainerPort{
 						v1.ContainerPort{
-							Name:          tfv1.DefaultPortName,
-							ContainerPort: tfv1.DefaultPort,
+							Name:          kubeflowv1.TFJobDefaultPortName,
+							ContainerPort: kubeflowv1.TFJobDefaultPort,
 						},
 					},
 				},
@@ -241,7 +241,7 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 	}
 }
 
-func SetTFJobCompletionTime(tfJob *tfv1.TFJob) {
+func SetTFJobCompletionTime(tfJob *kubeflowv1.TFJob) {
 	now := metav1.Time{Time: time.Now()}
 	tfJob.Status.CompletionTime = &now
 }

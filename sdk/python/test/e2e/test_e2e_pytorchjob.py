@@ -21,8 +21,8 @@ from kubernetes.client import V1Container
 
 from kubeflow.training import PyTorchJobClient
 from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1PyTorchJob
-from kubeflow.training import V1PyTorchJobSpec
+from kubeflow.training import KubeflowOrgV1PyTorchJob
+from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
 from kubeflow.training import V1RunPolicy
 
 PYTORCH_CLIENT = PyTorchJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
@@ -56,11 +56,11 @@ def test_sdk_e2e():
         )
     )
 
-    pytorchjob = V1PyTorchJob(
+    pytorchjob = KubeflowOrgV1PyTorchJob(
         api_version="kubeflow.org/v1",
         kind="PyTorchJob",
         metadata=V1ObjectMeta(name="pytorchjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
-        spec=V1PyTorchJobSpec(
+        spec=KubeflowOrgV1PyTorchJobSpec(
             run_policy=V1RunPolicy(
                 clean_pod_policy="None",
             ),

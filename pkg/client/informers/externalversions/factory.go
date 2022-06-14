@@ -23,7 +23,7 @@ import (
 
 	versioned "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/internalinterfaces"
-	tensorflow "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/tensorflow"
+	kubefloworg "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/kubeflow.org"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -170,9 +170,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Kubeflow() tensorflow.Interface
+	Kubeflow() kubefloworg.Interface
 }
 
-func (f *sharedInformerFactory) Kubeflow() tensorflow.Interface {
-	return tensorflow.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Kubeflow() kubefloworg.Interface {
+	return kubefloworg.New(f, f.namespace, f.tweakListOptions)
 }

@@ -19,7 +19,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -51,8 +51,16 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kubeflow.org, Version=v1
+	case v1.SchemeGroupVersion.WithResource("mpijobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().MPIJobs().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("mxjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().MXJobs().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("pytorchjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().PyTorchJobs().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("tfjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().TFJobs().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("xgboostjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().XGBoostJobs().Informer()}, nil
 
 	}
 

@@ -22,8 +22,8 @@ from kubernetes.client import V1Container
 from kubeflow.training import TFJobClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import V1RunPolicy
-from kubeflow.training import V1TFJob
-from kubeflow.training import V1TFJobSpec
+from kubeflow.training import KubeflowOrgV1TFJob
+from kubeflow.training import KubeflowOrgV1TFJobSpec
 
 TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
 SDK_TEST_NAMESPACE = 'default'
@@ -51,11 +51,11 @@ def test_sdk_e2e():
         )
     )
 
-    tfjob = V1TFJob(
+    tfjob = KubeflowOrgV1TFJob(
         api_version="kubeflow.org/v1",
         kind="TFJob",
         metadata=V1ObjectMeta(name="mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
-        spec=V1TFJobSpec(
+        spec=KubeflowOrgV1TFJobSpec(
             run_policy=V1RunPolicy(
                 clean_pod_policy="None",
             ),

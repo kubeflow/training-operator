@@ -1,4 +1,3 @@
-
 # Image URL to use all building/pushing image targets
 IMG ?= kubeflow/training-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -40,8 +39,15 @@ help: ## Display this help.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/apis/..." output:crd:artifacts:config=manifests/base/crds
 
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen ## Generate apidoc, sdk and code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations. 
+	# Is controller gen used for code generation?
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/..."
+	hack/update-codegen.sh
+	hack/python-sdk/gen-sdk.sh
+	$(MAKE) apidoc
+
+apidoc:
+	hack/generate-apidoc.sh
 
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -63,7 +69,7 @@ HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
 
 test: envtest
-	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
