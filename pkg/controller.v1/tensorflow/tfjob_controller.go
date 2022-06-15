@@ -183,6 +183,15 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&tfjob.Spec.RunPolicy, tfjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile Tensorflow Job error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
