@@ -169,6 +169,15 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&xgboostjob.Spec.RunPolicy, xgboostjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile XGBoost Job error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return reconcile.Result{}, nil
 }
 

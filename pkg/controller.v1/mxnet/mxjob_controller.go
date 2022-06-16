@@ -163,6 +163,15 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&mxjob.Spec.RunPolicy, mxjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile MX Job error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 

@@ -162,6 +162,15 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&pytorchjob.Spec.RunPolicy, pytorchjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile PyTorchJob error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
