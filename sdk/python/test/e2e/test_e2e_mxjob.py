@@ -27,7 +27,7 @@ from kubeflow.training import KubeflowOrgV1MXJobSpec
 from kubeflow.training import V1RunPolicy
 
 MX_CLIENT = MXJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'training'
+SDK_TEST_NAMESPACE = 'default'
 
 
 def test_sdk_e2e():
