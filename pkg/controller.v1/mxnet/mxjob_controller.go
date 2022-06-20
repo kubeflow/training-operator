@@ -326,6 +326,16 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		return err
 	}
 
+	if mxjob.Status.StartTime == nil {
+		now := metav1.Now()
+		mxjob.Status.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+			logrus.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
+			r.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		}
+	}
+
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 
@@ -338,39 +348,32 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		r.Log.Info(fmt.Sprintf("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			mxjob.Name, rtype, expected, running, succeeded, failed))
 
-		if mxjob.Status.StartTime == nil {
-			now := metav1.Now()
-			mxjob.Status.StartTime = &now
-			// enqueue a sync to check if job past ActiveDeadlineSeconds
-			if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
-				logrus.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
-				r.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) {
+			if running > 0 {
+				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
+				if err != nil {
+					logrus.Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+			}
+			// when scheduler is succeeded, the job is finished.
+			if expected == 0 {
+				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
+				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
+				if mxjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					mxjob.Status.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
+				if err != nil {
+					logrus.Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
+				return nil
 			}
 		}
-
-		if running > 0 {
-			msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
-			if err != nil {
-				logrus.Infof("Append mxjob condition error: %v", err)
-				return err
-			}
-		}
-		if expected == 0 {
-			msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
-			r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
-			if mxjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				mxjob.Status.CompletionTime = &now
-			}
-			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
-			if err != nil {
-				logrus.Infof("Append mxjob condition error: %v", err)
-				return err
-			}
-			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
-		}
-
 		if failed > 0 {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
