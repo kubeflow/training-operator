@@ -400,7 +400,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			if rtype == kubeflowv1.PyTorchJobReplicaTypeWorker {
 				// TODO(gaocegege): Support SuccessPolicy
 				if expected == 0 {
-					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
+					msg := fmt.Sprintf("PyTorchJob %s/%s successfully completed.",
 						pytorchjob.Namespace, pytorchjob.Name)
 					r.recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
 					if jobStatus.CompletionTime == nil {
@@ -410,17 +410,17 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 					err := commonutil.UpdateJobConditions(jobStatus,
 						commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
 					if err != nil {
-						commonutil.LoggerForJob(pytorchjob).Infof("Append tfjob condition error: %v", err)
+						commonutil.LoggerForJob(pytorchjob).Infof("Append pytorchjob condition error: %v", err)
 						return err
 					}
 					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, kubeflowv1.PytorchJobFrameworkName)
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
-					msg := fmt.Sprintf("TFJob %s/%s is running.",
+					msg := fmt.Sprintf("PyTorchJob %s/%s is running.",
 						pytorchjob.Namespace, pytorchjob.Name)
 					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
 					if err != nil {
-						commonutil.LoggerForJob(pytorchjob).Infof("Append tfjob condition error: %v", err)
+						commonutil.LoggerForJob(pytorchjob).Infof("Append pytorchjob condition error: %v", err)
 						return err
 					}
 				}
@@ -457,7 +457,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	return nil
 }
 
-// ContainsMasterSpec returns true if the tfjob contains master spec.
+// ContainsMasterSpec returns true if the pytorchjob contains master spec.
 func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
 	if _, ok := replicas[kubeflowv1.PyTorchJobReplicaTypeMaster]; ok {
 		return true
