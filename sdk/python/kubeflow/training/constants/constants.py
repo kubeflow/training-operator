@@ -60,3 +60,11 @@ MPIJOB_PLURAL = 'mpijobs'
 MPIJOB_VERSION = os.environ.get('MPIJOB_VERSION', 'v1')
 
 MPI_LOGLEVEL = os.environ.get('MPIJOB_LOGLEVEL', 'INFO').upper()
+
+# MXNETJob K8S constants
+MXJOB_GROUP = 'kubeflow.org'
+MXJOB_KIND = 'MXJob'
+MXJOB_PLURAL = 'mxjobs'
+MXJOB_VERSION = os.environ.get('MXJOB_VERSION', 'v1')
+
+MX_LOGLEVEL = os.environ.get('MXJOB_LOGLEVEL', 'INFO').upper()

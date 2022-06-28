@@ -53,6 +53,11 @@ def set_mpijob_namespace(mpijob):
     namespace = mpijob_namespace or get_default_target_namespace()
     return namespace
 
+def set_mxjob_namespace(mxjob):
+    mxjob_namespace = mxjob.metadata.namespace
+    namespace = mxjob_namespace or get_default_target_namespace()
+    return namespace
+
 def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     """
     Get labels according to specified flags.
