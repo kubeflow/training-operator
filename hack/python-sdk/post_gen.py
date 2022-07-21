@@ -24,7 +24,9 @@ import re
 
 __replacements = [
     ("import kubeflow.training", "from kubeflow.training.models import *"),
-    ("kubeflow.training.models.v1\/.*.v1.", "V1")
+    ("kubeflow.training.models.v1\/.*.v1.", "V1"),
+    ("kubeflow.training.models.kubeflow/org/v1/", "kubeflow_org_v1_"),
+    ("\.kubeflow.org.v1\.", ".KubeflowOrgV1"),
 ]
 
 sdk_dir = os.path.abspath(os.path.join(__file__, "../../..", "sdk/python"))
@@ -53,6 +55,9 @@ def add_imports() -> None:
     with open(os.path.join(sdk_dir, "kubeflow/training/__init__.py"), "a") as init_file:
         init_file.write("from kubeflow.training.api.tf_job_client import TFJobClient\n")
         init_file.write("from kubeflow.training.api.py_torch_job_client import PyTorchJobClient\n")
+        init_file.write("from kubeflow.training.api.xgboost_job_client import XGBoostJobClient\n")
+        init_file.write("from kubeflow.training.api.mpi_job_client import MPIJobClient\n")
+        init_file.write("from kubeflow.training.api.mx_job_client import MXJobClient\n")
     with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as init_file:
         init_file.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
 

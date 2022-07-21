@@ -20,17 +20,17 @@ import (
 	"strings"
 	"time"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"k8s.io/apimachinery/pkg/types"
-
 	common "github.com/kubeflow/common/pkg/apis/common/v1"
-	kubeflow "github.com/kubeflow/training-operator/pkg/apis/mpi/v1"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -38,20 +38,20 @@ const (
 	extendedGPUResourceName = "vendor-domain/gpu"
 )
 
-func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubeflow.MPIJob {
+func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubeflowv1.MPIJob {
 	cleanPodPolicyAll := common.CleanPodPolicyAll
-	mpiJob := &kubeflow.MPIJob{
-		TypeMeta: metav1.TypeMeta{APIVersion: kubeflow.SchemeGroupVersion.String()},
+	mpiJob := &kubeflowv1.MPIJob{
+		TypeMeta: metav1.TypeMeta{APIVersion: kubeflowv1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: kubeflow.MPIJobSpec{
+		Spec: kubeflowv1.MPIJobSpec{
 			RunPolicy: common.RunPolicy{
 				CleanPodPolicy: &cleanPodPolicyAll,
 			},
 			MPIReplicaSpecs: map[common.ReplicaType]*common.ReplicaSpec{
-				kubeflow.MPIReplicaTypeWorker: {
+				kubeflowv1.MPIJobReplicaTypeWorker: {
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -63,7 +63,7 @@ func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubef
 						},
 					},
 				},
-				kubeflow.MPIReplicaTypeLauncher: {
+				kubeflowv1.MPIJobReplicaTypeLauncher: {
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -90,12 +90,12 @@ func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubef
 	return mpiJob
 }
 
-func newMPIJobOld(name string, replicas *int32, pusPerReplica int64, resourceName string, startTime, completionTime *metav1.Time) *kubeflow.MPIJob {
+func newMPIJobOld(name string, replicas *int32, pusPerReplica int64, resourceName string, startTime, completionTime *metav1.Time) *kubeflowv1.MPIJob {
 	mpiJob := newMPIJobCommon(name, startTime, completionTime)
 
-	mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeWorker].Replicas = replicas
+	mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeWorker].Replicas = replicas
 
-	workerContainers := mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeWorker].Template.Spec.Containers
+	workerContainers := mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeWorker].Template.Spec.Containers
 	for i := range workerContainers {
 		container := &workerContainers[i]
 		container.Resources = corev1.ResourceRequirements{
@@ -110,12 +110,12 @@ func newMPIJobOld(name string, replicas *int32, pusPerReplica int64, resourceNam
 
 var newMPIJob = newMPIJobWithLauncher
 
-func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, resourceName string, startTime, completionTime *metav1.Time) *kubeflow.MPIJob {
+func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, resourceName string, startTime, completionTime *metav1.Time) *kubeflowv1.MPIJob {
 	mpiJob := newMPIJobOld(name, replicas, pusPerReplica, resourceName, startTime, completionTime)
 
-	mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeLauncher].Replicas = int32Ptr(1)
+	mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Replicas = pointer.Int32(1)
 
-	launcherContainers := mpiJob.Spec.MPIReplicaSpecs[kubeflow.MPIReplicaTypeLauncher].Template.Spec.Containers
+	launcherContainers := mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.Containers
 	for i := range launcherContainers {
 		container := &launcherContainers[i]
 		container.Resources = corev1.ResourceRequirements{
@@ -162,7 +162,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			for testName, testCase := range testCases {
 				mpiJob := newMPIJobWithLauncher("test-"+strings.ToLower(testName),
-					int32Ptr(64), 1, testCase.gpu, &startTime, &completionTime)
+					pointer.Int32(64), 1, testCase.gpu, &startTime, &completionTime)
 				Expect(isGPULauncher(mpiJob) == testCase.expected).To(BeTrue())
 			}
 		})
@@ -177,7 +177,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-succeeded"
 
-			mpiJob := newMPIJobWithLauncher(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -196,7 +196,7 @@ var _ = Describe("MPIJob controller", func() {
 				return testK8sClient.Status().Update(ctx, launcherCreated)
 			}, timeout, interval).Should(BeNil())
 
-			created := &kubeflow.MPIJob{}
+			created := &kubeflowv1.MPIJob{}
 			launcherStatus := &common.ReplicaStatus{
 				Active:    0,
 				Succeeded: 1,
@@ -207,7 +207,7 @@ var _ = Describe("MPIJob controller", func() {
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeLauncher, launcherStatus)
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher, launcherStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
@@ -221,7 +221,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-failed"
 
-			mpiJob := newMPIJobWithLauncher(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -243,13 +243,13 @@ var _ = Describe("MPIJob controller", func() {
 				Succeeded: 0,
 				Failed:    1,
 			}
-			created := &kubeflow.MPIJob{}
+			created := &kubeflowv1.MPIJob{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: jobName}, created)
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeLauncher, launcherStatus)
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher, launcherStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
@@ -263,7 +263,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-succeeded2"
 
-			mpiJob := newMPIJobWithLauncher(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -282,7 +282,7 @@ var _ = Describe("MPIJob controller", func() {
 				return testK8sClient.Status().Update(ctx, launcherCreated)
 			}, timeout, interval).Should(BeNil())
 
-			created := &kubeflow.MPIJob{}
+			created := &kubeflowv1.MPIJob{}
 			launcherStatus := &common.ReplicaStatus{
 				Active:    0,
 				Succeeded: 0,
@@ -293,7 +293,7 @@ var _ = Describe("MPIJob controller", func() {
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeWorker, launcherStatus)
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker, launcherStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
@@ -358,13 +358,13 @@ var _ = Describe("MPIJob controller", func() {
 				Failed:    0,
 			}
 			Eventually(func() bool {
-				created := &kubeflow.MPIJob{}
+				created := &kubeflowv1.MPIJob{}
 				err := testK8sClient.Get(ctx, key, created)
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeLauncher,
-					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeWorker,
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
+					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
@@ -430,13 +430,13 @@ var _ = Describe("MPIJob controller", func() {
 				Failed:    0,
 			}
 			Eventually(func() bool {
-				created := &kubeflow.MPIJob{}
+				created := &kubeflowv1.MPIJob{}
 				err := testK8sClient.Get(ctx, key, created)
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeLauncher,
-					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeWorker,
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
+					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
@@ -477,7 +477,7 @@ var _ = Describe("MPIJob controller", func() {
 				Namespace: metav1.NamespaceDefault,
 				Name:      mpiJob.Name + launcherSuffix,
 			}
-			launcher := &kubeflow.MPIJob{}
+			launcher := &kubeflowv1.MPIJob{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, launcherKey, launcher)
 				return err != nil
@@ -498,13 +498,13 @@ var _ = Describe("MPIJob controller", func() {
 				Failed:    0,
 			}
 			Eventually(func() bool {
-				created := &kubeflow.MPIJob{}
+				created := &kubeflowv1.MPIJob{}
 				err := testK8sClient.Get(ctx, key, created)
 				if err != nil {
 					return false
 				}
-				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeLauncher,
-					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflow.MPIReplicaTypeWorker,
+				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
+					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
 			}, timeout, interval).Should(BeTrue())
 		})
@@ -536,7 +536,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
 			launcher.OwnerReferences = nil
@@ -566,7 +566,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(1), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(1), 1, gpuResourceName, &startTime, &completionTime)
 
 			for i := 0; i < 1; i++ {
 				name := fmt.Sprintf("%s-%d", mpiJob.Name+workerSuffix, i)
@@ -599,7 +599,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 
 			cm := newConfigMap(mpiJob, 64, isGPULauncher(mpiJob))
 			cm.OwnerReferences = nil
@@ -629,7 +629,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 
 			sa := newLauncherServiceAccount(mpiJob)
 			sa.OwnerReferences = nil
@@ -659,7 +659,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 
 			role := newLauncherRole(mpiJob, 64)
 			role.OwnerReferences = nil
@@ -689,7 +689,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, int32Ptr(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 
 			rb := newLauncherRoleBinding(mpiJob)
 			rb.OwnerReferences = nil
@@ -729,5 +729,3 @@ func ReplicaStatusMatch(replicaStatuses map[common.ReplicaType]*common.ReplicaSt
 
 	return result
 }
-
-func int32Ptr(i int32) *int32 { return &i }

@@ -45,9 +45,9 @@ from kubernetes.client import V1Container
 from kubeflow.training import constants
 from kubeflow.training import utils
 from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1TFJob
-from kubeflow.training import V1TFJobList
-from kubeflow.training import V1TFJobSpec
+from kubeflow.training import KubeflowOrgV1TFJob
+from kubeflow.training import KubeflowOrgV1TFJobList
+from kubeflow.training import KubeflowOrgV1TFJobSpec
 from kubeflow.training import TFJobClient
 
 
@@ -72,11 +72,11 @@ worker = V1ReplicaSpec(
     )
 )
 
-tfjob = V1TFJob(
+tfjob = KubeflowOrgV1TFJob(
     api_version="kubeflow.org/v1",
     kind="TFJob",
     metadata=V1ObjectMeta(name="mnist",namespace=namespace),
-    spec=V1TFJobSpec(
+    spec=KubeflowOrgV1TFJobSpec(
         clean_pod_policy="None",
         tf_replica_specs={"Worker": worker}
     )
@@ -92,7 +92,7 @@ tfjob_client.create(tfjob)
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-tfjob  | [V1TFJob](V1TFJob.md) | tfjob defination| Required |
+tfjob  | [KubeflowOrgV1TFJob](KubeflowOrgV1TFJob.md) | tfjob defination| Required |
 namespace | str | Namespace for tfjob deploying to. If the `namespace` is not defined, will align with tfjob definition, or use current or default namespace if namespace is not specified in tfjob definition.  | Optional |
 
 ### Return type
@@ -135,7 +135,7 @@ Note that if you want to set the field from existing value to `None`, `patch` AP
 
 ```python
 
-tfjob = V1TFJob(
+tfjob = KubeflowOrgV1TFJob(
     api_version="kubeflow.org/v1",
     ... #update something in TFJob spec
 )
@@ -148,7 +148,7 @@ tfjob_client.patch('mnist', isvc)
 ### Parameters
 Name | Type |  Description | Notes
 ------------ | ------------- | ------------- | -------------
-tfjob  | [V1TFJob](V1TFJob.md) | tfjob defination| Required |
+tfjob  | [KubeflowOrgV1TFJob](KubeflowOrgV1TFJob.md) | tfjob defination| Required |
 namespace | str | The tfjob's namespace for patching. If the `namespace` is not defined, will align with tfjob definition, or use current or default namespace if namespace is not specified in tfjob definition. | Optional|
 
 ### Return type

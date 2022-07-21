@@ -20,10 +20,11 @@ import (
 
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 
-	pytorchv1 "github.com/kubeflow/training-operator/pkg/apis/pytorch/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 )
 
@@ -35,59 +36,59 @@ func TestInitContainer(t *testing.T) {
 	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
 
 	testCases := []struct {
-		job         *pytorchv1.PyTorchJob
+		job         *kubeflowv1.PyTorchJob
 		rtype       commonv1.ReplicaType
 		index       string
 		expected    int
 		exepctedErr error
 	}{
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &kubeflowv1.PyTorchJob{
+				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
-							Replicas: int32Ptr(1),
+						kubeflowv1.PyTorchJobReplicaTypeWorker: {
+							Replicas: pointer.Int32(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeWorker,
+			rtype:       kubeflowv1.PyTorchJobReplicaTypeWorker,
 			index:       "0",
 			expected:    0,
 			exepctedErr: nil,
 		},
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &kubeflowv1.PyTorchJob{
+				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
-							Replicas: int32Ptr(1),
+						kubeflowv1.PyTorchJobReplicaTypeWorker: {
+							Replicas: pointer.Int32(1),
 						},
-						pytorchv1.PyTorchReplicaTypeMaster: {
-							Replicas: int32Ptr(1),
+						kubeflowv1.PyTorchJobReplicaTypeMaster: {
+							Replicas: pointer.Int32(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeWorker,
+			rtype:       kubeflowv1.PyTorchJobReplicaTypeWorker,
 			index:       "0",
 			expected:    1,
 			exepctedErr: nil,
 		},
 		{
-			job: &pytorchv1.PyTorchJob{
-				Spec: pytorchv1.PyTorchJobSpec{
+			job: &kubeflowv1.PyTorchJob{
+				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						pytorchv1.PyTorchReplicaTypeWorker: {
-							Replicas: int32Ptr(1),
+						kubeflowv1.PyTorchJobReplicaTypeWorker: {
+							Replicas: pointer.Int32(1),
 						},
-						pytorchv1.PyTorchReplicaTypeMaster: {
-							Replicas: int32Ptr(1),
+						kubeflowv1.PyTorchJobReplicaTypeMaster: {
+							Replicas: pointer.Int32(1),
 						},
 					},
 				},
 			},
-			rtype:       pytorchv1.PyTorchReplicaTypeMaster,
+			rtype:       kubeflowv1.PyTorchJobReplicaTypeMaster,
 			index:       "0",
 			expected:    0,
 			exepctedErr: nil,

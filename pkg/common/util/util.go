@@ -15,7 +15,11 @@
 package util
 
 import (
+	"fmt"
+	"time"
+
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -71,4 +75,27 @@ func GetReplicaTypes(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) []com
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// DurationUntilExpireTime returns the duration until job needs to be cleaned up, or -1 if it's infinite.
+func DurationUntilExpireTime(runPolicy *commonv1.RunPolicy, jobStatus commonv1.JobStatus) (time.Duration, error) {
+	if !commonutil.IsSucceeded(jobStatus) && !commonutil.IsFailed(jobStatus) {
+		return -1, nil
+	}
+	currentTime := time.Now()
+	ttl := runPolicy.TTLSecondsAfterFinished
+	if ttl == nil {
+		return -1, nil
+	}
+	duration := time.Second * time.Duration(*ttl)
+	if jobStatus.CompletionTime == nil {
+		return -1, fmt.Errorf("job completion time is nil, cannot cleanup")
+	}
+	finishTime := jobStatus.CompletionTime
+	expireTime := finishTime.Add(duration)
+	if currentTime.After(expireTime) {
+		return 0, nil
+	} else {
+		return expireTime.Sub(currentTime), nil
+	}
 }

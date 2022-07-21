@@ -34,6 +34,9 @@ func (f *FakeWorkQueue) Done(item interface{}) {}
 // ShutDown WorkQueue ShutDown method
 func (f *FakeWorkQueue) ShutDown() {}
 
+// ShutDown WorkQueue ShutDownWithDrain method
+func (f *FakeWorkQueue) ShutDownWithDrain() {}
+
 // ShuttingDown WorkQueue ShuttingDown method
 func (f *FakeWorkQueue) ShuttingDown() bool { return true }
 

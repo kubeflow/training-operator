@@ -18,13 +18,13 @@ import (
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 
-	tfv1 "github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -39,7 +39,7 @@ var (
 	// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 	// key function but it should be just fine for non delete events.
 	KeyFunc        = cache.DeletionHandlingMetaNamespaceKeyFunc
-	GroupName      = tfv1.GroupVersion.Group
+	GroupName      = kubeflowv1.GroupVersion.Group
 	ControllerName = "training-operator"
 )
 
@@ -58,7 +58,7 @@ func GenOwnerReference(job metav1.Object, apiVersion string, kind string) *metav
 }
 
 // ConvertTFJobToUnstructured uses function ToUnstructured to convert TFJob to Unstructured.
-func ConvertTFJobToUnstructured(tfJob *tfv1.TFJob) (*unstructured.Unstructured, error) {
+func ConvertTFJobToUnstructured(tfJob *kubeflowv1.TFJob) (*unstructured.Unstructured, error) {
 	object, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tfJob)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func ConvertTFJobToUnstructured(tfJob *tfv1.TFJob) (*unstructured.Unstructured, 
 	}, nil
 }
 
-func GetKey(tfJob *tfv1.TFJob, t *testing.T) string {
+func GetKey(tfJob *kubeflowv1.TFJob, t *testing.T) string {
 	key, err := KeyFunc(tfJob)
 	if err != nil {
 		t.Errorf("Unexpected error getting key for job %v: %v", tfJob.Name, err)
@@ -77,9 +77,9 @@ func GetKey(tfJob *tfv1.TFJob, t *testing.T) string {
 	return key
 }
 
-func CheckCondition(tfJob *tfv1.TFJob, condition commonv1.JobConditionType, reason string) bool {
+func CheckCondition(tfJob *kubeflowv1.TFJob, condition commonv1.JobConditionType, reason string) bool {
 	for _, v := range tfJob.Status.Conditions {
-		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
+		if v.Type == condition && v.Status == corev1.ConditionTrue && v.Reason == reason {
 			return true
 		}
 	}

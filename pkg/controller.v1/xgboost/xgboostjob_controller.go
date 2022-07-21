@@ -17,49 +17,43 @@ package xgboost
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/informers"
+	"reflect"
 	"time"
 
-	"github.com/kubeflow/training-operator/pkg/apis/xgboost/validation"
-
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"reflect"
-
+	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	logger "github.com/kubeflow/common/pkg/util"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
-	xgboostv1 "github.com/kubeflow/training-operator/pkg/apis/xgboost/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
@@ -87,7 +81,7 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 		Scheme:    mgr.GetScheme(),
 		recorder:  mgr.GetEventRecorderFor(controllerName),
 		apiReader: mgr.GetAPIReader(),
-		Log:       ctrl.Log.WithName("controllers").WithName(xgboostv1.Kind),
+		Log:       ctrl.Log.WithName("controllers").WithName(kubeflowv1.XGBoostJobKind),
 	}
 
 	// Create clients
@@ -135,9 +129,9 @@ type XGBoostJobReconciler struct {
 // and what is in the XGBoostJob.Spec
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues(xgboostv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues(kubeflowv1.XGBoostJobSingular, req.NamespacedName)
 
-	xgboostjob := &xgboostv1.XGBoostJob{}
+	xgboostjob := &kubeflowv1.XGBoostJob{}
 	err := r.Get(ctx, req.NamespacedName, xgboostjob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch XGBoostJob", req.NamespacedName.String())
@@ -146,7 +140,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = validation.ValidateV1XGBoostJobSpec(&xgboostjob.Spec); err != nil {
+	if err = kubeflowv1.ValidateXGBoostJobSpec(&xgboostjob.Spec); err != nil {
 		logger.Info(err.Error(), "XGBoostJob failed validation", req.NamespacedName.String())
 	}
 
@@ -175,6 +169,15 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&xgboostjob.Spec.RunPolicy, xgboostjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile XGBoost Job error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return reconcile.Result{}, nil
 }
 
@@ -189,7 +192,7 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &xgboostv1.XGBoostJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &kubeflowv1.XGBoostJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -198,7 +201,7 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &xgboostv1.XGBoostJob{},
+		OwnerType:    &kubeflowv1.XGBoostJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -210,7 +213,7 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related service
 	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &xgboostv1.XGBoostJob{},
+		OwnerType:    &kubeflowv1.XGBoostJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -227,20 +230,20 @@ func (r *XGBoostJobReconciler) ControllerName() string {
 }
 
 func (r *XGBoostJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return xgboostv1.GroupVersion.WithKind(xgboostv1.Kind)
+	return kubeflowv1.GroupVersion.WithKind(kubeflowv1.XGBoostJobKind)
 }
 
 func (r *XGBoostJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return xgboostv1.GroupVersion
+	return kubeflowv1.GroupVersion
 }
 
 func (r *XGBoostJobReconciler) GetGroupNameLabelValue() string {
-	return xgboostv1.GroupVersion.Group
+	return kubeflowv1.GroupVersion.Group
 }
 
 // GetJobFromInformerCache returns the Job from Informer Cache
 func (r *XGBoostJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	job := &xgboostv1.XGBoostJob{}
+	job := &kubeflowv1.XGBoostJob{}
 	// Default reader for XGBoostJob is cache reader.
 	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -256,7 +259,7 @@ func (r *XGBoostJobReconciler) GetJobFromInformerCache(namespace, name string) (
 
 // GetJobFromAPIClient returns the Job from API server
 func (r *XGBoostJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &xgboostv1.XGBoostJob{}
+	job := &kubeflowv1.XGBoostJob{}
 
 	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -309,7 +312,7 @@ func (r *XGBoostJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Ser
 
 // DeleteJob deletes the job
 func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
-	xgboostjob, ok := job.(*xgboostv1.XGBoostJob)
+	xgboostjob, ok := job.(*kubeflowv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", xgboostjob)
 	}
@@ -320,13 +323,13 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(xgboostjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", xgboostjob.Name)
 	r.Log.Info("job deleted", "namespace", xgboostjob.Namespace, "name", xgboostjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, xgboostv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
 	return nil
 }
 
 // UpdateJobStatus updates the job status and job conditions
 func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
-	xgboostJob, ok := job.(*xgboostv1.XGBoostJob)
+	xgboostJob, ok := job.(*kubeflowv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of xgboostJob", xgboostJob)
 	}
@@ -359,7 +362,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			xgboostJob.Name, rtype, expected, running, succeeded, failed)
 
-		if rtype == commonv1.ReplicaType(xgboostv1.XGBoostReplicaTypeMaster) {
+		if rtype == commonv1.ReplicaType(kubeflowv1.XGBoostJobReplicaTypeMaster) {
 			if running > 0 {
 				msg := fmt.Sprintf("XGBoostJob %s is running.", xgboostJob.Name)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, xgboostJobRunningReason, msg)
@@ -382,7 +385,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
+				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
 				return nil
 			}
 		}
@@ -395,7 +398,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobFailedReason, msg)
@@ -408,7 +411,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					logger.LoggerForJob(xgboostJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
 			}
 		}
 	}
@@ -431,7 +434,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobSt
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	xgboostjob, ok := job.(*xgboostv1.XGBoostJob)
+	xgboostjob, ok := job.(*kubeflowv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", xgboostjob)
 	}
@@ -458,29 +461,29 @@ func (r *XGBoostJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerName() string {
-	return xgboostv1.DefaultContainerName
+	return kubeflowv1.XGBoostJobDefaultContainerName
 }
 
 func (r *XGBoostJobReconciler) GetDefaultContainerPortName() string {
-	return xgboostv1.DefaultPortName
+	return kubeflowv1.XGBoostJobDefaultPortName
 }
 
 func (r *XGBoostJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return string(rtype) == string(xgboostv1.XGBoostReplicaTypeMaster)
+	return string(rtype) == string(kubeflowv1.XGBoostJobReplicaTypeMaster)
 }
 
 // onOwnerCreateFunc modify creation condition.
 func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		xgboostJob, ok := e.Object.(*xgboostv1.XGBoostJob)
+		xgboostJob, ok := e.Object.(*kubeflowv1.XGBoostJob)
 		if !ok {
 			return true
 		}
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, xgboostv1.FrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

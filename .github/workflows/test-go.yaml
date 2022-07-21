@@ -1,4 +1,4 @@
-name: Go Test
+name: Go generate Test
 
 on:
   - push
@@ -27,28 +27,24 @@ jobs:
 
       - name: Check Go modules
         run: |
-          go mod tidy && git add go.*
+          go mod tidy && git add go.* &&
           git diff --cached --exit-code || (echo 'Please run "go mod tidy" to sync Go modules' && exit 1);
       - name: Check manifests
         run: |
-          make manifests && git add manifests
+          make manifests && git add manifests &&
           git diff --cached --exit-code || (echo 'Please run "make manifests" to generate manifests' && exit 1);
       - name: Check auto-generated codes
         run: |
-          make generate && git add pkg/apis
+          make generate && git add pkg sdk &&
           git diff --cached --exit-code || (echo 'Please run "make generate" to generate Go codes' && exit 1);
       - name: Verify gofmt
         run: |
-          make fmt && git add pkg cmd
+          make fmt && git add pkg cmd &&
           git diff --cached --exit-code || (echo 'Please run "make fmt" to verify gofmt' && exit 1);
       - name: Verify govet
         run: |
-          make vet && git add pkg cmd
+          make vet && git add pkg cmd &&
           git diff --cached --exit-code || (echo 'Please run "make vet" to verify govet' && exit 1);
-      - name: Run Go test
-        run: make test
-      - name: Coveralls report
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: cover.out
-          working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+      - name: Verify golint
+        run: |
+          make golangci-lint

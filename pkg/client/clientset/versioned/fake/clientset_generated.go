@@ -18,8 +18,8 @@ package fake
 
 import (
 	clientset "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1"
-	fakekubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/tensorflow/v1/fake"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1"
+	fakekubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -72,7 +72,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // KubeflowV1 retrieves the KubeflowV1Client
 func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {

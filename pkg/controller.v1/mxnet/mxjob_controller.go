@@ -20,42 +20,38 @@ import (
 	"reflect"
 	"time"
 
-	"k8s.io/client-go/informers"
-
-	"github.com/kubeflow/training-operator/pkg/apis/mxnet/validation"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
+	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
-	mxjobv1 "github.com/kubeflow/training-operator/pkg/apis/mxnet/v1"
-	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
@@ -123,16 +119,16 @@ type MXJobReconciler struct {
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
 func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(mxjobv1.Singular, req.NamespacedName)
+	logger := r.Log.WithValues(kubeflowv1.MXJobSingular, req.NamespacedName)
 
-	mxjob := &mxjobv1.MXJob{}
+	mxjob := &kubeflowv1.MXJob{}
 	err := r.Get(ctx, req.NamespacedName, mxjob)
 	if err != nil {
 		logger.Info(err.Error(), "unable to fetch MXJob", req.NamespacedName.String())
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = validation.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
+	if err = kubeflowv1.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
 		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
 	}
 
@@ -167,6 +163,15 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
+	t, err := util.DurationUntilExpireTime(&mxjob.Spec.RunPolicy, mxjob.Status)
+	if err != nil {
+		logrus.Warnf("Reconcile MX Job error %v", err)
+		return ctrl.Result{}, err
+	}
+	if t >= 0 {
+		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -181,7 +186,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &mxjobv1.MXJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(&source.Kind{Type: &kubeflowv1.MXJob{}}, &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
 	); err != nil {
 		return err
@@ -190,7 +195,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related pod
 	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mxjobv1.MXJob{},
+		OwnerType:    &kubeflowv1.MXJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -202,7 +207,7 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// inject watching for job related service
 	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &mxjobv1.MXJob{},
+		OwnerType:    &kubeflowv1.MXJob{},
 	}, predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -220,19 +225,19 @@ func (r *MXJobReconciler) ControllerName() string {
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mxjobv1.GroupVersion.WithKind(mxjobv1.Kind)
+	return kubeflowv1.GroupVersion.WithKind(kubeflowv1.MXJobKind)
 }
 
 func (r *MXJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
-	return mxjobv1.GroupVersion
+	return kubeflowv1.GroupVersion
 }
 
 func (r *MXJobReconciler) GetGroupNameLabelValue() string {
-	return mxjobv1.GroupVersion.Group
+	return kubeflowv1.GroupVersion.Group
 }
 
 func (r *MXJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
-	job := &mxjobv1.MXJob{}
+	job := &kubeflowv1.MXJob{}
 	err := r.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -246,7 +251,7 @@ func (r *MXJobReconciler) GetJobFromInformerCache(namespace, name string) (metav
 }
 
 func (r *MXJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.Object, error) {
-	job := &mxjobv1.MXJob{}
+	job := &kubeflowv1.MXJob{}
 
 	err := r.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
@@ -294,7 +299,7 @@ func (r *MXJobReconciler) GetServicesForJob(job interface{}) ([]*corev1.Service,
 }
 
 func (r *MXJobReconciler) DeleteJob(job interface{}) error {
-	mxjob, ok := job.(*mxjobv1.MXJob)
+	mxjob, ok := job.(*kubeflowv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of XGBoostJob", job)
 	}
@@ -305,12 +310,12 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.Recorder.Eventf(mxjob, corev1.EventTypeNormal, control.SuccessfulDeletePodReason, "Deleted job: %v", mxjob.Name)
 	logrus.Info("job deleted", "namespace", mxjob.Namespace, "name", mxjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
 	return nil
 }
 
 func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
-	mxjob, ok := job.(*mxjobv1.MXJob)
+	mxjob, ok := job.(*kubeflowv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxjob)
 	}
@@ -319,6 +324,16 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
 		return err
+	}
+
+	if mxjob.Status.StartTime == nil {
+		now := metav1.Now()
+		mxjob.Status.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+			logrus.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
+			r.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	for rtype, spec := range replicas {
@@ -333,39 +348,32 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		r.Log.Info(fmt.Sprintf("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			mxjob.Name, rtype, expected, running, succeeded, failed))
 
-		if mxjob.Status.StartTime == nil {
-			now := metav1.Now()
-			mxjob.Status.StartTime = &now
-			// enqueue a sync to check if job past ActiveDeadlineSeconds
-			if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
-				logrus.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
-				r.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
+		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) {
+			if running > 0 {
+				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
+				if err != nil {
+					logrus.Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+			}
+			// when scheduler is succeeded, the job is finished.
+			if expected == 0 {
+				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
+				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
+				if mxjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					mxjob.Status.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
+				if err != nil {
+					logrus.Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
+				return nil
 			}
 		}
-
-		if running > 0 {
-			msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
-			if err != nil {
-				logrus.Infof("Append mxjob condition error: %v", err)
-				return err
-			}
-		}
-		if expected == 0 {
-			msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
-			r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
-			if mxjob.Status.CompletionTime == nil {
-				now := metav1.Now()
-				mxjob.Status.CompletionTime = &now
-			}
-			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
-			if err != nil {
-				logrus.Infof("Append mxjob condition error: %v", err)
-				return err
-			}
-			trainingoperatorcommon.SuccessfulJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
-		}
-
 		if failed > 0 {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
@@ -375,7 +383,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
@@ -388,7 +396,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					logrus.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(mxjob.Namespace, kubeflowv1.MXJobFrameworkName)
 			}
 		}
 	}
@@ -402,7 +410,7 @@ func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus 
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
 	}
 
-	mxJob, ok := job.(*mxjobv1.MXJob)
+	mxJob, ok := job.(*kubeflowv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxJob)
 	}
@@ -425,32 +433,32 @@ func (r *MXJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 }
 
 func (r *MXJobReconciler) GetDefaultContainerName() string {
-	return mxjobv1.DefaultContainerName
+	return kubeflowv1.MXJobDefaultContainerName
 }
 
 func (r *MXJobReconciler) GetDefaultContainerPortName() string {
-	return mxjobv1.DefaultPortName
+	return kubeflowv1.MXJobDefaultPortName
 }
 
 func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	rtype commonv1.ReplicaType, index int) bool {
-	return string(rtype) == string(mxjobv1.MXReplicaTypeServer)
+	return string(rtype) == string(kubeflowv1.MXJobReplicaTypeServer)
 }
 
 // onOwnerCreateFunc modify creation condition.
 func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		mxjob, ok := e.Object.(*mxjobv1.MXJob)
+		mxJob, ok := e.Object.(*kubeflowv1.MXJob)
 		if !ok {
 			return true
 		}
 
 		// Use defaulters registered in scheme.
-		r.Scheme.Default(mxjob)
+		r.Scheme.Default(mxJob)
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(mxjob.Namespace, mxjobv1.FrameworkName)
-		if err := commonutil.UpdateJobConditions(&mxjob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
+		trainingoperatorcommon.CreatedJobsCounterInc(mxJob.Namespace, kubeflowv1.MXJobFrameworkName)
+		if err := commonutil.UpdateJobConditions(&mxJob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

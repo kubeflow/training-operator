@@ -43,12 +43,26 @@ def set_pytorchjob_namespace(pytorchjob):
     namespace = pytorchjob_namespace or get_default_target_namespace()
     return namespace
 
+def set_xgboostjob_namespace(xgboostjob):
+    xgboostjob_namespace = xgboostjob.metadata.namespace
+    namespace = xgboostjob_namespace or get_default_target_namespace()
+    return namespace
+
+def set_mpijob_namespace(mpijob):
+    mpijob_namespace = mpijob.metadata.namespace
+    namespace = mpijob_namespace or get_default_target_namespace()
+    return namespace
+
+def set_mxjob_namespace(mxjob):
+    mxjob_namespace = mxjob.metadata.namespace
+    namespace = mxjob_namespace or get_default_target_namespace()
+    return namespace
 
 def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     """
     Get labels according to specified flags.
     :param name: job name
-    :param master: if need include label 'job-role: master'.
+    :param master: if need include label 'training.kubeflow.org/job-role: master'.
     :param replica_type: Replica type according to the job type (master, worker, chief, ps etc).
     :param replica_index: Can specify replica index to get one pod of the job.
     :return: Dict: Labels
@@ -57,7 +71,6 @@ def get_job_labels(name, master=False, replica_type=None, replica_index=None):
         constants.JOB_GROUP_LABEL: 'kubeflow.org',
         constants.JOB_NAME_LABEL: name,
     }
-
     if master:
         labels[constants.JOB_ROLE_LABEL] = 'master'
 

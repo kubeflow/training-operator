@@ -74,7 +74,7 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 cd ${SCRIPT_ROOT}
 ${CODEGEN_PKG}/generate-groups.sh "all" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
-    tensorflow:v1 \
+    kubeflow.org:v1 \
     --output-base "${TEMP_DIR}" \
     --go-header-file hack/boilerplate/boilerplate.go.txt
 
@@ -84,29 +84,12 @@ ${CODEGEN_PKG}/generate-groups.sh "all" \
 #go build -o defaulter-gen ${CODEGEN_PKG}/cmd/defaulter-gen
 
 # ${GOPATH}/bin/defaulter-gen is automatically built from ${CODEGEN_PKG}/generate-groups.sh
-echo "Generating defaulters for tensorflow/v1"
-${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
+echo "Generating defaulters for kubeflow.org/v1"
+${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
     -O zz_generated.defaults \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating defaulters for pytorch/v1"
-${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
-    -O zz_generated.defaults \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating defaulters for mxnet/v1"
-${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
-    -O zz_generated.defaults \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating defaulters for xgboost/v1"
-${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
-    -O zz_generated.defaults \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 cd - >/dev/null
 
@@ -115,29 +98,12 @@ cd - >/dev/null
 echo "Building openapi-gen"
 go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
 
-echo "Generating OpenAPI specification for tensorflow/v1"
-./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
+echo "Generating OpenAPI specification for kubeflow.org/v1"
+./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
     --report-filename=hack/violation_exception.list \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/tensorflow/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating OpenAPI specification for pytorch/v1"
-./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/pytorch/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
-    --report-filename=hack/violation_exception.list \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/pytorch/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating OpenAPI specification for mxnet/v1"
-./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/mxnet/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
-    --report-filename=hack/violation_exception.list \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/mxnet/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
-
-echo "Generating OpenAPI specification for xgboost/v1"
-./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/xgboost/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
-    --report-filename=hack/violation_exception.list \
-    --output-package github.com/kubeflow/training-operator/pkg/apis/xgboost/v1 \
-    --go-header-file hack/boilerplate/boilerplate.go.txt "$@"
+    --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
 
 cd - >/dev/null
 
