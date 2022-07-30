@@ -581,9 +581,10 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 		expected := *(spec.Replicas) - succeeded
 		running := status.Active
 		failed := status.Failed
+		specReplicas := *spec.Replicas
 
-		logrus.Infof("MPIJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
-			mpiJob.Name, rtype, expected, running, succeeded, failed)
+		logrus.Infof("MPIJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d, failed=%d, Replicas=%d",
+			mpiJob.Name, rtype, expected, running, succeeded, failed, specReplicas)
 
 		if rtype == kubeflowv1.MPIJobReplicaTypeLauncher {
 			if running > 0 {
@@ -612,7 +613,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 				return nil
 			}
 		}
-		if failed > 0 {
+		if failed > 0 && (specReplicas > succeeded+running) {
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("MPIJob %s is restarting because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
 				jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
