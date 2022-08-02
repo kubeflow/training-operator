@@ -326,9 +326,9 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		return err
 	}
 
-	if mxjob.Status.StartTime == nil {
+	if jobStatus.StartTime == nil {
 		now := metav1.Now()
-		mxjob.Status.StartTime = &now
+		jobStatus.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
 		if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
 			logrus.Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
@@ -361,9 +361,9 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			if expected == 0 {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
-				if mxjob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					mxjob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
 				if err != nil {
@@ -387,9 +387,9 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
-				if mxjob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					mxjob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, mxJobFailedReason, msg)
 				if err != nil {
