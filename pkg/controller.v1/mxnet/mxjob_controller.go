@@ -336,6 +336,9 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		}
 	}
 
+	//check whether mxnet singleHost training
+	singleTraining := r.isSingleWorker(replicas)
+
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 
@@ -345,10 +348,10 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		running := status.Active
 		failed := status.Failed
 
-		r.Log.Info(fmt.Sprintf("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
-			mxjob.Name, rtype, expected, running, succeeded, failed))
+		r.Log.Info(fmt.Sprintf("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d, failed=%d, singleTraining=%t",
+			mxjob.Name, rtype, expected, running, succeeded, failed, singleTraining))
 
-		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) {
+		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) || singleTraining {
 			if running > 0 {
 				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
@@ -464,4 +467,19 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		}
 		return true
 	}
+}
+
+func (r *MXJobReconciler) isSingleWorker(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
+	var workerNum, scheNum, svrNum int32 = 0, 0, 0
+
+	for rtype, spec := range replicas {
+		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) {
+			scheNum += *spec.Replicas
+		} else if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeServer) {
+			svrNum += *spec.Replicas
+		} else if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeWorker) {
+			workerNum += *spec.Replicas
+		}
+	}
+	return workerNum == 1 && scheNum == 0 && svrNum == 0
 }
