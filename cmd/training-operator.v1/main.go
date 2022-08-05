@@ -19,7 +19,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"os"
+	"strings"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +57,6 @@ func main() {
 	var leaderElectionID string
 	var probeAddr string
 	var enabledSchemes controllerv1.EnabledSchemes
-	var enableGangScheduling bool
 	var gangSchedulerName string
 	var namespace string
 	var monitoringPort int
@@ -66,8 +68,7 @@ func main() {
 	flag.StringVar(&leaderElectionID, "leader-election-id", "1ca428e5.training-operator.kubeflow.org", "The ID for leader election.")
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
-	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
-	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule kubeflow jobs, defaults to volcano")
+	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "none", "The scheduler to gang-schedule kubeflow jobs, defaults to none")
 	flag.StringVar(&namespace, "namespace", os.Getenv(commonutil.EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
 	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
@@ -106,6 +107,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Prepare GangSchedulingSetupFunc
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerVolcano)) {
+		cfg := mgr.GetConfig()
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
+	} else if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerSchedulerPlugins)) {
+		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient())
+	}
+
 	// TODO: We need a general manager. all rest reconciler addsToManager
 	// Based on the user configuration, we start different controllers
 	if enabledSchemes.Empty() {
@@ -118,7 +129,7 @@ func main() {
 				"scheme not supported", "scheme", s)
 			os.Exit(1)
 		}
-		if err = setupFunc(mgr, enableGangScheduling); err != nil {
+		if err = setupFunc(mgr, gangSchedulingSetupFunc); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", s)
 			os.Exit(1)
 		}

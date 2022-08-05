@@ -69,14 +69,9 @@ const (
 	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 
-	// gang scheduler name.
-	gangSchedulerName = "volcano"
-
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
-	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"

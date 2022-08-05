@@ -16,6 +16,7 @@ package pytorch
 
 import (
 	"context"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"path/filepath"
 	"testing"
 
@@ -83,7 +84,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(gomega.HaveOccurred())
 
-	r := NewReconciler(mgr, false)
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	r := NewReconciler(mgr, gangSchedulingSetupFunc)
 
 	Expect(r.SetupWithManager(mgr)).NotTo(gomega.HaveOccurred())
 

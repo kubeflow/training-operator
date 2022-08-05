@@ -31,6 +31,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	//+kubebuilder:scaffold:imports
 )
@@ -85,7 +86,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	reconciler = NewReconciler(mgr, false)
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	reconciler = NewReconciler(mgr, gangSchedulingSetupFunc)
 	Expect(reconciler.SetupWithManager(mgr)).NotTo(HaveOccurred())
 
 	go func() {

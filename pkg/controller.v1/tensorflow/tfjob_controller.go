@@ -21,13 +21,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	train_util "github.com/kubeflow/common/pkg/util/train"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
+
+	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -49,11 +53,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
@@ -77,8 +76,6 @@ const (
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
 
-	// gang scheduler name.
-	gangSchedulerName = "volcano"
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
@@ -89,11 +86,9 @@ const (
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
-	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 )
 
-func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconciler {
+func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc) *TFJobReconciler {
 	r := &TFJobReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
@@ -104,23 +99,22 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconci
 
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
+
+	gangSchedulingSetupFunc(&r.JobController)
 
 	return r
 }
@@ -854,8 +848,11 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 	// if gang-scheduling is enabled:
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
-	if r.Config.EnableGangScheduling {
+	if r.Config.EnableGangScheduling() {
 		podSchedulerName := util.GetSchedulerName(replicas)
+
+		gangSchedulerName := r.PodGroupControl.GetSchedulerName()
+
 		if len(podSchedulerName) == 0 {
 			podTemplate.Spec.SchedulerName = gangSchedulerName
 		} else if strings.Compare(podSchedulerName, gangSchedulerName) != 0 {
@@ -864,11 +861,10 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 			r.Recorder.Event(tfjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
 		}
 
-		if podTemplate.Annotations == nil {
-			podTemplate.Annotations = map[string]string{}
+		r.PodGroupControl.DecoratePodTemplateSpec(podTemplate, tfjob, rt)
+		if gangSchedulerName == "volcano" {
+			podTemplate.Annotations[volcanoTaskSpecKey] = rt
 		}
-		podTemplate.Annotations[gangSchedulingPodGroupAnnotation] = tfjob.GetName()
-		podTemplate.Annotations[volcanoTaskSpecKey] = rt
 	}
 
 	err = r.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)

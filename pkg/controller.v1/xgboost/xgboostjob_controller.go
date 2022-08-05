@@ -27,6 +27,9 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	logger "github.com/kubeflow/common/pkg/util"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -49,11 +52,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
@@ -75,7 +73,7 @@ const (
 )
 
 // NewReconciler creates a XGBoostJob Reconciler
-func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
+func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc) *XGBoostJobReconciler {
 	r := &XGBoostJobReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
@@ -87,7 +85,6 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	// Create clients
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
@@ -95,16 +92,16 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: false},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
+
+	gangSchedulingSetupFunc(&r.JobController)
 
 	return r
 }

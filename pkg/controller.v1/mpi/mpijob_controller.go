@@ -25,12 +25,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/kubeflow/common/pkg/controller.v1/common"
-	"github.com/kubeflow/common/pkg/controller.v1/control"
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
-	commonutil "github.com/kubeflow/common/pkg/util"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -53,10 +47,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/common/pkg/controller.v1/control"
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	ctlrconfig "github.com/kubeflow/training-operator/pkg/config"
 )
 
@@ -68,7 +67,7 @@ const (
 	labelMPIJobName = "mpi-job-name"
 )
 
-func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconciler {
+func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc) *MPIJobReconciler {
 	r := &MPIJobReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
@@ -79,23 +78,23 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconc
 
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
 
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
+
+	gangSchedulingSetupFunc(&r.JobController)
+
 	return r
 }
 
@@ -999,20 +998,18 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *kubeflowv1.MPIJob, name string) *c
 	// if gang-scheduling is enabled:
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
-	if jc.Config.EnableGangScheduling {
-		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
+	if jc.Config.EnableGangScheduling() {
+		if !util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, jc.PodGroupControl.GetSchedulerName()) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
-		} else {
-			podSpec.Spec.SchedulerName = gangSchedulerName
 		}
-
-		if podSpec.Annotations == nil {
-			podSpec.Annotations = map[string]string{}
+		rtWorker := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeWorker))
+		rtLauncher := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher))
+		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rtWorker)
+		if jc.PodGroupControl.GetSchedulerName() == "volcano" {
+			podSpec.Annotations[volcanoTaskSpecKey] = rtLauncher
 		}
-		podSpec.Annotations[gangSchedulingPodGroupAnnotation] = mpiJob.GetName()
-		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeWorker))
 	}
 
 	return &corev1.Pod{
@@ -1053,20 +1050,17 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 
 	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher)))
 	// add SchedulerName to podSpec
-	if jc.Config.EnableGangScheduling {
-		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
+	if jc.Config.EnableGangScheduling() {
+		if !util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, jc.PodGroupControl.GetSchedulerName()) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
-		} else {
-			podSpec.Spec.SchedulerName = gangSchedulerName
 		}
-
-		if podSpec.Annotations == nil {
-			podSpec.Annotations = map[string]string{}
+		rt := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher))
+		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rt)
+		if jc.PodGroupControl.GetSchedulerName() == "volcano" {
+			podSpec.Annotations[volcanoTaskSpecKey] = rt
 		}
-		podSpec.Annotations[gangSchedulingPodGroupAnnotation] = mpiJob.GetName()
-		podSpec.Annotations[volcanoTaskSpecKey] = strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher))
 	}
 
 	podSpec.Spec.ServiceAccountName = launcherName

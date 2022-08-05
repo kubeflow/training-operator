@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
+
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 
@@ -82,7 +84,8 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	reconciler = NewReconciler(mgr, false)
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	reconciler = NewReconciler(mgr, gangSchedulingSetupFunc)
 	Expect(reconciler.SetupWithManager(mgr)).NotTo(HaveOccurred())
 
 	go func() {
