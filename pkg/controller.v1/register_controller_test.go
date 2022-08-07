@@ -61,7 +61,7 @@ func TestEnabledSchemes(t *testing.T) {
 
 	dummyJob := "dummyjob"
 	if testES.Set(dummyJob) == nil {
-		t.Errorf("successfully registerd non-supported job %s", dummyJob)
+		t.Errorf("successfully registered non-supported job %s", dummyJob)
 	}
 
 	if testES.Empty() {
