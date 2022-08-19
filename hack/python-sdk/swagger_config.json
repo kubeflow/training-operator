@@ -1,7 +1,7 @@
 {
     "packageName" : "kubeflow.training",
     "projectName" : "training",
-    "packageVersion": "1.4.0",
+    "packageVersion": "1.5.0",
     "importMappings": {
         "V1Container": "from kubernetes.client import V1Container",
         "V1ObjectMeta": "from kubernetes.client import V1ObjectMeta",
