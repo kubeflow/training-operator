@@ -14,7 +14,7 @@
 
 from __future__ import absolute_import
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 # import apis into sdk package
 
