@@ -32,7 +32,7 @@ const (
 	// TFJobKind is the kind name.
 	TFJobKind = "TFJob"
 	// TFJobPlural is the TensorflowPlural for TFJob.
-	TFJObPlural = "tfjobs"
+	TFJobPlural = "tfjobs"
 	// TFJobSingular is the singular for TFJob.
 	TFJobSingular = "tfjob"
 	// TFJobFrameworkName is the name of the ML Framework

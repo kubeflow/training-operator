@@ -416,6 +416,20 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			r.WorkQueue.AddAfter(tfJobKey, time.Duration(*tfJob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
 		}
 	}
+
+	// For the situation that jobStatus has a restarting condition, and append a running condition,
+	// the restarting condition will be removed from jobStatus by commonv1.filterOutCondition(),
+	// so we need to record the existing restarting condition for later use.
+	var existingRestartingCondition *commonv1.JobCondition
+	for _, condition := range jobStatus.Conditions {
+		if condition.Type == commonv1.JobRestarting {
+			existingRestartingCondition = &commonv1.JobCondition{
+				Reason:  condition.Reason,
+				Message: condition.Message,
+			}
+		}
+	}
+
 	// iterate the replica spec based on this order
 	allTypes := []commonv1.ReplicaType{
 		kubeflowv1.TFJobReplicaTypeChief,
@@ -506,14 +520,15 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		}
 
 		if failed > 0 {
-			restart := false
-			for _, condition := range jobStatus.Conditions {
-				if condition.Type == commonv1.JobRestarting {
-					restart = true
+			// For the situation that jobStatus has a restarting condition, and appends a new running condition,
+			// the restarting condition will be removed from jobStatus by commonv1.filterOutCondition(),
+			// so we need to append the restarting condition back to jobStatus.
+			if existingRestartingCondition != nil {
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, existingRestartingCondition.Reason, existingRestartingCondition.Message)
+				if err != nil {
+					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+					return err
 				}
-			}
-
-			if restart {
 				// job is restarting, no need to set it failed
 				// we know it because we update the status condition when reconciling the replicas
 				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, kubeflowv1.TFJobFrameworkName)

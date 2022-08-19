@@ -19,6 +19,11 @@ rules:
       - pytorchjobs/status
       - mxjobs/status
       - xgboostjobs/status
+      - mpijobs/finalizers
+      - tfjobs/finalizers
+      - pytorchjobs/finalizers
+      - mxjobs/finalizers
+      - xgboostjobs/finalizers
     verbs:
       - create
       - delete
