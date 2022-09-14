@@ -47,7 +47,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 		rank += masterReplicas
 	}
 
-	masterAddr := computeMasterAddr(xgboostjob.Name, strings.ToLower(string(kubeflowv1.XGBoostJobReplicaTypeMaster)), strconv.Itoa(0))
+	masterAddr := replicaName(xgboostjob.Name, kubeflowv1.XGBoostJobReplicaTypeMaster, 0)
 
 	masterPort, err := getPortFromXGBoostJob(xgboostjob, kubeflowv1.XGBoostJobReplicaTypeMaster)
 	if err != nil {
@@ -67,7 +67,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 		workerPort = workerPortTemp
 		workerAddrs = make([]string, totalReplicas-1)
 		for i := range workerAddrs {
-			workerAddrs[i] = computeMasterAddr(xgboostjob.Name, strings.ToLower(string(kubeflowv1.XGBoostJobReplicaTypeWorker)), strconv.Itoa(i))
+			workerAddrs[i] = replicaName(xgboostjob.Name, kubeflowv1.XGBoostJobReplicaTypeWorker, i)
 		}
 	}
 
@@ -111,8 +111,8 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 	return nil
 }
 
-func computeMasterAddr(jobName, rtype, index string) string {
-	n := jobName + "-" + rtype + "-" + index
+func replicaName(jobName string, rtype commonv1.ReplicaType, index int) string {
+	n := jobName + "-" + strings.ToLower(string(rtype)) + "-" + strconv.Itoa(index)
 	return strings.Replace(n, "/", "-", -1)
 }
 
