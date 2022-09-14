@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -120,8 +119,8 @@ func setInitContainer(obj interface{}, podTemplate *corev1.PodTemplateSpec,
 	// rtype is worker.
 	if rtype == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeWorker)) {
 		g := getInitContainerGenerator()
-		initContainers, err := g.GetInitContainer(genGeneralName(pytorchJob.Name,
-			strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeMaster)), strconv.Itoa(0)))
+		initContainers, err := g.GetInitContainer(replicaName(pytorchJob.Name,
+			kubeflowv1.PyTorchJobReplicaTypeMaster, 0))
 		if err != nil {
 			return err
 		}

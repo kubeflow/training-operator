@@ -2,7 +2,6 @@ package pytorch
 
 import (
 	"strconv"
-	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +36,7 @@ func (e MasterEnvVarGenerator) Generate(
 			return nil, err
 		}
 
-		masterAddr := genGeneralName(job.Name, strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeMaster)), strconv.Itoa(0))
+		masterAddr := replicaName(job.Name, kubeflowv1.PyTorchJobReplicaTypeMaster, 0)
 
 		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvMasterPort,

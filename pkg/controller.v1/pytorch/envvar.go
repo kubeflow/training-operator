@@ -103,8 +103,8 @@ func getTotalReplicas(job *kubeflowv1.PyTorchJob) int32 {
 	return jobReplicas
 }
 
-func genGeneralName(jobName, rtype, index string) string {
-	n := jobName + "-" + rtype + "-" + index
+func replicaName(jobName string, rtype commonv1.ReplicaType, index int) string {
+	n := jobName + "-" + strings.ToLower(string(rtype)) + "-" + strconv.Itoa(index)
 	return strings.Replace(n, "/", "-", -1)
 }
 
