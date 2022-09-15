@@ -89,7 +89,7 @@ class TFJobClient(object):
 
         try:
             self.custom_api.create_namespaced_custom_object(
-                constants.TFJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.TFJOB_VERSION,
                 namespace,
                 constants.TFJOB_PLURAL,
@@ -163,7 +163,7 @@ class TFJobClient(object):
 
         # Create TFJob template.
         tfjob = models.KubeflowOrgV1TFJob(
-            api_version=f"{constants.TFJOB_GROUP}/{constants.TFJOB_VERSION}",
+            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.TFJOB_VERSION}",
             kind=constants.TFJOB_KIND,
             metadata=client.V1ObjectMeta(name=name, namespace=namespace),
             spec=models.KubeflowOrgV1TFJobSpec(
@@ -212,7 +212,7 @@ class TFJobClient(object):
                 )
             else:
                 thread = self.custom_api.get_namespaced_custom_object(
-                    constants.TFJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.TFJOB_VERSION,
                     namespace,
                     constants.TFJOB_PLURAL,
@@ -244,7 +244,7 @@ class TFJobClient(object):
                 tfjob_watch(namespace=namespace, timeout_seconds=timeout_seconds)
             else:
                 thread = self.custom_api.list_namespaced_custom_object(
-                    constants.TFJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.TFJOB_VERSION,
                     namespace,
                     constants.TFJOB_PLURAL,
@@ -284,7 +284,7 @@ class TFJobClient(object):
 
         try:
             outputs = self.custom_api.patch_namespaced_custom_object(
-                constants.TFJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.TFJOB_VERSION,
                 namespace,
                 constants.TFJOB_PLURAL,
@@ -309,7 +309,7 @@ class TFJobClient(object):
 
         try:
             self.custom_api.delete_namespaced_custom_object(
-                group=constants.TFJOB_GROUP,
+                group=constants.KUBEFLOW_GROUP,
                 version=constants.TFJOB_VERSION,
                 namespace=namespace,
                 plural=constants.TFJOB_PLURAL,

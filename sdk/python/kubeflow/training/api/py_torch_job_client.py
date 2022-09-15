@@ -64,7 +64,7 @@ class PyTorchJobClient(object):
 
         try:
             self.custom_api.create_namespaced_custom_object(
-                constants.PYTORCHJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.PYTORCHJOB_VERSION,
                 namespace,
                 constants.PYTORCHJOB_PLURAL,
@@ -130,7 +130,7 @@ class PyTorchJobClient(object):
 
         # Create PyTorchJob template.
         pytorchjob = models.KubeflowOrgV1PyTorchJob(
-            api_version=f"{constants.PYTORCHJOB_GROUP}/{constants.PYTORCHJOB_VERSION}",
+            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.PYTORCHJOB_VERSION}",
             kind=constants.PYTORCHJOB_KIND,
             metadata=client.V1ObjectMeta(name=name, namespace=namespace),
             spec=models.KubeflowOrgV1PyTorchJobSpec(
@@ -174,7 +174,7 @@ class PyTorchJobClient(object):
                 )
             else:
                 thread = self.custom_api.get_namespaced_custom_object(
-                    constants.PYTORCHJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.PYTORCHJOB_VERSION,
                     namespace,
                     constants.PYTORCHJOB_PLURAL,
@@ -206,7 +206,7 @@ class PyTorchJobClient(object):
                 pytorchjob_watch(namespace=namespace, timeout_seconds=timeout_seconds)
             else:
                 thread = self.custom_api.list_namespaced_custom_object(
-                    constants.PYTORCHJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.PYTORCHJOB_VERSION,
                     namespace,
                     constants.PYTORCHJOB_PLURAL,
@@ -247,7 +247,7 @@ class PyTorchJobClient(object):
 
         try:
             outputs = self.custom_api.patch_namespaced_custom_object(
-                constants.PYTORCHJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.PYTORCHJOB_VERSION,
                 namespace,
                 constants.PYTORCHJOB_PLURAL,
@@ -272,7 +272,7 @@ class PyTorchJobClient(object):
 
         try:
             self.custom_api.delete_namespaced_custom_object(
-                group=constants.PYTORCHJOB_GROUP,
+                group=constants.KUBEFLOW_GROUP,
                 version=constants.PYTORCHJOB_VERSION,
                 namespace=namespace,
                 plural=constants.PYTORCHJOB_PLURAL,
