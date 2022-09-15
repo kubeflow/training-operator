@@ -103,8 +103,9 @@ class PyTorchJobClient(object):
             num_worker_replicas: Number of Worker replicas for the PyTorchJob.
                 If number of Worker replicas is 1, PyTorchJob uses only
                 Master replica.
-            packages_to_install: List of Python packages to install before
-                executing the training function.
+            packages_to_install: List of Python packages to install in addition
+                to the base image packages. These packages are installed before
+                executing the objective function.
             pip_index_url: The PyPI url from which to install Python packages.
         """
 

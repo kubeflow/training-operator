@@ -132,8 +132,9 @@ class TFJobClient(object):
                 of Chief replicas can't be more than 1.
             num_ps_replicas: Number of Parameter Server replicas for the TFJob.
             num_worker_replicas: Number of Worker replicas for the TFJob.
-            packages_to_install: List of Python packages to install before
-                executing the training function.
+            packages_to_install: List of Python packages to install in addition
+                to the base image packages. These packages are installed before
+                executing the objective function.
             pip_index_url: The PyPI url from which to install Python packages.
         """
 
