@@ -76,11 +76,11 @@ def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     :return: Dict: Labels
     """
     labels = {
-        constants.JOB_GROUP_LABEL: "kubeflow.org",
+        constants.JOB_GROUP_LABEL: constants.KUBEFLOW_GROUP,
         constants.JOB_NAME_LABEL: name,
     }
     if master:
-        labels[constants.JOB_ROLE_LABEL] = "master"
+        labels[constants.JOB_ROLE_LABEL] = constants.JOB_ROLE_MASTER
 
     if replica_type:
         labels[constants.JOB_TYPE_LABEL] = str.lower(replica_type)
