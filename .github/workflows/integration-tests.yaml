@@ -35,4 +35,4 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest
-          python3 -m pip install -r sdk/python/requirements.txt; pytest sdk/python/test --log-cli-level=info
+          python3 -m pip install -e sdk/python; pytest sdk/python/test --log-cli-level=info

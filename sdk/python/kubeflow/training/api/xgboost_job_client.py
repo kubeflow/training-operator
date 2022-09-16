@@ -25,7 +25,7 @@ from kubeflow.training.utils import utils
 
 from .xgboost_job_watch import watch as xgboostjob_watch
 
-logging.basicConfig(format='%(message)s')
+logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
 
@@ -39,7 +39,8 @@ def wrap_log_stream(q, stream):
             return
         except Exception as e:
             raise RuntimeError(
-                "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+                "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e
+            )
 
 
 def get_log_queue_pool(streams):
@@ -52,8 +53,13 @@ def get_log_queue_pool(streams):
 
 
 class XGBoostJobClient(object):
-    def __init__(self, config_file=None, context=None,  # pylint: disable=too-many-arguments
-                 client_configuration=None, persist_config=True):
+    def __init__(
+        self,
+        config_file=None,
+        context=None,  # pylint: disable=too-many-arguments
+        client_configuration=None,
+        persist_config=True,
+    ):
         """
         XGBoostJob client constructor
         :param config_file: kubeconfig file, defaults to ~/.kube/config
@@ -66,7 +72,8 @@ class XGBoostJobClient(object):
                 config_file=config_file,
                 context=context,
                 client_configuration=client_configuration,
-                persist_config=persist_config)
+                persist_config=persist_config,
+            )
         else:
             config.load_incluster_config()
 
@@ -86,20 +93,24 @@ class XGBoostJobClient(object):
 
         try:
             outputs = self.custom_api.create_namespaced_custom_object(
-                constants.XGBOOSTJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.XGBOOSTJOB_VERSION,
                 namespace,
                 constants.XGBOOSTJOB_PLURAL,
-                xgboostjob)
+                xgboostjob,
+            )
         except client.rest.ApiException as e:
             raise RuntimeError(
                 "Exception when calling CustomObjectsApi->create_namespaced_custom_object:\
-                 %s\n" % e)
+                 %s\n"
+                % e
+            )
 
         return outputs
 
-    def get(self, name=None, namespace=None, watch=False,
-            timeout_seconds=600):  # pylint: disable=inconsistent-return-statements
+    def get(
+        self, name=None, namespace=None, watch=False, timeout_seconds=600
+    ):  # pylint: disable=inconsistent-return-statements
         """
         Get the xgboostjob
         :param name: existing xgboostjob name, if not defined, the get all xgboostjobs in the namespace.
@@ -114,17 +125,17 @@ class XGBoostJobClient(object):
         if name:
             if watch:
                 xgboostjob_watch(
-                    name=name,
-                    namespace=namespace,
-                    timeout_seconds=timeout_seconds)
+                    name=name, namespace=namespace, timeout_seconds=timeout_seconds
+                )
             else:
                 thread = self.custom_api.get_namespaced_custom_object(
-                    constants.XGBOOSTJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.XGBOOSTJOB_VERSION,
                     namespace,
                     constants.XGBOOSTJOB_PLURAL,
                     name,
-                    async_req=True)
+                    async_req=True,
+                )
 
                 xgboostjob = None
                 try:
@@ -134,24 +145,28 @@ class XGBoostJobClient(object):
                 except client.rest.ApiException as e:
                     raise RuntimeError(
                         "Exception when calling CustomObjectsApi->get_namespaced_custom_object:\
-                        %s\n" % e)
+                        %s\n"
+                        % e
+                    )
                 except Exception as e:
                     raise RuntimeError(
                         "There was a problem to get XGBoostJob {0} in namespace {1}. Exception: \
-                        {2} ".format(name, namespace, e))
+                        {2} ".format(
+                            name, namespace, e
+                        )
+                    )
                 return xgboostjob
         else:
             if watch:
-                xgboostjob_watch(
-                    namespace=namespace,
-                    timeout_seconds=timeout_seconds)
+                xgboostjob_watch(namespace=namespace, timeout_seconds=timeout_seconds)
             else:
                 thread = self.custom_api.list_namespaced_custom_object(
-                    constants.XGBOOSTJOB_GROUP,
+                    constants.KUBEFLOW_GROUP,
                     constants.XGBOOSTJOB_VERSION,
                     namespace,
                     constants.XGBOOSTJOB_PLURAL,
-                    async_req=True)
+                    async_req=True,
+                )
 
                 xgboostjobs = None
                 try:
@@ -161,11 +176,16 @@ class XGBoostJobClient(object):
                 except client.rest.ApiException as e:
                     raise RuntimeError(
                         "Exception when calling CustomObjectsApi->list_namespaced_custom_object:\
-                        %s\n" % e)
+                        %s\n"
+                        % e
+                    )
                 except Exception as e:
                     raise RuntimeError(
                         "There was a problem to list XGBoostJobs in namespace {0}. \
-                        Exception: {1} ".format(namespace, e))
+                        Exception: {1} ".format(
+                            namespace, e
+                        )
+                    )
                 return xgboostjobs
 
     def patch(self, name, xgboostjob, namespace=None):
@@ -181,16 +201,19 @@ class XGBoostJobClient(object):
 
         try:
             outputs = self.custom_api.patch_namespaced_custom_object(
-                constants.XGBOOSTJOB_GROUP,
+                constants.KUBEFLOW_GROUP,
                 constants.XGBOOSTJOB_VERSION,
                 namespace,
                 constants.XGBOOSTJOB_PLURAL,
                 name,
-                xgboostjob)
+                xgboostjob,
+            )
         except client.rest.ApiException as e:
             raise RuntimeError(
                 "Exception when calling CustomObjectsApi->patch_namespaced_custom_object:\
-                 %s\n" % e)
+                 %s\n"
+                % e
+            )
 
         return outputs
 
@@ -206,23 +229,29 @@ class XGBoostJobClient(object):
 
         try:
             return self.custom_api.delete_namespaced_custom_object(
-                group=constants.XGBOOSTJOB_GROUP,
+                group=constants.KUBEFLOW_GROUP,
                 version=constants.XGBOOSTJOB_VERSION,
                 namespace=namespace,
                 plural=constants.XGBOOSTJOB_PLURAL,
                 name=name,
-                body=client.V1DeleteOptions())
+                body=client.V1DeleteOptions(),
+            )
         except client.rest.ApiException as e:
             raise RuntimeError(
                 "Exception when calling CustomObjectsApi->delete_namespaced_custom_object:\
-                 %s\n" % e)
+                 %s\n"
+                % e
+            )
 
-    def wait_for_job(self, name,  # pylint: disable=inconsistent-return-statements
-                     namespace=None,
-                     timeout_seconds=600,
-                     polling_interval=30,
-                     watch=False,
-                     status_callback=None):
+    def wait_for_job(
+        self,
+        name,  # pylint: disable=inconsistent-return-statements
+        namespace=None,
+        timeout_seconds=600,
+        polling_interval=30,
+        watch=False,
+        status_callback=None,
+    ):
         """Wait for the specified job to finish.
 
         :param name: Name of the TfJob.
@@ -240,9 +269,8 @@ class XGBoostJobClient(object):
 
         if watch:
             xgboostjob_watch(
-                name=name,
-                namespace=namespace,
-                timeout_seconds=timeout_seconds)
+                name=name, namespace=namespace, timeout_seconds=timeout_seconds
+            )
         else:
             return self.wait_for_condition(
                 name,
@@ -250,14 +278,18 @@ class XGBoostJobClient(object):
                 namespace=namespace,
                 timeout_seconds=timeout_seconds,
                 polling_interval=polling_interval,
-                status_callback=status_callback)
+                status_callback=status_callback,
+            )
 
-    def wait_for_condition(self, name,
-                           expected_condition,
-                           namespace=None,
-                           timeout_seconds=600,
-                           polling_interval=30,
-                           status_callback=None):
+    def wait_for_condition(
+        self,
+        name,
+        expected_condition,
+        namespace=None,
+        timeout_seconds=600,
+        polling_interval=30,
+        status_callback=None,
+    ):
         """Waits until any of the specified conditions occur.
 
         :param name: Name of the job.
@@ -296,7 +328,9 @@ class XGBoostJobClient(object):
 
         raise RuntimeError(
             "Timeout waiting for XGBoostJob {0} in namespace {1} to enter one of the "
-            "conditions {2}.".format(name, namespace, expected_condition), xgboostjob)
+            "conditions {2}.".format(name, namespace, expected_condition),
+            xgboostjob,
+        )
 
     def get_job_status(self, name, namespace=None):
         """Returns XGBoostJob status, such as Running, Failed or Succeeded.
@@ -332,8 +366,14 @@ class XGBoostJobClient(object):
         xgboostjob_status = self.get_job_status(name, namespace=namespace)
         return xgboostjob_status.lower() == "succeeded"
 
-    def get_pod_names(self, name, namespace=None, master=False,  # pylint: disable=inconsistent-return-statements
-                      replica_type=None, replica_index=None):
+    def get_pod_names(
+        self,
+        name,
+        namespace=None,
+        master=False,  # pylint: disable=inconsistent-return-statements
+        replica_type=None,
+        replica_index=None,
+    ):
         """
         Get pod names of XGBoostJob.
         :param name: xgboostjob name
@@ -348,16 +388,18 @@ class XGBoostJobClient(object):
         if namespace is None:
             namespace = utils.get_default_target_namespace()
 
-        labels = utils.get_job_labels(name, master=master,
-                                      replica_type=replica_type,
-                                      replica_index=replica_index)
+        labels = utils.get_job_labels(
+            name, master=master, replica_type=replica_type, replica_index=replica_index
+        )
 
         try:
             resp = self.core_api.list_namespaced_pod(
-                namespace, label_selector=utils.to_selector(labels))
+                namespace, label_selector=utils.to_selector(labels)
+            )
         except client.rest.ApiException as e:
             raise RuntimeError(
-                "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+                "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e
+            )
 
         pod_names = []
         for pod in resp.items:
@@ -365,13 +407,22 @@ class XGBoostJobClient(object):
                 pod_names.append(pod.metadata.name)
 
         if not pod_names:
-            logging.warning("Not found Pods of the XGBoostJob %s with the labels %s.", name, labels)
+            logging.warning(
+                "Not found Pods of the XGBoostJob %s with the labels %s.", name, labels
+            )
         else:
             return set(pod_names)
 
-    def get_logs(self, name, namespace=None, master=True,
-                 replica_type=None, replica_index=None,
-                 follow=False, container="xgboost"):
+    def get_logs(
+        self,
+        name,
+        namespace=None,
+        master=True,
+        replica_type=None,
+        replica_index=None,
+        follow=False,
+        container="xgboost",
+    ):
         """
         Get training logs of the XGBoostJob.
         By default only get the logs of Pod that has labels 'job-role: master'.
@@ -390,16 +441,27 @@ class XGBoostJobClient(object):
         if namespace is None:
             namespace = utils.get_default_target_namespace()
 
-        pod_names = list(self.get_pod_names(name, namespace=namespace,
-                                            master=master,
-                                            replica_type=replica_type,
-                                            replica_index=replica_index))
+        pod_names = list(
+            self.get_pod_names(
+                name,
+                namespace=namespace,
+                master=master,
+                replica_type=replica_type,
+                replica_index=replica_index,
+            )
+        )
         if pod_names:
             if follow:
                 log_streams = []
                 for pod in pod_names:
-                    log_streams.append(k8s_watch.Watch().stream(self.core_api.read_namespaced_pod_log,
-                                                                name=pod, namespace=namespace, container=container))
+                    log_streams.append(
+                        k8s_watch.Watch().stream(
+                            self.core_api.read_namespaced_pod_log,
+                            name=pod,
+                            namespace=namespace,
+                            container=container,
+                        )
+                    )
                 finished = [False for _ in log_streams]
 
                 # create thread and queue per stream, for non-blocking iteration
@@ -425,11 +487,18 @@ class XGBoostJobClient(object):
             else:
                 for pod in pod_names:
                     try:
-                        pod_logs = self.core_api.read_namespaced_pod_log(pod, namespace, container=container)
+                        pod_logs = self.core_api.read_namespaced_pod_log(
+                            pod, namespace, container=container
+                        )
                         logging.info("The logs of Pod %s:\n %s", pod, pod_logs)
                     except client.rest.ApiException as e:
                         raise RuntimeError(
-                            "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n" % e)
+                            "Exception when calling CoreV1Api->read_namespaced_pod_log: %s\n"
+                            % e
+                        )
         else:
-            raise RuntimeError("Not found Pods of the XGBoostJob {} "
-                               "in namespace {}".format(name, namespace))
+            raise RuntimeError(
+                "Not found Pods of the XGBoostJob {} "
+                "in namespace {}".format(name, namespace)
+            )
+
