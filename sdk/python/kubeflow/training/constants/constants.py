@@ -28,6 +28,7 @@ TFJOB_VERSION: Final[str] = os.environ.get("TFJOB_VERSION", "v1")
 TFJOB_LOGLEVEL: Final[str] = os.environ.get("TFJOB_LOGLEVEL", "INFO").upper()
 
 TFJOB_BASE_IMAGE: Final[str] = "docker.io/tensorflow/tensorflow:2.9.1"
+TFJOB_BASE_IMAGE_GPU: Final[str] = "docker.io/tensorflow/tensorflow:2.9.1-gpu"
 
 # Job Label Names
 JOB_GROUP_LABEL: Final[str] = "group-name"
