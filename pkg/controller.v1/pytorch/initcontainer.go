@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
 
@@ -91,7 +91,7 @@ func (i *initContainerGenerator) GetInitContainer(masterAddr string) ([]corev1.C
 // getInitContainerTemplateOrDefault returns the init container template file if
 // it exists, or return initContainerTemplate by default.
 func getInitContainerTemplateOrDefault(file string) string {
-	b, err := ioutil.ReadFile(file)
+	b, err := os.ReadFile(file)
 	if err == nil {
 		return string(b)
 	}
