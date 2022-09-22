@@ -8,16 +8,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes-version: ["v1.21.12", "v1.22.9", "v1.23.6"]
+        kubernetes-version: ["v1.22.15", "v1.23.12", "v1.24.6"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       
       - name: Create k8s Kind Cluster
-        uses: helm/kind-action@v1.2.0
+        uses: helm/kind-action@v1.3.0
         with:
           node_image: kindest/node:${{ matrix.kubernetes-version }}
           cluster_name: training-operator-cluster
+          kubectl_version: ${{ matrix.kubernetes-version }}
 
       - name: Build training-operator
         run: |
