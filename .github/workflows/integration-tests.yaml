@@ -18,6 +18,7 @@ jobs:
         with:
           node_image: kindest/node:${{ matrix.kubernetes-version }}
           cluster_name: training-operator-cluster
+          kubectl_version: ${{ matrix.kubernetes-version }}
 
       - name: Build training-operator
         run: |
