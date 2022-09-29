@@ -222,17 +222,22 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}); err != nil {
 		return err
 	}
+	// skip watching podgroup if podgroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
 
-	// inject watching for job related podgroup
-	if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.XGBoostJob{},
-	}, predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
-	}); err != nil {
-		return err
+		// inject watching for job related podgroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.XGBoostJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
