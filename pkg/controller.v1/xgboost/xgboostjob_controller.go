@@ -226,7 +226,6 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version)
 	if err == nil {
-
 		// inject watching for job related podgroup
 		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
