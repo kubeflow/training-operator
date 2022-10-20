@@ -53,6 +53,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -240,6 +241,19 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		OwnerType:    &kubeflowv1.MPIJob{},
 	}, predicates); err != nil {
 		return err
+	}
+
+	// skip watching podgroup if PodGroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related PodGroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.MPIJob{},
+		}, predicates); err != nil {
+			return err
+		}
 	}
 
 	return nil
