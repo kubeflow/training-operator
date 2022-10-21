@@ -139,11 +139,6 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			}
 
 		}
-
-		// Set the elastic environment variables if the paddleElasticPolicy is not null.
-		if paddlejob.Spec.ElasticPolicy != nil {
-			// TODO(kuizhiqing)
-		}
 	}
 
 	return nil
