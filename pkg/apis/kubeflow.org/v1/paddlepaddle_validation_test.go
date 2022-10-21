@@ -69,23 +69,6 @@ func TestValidateV1PaddleJobSpec(t *testing.T) {
 				},
 			},
 		},
-		{
-			PaddleReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				PaddleJobReplicaTypeMaster: {
-					Replicas: pointer.Int32(2),
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "paddle",
-									Image: "gcr.io/kubeflow-ci/paddle-dist-mnist_test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 	for _, c := range testCases {
 		err := ValidateV1PaddleJobSpec(&c)

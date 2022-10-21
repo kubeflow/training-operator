@@ -44,6 +44,7 @@ spec:
             description: Specification of the desired state of the PaddleJob.
             properties:
               elasticPolicy:
+                description: ElasticPolicy holds the elastic policy for paddle job.
                 properties:
                   maxReplicas:
                     description: upper limit for the number of pods that can be set
@@ -52,6 +53,8 @@ spec:
                     format: int32
                     type: integer
                   maxRestarts:
+                    description: MaxRestarts is the limit for restart times of pods
+                      in elastic mode.
                     format: int32
                     type: integer
                   metrics:
