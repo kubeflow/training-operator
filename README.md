@@ -17,6 +17,7 @@ run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost/MPI j
   - [Apache MXNet API Definition](pkg/apis/kubeflow.org/v1/mxnet_types.go)
   - [XGBoost API Definition](pkg/apis/kubeflow.org/v1/xgboost_types.go)
   - [MPI API Definition](pkg/apis/kubeflow.org/v1/mpi_types.go)
+  - [PaddlePaddle API Definition](pkg/apis/kubeflow.org/v1/paddlepaddle_types.go)
 - For details on API design, please refer to the [v1alpha2 design doc](https://github.com/kubeflow/community/blob/master/proposals/tf-operator-design-v1alpha2.md).
 - For details of all-in-one operator design, please refer to the [All-in-one Kubeflow Training Operator](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit#heading=h.e33ufidnl8z6)
 - For details on its observability, please refer to the [monitoring design doc](docs/monitoring/README.md).

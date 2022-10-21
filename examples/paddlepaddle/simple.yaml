@@ -1,0 +1,36 @@
+apiVersion: "kubeflow.org/v1"
+kind: PaddleJob
+metadata:
+  name: paddle-simple
+  namespace: kubeflow
+spec:
+  paddleReplicaSpecs:
+    Worker:
+      replicas: 2
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+            - name: paddle
+              image: registry.baidubce.com/ppfleetx/ppfleetx-cuda11.2-cudnn8:v0.1.0
+              command:
+                - python
+              args:
+                - "-m"
+                - paddle.distributed.launch
+                - "run_check"
+              ports:
+                - containerPort: 37777
+                  name: master
+              imagePullPolicy: Always
+              resources:
+                  limits:
+                      nvidia.com/gpu: 2
+              volumeMounts:
+                  - mountPath: /dev/shm
+                    name: dshm
+          volumes:
+            - name: dshm
+              emptyDir:
+                medium: Memory
+
