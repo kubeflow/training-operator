@@ -15,7 +15,6 @@
 package v1
 
 import (
-	"k8s.io/utils/pointer"
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
