@@ -33,7 +33,7 @@ job_name = "paddlejob-cpu-ci-test"
 def test_sdk_e2e():
     container = V1Container(
         name="paddle",
-        image="registry.baidubce.com/paddlepaddle/paddle:2.4.0rc0-cpu",
+        image="docker.io/paddlepaddle/paddle:2.4.0rc0-cpu",
         command=["python"],
         args= ["-m", "paddle.distributed.launch", "run_check"],
     )
