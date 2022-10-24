@@ -462,7 +462,7 @@ class PaddleJobClient(object):
         self,
         name,
         namespace=None,
-        master=True,
+        master=False,
         replica_type=None,
         replica_index=None,
         follow=False,

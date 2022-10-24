@@ -53,6 +53,15 @@ PYTORCHJOB_BASE_IMAGE: Final[
     str
 ] = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
 
+# PaddleJob K8S constants
+PADDLEJOB_KIND: Final[str] = "PaddleJob"
+PADDLEJOB_PLURAL: Final[str] = "paddlejobs"
+PADDLEJOB_VERSION: Final[str] = os.environ.get("PADDLEJOB_VERSION", "v1")
+
+PADDLE_LOGLEVEL: Final[str] = os.environ.get("PADDLEJOB_LOGLEVEL", "INFO").upper()
+
+PADDLEJOB_BASE_IMAGE: Final[str] = "docker.io/paddlepaddle/paddle:2.4.0rc0-gpu-cuda11.2-cudnn8.1-trt8.0"
+
 # XGBoostJob K8S constants
 XGBOOSTJOB_KIND: Final[str] = "XGBoostJob"
 XGBOOSTJOB_PLURAL: Final[str] = "xgboostjobs"
