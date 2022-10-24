@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1"
 kind: PaddleJob
 metadata:
-  name: paddle-simple
+  name: paddle-simple-cpu
   namespace: kubeflow
 spec:
   paddleReplicaSpecs:
@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
             - name: paddle
-              image: registry.baidubce.com/ppfleetx/ppfleetx-cuda11.2-cudnn8:v0.1.0
+              image: registry.baidubce.com/paddlepaddle/paddle:2.4.0rc0-cpu
               command:
                 - python
               args:
@@ -23,14 +23,3 @@ spec:
                 - containerPort: 37777
                   name: master
               imagePullPolicy: Always
-              resources:
-                  limits:
-                      nvidia.com/gpu: 2
-              volumeMounts:
-                  - mountPath: /dev/shm
-                    name: dshm
-          volumes:
-            - name: dshm
-              emptyDir:
-                medium: Memory
-
