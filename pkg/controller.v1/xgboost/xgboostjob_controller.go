@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -220,6 +221,22 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
+	}
+	// skip watching podgroup if podgroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related podgroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.XGBoostJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
