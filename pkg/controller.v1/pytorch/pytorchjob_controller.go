@@ -171,6 +171,13 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{Requeue: true, RequeueAfter: t}, nil
 	}
 
+	// if we create a pytorchjob, operator will create a podgroup later,if there is no enough resources in cluster, the podgroup will be pending, the reconcile function will break.
+	// if there are enough resources available later, the status of podgroup will be inqueue. then the reconcile function should continue to run. but the operator have not listening the podgroup
+	// if status of job is Created, it may mean that the operator have not created pods and services, we should reconcile job a little seconds later
+	if len(pytorchjob.Status.Conditions) == 1 && pytorchjob.Status.Conditions[0].Type == commonv1.JobCreated {
+		return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
+	}
+
 	return ctrl.Result{}, nil
 }
 
