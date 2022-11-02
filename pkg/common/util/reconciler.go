@@ -22,7 +22,6 @@ import (
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -83,7 +82,9 @@ func OnDependentUpdateFunc(jc *common.JobController) func(updateEvent event.Upda
 			return false
 		}
 
-		var logger *logrus.Entry
+		kind := jc.Controller.GetAPIGroupVersionKind().Kind
+		var logger = LoggerForGenericKind(newObj, kind)
+
 		if _, ok := newObj.(*corev1.Pod); ok {
 			logger = commonutil.LoggerForPod(newObj.(*corev1.Pod), jc.Controller.GetAPIGroupVersionKind().Kind)
 		}
