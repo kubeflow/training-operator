@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes-version: ["1.22.1", "1.23.5", "1.24.2"]
+        kubernetes-version: ["1.23.5", "1.24.2", "1.25.0"]
 
     steps:
       - name: Check out code
