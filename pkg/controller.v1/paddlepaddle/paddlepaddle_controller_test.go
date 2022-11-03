@@ -119,6 +119,11 @@ var _ = Describe("PaddleJob controller", func() {
 				Name:          kubeflowv1.PaddleJobDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
+			// Check env variable
+			Expect(masterPod.Spec.Containers[0].Env).To(ContainElements(corev1.EnvVar{
+				Name:  EnvMasterEndpoint,
+				Value: fmt.Sprintf("$(POD_IP_DUMMY):%d", expectedPort),
+			}))
 			// Check service port.
 			Expect(masterSvc.Spec.Ports[0].Port).To(Equal(expectedPort))
 			// Check owner reference.
