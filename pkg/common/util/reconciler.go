@@ -56,12 +56,13 @@ func OnDependentCreateFunc(exp expectation.ControllerExpectationsInterface) func
 		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
 			var expectKey string
-			if _, ok := e.Object.(*corev1.Pod); ok {
+			switch e.Object.(type) {
+			case *corev1.Pod:
 				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
-			}
-
-			if _, ok := e.Object.(*corev1.Service); ok {
+			case *corev1.Service:
 				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
+			default:
+				return false
 			}
 			exp.CreationObserved(expectKey)
 			return true
@@ -85,12 +86,13 @@ func OnDependentUpdateFunc(jc *common.JobController) func(updateEvent event.Upda
 		kind := jc.Controller.GetAPIGroupVersionKind().Kind
 		var logger = LoggerForGenericKind(newObj, kind)
 
-		if _, ok := newObj.(*corev1.Pod); ok {
-			logger = commonutil.LoggerForPod(newObj.(*corev1.Pod), jc.Controller.GetAPIGroupVersionKind().Kind)
-		}
-
-		if _, ok := newObj.(*corev1.Service); ok {
+		switch obj := newObj.(type) {
+		case *corev1.Pod:
+			logger = commonutil.LoggerForPod(obj, jc.Controller.GetAPIGroupVersionKind().Kind)
+		case *corev1.Service:
 			logger = commonutil.LoggerForService(newObj.(*corev1.Service), jc.Controller.GetAPIGroupVersionKind().Kind)
+		default:
+			return false
 		}
 
 		newControllerRef := metav1.GetControllerOf(newObj)
@@ -152,14 +154,14 @@ func OnDependentDeleteFunc(exp expectation.ControllerExpectationsInterface) func
 		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
 			var expectKey string
-			if _, ok := e.Object.(*corev1.Pod); ok {
+			switch e.Object.(type) {
+			case *corev1.Pod:
 				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
-			}
-
-			if _, ok := e.Object.(*corev1.Service); ok {
+			case *corev1.Service:
 				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
+			default:
+				return false
 			}
-
 			exp.DeletionObserved(expectKey)
 			return true
 		}
