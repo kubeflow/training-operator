@@ -14,11 +14,15 @@
 
 package config
 
+import "github.com/kubeflow/training-operator/pkg/common/util"
+
 // Config is the global configuration for the training operator.
 var Config struct {
 	PyTorchInitContainerTemplateFile string
 	PyTorchInitContainerImage        string
 	MPIKubectlDeliveryImage          string
+
+	WatchedResources util.GvkListFlag
 }
 
 const (

@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kubeflow/training-operator/pkg/config"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
@@ -213,6 +216,51 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
+	}
+
+	// inject watching for job related service
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &kubeflowv1.PyTorchJob{},
+	}, predicate.Funcs{
+		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+	}); err != nil {
+		return err
+	}
+
+	// inject watching for job related objects,such as PodGroup
+	if config.Config.WatchedResources != nil {
+		gvkList := config.Config.WatchedResources
+
+		// Watch for changes in custom resources
+		for _, gvk := range gvkList {
+			// Check if CRD is installed on the cluster.
+			_, err := mgr.GetRESTMapper().RESTMapping(gvk.GroupKind(), gvk.Version)
+			if err != nil {
+				if meta.IsNoMatchError(err) {
+					logrus.Info("Job watch error. CRD might be missing. Please install CRD and restart pytorchjob-controller",
+						"CRD Group ", gvk.Group, ",CRD Version ", gvk.Version, ",CRD Kind ", gvk.Kind)
+					continue
+				}
+				return err
+			}
+			// Watch for the CRD changes.
+			unstructuredJob := &unstructured.Unstructured{}
+			unstructuredJob.SetGroupVersionKind(gvk)
+			err = c.Watch(
+				&source.Kind{Type: unstructuredJob},
+				&handler.EnqueueRequestForOwner{
+					IsController: true,
+					OwnerType:    &kubeflowv1.PyTorchJob{},
+				})
+			if err != nil {
+				return err
+			}
+			logrus.Info("Job watch added successfully",
+				"CRD Group ", gvk.Group, ",CRD Version ", gvk.Version, ",CRD Kind ", gvk.Kind)
+		}
 	}
 
 	return nil
