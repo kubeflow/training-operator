@@ -226,9 +226,9 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			IsController: true,
 			OwnerType:    &kubeflowv1.MXJob{},
 		}, predicate.Funcs{
-			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 		}); err != nil {
 			return err
 		}
