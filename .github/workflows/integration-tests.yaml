@@ -11,7 +11,7 @@ jobs:
         kubernetes-version: ["v1.23.12", "v1.24.6", "v1.25.2"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.3.0
