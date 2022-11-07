@@ -235,6 +235,118 @@
       "description": "MXJobStatus defines the observed state of MXJob",
       "type": "object"
     },
+    "kubeflow.org.v1.PaddleElasticPolicy": {
+      "type": "object",
+      "properties": {
+        "maxReplicas": {
+          "description": "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxRestarts": {
+          "description": "MaxRestarts is the limit for restart times of pods in elastic mode.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "metrics": {
+          "description": "Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/k8s.io.api.autoscaling.v2beta2.MetricSpec"
+          }
+        },
+        "minReplicas": {
+          "description": "minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "kubeflow.org.v1.PaddleJob": {
+      "description": "PaddleJob Represents a PaddleJob resource.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/v1.ObjectMeta"
+        },
+        "spec": {
+          "description": "Specification of the desired state of the PaddleJob.",
+          "default": {},
+          "$ref": "#/definitions/kubeflow.org.v1.PaddleJobSpec"
+        },
+        "status": {
+          "description": "Most recently observed status of the PaddleJob. Read-only (modified by the system).",
+          "default": {},
+          "$ref": "#/definitions/v1.JobStatus"
+        }
+      }
+    },
+    "kubeflow.org.v1.PaddleJobList": {
+      "description": "PaddleJobList is a list of PaddleJobs.",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "description": "List of PaddleJobs.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kubeflow.org.v1.PaddleJob"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Standard list metadata.",
+          "default": {},
+          "$ref": "#/definitions/v1.ListMeta"
+        }
+      }
+    },
+    "kubeflow.org.v1.PaddleJobSpec": {
+      "description": "PaddleJobSpec is a desired state description of the PaddleJob.",
+      "type": "object",
+      "required": [
+        "runPolicy",
+        "paddleReplicaSpecs"
+      ],
+      "properties": {
+        "elasticPolicy": {
+          "description": "ElasticPolicy holds the elastic policy for paddle job.",
+          "$ref": "#/definitions/kubeflow.org.v1.PaddleElasticPolicy"
+        },
+        "paddleReplicaSpecs": {
+          "description": "A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,\n  {\n    \"Master\": PaddleReplicaSpec,\n    \"Worker\": PaddleReplicaSpec,\n  }",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1.ReplicaSpec"
+          }
+        },
+        "runPolicy": {
+          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
+          "$ref": "#/definitions/v1.RunPolicy"
+        }
+      }
+    },
     "kubeflow.org.v1.PyTorchJob": {
       "description": "PyTorchJob Represents a PyTorchJob resource.",
       "type": "object",
