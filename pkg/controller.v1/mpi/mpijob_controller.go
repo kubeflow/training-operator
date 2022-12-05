@@ -359,9 +359,9 @@ func (jc *MPIJobReconciler) ReconcilePods(
 	}
 
 	// first set StartTime.
-	if mpiJob.Status.StartTime == nil {
+	if jobStatus.StartTime == nil {
 		now := metav1.Now()
-		mpiJob.Status.StartTime = &now
+		jobStatus.StartTime = &now
 	}
 
 	initializeReplicaStatuses(jobStatus, rtype)
@@ -639,9 +639,9 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 			} else {
 				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
 				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
-				if mpiJob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					mpiJob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {
