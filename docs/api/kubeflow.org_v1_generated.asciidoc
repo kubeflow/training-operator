@@ -20,6 +20,8 @@ Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijoblist[$$MPIJobList$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjob[$$MXJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjoblist[$$MXJobList$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob[$$PaddleJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejoblist[$$PaddleJobList$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjob[$$PyTorchJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjoblist[$$PyTorchJobList$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-tfjob[$$TFJob$$]
@@ -193,6 +195,87 @@ MXJobSpec defines the desired state of MXJob
 |===
 
 
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddleelasticpolicy"]
+==== PaddleElasticPolicy 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec[$$PaddleJobSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`minReplicas`* __integer__ | minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.
+| *`maxReplicas`* __integer__ | upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.
+| *`maxRestarts`* __integer__ | MaxRestarts is the limit for restart times of pods in elastic mode.
+| *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2beta2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob"]
+==== PaddleJob 
+
+PaddleJob Represents a PaddleJob resource.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejoblist[$$PaddleJobList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `PaddleJob`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec[$$PaddleJobSpec$$]__ | Specification of the desired state of the PaddleJob.
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PaddleJob. Read-only (modified by the system).
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejoblist"]
+==== PaddleJobList 
+
+PaddleJobList is a list of PaddleJobs.
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `PaddleJobList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob[$$PaddleJob$$] array__ | List of PaddleJobs.
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec"]
+==== PaddleJobSpec 
+
+PaddleJobSpec is a desired state description of the PaddleJob.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob[$$PaddleJob$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-common-pkg-apis-common-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`elasticPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddleelasticpolicy[$$PaddleElasticPolicy$$]__ | ElasticPolicy holds the elastic policy for paddle job.
+| *`paddleReplicaSpecs`* __object (keys:ReplicaType, values:ReplicaSpec)__ | A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,   {     "Master": PaddleReplicaSpec,     "Worker": PaddleReplicaSpec,   }
+|===
 
 
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjob"]

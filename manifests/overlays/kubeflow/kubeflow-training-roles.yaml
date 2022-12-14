@@ -27,6 +27,7 @@ rules:
       - pytorchjobs
       - mxjobs
       - xgboostjobs
+      - paddlejobs
     verbs:
       - create
       - delete
@@ -43,6 +44,7 @@ rules:
       - pytorchjobs/status
       - mxjobs/status
       - xgboostjobs/status
+      - paddlejobs/status
     verbs:
       - get
 
@@ -62,6 +64,7 @@ rules:
       - pytorchjobs
       - mxjobs
       - xgboostjobs
+      - paddlejobs
     verbs:
       - get
       - list
@@ -74,5 +77,6 @@ rules:
       - pytorchjobs/status
       - mxjobs/status
       - xgboostjobs/status
+      - paddlejobs/status
     verbs:
       - get

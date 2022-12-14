@@ -32,6 +32,14 @@ type MXJobListerExpansion interface{}
 // MXJobNamespaceLister.
 type MXJobNamespaceListerExpansion interface{}
 
+// PaddleJobListerExpansion allows custom methods to be added to
+// PaddleJobLister.
+type PaddleJobListerExpansion interface{}
+
+// PaddleJobNamespaceListerExpansion allows custom methods to be added to
+// PaddleJobNamespaceLister.
+type PaddleJobNamespaceListerExpansion interface{}
+
 // PyTorchJobListerExpansion allows custom methods to be added to
 // PyTorchJobLister.
 type PyTorchJobListerExpansion interface{}

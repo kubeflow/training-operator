@@ -28,30 +28,34 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":                    schema_pkg_apis_common_v1_JobCondition(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":                       schema_pkg_apis_common_v1_JobStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":                     schema_pkg_apis_common_v1_ReplicaSpec(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":                   schema_pkg_apis_common_v1_ReplicaStatus(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                       schema_pkg_apis_common_v1_RunPolicy(ref),
-		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":                schema_pkg_apis_common_v1_SchedulingPolicy(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.ElasticPolicy":  schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJob":         schema_pkg_apis_kubefloworg_v1_MPIJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJobList":     schema_pkg_apis_kubefloworg_v1_MPIJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJobSpec":     schema_pkg_apis_kubefloworg_v1_MPIJobSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJob":          schema_pkg_apis_kubefloworg_v1_MXJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobList":      schema_pkg_apis_kubefloworg_v1_MXJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobSpec":      schema_pkg_apis_kubefloworg_v1_MXJobSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobStatus":    schema_pkg_apis_kubefloworg_v1_MXJobStatus(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJob":     schema_pkg_apis_kubefloworg_v1_PyTorchJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJobList": schema_pkg_apis_kubefloworg_v1_PyTorchJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJobSpec": schema_pkg_apis_kubefloworg_v1_PyTorchJobSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RDZVConf":       schema_pkg_apis_kubefloworg_v1_RDZVConf(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJob":          schema_pkg_apis_kubefloworg_v1_TFJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJobList":      schema_pkg_apis_kubefloworg_v1_TFJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJobSpec":      schema_pkg_apis_kubefloworg_v1_TFJobSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJob":     schema_pkg_apis_kubefloworg_v1_XGBoostJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJobList": schema_pkg_apis_kubefloworg_v1_XGBoostJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJobSpec": schema_pkg_apis_kubefloworg_v1_XGBoostJobSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobCondition":                         schema_pkg_apis_common_v1_JobCondition(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus":                            schema_pkg_apis_common_v1_JobStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec":                          schema_pkg_apis_common_v1_ReplicaSpec(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaStatus":                        schema_pkg_apis_common_v1_ReplicaStatus(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy":                            schema_pkg_apis_common_v1_RunPolicy(ref),
+		"github.com/kubeflow/common/pkg/apis/common/v1.SchedulingPolicy":                     schema_pkg_apis_common_v1_SchedulingPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.ElasticPolicy":       schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJob":              schema_pkg_apis_kubefloworg_v1_MPIJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJobList":          schema_pkg_apis_kubefloworg_v1_MPIJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJobSpec":          schema_pkg_apis_kubefloworg_v1_MPIJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJob":               schema_pkg_apis_kubefloworg_v1_MXJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobList":           schema_pkg_apis_kubefloworg_v1_MXJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobSpec":           schema_pkg_apis_kubefloworg_v1_MXJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MXJobStatus":         schema_pkg_apis_kubefloworg_v1_MXJobStatus(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleElasticPolicy": schema_pkg_apis_kubefloworg_v1_PaddleElasticPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJob":           schema_pkg_apis_kubefloworg_v1_PaddleJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJobList":       schema_pkg_apis_kubefloworg_v1_PaddleJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJobSpec":       schema_pkg_apis_kubefloworg_v1_PaddleJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJob":          schema_pkg_apis_kubefloworg_v1_PyTorchJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJobList":      schema_pkg_apis_kubefloworg_v1_PyTorchJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PyTorchJobSpec":      schema_pkg_apis_kubefloworg_v1_PyTorchJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RDZVConf":            schema_pkg_apis_kubefloworg_v1_RDZVConf(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJob":               schema_pkg_apis_kubefloworg_v1_TFJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJobList":           schema_pkg_apis_kubefloworg_v1_TFJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.TFJobSpec":           schema_pkg_apis_kubefloworg_v1_TFJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJob":          schema_pkg_apis_kubefloworg_v1_XGBoostJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJobList":      schema_pkg_apis_kubefloworg_v1_XGBoostJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.XGBoostJobSpec":      schema_pkg_apis_kubefloworg_v1_XGBoostJobSpec(ref),
 	}
 }
 
@@ -751,6 +755,198 @@ func schema_pkg_apis_kubefloworg_v1_MXJobStatus(ref common.ReferenceCallback) co
 				Type:        []string{"object"},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_PaddleElasticPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"minReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"maxReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"maxRestarts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxRestarts is the limit for restart times of pods in elastic mode.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"metrics": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/autoscaling/v2beta2.MetricSpec"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_PaddleJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PaddleJob Represents a PaddleJob resource.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specification of the desired state of the PaddleJob.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJobSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Most recently observed status of the PaddleJob. Read-only (modified by the system).",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.JobStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/common/pkg/apis/common/v1.JobStatus", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_PaddleJobList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PaddleJobList is a list of PaddleJobs.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Standard list metadata.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Description: "List of PaddleJobs.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJob"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_PaddleJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PaddleJobSpec is a desired state description of the PaddleJob.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"runPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy"),
+						},
+					},
+					"elasticPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ElasticPolicy holds the elastic policy for paddle job.",
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleElasticPolicy"),
+						},
+					},
+					"paddleReplicaSpecs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,\n  {\n    \"Master\": PaddleReplicaSpec,\n    \"Worker\": PaddleReplicaSpec,\n  }",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"runPolicy", "paddleReplicaSpecs"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/common/pkg/apis/common/v1.ReplicaSpec", "github.com/kubeflow/common/pkg/apis/common/v1.RunPolicy", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.PaddleElasticPolicy"},
 	}
 }
 

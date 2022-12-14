@@ -23,6 +23,7 @@ import (
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
 	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
+	paddlecontroller "github.com/kubeflow/training-operator/pkg/controller.v1/paddlepaddle"
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
 	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
@@ -47,6 +48,9 @@ var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
 	},
 	kubeflowv1.MPIJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
 		return mpicontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	},
+	kubeflowv1.PaddleJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
+		return paddlecontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
 	},
 }
 

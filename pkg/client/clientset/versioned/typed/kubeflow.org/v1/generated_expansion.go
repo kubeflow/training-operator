@@ -20,6 +20,8 @@ type MPIJobExpansion interface{}
 
 type MXJobExpansion interface{}
 
+type PaddleJobExpansion interface{}
+
 type PyTorchJobExpansion interface{}
 
 type TFJobExpansion interface{}
