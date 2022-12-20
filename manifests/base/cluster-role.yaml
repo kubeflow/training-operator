@@ -85,3 +85,9 @@ rules:
       - podgroups
     verbs:
       - "*"
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - "*"

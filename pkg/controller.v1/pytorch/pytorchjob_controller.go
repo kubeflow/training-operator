@@ -17,6 +17,7 @@ package pytorch
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -162,7 +163,6 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(err, "Reconcile PyTorchJob error")
 		return ctrl.Result{}, err
 	}
-
 	t, err := util.DurationUntilExpireTime(&pytorchjob.Spec.RunPolicy, pytorchjob.Status)
 	if err != nil {
 		logrus.Warnf("Reconcile PyTorchJob error %v", err)
@@ -334,7 +334,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 func (jc *PyTorchJobReconciler) GenLabelSelector(jobName string,
 	rtype commonv1.ReplicaType) *metav1.LabelSelector {
 	labels := jc.GenLabels(jobName)
-	labels[commonv1.ReplicaTypeLabel] = string(rtype)
+	labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
 
 	return &metav1.LabelSelector{
 		MatchLabels: labels,
@@ -349,7 +349,6 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
 	}
-
 	pytorchjobKey, err := common.KeyFunc(pytorchjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for pytorchjob object %#v: %v", pytorchjob, err))
@@ -371,10 +370,9 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
-		if status.LabelSelector == nil {
-			// Generate the label selector.
-			status.LabelSelector = r.GenLabelSelector(pytorchjob.Name, rtype)
-		}
+		// Generate the label selector.
+		labelselector := metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
+		jobStatus.ReplicaStatuses[rtype].LabelSelector = labelselector
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded
@@ -457,9 +455,9 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
-				if pytorchjob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					pytorchjob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {
@@ -470,7 +468,6 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			}
 		}
 	}
-
 	return nil
 }
 

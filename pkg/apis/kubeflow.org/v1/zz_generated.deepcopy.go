@@ -21,7 +21,7 @@ package v1
 
 import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"k8s.io/api/autoscaling/v2beta2"
+	"k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -80,7 +80,7 @@ func (in *ElasticPolicy) DeepCopyInto(out *ElasticPolicy) {
 	}
 	if in.Metrics != nil {
 		in, out := &in.Metrics, &out.Metrics
-		*out = make([]v2beta2.MetricSpec, len(*in))
+		*out = make([]v2.MetricSpec, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -322,7 +322,7 @@ func (in *PaddleElasticPolicy) DeepCopyInto(out *PaddleElasticPolicy) {
 	}
 	if in.Metrics != nil {
 		in, out := &in.Metrics, &out.Metrics
-		*out = make([]v2beta2.MetricSpec, len(*in))
+		*out = make([]v2.MetricSpec, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
