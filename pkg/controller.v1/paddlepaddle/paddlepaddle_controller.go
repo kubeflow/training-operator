@@ -368,8 +368,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 		// Generate the label selector.
-		selector := metav1.FormatLabelSelector(r.GenLabelSelector(paddlejob.Name, rtype))
-		status.LabelSelector = selector
+		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(paddlejob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded

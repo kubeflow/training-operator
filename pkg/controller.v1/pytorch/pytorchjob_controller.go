@@ -371,8 +371,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 		// Generate the label selector.
-		labelselector := metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
-		jobStatus.ReplicaStatuses[rtype].LabelSelector = labelselector
+		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded
