@@ -24,7 +24,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/k8s.io.api.autoscaling.v2beta2.MetricSpec"
+            "$ref": "#/definitions/k8s.io.api.autoscaling.v2.MetricSpec"
           }
         },
         "minReplicas": {
@@ -253,7 +253,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/k8s.io.api.autoscaling.v2beta2.MetricSpec"
+            "$ref": "#/definitions/k8s.io.api.autoscaling.v2.MetricSpec"
           }
         },
         "minReplicas": {
@@ -715,7 +715,7 @@
         },
         "labelSelector": {
           "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
-          "$ref": "#/definitions/v1.LabelSelector"
+          "type": "string"
         },
         "succeeded": {
           "description": "The number of pods which reached phase Succeeded.",

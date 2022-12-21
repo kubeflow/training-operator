@@ -17,7 +17,7 @@ package pytorch
 import (
 	"context"
 
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +37,7 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) e
 		return nil
 	}
 
-	current := &autoscalingv2beta2.HorizontalPodAutoscaler{}
+	current := &autoscalingv2.HorizontalPodAutoscaler{}
 
 	// Get the exepected HPA.
 	expected, err := desiredHPA(pytorchJob, r.Scheme)
@@ -74,16 +74,17 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) e
 }
 
 func desiredHPA(pytorchJob *kubeflowv1.PyTorchJob, scheme *runtime.Scheme) (
-	*autoscalingv2beta2.HorizontalPodAutoscaler, error) {
-	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
+	*autoscalingv2.HorizontalPodAutoscaler, error) {
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pytorchJob.Name,
 			Namespace: pytorchJob.Namespace,
 		},
-		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
-				Kind: pytorchJob.Kind,
-				Name: pytorchJob.Name,
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+				Kind:       pytorchJob.Kind,
+				Name:       pytorchJob.Name,
+				APIVersion: pytorchJob.APIVersion,
 			},
 			MinReplicas: pytorchJob.Spec.ElasticPolicy.MinReplicas,
 			MaxReplicas: *pytorchJob.Spec.ElasticPolicy.MaxReplicas,
