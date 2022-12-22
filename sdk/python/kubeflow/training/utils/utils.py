@@ -76,7 +76,6 @@ def get_job_labels(name, master=False, replica_type=None, replica_index=None):
     :return: Dict: Labels
     """
     labels = {
-        constants.JOB_GROUP_LABEL: constants.KUBEFLOW_GROUP,
         constants.JOB_NAME_LABEL: name,
     }
     if master:
