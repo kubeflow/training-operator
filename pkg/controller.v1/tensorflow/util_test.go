@@ -52,19 +52,9 @@ func TestGenLabels(t *testing.T) {
 
 	labels := reconciler.GenLabels(testJobName)
 	jobNameLabel := commonv1.JobNameLabel
-	JobNameLabelDeprecated := commonv1.JobNameLabelDeprecated
 
 	if labels[jobNameLabel] != expctedVal {
 		t.Errorf("Expected %s %s, got %s", jobNameLabel, expctedVal, jobNameLabel)
-	}
-
-	if labels[JobNameLabelDeprecated] != expctedVal {
-		t.Errorf("Expected %s %s, got %s", JobNameLabelDeprecated, expctedVal, JobNameLabelDeprecated)
-	}
-
-	if labels[commonv1.GroupNameLabelDeprecated] != kubeflowv1.GroupVersion.Group {
-		t.Errorf("Expected %s %s, got %s", commonv1.GroupNameLabelDeprecated, kubeflowv1.GroupVersion.Group,
-			labels[commonv1.GroupNameLabelDeprecated])
 	}
 
 	if labels[commonv1.OperatorNameLabel] != controllerName {

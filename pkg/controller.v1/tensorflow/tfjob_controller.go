@@ -72,9 +72,6 @@ const (
 
 	controllerName = "tfjob-controller"
 
-	// labels for pods and servers.
-	tfReplicaTypeLabel  = "replica-type"
-	tfReplicaIndexLabel = "replica-index"
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
 
@@ -833,8 +830,6 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 
 	// Set type and index for the worker.
 	labels := r.GenLabels(tfjob.Name)
-	labels[tfReplicaTypeLabel] = rt
-	labels[tfReplicaIndexLabel] = index
 	labels[commonv1.ReplicaTypeLabel] = rt
 	labels[commonv1.ReplicaIndexLabel] = index
 

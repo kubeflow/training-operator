@@ -111,9 +111,7 @@ var _ = Describe("TFJob controller", func() {
 
 				jobName := c.tfJob.GetName()
 				labels := reconciler.GenLabels(jobName)
-				labels[commonv1.ReplicaTypeLabelDeprecated] = c.rt
 				labels[commonv1.ReplicaTypeLabel] = c.rt
-				labels[commonv1.ReplicaIndexLabelDeprecated] = c.index
 				labels[commonv1.ReplicaIndexLabel] = c.index
 
 				Expect(reconciler.SetClusterSpec(c.tfJob, podTemplate, c.rt, c.index)).Should(Succeed())
