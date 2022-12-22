@@ -84,7 +84,7 @@ class TestKubeflowOrgV1PaddleJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = None, 
+                                    label_selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )
@@ -141,7 +141,7 @@ class TestKubeflowOrgV1PaddleJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = None, 
+                                    label_selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )

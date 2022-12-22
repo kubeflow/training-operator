@@ -248,14 +248,13 @@ func schema_pkg_apis_common_v1_ReplicaStatus(ref common.ReferenceCallback) commo
 					"labelSelector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
 			},
 		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 
@@ -441,7 +440,7 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
+										Ref:     ref("k8s.io/api/autoscaling/v2.MetricSpec"),
 									},
 								},
 							},
@@ -451,7 +450,7 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RDZVConf", "k8s.io/api/autoscaling/v2beta2.MetricSpec"},
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RDZVConf", "k8s.io/api/autoscaling/v2.MetricSpec"},
 	}
 }
 
@@ -793,7 +792,7 @@ func schema_pkg_apis_kubefloworg_v1_PaddleElasticPolicy(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/autoscaling/v2beta2.MetricSpec"),
+										Ref:     ref("k8s.io/api/autoscaling/v2.MetricSpec"),
 									},
 								},
 							},
@@ -803,7 +802,7 @@ func schema_pkg_apis_kubefloworg_v1_PaddleElasticPolicy(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/autoscaling/v2beta2.MetricSpec"},
+			"k8s.io/api/autoscaling/v2.MetricSpec"},
 	}
 }
 
