@@ -83,7 +83,7 @@ var _ = BeforeSuite(func() {
 
 	r := NewReconciler(mgr, false)
 
-	Expect(r.SetupWithManager(mgr)).NotTo(gomega.HaveOccurred())
+	Expect(r.SetupWithManager(mgr, 1)).NotTo(gomega.HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()

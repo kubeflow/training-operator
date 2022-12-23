@@ -89,7 +89,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	reconciler = NewReconciler(mgr, false)
-	Expect(reconciler.SetupWithManager(mgr)).NotTo(HaveOccurred())
+	Expect(reconciler.SetupWithManager(mgr, 1)).NotTo(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
