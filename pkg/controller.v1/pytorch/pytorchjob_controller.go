@@ -176,9 +176,10 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {

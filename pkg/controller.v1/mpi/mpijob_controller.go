@@ -176,9 +176,10 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(jc.ControllerName(), mgr, controller.Options{
-		Reconciler: jc,
+		Reconciler:              jc,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
