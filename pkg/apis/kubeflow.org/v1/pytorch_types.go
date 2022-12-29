@@ -16,7 +16,7 @@ package v1
 
 import (
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,7 +51,7 @@ const (
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
 //+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
-// +kubebuilder:subresource:scale:specpath=.spec.pytorchReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Active,selectorpath=.status.labelSelector
+// +kubebuilder:subresource:scale:specpath=.spec.pytorchReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Worker.active,selectorpath=.status.replicaStatuses.Worker.labelSelector
 
 // PyTorchJob Represents a PyTorchJob resource.
 type PyTorchJob struct {
@@ -121,7 +121,7 @@ type ElasticPolicy struct {
 	// more information about how each type of metric must respond.
 	// If not set, the HPA will not be created.
 	// +optional
-	Metrics []autoscalingv2beta2.MetricSpec `json:"metrics,omitempty"`
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 
 type RDZVConf struct {

@@ -52,9 +52,7 @@ func NewBaseService(name string, job metav1.Object, refs []metav1.OwnerReference
 
 func NewService(job metav1.Object, typ string, index int, refs []metav1.OwnerReference) *corev1.Service {
 	svc := NewBaseService(fmt.Sprintf("%s-%s-%d", job.GetName(), typ, index), job, refs)
-	svc.Labels[commonv1.ReplicaTypeLabelDeprecated] = typ
 	svc.Labels[commonv1.ReplicaTypeLabel] = typ
-	svc.Labels[commonv1.ReplicaIndexLabelDeprecated] = fmt.Sprintf("%d", index)
 	svc.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return svc
 }

@@ -14,16 +14,19 @@ rules:
       - mxjobs
       - pytorchjobs
       - xgboostjobs
+      - paddlejobs
       - mpijobs/status
       - tfjobs/status
       - pytorchjobs/status
       - mxjobs/status
       - xgboostjobs/status
+      - paddlejobs/status
       - mpijobs/finalizers
       - tfjobs/finalizers
       - pytorchjobs/finalizers
       - mxjobs/finalizers
       - xgboostjobs/finalizers
+      - paddlejobs/finalizers
     verbs:
       - create
       - delete
@@ -80,5 +83,11 @@ rules:
       - scheduling.volcano.sh
     resources:
       - podgroups
+    verbs:
+      - "*"
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
     verbs:
       - "*"

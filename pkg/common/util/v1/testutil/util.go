@@ -30,8 +30,6 @@ import (
 const (
 	LabelGroupName = "group-name"
 	JobNameLabel   = "job-name"
-	// Deprecated label. Has to be removed later
-	DeprecatedLabelTFJobName = "tf-job-name"
 )
 
 var (

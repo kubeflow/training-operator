@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -71,9 +72,6 @@ const (
 
 	controllerName = "tfjob-controller"
 
-	// labels for pods and servers.
-	tfReplicaTypeLabel  = "replica-type"
-	tfReplicaIndexLabel = "replica-index"
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
 
@@ -196,9 +194,10 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -234,6 +233,22 @@ func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
+	}
+	// skip watching podgroup if podgroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related podgroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.TFJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -817,8 +832,6 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 
 	// Set type and index for the worker.
 	labels := r.GenLabels(tfjob.Name)
-	labels[tfReplicaTypeLabel] = rt
-	labels[tfReplicaIndexLabel] = index
 	labels[commonv1.ReplicaTypeLabel] = rt
 	labels[commonv1.ReplicaIndexLabel] = index
 

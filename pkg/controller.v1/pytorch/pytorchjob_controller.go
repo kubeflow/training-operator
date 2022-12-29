@@ -17,6 +17,7 @@ package pytorch
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -47,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -161,7 +163,6 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(err, "Reconcile PyTorchJob error")
 		return ctrl.Result{}, err
 	}
-
 	t, err := util.DurationUntilExpireTime(&pytorchjob.Spec.RunPolicy, pytorchjob.Status)
 	if err != nil {
 		logrus.Warnf("Reconcile PyTorchJob error %v", err)
@@ -175,9 +176,10 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -213,6 +215,22 @@ func (r *PyTorchJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
+	}
+	// skip watching podgroup if podgroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related podgroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.PyTorchJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -317,7 +335,7 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 func (jc *PyTorchJobReconciler) GenLabelSelector(jobName string,
 	rtype commonv1.ReplicaType) *metav1.LabelSelector {
 	labels := jc.GenLabels(jobName)
-	labels[commonv1.ReplicaTypeLabel] = string(rtype)
+	labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
 
 	return &metav1.LabelSelector{
 		MatchLabels: labels,
@@ -332,7 +350,6 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
 	}
-
 	pytorchjobKey, err := common.KeyFunc(pytorchjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for pytorchjob object %#v: %v", pytorchjob, err))
@@ -354,10 +371,8 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
-		if status.LabelSelector == nil {
-			// Generate the label selector.
-			status.LabelSelector = r.GenLabelSelector(pytorchjob.Name, rtype)
-		}
+		// Generate the label selector.
+		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded
@@ -440,9 +455,9 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
-				if pytorchjob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					pytorchjob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {
@@ -453,7 +468,6 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			}
 		}
 	}
-
 	return nil
 }
 

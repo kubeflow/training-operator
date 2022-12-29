@@ -26,6 +26,8 @@ type Interface interface {
 	MPIJobs() MPIJobInformer
 	// MXJobs returns a MXJobInformer.
 	MXJobs() MXJobInformer
+	// PaddleJobs returns a PaddleJobInformer.
+	PaddleJobs() PaddleJobInformer
 	// PyTorchJobs returns a PyTorchJobInformer.
 	PyTorchJobs() PyTorchJobInformer
 	// TFJobs returns a TFJobInformer.
@@ -53,6 +55,11 @@ func (v *version) MPIJobs() MPIJobInformer {
 // MXJobs returns a MXJobInformer.
 func (v *version) MXJobs() MXJobInformer {
 	return &mXJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// PaddleJobs returns a PaddleJobInformer.
+func (v *version) PaddleJobs() PaddleJobInformer {
+	return &paddleJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // PyTorchJobs returns a PyTorchJobInformer.

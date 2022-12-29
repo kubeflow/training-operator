@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -112,11 +113,11 @@ type MXJobReconciler struct {
 	Scheme    *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=mxjobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
 func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 	logger := r.Log.WithValues(kubeflowv1.MXJobSingular, req.NamespacedName)
@@ -176,9 +177,10 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -214,6 +216,23 @@ func (r *MXJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 	}); err != nil {
 		return err
+	}
+
+	// skip watching podgroup if podgroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related podgroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.MXJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil

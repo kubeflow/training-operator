@@ -53,6 +53,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -175,9 +176,10 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(jc.ControllerName(), mgr, controller.Options{
-		Reconciler: jc,
+		Reconciler:              jc,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -242,6 +244,19 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// skip watching podgroup if PodGroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related PodGroup
+		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.MPIJob{},
+		}, predicates); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -256,20 +271,6 @@ func (jc *MPIJobReconciler) ReconcileServices(
 
 func (jc *MPIJobReconciler) ControllerName() string {
 	return controllerName
-}
-
-// GenLabels is overridden for backward compatibility
-// TODO(zw0610): remove this overriding method when backward compatibility is dropped
-func (jc *MPIJobReconciler) GenLabels(jobName string) map[string]string {
-	// Generate basic labels from kubeflow/common
-	basicLabels := jc.JobController.GenLabels(jobName)
-
-	// add "mpi-job-name" label for backward compatibility
-	basicLabels[labelMPIJobName] = basicLabels[commonv1.JobNameLabel]
-	// remove "job-name" as MPIJob never uses
-	delete(basicLabels, commonv1.JobNameLabelDeprecated)
-
-	return basicLabels
 }
 
 func (jc *MPIJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
@@ -345,9 +346,9 @@ func (jc *MPIJobReconciler) ReconcilePods(
 	}
 
 	// first set StartTime.
-	if mpiJob.Status.StartTime == nil {
+	if jobStatus.StartTime == nil {
 		now := metav1.Now()
-		mpiJob.Status.StartTime = &now
+		jobStatus.StartTime = &now
 	}
 
 	initializeReplicaStatuses(jobStatus, rtype)
@@ -625,9 +626,9 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 			} else {
 				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
 				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
-				if mpiJob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					mpiJob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {

@@ -28,6 +28,7 @@ type KubeflowV1Interface interface {
 	RESTClient() rest.Interface
 	MPIJobsGetter
 	MXJobsGetter
+	PaddleJobsGetter
 	PyTorchJobsGetter
 	TFJobsGetter
 	XGBoostJobsGetter
@@ -44,6 +45,10 @@ func (c *KubeflowV1Client) MPIJobs(namespace string) MPIJobInterface {
 
 func (c *KubeflowV1Client) MXJobs(namespace string) MXJobInterface {
 	return newMXJobs(c, namespace)
+}
+
+func (c *KubeflowV1Client) PaddleJobs(namespace string) PaddleJobInterface {
+	return newPaddleJobs(c, namespace)
 }
 
 func (c *KubeflowV1Client) PyTorchJobs(namespace string) PyTorchJobInterface {

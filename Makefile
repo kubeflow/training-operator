@@ -1,7 +1,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= kubeflow/training-operator:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false,generateEmbeddedObjectMeta=true"
+# CRD generation options
+CRD_OPTIONS ?= "crd:generateEmbeddedObjectMeta=true"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -58,12 +58,12 @@ vet: ## Run go vet against code.
 GOLANGCI_LINT=$(shell which golangci-lint)
 golangci-lint:
 ifeq ($(GOLANGCI_LINT),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.42.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.50.1
 	$(info golangci-lint has been installed)
 endif
-	golangci-lint run --timeout 5m ./...
+	golangci-lint run --timeout 5m --go 1.19 ./...
 
-ENVTEST_K8S_VERSION ?= 1.22
+ENVTEST_K8S_VERSION ?= 1.25
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
@@ -73,7 +73,7 @@ test: envtest
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
-	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@3966c6775dfb86e6ce171c5673ae52c0724b2d9f # v0.12.1
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@4b208abbf44562af057fafc512b4baff2c75c196 # v0.13.0
 	@echo "setup-envtest has been installed"
 endif
 	@echo "setup-envtest has already installed"
@@ -105,25 +105,12 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build manifests/overlays/standalone | kubectl delete -f -
 
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.0)
+	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
-
-# go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
-endef
+	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7

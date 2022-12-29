@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	commonutil "github.com/kubeflow/common/pkg/util"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -45,6 +46,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(kubeflowv1.AddToScheme(scheme))
+	utilruntime.Must(v1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -58,6 +60,7 @@ func main() {
 	var gangSchedulerName string
 	var namespace string
 	var monitoringPort int
+	var controllerThreads int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -65,13 +68,14 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&leaderElectionID, "leader-election-id", "1ca428e5.training-operator.kubeflow.org", "The ID for leader election.")
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
-		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob. By default, all supported schemes will be enabled.")
+		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob, PaddleJob. By default, all supported schemes will be enabled.")
 	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
 	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule kubeflow jobs, defaults to volcano")
 	flag.StringVar(&namespace, "namespace", os.Getenv(commonutil.EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
 	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
 		"It can be set to \"0\" to disable the metrics serving.")
+	flag.IntVar(&controllerThreads, "controller-threads", 1, "Number of worker threads used by the controller.")
 
 	// PyTorch related flags
 	flag.StringVar(&config.Config.PyTorchInitContainerImage, "pytorch-init-container-image",
@@ -118,7 +122,7 @@ func main() {
 				"scheme not supported", "scheme", s)
 			os.Exit(1)
 		}
-		if err = setupFunc(mgr, enableGangScheduling); err != nil {
+		if err = setupFunc(mgr, enableGangScheduling, controllerThreads); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", s)
 			os.Exit(1)
 		}

@@ -23,6 +23,7 @@ import (
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
 	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
+	paddlecontroller "github.com/kubeflow/training-operator/pkg/controller.v1/paddlepaddle"
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
 	xgboostcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/xgboost"
@@ -30,23 +31,26 @@ import (
 
 const ErrTemplateSchemeNotSupported = "scheme %s is not supported yet"
 
-type ReconcilerSetupFunc func(manager manager.Manager, enableGangScheduling bool) error
+type ReconcilerSetupFunc func(manager manager.Manager, enableGangScheduling bool, controllerThreads int) error
 
 var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
-	kubeflowv1.TFJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
-		return tensorflowcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	kubeflowv1.TFJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return tensorflowcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
 	},
-	kubeflowv1.PytorchJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
-		return pytorchcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	kubeflowv1.PytorchJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return pytorchcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
 	},
-	kubeflowv1.MXJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
-		return mxnetcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	kubeflowv1.MXJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return mxnetcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
 	},
-	kubeflowv1.XGBoostJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
-		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	kubeflowv1.XGBoostJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return xgboostcontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
 	},
-	kubeflowv1.MPIJobKind: func(mgr manager.Manager, enableGangScheduling bool) error {
-		return mpicontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr)
+	kubeflowv1.MPIJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return mpicontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
+	},
+	kubeflowv1.PaddleJobKind: func(mgr manager.Manager, enableGangScheduling bool, controllerThreads int) error {
+		return paddlecontroller.NewReconciler(mgr, enableGangScheduling).SetupWithManager(mgr, controllerThreads)
 	},
 }
 

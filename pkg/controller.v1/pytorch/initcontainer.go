@@ -18,8 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
-	"strconv"
+	"os"
 	"strings"
 	"sync"
 
@@ -92,7 +91,7 @@ func (i *initContainerGenerator) GetInitContainer(masterAddr string) ([]corev1.C
 // getInitContainerTemplateOrDefault returns the init container template file if
 // it exists, or return initContainerTemplate by default.
 func getInitContainerTemplateOrDefault(file string) string {
-	b, err := ioutil.ReadFile(file)
+	b, err := os.ReadFile(file)
 	if err == nil {
 		return string(b)
 	}
@@ -120,8 +119,8 @@ func setInitContainer(obj interface{}, podTemplate *corev1.PodTemplateSpec,
 	// rtype is worker.
 	if rtype == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeWorker)) {
 		g := getInitContainerGenerator()
-		initContainers, err := g.GetInitContainer(genGeneralName(pytorchJob.Name,
-			strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeMaster)), strconv.Itoa(0)))
+		initContainers, err := g.GetInitContainer(replicaName(pytorchJob.Name,
+			kubeflowv1.PyTorchJobReplicaTypeMaster, 0))
 		if err != nil {
 			return err
 		}

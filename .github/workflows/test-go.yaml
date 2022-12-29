@@ -16,14 +16,14 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17.2
+          go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator/go.mod
 
       - name: Check Go modules
         run: |
