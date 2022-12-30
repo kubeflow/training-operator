@@ -784,25 +784,26 @@ func (r *TFJobReconciler) ReconcilePods(
 				}
 			}
 			// Check if the pod is retryable.
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
-					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
-					if err := r.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
-						return err
-					}
-
-					// with common library framework, we have to handle restart status here
-					// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
-					msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
-						tfJob.Name, rtype)
-					r.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-					trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, kubeflowv1.TFJobFrameworkName)
+			if pod.Status.Phase == v1.PodFailed &&
+				(spec.RestartPolicy == commonv1.RestartPolicyExitCode && train_util.IsRetryableExitCode(exitCode) ||
+					spec.RestartPolicy == commonv1.RestartPolicyOnFailure ||
+					spec.RestartPolicy == commonv1.RestartPolicyAlways) {
+				logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
+				if err := r.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
+					return err
 				}
+
+				// with common library framework, we have to handle restart status here
+				// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
+				msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
+					tfJob.Name, rtype)
+				r.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, kubeflowv1.TFJobFrameworkName)
 			}
 
 			updateJobReplicaStatuses(jobStatus, rtype, pod)
