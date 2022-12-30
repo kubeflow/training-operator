@@ -792,10 +792,10 @@ func (r *TFJobReconciler) ReconcilePods(
 				if err := r.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
 					return err
 				}
-				
+
 				// with common library framework, we have to handle restart status here
 				// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
-				msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.", 
+				msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
 					tfJob.Name, rtype)
 				r.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
