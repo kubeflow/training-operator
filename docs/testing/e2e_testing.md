@@ -1,5 +1,11 @@
 # How to Write an E2E Test for Kubeflow Training Operator
 
+TODO (andreyvelich): This doc is outdated. Currently, E2Es are located here:
+
+```
+sdk/python/test/e2e
+```
+
 The E2E tests for Kubeflow Training operator are implemented as Argo workflows. For more background and details
 about Argo (not required for understanding the rest of this document), please take a look at
 [this link](https://github.com/kubeflow/testing/blob/master/README.md).
