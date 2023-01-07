@@ -54,9 +54,7 @@ func NewBasePod(name string, job metav1.Object, refs []metav1.OwnerReference) *c
 
 func NewPod(job metav1.Object, typ string, index int, refs []metav1.OwnerReference) *corev1.Pod {
 	pod := NewBasePod(fmt.Sprintf("%s-%s-%d", job.GetName(), typ, index), job, refs)
-	pod.Labels[commonv1.ReplicaTypeLabelDeprecated] = typ
 	pod.Labels[commonv1.ReplicaTypeLabel] = typ
-	pod.Labels[commonv1.ReplicaIndexLabelDeprecated] = fmt.Sprintf("%d", index)
 	pod.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return pod
 }

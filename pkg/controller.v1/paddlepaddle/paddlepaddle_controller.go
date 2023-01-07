@@ -17,6 +17,7 @@ package paddle
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -171,9 +172,10 @@ func (r *PaddleJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -329,7 +331,7 @@ func (r *PaddleJobReconciler) DeleteJob(job interface{}) error {
 func (jc *PaddleJobReconciler) GenLabelSelector(jobName string,
 	rtype commonv1.ReplicaType) *metav1.LabelSelector {
 	labels := jc.GenLabels(jobName)
-	labels[commonv1.ReplicaTypeLabel] = string(rtype)
+	labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
 
 	return &metav1.LabelSelector{
 		MatchLabels: labels,
@@ -366,10 +368,8 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
-		if status.LabelSelector == nil {
-			// Generate the label selector.
-			status.LabelSelector = r.GenLabelSelector(paddlejob.Name, rtype)
-		}
+		// Generate the label selector.
+		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(paddlejob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded
@@ -452,9 +452,9 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			} else {
 				msg := fmt.Sprintf("PaddleJob %s is failed because %d %s replica(s) failed.", paddlejob.Name, failed, rtype)
 				r.Recorder.Event(paddlejob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
-				if paddlejob.Status.CompletionTime == nil {
+				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
-					paddlejob.Status.CompletionTime = &now
+					jobStatus.CompletionTime = &now
 				}
 				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {

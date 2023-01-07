@@ -73,8 +73,8 @@ def main(args):
   # MultiWorkerMirroredStrategy creates copies of all variables in the model's
   # layers on each device across all workers
   # if your GPUs don't support NCCL, replace "communication" with another
-  strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-      communication=tf.distribute.experimental.CollectiveCommunication.NCCL)
+  strategy = tf.distribute.MultiWorkerMirroredStrategy(
+      communication_options=tf.distribute.experimental.CommunicationOptions(implementation=tf.distribute.experimental.CollectiveCommunication.AUTO))
 
   BATCH_SIZE_PER_REPLICA = 64
   BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync

@@ -6,8 +6,15 @@ spec:
   elasticPolicy:
     rdzvBackend: c10d
     minReplicas: 1
-    maxReplicas: 2
+    maxReplicas: 3
     maxRestarts: 100
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
   pytorchReplicaSpecs:
     Worker:
       replicas: 2
@@ -16,8 +23,11 @@ spec:
         spec:
           containers:
             - name: pytorch
-              image: kubeflow/pytorch-elastic-example-imagenet:1.0.0-sigterm
+              image: quay.io/johnugeorge/pytorch-elastic-example-imagenet:0.1
               imagePullPolicy: IfNotPresent
+              resources:
+                requests:
+                  cpu: 4
               env:
               - name: LOGLEVEL
                 value: DEBUG
@@ -27,7 +37,7 @@ spec:
                 - torch.distributed.run
                 - /workspace/examples/imagenet.py
                 - "--arch=resnet18"
-                - "--epochs=20"
+                - "--epochs=1"
                 - "--batch-size=32"
                 - "--workers=0"
                 - "/workspace/data/tiny-imagenet-200"

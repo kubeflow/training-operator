@@ -35,7 +35,7 @@ class KubeflowOrgV1ElasticPolicy(object):
     openapi_types = {
         'max_replicas': 'int',
         'max_restarts': 'int',
-        'metrics': 'list[K8sIoApiAutoscalingV2beta2MetricSpec]',
+        'metrics': 'list[K8sIoApiAutoscalingV2MetricSpec]',
         'min_replicas': 'int',
         'n_proc_per_node': 'int',
         'rdzv_backend': 'str',
@@ -153,7 +153,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.  # noqa: E501
 
         :return: The metrics of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
-        :rtype: list[K8sIoApiAutoscalingV2beta2MetricSpec]
+        :rtype: list[K8sIoApiAutoscalingV2MetricSpec]
         """
         return self._metrics
 
@@ -164,7 +164,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.  # noqa: E501
 
         :param metrics: The metrics of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
-        :type: list[K8sIoApiAutoscalingV2beta2MetricSpec]
+        :type: list[K8sIoApiAutoscalingV2MetricSpec]
         """
 
         self._metrics = metrics

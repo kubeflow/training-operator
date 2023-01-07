@@ -72,9 +72,6 @@ const (
 
 	controllerName = "tfjob-controller"
 
-	// labels for pods and servers.
-	tfReplicaTypeLabel  = "replica-type"
-	tfReplicaIndexLabel = "replica-index"
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
 
@@ -197,9 +194,10 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -786,25 +784,26 @@ func (r *TFJobReconciler) ReconcilePods(
 				}
 			}
 			// Check if the pod is retryable.
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
-				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
-					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
-					if err := r.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
-						return err
-					}
-
-					// with common library framework, we have to handle restart status here
-					// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
-					msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
-						tfJob.Name, rtype)
-					r.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
-					trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, kubeflowv1.TFJobFrameworkName)
+			if pod.Status.Phase == v1.PodFailed &&
+				(spec.RestartPolicy == commonv1.RestartPolicyExitCode && train_util.IsRetryableExitCode(exitCode) ||
+					spec.RestartPolicy == commonv1.RestartPolicyOnFailure ||
+					spec.RestartPolicy == commonv1.RestartPolicyAlways) {
+				logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
+				if err := r.PodControl.DeletePod(pod.Namespace, pod.Name, tfJob); err != nil {
+					return err
 				}
+
+				// with common library framework, we have to handle restart status here
+				// or we won't know which replica has been restarted in updateJobStatus after reconciling all replicas
+				msg := fmt.Sprintf("TFJob %s is restarting because %s replica(s) failed.",
+					tfJob.Name, rtype)
+				r.Recorder.Event(tfJob, corev1.EventTypeWarning, tfJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, tfJobRestartingReason, msg)
+				if err != nil {
+					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, kubeflowv1.TFJobFrameworkName)
 			}
 
 			updateJobReplicaStatuses(jobStatus, rtype, pod)
@@ -833,8 +832,6 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 
 	// Set type and index for the worker.
 	labels := r.GenLabels(tfjob.Name)
-	labels[tfReplicaTypeLabel] = rt
-	labels[tfReplicaIndexLabel] = index
 	labels[commonv1.ReplicaTypeLabel] = rt
 	labels[commonv1.ReplicaIndexLabel] = index
 

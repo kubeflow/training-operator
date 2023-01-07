@@ -176,9 +176,10 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(jc.ControllerName(), mgr, controller.Options{
-		Reconciler: jc,
+		Reconciler:              jc,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -270,20 +271,6 @@ func (jc *MPIJobReconciler) ReconcileServices(
 
 func (jc *MPIJobReconciler) ControllerName() string {
 	return controllerName
-}
-
-// GenLabels is overridden for backward compatibility
-// TODO(zw0610): remove this overriding method when backward compatibility is dropped
-func (jc *MPIJobReconciler) GenLabels(jobName string) map[string]string {
-	// Generate basic labels from kubeflow/common
-	basicLabels := jc.JobController.GenLabels(jobName)
-
-	// add "mpi-job-name" label for backward compatibility
-	basicLabels[labelMPIJobName] = basicLabels[commonv1.JobNameLabel]
-	// remove "job-name" as MPIJob never uses
-	delete(basicLabels, commonv1.JobNameLabelDeprecated)
-
-	return basicLabels
 }
 
 func (jc *MPIJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
