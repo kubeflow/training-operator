@@ -41,3 +41,13 @@ from kubeflow.training.models.v1_replica_spec import V1ReplicaSpec
 from kubeflow.training.models.v1_replica_status import V1ReplicaStatus
 from kubeflow.training.models.v1_run_policy import V1RunPolicy
 from kubeflow.training.models.v1_scheduling_policy import V1SchedulingPolicy
+
+# Import Kubernetes models.
+from kubernetes.client import V1ObjectMeta
+from kubernetes.client import V1ListMeta
+from kubernetes.client import V1ManagedFieldsEntry
+from kubernetes.client import V1JobCondition
+from kubernetes.client import V1PodTemplateSpec
+from kubernetes.client import V1PodSpec
+from kubernetes.client import V1Container
+from kubernetes.client import V1ResourceRequirements

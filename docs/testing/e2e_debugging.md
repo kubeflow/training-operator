@@ -1,10 +1,7 @@
 # How to debug an E2E test for Kubeflow Training Operator
 
 TODO (andreyvelich): This doc is outdated. Currently, E2Es are located here:
-
-```
-sdk/python/test/e2e
-```
+[`sdk/python/test/e2e`](../../sdk/python/test/e2e)
 
 [E2E Testing](./e2e_testing.md) gives an overview of writing e2e tests. This guidance concentrates more on the e2e failure debugging.
 

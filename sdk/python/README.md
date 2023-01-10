@@ -33,6 +33,9 @@ Please follow the [sample](examples/kubeflow-tfjob-sdk.ipynb) to create, update 
 
 ## Documentation for API Endpoints
 
+TODO(andreyvelich): These docs are outdated. Please track this issue for the status:
+https://github.com/kubeflow/katib/issues/2081
+
 Class | Method | Description
 ------------ | -------------  | -------------
 [TFJobClient](docs/TFJobClient.md) | [create](docs/TFJobClient.md#create) | Create TFJob|

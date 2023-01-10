@@ -46,21 +46,31 @@ def fix_test_files() -> None:
     for test_file in test_files:
         print(f"Precessing file {test_file}")
         if test_file.endswith(".py"):
-            with fileinput.FileInput(os.path.join(test_folder_dir, test_file), inplace=True) as file:
+            with fileinput.FileInput(
+                os.path.join(test_folder_dir, test_file), inplace=True
+            ) as file:
                 for line in file:
-                    print(_apply_regex(line), end='')
+                    print(_apply_regex(line), end="")
 
 
 def add_imports() -> None:
-    with open(os.path.join(sdk_dir, "kubeflow/training/__init__.py"), "a") as init_file:
-        init_file.write("from kubeflow.training.api.tf_job_client import TFJobClient\n")
-        init_file.write("from kubeflow.training.api.py_torch_job_client import PyTorchJobClient\n")
-        init_file.write("from kubeflow.training.api.xgboost_job_client import XGBoostJobClient\n")
-        init_file.write("from kubeflow.training.api.mpi_job_client import MPIJobClient\n")
-        init_file.write("from kubeflow.training.api.mx_job_client import MXJobClient\n")
-        init_file.write("from kubeflow.training.api.paddle_job_client import PaddleJobClient\n")
-    with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as init_file:
-        init_file.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
+    with open(os.path.join(sdk_dir, "kubeflow/training/__init__.py"), "a") as f:
+        f.write("from kubeflow.training.api.training_client import TrainingClient\n")
+    with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as f:
+        f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
+
+    # Add Kubernetes models to proper deserialization of Training models.
+    with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "a") as f:
+        f.write("\n")
+        f.write("# Import Kubernetes models.\n")
+        f.write("from kubernetes.client import V1ObjectMeta\n")
+        f.write("from kubernetes.client import V1ListMeta\n")
+        f.write("from kubernetes.client import V1ManagedFieldsEntry\n")
+        f.write("from kubernetes.client import V1JobCondition\n")
+        f.write("from kubernetes.client import V1PodTemplateSpec\n")
+        f.write("from kubernetes.client import V1PodSpec\n")
+        f.write("from kubernetes.client import V1Container\n")
+        f.write("from kubernetes.client import V1ResourceRequirements\n")
 
 
 def _apply_regex(input_str: str) -> str:
@@ -69,5 +79,5 @@ def _apply_regex(input_str: str) -> str:
     return input_str
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
