@@ -19,7 +19,7 @@ APISERVER_TIMEOUT = 120
 
 # Common constants.
 KUBEFLOW_GROUP = "kubeflow.org"
-TRAINING_VERSION = "v1"
+OPERATOR_VERSION = "v1"
 
 # Training Job conditions.
 JOB_CONDITION_CREATED = "Created"
@@ -40,9 +40,9 @@ CONDITION_STATUS_TRUE = "True"
 # Job Label Names
 JOB_NAME_LABEL = "training.kubeflow.org/job-name"
 JOB_ROLE_LABEL = "training.kubeflow.org/job-role"
+JOB_ROLE_MASTER = "master"
 REPLICA_TYPE_LABEL = "training.kubeflow.org/replica-type"
 REPLICA_INDEX_LABEL = "training.kubeflow.org/replica-index"
-JOB_ROLE_MASTER = "master"
 
 # TFJob constants.
 TFJOB_KIND = "TFJob"
@@ -104,4 +104,3 @@ JOB_KINDS = {
         "model": models.KubeflowOrgV1PaddleJob,
     },
 }
-

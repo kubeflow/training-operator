@@ -652,7 +652,7 @@ class TrainingClient(object):
 
         # Create TFJob template.
         tfjob = models.KubeflowOrgV1TFJob(
-            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.TRAINING_VERSION}",
+            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.OPERATOR_VERSION}",
             kind=constants.TFJOB_KIND,
             metadata=client.V1ObjectMeta(name=name, namespace=namespace),
             spec=models.KubeflowOrgV1TFJobSpec(
@@ -832,7 +832,7 @@ class TrainingClient(object):
 
         # Create PyTorchJob template.
         pytorchjob = models.KubeflowOrgV1PyTorchJob(
-            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.TRAINING_VERSION}",
+            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.OPERATOR_VERSION}",
             kind=constants.PYTORCHJOB_KIND,
             metadata=client.V1ObjectMeta(name=name, namespace=namespace),
             spec=models.KubeflowOrgV1PyTorchJobSpec(

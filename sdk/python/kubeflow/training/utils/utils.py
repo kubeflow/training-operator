@@ -80,7 +80,7 @@ def create_job(
     try:
         custom_api.create_namespaced_custom_object(
             constants.KUBEFLOW_GROUP,
-            constants.TRAINING_VERSION,
+            constants.OPERATOR_VERSION,
             namespace,
             job_plural,
             job,
@@ -111,7 +111,7 @@ def get_job(
     try:
         thread = custom_api.get_namespaced_custom_object(
             constants.KUBEFLOW_GROUP,
-            constants.TRAINING_VERSION,
+            constants.OPERATOR_VERSION,
             namespace,
             job_plural,
             name,
@@ -141,7 +141,7 @@ def list_jobs(
     try:
         thread = custom_api.list_namespaced_custom_object(
             constants.KUBEFLOW_GROUP,
-            constants.TRAINING_VERSION,
+            constants.OPERATOR_VERSION,
             namespace,
             job_plural,
             async_req=True,
@@ -170,7 +170,7 @@ def delete_job(
     try:
         custom_api.delete_namespaced_custom_object(
             constants.KUBEFLOW_GROUP,
-            constants.TRAINING_VERSION,
+            constants.OPERATOR_VERSION,
             namespace,
             job_plural,
             name=name,
