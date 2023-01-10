@@ -97,6 +97,7 @@ class TrainingClient(object):
                 conditions yet.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Training Job.
             RuntimeError: Failed to get Training Job.
         """
@@ -159,9 +160,10 @@ class TrainingClient(object):
                 KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
 
         Returns:
-            bool: True is Job is Created, else False.
+            bool: True if Job is Created, else False.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -190,9 +192,10 @@ class TrainingClient(object):
                 KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
 
         Returns:
-            bool: True is Job is Running, else False.
+            bool: True if Job is Running, else False.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -221,9 +224,10 @@ class TrainingClient(object):
                 KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
 
         Returns:
-            bool: True is Job is Restarting, else False.
+            bool: True if Job is Restarting, else False.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -252,9 +256,10 @@ class TrainingClient(object):
                 KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
 
         Returns:
-            bool: True is Job is Succeeded, else False.
+            bool: True if Job is Succeeded, else False.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -283,9 +288,10 @@ class TrainingClient(object):
                 KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
 
         Returns:
-            bool: True is Job is Failed, else False.
+            bool: True if Job is Failed, else False.
 
         Raises:
+            ValueError: Job kind is invalid.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -323,12 +329,12 @@ class TrainingClient(object):
                 is current Job object.
 
         Returns:
-            Training Job object of type `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob,
+            object: Training Job object of type `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob,
             KubeflowOrgV1MXJob, KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or
             KubeflowOrgV1PaddleJob` which is reached required condition.
 
         Raises:
-            ValueError: Expected conditions are invalid.
+            ValueError: Expected conditions are invalid or Job kind is invalid
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
