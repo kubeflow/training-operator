@@ -19,14 +19,16 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import PyTorchJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PyTorchJob
 from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
 from kubeflow.training import V1RunPolicy
+from kubeflow.training.constants import constants
 
-PYTORCH_CLIENT = PyTorchJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'default'
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+SDK_TEST_NAMESPACE = "default"
+JOB_NAME = "pytorchjob-mnist-ci-test"
 
 
 def test_sdk_e2e():
@@ -39,43 +41,31 @@ def test_sdk_e2e():
     master = V1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     pytorchjob = KubeflowOrgV1PyTorchJob(
         api_version="kubeflow.org/v1",
         kind="PyTorchJob",
-        metadata=V1ObjectMeta(name="pytorchjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
         spec=KubeflowOrgV1PyTorchJobSpec(
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            pytorch_replica_specs={"Master": master,
-                                   "Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            pytorch_replica_specs={"Master": master, "Worker": worker},
+        ),
     )
 
-    PYTORCH_CLIENT.create(pytorchjob)
+    TRAINING_CLIENT.create_pytorchjob(pytorchjob, SDK_TEST_NAMESPACE)
 
-    PYTORCH_CLIENT.wait_for_job("pytorchjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not PYTORCH_CLIENT.is_job_succeeded("pytorchjob-mnist-ci-test",
-                                           namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The PyTorchJob is not succeeded.")
+    TRAINING_CLIENT.wait_for_job_conditions(
+        JOB_NAME, SDK_TEST_NAMESPACE, constants.PYTORCHJOB_KIND
+    )
 
-    PYTORCH_CLIENT.get_logs("pytorchjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
 
-    PYTORCH_CLIENT.delete("pytorchjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_pytorchjob(JOB_NAME, SDK_TEST_NAMESPACE)

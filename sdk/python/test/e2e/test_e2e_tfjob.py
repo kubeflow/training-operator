@@ -19,14 +19,17 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import TFJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training import KubeflowOrgV1TFJob
 from kubeflow.training import KubeflowOrgV1TFJobSpec
+from kubeflow.training.constants import constants
 
-TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
-SDK_TEST_NAMESPACE = 'default'
+
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+SDK_TEST_NAMESPACE = "default"
+JOB_NAME = "tfjob-mnist-ci-test"
 
 
 def test_sdk_e2e():
@@ -36,39 +39,34 @@ def test_sdk_e2e():
         command=[
             "python",
             "/var/tf_mnist/mnist_with_summaries.py",
-            "--log_dir=/train/logs", "--learning_rate=0.01",
-            "--batch_size=150"
-        ]
+            "--log_dir=/train/logs",
+            "--learning_rate=0.01",
+            "--batch_size=150",
+        ],
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     tfjob = KubeflowOrgV1TFJob(
         api_version="kubeflow.org/v1",
         kind="TFJob",
-        metadata=V1ObjectMeta(name="mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
         spec=KubeflowOrgV1TFJobSpec(
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            tf_replica_specs={"Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            tf_replica_specs={"Worker": worker},
+        ),
     )
 
-    TFJOB_CLIENT.create(tfjob, namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_tfjob(tfjob, SDK_TEST_NAMESPACE)
 
-    TFJOB_CLIENT.wait_for_job("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not TFJOB_CLIENT.is_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The TFJob is not succeeded.")
+    TRAINING_CLIENT.wait_for_job_conditions(
+        JOB_NAME, SDK_TEST_NAMESPACE, constants.TFJOB_KIND
+    )
 
-    TFJOB_CLIENT.get_logs("mnist-ci-test", master=False, namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
 
-    TFJOB_CLIENT.delete("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_tfjob(JOB_NAME, SDK_TEST_NAMESPACE)

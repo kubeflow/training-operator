@@ -19,68 +19,60 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import XGBoostJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1XGBoostJob
 from kubeflow.training import KubeflowOrgV1XGBoostJobSpec
 from kubeflow.training import V1RunPolicy
+from kubeflow.training.constants import constants
 
-XGBOOST_CLIENT = XGBoostJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'default'
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+SDK_TEST_NAMESPACE = "default"
+JOB_NAME = "xgboostjob-iris-ci-test"
 
 
 def test_sdk_e2e():
     container = V1Container(
         name="xgboost",
         image="docker.io/merlintang/xgboost-dist-iris:1.1",
-        args=["--job_type=Train",
-              "--xgboost_parameter=objective:multi:softprob,num_class:3",
-              "--n_estimators=10",
-              "--learning_rate=0.1",
-              "--model_path=/tmp/xgboost-model",
-              "--model_storage_type=local"],
+        args=[
+            "--job_type=Train",
+            "--xgboost_parameter=objective:multi:softprob,num_class:3",
+            "--n_estimators=10",
+            "--learning_rate=0.1",
+            "--model_path=/tmp/xgboost-model",
+            "--model_storage_type=local",
+        ],
     )
 
     master = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     xgboostjob = KubeflowOrgV1XGBoostJob(
         api_version="kubeflow.org/v1",
         kind="XGBoostJob",
-        metadata=V1ObjectMeta(name="xgboostjob-iris-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
         spec=KubeflowOrgV1XGBoostJobSpec(
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            xgb_replica_specs={"Master": master,
-                                   "Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            xgb_replica_specs={"Master": master, "Worker": worker},
+        ),
     )
 
-    XGBOOST_CLIENT.create(xgboostjob)
+    TRAINING_CLIENT.create_xgboostjob(xgboostjob, SDK_TEST_NAMESPACE)
 
-    XGBOOST_CLIENT.wait_for_job("xgboostjob-iris-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not XGBOOST_CLIENT.is_job_succeeded("xgboostjob-iris-ci-test",
-                                           namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The XGBoostJob is not succeeded.")
+    TRAINING_CLIENT.wait_for_job_conditions(
+        JOB_NAME, SDK_TEST_NAMESPACE, constants.XGBOOSTJOB_KIND
+    )
 
-    XGBOOST_CLIENT.get_logs("xgboostjob-iris-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
 
-    XGBOOST_CLIENT.delete("xgboostjob-iris-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, SDK_TEST_NAMESPACE)

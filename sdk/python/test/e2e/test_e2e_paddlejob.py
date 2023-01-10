@@ -19,54 +19,48 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import PaddleJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PaddleJob
 from kubeflow.training import KubeflowOrgV1PaddleJobSpec
 from kubeflow.training import V1RunPolicy
+from kubeflow.training.constants import constants
 
-PADDLE_CLIENT = PaddleJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'default'
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+SDK_TEST_NAMESPACE = "default"
+JOB_NAME = "paddlejob-cpu-ci-test"
 
-job_name = "paddlejob-cpu-ci-test"
 
 def test_sdk_e2e():
     container = V1Container(
         name="paddle",
         image="docker.io/paddlepaddle/paddle:2.4.0rc0-cpu",
         command=["python"],
-        args= ["-m", "paddle.distributed.launch", "run_check"],
+        args=["-m", "paddle.distributed.launch", "run_check"],
     )
 
     worker = V1ReplicaSpec(
         replicas=2,
         restart_policy="OnFailure",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     paddlejob = KubeflowOrgV1PaddleJob(
         api_version="kubeflow.org/v1",
         kind="PaddleJob",
-        metadata=V1ObjectMeta(name=job_name, namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
         spec=KubeflowOrgV1PaddleJobSpec(
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            paddle_replica_specs={"Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            paddle_replica_specs={"Worker": worker},
+        ),
     )
 
-    PADDLE_CLIENT.create(paddlejob)
+    TRAINING_CLIENT.create_paddlejob(paddlejob, SDK_TEST_NAMESPACE)
 
-    PADDLE_CLIENT.wait_for_job(job_name, namespace=SDK_TEST_NAMESPACE)
-    if not PADDLE_CLIENT.is_job_succeeded(job_name,
-                                           namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The PaddleJob is not succeeded.")
+    TRAINING_CLIENT.wait_for_job_conditions(
+        JOB_NAME, SDK_TEST_NAMESPACE, constants.PADDLEJOB_KIND
+    )
 
-    PADDLE_CLIENT.get_logs(job_name, namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
 
-    PADDLE_CLIENT.delete(job_name, namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_paddlejob(JOB_NAME, SDK_TEST_NAMESPACE)
