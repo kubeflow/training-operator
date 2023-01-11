@@ -105,6 +105,7 @@ def get_job(
     job_model: object,
     job_kind: str,
     job_plural: str,
+    timeout: int,
 ):
     """Get the Training Job."""
 
@@ -117,7 +118,7 @@ def get_job(
             name,
             async_req=True,
         )
-        response = FakeResponse(thread.get(constants.APISERVER_TIMEOUT))
+        response = FakeResponse(thread.get(timeout))
         job = api_client.deserialize(response, job_model)
         return job
 
@@ -134,6 +135,7 @@ def list_jobs(
     job_model: object,
     job_kind: str,
     job_plural: str,
+    timeout: int,
 ):
     """List the Training Jobs."""
 
@@ -146,7 +148,7 @@ def list_jobs(
             job_plural,
             async_req=True,
         )
-        response = thread.get(constants.APISERVER_TIMEOUT)
+        response = thread.get(timeout)
         result = [
             api_client.deserialize(FakeResponse(item), job_model)
             for item in response.get("items")

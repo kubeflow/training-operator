@@ -15,7 +15,7 @@
 from kubeflow.training import models
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
-APISERVER_TIMEOUT = 120
+DEFAULT_TIMEOUT = 120
 
 # Common constants.
 KUBEFLOW_GROUP = "kubeflow.org"
