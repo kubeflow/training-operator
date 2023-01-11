@@ -17,6 +17,7 @@ package util
 import (
 	"fmt"
 	"reflect"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
@@ -91,6 +92,8 @@ func OnDependentUpdateFunc(jc *common.JobController) func(updateEvent event.Upda
 			logger = commonutil.LoggerForPod(obj, jc.Controller.GetAPIGroupVersionKind().Kind)
 		case *corev1.Service:
 			logger = commonutil.LoggerForService(newObj.(*corev1.Service), jc.Controller.GetAPIGroupVersionKind().Kind)
+		case *v1beta1.PodGroup:
+			logger = commonutil.LoggerForPodGroup(newObj.(*v1beta1.PodGroup), jc.Controller.GetAPIGroupVersionKind().Kind)
 		default:
 			return false
 		}
