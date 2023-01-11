@@ -30,7 +30,7 @@ from kubeflow.training.constants import constants
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "mxjob-mnist-ci-test"
-CONTAINER_NAME = "mpi"
+CONTAINER_NAME = "mxnet"
 
 
 def test_sdk_e2e():
