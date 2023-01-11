@@ -7,7 +7,6 @@
     "V1ObjectMeta": "from kubernetes.client import V1ObjectMeta",
     "V1ListMeta": "from kubernetes.client import V1ListMeta",
     "V1ResourceRequirements": "from kubernetes.client import V1ResourceRequirements",
-    "V1JobCondition": "from kubernetes.client import V1JobCondition",
     "V1PodTemplateSpec": "from kubernetes.client import V1PodTemplateSpec"
   },
   "typeMappings": {

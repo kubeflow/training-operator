@@ -46,7 +46,6 @@ from kubeflow.training.models.v1_scheduling_policy import V1SchedulingPolicy
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1ListMeta
 from kubernetes.client import V1ManagedFieldsEntry
-from kubernetes.client import V1JobCondition
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container

@@ -66,7 +66,6 @@ def add_imports() -> None:
         f.write("from kubernetes.client import V1ObjectMeta\n")
         f.write("from kubernetes.client import V1ListMeta\n")
         f.write("from kubernetes.client import V1ManagedFieldsEntry\n")
-        f.write("from kubernetes.client import V1JobCondition\n")
         f.write("from kubernetes.client import V1PodTemplateSpec\n")
         f.write("from kubernetes.client import V1PodSpec\n")
         f.write("from kubernetes.client import V1Container\n")
