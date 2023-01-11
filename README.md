@@ -96,6 +96,7 @@ The following table lists the most recent few versions of the operator.
 | `v1.2.x`               | `v1`        | 1.16+              |
 | `v1.3.x`               | `v1`        | 1.18+              |
 | `v1.4.x`               | `v1`        | 1.23+              |
+| `v1.5.x`               | `v1`        | 1.23+              |
 | `latest` (master HEAD) | `v1`        | 1.23+              |
 
 ## Acknowledgement
