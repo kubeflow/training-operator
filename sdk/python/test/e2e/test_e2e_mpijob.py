@@ -29,11 +29,12 @@ from kubeflow.training.constants import constants
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "mpijob-mxnet-ci-test"
+CONTAINER_NAME = "mpi"
 
 
 def test_sdk_e2e():
     master_container = V1Container(
-        name="mpi",
+        name=CONTAINER_NAME,
         image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
         command=["mpirun"],
         args=[
@@ -96,6 +97,6 @@ def test_sdk_e2e():
         JOB_NAME, SDK_TEST_NAMESPACE, constants.MPIJOB_KIND
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
 
     TRAINING_CLIENT.delete_mpijob(JOB_NAME, SDK_TEST_NAMESPACE)

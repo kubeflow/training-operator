@@ -29,11 +29,12 @@ from kubeflow.training.constants import constants
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "xgboostjob-iris-ci-test"
+CONTAINER_NAME = "xgboost"
 
 
 def test_sdk_e2e():
     container = V1Container(
-        name="xgboost",
+        name=CONTAINER_NAME,
         image="docker.io/merlintang/xgboost-dist-iris:1.1",
         args=[
             "--job_type=Train",
@@ -73,6 +74,6 @@ def test_sdk_e2e():
         JOB_NAME, SDK_TEST_NAMESPACE, constants.XGBOOSTJOB_KIND
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
 
     TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, SDK_TEST_NAMESPACE)

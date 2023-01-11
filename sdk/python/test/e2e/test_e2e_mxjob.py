@@ -30,11 +30,12 @@ from kubeflow.training.constants import constants
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "mxjob-mnist-ci-test"
+CONTAINER_NAME = "mpi"
 
 
 def test_sdk_e2e():
     worker_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         command=["/usr/local/bin/python3"],
         args=[
@@ -50,13 +51,13 @@ def test_sdk_e2e():
     )
 
     server_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
     )
 
     scheduler_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
     )
@@ -100,6 +101,6 @@ def test_sdk_e2e():
         JOB_NAME, SDK_TEST_NAMESPACE, constants.MXJOB_KIND
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
 
     TRAINING_CLIENT.delete_mxjob(JOB_NAME, SDK_TEST_NAMESPACE)
