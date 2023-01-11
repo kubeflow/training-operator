@@ -783,13 +783,18 @@ class TrainingClient(object):
         )
 
     def delete_tfjob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the TFJob
 
         Args:
             name: Name for the TFJob.
             namespace: Namespace for the TFJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the TFJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete TFJob.
@@ -802,6 +807,7 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.TFJOB_KIND,
             job_plural=constants.TFJOB_PLURAL,
+            delete_options=delete_options,
         )
 
     # ------------------------------------------------------------------------ #
@@ -971,13 +977,18 @@ class TrainingClient(object):
         )
 
     def delete_pytorchjob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the PyTorchJob
 
         Args:
             name: Name for the PyTorchJob.
             namespace: Namespace for the PyTorchJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the PyTorchJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete PyTorchJob.
@@ -990,6 +1001,7 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.PYTORCHJOB_KIND,
             job_plural=constants.PYTORCHJOB_PLURAL,
+            delete_options=delete_options,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1088,13 +1100,18 @@ class TrainingClient(object):
         )
 
     def delete_mxjob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the MXJob
 
         Args:
             name: Name for the MXJob.
             namespace: Namespace for the MXJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the MXJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete MXJob.
@@ -1107,6 +1124,7 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.MXJOB_KIND,
             job_plural=constants.MXJOB_PLURAL,
+            delete_options=delete_options,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1207,13 +1225,18 @@ class TrainingClient(object):
         )
 
     def delete_xgboostjob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the XGBoostJob
 
         Args:
             name: Name for the XGBoostJob.
             namespace: Namespace for the XGBoostJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the XGBoostJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete XGBoostJob.
@@ -1226,6 +1249,7 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.XGBOOSTJOB_KIND,
             job_plural=constants.XGBOOSTJOB_PLURAL,
+            delete_options=delete_options,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1326,13 +1350,18 @@ class TrainingClient(object):
         )
 
     def delete_mpijob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the MPIJob
 
         Args:
             name: Name for the MPIJob.
             namespace: Namespace for the MPIJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the MPIJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete MPIJob.
@@ -1345,6 +1374,7 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.MPIJOB_KIND,
             job_plural=constants.MPIJOB_PLURAL,
+            delete_options=delete_options,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1443,13 +1473,18 @@ class TrainingClient(object):
         )
 
     def delete_paddlejob(
-        self, name: str, namespace: str = utils.get_default_target_namespace(),
+        self,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+        delete_options: client.V1DeleteOptions = None,
     ):
         """Delete the PaddleJob
 
         Args:
             name: Name for the PaddleJob.
             namespace: Namespace for the PaddleJob.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the PaddleJob. For example, grace period seconds.
 
         Raises:
             TimeoutError: Timeout to delete PaddleJob.
@@ -1462,4 +1497,5 @@ class TrainingClient(object):
             namespace=namespace,
             job_kind=constants.PADDLEJOB_KIND,
             job_plural=constants.PADDLEJOB_PLURAL,
+            delete_options=delete_options,
         )

@@ -166,6 +166,7 @@ def delete_job(
     namespace: str,
     job_kind: str,
     job_plural: str,
+    delete_options: client.V1DeleteOptions,
 ):
     """Delete the Training Job."""
 
@@ -176,7 +177,7 @@ def delete_job(
             namespace,
             job_plural,
             name=name,
-            body=client.V1DeleteOptions(),
+            body=delete_options,
         )
     except multiprocessing.TimeoutError:
         raise TimeoutError(f"Timeout to delete {job_kind}: {namespace}/{name}")
