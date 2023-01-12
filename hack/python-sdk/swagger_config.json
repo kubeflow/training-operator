@@ -2,13 +2,6 @@
   "packageName": "kubeflow.training",
   "projectName": "training",
   "packageVersion": "1.5.0",
-  "importMappings": {
-    "V1Container": "from kubernetes.client import V1Container",
-    "V1ObjectMeta": "from kubernetes.client import V1ObjectMeta",
-    "V1ListMeta": "from kubernetes.client import V1ListMeta",
-    "V1ResourceRequirements": "from kubernetes.client import V1ResourceRequirements",
-    "V1PodTemplateSpec": "from kubernetes.client import V1PodTemplateSpec"
-  },
   "typeMappings": {
     "V1Time": "datetime"
   }

@@ -60,16 +60,16 @@ def add_imports() -> None:
         f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
 
     # Add Kubernetes models to proper deserialization of Training models.
-    with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "a") as f:
-        f.write("\n")
-        f.write("# Import Kubernetes models.\n")
-        f.write("from kubernetes.client import V1ObjectMeta\n")
-        f.write("from kubernetes.client import V1ListMeta\n")
-        f.write("from kubernetes.client import V1ManagedFieldsEntry\n")
-        f.write("from kubernetes.client import V1PodTemplateSpec\n")
-        f.write("from kubernetes.client import V1PodSpec\n")
-        f.write("from kubernetes.client import V1Container\n")
-        f.write("from kubernetes.client import V1ResourceRequirements\n")
+    with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "r") as f:
+        new_lines = []
+        for line in f.readlines():
+            new_lines.append(line)
+            if line.startswith("from __future__ import absolute_import"):
+                new_lines.append("\n")
+                new_lines.append("# Import Kubernetes models.\n")
+                new_lines.append("from kubernetes.client import *\n")
+    with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "w") as f:
+        f.writelines(new_lines)
 
 
 def _apply_regex(input_str: str) -> str:
