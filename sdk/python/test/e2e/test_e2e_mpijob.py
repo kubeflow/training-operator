@@ -98,8 +98,8 @@ def test_sdk_e2e():
     )
 
     TRAINING_CLIENT.create_mpijob(mpijob, JOB_NAMESPACE)
-    print(f"List of created {constants.MPIJOB_KIND}s")
-    print(TRAINING_CLIENT.list_mpijobs(JOB_NAMESPACE))
+    logging.info(f"List of created {constants.MPIJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_mpijobs(JOB_NAMESPACE))
 
     verify_job_e2e(
         TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.MPIJOB_KIND, CONTAINER_NAME,

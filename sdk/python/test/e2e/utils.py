@@ -13,7 +13,7 @@ def verify_job_e2e(
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
-    logging.info(f"\n\n\n{job_kind} conditions")
+    logging.info(f"\n\n\n{job_kind} is running")
     client.wait_for_job_conditions(name, namespace, job_kind)
 
     # Job should have Created, Running, and Succeeded conditions.

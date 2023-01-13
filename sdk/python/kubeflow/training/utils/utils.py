@@ -42,9 +42,9 @@ class StatusLogger:
 
     def __call__(self, *values):
         if self.first_call:
-            print(self.header)
+            logging.info(self.header)
             self.first_call = False
-        print(self.column_format.format(*values))
+        logging.info(self.column_format.format(*values))
 
 
 class FakeResponse:
