@@ -105,25 +105,9 @@ class TrainingClient(object):
             RuntimeError: Failed to get Training Job.
         """
 
-        if (
-            job is not None
-            and not isinstance(job, models.KubeflowOrgV1TFJob)
-            and not isinstance(job, models.KubeflowOrgV1PyTorchJob)
-            and not isinstance(job, models.KubeflowOrgV1MXJob)
-            and not isinstance(job, models.KubeflowOrgV1XGBoostJob)
-            and not isinstance(job, models.KubeflowOrgV1MPIJob)
-            and not isinstance(job, models.KubeflowOrgV1PaddleJob)
-        ):
-            raise ValueError(
-                "Job must be one of these types: {},{},{},{},{},{}".format(
-                    models.KubeflowOrgV1TFJob,
-                    models.KubeflowOrgV1PyTorchJob,
-                    models.KubeflowOrgV1MXJob,
-                    models.KubeflowOrgV1XGBoostJob,
-                    models.KubeflowOrgV1MPIJob,
-                    models.KubeflowOrgV1PaddleJob,
-                )
-            )
+        models = tuple([d["model"] for d in list(constants.JOB_KINDS.values())])
+        if job is not None and not isinstance(job, models):
+            raise ValueError(f"Job must be one of these types: {models}")
 
         # If Job is not set, get the Training Job.
         if job is None:
