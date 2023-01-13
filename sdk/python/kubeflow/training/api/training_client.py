@@ -665,6 +665,8 @@ class TrainingClient(object):
         """
 
         # Check if at least one replica is set.
+        # TODO (andreyvelich): Remove this check once we have CEL validation.
+        # Ref: https://github.com/kubeflow/training-operator/issues/1708
         if (
             num_chief_replicas is None
             and num_ps_replicas is None
@@ -701,17 +703,23 @@ class TrainingClient(object):
 
         # Add Chief, PS, and Worker replicas to the TFJob.
         if num_chief_replicas is not None:
-            tfjob.spec.tf_replica_specs["Chief"] = models.V1ReplicaSpec(
+            tfjob.spec.tf_replica_specs[
+                constants.REPLICA_TYPE_CHIEF
+            ] = models.V1ReplicaSpec(
                 replicas=num_chief_replicas, template=pod_template_spec,
             )
 
         if num_ps_replicas is not None:
-            tfjob.spec.tf_replica_specs["PS"] = models.V1ReplicaSpec(
+            tfjob.spec.tf_replica_specs[
+                constants.REPLICA_TYPE_PS
+            ] = models.V1ReplicaSpec(
                 replicas=num_ps_replicas, template=pod_template_spec,
             )
 
         if num_worker_replicas is not None:
-            tfjob.spec.tf_replica_specs["Worker"] = models.V1ReplicaSpec(
+            tfjob.spec.tf_replica_specs[
+                constants.REPLICA_TYPE_WORKER
+            ] = models.V1ReplicaSpec(
                 replicas=num_worker_replicas, template=pod_template_spec,
             )
 
@@ -868,6 +876,8 @@ class TrainingClient(object):
         """
 
         # Check if at least one worker replica is set.
+        # TODO (andreyvelich): Remove this check once we have CEL validation.
+        # Ref: https://github.com/kubeflow/training-operator/issues/1708
         if num_worker_replicas is None:
             raise ValueError("At least one Worker replica for PyTorchJob must be set")
 
@@ -899,13 +909,15 @@ class TrainingClient(object):
         )
 
         # Add Master and Worker replicas to the PyTorchJob.
-        pytorchjob.spec.pytorch_replica_specs["Master"] = models.V1ReplicaSpec(
-            replicas=1, template=pod_template_spec,
-        )
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_MASTER
+        ] = models.V1ReplicaSpec(replicas=1, template=pod_template_spec,)
 
         # If number of Worker replicas is 1, PyTorchJob uses only Master replica.
         if num_worker_replicas != 1:
-            pytorchjob.spec.pytorch_replica_specs["Worker"] = models.V1ReplicaSpec(
+            pytorchjob.spec.pytorch_replica_specs[
+                constants.REPLICA_TYPE_WORKER
+            ] = models.V1ReplicaSpec(
                 replicas=num_worker_replicas, template=pod_template_spec,
             )
 

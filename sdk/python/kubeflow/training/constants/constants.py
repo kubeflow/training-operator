@@ -44,6 +44,12 @@ JOB_ROLE_MASTER = "master"
 REPLICA_TYPE_LABEL = "training.kubeflow.org/replica-type"
 REPLICA_INDEX_LABEL = "training.kubeflow.org/replica-index"
 
+# Various replica types.
+REPLICA_TYPE_CHIEF = "Chief"
+REPLICA_TYPE_PS = "PS"
+REPLICA_TYPE_MASTER = "Master"
+REPLICA_TYPE_WORKER = "Worker"
+
 # TFJob constants.
 TFJOB_KIND = "TFJob"
 TFJOB_PLURAL = "tfjobs"
