@@ -945,7 +945,7 @@ class TrainingClient(object):
             timeout=timeout,
         )
 
-    def list_pytorchjob(
+    def list_pytorchjobs(
         self,
         namespace: str = utils.get_default_target_namespace(),
         timeout: int = constants.DEFAULT_TIMEOUT,

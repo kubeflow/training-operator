@@ -27,9 +27,11 @@ from kubeflow.training import KubeflowOrgV1MXJobSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training.constants import constants
 
+from test.e2e.utils import verify_job_e2e
+
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
-SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "mxjob-mnist-ci-test"
+JOB_NAMESPACE = "default"
 CONTAINER_NAME = "mxnet"
 
 
@@ -83,7 +85,7 @@ def test_sdk_e2e():
     mxjob = KubeflowOrgV1MXJob(
         api_version="kubeflow.org/v1",
         kind="MXJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1MXJobSpec(
             job_mode="MXTrain",
             run_policy=V1RunPolicy(clean_pod_policy="None",),
@@ -95,12 +97,12 @@ def test_sdk_e2e():
         ),
     )
 
-    TRAINING_CLIENT.create_mxjob(mxjob, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_mxjob(mxjob, JOB_NAMESPACE)
+    print(f"List of created {constants.MXJOB_KIND}s")
+    print(TRAINING_CLIENT.list_mxjobs(JOB_NAMESPACE))
 
-    TRAINING_CLIENT.wait_for_job_conditions(
-        JOB_NAME, SDK_TEST_NAMESPACE, constants.MXJOB_KIND
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.MXJOB_KIND, CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
-
-    TRAINING_CLIENT.delete_mxjob(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, JOB_NAMESPACE)

@@ -26,9 +26,11 @@ from kubeflow.training import KubeflowOrgV1MPIJobSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training.constants import constants
 
+from test.e2e.utils import verify_job_e2e
+
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
-SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "mpijob-mxnet-ci-test"
+JOB_NAMESPACE = "default"
 CONTAINER_NAME = "mpi"
 
 
@@ -83,7 +85,7 @@ def test_sdk_e2e():
     mpijob = KubeflowOrgV1MPIJob(
         api_version="kubeflow.org/v1",
         kind="MPIJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1MPIJobSpec(
             slots_per_worker=1,
             run_policy=V1RunPolicy(clean_pod_policy="None",),
@@ -91,12 +93,12 @@ def test_sdk_e2e():
         ),
     )
 
-    TRAINING_CLIENT.create_mpijob(mpijob, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_mpijob(mpijob, JOB_NAMESPACE)
+    print(f"List of created {constants.MPIJOB_KIND}s")
+    print(TRAINING_CLIENT.list_mpijobs(JOB_NAMESPACE))
 
-    TRAINING_CLIENT.wait_for_job_conditions(
-        JOB_NAME, SDK_TEST_NAMESPACE, constants.MPIJOB_KIND
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.MPIJOB_KIND, CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
-
-    TRAINING_CLIENT.delete_mpijob(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_mpijob(JOB_NAME, JOB_NAMESPACE)

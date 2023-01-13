@@ -26,15 +26,17 @@ from kubeflow.training import KubeflowOrgV1TFJob
 from kubeflow.training import KubeflowOrgV1TFJobSpec
 from kubeflow.training.constants import constants
 
+from test.e2e.utils import verify_job_e2e
 
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
-SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "tfjob-mnist-ci-test"
+JOB_NAMESPACE = "default"
+CONTAINER_NAME = "tensorflow"
 
 
 def test_sdk_e2e():
     container = V1Container(
-        name="tensorflow",
+        name=CONTAINER_NAME,
         image="gcr.io/kubeflow-ci/tf-mnist-with-summaries:1.0",
         command=[
             "python",
@@ -54,19 +56,19 @@ def test_sdk_e2e():
     tfjob = KubeflowOrgV1TFJob(
         api_version="kubeflow.org/v1",
         kind="TFJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1TFJobSpec(
             run_policy=V1RunPolicy(clean_pod_policy="None",),
             tf_replica_specs={"Worker": worker},
         ),
     )
 
-    TRAINING_CLIENT.create_tfjob(tfjob, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_tfjob(tfjob, JOB_NAMESPACE)
+    print(f"List of created {constants.TFJOB_KIND}s")
+    print(TRAINING_CLIENT.list_tfjobs(JOB_NAMESPACE))
 
-    TRAINING_CLIENT.wait_for_job_conditions(
-        JOB_NAME, SDK_TEST_NAMESPACE, constants.TFJOB_KIND
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.TFJOB_KIND, CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE)
-
-    TRAINING_CLIENT.delete_tfjob(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_tfjob(JOB_NAME, JOB_NAMESPACE)

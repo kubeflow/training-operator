@@ -26,9 +26,11 @@ from kubeflow.training import KubeflowOrgV1PaddleJobSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training.constants import constants
 
+from test.e2e.utils import verify_job_e2e
+
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
-SDK_TEST_NAMESPACE = "default"
 JOB_NAME = "paddlejob-cpu-ci-test"
+JOB_NAMESPACE = "default"
 CONTAINER_NAME = "paddle"
 
 
@@ -49,19 +51,23 @@ def test_sdk_e2e():
     paddlejob = KubeflowOrgV1PaddleJob(
         api_version="kubeflow.org/v1",
         kind="PaddleJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1PaddleJobSpec(
             run_policy=V1RunPolicy(clean_pod_policy="None",),
             paddle_replica_specs={"Worker": worker},
         ),
     )
 
-    TRAINING_CLIENT.create_paddlejob(paddlejob, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_paddlejob(paddlejob, JOB_NAMESPACE)
+    print(f"List of created {constants.PADDLEJOB_KIND}s")
+    print(TRAINING_CLIENT.list_paddlejobs(JOB_NAMESPACE))
 
-    TRAINING_CLIENT.wait_for_job_conditions(
-        JOB_NAME, SDK_TEST_NAMESPACE, constants.PADDLEJOB_KIND
+    verify_job_e2e(
+        TRAINING_CLIENT,
+        JOB_NAME,
+        JOB_NAMESPACE,
+        constants.PADDLEJOB_KIND,
+        CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.get_job_logs(JOB_NAME, SDK_TEST_NAMESPACE, container=CONTAINER_NAME)
-
-    TRAINING_CLIENT.delete_paddlejob(JOB_NAME, SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_paddlejob(JOB_NAME, JOB_NAMESPACE)
