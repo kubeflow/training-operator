@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -27,6 +28,9 @@ from kubeflow.training import V1RunPolicy
 from kubeflow.training.constants import constants
 
 from test.e2e.utils import verify_job_e2e
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
 
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 JOB_NAME = "pytorchjob-mnist-ci-test"
@@ -64,8 +68,8 @@ def test_sdk_e2e():
     )
 
     TRAINING_CLIENT.create_pytorchjob(pytorchjob, JOB_NAMESPACE)
-    print(f"List of created {constants.PYTORCHJOB_KIND}s")
-    print(TRAINING_CLIENT.list_pytorchjobs(JOB_NAMESPACE))
+    logging.info(f"List of created {constants.PYTORCHJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_pytorchjobs(JOB_NAMESPACE))
 
     verify_job_e2e(
         TRAINING_CLIENT,

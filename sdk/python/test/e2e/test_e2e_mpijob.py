@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -27,6 +28,9 @@ from kubeflow.training import V1RunPolicy
 from kubeflow.training.constants import constants
 
 from test.e2e.utils import verify_job_e2e
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
 
 TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 JOB_NAME = "mpijob-mxnet-ci-test"

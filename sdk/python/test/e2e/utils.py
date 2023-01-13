@@ -1,4 +1,10 @@
+import logging
+
 from kubeflow.training import TrainingClient
+
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
 
 
 def verify_job_e2e(
@@ -7,7 +13,7 @@ def verify_job_e2e(
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
-    print(f"\n\n\n{job_kind} conditions")
+    logging.info(f"\n\n\n{job_kind} conditions")
     client.wait_for_job_conditions(name, namespace, job_kind)
 
     # Job should have Created, Running, and Succeeded conditions.
@@ -32,9 +38,9 @@ def verify_job_e2e(
         raise Exception(f"{job_kind} should not be in Failed condition")
 
     # Print Job pod names.
-    print(f"\n\n\n{job_kind} pod names")
-    print(client.get_job_pod_names(name, namespace))
+    logging.info(f"\n\n\n{job_kind} pod names")
+    logging.info(client.get_job_pod_names(name, namespace))
 
     # Print Job logs.
-    print(f"\n\n\n{job_kind} logs")
+    logging.info(f"\n\n\n{job_kind} logs")
     client.get_job_logs(name, namespace, container=container)
