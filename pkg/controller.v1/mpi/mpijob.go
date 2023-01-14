@@ -18,11 +18,11 @@ import (
 	"strings"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -69,14 +69,9 @@ const (
 	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 
-	// gang scheduler name.
-	gangSchedulerName = "volcano"
-
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-	// gangSchedulingPodGroupAnnotation is the annotation key used by batch schedulers
-	gangSchedulingPodGroupAnnotation = "scheduling.k8s.io/group-name"
 
 	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
 	volcanoTaskSpecKey = "volcano.sh/task-spec"
