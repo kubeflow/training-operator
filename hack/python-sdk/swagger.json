@@ -773,6 +773,10 @@
         },
         "queue": {
           "type": "string"
+        },
+        "scheduleTimeoutSeconds": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     }

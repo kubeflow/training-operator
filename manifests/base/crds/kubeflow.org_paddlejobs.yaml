@@ -7904,6 +7904,9 @@ spec:
                         type: string
                       queue:
                         type: string
+                      scheduleTimeoutSeconds:
+                        format: int32
+                        type: integer
                     type: object
                   ttlSecondsAfterFinished:
                     description: TTLSecondsAfterFinished is the TTL to clean up jobs.

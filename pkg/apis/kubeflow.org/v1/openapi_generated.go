@@ -346,6 +346,12 @@ func schema_pkg_apis_common_v1_SchedulingPolicy(ref common.ReferenceCallback) co
 							Format: "",
 						},
 					},
+					"scheduleTimeoutSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
 				},
 			},
 		},

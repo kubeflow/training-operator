@@ -74,7 +74,8 @@ class TestKubeflowOrgV1PyTorchJob(unittest.TestCase):
                                 'key' : None
                                 }, 
                             priority_class = '0', 
-                            queue = '0', ), 
+                            queue = '0', 
+                            schedule_timeout_seconds = 56, ), 
                         ttl_seconds_after_finished = 56, ), ), 
                 status = V1JobStatus(
                     completion_time = None, 
