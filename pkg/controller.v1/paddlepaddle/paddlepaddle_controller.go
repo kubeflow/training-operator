@@ -52,6 +52,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 )
 
@@ -211,11 +212,11 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 		return err
 	}
 
-	// skip watching podgroup if podgroup is not installed
+	// skip watching volcano PodGroup if volcano PodGroup is not installed
 	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version)
 	if err == nil {
-		// inject watching for job related podgroup
+		// inject watching for job related volcano PodGroup
 		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &kubeflowv1.PaddleJob{},
@@ -223,6 +224,24 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
 			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
 			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+		}); err != nil {
+			return err
+		}
+	}
+
+	// skip watching scheduler-plugins PodGroup if scheduler-plugins PodGroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(
+		schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		schedulerpluginsv1alpha1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related scheduler-plugins PodGroup
+		if err = c.Watch(&source.Kind{Type: &schedulerpluginsv1alpha1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.PaddleJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
 		}); err != nil {
 			return err
 		}
