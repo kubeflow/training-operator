@@ -212,6 +212,7 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 	}); err != nil {
 		return err
 	}
+
 	// skip watching podgroup if podgroup is not installed
 	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version)
@@ -221,9 +222,9 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 			IsController: true,
 			OwnerType:    &kubeflowv1.PaddleJob{},
 		}, predicate.Funcs{
-			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 		}); err != nil {
 			return err
 		}
