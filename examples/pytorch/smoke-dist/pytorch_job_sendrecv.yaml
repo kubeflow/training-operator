@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
             - name: pytorch
-              image: gcr.io/kubeflow-ci/pytorch-dist-sendrecv-test:1.0
+              image: kubeflow/pytorch-dist-sendrecv-test:latest
     Worker:
       replicas: 3
       restartPolicy: OnFailure
@@ -19,4 +19,4 @@ spec:
         spec:
           containers:
             - name: pytorch
-              image: gcr.io/kubeflow-ci/pytorch-dist-sendrecv-test:1.0
+              image: kubeflow/pytorch-dist-sendrecv-test:latest
