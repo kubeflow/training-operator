@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **min_resources** | [**dict(str, Quantity)**](Quantity.md) |  | [optional] 
 **priority_class** | **str** |  | [optional] 
 **queue** | **str** |  | [optional] 
+**schedule_timeout_seconds** | **int** |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

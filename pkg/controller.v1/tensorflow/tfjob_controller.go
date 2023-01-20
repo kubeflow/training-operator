@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
@@ -102,18 +101,15 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *TFJobReconci
 
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
@@ -868,7 +864,7 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 	// if gang-scheduling is enabled:
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
-	if r.Config.EnableGangScheduling {
+	if r.Config.EnableGangScheduling() {
 		podSchedulerName := util.GetSchedulerName(replicas)
 		if len(podSchedulerName) == 0 {
 			podTemplate.Spec.SchedulerName = gangSchedulerName

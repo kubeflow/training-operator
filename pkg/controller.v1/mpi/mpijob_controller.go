@@ -54,7 +54,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
@@ -80,18 +79,15 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MPIJobReconc
 
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
@@ -1000,7 +996,7 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *kubeflowv1.MPIJob, name string) *c
 	// if gang-scheduling is enabled:
 	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
 	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "volcano".
-	if jc.Config.EnableGangScheduling {
+	if jc.Config.EnableGangScheduling() {
 		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)
@@ -1054,7 +1050,7 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 
 	logger := commonutil.LoggerForReplica(mpiJob, strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher)))
 	// add SchedulerName to podSpec
-	if jc.Config.EnableGangScheduling {
+	if jc.Config.EnableGangScheduling() {
 		if util.IsGangSchedulerSet(mpiJob.Spec.MPIReplicaSpecs, gangSchedulerName) {
 			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
 			logger.Warning(errMsg)

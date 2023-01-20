@@ -48,7 +48,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
@@ -81,7 +80,6 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MXJobReconci
 	// Create clients.
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
 	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
@@ -89,11 +87,9 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *MXJobReconci
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.Recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.Recorder},
