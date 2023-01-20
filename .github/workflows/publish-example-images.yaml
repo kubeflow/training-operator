@@ -1,0 +1,55 @@
+name: Publish Training Operator Example Images
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  example:
+    name: Publish Image
+    uses: ./.github/workflows/build-and-publish-images.yaml
+    with:
+      component-name: ${{ matrix.component-name }}
+      # TODO (tenzen-y): Support linux/arm64 platform
+      platforms: linux/amd64
+      dockerfile: ${{ matrix.dockerfile }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component-name: tf-dist-mnist-test
+            dockerfile: examples/tensorflow/dist-mnist/Dockerfile
+          - component-name: tf-distributed-worker
+            dockerfile: examples/tensorflow/distribution_strategy/estimator-API/Dockerfile
+          - component-name: tf-multi-worker-strategy
+            dockerfile: examples/tensorflow/distribution_strategy/keras-API/Dockerfile
+          - component-name: tf-mnist-with-summaries
+            dockerfile: examples/tensorflow/mnist_with_summaries/Dockerfile
+          - component-name: tf-smoke
+            dockerfile: examples/tensorflow/tf_sample/Dockerfile
+          - component-name: pytorch-dist-sendrecv-test
+            dockerfile: examples/pytorch/smoke-dist/Dockerfile
+          - component-name: pytorch-elastic-example-imagenet
+            dockerfile: examples/pytorch/elastic/imagenet/Dockerfile
+          - component-name: pytorch-elastic-example-echo
+            dockerfile: examples/pytorch/elastic/echo/Dockerfile
+
+# TODO (tenzen-y): Fix the below broken Dockerfiles
+#          - component-name: lightgbm-dist-py-test
+#            dockerfile: examples/xgboost/lightgbm-dist/Dockerfile
+#          - component-name: xgboost-dist-rabit-test
+#            dockerfile: examples/xgboost/smoke-dist/Dockerfile
+#          - component-name: xgboost-dist-iris
+#            dockerfile: examples/xgboost/xgboost-dist
+#          - component-name: mxnet-gpu
+#            dockerfile: examples/mxnet/train/Dockerfile
+#          - component-name: mxnet-auto-tuning
+#            dockerfile: examples/mxnet/tune/Dockerfile
+#          - component-name: pytorch-dist-mnist-mpi
+#            dockerfile: examples/pytorch/mnist/Dockerfile-mpi
+#          - component-name: pytorch-dist-mnist
+#            dockerfile: examples/pytorch/mnist/Dockerfile
