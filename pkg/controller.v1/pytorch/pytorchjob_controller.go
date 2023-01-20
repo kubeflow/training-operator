@@ -74,7 +74,7 @@ func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSched
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
-	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
+	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
@@ -390,7 +390,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 		// Generate the label selector.
-		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
+		status.Selector = metav1.FormatLabelSelector(r.GenLabelSelector(pytorchjob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded

@@ -79,7 +79,8 @@ class TestKubeflowOrgV1MXJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = '0', 
+                                    label_selector = None, 
+                                    selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )
@@ -131,7 +132,8 @@ class TestKubeflowOrgV1MXJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = '0', 
+                                    label_selector = None, 
+                                    selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )

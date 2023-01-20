@@ -51,7 +51,7 @@ const (
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
 //+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
-// +kubebuilder:subresource:scale:specpath=.spec.paddleReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Worker.active,selectorpath=.status.replicaStatuses.Worker.labelSelector
+// +kubebuilder:subresource:scale:specpath=.spec.paddleReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Worker.active,selectorpath=.status.replicaStatuses.Worker.selector
 
 // PaddleJob Represents a PaddleJob resource.
 type PaddleJob struct {
