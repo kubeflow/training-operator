@@ -13,92 +13,208 @@
 # limitations under the License.
 
 import os
+import logging
 import textwrap
 import inspect
 from typing import Callable, List, Dict, Any
+import json
+import threading
+import queue
+import multiprocessing
+
 from kubernetes import client
 
 from kubeflow.training.constants import constants
+from kubeflow.training.api_client import ApiClient
+
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
+
+
+class StatusLogger:
+    """Logger to print Training Job statuses."""
+
+    def __init__(self, header, column_format):
+        self.header = header
+        self.column_format = column_format
+        self.first_call = True
+
+    def __call__(self, *values):
+        if self.first_call:
+            logging.info(self.header)
+            self.first_call = False
+        logging.info(self.column_format.format(*values))
+
+
+class FakeResponse:
+    """Fake object of RESTResponse to deserialize
+    Ref) https://github.com/kubeflow/katib/pull/1630#discussion_r697877815
+    Ref) https://github.com/kubernetes-client/python/issues/977#issuecomment-592030030
+    """
+
+    def __init__(self, obj):
+        self.data = json.dumps(obj)
 
 
 def is_running_in_k8s():
     return os.path.isdir("/var/run/secrets/kubernetes.io/")
 
 
-def get_current_k8s_namespace():
+def get_default_target_namespace():
+    if not is_running_in_k8s():
+        return "default"
     with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
         return f.readline()
 
 
-def get_default_target_namespace():
-    if not is_running_in_k8s():
-        return "default"
-    return get_current_k8s_namespace()
+def create_job(
+    custom_api: client.CustomObjectsApi,
+    job: object,
+    namespace: str,
+    job_kind: str,
+    job_plural: str,
+):
+    """Create the Training Job."""
+
+    try:
+        custom_api.create_namespaced_custom_object(
+            constants.KUBEFLOW_GROUP,
+            constants.OPERATOR_VERSION,
+            namespace,
+            job_plural,
+            job,
+        )
+    except multiprocessing.TimeoutError:
+        raise TimeoutError(
+            f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
+        )
+    except Exception:
+        raise RuntimeError(
+            f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
+        )
+
+    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been created")
 
 
-def set_tfjob_namespace(tfjob):
-    tfjob_namespace = tfjob.metadata.namespace
-    namespace = tfjob_namespace or get_default_target_namespace()
-    return namespace
+def get_job(
+    custom_api: client.CustomObjectsApi,
+    api_client: ApiClient,
+    name: str,
+    namespace: str,
+    job_model: object,
+    job_kind: str,
+    job_plural: str,
+    timeout: int,
+):
+    """Get the Training Job."""
+
+    try:
+        thread = custom_api.get_namespaced_custom_object(
+            constants.KUBEFLOW_GROUP,
+            constants.OPERATOR_VERSION,
+            namespace,
+            job_plural,
+            name,
+            async_req=True,
+        )
+        response = FakeResponse(thread.get(timeout))
+        job = api_client.deserialize(response, job_model)
+        return job
+
+    except multiprocessing.TimeoutError:
+        raise TimeoutError(f"Timeout to get {job_kind}: {namespace}/{name}")
+    except Exception:
+        raise RuntimeError(f"Failed to get {job_kind}: {namespace}/{name}")
 
 
-def set_pytorchjob_namespace(pytorchjob):
-    pytorchjob_namespace = pytorchjob.metadata.namespace
-    namespace = pytorchjob_namespace or get_default_target_namespace()
-    return namespace
+def list_jobs(
+    custom_api: client.CustomObjectsApi,
+    api_client: ApiClient,
+    namespace: str,
+    job_model: object,
+    job_kind: str,
+    job_plural: str,
+    timeout: int,
+):
+    """List the Training Jobs."""
+
+    result = []
+    try:
+        thread = custom_api.list_namespaced_custom_object(
+            constants.KUBEFLOW_GROUP,
+            constants.OPERATOR_VERSION,
+            namespace,
+            job_plural,
+            async_req=True,
+        )
+        response = thread.get(timeout)
+        result = [
+            api_client.deserialize(FakeResponse(item), job_model)
+            for item in response.get("items")
+        ]
+    except multiprocessing.TimeoutError:
+        raise TimeoutError(f"Timeout to list {job_kind}s in namespace: {namespace}")
+    except Exception:
+        raise RuntimeError(f"Failed to list {job_kind}s in namespace: {namespace}")
+    return result
 
 
-def set_xgboostjob_namespace(xgboostjob):
-    xgboostjob_namespace = xgboostjob.metadata.namespace
-    namespace = xgboostjob_namespace or get_default_target_namespace()
-    return namespace
+def delete_job(
+    custom_api: client.CustomObjectsApi,
+    name: str,
+    namespace: str,
+    job_kind: str,
+    job_plural: str,
+    delete_options: client.V1DeleteOptions,
+):
+    """Delete the Training Job."""
+
+    try:
+        custom_api.delete_namespaced_custom_object(
+            constants.KUBEFLOW_GROUP,
+            constants.OPERATOR_VERSION,
+            namespace,
+            job_plural,
+            name=name,
+            body=delete_options,
+        )
+    except multiprocessing.TimeoutError:
+        raise TimeoutError(f"Timeout to delete {job_kind}: {namespace}/{name}")
+    except Exception:
+        raise RuntimeError(f"Failed to delete {job_kind}: {namespace}/{name}")
+
+    logging.info(f"{job_kind} {namespace}/{name} has been deleted")
 
 
-def set_mpijob_namespace(mpijob):
-    mpijob_namespace = mpijob.metadata.namespace
-    namespace = mpijob_namespace or get_default_target_namespace()
-    return namespace
+def wrap_log_stream(q, stream):
+    while True:
+        try:
+            logline = next(stream)
+            q.put(logline)
+        except StopIteration:
+            q.put(None)
+            return
 
 
-def set_mxjob_namespace(mxjob):
-    mxjob_namespace = mxjob.metadata.namespace
-    namespace = mxjob_namespace or get_default_target_namespace()
-    return namespace
+def get_log_queue_pool(streams):
+    pool = []
+    for stream in streams:
+        q = queue.Queue(maxsize=100)
+        pool.append(q)
+        threading.Thread(target=wrap_log_stream, args=(q, stream)).start()
+    return pool
 
 
-def get_job_labels(name, master=False, replica_type=None, replica_index=None):
+def has_condition(conditions: object, condition_type: str):
+    """Verify if the condition list has the required condition.
+    Condition should be valid object with `type` and `status`.
     """
-    Get labels according to specified flags.
-    :param name: job name
-    :param master: if need include label 'training.kubeflow.org/job-role: master'.
-    :param replica_type: Replica type according to the job type (master, worker, chief, ps etc).
-    :param replica_index: Can specify replica index to get one pod of the job.
-    :return: Dict: Labels
-    """
-    labels = {
-        constants.JOB_NAME_LABEL: name,
-    }
-    if master:
-        labels[constants.JOB_ROLE_LABEL] = constants.JOB_ROLE_MASTER
 
-    if replica_type:
-        labels[constants.JOB_TYPE_LABEL] = str.lower(replica_type)
-
-    if replica_index:
-        labels[constants.JOB_INDEX_LABEL] = replica_index
-
-    return labels
-
-
-def to_selector(labels):
-    """
-    Transfer Labels to selector.
-    """
-    parts = []
-    for key in labels.keys():
-        parts.append("{0}={1}".format(key, labels[key]))
-
-    return ",".join(parts)
+    for c in conditions:
+        if c.type == condition_type and c.status == constants.CONDITION_STATUS_TRUE:
+            return True
+    return False
 
 
 def get_script_for_python_packages(packages_to_install, pip_index_url):
@@ -189,16 +305,3 @@ def get_pod_template_spec(
     )
 
     return pod_template_spec
-
-
-class TableLogger:
-    def __init__(self, header, column_format):
-        self.header = header
-        self.column_format = column_format
-        self.first_call = True
-
-    def __call__(self, *values):
-        if self.first_call:
-            print(self.header)
-            self.first_call = False
-        print(self.column_format.format(*values))

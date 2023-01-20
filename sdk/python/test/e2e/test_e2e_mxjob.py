@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import logging
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -20,92 +21,92 @@ from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 from kubernetes.client import V1ContainerPort
 
-from kubeflow.training import MXJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1MXJob
 from kubeflow.training import KubeflowOrgV1MXJobSpec
 from kubeflow.training import V1RunPolicy
+from kubeflow.training.constants import constants
 
-MX_CLIENT = MXJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'default'
+from test.e2e.utils import verify_job_e2e
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
+
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+JOB_NAME = "mxjob-mnist-ci-test"
+JOB_NAMESPACE = "default"
+CONTAINER_NAME = "mxnet"
 
 
 def test_sdk_e2e():
     worker_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         command=["/usr/local/bin/python3"],
-        args=["incubator-mxnet/example/image-classification/train_mnist.py",
-              "--num-epochs", "5",
-              "--num-examples","1000",
-              "--kv-store", "dist_sync"],
-        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")]
+        args=[
+            "incubator-mxnet/example/image-classification/train_mnist.py",
+            "--num-epochs",
+            "5",
+            "--num-examples",
+            "1000",
+            "--kv-store",
+            "dist_sync",
+        ],
+        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
     )
 
     server_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
-        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")]
+        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
     )
 
     scheduler_container = V1Container(
-        name="mxnet",
+        name=CONTAINER_NAME,
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
-        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")]
+        ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[worker_container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[worker_container])),
     )
 
     server = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[server_container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[server_container])),
     )
 
     scheduler = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[scheduler_container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[scheduler_container])),
     )
 
     mxjob = KubeflowOrgV1MXJob(
         api_version="kubeflow.org/v1",
         kind="MXJob",
-        metadata=V1ObjectMeta(name="mxjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1MXJobSpec(
             job_mode="MXTrain",
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            mx_replica_specs={"Scheduler": scheduler,
-                                "Server": server,
-                                   "Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            mx_replica_specs={
+                "Scheduler": scheduler,
+                "Server": server,
+                "Worker": worker,
+            },
+        ),
     )
 
-    MX_CLIENT.create(mxjob)
+    TRAINING_CLIENT.create_mxjob(mxjob, JOB_NAMESPACE)
+    logging.info(f"List of created {constants.MXJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_mxjobs(JOB_NAMESPACE))
 
-    MX_CLIENT.wait_for_job("mxjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not MX_CLIENT.is_job_succeeded("mxjob-mnist-ci-test",
-                                           namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The MXJob is not succeeded.")
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.MXJOB_KIND, CONTAINER_NAME,
+    )
 
-    MX_CLIENT.get_logs("mxjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE, master=False)
-
-    MX_CLIENT.delete("mxjob-mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, JOB_NAMESPACE)

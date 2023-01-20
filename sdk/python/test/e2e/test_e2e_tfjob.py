@@ -13,62 +13,66 @@
 # limitations under the License.
 
 import os
+import logging
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import TFJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training import KubeflowOrgV1TFJob
 from kubeflow.training import KubeflowOrgV1TFJobSpec
+from kubeflow.training.constants import constants
 
-TFJOB_CLIENT = TFJobClient(config_file=os.getenv('KUBECONFIG'))
-SDK_TEST_NAMESPACE = 'default'
+from test.e2e.utils import verify_job_e2e
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
+
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+JOB_NAME = "tfjob-mnist-ci-test"
+JOB_NAMESPACE = "default"
+CONTAINER_NAME = "tensorflow"
 
 
 def test_sdk_e2e():
     container = V1Container(
-        name="tensorflow",
+        name=CONTAINER_NAME,
         image="gcr.io/kubeflow-ci/tf-mnist-with-summaries:1.0",
         command=[
             "python",
             "/var/tf_mnist/mnist_with_summaries.py",
-            "--log_dir=/train/logs", "--learning_rate=0.01",
-            "--batch_size=150"
-        ]
+            "--log_dir=/train/logs",
+            "--learning_rate=0.01",
+            "--batch_size=150",
+        ],
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     tfjob = KubeflowOrgV1TFJob(
         api_version="kubeflow.org/v1",
         kind="TFJob",
-        metadata=V1ObjectMeta(name="mnist-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1TFJobSpec(
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            tf_replica_specs={"Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            tf_replica_specs={"Worker": worker},
+        ),
     )
 
-    TFJOB_CLIENT.create(tfjob, namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.create_tfjob(tfjob, JOB_NAMESPACE)
+    logging.info(f"List of created {constants.TFJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_tfjobs(JOB_NAMESPACE))
 
-    TFJOB_CLIENT.wait_for_job("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not TFJOB_CLIENT.is_job_succeeded("mnist-ci-test", namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The TFJob is not succeeded.")
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.TFJOB_KIND, CONTAINER_NAME,
+    )
 
-    TFJOB_CLIENT.get_logs("mnist-ci-test", master=False, namespace=SDK_TEST_NAMESPACE)
-
-    TFJOB_CLIENT.delete("mnist-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_tfjob(JOB_NAME, JOB_NAMESPACE)

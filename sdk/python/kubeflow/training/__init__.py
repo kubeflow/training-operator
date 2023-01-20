@@ -55,9 +55,4 @@ from kubeflow.training.models.v1_replica_status import V1ReplicaStatus
 from kubeflow.training.models.v1_run_policy import V1RunPolicy
 from kubeflow.training.models.v1_scheduling_policy import V1SchedulingPolicy
 
-from kubeflow.training.api.tf_job_client import TFJobClient
-from kubeflow.training.api.py_torch_job_client import PyTorchJobClient
-from kubeflow.training.api.xgboost_job_client import XGBoostJobClient
-from kubeflow.training.api.mpi_job_client import MPIJobClient
-from kubeflow.training.api.mx_job_client import MXJobClient
-from kubeflow.training.api.paddle_job_client import PaddleJobClient
+from kubeflow.training.api.training_client import TrainingClient

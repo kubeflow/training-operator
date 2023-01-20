@@ -33,8 +33,8 @@ class V1JobCondition(object):
                             and the value is json key in definition.
     """
     openapi_types = {
-        'last_transition_time': 'V1Time',
-        'last_update_time': 'V1Time',
+        'last_transition_time': 'datetime',
+        'last_update_time': 'datetime',
         'message': 'str',
         'reason': 'str',
         'status': 'str',
@@ -81,7 +81,7 @@ class V1JobCondition(object):
 
 
         :return: The last_transition_time of this V1JobCondition.  # noqa: E501
-        :rtype: V1Time
+        :rtype: datetime
         """
         return self._last_transition_time
 
@@ -91,7 +91,7 @@ class V1JobCondition(object):
 
 
         :param last_transition_time: The last_transition_time of this V1JobCondition.  # noqa: E501
-        :type: V1Time
+        :type: datetime
         """
 
         self._last_transition_time = last_transition_time
@@ -102,7 +102,7 @@ class V1JobCondition(object):
 
 
         :return: The last_update_time of this V1JobCondition.  # noqa: E501
-        :rtype: V1Time
+        :rtype: datetime
         """
         return self._last_update_time
 
@@ -112,7 +112,7 @@ class V1JobCondition(object):
 
 
         :param last_update_time: The last_update_time of this V1JobCondition.  # noqa: E501
-        :type: V1Time
+        :type: datetime
         """
 
         self._last_update_time = last_update_time

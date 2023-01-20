@@ -13,7 +13,7 @@ spec:
         spec:
           containers:
             - name: tensorflow
-              image: kubeflowimages/multi_worker_strategy:v20200522-2a5b081c
+              image: kubeflow/tf-multi-worker-strategy:latest
               volumeMounts:
                 - mountPath: /train
                   name: training

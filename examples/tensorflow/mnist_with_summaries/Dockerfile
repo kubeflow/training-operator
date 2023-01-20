@@ -14,5 +14,5 @@
 
 FROM tensorflow/tensorflow:1.11.0
 
-ADD . /var/tf_mnist
+ADD examples/tensorflow/mnist_with_summaries/ /var/tf_mnist
 ENTRYPOINT ["python", "/var/tf_mnist/mnist_with_summaries.py"]
