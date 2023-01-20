@@ -90,7 +90,7 @@ func NewReconciler(mgr manager.Manager, scheduling bool) *XGBoostJobReconciler {
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
-	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
+	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
