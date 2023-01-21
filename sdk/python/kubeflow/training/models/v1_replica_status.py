@@ -35,7 +35,8 @@ class V1ReplicaStatus(object):
     openapi_types = {
         'active': 'int',
         'failed': 'int',
-        'label_selector': 'str',
+        'label_selector': 'V1LabelSelector',
+        'selector': 'str',
         'succeeded': 'int'
     }
 
@@ -43,10 +44,11 @@ class V1ReplicaStatus(object):
         'active': 'active',
         'failed': 'failed',
         'label_selector': 'labelSelector',
+        'selector': 'selector',
         'succeeded': 'succeeded'
     }
 
-    def __init__(self, active=None, failed=None, label_selector=None, succeeded=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, active=None, failed=None, label_selector=None, selector=None, succeeded=None, local_vars_configuration=None):  # noqa: E501
         """V1ReplicaStatus - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -55,6 +57,7 @@ class V1ReplicaStatus(object):
         self._active = None
         self._failed = None
         self._label_selector = None
+        self._selector = None
         self._succeeded = None
         self.discriminator = None
 
@@ -64,6 +67,8 @@ class V1ReplicaStatus(object):
             self.failed = failed
         if label_selector is not None:
             self.label_selector = label_selector
+        if selector is not None:
+            self.selector = selector
         if succeeded is not None:
             self.succeeded = succeeded
 
@@ -117,10 +122,9 @@ class V1ReplicaStatus(object):
     def label_selector(self):
         """Gets the label_selector of this V1ReplicaStatus.  # noqa: E501
 
-        A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.  # noqa: E501
 
         :return: The label_selector of this V1ReplicaStatus.  # noqa: E501
-        :rtype: str
+        :rtype: V1LabelSelector
         """
         return self._label_selector
 
@@ -128,13 +132,35 @@ class V1ReplicaStatus(object):
     def label_selector(self, label_selector):
         """Sets the label_selector of this V1ReplicaStatus.
 
-        A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.  # noqa: E501
 
         :param label_selector: The label_selector of this V1ReplicaStatus.  # noqa: E501
-        :type: str
+        :type: V1LabelSelector
         """
 
         self._label_selector = label_selector
+
+    @property
+    def selector(self):
+        """Gets the selector of this V1ReplicaStatus.  # noqa: E501
+
+        A Selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty Selector matches all objects. A null Selector matches no objects.  # noqa: E501
+
+        :return: The selector of this V1ReplicaStatus.  # noqa: E501
+        :rtype: str
+        """
+        return self._selector
+
+    @selector.setter
+    def selector(self, selector):
+        """Sets the selector of this V1ReplicaStatus.
+
+        A Selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty Selector matches all objects. A null Selector matches no objects.  # noqa: E501
+
+        :param selector: The selector of this V1ReplicaStatus.  # noqa: E501
+        :type: str
+        """
+
+        self._selector = selector
 
     @property
     def succeeded(self):

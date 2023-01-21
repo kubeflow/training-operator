@@ -54,7 +54,8 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                         'key' : None
                                         }, 
                                     priority_class = '0', 
-                                    queue = '0', ), 
+                                    queue = '0', 
+                                    schedule_timeout_seconds = 56, ), 
                                 ttl_seconds_after_finished = 56, ), 
                             success_policy = '0', 
                             tf_replica_specs = {
@@ -79,7 +80,8 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = '0', 
+                                    label_selector = None, 
+                                    selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )
@@ -106,7 +108,8 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                         'key' : None
                                         }, 
                                     priority_class = '0', 
-                                    queue = '0', ), 
+                                    queue = '0', 
+                                    schedule_timeout_seconds = 56, ), 
                                 ttl_seconds_after_finished = 56, ), 
                             success_policy = '0', 
                             tf_replica_specs = {
@@ -131,7 +134,8 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                 'key' : V1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
-                                    label_selector = '0', 
+                                    label_selector = None, 
+                                    selector = '0', 
                                     succeeded = 56, )
                                 }, 
                             start_time = None, ), )

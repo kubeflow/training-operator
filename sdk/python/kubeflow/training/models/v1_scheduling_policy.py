@@ -36,17 +36,19 @@ class V1SchedulingPolicy(object):
         'min_available': 'int',
         'min_resources': 'dict(str, Quantity)',
         'priority_class': 'str',
-        'queue': 'str'
+        'queue': 'str',
+        'schedule_timeout_seconds': 'int'
     }
 
     attribute_map = {
         'min_available': 'minAvailable',
         'min_resources': 'minResources',
         'priority_class': 'priorityClass',
-        'queue': 'queue'
+        'queue': 'queue',
+        'schedule_timeout_seconds': 'scheduleTimeoutSeconds'
     }
 
-    def __init__(self, min_available=None, min_resources=None, priority_class=None, queue=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, min_available=None, min_resources=None, priority_class=None, queue=None, schedule_timeout_seconds=None, local_vars_configuration=None):  # noqa: E501
         """V1SchedulingPolicy - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -56,6 +58,7 @@ class V1SchedulingPolicy(object):
         self._min_resources = None
         self._priority_class = None
         self._queue = None
+        self._schedule_timeout_seconds = None
         self.discriminator = None
 
         if min_available is not None:
@@ -66,6 +69,8 @@ class V1SchedulingPolicy(object):
             self.priority_class = priority_class
         if queue is not None:
             self.queue = queue
+        if schedule_timeout_seconds is not None:
+            self.schedule_timeout_seconds = schedule_timeout_seconds
 
     @property
     def min_available(self):
@@ -150,6 +155,27 @@ class V1SchedulingPolicy(object):
         """
 
         self._queue = queue
+
+    @property
+    def schedule_timeout_seconds(self):
+        """Gets the schedule_timeout_seconds of this V1SchedulingPolicy.  # noqa: E501
+
+
+        :return: The schedule_timeout_seconds of this V1SchedulingPolicy.  # noqa: E501
+        :rtype: int
+        """
+        return self._schedule_timeout_seconds
+
+    @schedule_timeout_seconds.setter
+    def schedule_timeout_seconds(self, schedule_timeout_seconds):
+        """Sets the schedule_timeout_seconds of this V1SchedulingPolicy.
+
+
+        :param schedule_timeout_seconds: The schedule_timeout_seconds of this V1SchedulingPolicy.  # noqa: E501
+        :type: int
+        """
+
+        self._schedule_timeout_seconds = schedule_timeout_seconds
 
     def to_dict(self):
         """Returns the model properties as a dict"""
