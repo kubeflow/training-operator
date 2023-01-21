@@ -1,7 +1,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= kubeflow/training-operator:latest
 # CRD generation options
-CRD_OPTIONS ?= "crd:generateEmbeddedObjectMeta=true,maxDescLen=300"
+CRD_OPTIONS ?= "crd:generateEmbeddedObjectMeta=true,maxDescLen=400"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
