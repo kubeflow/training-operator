@@ -372,7 +372,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		}
 	}
 
-	//check whether mxnet singleHost training
+	// check whether mxnet singleHost training
 	singleTraining := r.isSingleWorker(replicas)
 
 	for rtype, spec := range replicas {

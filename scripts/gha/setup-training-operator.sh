@@ -22,7 +22,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-
 echo "Kind load newly locally built image"
 # use cluster name which is used in github actions kind create
 kind load docker-image ${TRAINING_CI_IMAGE} --name ${KIND_CLUSTER}
@@ -34,11 +33,39 @@ kustomize edit set image kubeflow/training-operator=${TRAINING_CI_IMAGE}
 echo "Installing training operator manifests"
 kustomize build . | kubectl apply -f -
 
+if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
+  echo "Installing Scheduler Plugins..."
+  # We need to use latest helm chart since older helm chart has bugs in RBAC.
+  git clone https://github.com/kubernetes-sigs/scheduler-plugins.git
+  pushd scheduler-plugins/manifests/install/charts
+
+  # We need to use a values.yaml for v1.23 if K8S cluster version is v1.23.x since latest helm chart does not have compatible with v1.23.
+  # TODO (tenzen-y): Once we stop supporting v1.23, we must remove the below:
+  K8S_MINOR=$(echo "${KUBERNETES_VERSION}" | cut -d . -f 2)
+  if [ "$K8S_MINOR" = "23" ]; then \
+      helm install \
+        -f https://raw.githubusercontent.com/kubernetes-sigs/scheduler-plugins/release-1.23/manifests/install/charts/as-a-second-scheduler/values.yaml \
+        scheduler-plugins as-a-second-scheduler/
+  else
+    helm install scheduler-plugins as-a-second-scheduler/
+  fi
+  popd
+  rm -rf scheduler-plugins
+
+  echo "Configure gang-scheduling using scheduler-plugins to training-operator"
+  kubectl patch -n kubeflow deployments training-operator --type='json' \
+    -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/1", "value": "--gang-scheduler-name=scheduler-plugins"}]'
+fi
+
 TIMEOUT=30
 until kubectl get pods -n kubeflow | grep training-operator | grep 1/1 || [[ $TIMEOUT -eq 1 ]]; do
   sleep 10
   TIMEOUT=$(( TIMEOUT - 1 ))
 done
+if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
+  kubectl wait pods --for=condition=ready -n scheduler-plugins --timeout "${TIMEOUT}s" --all
+fi
+
 kubectl version
 kubectl cluster-info
 kubectl get nodes

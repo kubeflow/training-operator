@@ -91,7 +91,6 @@ PADDLEJOB_BASE_IMAGE = (
     "docker.io/paddlepaddle/paddle:2.4.0rc0-gpu-cuda11.2-cudnn8.1-trt8.0"
 )
 
-
 # Dictionary to get plural and model for each Job kind.
 JOB_KINDS = {
     TFJOB_KIND: {"plural": TFJOB_PLURAL, "model": models.KubeflowOrgV1TFJob},

@@ -187,6 +187,37 @@ def delete_job(
     logging.info(f"{job_kind} {namespace}/{name} has been deleted")
 
 
+def patch_job(
+    custom_api: client.CustomObjectsApi,
+    job: object,
+    namespace: str,
+    name: str,
+    job_kind: str,
+    job_plural: str,
+):
+    """Patch the Training Job."""
+
+    try:
+        custom_api.patch_namespaced_custom_object(
+            constants.KUBEFLOW_GROUP,
+            constants.OPERATOR_VERSION,
+            namespace,
+            job_plural,
+            name,
+            job,
+        )
+    except multiprocessing.TimeoutError:
+        raise TimeoutError(
+            f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
+        )
+    except Exception:
+        raise RuntimeError(
+            f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
+        )
+
+    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been patched")
+
+
 def wrap_log_stream(q, stream):
     while True:
         try:
