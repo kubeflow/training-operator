@@ -13,38 +13,60 @@
 # limitations under the License.
 
 import os
+import logging
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import MPIJobClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1MPIJob
 from kubeflow.training import KubeflowOrgV1MPIJobSpec
 from kubeflow.training import V1RunPolicy
+from kubeflow.training.constants import constants
 
-MPI_CLIENT = MPIJobClient(config_file=os.getenv('KUBECONFIG', '~/.kube/config'))
-SDK_TEST_NAMESPACE = 'default'
+from test.e2e.utils import verify_job_e2e
+
+logging.basicConfig(format="%(message)s")
+logging.getLogger().setLevel(logging.INFO)
+
+TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+JOB_NAME = "mpijob-mxnet-ci-test"
+JOB_NAMESPACE = "default"
+CONTAINER_NAME = "mpi"
 
 
 def test_sdk_e2e():
     master_container = V1Container(
-        name="mpi",
+        name=CONTAINER_NAME,
         image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
         command=["mpirun"],
-        args=["-np", "1",
-              "--allow-run-as-root",
-              "-bind-to", "none",
-              "-map-by", "slot",
-              "-x", "LD_LIBRARY_PATH",
-              "-x", "PATH",
-              "-mca", "pml", "ob1",
-              "-mca", "btl", "^openib",
-              #"python", "/examples/tensorflow2_mnist.py"]
-              "python", "/examples/pytorch_mnist.py",
-              "--epochs","1"]
+        args=[
+            "-np",
+            "1",
+            "--allow-run-as-root",
+            "-bind-to",
+            "none",
+            "-map-by",
+            "slot",
+            "-x",
+            "LD_LIBRARY_PATH",
+            "-x",
+            "PATH",
+            "-mca",
+            "pml",
+            "ob1",
+            "-mca",
+            "btl",
+            "^openib",
+            # "python", "/examples/tensorflow2_mnist.py"]
+            "python",
+            "/examples/pytorch_mnist.py",
+            "--epochs",
+            "1",
+        ],
     )
 
     worker_container = V1Container(
@@ -52,48 +74,35 @@ def test_sdk_e2e():
         image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
     )
 
-
     master = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[master_container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[master_container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(
-            spec=V1PodSpec(
-                containers=[worker_container]
-            )
-        )
+        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[worker_container])),
     )
 
     mpijob = KubeflowOrgV1MPIJob(
         api_version="kubeflow.org/v1",
         kind="MPIJob",
-        metadata=V1ObjectMeta(name="mpijob-mxnet-ci-test", namespace=SDK_TEST_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
         spec=KubeflowOrgV1MPIJobSpec(
             slots_per_worker=1,
-            run_policy=V1RunPolicy(
-                clean_pod_policy="None",
-            ),
-            mpi_replica_specs={"Launcher": master,
-                                   "Worker": worker}
-        )
+            run_policy=V1RunPolicy(clean_pod_policy="None",),
+            mpi_replica_specs={"Launcher": master, "Worker": worker},
+        ),
     )
 
-    MPI_CLIENT.create(mpijob)
+    TRAINING_CLIENT.create_mpijob(mpijob, JOB_NAMESPACE)
+    logging.info(f"List of created {constants.MPIJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_mpijobs(JOB_NAMESPACE))
 
-    MPI_CLIENT.wait_for_job("mpijob-mxnet-ci-test", namespace=SDK_TEST_NAMESPACE)
-    if not MPI_CLIENT.is_job_succeeded("mpijob-mxnet-ci-test",
-                                           namespace=SDK_TEST_NAMESPACE):
-        raise RuntimeError("The MPIJob is not succeeded.")
+    verify_job_e2e(
+        TRAINING_CLIENT, JOB_NAME, JOB_NAMESPACE, constants.MPIJOB_KIND, CONTAINER_NAME,
+    )
 
-    MPI_CLIENT.get_logs("mpijob-mxnet-ci-test", namespace=SDK_TEST_NAMESPACE)
-
-    MPI_CLIENT.delete("mpijob-mxnet-ci-test", namespace=SDK_TEST_NAMESPACE)
+    TRAINING_CLIENT.delete_mpijob(JOB_NAME, JOB_NAMESPACE)

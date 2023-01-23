@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,8 +30,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	commonutil "github.com/kubeflow/common/pkg/util"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
@@ -47,6 +51,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(kubeflowv1.AddToScheme(scheme))
 	utilruntime.Must(v1beta1.AddToScheme(scheme))
+	utilruntime.Must(schedulerpluginsv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -56,7 +61,6 @@ func main() {
 	var leaderElectionID string
 	var probeAddr string
 	var enabledSchemes controllerv1.EnabledSchemes
-	var enableGangScheduling bool
 	var gangSchedulerName string
 	var namespace string
 	var monitoringPort int
@@ -69,8 +73,7 @@ func main() {
 	flag.StringVar(&leaderElectionID, "leader-election-id", "1ca428e5.training-operator.kubeflow.org", "The ID for leader election.")
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob, PaddleJob. By default, all supported schemes will be enabled.")
-	flag.BoolVar(&enableGangScheduling, "enable-gang-scheduling", false, "Set true to enable gang scheduling")
-	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "volcano", "The scheduler to gang-schedule kubeflow jobs, defaults to volcano")
+	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "none", "The scheduler to gang-schedule kubeflow jobs, defaults to none")
 	flag.StringVar(&namespace, "namespace", os.Getenv(commonutil.EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
 	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
@@ -110,6 +113,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Prepare GangSchedulingSetupFunc
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerVolcano)) {
+		cfg := mgr.GetConfig()
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
+	} else if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerSchedulerPlugins)) {
+		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient())
+	}
+
 	// TODO: We need a general manager. all rest reconciler addsToManager
 	// Based on the user configuration, we start different controllers
 	if enabledSchemes.Empty() {
@@ -122,7 +135,7 @@ func main() {
 				"scheme not supported", "scheme", s)
 			os.Exit(1)
 		}
-		if err = setupFunc(mgr, enableGangScheduling, controllerThreads); err != nil {
+		if err = setupFunc(mgr, gangSchedulingSetupFunc, controllerThreads); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", s)
 			os.Exit(1)
 		}

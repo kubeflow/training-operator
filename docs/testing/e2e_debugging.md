@@ -1,7 +1,9 @@
 # How to debug an E2E test for Kubeflow Training Operator
 
-[E2E Testing](./e2e_testing.md) gives an overview of writing e2e tests. This guidance concentrates more on the e2e failure debugging.
+TODO (andreyvelich): This doc is outdated. Currently, E2Es are located here:
+[`sdk/python/test/e2e`](../../sdk/python/test/e2e)
 
+[E2E Testing](./e2e_testing.md) gives an overview of writing e2e tests. This guidance concentrates more on the e2e failure debugging.
 
 ## Prerequsite
 
@@ -16,7 +18,8 @@ wget https://github.com/ksonnet/ksonnet/releases/download/v0.13.1/ks_0.13.1_linu
 tar -xvzf ks_0.13.1_linux_amd64.tar.gz
 sudo cp ks_0.13.1_linux_amd64/ks /usr/local/bin/ks-13
 ```
-> We would like to deprecate `ksonnet` but may takes some time. Feel free to pick up [the issue](https://github.com/kubeflow/training-operator/issues/1468) if you are interested in it. 
+
+> We would like to deprecate `ksonnet` but may takes some time. Feel free to pick up [the issue](https://github.com/kubeflow/training-operator/issues/1468) if you are interested in it.
 > If your platform is darwin or windows, feel free to download binaries in [ksonnet v0.13.1](https://github.com/ksonnet/ksonnet/releases/tag/v0.13.1)
 
 4. Deploy HEAD training operator version in your environment
@@ -33,6 +36,7 @@ kubectl set image deployment.v1.apps/training-operator training-operator=kubeflo
 ## Run E2E Tests locally
 
 1. Set environments
+
 ```
 export KUBEFLOW_PATH=$GOPATH/src/github.com/kubeflow
 export KUBEFLOW_TRAINING_REPO=$KUBEFLOW_PATH/training-operator
@@ -40,16 +44,16 @@ export KUBEFLOW_TESTING_REPO=$KUBEFLOW_PATH/testing
 export PYTHONPATH=$KUBEFLOW_TRAINING_REPO:$KUBEFLOW_TRAINING_REPO/py:$KUBEFLOW_TESTING_REPO/py:$KUBEFLOW_TRAINING_REPO/sdk/python
 ```
 
-
 2. Install python dependencies
+
 ```
 pip3 install -r $KUBEFLOW_TESTING_REPO/py/kubeflow/testing/requirements.txt
 ```
 
 > Note: if you have meet problem install requirement, you may need to `sudo apt-get install libffi-dev`. Feel free to share error logs if you don't know how to handle it.
 
-
 3. Run Tests
+
 ```
 # enter the ksonnet app to run tests
 cd $KUBEFLOW_TRAINING_REPO/test/workflows
@@ -60,10 +64,9 @@ python3 -m kubeflow.tf_operator.cleanpod_policy_tests --app_dir=$KUBEFLOW_TRAINI
 python3 -m kubeflow.tf_operator.simple_tfjob_tests  --app_dir=$KUBEFLOW_TRAINING_REPO/test/workflows --params=name=simple-tfjob-tests-v1,namespace=kubeflow --tfjob_version=v1 --num_trials=2 --artifacts_path=/tmp/output/artifact
 ```
 
-
 ## Check results
 
-You can either check logs or check results in `/tmp/output/artifact`. 
+You can either check logs or check results in `/tmp/output/artifact`.
 
 ```
 $ ls -al /tmp/output/artifact
@@ -75,7 +78,7 @@ $ cat /tmp/output/artifact/junit_test_simple_tfjob_cpu.xml
 
 ## Common issues
 
-1. ksonnet is not installed 
+1. ksonnet is not installed
 
 ```
 ERROR|2021-11-16T03:06:06|/home/jiaxin.shan/go/src/github.com/kubeflow/training-operator/py/kubeflow/tf_operator/test_runner.py|57| There was a problem running the job; Exception [Errno 2] No such file or directory: 'ks-13': 'ks-13'
@@ -96,7 +99,6 @@ FileNotFoundError: [Errno 2] No such file or directory: 'ks-13': 'ks-13'
 ```
 
 Please check `Prerequsite` section to install ksonnet.
-
 
 2. TypeError: load() missing 1 required positional argument: 'Loader'
 

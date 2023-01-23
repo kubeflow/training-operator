@@ -14,5 +14,5 @@
 
 FROM ibmcom/tensorflow-ppc64le:1.13.1
 
-ADD . /var/tf_mnist
+ADD examples/tensorflow/tf_sample/ /var/tf_mnist
 ENTRYPOINT ["python", "/var/tf_mnist/mnist_with_summaries.py"]

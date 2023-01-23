@@ -13,6 +13,9 @@
 
 from __future__ import absolute_import
 
+# Import Kubernetes models.
+from kubernetes.client import *
+
 # import models into model package
 from kubeflow.training.models.kubeflow_org_v1_elastic_policy import KubeflowOrgV1ElasticPolicy
 from kubeflow.training.models.kubeflow_org_v1_mpi_job import KubeflowOrgV1MPIJob
