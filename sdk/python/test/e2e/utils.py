@@ -69,6 +69,7 @@ def verify_job_e2e(
 def get_pod_spec_scheduler_name(gang_scheduler_name: str) -> str:
     if gang_scheduler_name == TEST_GANG_SCHEDULER_NAME_SCHEDULER_PLUGINS:
         return DEFAULT_SCHEDULER_PLUGINS_NAME
+    # TODO (tenzen-y): Implement E2E tests using volcano.
     elif gang_scheduler_name == TEST_GANG_SCHEDULER_NAME_VOLCANO:
         return ""
 
