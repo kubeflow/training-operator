@@ -9,6 +9,18 @@ concurrency:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
+
+    # Almost similar to the following:
+    #
+    # ```yaml
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     kubernetes-version: ["v1.23.12", "v1.24.6", "v1.25.2"]
+    #     gang-scheduler-name: ["none", "scheduler-plugins"]
+    # ```
+    # The difference is that each combination is randomly assigned various Python versions
+    # to verify Python SDK operations.
     strategy:
       fail-fast: false
       matrix:
