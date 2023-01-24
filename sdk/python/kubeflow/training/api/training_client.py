@@ -36,35 +36,43 @@ status_logger = utils.StatusLogger(
 class TrainingClient(object):
     def __init__(
         self,
-        config_file=None,
-        context=None,
-        client_configuration=None,
-        persist_config=True,
+        config_file: str = None,
+        context: str = None,
+        client_configuration: client.Configuration = None,
+        no_config: bool = False,
+        persist_config: bool = True,
     ):
         """TrainingClient constructor.
 
         Args:
-            config_file: Name of the kube-config file. Defaults to ~/.kube/config.
+            config_file: Path to the kube-config file. Defaults to ~/.kube/config.
             context: Set the active context. Defaults to current_context from the kube-config.
             client_configuration: The kubernetes.client.Configuration to set configs to.
+            no_config: Whether to ignore the kube-config for cluster authentication.
+                In that case, you have to provide the client configuration
+                with the Bearer token to use the client.
+                You can find an example here: https://github.com/kubernetes-client/python/blob/67f9c7a97081b4526470cad53576bc3b71fa6fcc/examples/remote_cluster.py#L31
             persist_config: If True, config file will be updated when changed.
         """
 
-        self.in_cluster = None
-        if config_file or not utils.is_running_in_k8s():
+        if no_config and client_configuration is None:
+            raise ValueError(
+                "Client configuration must be set when kube-config is ignored"
+            )
+
+        if config_file or (not utils.is_running_in_k8s() and not no_config):
             config.load_kube_config(
                 config_file=config_file,
                 context=context,
                 client_configuration=client_configuration,
                 persist_config=persist_config,
             )
-            self.in_cluster = False
-        else:
+        elif not no_config:
             config.load_incluster_config()
-            self.in_cluster = True
 
-        self.custom_api = client.CustomObjectsApi()
-        self.core_api = client.CoreV1Api()
+        k8s_client = client.ApiClient(client_configuration)
+        self.custom_api = client.CustomObjectsApi(k8s_client)
+        self.core_api = client.CoreV1Api(k8s_client)
         self.api_client = ApiClient()
 
     # ------------------------------------------------------------------------ #
