@@ -752,12 +752,12 @@ class TrainingClient(object):
 
         Args:
             namespace: Namespace to list the TFJobs.
+            timeout: Optional, Kubernetes API server timeout in seconds
+                to execute the request.
 
         Returns:
             list[KubeflowOrgV1TFJob]: List of TFJobs objects. It returns
             empty list if TFJobs cannot be found.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
 
         Raises:
             TimeoutError: Timeout to list TFJobs.
@@ -800,6 +800,33 @@ class TrainingClient(object):
             job_kind=constants.TFJOB_KIND,
             job_plural=constants.TFJOB_PLURAL,
             delete_options=delete_options,
+        )
+
+    def patch_tfjob(
+        self,
+        tfjob: models.KubeflowOrgV1TFJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the TFJob.
+
+        Args:
+            tfjob: TFJob object of type KubeflowOrgV1TFJob to patch.
+            name: Name for the TFJob.
+            namespace: Namespace for the TFJob.
+
+        Raises:
+            TimeoutError: Timeout to patch TFJob.
+            RuntimeError: Failed to patch TFJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=tfjob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.TFJOB_KIND,
+            job_plural=constants.TFJOB_PLURAL,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1000,6 +1027,33 @@ class TrainingClient(object):
             delete_options=delete_options,
         )
 
+    def patch_pytorchjob(
+        self,
+        pytorchjob: models.KubeflowOrgV1PyTorchJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the PyTorchJob.
+
+        Args:
+            pytorchjob: PyTorchJob object of type KubeflowOrgV1PyTorchJob.
+            name: Name for the PyTorchJob.
+            namespace: Namespace for the PyTorchJob.
+
+        Raises:
+            TimeoutError: Timeout to patch PyTorchJob.
+            RuntimeError: Failed to patch PyTorchJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=pytorchjob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.PYTORCHJOB_KIND,
+            job_plural=constants.PYTORCHJOB_PLURAL,
+        )
+
     # ------------------------------------------------------------------------ #
     # MXJob Training Client APIs.
     # ------------------------------------------------------------------------ #
@@ -1044,6 +1098,8 @@ class TrainingClient(object):
         Args:
             name: Name for the MXJob.
             namespace: Namespace for the MXJob.
+            timeout: Optional, Kubernetes API server timeout in seconds
+                to execute the request.
 
         Returns:
             KubeflowOrgV1MXJob: MXJob object.
@@ -1121,6 +1177,33 @@ class TrainingClient(object):
             job_kind=constants.MXJOB_KIND,
             job_plural=constants.MXJOB_PLURAL,
             delete_options=delete_options,
+        )
+
+    def patch_mxjob(
+        self,
+        mxjob: models.KubeflowOrgV1MXJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the MXJob.
+
+        Args:
+            mxjob: MXJob object of type KubeflowOrgV1MXJob.
+            name: Name for the MXJob.
+            namespace: Namespace for the MXJob.
+
+        Raises:
+            TimeoutError: Timeout to patch MXJob.
+            RuntimeError: Failed to patch MXJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=mxjob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.MXJOB_KIND,
+            job_plural=constants.MXJOB_PLURAL,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1248,6 +1331,33 @@ class TrainingClient(object):
             delete_options=delete_options,
         )
 
+    def patch_xgboostjob(
+        self,
+        xgboostjob: models.KubeflowOrgV1XGBoostJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the XGBoostJob.
+
+        Args:
+            xgboostjob: XGBoostJob object of type KubeflowOrgV1XGBoostJob.
+            name: Name for the XGBoostJob.
+            namespace: Namespace for the XGBoostJob.
+
+        Raises:
+            TimeoutError: Timeout to patch XGBoostJob.
+            RuntimeError: Failed to patch XGBoostJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=xgboostjob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.XGBOOSTJOB_KIND,
+            job_plural=constants.XGBOOSTJOB_PLURAL,
+        )
+
     # ------------------------------------------------------------------------ #
     # MPIJob Training Client APIs.
     # ------------------------------------------------------------------------ #
@@ -1323,12 +1433,12 @@ class TrainingClient(object):
 
         Args:
             namespace: Namespace to list the MPIJobs.
+            timeout: Optional, Kubernetes API server timeout in seconds
+                to execute the request.
 
         Returns:
             list[KubeflowOrgV1MPIJob]: List of MPIJobs objects. It returns
             empty list if MPIJobs cannot be found.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
 
         Raises:
             TimeoutError: Timeout to list MPIJobs.
@@ -1371,6 +1481,33 @@ class TrainingClient(object):
             job_kind=constants.MPIJOB_KIND,
             job_plural=constants.MPIJOB_PLURAL,
             delete_options=delete_options,
+        )
+
+    def patch_mpijob(
+        self,
+        mpijob: models.KubeflowOrgV1MPIJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the MPIJob.
+
+        Args:
+            mpijob: MPIJob object of type KubeflowOrgV1MPIJob.
+            name: Name for the MPIJob.
+            namespace: Namespace for the MPIJob.
+
+        Raises:
+            TimeoutError: Timeout to patch MPIJob.
+            RuntimeError: Failed to patch MPIJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=mpijob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.MPIJOB_KIND,
+            job_plural=constants.MPIJOB_PLURAL,
         )
 
     # ------------------------------------------------------------------------ #
@@ -1417,6 +1554,8 @@ class TrainingClient(object):
         Args:
             name: Name for the PaddleJob.
             namespace: Namespace for the PaddleJob.
+            timeout: Optional, Kubernetes API server timeout in seconds
+                to execute the request.
 
         Returns:
             KubeflowOrgV1PaddleJob: PaddleJob object.
@@ -1494,4 +1633,31 @@ class TrainingClient(object):
             job_kind=constants.PADDLEJOB_KIND,
             job_plural=constants.PADDLEJOB_PLURAL,
             delete_options=delete_options,
+        )
+
+    def patch_paddlejob(
+        self,
+        paddlejob: models.KubeflowOrgV1PaddleJob,
+        name: str,
+        namespace: str = utils.get_default_target_namespace(),
+    ):
+        """Patch the PaddleJob.
+
+        Args:
+            paddlejob: PaddleJob object of type KubeflowOrgV1PaddleJob.
+            name: Name for the PaddleJob.
+            namespace: Namespace for the PaddleJob.
+
+        Raises:
+            TimeoutError: Timeout to patch PaddleJob.
+            RuntimeError: Failed to patch PaddleJob.
+        """
+
+        return utils.patch_job(
+            custom_api=self.custom_api,
+            job=paddlejob,
+            name=name,
+            namespace=namespace,
+            job_kind=constants.PADDLEJOB_KIND,
+            job_plural=constants.PADDLEJOB_PLURAL,
         )

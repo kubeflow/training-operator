@@ -14,6 +14,7 @@
 
 import os
 import logging
+import pytest
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -25,9 +26,12 @@ from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import V1RunPolicy
 from kubeflow.training import KubeflowOrgV1TFJob
 from kubeflow.training import KubeflowOrgV1TFJobSpec
+from kubeflow.training import V1SchedulingPolicy
 from kubeflow.training.constants import constants
 
-from test.e2e.utils import verify_job_e2e
+from test.e2e.utils import verify_job_e2e, verify_unschedulable_job_e2e, get_pod_spec_scheduler_name
+from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
+from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
@@ -36,20 +40,58 @@ TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/co
 JOB_NAME = "tfjob-mnist-ci-test"
 JOB_NAMESPACE = "default"
 CONTAINER_NAME = "tensorflow"
+GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
-def test_sdk_e2e():
-    container = V1Container(
-        name=CONTAINER_NAME,
-        image="gcr.io/kubeflow-ci/tf-mnist-with-summaries:1.0",
-        command=[
-            "python",
-            "/var/tf_mnist/mnist_with_summaries.py",
-            "--log_dir=/train/logs",
-            "--learning_rate=0.01",
-            "--batch_size=150",
-        ],
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+)
+def test_sdk_e2e_with_gang_scheduling():
+    container = generate_container()
+
+    worker = V1ReplicaSpec(
+        replicas=1,
+        restart_policy="Never",
+        template=V1PodTemplateSpec(spec=V1PodSpec(
+            containers=[container],
+            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+        )),
     )
+
+    unschedulable_tfjob = generate_tfjob(worker, V1SchedulingPolicy(min_available=10))
+    schedulable_tfjob = generate_tfjob(worker, V1SchedulingPolicy(min_available=1))
+
+    TRAINING_CLIENT.create_tfjob(unschedulable_tfjob, JOB_NAMESPACE)
+    logging.info(f"List of created {constants.TFJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_tfjobs(JOB_NAMESPACE))
+
+    verify_unschedulable_job_e2e(
+        TRAINING_CLIENT,
+        JOB_NAME,
+        JOB_NAMESPACE,
+        constants.TFJOB_KIND,
+    )
+
+    TRAINING_CLIENT.patch_tfjob(schedulable_tfjob, JOB_NAME, JOB_NAMESPACE)
+    logging.info(f"List of patched {constants.TFJOB_KIND}s")
+    logging.info(TRAINING_CLIENT.list_tfjobs(JOB_NAMESPACE))
+
+    verify_job_e2e(
+        TRAINING_CLIENT,
+        JOB_NAME,
+        JOB_NAMESPACE,
+        constants.TFJOB_KIND,
+        CONTAINER_NAME,
+    )
+
+    TRAINING_CLIENT.delete_tfjob(JOB_NAME, JOB_NAMESPACE)
+
+
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+)
+def test_sdk_e2e():
+    container = generate_container()
 
     worker = V1ReplicaSpec(
         replicas=1,
@@ -57,15 +99,7 @@ def test_sdk_e2e():
         template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
-    tfjob = KubeflowOrgV1TFJob(
-        api_version="kubeflow.org/v1",
-        kind="TFJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
-        spec=KubeflowOrgV1TFJobSpec(
-            run_policy=V1RunPolicy(clean_pod_policy="None",),
-            tf_replica_specs={"Worker": worker},
-        ),
-    )
+    tfjob = generate_tfjob(worker)
 
     TRAINING_CLIENT.create_tfjob(tfjob, JOB_NAMESPACE)
     logging.info(f"List of created {constants.TFJOB_KIND}s")
@@ -76,3 +110,35 @@ def test_sdk_e2e():
     )
 
     TRAINING_CLIENT.delete_tfjob(JOB_NAME, JOB_NAMESPACE)
+
+
+def generate_tfjob(
+    worker: V1ReplicaSpec,
+    scheduling_policy: V1SchedulingPolicy = None,
+) -> KubeflowOrgV1TFJob:
+    return KubeflowOrgV1TFJob(
+        api_version="kubeflow.org/v1",
+        kind="TFJob",
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
+        spec=KubeflowOrgV1TFJobSpec(
+            run_policy=V1RunPolicy(
+                clean_pod_policy="None",
+                scheduling_policy=scheduling_policy,
+            ),
+            tf_replica_specs={"Worker": worker},
+        ),
+    )
+
+
+def generate_container() -> V1Container:
+    return V1Container(
+        name=CONTAINER_NAME,
+        image="gcr.io/kubeflow-ci/tf-mnist-with-summaries:1.0",
+        command=[
+            "python",
+            "/var/tf_mnist/mnist_with_summaries.py",
+            "--log_dir=/train/logs",
+            "--learning_rate=0.01",
+            "--batch_size=150",
+        ],
+    )
