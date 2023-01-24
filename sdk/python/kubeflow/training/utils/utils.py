@@ -190,8 +190,8 @@ def delete_job(
 def patch_job(
     custom_api: client.CustomObjectsApi,
     job: object,
-    namespace: str,
     name: str,
+    namespace: str,
     job_kind: str,
     job_plural: str,
 ):
@@ -208,11 +208,11 @@ def patch_job(
         )
     except multiprocessing.TimeoutError:
         raise TimeoutError(
-            f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
+            f"Timeout to patch {job_kind}: {namespace}/{job.metadata.name}"
         )
     except Exception:
         raise RuntimeError(
-            f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
+            f"Failed to patch {job_kind}: {namespace}/{job.metadata.name}"
         )
 
     logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been patched")

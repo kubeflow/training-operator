@@ -811,7 +811,7 @@ class TrainingClient(object):
         """Patch the TFJob.
 
         Args:
-            tfjob: TFJob object of type KubeflowOrgV1TFJob.
+            tfjob: TFJob object of type KubeflowOrgV1TFJob to patch.
             name: Name for the TFJob.
             namespace: Namespace for the TFJob.
 
@@ -823,8 +823,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=tfjob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.TFJOB_KIND,
             job_plural=constants.TFJOB_PLURAL,
         )
@@ -1048,8 +1048,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=pytorchjob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.PYTORCHJOB_KIND,
             job_plural=constants.PYTORCHJOB_PLURAL,
         )
@@ -1200,8 +1200,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=mxjob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.MXJOB_KIND,
             job_plural=constants.MXJOB_PLURAL,
         )
@@ -1352,8 +1352,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=xgboostjob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.XGBOOSTJOB_KIND,
             job_plural=constants.XGBOOSTJOB_PLURAL,
         )
@@ -1504,8 +1504,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=mpijob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.MPIJOB_KIND,
             job_plural=constants.MPIJOB_PLURAL,
         )
@@ -1656,8 +1656,8 @@ class TrainingClient(object):
         return utils.patch_job(
             custom_api=self.custom_api,
             job=paddlejob,
-            namespace=namespace,
             name=name,
+            namespace=namespace,
             job_kind=constants.PADDLEJOB_KIND,
             job_plural=constants.PADDLEJOB_PLURAL,
         )
