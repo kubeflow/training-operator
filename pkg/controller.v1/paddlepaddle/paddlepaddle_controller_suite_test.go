@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	v1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -81,9 +82,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(gomega.HaveOccurred())
 
-	r := NewReconciler(mgr, false)
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	r := NewReconciler(mgr, gangSchedulingSetupFunc)
 
-	Expect(r.SetupWithManager(mgr)).NotTo(gomega.HaveOccurred())
+	Expect(r.SetupWithManager(mgr, 1)).NotTo(gomega.HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()

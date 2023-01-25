@@ -19,19 +19,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	v1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -86,8 +86,9 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	reconciler = NewReconciler(mgr, false)
-	Expect(reconciler.SetupWithManager(mgr)).NotTo(HaveOccurred())
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	reconciler = NewReconciler(mgr, gangSchedulingSetupFunc)
+	Expect(reconciler.SetupWithManager(mgr, 1)).NotTo(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()

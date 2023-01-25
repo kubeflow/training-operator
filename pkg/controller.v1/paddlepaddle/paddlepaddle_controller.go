@@ -20,12 +20,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/common"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	"github.com/kubeflow/common/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/common/pkg/util"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
+	"github.com/kubeflow/training-operator/pkg/common/util"
+
+	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -48,12 +52,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
-	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
-
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
-	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 const (
@@ -61,7 +61,7 @@ const (
 )
 
 // NewReconciler creates a PaddleJob Reconciler
-func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PaddleJobReconciler {
+func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc) *PaddleJobReconciler {
 	r := &PaddleJobReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
@@ -73,24 +73,23 @@ func NewReconciler(mgr manager.Manager, enableGangScheduling bool) *PaddleJobRec
 	// Create clients
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 	sharedInformers := informers.NewSharedInformerFactory(kubeClientSet, 0)
-	priorityClassInformer := sharedInformers.Scheduling().V1beta1().PriorityClasses()
+	priorityClassInformer := sharedInformers.Scheduling().V1().PriorityClasses()
 
 	// Initialize common job controller
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		Config:                      common.JobControllerConfiguration{EnableGangScheduling: enableGangScheduling},
 		WorkQueue:                   &util.FakeWorkQueue{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
-		VolcanoClientSet:            volcanoClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
 		PriorityClassInformerSynced: priorityClassInformer.Informer().HasSynced,
 		PodControl:                  control.RealPodControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 		ServiceControl:              control.RealServiceControl{KubeClient: kubeClientSet, Recorder: r.recorder},
 	}
+
+	gangSchedulingSetupFunc(&r.JobController)
 
 	return r
 }
@@ -174,9 +173,10 @@ func (r *PaddleJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
-		Reconciler: r,
+		Reconciler:              r,
+		MaxConcurrentReconciles: controllerThreads,
 	})
 
 	if err != nil {
@@ -213,18 +213,37 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}); err != nil {
 		return err
 	}
-	// skip watching podgroup if podgroup is not installed
+
+	// skip watching volcano PodGroup if volcano PodGroup is not installed
 	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version)
 	if err == nil {
-		// inject watching for job related podgroup
+		// inject watching for job related volcano PodGroup
 		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &kubeflowv1.PaddleJob{},
 		}, predicate.Funcs{
-			CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-			UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-			DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
+		}); err != nil {
+			return err
+		}
+	}
+
+	// skip watching scheduler-plugins PodGroup if scheduler-plugins PodGroup is not installed
+	_, err = mgr.GetRESTMapper().RESTMapping(
+		schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+		schedulerpluginsv1alpha1.SchemeGroupVersion.Version)
+	if err == nil {
+		// inject watching for job related scheduler-plugins PodGroup
+		if err = c.Watch(&source.Kind{Type: &schedulerpluginsv1alpha1.PodGroup{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &kubeflowv1.PaddleJob{},
+		}, predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
+			UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
+			DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 		}); err != nil {
 			return err
 		}
@@ -370,7 +389,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 	for rtype, spec := range replicas {
 		status := jobStatus.ReplicaStatuses[rtype]
 		// Generate the label selector.
-		status.LabelSelector = metav1.FormatLabelSelector(r.GenLabelSelector(paddlejob.Name, rtype))
+		status.Selector = metav1.FormatLabelSelector(r.GenLabelSelector(paddlejob.Name, rtype))
 
 		succeeded := status.Succeeded
 		expected := *(spec.Replicas) - succeeded

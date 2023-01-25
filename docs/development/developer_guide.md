@@ -96,10 +96,16 @@ This command will re-generate the api and model files together with the document
 The following files/folders in `sdk/python` are auto-generated and should not be modified directly:
 
 ```
-docs
-kubeflow/training/models
-kubeflow/training/*.py
-test/*.py
+sdk/python/docs
+sdk/python/kubeflow/training/models
+sdk/python/kubeflow/training/*.py
+sdk/python/test/*.py
+```
+
+The Training Operator client and public APIs are located here:
+
+```
+sdk/python/kubeflow/training/api
 ```
 
 ## Code Style

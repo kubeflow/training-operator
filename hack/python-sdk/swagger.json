@@ -714,7 +714,11 @@
           "format": "int32"
         },
         "labelSelector": {
-          "description": "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
+          "description": "Deprecated: Use Selector instead",
+          "$ref": "#/definitions/v1.LabelSelector"
+        },
+        "selector": {
+          "description": "A Selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty Selector matches all objects. A null Selector matches no objects.",
           "type": "string"
         },
         "succeeded": {
@@ -773,6 +777,10 @@
         },
         "queue": {
           "type": "string"
+        },
+        "scheduleTimeoutSeconds": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     }
