@@ -133,7 +133,8 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err = kubeflowv1.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
-		logger.Info(err.Error(), "MPIJob failed validation", req.NamespacedName.String())
+		logger.Error(err, "MPIJob failed validation")
+		jc.Recorder.Eventf(mpijob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "MPIJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
 

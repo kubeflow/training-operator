@@ -129,7 +129,9 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	if err = kubeflowv1.ValidateV1MXJobSpec(&mxjob.Spec); err != nil {
-		logger.Info(err.Error(), "MXJob failed validation", req.NamespacedName.String())
+		logger.Error(err, "MXJob failed validation")
+		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "MXJob failed validation because %s", err)
+		return ctrl.Result{}, err
 	}
 
 	// Check if reconciliation is needed
