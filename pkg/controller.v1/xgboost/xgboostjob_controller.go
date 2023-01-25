@@ -141,7 +141,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err = kubeflowv1.ValidateXGBoostJobSpec(&xgboostjob.Spec); err != nil {
 		logger.Error(err, "XGBoostJob failed validation")
-		r.Recorder.Eventf(xgboostjob, corev1.EventTypeWarning, "JobFailedValidation", "XGBoostJob failed validation because %s", err)
+		r.Recorder.Eventf(xgboostjob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "XGBoostJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
 

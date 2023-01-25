@@ -131,7 +131,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err = kubeflowv1.ValidateV1PyTorchJobSpec(&pytorchjob.Spec); err != nil {
 		logger.Error(err, "PyTorchJob failed validation")
-		r.Recorder.Eventf(pytorchjob, corev1.EventTypeWarning, "JobFailedValidation", "PyTorchJob failed validation because %s", err)
+		r.Recorder.Eventf(pytorchjob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "PyTorchJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
 
