@@ -275,7 +275,7 @@ func schema_pkg_apis_common_v1_RunPolicy(ref common.ReferenceCallback) common.Op
 				Properties: map[string]spec.Schema{
 					"cleanPodPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.",
+							Description: "CleanPodPolicy defines the policy to kill pods after the job completes. Default to None.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

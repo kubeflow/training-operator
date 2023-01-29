@@ -743,7 +743,7 @@
           "format": "int32"
         },
         "cleanPodPolicy": {
-          "description": "CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.",
+          "description": "CleanPodPolicy defines the policy to kill pods after the job completes. Default to None.",
           "type": "string"
         },
         "schedulingPolicy": {
