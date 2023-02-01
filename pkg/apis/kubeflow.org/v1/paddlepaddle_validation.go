@@ -18,13 +18,24 @@ import (
 	"fmt"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
-func ValidateV1PaddleJobSpec(c *PaddleJobSpec) error {
-	if c.PaddleReplicaSpecs == nil {
+func ValidateV1PaddleJob(paddleJob *PaddleJob) error {
+	if errors := apimachineryvalidation.NameIsDNS1035Label(paddleJob.ObjectMeta.Name, false); errors != nil {
+		return fmt.Errorf("PaddleJob name is invalid: %v", errors)
+	}
+	if err := validatePaddleReplicaSpecs(paddleJob.Spec.PaddleReplicaSpecs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePaddleReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	if specs == nil {
 		return fmt.Errorf("PaddleJobSpec is not valid")
 	}
-	for rType, value := range c.PaddleReplicaSpecs {
+	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("PaddleJobSpec is not valid: containers definition expected in %v", rType)
 		}
@@ -63,5 +74,4 @@ func ValidateV1PaddleJobSpec(c *PaddleJobSpec) error {
 	}
 
 	return nil
-
 }

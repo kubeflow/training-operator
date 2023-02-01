@@ -18,13 +18,24 @@ import (
 	"fmt"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
-func ValidateV1PyTorchJobSpec(c *PyTorchJobSpec) error {
-	if c.PyTorchReplicaSpecs == nil {
+func ValidateV1PyTorchJob(pytorchJob *PyTorchJob) error {
+	if errors := apimachineryvalidation.NameIsDNS1035Label(pytorchJob.ObjectMeta.Name, false); errors != nil {
+		return fmt.Errorf("PyTorchJob name is invalid: %v", errors)
+	}
+	if err := validatePyTorchReplicaSpecs(pytorchJob.Spec.PyTorchReplicaSpecs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePyTorchReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	if specs == nil {
 		return fmt.Errorf("PyTorchJobSpec is not valid")
 	}
-	for rType, value := range c.PyTorchReplicaSpecs {
+	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("PyTorchJobSpec is not valid: containers definition expected in %v", rType)
 		}
