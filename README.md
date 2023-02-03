@@ -72,7 +72,7 @@ Please refer to following API Documentation:
 
 You can:
 
-- Join our [Slack](https://join.slack.com/t/kubeflow/shared_invite/zt-n73pfj05-l206djXlXk5qdQKs4o1Zkg) channel.
+- Join our [Slack](https://www.kubeflow.org/docs/about/community/#kubeflow-slack) channel.
 - Check out [who is using this operator](./docs/adopters.md).
 
 This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
