@@ -434,7 +434,10 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 		} else {
 			if rtype == kubeflowv1.PyTorchJobReplicaTypeWorker {
 				// TODO(gaocegege): Support SuccessPolicy
-				if expected == 0 {
+				// Leave a succeeded condition for the following two cases:
+				// 1. If all workers are succeeded.
+				// 2. If `ElasticPolicy` is not nil and any worker has completed.
+				if expected == 0 || (pytorchjob.Spec.ElasticPolicy != nil && succeeded > 0) {
 					msg := fmt.Sprintf("PyTorchJob %s/%s successfully completed.",
 						pytorchjob.Namespace, pytorchjob.Name)
 					r.recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
