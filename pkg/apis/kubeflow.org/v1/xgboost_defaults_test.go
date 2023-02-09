@@ -96,7 +96,7 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyNone, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
 		},
 		"Set spec with restart policy": {
 			original: &XGBoostJob{
@@ -118,7 +118,7 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, commonv1.RestartPolicyOnFailure, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyNone, commonv1.RestartPolicyOnFailure, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
 		},
 		"Set spec with replicas": {
 			original: &XGBoostJob{
@@ -140,7 +140,7 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, XGBoostJobDefaultRestartPolicy, 3, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyNone, XGBoostJobDefaultRestartPolicy, 3, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
 		},
 
 		"Set spec with default node port name and port": {
@@ -168,7 +168,7 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyNone, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
 		},
 
 		"Set spec with node port": {
@@ -196,7 +196,31 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, 9999),
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyNone, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, 9999),
+		},
+		"set spec with cleanpod policy": {
+			original: &XGBoostJob{
+				Spec: XGBoostJobSpec{
+					RunPolicy: commonv1.RunPolicy{
+						CleanPodPolicy: cleanPodPolicyPointer(commonv1.CleanPodPolicyAll),
+					},
+					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										corev1.Container{
+											Name:  XGBoostJobDefaultContainerName,
+											Image: testImage,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: expectedXGBoostJob(commonv1.CleanPodPolicyAll, XGBoostJobDefaultRestartPolicy, 1, XGBoostJobDefaultPortName, XGBoostJobDefaultPort),
 		},
 	}
 

@@ -46,9 +46,9 @@ func setXGBoostJobTypeNamesToCamelCase(xgboostJob *XGBoostJob) {
 
 // SetDefaults_XGBoostJob sets any unspecified values to defaults.
 func SetDefaults_XGBoostJob(xgboostJob *XGBoostJob) {
-	// Set default cleanpod policy to All.
+	// Set default cleanpod policy to None.
 	if xgboostJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := commonv1.CleanPodPolicyAll
+		all := commonv1.CleanPodPolicyNone
 		xgboostJob.Spec.RunPolicy.CleanPodPolicy = &all
 	}
 
