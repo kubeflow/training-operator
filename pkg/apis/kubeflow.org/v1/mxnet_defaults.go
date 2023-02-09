@@ -46,9 +46,9 @@ func setMXNetTypeNamesToCamelCase(mxJob *MXJob) {
 
 // SetDefaults_MXJob sets any unspecified values to defaults.
 func SetDefaults_MXJob(mxjob *MXJob) {
-	// Set default cleanpod policy to All.
+	// Set default cleanpod policy to None.
 	if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := commonv1.CleanPodPolicyAll
+		all := commonv1.CleanPodPolicyNone
 		mxjob.Spec.RunPolicy.CleanPodPolicy = &all
 	}
 
