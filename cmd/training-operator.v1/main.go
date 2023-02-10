@@ -85,6 +85,8 @@ func main() {
 		config.PyTorchInitContainerImageDefault, "The image for pytorch init container")
 	flag.StringVar(&config.Config.PyTorchInitContainerTemplateFile, "pytorch-init-container-template-file",
 		config.PyTorchInitContainerTemplateFileDefault, "The template file for pytorch init container")
+	flag.IntVar(&config.Config.PyTorchInitContainerMaxTries, "pytorch-init-container-try-number",
+		config.PyTorchInitContainerMaxTriesDefault, "The number of tries for the pytorch init container")
 
 	// MPI related flags
 	flag.StringVar(&config.Config.MPIKubectlDeliveryImage, "mpi-kubectl-delivery-image",
