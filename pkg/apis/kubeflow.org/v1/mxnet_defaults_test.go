@@ -96,7 +96,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 		"Set spec with restart policy": {
 			original: &MXJob{
@@ -118,7 +118,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, commonv1.RestartPolicyOnFailure, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, commonv1.RestartPolicyOnFailure, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 		"Set spec with replicas": {
 			original: &MXJob{
@@ -140,7 +140,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 3, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 3, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 
 		"Set spec with default node port name and port": {
@@ -168,7 +168,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 
 		"Set spec with node port": {
@@ -196,7 +196,32 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, 9999),
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, 9999),
+		},
+
+		"set spec with cleanpod policy": {
+			original: &MXJob{
+				Spec: MXJobSpec{
+					RunPolicy: commonv1.RunPolicy{
+						CleanPodPolicy: cleanPodPolicyPointer(commonv1.CleanPodPolicyAll),
+					},
+					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										corev1.Container{
+											Name:  MXJobDefaultContainerName,
+											Image: testImage,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 	}
 

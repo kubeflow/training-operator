@@ -18,72 +18,176 @@ import (
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
-func TestValidateV1MXJobSpec(t *testing.T) {
-	testCases := []MXJobSpec{
-		{
-			MXReplicaSpecs: nil,
-		},
-		{
-			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
+func TestValidateV1MXJob(t *testing.T) {
+	validMXReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+		MXJobReplicaTypeScheduler: {
+			Replicas:      pointer.Int32(1),
+			RestartPolicy: commonv1.RestartPolicyNever,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:  "mxnet",
+						Image: "mxjob/mxnet",
+					}},
 				},
 			},
 		},
-		{
-			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Image: "",
-								},
-							},
-						},
-					},
+		MXJobReplicaTypeServer: {
+			Replicas:      pointer.Int32(1),
+			RestartPolicy: commonv1.RestartPolicyNever,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:  "mxnet",
+						Image: "mxjob/mxnet",
+					}},
 				},
 			},
 		},
-		{
-			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								v1.Container{
-									Name:  "",
-									Image: "mxjob/mxnet:gpu",
-								},
-							},
+		MXJobReplicaTypeWorker: {
+			Replicas:      pointer.Int32(1),
+			RestartPolicy: commonv1.RestartPolicyNever,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:    "mxnet",
+						Image:   "mxjob/mxnet",
+						Command: []string{"python"},
+						Args: []string{
+							"/incubator-mxnet/example/image-classification/train_mnist.py",
+							"--num-epochs=10",
+							"--num-layers=2",
+							"--kv-store=dist_device_sync",
 						},
-					},
-				},
-			},
-		},
-		{
-			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MXJobReplicaTypeScheduler: &commonv1.ReplicaSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
-						},
-					},
+					}},
 				},
 			},
 		},
 	}
-	for _, c := range testCases {
-		err := ValidateV1MXJobSpec(&c)
-		if err.Error() != "MXJobSpec is not valid" {
-			t.Error("Failed validate the alpha2.MXJobSpec")
-		}
+
+	testCases := map[string]struct {
+		MXJob   *MXJob
+		wantErr bool
+	}{
+		"valid mxJob": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: validMXReplicaSpecs,
+				},
+			},
+			wantErr: false,
+		},
+		"mxReplicaSpecs is nil": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			wantErr: true,
+		},
+		"mxJob name does not meet DNS1035": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "10test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: validMXReplicaSpecs,
+				},
+			},
+			wantErr: true,
+		},
+		"no containers": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						MXJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"image is empty": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						MXJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{{
+										Name:  "mxnet",
+										Image: "",
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"mxnet default container name doesn't find": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						MXJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{{
+										Name:  "",
+										Image: "mxjob/mxnet:gpu",
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"replicaSpec is nil": {
+			MXJob: &MXJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: MXJobSpec{
+					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						MXJobReplicaTypeScheduler: nil,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := ValidateV1MXJob(tc.MXJob)
+			if (got != nil) != tc.wantErr {
+				t.Fatalf("ValidateV1MXJob() error = %v, wantErr %v", got, tc.wantErr)
+			}
+		})
 	}
 }

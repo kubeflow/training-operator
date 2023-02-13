@@ -17,10 +17,20 @@ package v1
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	log "github.com/sirupsen/logrus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
+
+func ValidateV1TFJob(tfjob *TFJob) error {
+	if errors := apimachineryvalidation.NameIsDNS1035Label(tfjob.ObjectMeta.Name, false); errors != nil {
+		return fmt.Errorf("TFJob name is invalid: %v", errors)
+	}
+	if err := validateV1TFReplicaSpecs(tfjob.Spec.TFReplicaSpecs); err != nil {
+		return err
+	}
+	return nil
+}
 
 // IsChieforMaster returns true if the type is Master or Chief.
 func IsChieforMaster(typ commonv1.ReplicaType) bool {
@@ -37,12 +47,7 @@ func IsEvaluator(typ commonv1.ReplicaType) bool {
 	return typ == TFJobReplicaTypeEval
 }
 
-// ValidateV1TFJobSpec checks that the v1.TFJobSpec is valid.
-func ValidateV1TFJobSpec(c *TFJobSpec) error {
-	return validateV1ReplicaSpecs(c.TFReplicaSpecs)
-}
-
-func validateV1ReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+func validateV1TFReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("TFJobSpec is not valid")
 	}

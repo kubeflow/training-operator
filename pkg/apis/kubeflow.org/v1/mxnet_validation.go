@@ -16,14 +16,21 @@ package v1
 
 import (
 	"fmt"
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	log "github.com/sirupsen/logrus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
-// ValidateV1MXJobSpec checks that the kubeflowv1.MXJobSpec is valid.
-func ValidateV1MXJobSpec(c *MXJobSpec) error {
-	return validateMXNetReplicaSpecs(c.MXReplicaSpecs)
+// ValidateV1MXJob checks that the kubeflowv1.MXJobSpec is valid.
+func ValidateV1MXJob(mxJob *MXJob) error {
+	if errors := apimachineryvalidation.NameIsDNS1035Label(mxJob.ObjectMeta.Name, false); errors != nil {
+		return fmt.Errorf("MXJob name is invalid: %v", errors)
+	}
+	if err := validateMXReplicaSpecs(mxJob.Spec.MXReplicaSpecs); err != nil {
+		return err
+	}
+	return nil
 }
 
 // IsScheduler returns true if the type is Scheduler.
@@ -31,7 +38,7 @@ func IsScheduler(typ commonv1.ReplicaType) bool {
 	return typ == MXJobReplicaTypeScheduler
 }
 
-func validateMXNetReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+func validateMXReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("MXJobSpec is not valid")
 	}
