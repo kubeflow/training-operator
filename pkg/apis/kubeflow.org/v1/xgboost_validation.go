@@ -18,14 +18,25 @@ import (
 	"fmt"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
-func ValidateXGBoostJobSpec(c *XGBoostJobSpec) error {
-	if c.XGBReplicaSpecs == nil {
+func ValidateV1XGBoostJob(xgboostJob *XGBoostJob) error {
+	if errors := apimachineryvalidation.NameIsDNS1035Label(xgboostJob.ObjectMeta.Name, false); errors != nil {
+		return fmt.Errorf("XGBoostJob name is invalid: %v", errors)
+	}
+	if err := validateXGBoostReplicaSpecs(xgboostJob.Spec.XGBReplicaSpecs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateXGBoostReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	if specs == nil {
 		return fmt.Errorf("XGBoostJobSpec is not valid")
 	}
 	masterExists := false
-	for rType, value := range c.XGBReplicaSpecs {
+	for rType, value := range specs {
 		if value == nil || len(value.Template.Spec.Containers) == 0 {
 			return fmt.Errorf("XGBoostJobSpec is not valid: containers definition expected in %v", rType)
 		}
