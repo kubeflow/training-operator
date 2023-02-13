@@ -6,4 +6,4 @@ resources:
   - namespace.yaml
 images:
   - name: kubeflow/training-operator
-    newTag: "v1-d0fb5c0"
+    newTag: "v1-5a5f92d"
