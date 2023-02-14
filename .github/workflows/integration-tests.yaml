@@ -52,7 +52,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ inputs.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.3.0
