@@ -577,7 +577,7 @@ class TrainingClient(object):
                     logging.info("The logs of pod %s:\n %s", pod, pod_logs)
                 except Exception:
                     raise RuntimeError(
-                        f"Failed to read logs for pod {namespace}/{pod.metadata.name}"
+                        f"Failed to read logs for pod {namespace}/{pod}"
                     )
 
     # ------------------------------------------------------------------------ #
