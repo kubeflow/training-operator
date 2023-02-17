@@ -43,7 +43,7 @@ var (
     requests:
       cpu: 50m
       memory: 10Mi
-  command: ['sh', '-c', 'until nslookup {{.MasterAddr}}; do echo waiting for master; sleep 2; done;']`
+  command: ['sh', '-c', 'err=1;for i in $(seq {{.MaxTries}}); do if nslookup {{.MasterAddr}}; then err=0 && break; fi;echo waiting for master; sleep 2; done; exit $err']`
 	onceInitContainer sync.Once
 	icGenerator       *initContainerGenerator
 )
@@ -51,6 +51,7 @@ var (
 type initContainerGenerator struct {
 	template string
 	image    string
+	maxTries int
 }
 
 func getInitContainerGenerator() *initContainerGenerator {
@@ -58,6 +59,7 @@ func getInitContainerGenerator() *initContainerGenerator {
 		icGenerator = &initContainerGenerator{
 			template: getInitContainerTemplateOrDefault(config.Config.PyTorchInitContainerTemplateFile),
 			image:    config.Config.PyTorchInitContainerImage,
+			maxTries: config.Config.PyTorchInitContainerMaxTries,
 		}
 	})
 	return icGenerator
@@ -72,9 +74,11 @@ func (i *initContainerGenerator) GetInitContainer(masterAddr string) ([]corev1.C
 	if err := tpl.Execute(&buf, struct {
 		MasterAddr         string
 		InitContainerImage string
+		MaxTries           int
 	}{
 		MasterAddr:         masterAddr,
 		InitContainerImage: i.image,
+		MaxTries:           i.maxTries,
 	}); err != nil {
 		return nil, err
 	}
