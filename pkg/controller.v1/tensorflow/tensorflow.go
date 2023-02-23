@@ -108,9 +108,7 @@ func genTFConfigJSONStr(tfjob *kubeflowv1.TFJob, rtype, index string) (string, e
 	}
 
 	var tfConfigJSONByteSlice []byte
-	isPsOrWorker := rtype == strings.ToLower(string(kubeflowv1.TFJobReplicaTypeWorker)) ||
-		rtype == strings.ToLower(string(kubeflowv1.TFJobReplicaTypePS))
-	if tfjob.Spec.EnableDynamicWorker && isPsOrWorker {
+	if tfjob.Spec.EnableDynamicWorker && rtype == strings.ToLower(string(kubeflowv1.TFJobReplicaTypeWorker)) {
 		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, strings.ToLower(rtype), int32(i))
 		sparseTFConfig := SparseTFConfig{
 			Cluster: sparseCluster,
