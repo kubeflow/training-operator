@@ -83,6 +83,9 @@ func convertClusterSpecToSparseClusterSpec(clusterSpec ClusterSpec, rtype string
 }
 
 // genTFConfig will generate the environment variable TF_CONFIG
+// all values in this config will be constant across all pods
+// except the task index, which will be replaced with the job completion
+// index by the mutating admission webhook (per current proposal)
 //
 //	{
 //	    "cluster": {
@@ -108,6 +111,8 @@ func genTFConfigJSONStr(tfjob *kubeflowv1.TFJob, rtype, index string) (string, e
 	}
 
 	var tfConfigJSONByteSlice []byte
+	// seems like dynamic worker just means we don't need to set the "environment" field
+	// of TF_CONFIG?
 	if tfjob.Spec.EnableDynamicWorker {
 		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, strings.ToLower(rtype), int32(i))
 		sparseTFConfig := SparseTFConfig{

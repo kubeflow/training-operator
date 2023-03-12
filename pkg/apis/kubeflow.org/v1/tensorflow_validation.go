@@ -47,6 +47,10 @@ func IsEvaluator(typ commonv1.ReplicaType) bool {
 	return typ == TFJobReplicaTypeEval
 }
 
+// this replica spec validation follows the same pattern as pytorch
+// - validates 1+ containers exist
+// - validates exactly 1 chief/master exists
+// - validates at least one of the containers is named "tensorflow"
 func validateV1TFReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("TFJobSpec is not valid")

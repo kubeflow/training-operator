@@ -136,6 +136,8 @@ type TFJobReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
+// Reconcilation follows the same standard pattern as pytorch, nothing special here.
+// The only difference is pytorch has a call to ReconcileHPA if ElasticPolicy + Metrics are defined.
 func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 	logger := r.Log.WithValues(kubeflowv1.TFJobSingular, req.NamespacedName)
@@ -191,6 +193,7 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// identical to pytorch but using TFJob instead of PyTorchJob
 func (r *TFJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads int) error {
 	c, err := controller.New(r.ControllerName(), mgr, controller.Options{
 		Reconciler:              r,
@@ -339,6 +342,7 @@ func (r *TFJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod, e
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing Pods (see #42639).
+	// this "adoption" handling logic is not present in pytorch controller
 	canAdoptFunc := common.RecheckDeletionTimestamp(func() (metav1.Object, error) {
 		fresh, err := r.Controller.GetJobFromAPIClient(job.GetNamespace(), job.GetName())
 		if err != nil {
@@ -381,6 +385,7 @@ func (r *TFJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Se
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing services (see #42639).
+	// again, pytorch has no adoption handling logic.
 	canAdoptFunc := common.RecheckDeletionTimestamp(func() (metav1.Object, error) {
 		fresh, err := r.GetJobFromInformerCache(job.GetNamespace(), job.GetName())
 		if err != nil {
@@ -430,6 +435,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 
 	logger := commonutil.LoggerForJob(tfJob)
 
+	// pytorch has no special call to check if worker 0 is completed here
 	worker0Completed, err := r.IsWorker0Completed(tfJob, replicas)
 	if err != nil {
 		logger.Warnf("check if worker 0 completed error %v", err)
@@ -451,6 +457,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 	// For the situation that jobStatus has a restarting condition, and append a running condition,
 	// the restarting condition will be removed from jobStatus by commonv1.filterOutCondition(),
 	// so we need to record the existing restarting condition for later use.
+	// pytorch does not have this condition check
 	var existingRestartingCondition *commonv1.JobCondition
 	for _, condition := range jobStatus.Conditions {
 		if condition.Type == commonv1.JobRestarting {
@@ -469,6 +476,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		kubeflowv1.TFJobReplicaTypePS,
 		kubeflowv1.TFJobReplicaTypeWorker,
 	}
+	// tensorflow iterates through replica types rather than the `replicas` map itself
 	for _, rtype := range allTypes {
 		if replicas[rtype] == nil {
 			continue
@@ -487,6 +495,8 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 
 		// If the TFJob contains Chief or Master spec, then we will update the status
 		// according to the Chief/Master spec.
+		// this big if else block for checking master/workers is nearly identical
+		//  in pytorch, just different success policies.
 		if ContainsChiefOrMasterSpec(tfJob.Spec.TFReplicaSpecs) {
 			if kubeflowv1.IsChieforMaster(rtype) {
 				if running > 0 {
@@ -550,6 +560,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			}
 		}
 
+		// handles failed replicas/pods nearly identically to pytorch
 		if failed > 0 {
 			// For the situation that jobStatus has a restarting condition, and appends a new running condition,
 			// the restarting condition will be removed from jobStatus by commonv1.filterOutCondition(),
@@ -595,6 +606,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 	return nil
 }
 
+// nearly identical to pytorch
 func (r *TFJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
 		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
@@ -636,10 +648,13 @@ func (r *TFJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.Po
 	}
 
 	// Do not set TF_CONFIG for local training jobs.
+	// this check does not exist in pytorch, and i'm curious if
+	// setting TF_CONFIG for a local training job actually breaks anything?
 	if !isDistributed(tfjob) {
 		return nil
 	}
 	// Generate TF_CONFIG JSON string.
+	// see comments in function
 	tfConfigStr, err := genTFConfigJSONStr(tfjob, rtype, index)
 	if err != nil {
 		return err
@@ -678,6 +693,9 @@ func (r *TFJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*common
 		return rtype == kubeflowv1.TFJobReplicaTypeChief || rtype == kubeflowv1.TFJobReplicaTypeMaster
 	}
 	// else check if it is worker with index 0
+	// master can be either a chief/master pod or a worker with index 0
+	// this is different than pytorch, which just uses the replica type master
+	// and does not care about index.
 	return rtype == kubeflowv1.TFJobReplicaTypeWorker && index == 0
 }
 
@@ -729,6 +747,10 @@ func (r *TFJobReconciler) getPodSlices(tfjob *kubeflowv1.TFJob, replicasNum *int
 // This should be removed later unless TF has specific logics there
 // reconcilePods checks and updates pods for each given TFReplicaSpec.
 // It will requeue the tfjob in case of an error while creating/deleting pods.
+// pytorch controller does not implement this method. strangely, it doesn't seem to be called anywhere.
+// the comment above indicites it is overriding kubeflow/common reconciliation logic, but
+// this method does not appear anywhere in that package.
+// maybe we could do some testing to see if the TFJob controller still works without this?
 func (r *TFJobReconciler) ReconcilePods(
 	job interface{},
 	jobStatus *commonv1.JobStatus,
@@ -829,6 +851,8 @@ func (r *TFJobReconciler) ReconcilePods(
 }
 
 // createNewPod creates a new pod for the given index and type.
+// pytorch controller does not have this method. It is only used in
+// in the overridden `ReconcilePods` function above.
 func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string, spec *commonv1.ReplicaSpec, masterRole bool,
 	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 

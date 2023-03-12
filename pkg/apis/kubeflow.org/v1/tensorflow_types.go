@@ -42,11 +42,11 @@ const (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=tfjob
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
-//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// No scale subresource marker here for HPA (unlike PyTorchJob)
 // TFJob represents a TFJob resource.
 type TFJob struct {
 	// Standard Kubernetes type metadata.
@@ -77,6 +77,8 @@ type TFJobSpec struct {
 	// SuccessPolicy defines the policy to mark the TFJob as succeeded.
 	// Default to "", using the default rules.
 	// +optional
+	// TFJobSpec has a SuccessPolicy (unlike PyTorch) but this can be represented by
+	// the SucessPolicy in the proposed JobSet struct
 	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
 
 	// A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
@@ -85,9 +87,11 @@ type TFJobSpec struct {
 	//     "PS": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
+	// same data type as PyTorchReplicaSpecs
 	TFReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"tfReplicaSpecs"`
 
 	// A switch to enable dynamic worker
+	// This field does not exist for pytorch.
 	EnableDynamicWorker bool `json:"enableDynamicWorker,omitempty"`
 }
 
@@ -101,9 +105,17 @@ const (
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),
 // "Worker", "PS", or "Evaluator".
-
+// Pytorch only has 2 replica types (master + worker).
+// Tensorflow has 4 replica types (master/chief are semantically equivalent).
+// This should still be able to be modeled by a JobSet though:
+// Job[0] = Chief/master pod
+// Job[1] = Parameter server pod (only needed if using tf.distribute.experimental.ParameterServerStrategy)
+// Job[2] = Worker pods
+// Job[3] = Evaluator pod (optional)
 const (
 	// TFJobReplicaTypePS is the type for parameter servers of distributed TensorFlow.
+	// Only used when using tf.distribute.experimental.ParameterServerStrategy
+	// No analgous replica type exists in pytorch
 	TFJobReplicaTypePS commonv1.ReplicaType = "PS"
 
 	// TFJobReplicaTypeWorker is the type for workers of distributed TensorFlow.
@@ -120,6 +132,8 @@ const (
 	TFJobReplicaTypeMaster commonv1.ReplicaType = "Master"
 
 	// TFJobReplicaTypeEval is the type for evaluation replica in TensorFlow.
+	// Evaluators can be used to compute evaluation metrics as the model is trained.
+	// No analagous replica type exists in pytorch.
 	TFJobReplicaTypeEval commonv1.ReplicaType = "Evaluator"
 )
 
