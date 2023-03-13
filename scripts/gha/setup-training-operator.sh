@@ -39,6 +39,12 @@ if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
   git clone https://github.com/kubernetes-sigs/scheduler-plugins.git
   pushd scheduler-plugins/manifests/install/charts
 
+  # Since https://github.com/kubernetes-sigs/scheduler-plugins/pull/526, the scheduler-plugins switch the API group to 'x-k8s.io'.
+  # So we must use the specific commit version to available the older API group, 'sigs.k8s.io'.
+  # Details: https://github.com/kubeflow/training-operator/issues/1769
+  # TODO: Once we support new API group, we should switch the scheduler-plugins version.
+  git checkout df16b76a226e58b6961b30ba800e5a713d433c44
+
   # We need to use a values.yaml for v1.23 if K8S cluster version is v1.23.x since latest helm chart does not have compatible with v1.23.
   # TODO (tenzen-y): Once we stop supporting v1.23, we must remove the below:
   K8S_MINOR=$(echo "${KUBERNETES_VERSION}" | cut -d . -f 2)
