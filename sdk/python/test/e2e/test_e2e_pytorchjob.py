@@ -21,6 +21,7 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PyTorchJob
 from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
@@ -35,6 +36,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
+TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "pytorchjob-mnist-ci-test"
 CONTAINER_NAME = "pytorch"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
@@ -43,7 +45,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
+def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -67,36 +69,36 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
     unschedulable_pytorchjob = generate_pytorchjob(master, worker, V1SchedulingPolicy(min_available=10), job_namespace)
     schedulable_pytorchjob = generate_pytorchjob(master, worker, V1SchedulingPolicy(min_available=2), job_namespace)
 
-    training_client.create_pytorchjob(unschedulable_pytorchjob, job_namespace)
+    TRAINING_CLIENT.create_pytorchjob(unschedulable_pytorchjob, job_namespace)
     logging.info(f"List of created {constants.PYTORCHJOB_KIND}s")
-    logging.info(training_client.list_pytorchjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_pytorchjobs(job_namespace))
 
     verify_unschedulable_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.PYTORCHJOB_KIND,
     )
 
-    training_client.patch_pytorchjob(schedulable_pytorchjob, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.patch_pytorchjob(schedulable_pytorchjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.PYTORCHJOB_KIND}s")
-    logging.info(training_client.list_pytorchjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_pytorchjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.PYTORCHJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_pytorchjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_pytorchjob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e(job_namespace, training_client):
+def test_sdk_e2e(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -113,19 +115,19 @@ def test_sdk_e2e(job_namespace, training_client):
 
     pytorchjob = generate_pytorchjob(master, worker, job_namespace=job_namespace)
 
-    training_client.create_pytorchjob(pytorchjob, job_namespace)
+    TRAINING_CLIENT.create_pytorchjob(pytorchjob, job_namespace)
     logging.info(f"List of created {constants.PYTORCHJOB_KIND}s")
-    logging.info(training_client.list_pytorchjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_pytorchjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.PYTORCHJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_pytorchjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_pytorchjob(JOB_NAME, job_namespace)
 
 
 def generate_pytorchjob(

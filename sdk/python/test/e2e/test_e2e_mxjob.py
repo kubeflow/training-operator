@@ -23,6 +23,7 @@ from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 from kubernetes.client import V1ContainerPort
 
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1MXJob
 from kubeflow.training import KubeflowOrgV1MXJobSpec
@@ -37,6 +38,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
+TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "mxjob-mnist-ci-test"
 CONTAINER_NAME = "mxnet"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
@@ -45,7 +47,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
+def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
     worker = V1ReplicaSpec(
@@ -78,36 +80,36 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
     unschedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=10), job_namespace)
     schedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=3), job_namespace)
 
-    training_client.create_mxjob(unschedulable_mxjob, job_namespace)
+    TRAINING_CLIENT.create_mxjob(unschedulable_mxjob, job_namespace)
     logging.info(f"List of created {constants.MXJOB_KIND}s")
-    logging.info(training_client.list_mxjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_unschedulable_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.MXJOB_KIND,
     )
 
-    training_client.patch_mxjob(schedulable_mxjob, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.patch_mxjob(schedulable_mxjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.MXJOB_KIND}s")
-    logging.info(training_client.list_mxjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.MXJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_mxjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e(job_namespace, training_client):
+def test_sdk_e2e(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
     worker = V1ReplicaSpec(
@@ -130,19 +132,19 @@ def test_sdk_e2e(job_namespace, training_client):
 
     mxjob = generate_mxjob(scheduler, server, worker, job_namespace=job_namespace)
 
-    training_client.create_mxjob(mxjob, job_namespace)
+    TRAINING_CLIENT.create_mxjob(mxjob, job_namespace)
     logging.info(f"List of created {constants.MXJOB_KIND}s")
-    logging.info(training_client.list_mxjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.MXJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_mxjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, job_namespace)
 
 
 def generate_mxjob(

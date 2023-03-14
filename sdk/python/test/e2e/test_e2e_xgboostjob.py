@@ -21,6 +21,7 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
+from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1XGBoostJob
 from kubeflow.training import KubeflowOrgV1XGBoostJobSpec
@@ -35,6 +36,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
+TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "xgboostjob-iris-ci-test"
 CONTAINER_NAME = "xgboost"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
@@ -43,7 +45,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
+def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -67,36 +69,36 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
     unschedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=10), job_namespace)
     schedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=2), job_namespace)
 
-    training_client.create_xgboostjob(unschedulable_xgboostjob, job_namespace)
+    TRAINING_CLIENT.create_xgboostjob(unschedulable_xgboostjob, job_namespace)
     logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
-    logging.info(training_client.list_xgboostjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_unschedulable_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.XGBOOSTJOB_KIND,
     )
 
-    training_client.patch_xgboostjob(schedulable_xgboostjob, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.patch_xgboostjob(schedulable_xgboostjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.XGBOOSTJOB_KIND}s")
-    logging.info(training_client.list_xgboostjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.XGBOOSTJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_xgboostjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e(job_namespace, training_client):
+def test_sdk_e2e(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -113,19 +115,19 @@ def test_sdk_e2e(job_namespace, training_client):
 
     xgboostjob = generate_xgboostjob(master, worker, job_namespace=job_namespace)
 
-    training_client.create_xgboostjob(xgboostjob, job_namespace)
+    TRAINING_CLIENT.create_xgboostjob(xgboostjob, job_namespace)
     logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
-    logging.info(training_client.list_xgboostjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_job_e2e(
-        training_client,
+        TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.XGBOOSTJOB_KIND,
         CONTAINER_NAME,
     )
 
-    training_client.delete_xgboostjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, job_namespace)
 
 
 def generate_xgboostjob(

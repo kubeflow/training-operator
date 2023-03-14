@@ -12,10 +12,3 @@ def pytest_addoption(parser):
 @pytest.fixture
 def job_namespace(request):
     return request.config.getoption("--namespace")
-
-@pytest.fixture
-def training_client():
-    if is_running_in_k8s():
-        return TrainingClient()
-    else:
-        return TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
