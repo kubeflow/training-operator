@@ -51,7 +51,7 @@ def test_sdk_e2e_with_gang_scheduling():
 
     master = V1ReplicaSpec(
         replicas=1,
-        restart_policy="Never",
+        restart_policy="OnFailure",
         template=V1PodTemplateSpec(spec=V1PodSpec(
             containers=[container],
             scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
@@ -60,7 +60,7 @@ def test_sdk_e2e_with_gang_scheduling():
 
     worker = V1ReplicaSpec(
         replicas=1,
-        restart_policy="Never",
+        restart_policy="OnFailure",
         template=V1PodTemplateSpec(spec=V1PodSpec(
             containers=[container],
             scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
@@ -104,13 +104,13 @@ def test_sdk_e2e():
 
     master = V1ReplicaSpec(
         replicas=1,
-        restart_policy="Never",
+        restart_policy="OnFailure",
         template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
-        restart_policy="Never",
+        restart_policy="OnFailure",
         template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
