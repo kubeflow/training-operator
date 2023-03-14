@@ -21,7 +21,6 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 
-from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PaddleJob
 from kubeflow.training import KubeflowOrgV1PaddleJobSpec
@@ -36,9 +35,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
 JOB_NAME = "paddlejob-cpu-ci-test"
-JOB_NAMESPACE = "default"
 CONTAINER_NAME = "paddle"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
@@ -46,7 +43,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling():
+def test_sdk_e2e_with_gang_scheduling(job_namespace, training_client):
     container = generate_container()
 
     worker = V1ReplicaSpec(
@@ -58,39 +55,39 @@ def test_sdk_e2e_with_gang_scheduling():
         )),
     )
 
-    unschedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=10))
-    schedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=2))
+    unschedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=2), job_namespace)
 
-    TRAINING_CLIENT.create_paddlejob(unschedulable_paddlejob, JOB_NAMESPACE)
+    training_client.create_paddlejob(unschedulable_paddlejob, job_namespace)
     logging.info(f"List of created {constants.PADDLEJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_paddlejobs(JOB_NAMESPACE))
+    logging.info(training_client.list_paddlejobs(job_namespace))
 
     verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
+        training_client,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.PADDLEJOB_KIND,
     )
 
-    TRAINING_CLIENT.patch_paddlejob(schedulable_paddlejob, JOB_NAME, JOB_NAMESPACE)
+    training_client.patch_paddlejob(schedulable_paddlejob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.PADDLEJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_paddlejobs(JOB_NAMESPACE))
+    logging.info(training_client.list_paddlejobs(job_namespace))
 
     verify_job_e2e(
-        TRAINING_CLIENT,
+        training_client,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.PADDLEJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_paddlejob(JOB_NAME, JOB_NAMESPACE)
+    training_client.delete_paddlejob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e():
+def test_sdk_e2e(job_namespace, training_client):
     container = generate_container()
 
     worker = V1ReplicaSpec(
@@ -99,31 +96,32 @@ def test_sdk_e2e():
         template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
-    paddlejob = generate_paddlejob(worker)
+    paddlejob = generate_paddlejob(worker, job_namespace=job_namespace)
 
-    TRAINING_CLIENT.create_paddlejob(paddlejob, JOB_NAMESPACE)
+    training_client.create_paddlejob(paddlejob, job_namespace)
     logging.info(f"List of created {constants.PADDLEJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_paddlejobs(JOB_NAMESPACE))
+    logging.info(training_client.list_paddlejobs(job_namespace))
 
     verify_job_e2e(
-        TRAINING_CLIENT,
+        training_client,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.PADDLEJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_paddlejob(JOB_NAME, JOB_NAMESPACE)
+    training_client.delete_paddlejob(JOB_NAME, job_namespace)
 
 
 def generate_paddlejob(
     worker: V1ReplicaSpec,
     scheduling_policy: V1SchedulingPolicy = None,
+    job_namespace: str = "default",
 ) -> KubeflowOrgV1PaddleJob:
     return KubeflowOrgV1PaddleJob(
         api_version="kubeflow.org/v1",
         kind="PaddleJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1PaddleJobSpec(
             run_policy=V1RunPolicy(
                 scheduling_policy=scheduling_policy,
