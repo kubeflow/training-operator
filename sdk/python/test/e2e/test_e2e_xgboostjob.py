@@ -36,9 +36,8 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "xgboostjob-iris-ci-test"
-JOB_NAMESPACE = "default"
 CONTAINER_NAME = "xgboost"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
@@ -46,7 +45,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling():
+def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -67,39 +66,39 @@ def test_sdk_e2e_with_gang_scheduling():
         )),
     )
 
-    unschedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=10))
-    schedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=2))
+    unschedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_xgboostjob = generate_xgboostjob(master, worker, V1SchedulingPolicy(min_available=2), job_namespace)
 
-    TRAINING_CLIENT.create_xgboostjob(unschedulable_xgboostjob, JOB_NAMESPACE)
+    TRAINING_CLIENT.create_xgboostjob(unschedulable_xgboostjob, job_namespace)
     logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_xgboostjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_unschedulable_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.XGBOOSTJOB_KIND,
     )
 
-    TRAINING_CLIENT.patch_xgboostjob(schedulable_xgboostjob, JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.patch_xgboostjob(schedulable_xgboostjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.XGBOOSTJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_xgboostjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.XGBOOSTJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e():
+def test_sdk_e2e(job_namespace):
     container = generate_container()
 
     master = V1ReplicaSpec(
@@ -114,32 +113,33 @@ def test_sdk_e2e():
         template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
     )
 
-    xgboostjob = generate_xgboostjob(master, worker)
+    xgboostjob = generate_xgboostjob(master, worker, job_namespace=job_namespace)
 
-    TRAINING_CLIENT.create_xgboostjob(xgboostjob, JOB_NAMESPACE)
+    TRAINING_CLIENT.create_xgboostjob(xgboostjob, job_namespace)
     logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_xgboostjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_xgboostjobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.XGBOOSTJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.delete_xgboostjob(JOB_NAME, job_namespace)
 
 
 def generate_xgboostjob(
     master: V1ReplicaSpec,
     worker: V1ReplicaSpec,
     scheduling_policy: V1SchedulingPolicy = None,
+    job_namespace: str = "default",
 ) -> KubeflowOrgV1XGBoostJob:
     return KubeflowOrgV1XGBoostJob(
         api_version="kubeflow.org/v1",
         kind="XGBoostJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1XGBoostJobSpec(
             run_policy=V1RunPolicy(
                 clean_pod_policy="None",

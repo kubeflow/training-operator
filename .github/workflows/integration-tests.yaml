@@ -79,6 +79,6 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest
-          python3 -m pip install -e sdk/python; pytest sdk/python/test --log-cli-level=info
+          python3 -m pip install -e sdk/python; pytest sdk/python/test --log-cli-level=info --namespace=default
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
