@@ -51,10 +51,13 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+            spec=V1PodSpec(
+                containers=[container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     unschedulable_tfjob = generate_tfjob(worker, V1SchedulingPolicy(min_available=10), job_namespace)
@@ -95,7 +98,8 @@ def test_sdk_e2e(job_namespace):
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+                                   spec=V1PodSpec(containers=[container])),
     )
 
     tfjob = generate_tfjob(worker, job_namespace=job_namespace)

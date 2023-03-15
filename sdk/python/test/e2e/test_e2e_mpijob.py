@@ -52,19 +52,25 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     launcher = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[launcher_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+            spec=V1PodSpec(
+                containers=[launcher_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[worker_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+            spec=V1PodSpec(
+                containers=[worker_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     mpijob = generate_mpijob(launcher, worker, V1SchedulingPolicy(min_available=10), job_namespace)
@@ -105,13 +111,15 @@ def test_sdk_e2e(job_namespace):
     launcher = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[launcher_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+                                   spec=V1PodSpec(containers=[launcher_container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[worker_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+                                   spec=V1PodSpec(containers=[worker_container])),
     )
 
     mpijob = generate_mpijob(launcher, worker, job_namespace=job_namespace)
