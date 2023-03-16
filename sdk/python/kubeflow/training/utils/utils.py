@@ -322,7 +322,7 @@ def get_pod_template_spec(
 
     # Create Pod template spec.
     pod_template_spec = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(annotations={"sidecar.istio.io/inject": "false"}),
+        metadata=client.V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
         spec=client.V1PodSpec(
             containers=[
                 client.V1Container(

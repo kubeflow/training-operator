@@ -53,7 +53,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
             spec=V1PodSpec(
                 containers=[launcher_container],
                 scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
@@ -65,7 +65,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
             spec=V1PodSpec(
                 containers=[worker_container],
                 scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
@@ -111,14 +111,14 @@ def test_sdk_e2e(job_namespace):
     launcher = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[launcher_container])),
     )
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={'sidecar.istio.io/inject': "false"}),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[worker_container])),
     )
 
