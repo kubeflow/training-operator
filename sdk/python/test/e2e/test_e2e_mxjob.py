@@ -53,28 +53,37 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[worker_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[worker_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     server = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[server_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[server_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     scheduler = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[scheduler_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[scheduler_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     unschedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=10), job_namespace)
@@ -115,19 +124,22 @@ def test_sdk_e2e(job_namespace):
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[worker_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[worker_container])),
     )
 
     server = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[server_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[server_container])),
     )
 
     scheduler = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[scheduler_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[scheduler_container])),
     )
 
     mxjob = generate_mxjob(scheduler, server, worker, job_namespace=job_namespace)

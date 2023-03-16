@@ -20,6 +20,7 @@ DEFAULT_TIMEOUT = 120
 # Common constants.
 KUBEFLOW_GROUP = "kubeflow.org"
 OPERATOR_VERSION = "v1"
+ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
 
 # Training Job conditions.
 JOB_CONDITION_CREATED = "Created"
