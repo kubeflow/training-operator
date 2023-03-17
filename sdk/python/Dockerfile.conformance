@@ -24,6 +24,7 @@ COPY conformance/run.sh .
 # Add test script.
 RUN chmod +x run.sh
 
-RUN pip install pytest kubernetes>=23.6.0
+RUN pip install pytest
+RUN python -m pip install -e .
 
 ENTRYPOINT [ "./run.sh" ]
