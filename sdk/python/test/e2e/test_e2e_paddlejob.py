@@ -44,7 +44,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
 @pytest.mark.skipif(
-    True or GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
@@ -91,7 +91,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
 
 @pytest.mark.skipif(
-    True or GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     container = generate_container()
@@ -145,5 +145,5 @@ def generate_container() -> V1Container:
         image="docker.io/paddlepaddle/paddle:2.4.0rc0-cpu",
         command=["python"],
         args=["-m", "paddle.distributed.launch", "run_check"],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.5"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.4"}),
     )

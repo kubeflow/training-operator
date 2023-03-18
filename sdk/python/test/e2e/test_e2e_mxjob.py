@@ -46,7 +46,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
 @pytest.mark.skipif(
-    True or GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
@@ -117,7 +117,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
 
 @pytest.mark.skipif(
-    True or GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
