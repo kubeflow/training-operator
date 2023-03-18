@@ -20,6 +20,7 @@ from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -144,4 +145,5 @@ def generate_container() -> V1Container:
         image="docker.io/paddlepaddle/paddle:2.4.0rc0-cpu",
         command=["python"],
         args=["-m", "paddle.distributed.launch", "run_check"],
+        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
     )

@@ -20,6 +20,7 @@ from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -145,4 +146,5 @@ def generate_container() -> V1Container:
             "--learning_rate=0.01",
             "--batch_size=150",
         ],
+        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
     )

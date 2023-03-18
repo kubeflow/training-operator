@@ -22,6 +22,7 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 from kubernetes.client import V1ContainerPort
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -201,6 +202,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
             "dist_sync",
         ],
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
     )
 
     server_container = V1Container(
@@ -208,6 +210,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
     )
 
     scheduler_container = V1Container(
@@ -215,6 +218,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
     )
 
     return worker_container, server_container, scheduler_container
