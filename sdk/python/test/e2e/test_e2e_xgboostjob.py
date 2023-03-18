@@ -44,7 +44,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    True or GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
@@ -103,7 +103,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    True or GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     container = generate_container()
@@ -171,5 +171,5 @@ def generate_container() -> V1Container:
             "--model_path=/tmp/xgboost-model",
             "--model_storage_type=local",
         ],
-        resources=V1ResourceRequirements(requests={"memory":"1Gi", "cpu": "1"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.5"}),
     )

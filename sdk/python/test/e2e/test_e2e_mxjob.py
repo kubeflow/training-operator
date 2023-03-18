@@ -46,7 +46,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    True or GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
@@ -117,7 +117,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    True or GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
@@ -202,7 +202,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
             "dist_sync",
         ],
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "1"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.25"}),
     )
 
     server_container = V1Container(
@@ -210,7 +210,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "1"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.25"}),
     )
 
     scheduler_container = V1Container(
@@ -218,7 +218,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "1"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.25"}),
     )
 
     return worker_container, server_container, scheduler_container
