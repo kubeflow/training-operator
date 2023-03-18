@@ -164,5 +164,5 @@ def generate_container() -> V1Container:
         name=CONTAINER_NAME,
         image="gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0",
         args=["--backend", "gloo"],
-        resources=V1ResourceRequirements(limits={"memory":"4Gi", "cpu": "4"}),
+        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.5"}),
     )
