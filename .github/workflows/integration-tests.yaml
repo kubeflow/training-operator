@@ -76,6 +76,9 @@ jobs:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run tests
         run: |
           pip install pytest
