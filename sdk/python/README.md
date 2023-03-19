@@ -81,3 +81,11 @@ Class | Method | Description
  - [V1XGBoostJob](docs/KubeflowOrgV1XGBoostJob.md)
  - [V1XGBoostJobList](docs/KubeflowOrgV1XGBoostJobList.md)
  - [V1XGBoostJobSpec](docs/KubeflowOrgV1XGBoostJobSpec.md)
+
+
+## Building conformance tests
+
+Run
+```
+docker build . -f Dockerfile.conformance -t <tag>
+```

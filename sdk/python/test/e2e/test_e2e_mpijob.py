@@ -21,6 +21,7 @@ from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -189,11 +190,13 @@ def generate_containers() -> Tuple[V1Container, V1Container]:
             "--epochs",
             "1",
         ],
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     worker_container = V1Container(
         name="mpi",
         image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     return launcher_container, worker_container

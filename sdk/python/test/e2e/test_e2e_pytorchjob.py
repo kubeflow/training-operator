@@ -20,6 +20,7 @@ from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -163,4 +164,5 @@ def generate_container() -> V1Container:
         name=CONTAINER_NAME,
         image="gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0",
         args=["--backend", "gloo"],
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
