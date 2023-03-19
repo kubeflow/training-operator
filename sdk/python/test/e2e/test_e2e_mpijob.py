@@ -190,7 +190,7 @@ def generate_containers() -> Tuple[V1Container, V1Container]:
             "--epochs",
             "1",
         ],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.4"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     worker_container = V1Container(
