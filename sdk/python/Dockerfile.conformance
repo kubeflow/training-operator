@@ -17,9 +17,9 @@ FROM python:3.9.6-alpine3.14
 
 WORKDIR /kubeflow/training-operator/sdk/python
 
-COPY . .
+COPY sdk/python .
 
-COPY conformance/run.sh .
+COPY sdk/python/conformance/run.sh .
 
 # Add test script.
 RUN chmod +x run.sh
