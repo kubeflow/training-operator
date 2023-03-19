@@ -145,5 +145,5 @@ def generate_container() -> V1Container:
         image="docker.io/paddlepaddle/paddle:2.4.0rc0-cpu",
         command=["python"],
         args=["-m", "paddle.distributed.launch", "run_check"],
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.4"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )

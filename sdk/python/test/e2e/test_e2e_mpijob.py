@@ -196,7 +196,7 @@ def generate_containers() -> Tuple[V1Container, V1Container]:
     worker_container = V1Container(
         name="mpi",
         image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
-        resources=V1ResourceRequirements(limits={"memory":"1Gi", "cpu": "0.4"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     return launcher_container, worker_container
