@@ -83,9 +83,9 @@ ${CODEGEN_PKG}/generate-groups.sh "all" \
 #echo "Building defaulter-gen"
 #go build -o defaulter-gen ${CODEGEN_PKG}/cmd/defaulter-gen
 
-# ${GOPATH}/bin/defaulter-gen is automatically built from ${CODEGEN_PKG}/generate-groups.sh
+# $(go env GOPATH)/bin/defaulter-gen is automatically built from ${CODEGEN_PKG}/generate-groups.sh
 echo "Generating defaulters for kubeflow.org/v1"
-${GOPATH}/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
+$(go env GOPATH)/bin/defaulter-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
     -O zz_generated.defaults \
     --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
     --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
