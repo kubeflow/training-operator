@@ -27,7 +27,7 @@ REQUIRES = [
 
 setuptools.setup(
     name="kubeflow-training",
-    version="1.6.0rc0",
+    version="1.6.0",
     author="Kubeflow Authors",
     author_email="hejinchi@cn.ibm.com",
     license="Apache License Version 2.0",
