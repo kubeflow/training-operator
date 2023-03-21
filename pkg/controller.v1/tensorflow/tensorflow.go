@@ -108,30 +108,18 @@ func genTFConfigJSONStr(tfjob *kubeflowv1.TFJob, rtype, index string) (string, e
 	}
 
 	var tfConfigJSONByteSlice []byte
-	if tfjob.Spec.EnableDynamicWorker && rtype == strings.ToLower(string(kubeflowv1.TFJobReplicaTypeWorker)) {
-		sparseCluster := convertClusterSpecToSparseClusterSpec(cluster, strings.ToLower(rtype), int32(i))
-		sparseTFConfig := SparseTFConfig{
-			Cluster: sparseCluster,
-			Task: TaskSpec{
-				Type:  strings.ToLower(rtype),
-				Index: int(i),
-			},
-		}
-		tfConfigJSONByteSlice, err = json.Marshal(sparseTFConfig)
-	} else {
-		tfConfig := TFConfig{
-			Cluster: cluster,
-			Task: TaskSpec{
-				Type:  strings.ToLower(rtype),
-				Index: int(i),
-			},
-			// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
-			// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
-			// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
-			Environment: "cloud",
-		}
-		tfConfigJSONByteSlice, err = json.Marshal(tfConfig)
+	tfConfig := TFConfig{
+		Cluster: cluster,
+		Task: TaskSpec{
+			Type:  strings.ToLower(rtype),
+			Index: int(i),
+		},
+		// We need to set environment to cloud  otherwise it will default to local which isn't what we want.
+		// Environment is used by tensorflow.contrib.learn.python.learn in versions <= 1.3
+		// TODO(jlewi): I don't think it is used in versions TF >- 1.4. So we can eventually get rid of it.
+		Environment: "cloud",
 	}
+	tfConfigJSONByteSlice, err = json.Marshal(tfConfig)
 	if err != nil {
 		return "", err
 	}
