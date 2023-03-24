@@ -34,6 +34,7 @@ func TestInitContainer(t *testing.T) {
 
 	config.Config.PyTorchInitContainerImage = config.PyTorchInitContainerImageDefault
 	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
+	config.Config.PyTorchInitContainerMaxTries = config.PyTorchInitContainerMaxTriesDefault
 
 	testCases := []struct {
 		job         *kubeflowv1.PyTorchJob

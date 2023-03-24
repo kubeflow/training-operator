@@ -15,82 +15,180 @@
 package v1
 
 import (
-	"k8s.io/utils/pointer"
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
-func TestValidateV1PyTorchJobSpec(t *testing.T) {
-	testCases := []PyTorchJobSpec{
-		{
-			PyTorchReplicaSpecs: nil,
-		},
-		{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				PyTorchJobReplicaTypeWorker: {
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{},
+func TestValidateV1PyTorchJob(t *testing.T) {
+	validPyTorchReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+		PyTorchJobReplicaTypeMaster: {
+			Replicas:      pointer.Int32(1),
+			RestartPolicy: commonv1.RestartPolicyOnFailure,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:            "pytorch",
+						Image:           "docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727",
+						ImagePullPolicy: corev1.PullAlways,
+						Command: []string{
+							"python3",
+							"/opt/pytorch-mnist/mnist.py",
+							"--epochs=1",
 						},
-					},
+					}},
 				},
 			},
 		},
-		{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				PyTorchJobReplicaTypeWorker: {
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Image: "",
-								},
-							},
+		PyTorchJobReplicaTypeWorker: {
+			Replicas:      pointer.Int32(1),
+			RestartPolicy: commonv1.RestartPolicyOnFailure,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:            "pytorch",
+						Image:           "docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727",
+						ImagePullPolicy: corev1.PullAlways,
+						Command: []string{
+							"python3",
+							"/opt/pytorch-mnist/mnist.py",
+							"--epochs=1",
 						},
-					},
-				},
-			},
-		},
-		{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				PyTorchJobReplicaTypeWorker: {
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "",
-									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				PyTorchJobReplicaTypeMaster: {
-					Replicas: pointer.Int32(2),
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "pytorch",
-									Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
-								},
-							},
-						},
-					},
+					}},
 				},
 			},
 		},
 	}
-	for _, c := range testCases {
-		err := ValidateV1PyTorchJobSpec(&c)
-		if err == nil {
-			t.Error("Failed validate the v1.PyTorchJobSpec")
-		}
+
+	testCases := map[string]struct {
+		pytorchJob *PyTorchJob
+		wantErr    bool
+	}{
+		"valid PyTorchJob": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: false,
+		},
+		"pytorchJob name does not meet DNS1035": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "0-test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: true,
+		},
+		"no containers": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"image is empty": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"pytorchJob default container name doesn't present": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchJobReplicaTypeWorker: {
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"the number of replicas in masterReplica is other than 1": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchJobReplicaTypeMaster: {
+							Replicas: pointer.Int32(2),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := ValidateV1PyTorchJob(tc.pytorchJob)
+			if (got != nil) != tc.wantErr {
+				t.Fatalf("ValidateV1PyTorchJob() error = %v, wantErr %v", got, tc.wantErr)
+			}
+		})
 	}
 }

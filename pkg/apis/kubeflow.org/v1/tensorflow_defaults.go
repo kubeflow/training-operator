@@ -50,9 +50,9 @@ func setTensorflowTypeNamesToCamelCase(tfJob *TFJob) {
 
 // SetDefaults_TFJob sets any unspecified values to defaults.
 func SetDefaults_TFJob(tfJob *TFJob) {
-	// Set default cleanpod policy to Running.
+	// Set default cleanpod policy to None.
 	if tfJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		running := commonv1.CleanPodPolicyRunning
+		running := commonv1.CleanPodPolicyNone
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &running
 	}
 	// Set default success policy to "".

@@ -22,6 +22,7 @@ from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 from kubernetes.client import V1ContainerPort
+from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
 from kubeflow.training import V1ReplicaSpec
@@ -38,9 +39,8 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient(config_file=os.getenv("KUBECONFIG", "~/.kube/config"))
+TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "mxjob-mnist-ci-test"
-JOB_NAMESPACE = "default"
 CONTAINER_NAME = "mxnet"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
@@ -48,104 +48,116 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
 )
-def test_sdk_e2e_with_gang_scheduling():
+def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[worker_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[worker_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     server = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[server_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[server_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
     scheduler = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(
-            containers=[scheduler_container],
-            scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-        )),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            spec=V1PodSpec(
+                containers=[scheduler_container],
+                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+            )
+        ),
     )
 
-    unschedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=10))
-    schedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=3))
+    unschedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=3), job_namespace)
 
-    TRAINING_CLIENT.create_mxjob(unschedulable_mxjob, JOB_NAMESPACE)
+    TRAINING_CLIENT.create_mxjob(unschedulable_mxjob, job_namespace)
     logging.info(f"List of created {constants.MXJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mxjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_unschedulable_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.MXJOB_KIND,
     )
 
-    TRAINING_CLIENT.patch_mxjob(schedulable_mxjob, JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.patch_mxjob(schedulable_mxjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.MXJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mxjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.MXJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_mxjob(JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
 )
-def test_sdk_e2e():
+def test_sdk_e2e(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
     worker = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[worker_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[worker_container])),
     )
 
     server = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[server_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[server_container])),
     )
 
     scheduler = V1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(spec=V1PodSpec(containers=[scheduler_container])),
+        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+                                   spec=V1PodSpec(containers=[scheduler_container])),
     )
 
-    mxjob = generate_mxjob(scheduler, server, worker)
+    mxjob = generate_mxjob(scheduler, server, worker, job_namespace=job_namespace)
 
-    TRAINING_CLIENT.create_mxjob(mxjob, JOB_NAMESPACE)
+    TRAINING_CLIENT.create_mxjob(mxjob, job_namespace)
     logging.info(f"List of created {constants.MXJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mxjobs(JOB_NAMESPACE))
+    logging.info(TRAINING_CLIENT.list_mxjobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
-        JOB_NAMESPACE,
+        job_namespace,
         constants.MXJOB_KIND,
         CONTAINER_NAME,
     )
 
-    TRAINING_CLIENT.delete_mxjob(JOB_NAME, JOB_NAMESPACE)
+    TRAINING_CLIENT.delete_mxjob(JOB_NAME, job_namespace)
 
 
 def generate_mxjob(
@@ -153,11 +165,12 @@ def generate_mxjob(
     server: V1ReplicaSpec,
     worker: V1ReplicaSpec,
     scheduling_policy: V1SchedulingPolicy = None,
+    job_namespace: str = "default",
 ) -> KubeflowOrgV1MXJob:
     return KubeflowOrgV1MXJob(
         api_version="kubeflow.org/v1",
         kind="MXJob",
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=JOB_NAMESPACE),
+        metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1MXJobSpec(
             job_mode="MXTrain",
             run_policy=V1RunPolicy(
@@ -189,6 +202,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
             "dist_sync",
         ],
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
     )
 
     server_container = V1Container(
@@ -196,6 +210,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
     )
 
     scheduler_container = V1Container(
@@ -203,6 +218,7 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
         # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
         image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
     )
 
     return worker_container, server_container, scheduler_container

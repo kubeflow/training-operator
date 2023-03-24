@@ -147,7 +147,7 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = kubeflowv1.ValidateV1TFJobSpec(&tfjob.Spec); err != nil {
+	if err = kubeflowv1.ValidateV1TFJob(tfjob); err != nil {
 		logger.Error(err, "TFJob failed validation")
 		r.Recorder.Eventf(tfjob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "TFJob failed validation because %s", err)
 		return ctrl.Result{}, err

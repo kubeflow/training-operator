@@ -19,6 +19,7 @@ var Config struct {
 	PyTorchInitContainerTemplateFile string
 	PyTorchInitContainerImage        string
 	MPIKubectlDeliveryImage          string
+	PyTorchInitContainerMaxTries     int
 }
 
 const (
@@ -28,6 +29,8 @@ const (
 	// PyTorchInitContainerTemplateFileDefault is the default template file for
 	// the pytorch init container.
 	PyTorchInitContainerTemplateFileDefault = "/etc/config/initContainer.yaml"
+	// PyTorchInitContainerMaxTriesDefault is the default number of tries for the pytorch init container.
+	PyTorchInitContainerMaxTriesDefault = 100
 	// MPIKubectlDeliveryImageDefault is the default image for launcher pod in MPIJob init container.
 	MPIKubectlDeliveryImageDefault = "mpioperator/kubectl-delivery:latest"
 )

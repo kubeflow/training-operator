@@ -561,7 +561,7 @@ func (jc *MPIJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod,
 func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
 	mpiJob, ok := job.(*kubeflowv1.MPIJob)
 	if !ok {
-		return fmt.Errorf("%v is not a type of TFJob", mpiJob)
+		return fmt.Errorf("%v is not a type of MPIJob", mpiJob)
 	}
 
 	log := commonutil.LoggerForJob(mpiJob)
