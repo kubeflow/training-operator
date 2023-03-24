@@ -9,16 +9,17 @@ Note: Latest [Python SDK 1.6 version](https://pypi.org/project/kubeflow-training
 
 **New Features**
 - Support for k8s v1.25 in CI [\#1684](https://github.com/kubeflow/training-operator/pull/1684) ([johnugeorge](https://github.com/johnugeorge))
-- \[PaddlePaddle\] support paddlejob [\#1675](https://github.com/kubeflow/training-operator/pull/1675) ([kuizhiqing](https://github.com/kuizhiqing))
-- Add PodGroup as controller watch source [\#1666](https://github.com/kubeflow/training-operator/pull/1666) ([ggaaooppeenngg](https://github.com/ggaaooppeenngg))
+- HPA support for PyTorch Elastic [\#1701](https://github.com/kubeflow/training-operator/pull/1701) ([johnugeorge](https://github.com/johnugeorge))
+- Adopting coschduling plugin [\#1724](https://github.com/kubeflow/training-operator/pull/1724) ([tenzen-y](https://github.com/tenzen-y))
+- Support for Paddlepaddle [\#1675](https://github.com/kubeflow/training-operator/pull/1675) ([kuizhiqing](https://github.com/kuizhiqing))
 - Create TFJob and PyTorchJob from Function APIs in the Training SDK [\#1659](https://github.com/kubeflow/training-operator/pull/1659) ([andreyvelich](https://github.com/andreyvelich))
 - \[SDK\] Use Training Client without Kube Config [\#1740](https://github.com/kubeflow/training-operator/pull/1740) ([andreyvelich](https://github.com/andreyvelich))
-- Adopting coschduling plugin [\#1724](https://github.com/kubeflow/training-operator/pull/1724) ([tenzen-y](https://github.com/tenzen-y))
 - \[SDK\] Create Unify Training Client [\#1719](https://github.com/kubeflow/training-operator/pull/1719) ([andreyvelich](https://github.com/andreyvelich))
-- HPA support for PyTorch Elastic [\#1701](https://github.com/kubeflow/training-operator/pull/1701) ([johnugeorge](https://github.com/johnugeorge))
+
 
 **Bug fixes**
 - [SDK] pod has no metadata attr anymore in the get\_job\_logs\(\) … [\#1760](https://github.com/kubeflow/training-operator/pull/1760) ([yaobaiwei](https://github.com/yaobaiwei))
+- Add PodGroup as controller watch source [\#1666](https://github.com/kubeflow/training-operator/pull/1666) ([ggaaooppeenngg](https://github.com/ggaaooppeenngg))
 - fix infinite loop in init-pytorch container [\#1756](https://github.com/kubeflow/training-operator/pull/1756) ([kidddddddddddddddddddddd](https://github.com/kidddddddddddddddddddddd))
 - Fix the success condition of the job in PyTorchJob's Elastic mode. [\#1752](https://github.com/kubeflow/training-operator/pull/1752) ([Syulin7](https://github.com/Syulin7))
 - Fix XGBoost conditions bug [\#1737](https://github.com/kubeflow/training-operator/pull/1737) ([tenzen-y](https://github.com/tenzen-y))
