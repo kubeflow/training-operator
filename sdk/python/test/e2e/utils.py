@@ -28,13 +28,13 @@ def verify_unschedulable_job_e2e(
 
 
 def verify_job_e2e(
-    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str
+    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str, timeout: int = 600
 ):
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
     logging.info(f"\n\n\n{job_kind} is running")
-    client.wait_for_job_conditions(name, namespace, job_kind)
+    client.wait_for_job_conditions(name, namespace, job_kind, timeout=timeout)
 
     # Job should have Created, Running, and Succeeded conditions.
     conditions = client.get_job_conditions(name, namespace, job_kind)
