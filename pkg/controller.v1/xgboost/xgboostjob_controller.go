@@ -403,15 +403,15 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 
 		if rtype == commonv1.ReplicaType(kubeflowv1.XGBoostJobReplicaTypeMaster) {
 			if running > 0 {
-				msg := fmt.Sprintf("XGBoostJob %s is running.", xgboostJob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, xgboostJobRunningReason, msg)
-				if err != nil {
-					logger.Infof("Append job condition error: %v", err)
+				if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
 					return err
 				}
 			}
 			// when master is succeed, the job is finished.
 			if expected == 0 {
+				if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
+					return err
+				}
 				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", xgboostJob.Name)
 				logrus.Info(msg)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobSucceededReason, msg)
@@ -429,6 +429,9 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 			}
 		}
 		if failed > 0 {
+			if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
+				return err
+			}
 			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeWarning, xgboostJobRestartingReason, msg)
