@@ -92,6 +92,10 @@ func main() {
 	flag.StringVar(&config.Config.MPIKubectlDeliveryImage, "mpi-kubectl-delivery-image",
 		config.MPIKubectlDeliveryImageDefault, "The image for mpi launcher init container")
 
+	// Paddle related flags
+	flag.StringVar(&config.Config.PaddleElasticMedium, "paddle-elastic-medium",
+		config.PaddleElasticDefaultImage, "The image to start etcd server or external etcd endpoint (e.g. etcd://1.1.1.1:2379).")
+
 	opts := zap.Options{
 		Development:     true,
 		StacktraceLevel: zapcore.DPanicLevel,

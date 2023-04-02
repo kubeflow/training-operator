@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/config"
 )
 
 const (
@@ -31,6 +32,8 @@ const (
 	EnvJobID          = "PADDLE_JOB_ID"
 	EnvServerNum      = "PADDLE_SERVER_NUM"
 	EnvTrainerNum     = "PADDLE_TRAINER_NUM"
+
+	ETCD_POTOCAL = "etcd://"
 )
 
 // EnvVarGenerator is the environment variable generator interface.
@@ -39,11 +42,20 @@ type EnvVarGenerator interface {
 }
 
 func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
-	paddlejob, ok := obj.(*kubeflowv1.PaddleJob)
+	job, ok := obj.(*kubeflowv1.PaddleJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PaddleJob", obj)
 	}
+	if job.Spec.ElasticPolicy == nil ||
+		job.Spec.ElasticPolicy.MinReplicas == nil ||
+		job.Spec.ElasticPolicy.MaxReplicas == nil {
+		return setStaticPodEnv(job, podTemplateSpec, rtype, index)
+	} else {
+		return setElasticPodEnv(job, podTemplateSpec, rtype, index)
+	}
+}
 
+func setStaticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	rank, err := strconv.Atoi(index)
 	if err != nil {
 		return err
@@ -139,6 +151,42 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			}
 
 		}
+	}
+
+	return nil
+}
+
+func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
+	var masterEndpoint string
+	if strings.HasPrefix(config.Config.PaddleElasticMedium, ETCD_POTOCAL) {
+		masterEndpoint = config.Config.PaddleElasticMedium
+	}
+
+	for i := range podTemplateSpec.Spec.Containers {
+		// Initialize the environment variables.
+		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
+			podTemplateSpec.Spec.Containers[i].Env = make([]corev1.EnvVar, 0)
+		}
+		// Set PYTHONUNBUFFERED to true, to disable output buffering.
+		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "PYTHONUNBUFFERED",
+			Value: "0",
+		})
+
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  EnvJobID,
+			Value: paddlejob.Name,
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name: EnvNumNodes,
+			Value: fmt.Sprintf("%d:%d",
+				*paddlejob.Spec.ElasticPolicy.MinReplicas, *paddlejob.Spec.ElasticPolicy.MaxReplicas),
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  EnvMasterEndpoint,
+			Value: masterEndpoint,
+		})
 	}
 
 	return nil

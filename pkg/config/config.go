@@ -20,6 +20,7 @@ var Config struct {
 	PyTorchInitContainerImage        string
 	MPIKubectlDeliveryImage          string
 	PyTorchInitContainerMaxTries     int
+	PaddleElasticMedium              string
 }
 
 const (
@@ -33,4 +34,6 @@ const (
 	PyTorchInitContainerMaxTriesDefault = 100
 	// MPIKubectlDeliveryImageDefault is the default image for launcher pod in MPIJob init container.
 	MPIKubectlDeliveryImageDefault = "mpioperator/kubectl-delivery:latest"
+	// PaddleElasticDefaultImage is the default image for PaddleElasticMedium, to start etcd server
+	PaddleElasticDefaultImage = "bitnami/etcd:3.5"
 )
