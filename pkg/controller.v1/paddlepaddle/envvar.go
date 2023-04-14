@@ -32,8 +32,7 @@ const (
 	EnvJobID          = "PADDLE_JOB_ID"
 	EnvServerNum      = "PADDLE_SERVER_NUM"
 	EnvTrainerNum     = "PADDLE_TRAINER_NUM"
-
-	ETCD_POTOCAL = "etcd://"
+	EtcdPotocol       = "etcd://"
 )
 
 // EnvVarGenerator is the environment variable generator interface.
@@ -72,7 +71,7 @@ func setStaticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.Po
 		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  "PYTHONUNBUFFERED",
-			Value: "0",
+			Value: "1",
 		})
 
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
@@ -158,7 +157,9 @@ func setStaticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.Po
 
 func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	var masterEndpoint string
-	if strings.HasPrefix(config.Config.PaddleElasticMedium, ETCD_POTOCAL) {
+	if paddlejob.Spec.ElasticPolicy.Master != nil {
+		masterEndpoint = *paddlejob.Spec.ElasticPolicy.Master
+	} else if strings.HasPrefix(config.Config.PaddleElasticMedium, EtcdPotocol) {
 		masterEndpoint = config.Config.PaddleElasticMedium
 	}
 
@@ -171,7 +172,7 @@ func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.P
 		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  "PYTHONUNBUFFERED",
-			Value: "0",
+			Value: "1",
 		})
 
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{

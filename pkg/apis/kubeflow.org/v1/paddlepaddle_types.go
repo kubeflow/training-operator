@@ -101,6 +101,10 @@ type PaddleElasticPolicy struct {
 	// +optional
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
 
+	// Master is the rendezvous endpoint with protocol, e.g. etcd://1.2.3.4:2379
+	// +optional
+	Master *string `json:"master,omitempty"`
+
 	// Metrics contains the specifications which are used to calculate the
 	// desired replica count (the maximum replica count across all metrics will
 	// be used).  The desired replica count is calculated with multiplying the
