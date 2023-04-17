@@ -32,7 +32,6 @@ const (
 	EnvJobID          = "PADDLE_JOB_ID"
 	EnvServerNum      = "PADDLE_SERVER_NUM"
 	EnvTrainerNum     = "PADDLE_TRAINER_NUM"
-	EtcdPotocol       = "etcd://"
 )
 
 // EnvVarGenerator is the environment variable generator interface.
@@ -157,11 +156,36 @@ func setStaticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.Po
 
 func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
 	var masterEndpoint string
-	if paddlejob.Spec.ElasticPolicy.Master != nil {
-		masterEndpoint = *paddlejob.Spec.ElasticPolicy.Master
-	} else if strings.HasPrefix(config.Config.PaddleElasticMedium, EtcdPotocol) {
+	var paddleJobName string
+	var numNodes string
+
+	// TODO(kuizhiqing) RDZVBackend support etcd only for now
+	backend := "etcd" // policy.RDZVBackend
+	policy := paddlejob.Spec.ElasticPolicy
+
+	if policy.RDZVPort != nil && policy.RDZVHost != nil {
+		masterEndpoint = fmt.Sprintf("%s://%s:%d", backend, *policy.RDZVHost, *policy.RDZVPort)
+	} else if strings.HasPrefix(config.Config.PaddleElasticMedium, backend) {
 		masterEndpoint = config.Config.PaddleElasticMedium
+	} else {
+		return fmt.Errorf("Master not properly set.")
 	}
+
+	if policy.RDZVID != nil {
+		paddleJobName = *policy.RDZVID
+	} else {
+		paddleJobName = paddlejob.Name
+	}
+
+	min := getReplicasByType(paddlejob, rtype)
+	max := min
+	if policy.MinReplicas != nil {
+		min = *policy.MinReplicas
+	}
+	if policy.MaxReplicas != nil {
+		max = *policy.MaxReplicas
+	}
+	numNodes = fmt.Sprintf("%d:%d", min, max)
 
 	for i := range podTemplateSpec.Spec.Containers {
 		// Initialize the environment variables.
@@ -177,12 +201,11 @@ func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.P
 
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  EnvJobID,
-			Value: paddlejob.Name,
+			Value: paddleJobName,
 		})
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name: EnvNumNodes,
-			Value: fmt.Sprintf("%d:%d",
-				*paddlejob.Spec.ElasticPolicy.MinReplicas, *paddlejob.Spec.ElasticPolicy.MaxReplicas),
+			Name:  EnvNumNodes,
+			Value: numNodes,
 		})
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  EnvMasterEndpoint,
@@ -191,6 +214,15 @@ func setElasticPodEnv(paddlejob *kubeflowv1.PaddleJob, podTemplateSpec *corev1.P
 	}
 
 	return nil
+}
+
+func getReplicasByType(job *kubeflowv1.PaddleJob, rtype string) int32 {
+	for rt, spec := range job.Spec.PaddleReplicaSpecs {
+		if string(rt) == rtype {
+			return *spec.Replicas
+		}
+	}
+	return 0
 }
 
 func getTotalReplicas(job *kubeflowv1.PaddleJob) int32 {

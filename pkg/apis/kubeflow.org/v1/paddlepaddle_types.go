@@ -97,13 +97,18 @@ type PaddleElasticPolicy struct {
 	// +optional
 	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
 
+	RDZVBackend *RDZVBackend `json:"rdzvBackend,omitempty"`
+	RDZVPort    *int32       `json:"rdzvPort,omitempty"`
+	RDZVHost    *string      `json:"rdzvHost,omitempty"`
+	RDZVID      *string      `json:"rdzvId,omitempty"`
+	// RDZVConf contains additional rendezvous configuration (<key1>=<value1>,<key2>=<value2>,...).
+	RDZVConf []RDZVConf `json:"rdzvConf,omitempty"`
+	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
+
 	// MaxRestarts is the limit for restart times of pods in elastic mode.
 	// +optional
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
-
-	// Master is the rendezvous endpoint with protocol, e.g. etcd://1.2.3.4:2379
-	// +optional
-	Master *string `json:"master,omitempty"`
 
 	// Metrics contains the specifications which are used to calculate the
 	// desired replica count (the maximum replica count across all metrics will
@@ -116,6 +121,10 @@ type PaddleElasticPolicy struct {
 	// +optional
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
+
+const (
+	BackendHTTP RDZVBackend = "http"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=paddlejobs
