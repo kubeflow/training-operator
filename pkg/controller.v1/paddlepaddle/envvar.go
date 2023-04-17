@@ -44,9 +44,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PaddleJob", obj)
 	}
-	if job.Spec.ElasticPolicy == nil ||
-		job.Spec.ElasticPolicy.MinReplicas == nil ||
-		job.Spec.ElasticPolicy.MaxReplicas == nil {
+	if job.Spec.ElasticPolicy == nil {
 		return setStaticPodEnv(job, podTemplateSpec, rtype, index)
 	} else {
 		return setElasticPodEnv(job, podTemplateSpec, rtype, index)
