@@ -10,7 +10,7 @@ spec:
       template:
         spec:
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: kubeflow/lightgbm-dist-py-test:1.0
             ports:
             - containerPort: 9991
@@ -44,7 +44,7 @@ spec:
       template:
         spec:
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: kubeflow/lightgbm-dist-py-test:1.0
             ports:
             - containerPort: 9991
