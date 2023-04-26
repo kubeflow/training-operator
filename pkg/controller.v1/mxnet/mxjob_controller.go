@@ -315,7 +315,7 @@ func (r *MXJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, error) 
 	if err != nil {
 		return nil, err
 	}
-	return util.ConvertPodList(podlist.Items), nil
+	return util.JobControlledPodList(podlist.Items, job), nil
 }
 
 func (r *MXJobReconciler) GetServicesForJob(job interface{}) ([]*corev1.Service, error) {

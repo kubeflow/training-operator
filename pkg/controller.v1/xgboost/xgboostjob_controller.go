@@ -325,7 +325,7 @@ func (r *XGBoostJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 		return nil, err
 	}
 
-	return util.ConvertPodList(podlist.Items), nil
+	return util.JobControlledPodList(podlist.Items, job), nil
 }
 
 // GetServicesForJob returns the services managed by the job. This can be achieved by selecting services using label key "job-name"

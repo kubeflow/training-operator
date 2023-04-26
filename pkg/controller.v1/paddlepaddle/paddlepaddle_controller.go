@@ -311,7 +311,7 @@ func (r *PaddleJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, err
 		return nil, err
 	}
 
-	return util.ConvertPodList(podlist.Items), nil
+	return util.JobControlledPodList(podlist.Items, job), nil
 }
 
 func (r *PaddleJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Service, error) {

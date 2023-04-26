@@ -335,7 +335,7 @@ func (r *TFJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod, e
 		return nil, err
 	}
 
-	pods := util.ConvertPodList(podlist.Items)
+	pods := util.JobControlledPodList(podlist.Items, job)
 
 	// If any adoptions are attempted, we should first recheck for deletion
 	// with an uncached quorum read sometime after listing Pods (see #42639).
