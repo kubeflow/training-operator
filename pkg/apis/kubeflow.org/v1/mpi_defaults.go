@@ -32,9 +32,11 @@ func SetDefaults_MPIJob(mpiJob *MPIJob) {
 		mpiJob.Spec.RunPolicy.CleanPodPolicy = &none
 	}
 
-	// set default to Launcher
-	setDefaultRestartPolicy(mpiJob.Spec.MPIReplicaSpecs[MPIJobReplicaTypeLauncher], MPIJobDefaultRestartPolicy)
+	// Set default replicas
+	setDefaultReplicas(mpiJob.Spec.MPIReplicaSpecs[MPIJobReplicaTypeLauncher], 1)
+	setDefaultReplicas(mpiJob.Spec.MPIReplicaSpecs[MPIJobReplicaTypeWorker], 0)
 
-	// set default to Worker
+	// Set default restartPolicy
+	setDefaultRestartPolicy(mpiJob.Spec.MPIReplicaSpecs[MPIJobReplicaTypeLauncher], MPIJobDefaultRestartPolicy)
 	setDefaultRestartPolicy(mpiJob.Spec.MPIReplicaSpecs[MPIJobReplicaTypeWorker], MPIJobDefaultRestartPolicy)
 }
