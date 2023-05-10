@@ -67,7 +67,7 @@ type SparseClusterSpec struct {
 }
 
 type SparseTFConfig struct {
-	Cluster SparseClusterSpec `json:"sparseCluster"`
+	Cluster SparseClusterSpec `json:"cluster"`
 	Task    TaskSpec          `json:"task"`
 }
 
@@ -91,6 +91,20 @@ func convertClusterSpecToSparseClusterSpec(clusterSpec ClusterSpec, rtype string
 //	    },
 //	    "task": {
 //	        "type": "ps",
+//	        "index": 1
+//	        },
+//	    }
+//	}
+//
+// if EnableDynamicWorker set true
+//
+//	{
+//	    "cluster": {
+//	        "ps": ["ps1:2222", "ps2:2222"],
+//	        "worker": {"1":"worker1:2222"}
+//	    },
+//	    "task": {
+//	        "type": "worker",
 //	        "index": 1
 //	        },
 //	    }
