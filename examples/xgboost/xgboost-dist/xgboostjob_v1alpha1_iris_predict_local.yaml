@@ -16,7 +16,7 @@ spec:
             persistentVolumeClaim:
               claimName: xgboostlocal
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: docker.io/merlintang/xgboost-dist-iris:1.1 
             volumeMounts:
               - name: task-pv-storage
@@ -41,7 +41,7 @@ spec:
             persistentVolumeClaim:
               claimName: xgboostlocal
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: docker.io/merlintang/xgboost-dist-iris:1.1
             volumeMounts:
               - name: task-pv-storage

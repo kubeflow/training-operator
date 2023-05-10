@@ -12,7 +12,7 @@ spec:
         kind: Pod
         spec:
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: docker.io/merlintang/xgboost-dist-rabit-test:1.2
             ports:
             - containerPort: 9991
@@ -26,7 +26,7 @@ spec:
         kind: Pod
         spec:
           containers:
-          - name: xgboostjob
+          - name: xgboost
             image: docker.io/merlintang/xgboost-dist-rabit-test:1.2
             ports:
             - containerPort: 9991
