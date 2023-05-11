@@ -17,14 +17,13 @@ def verify_unschedulable_job_e2e(
     logging.info(f"\n\n\n{job_kind} is creating")
     client.wait_for_job_conditions(name, namespace, job_kind, {constants.JOB_CONDITION_CREATED})
 
-    # Job should have Created conditions.
-    conditions = client.get_job_conditions(name, namespace, job_kind)
-    if len(conditions) != 1:
-        raise Exception(f"{job_kind} conditions are invalid: {conditions}")
-
-    # Job should have correct conditions.
+    # Job should have a Created condition.
     if not client.is_job_created(name, namespace, job_kind):
         raise Exception(f"{job_kind} should be in Created condition")
+
+    # Job shouldn't have a Running condition.
+    if client.is_job_running(name, namespace, job_kind):
+        raise Exception(f"{job_kind} shouldn't be in Running condition")
 
 
 def verify_job_e2e(
