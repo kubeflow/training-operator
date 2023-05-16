@@ -551,11 +551,7 @@ func (jc *MPIJobReconciler) GetPodsForJob(jobObject interface{}) ([]*corev1.Pod,
 		return nil, err
 	}
 
-	var filter util.ObjectFilterFunction = func(obj metav1.Object) bool {
-		return metav1.IsControlledBy(obj, job)
-	}
-
-	return util.ConvertPodListWithFilter(podlist.Items, filter), nil
+	return util.JobControlledPodList(podlist.Items, job), nil
 }
 
 func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
@@ -1243,12 +1239,7 @@ func (jc *MPIJobReconciler) getRunningWorkerPods(mpiJob *kubeflowv1.MPIJob) ([]*
 			podList = append(podList, podFullList.Items[idx])
 		}
 	}
-
-	var filter util.ObjectFilterFunction = func(obj metav1.Object) bool {
-		return metav1.IsControlledBy(obj, mpiJob)
-	}
-
-	return util.ConvertPodListWithFilter(podList, filter), nil
+	return util.JobControlledPodList(podList, mpiJob), nil
 }
 
 // newConfigMap creates a new ConfigMap containing configurations for an MPIJob

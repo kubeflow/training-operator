@@ -38,33 +38,17 @@ func ConvertServiceList(list []corev1.Service) []*corev1.Service {
 	return ret
 }
 
-// ConvertPodList convert pod list to pod pointer list
-func ConvertPodList(list []corev1.Pod) []*corev1.Pod {
+// JobControlledPodList filter pod list owned by the job.
+func JobControlledPodList(list []corev1.Pod, job metav1.Object) []*corev1.Pod {
 	if list == nil {
 		return nil
 	}
 	ret := make([]*corev1.Pod, 0, len(list))
 	for i := range list {
-		ret = append(ret, &list[i])
-	}
-	return ret
-}
-
-// ConvertPodListWithFilter converts pod list to pod pointer list with ObjectFilterFunction
-func ConvertPodListWithFilter(list []corev1.Pod, pass ObjectFilterFunction) []*corev1.Pod {
-	if list == nil {
-		return nil
-	}
-	ret := make([]*corev1.Pod, 0, len(list))
-	for i := range list {
-		obj := &list[i]
-		if pass != nil {
-			if pass(obj) {
-				ret = append(ret, obj)
-			}
-		} else {
-			ret = append(ret, obj)
+		if !metav1.IsControlledBy(&list[i], job) {
+			continue
 		}
+		ret = append(ret, &list[i])
 	}
 	return ret
 }
