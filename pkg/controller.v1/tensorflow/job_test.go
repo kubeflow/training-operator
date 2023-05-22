@@ -549,11 +549,19 @@ var _ = Describe("TFJob controller", func() {
 				ctx := context.Background()
 				name := fmt.Sprintf(jobNameTemplate, idx)
 				tc.tfJob.SetName(name)
+				tc.tfJob.CreationTimestamp = metav1.Now()
 
 				By("creating a TFJob")
 				Expect(reconciler.Create(ctx, tc.tfJob)).Should(Succeed())
 
-				initializeReplicaStatuses(&tc.tfJob.Status, kubeflowv1.TFJobReplicaTypeWorker)
+				// We need to wait for synchronizing cache.
+				By("getting a created TFJob")
+				var updatedTFJob kubeflowv1.TFJob
+				Eventually(func() error {
+					return reconciler.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &updatedTFJob)
+				}, timeout, interval).Should(BeNil())
+
+				initializeReplicaStatuses(&updatedTFJob.Status, kubeflowv1.TFJobReplicaTypeWorker)
 
 				By("prepare pod")
 				refs := []metav1.OwnerReference{
@@ -563,13 +571,21 @@ var _ = Describe("TFJob controller", func() {
 				pod.Status.Phase = tc.phase
 
 				By("update job replica statuses")
-				updateJobReplicaStatuses(&tc.tfJob.Status, kubeflowv1.TFJobReplicaTypeWorker, pod)
+				updateJobReplicaStatuses(&updatedTFJob.Status, kubeflowv1.TFJobReplicaTypeWorker, pod)
 
 				By("update job status")
-				Expect(reconciler.UpdateJobStatus(tc.tfJob, tc.tfJob.Spec.TFReplicaSpecs, &tc.tfJob.Status)).To(Succeed())
-				Expect(reconciler.Status().Update(ctx, tc.tfJob)).Should(Succeed())
+				Expect(reconciler.UpdateJobStatus(&updatedTFJob, updatedTFJob.Spec.TFReplicaSpecs, &updatedTFJob.Status)).To(Succeed())
+				By("updating job status...")
+				Expect(reconciler.Status().Update(ctx, &updatedTFJob)).To(Succeed())
 
-				ttl := tc.tfJob.Spec.RunPolicy.TTLSecondsAfterFinished
+				By("waiting for updating replicaStatus for workers")
+				Eventually(func() *commonv1.ReplicaStatus {
+					var getTFJob kubeflowv1.TFJob
+					Expect(reconciler.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &getTFJob)).Should(Succeed())
+					return getTFJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker]
+				}, timeout, interval).ShouldNot(BeNil())
+
+				ttl := updatedTFJob.Spec.RunPolicy.TTLSecondsAfterFinished
 				if ttl != nil {
 					dur := time.Second * time.Duration(*ttl)
 					time.Sleep(dur)

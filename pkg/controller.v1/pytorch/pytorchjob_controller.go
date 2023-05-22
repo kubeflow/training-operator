@@ -315,7 +315,7 @@ func (r *PyTorchJobReconciler) GetPodsForJob(obj interface{}) ([]*corev1.Pod, er
 		return nil, err
 	}
 
-	return util.ConvertPodList(podlist.Items), nil
+	return util.JobControlledPodList(podlist.Items, job), nil
 }
 
 func (r *PyTorchJobReconciler) GetServicesForJob(obj interface{}) ([]*corev1.Service, error) {
