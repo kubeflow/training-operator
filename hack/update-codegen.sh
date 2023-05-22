@@ -29,26 +29,25 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG=github.com/kubeflow/training-operator
 
-# Grab code-generator version from go.sum
-CODEGEN_VERSION=$(grep 'k8s.io/code-generator' go.mod | awk '{print $2}')
-CODEGEN_PKG=$(echo $(go env GOPATH)"/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}")
+GET_PKG_LOCATION() {
+  pkg_name="${1:-}"
 
-if [[ ! -d ${CODEGEN_PKG} ]]; then
-    echo "${CODEGEN_PKG} is missing. Running 'go mod download'."
+  pkg_location="$(go list -m -f '{{.Dir}}' "${pkg_name}" 2>/dev/null)"
+  if [ "${pkg_location}" = "" ]; then
+    echo "${pkg_name} is missing. Running 'go mod download'."
+
     go mod download
-fi
+    pkg_location=$(go list -m -f '{{.Dir}}' "${pkg_name}")
+  fi
+  echo "${pkg_location}"
+}
 
+# Grab code-generator version from go.sum
+CODEGEN_PKG="$(GET_PKG_LOCATION "k8s.io/code-generator")"
 echo ">> Using ${CODEGEN_PKG}"
 
 # Grab openapi-gen version from go.mod
-OPENAPI_VERSION=$(grep 'k8s.io/kube-openapi' go.mod | awk '{print $2}')
-OPENAPI_PKG=$(echo $(go env GOPATH)"/pkg/mod/k8s.io/kube-openapi@${OPENAPI_VERSION}")
-
-if [[ ! -d ${OPENAPI_PKG} ]]; then
-    echo "${OPENAPI_PKG} is missing. Running 'go mod download'."
-    go mod download
-fi
-
+OPENAPI_PKG="$(GET_PKG_LOCATION 'k8s.io/kube-openapi')"
 echo ">> Using ${OPENAPI_PKG}"
 
 # code-generator does work with go.mod but makes assumptions about
