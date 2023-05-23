@@ -122,7 +122,7 @@ class V1RunPolicy(object):
     def clean_pod_policy(self):
         """Gets the clean_pod_policy of this V1RunPolicy.  # noqa: E501
 
-        CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.  # noqa: E501
+        CleanPodPolicy defines the policy to kill pods after the job completes. Default to None.  # noqa: E501
 
         :return: The clean_pod_policy of this V1RunPolicy.  # noqa: E501
         :rtype: str
@@ -133,7 +133,7 @@ class V1RunPolicy(object):
     def clean_pod_policy(self, clean_pod_policy):
         """Sets the clean_pod_policy of this V1RunPolicy.
 
-        CleanPodPolicy defines the policy to kill pods after the job completes. Default to Running.  # noqa: E501
+        CleanPodPolicy defines the policy to kill pods after the job completes. Default to None.  # noqa: E501
 
         :param clean_pod_policy: The clean_pod_policy of this V1RunPolicy.  # noqa: E501
         :type: str
