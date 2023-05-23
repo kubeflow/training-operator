@@ -7,18 +7,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/kubeflow/common/pkg/util"
+	"github.com/kubeflow/training-operator/pkg/util/common/util"
 )
 
-func expectedMPIJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy commonv1.RestartPolicy) *MPIJob {
+func expectedMPIJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy) *MPIJob {
 	return &MPIJob{
 		Spec: MPIJobSpec{
 			CleanPodPolicy: &cleanPodPolicy,
-			RunPolicy: commonv1.RunPolicy{
+			RunPolicy: RunPolicy{
 				CleanPodPolicy: &cleanPodPolicy,
 			},
-			MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 				MPIJobReplicaTypeLauncher: {
 					Replicas:      pointer.Int32(1),
 					RestartPolicy: restartPolicy,
@@ -53,8 +52,8 @@ func expectedMPIJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy common
 }
 
 func TestSetDefaults_MPIJob(t *testing.T) {
-	customRestartPolicy := commonv1.RestartPolicyAlways
-	customCleanPodPolicy := commonv1.CleanPodPolicyRunning
+	customRestartPolicy := RestartPolicyAlways
+	customCleanPodPolicy := CleanPodPolicyRunning
 
 	testCases := map[string]struct {
 		original *MPIJob
@@ -64,10 +63,10 @@ func TestSetDefaults_MPIJob(t *testing.T) {
 			original: &MPIJob{
 				Spec: MPIJobSpec{
 					CleanPodPolicy: &customCleanPodPolicy,
-					RunPolicy: commonv1.RunPolicy{
+					RunPolicy: RunPolicy{
 						CleanPodPolicy: &customCleanPodPolicy,
 					},
-					MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MPIJobReplicaTypeLauncher: {
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
@@ -102,7 +101,7 @@ func TestSetDefaults_MPIJob(t *testing.T) {
 		"set default clean pod policy": {
 			original: &MPIJob{
 				Spec: MPIJobSpec{
-					MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MPIJobReplicaTypeLauncher: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -130,12 +129,12 @@ func TestSetDefaults_MPIJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMPIJob(commonv1.CleanPodPolicyNone, MPIJobDefaultRestartPolicy),
+			expected: expectedMPIJob(CleanPodPolicyNone, MPIJobDefaultRestartPolicy),
 		},
 		"set default restart policy": {
 			original: &MPIJob{
 				Spec: MPIJobSpec{
-					MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MPIJobReplicaTypeLauncher: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -163,7 +162,7 @@ func TestSetDefaults_MPIJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMPIJob(commonv1.CleanPodPolicyNone, MPIJobDefaultRestartPolicy),
+			expected: expectedMPIJob(CleanPodPolicyNone, MPIJobDefaultRestartPolicy),
 		},
 	}
 	for name, tc := range testCases {

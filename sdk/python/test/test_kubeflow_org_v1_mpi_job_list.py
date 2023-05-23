@@ -46,16 +46,16 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                             clean_pod_policy = '0', 
                             main_container = '0', 
                             mpi_replica_specs = {
-                                'key' : V1ReplicaSpec(
+                                'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                                     replicas = 56, 
                                     restart_policy = '0', 
                                     template = None, )
                                 }, 
-                            run_policy = V1RunPolicy(
+                            run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                                 active_deadline_seconds = 56, 
                                 backoff_limit = 56, 
                                 clean_pod_policy = '0', 
-                                scheduling_policy = V1SchedulingPolicy(
+                                scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                                     min_available = 56, 
                                     min_resources = {
                                         'key' : None
@@ -65,10 +65,10 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                     schedule_timeout_seconds = 56, ), 
                                 ttl_seconds_after_finished = 56, ), 
                             slots_per_worker = 56, ), 
-                        status = V1JobStatus(
+                        status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
                             completion_time = None, 
                             conditions = [
-                                V1JobCondition(
+                                kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition(
                                     last_transition_time = None, 
                                     last_update_time = None, 
                                     message = '0', 
@@ -78,7 +78,7 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                 ], 
                             last_reconcile_time = None, 
                             replica_statuses = {
-                                'key' : V1ReplicaStatus(
+                                'key' : kubeflow_org_v1_replica_status.KubeflowOrgV1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
                                     label_selector = None, 
@@ -101,16 +101,16 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                             clean_pod_policy = '0', 
                             main_container = '0', 
                             mpi_replica_specs = {
-                                'key' : V1ReplicaSpec(
+                                'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                                     replicas = 56, 
                                     restart_policy = '0', 
                                     template = None, )
                                 }, 
-                            run_policy = V1RunPolicy(
+                            run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                                 active_deadline_seconds = 56, 
                                 backoff_limit = 56, 
                                 clean_pod_policy = '0', 
-                                scheduling_policy = V1SchedulingPolicy(
+                                scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                                     min_available = 56, 
                                     min_resources = {
                                         'key' : None
@@ -120,10 +120,10 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                     schedule_timeout_seconds = 56, ), 
                                 ttl_seconds_after_finished = 56, ), 
                             slots_per_worker = 56, ), 
-                        status = V1JobStatus(
+                        status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
                             completion_time = None, 
                             conditions = [
-                                V1JobCondition(
+                                kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition(
                                     last_transition_time = None, 
                                     last_update_time = None, 
                                     message = '0', 
@@ -133,7 +133,7 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                 ], 
                             last_reconcile_time = None, 
                             replica_statuses = {
-                                'key' : V1ReplicaStatus(
+                                'key' : kubeflow_org_v1_replica_status.KubeflowOrgV1ReplicaStatus(
                                     active = 56, 
                                     failed = 56, 
                                     label_selector = None, 

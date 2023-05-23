@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +28,7 @@ const (
 	// PytorchJobDefaultPort is default value of the port.
 	PytorchJobDefaultPort = 23456
 	// PytorchJobDefaultRestartPolicy is default RestartPolicy for PyTorchReplicaSpec.
-	PytorchJobDefaultRestartPolicy = commonv1.RestartPolicyOnFailure
+	PytorchJobDefaultRestartPolicy = RestartPolicyOnFailure
 	// PytorchJobKind is the kind name.
 	PytorchJobKind = "PyTorchJob"
 	// PytorchJobPlural is the PytorchPlural for pytorchJob.
@@ -39,9 +38,9 @@ const (
 	// PytorchJobFrameworkName is the name of the ML Framework
 	PytorchJobFrameworkName = "pytorch"
 	// PyTorchJobReplicaTypeMaster is the type of Master of distributed PyTorch
-	PyTorchJobReplicaTypeMaster commonv1.ReplicaType = "Master"
+	PyTorchJobReplicaTypeMaster ReplicaType = "Master"
 	// PyTorchJobReplicaTypeWorker is the type for workers of distributed PyTorch.
-	PyTorchJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	PyTorchJobReplicaTypeWorker ReplicaType = "Worker"
 )
 
 // +genclient
@@ -65,7 +64,7 @@ type PyTorchJob struct {
 
 	// Most recently observed status of the PyTorchJob.
 	// Read-only (modified by the system).
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Status JobStatus `json:"status,omitempty"`
 }
 
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
@@ -74,7 +73,7 @@ type PyTorchJobSpec struct {
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
 	//+kubebuilder:validation:Optional
-	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
+	RunPolicy RunPolicy `json:"runPolicy"`
 
 	ElasticPolicy *ElasticPolicy `json:"elasticPolicy,omitempty"`
 
@@ -84,7 +83,7 @@ type PyTorchJobSpec struct {
 	//     "Master": PyTorchReplicaSpec,
 	//     "Worker": PyTorchReplicaSpec,
 	//   }
-	PyTorchReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"pytorchReplicaSpecs"`
+	PyTorchReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"pytorchReplicaSpecs"`
 }
 
 type ElasticPolicy struct {

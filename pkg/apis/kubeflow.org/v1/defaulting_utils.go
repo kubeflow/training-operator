@@ -3,7 +3,6 @@ package v1
 import (
 	"strings"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 )
@@ -34,13 +33,13 @@ func setDefaultPort(spec *corev1.PodSpec, defaultPortName string, defaultPort in
 		})
 }
 
-func setDefaultRestartPolicy(replicaSpec *commonv1.ReplicaSpec, defaultRestartPolicy commonv1.RestartPolicy) {
+func setDefaultRestartPolicy(replicaSpec *ReplicaSpec, defaultRestartPolicy RestartPolicy) {
 	if replicaSpec != nil && replicaSpec.RestartPolicy == "" {
 		replicaSpec.RestartPolicy = defaultRestartPolicy
 	}
 }
 
-func setDefaultReplicas(replicaSpec *commonv1.ReplicaSpec, replicas int32) {
+func setDefaultReplicas(replicaSpec *ReplicaSpec, replicas int32) {
 	if replicaSpec != nil && replicaSpec.Replicas == nil {
 		replicaSpec.Replicas = pointer.Int32(replicas)
 	}
@@ -48,7 +47,7 @@ func setDefaultReplicas(replicaSpec *commonv1.ReplicaSpec, replicas int32) {
 
 // setTypeNameToCamelCase sets the name of the replica type from any case to correct case.
 // E.g. from server to Server; from WORKER to Worker.
-func setTypeNameToCamelCase(replicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec, typ commonv1.ReplicaType) {
+func setTypeNameToCamelCase(replicaSpecs map[ReplicaType]*ReplicaSpec, typ ReplicaType) {
 	for t := range replicaSpecs {
 		if strings.EqualFold(string(t), string(typ)) && t != typ {
 			spec := replicaSpecs[t]
@@ -59,6 +58,6 @@ func setTypeNameToCamelCase(replicaSpecs map[commonv1.ReplicaType]*commonv1.Repl
 	}
 }
 
-func cleanPodPolicyPointer(cleanPodPolicy commonv1.CleanPodPolicy) *commonv1.CleanPodPolicy {
+func cleanPodPolicyPointer(cleanPodPolicy CleanPodPolicy) *CleanPodPolicy {
 	return &cleanPodPolicy
 }

@@ -17,7 +17,6 @@ package v1
 import (
 	"fmt"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	log "github.com/sirupsen/logrus"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
@@ -33,21 +32,21 @@ func ValidateV1TFJob(tfjob *TFJob) error {
 }
 
 // IsChieforMaster returns true if the type is Master or Chief.
-func IsChieforMaster(typ commonv1.ReplicaType) bool {
+func IsChieforMaster(typ ReplicaType) bool {
 	return typ == TFJobReplicaTypeChief || typ == TFJobReplicaTypeMaster
 }
 
 // IsWorker returns true if the type is Worker.
-func IsWorker(typ commonv1.ReplicaType) bool {
+func IsWorker(typ ReplicaType) bool {
 	return typ == TFJobReplicaTypeWorker
 }
 
 // IsEvaluator returns true if the type is Evaluator.
-func IsEvaluator(typ commonv1.ReplicaType) bool {
+func IsEvaluator(typ ReplicaType) bool {
 	return typ == TFJobReplicaTypeEval
 }
 
-func validateV1TFReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+func validateV1TFReplicaSpecs(specs map[ReplicaType]*ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("TFJobSpec is not valid")
 	}

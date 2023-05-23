@@ -17,7 +17,6 @@ package v1
 import (
 	"fmt"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
@@ -31,7 +30,7 @@ func ValidateV1PyTorchJob(pytorchJob *PyTorchJob) error {
 	return nil
 }
 
-func validatePyTorchReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+func validatePyTorchReplicaSpecs(specs map[ReplicaType]*ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("PyTorchJobSpec is not valid")
 	}
@@ -40,7 +39,7 @@ func validatePyTorchReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.Replic
 			return fmt.Errorf("PyTorchJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		// Make sure the replica type is valid.
-		validReplicaTypes := []commonv1.ReplicaType{PyTorchJobReplicaTypeMaster, PyTorchJobReplicaTypeWorker}
+		validReplicaTypes := []ReplicaType{PyTorchJobReplicaTypeMaster, PyTorchJobReplicaTypeWorker}
 
 		isValidReplicaType := false
 		for _, t := range validReplicaTypes {

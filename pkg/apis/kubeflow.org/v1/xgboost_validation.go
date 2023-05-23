@@ -17,7 +17,6 @@ package v1
 import (
 	"fmt"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 )
 
@@ -31,7 +30,7 @@ func ValidateV1XGBoostJob(xgboostJob *XGBoostJob) error {
 	return nil
 }
 
-func validateXGBoostReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+func validateXGBoostReplicaSpecs(specs map[ReplicaType]*ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("XGBoostJobSpec is not valid")
 	}
@@ -41,7 +40,7 @@ func validateXGBoostReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.Replic
 			return fmt.Errorf("XGBoostJobSpec is not valid: containers definition expected in %v", rType)
 		}
 		// Make sure the replica type is valid.
-		validReplicaTypes := []commonv1.ReplicaType{XGBoostJobReplicaTypeMaster, XGBoostJobReplicaTypeWorker}
+		validReplicaTypes := []ReplicaType{XGBoostJobReplicaTypeMaster, XGBoostJobReplicaTypeWorker}
 
 		isValidReplicaType := false
 		for _, t := range validReplicaTypes {

@@ -17,8 +17,6 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 func addPytorchDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -54,7 +52,7 @@ func setElasticPolicy(pytorchJob *PyTorchJob) {
 
 // setPytorchTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
 func setPytorchTypeNamesToCamelCase(pytorchJob *PyTorchJob) {
-	replicaTypes := []commonv1.ReplicaType{
+	replicaTypes := []ReplicaType{
 		PyTorchJobReplicaTypeMaster,
 		PyTorchJobReplicaTypeWorker,
 	}
@@ -67,7 +65,7 @@ func setPytorchTypeNamesToCamelCase(pytorchJob *PyTorchJob) {
 func SetDefaults_PyTorchJob(job *PyTorchJob) {
 	// Set default cleanpod policy to None.
 	if job.Spec.RunPolicy.CleanPodPolicy == nil {
-		policy := commonv1.CleanPodPolicyNone
+		policy := CleanPodPolicyNone
 		job.Spec.RunPolicy.CleanPodPolicy = &policy
 	}
 

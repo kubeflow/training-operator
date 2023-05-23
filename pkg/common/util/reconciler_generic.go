@@ -19,11 +19,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	log "github.com/sirupsen/logrus"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )

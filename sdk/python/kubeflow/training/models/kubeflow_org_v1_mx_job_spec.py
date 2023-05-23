@@ -34,8 +34,8 @@ class KubeflowOrgV1MXJobSpec(object):
     """
     openapi_types = {
         'job_mode': 'str',
-        'mx_replica_specs': 'dict(str, V1ReplicaSpec)',
-        'run_policy': 'V1RunPolicy'
+        'mx_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)',
+        'run_policy': 'KubeflowOrgV1RunPolicy'
     }
 
     attribute_map = {
@@ -88,10 +88,10 @@ class KubeflowOrgV1MXJobSpec(object):
     def mx_replica_specs(self):
         """Gets the mx_replica_specs of this KubeflowOrgV1MXJobSpec.  # noqa: E501
 
-        MXReplicaSpecs is map of commonv1.ReplicaType and commonv1.ReplicaSpec specifies the MX replicas to run. For example,   {     \"Scheduler\": commonv1.ReplicaSpec,     \"Server\": commonv1.ReplicaSpec,     \"Worker\": commonv1.ReplicaSpec,   }  # noqa: E501
+        MXReplicaSpecs is map of ReplicaType and ReplicaSpec specifies the MX replicas to run. For example,   {     \"Scheduler\": ReplicaSpec,     \"Server\": ReplicaSpec,     \"Worker\": ReplicaSpec,   }  # noqa: E501
 
         :return: The mx_replica_specs of this KubeflowOrgV1MXJobSpec.  # noqa: E501
-        :rtype: dict(str, V1ReplicaSpec)
+        :rtype: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         return self._mx_replica_specs
 
@@ -99,10 +99,10 @@ class KubeflowOrgV1MXJobSpec(object):
     def mx_replica_specs(self, mx_replica_specs):
         """Sets the mx_replica_specs of this KubeflowOrgV1MXJobSpec.
 
-        MXReplicaSpecs is map of commonv1.ReplicaType and commonv1.ReplicaSpec specifies the MX replicas to run. For example,   {     \"Scheduler\": commonv1.ReplicaSpec,     \"Server\": commonv1.ReplicaSpec,     \"Worker\": commonv1.ReplicaSpec,   }  # noqa: E501
+        MXReplicaSpecs is map of ReplicaType and ReplicaSpec specifies the MX replicas to run. For example,   {     \"Scheduler\": ReplicaSpec,     \"Server\": ReplicaSpec,     \"Worker\": ReplicaSpec,   }  # noqa: E501
 
         :param mx_replica_specs: The mx_replica_specs of this KubeflowOrgV1MXJobSpec.  # noqa: E501
-        :type: dict(str, V1ReplicaSpec)
+        :type: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         if self.local_vars_configuration.client_side_validation and mx_replica_specs is None:  # noqa: E501
             raise ValueError("Invalid value for `mx_replica_specs`, must not be `None`")  # noqa: E501
@@ -115,7 +115,7 @@ class KubeflowOrgV1MXJobSpec(object):
 
 
         :return: The run_policy of this KubeflowOrgV1MXJobSpec.  # noqa: E501
-        :rtype: V1RunPolicy
+        :rtype: KubeflowOrgV1RunPolicy
         """
         return self._run_policy
 
@@ -125,7 +125,7 @@ class KubeflowOrgV1MXJobSpec(object):
 
 
         :param run_policy: The run_policy of this KubeflowOrgV1MXJobSpec.  # noqa: E501
-        :type: V1RunPolicy
+        :type: KubeflowOrgV1RunPolicy
         """
         if self.local_vars_configuration.client_side_validation and run_policy is None:  # noqa: E501
             raise ValueError("Invalid value for `run_policy`, must not be `None`")  # noqa: E501

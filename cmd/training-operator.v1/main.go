@@ -34,11 +34,11 @@ import (
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
-	"github.com/kubeflow/common/pkg/controller.v1/common"
-	commonutil "github.com/kubeflow/common/pkg/util"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
 	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	//+kubebuilder:scaffold:imports
 )
 

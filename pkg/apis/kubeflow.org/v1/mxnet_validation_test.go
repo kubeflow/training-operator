@@ -17,17 +17,16 @@ package v1
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
 func TestValidateV1MXJob(t *testing.T) {
-	validMXReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+	validMXReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		MXJobReplicaTypeScheduler: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyNever,
+			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -39,7 +38,7 @@ func TestValidateV1MXJob(t *testing.T) {
 		},
 		MXJobReplicaTypeServer: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyNever,
+			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -51,7 +50,7 @@ func TestValidateV1MXJob(t *testing.T) {
 		},
 		MXJobReplicaTypeWorker: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyNever,
+			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -110,7 +109,7 @@ func TestValidateV1MXJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -129,7 +128,7 @@ func TestValidateV1MXJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -151,7 +150,7 @@ func TestValidateV1MXJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -173,7 +172,7 @@ func TestValidateV1MXJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MXJobReplicaTypeScheduler: nil,
 					},
 				},

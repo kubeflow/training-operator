@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,7 +29,7 @@ const (
 	// XGBoostJobDefaultPort is default value of the port.
 	XGBoostJobDefaultPort = 9999
 	// XGBoostJobDefaultRestartPolicy is default RestartPolicy for XGBReplicaSpecs.
-	XGBoostJobDefaultRestartPolicy = commonv1.RestartPolicyNever
+	XGBoostJobDefaultRestartPolicy = RestartPolicyNever
 	// XGBoostJobKind is the kind name.
 	XGBoostJobKind = "XGBoostJob"
 	// XGBoostJobPlural is the XGBoostJobPlural for XGBoostJob.
@@ -40,9 +39,9 @@ const (
 	// XGBoostJobFrameworkName is the name of the ML Framework
 	XGBoostJobFrameworkName = "xgboost"
 	// XGBoostJobReplicaTypeMaster is the type for master replica.
-	XGBoostJobReplicaTypeMaster commonv1.ReplicaType = "Master"
+	XGBoostJobReplicaTypeMaster ReplicaType = "Master"
 	// XGBoostJobReplicaTypeWorker is the type for worker replicas.
-	XGBoostJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	XGBoostJobReplicaTypeWorker ReplicaType = "Worker"
 )
 
 // XGBoostJobSpec defines the desired state of XGBoostJob
@@ -50,9 +49,9 @@ type XGBoostJobSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	//+kubebuilder:validation:Optional
-	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
+	RunPolicy RunPolicy `json:"runPolicy"`
 
-	XGBReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"xgbReplicaSpecs"`
+	XGBReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"xgbReplicaSpecs"`
 }
 
 //+kubebuilder:object:root=true
@@ -68,8 +67,8 @@ type XGBoostJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   XGBoostJobSpec     `json:"spec,omitempty"`
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Spec   XGBoostJobSpec `json:"spec,omitempty"`
+	Status JobStatus      `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

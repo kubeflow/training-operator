@@ -18,12 +18,11 @@ import (
 	"reflect"
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 )
 
-func expectedMXNetJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy commonv1.RestartPolicy, replicas int32, portName string, port int32) *MXJob {
+func expectedMXNetJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, replicas int32, portName string, port int32) *MXJob {
 	ports := []corev1.ContainerPort{}
 
 	// port not set
@@ -48,11 +47,11 @@ func expectedMXNetJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy comm
 
 	return &MXJob{
 		Spec: MXJobSpec{
-			RunPolicy: commonv1.RunPolicy{
+			RunPolicy: RunPolicy{
 				CleanPodPolicy: &cleanPodPolicy,
 			},
-			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+			MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				MXJobReplicaTypeWorker: &ReplicaSpec{
 					Replicas:      pointer.Int32(replicas),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
@@ -80,8 +79,8 @@ func TestSetDefaults_MXJob(t *testing.T) {
 		"set spec with minimum setting": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -96,14 +95,14 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 		"Set spec with restart policy": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
-							RestartPolicy: commonv1.RestartPolicyOnFailure,
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
+							RestartPolicy: RestartPolicyOnFailure,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -118,13 +117,13 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, commonv1.RestartPolicyOnFailure, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(CleanPodPolicyNone, RestartPolicyOnFailure, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 		"Set spec with replicas": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
 							Replicas: pointer.Int32(3),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -140,14 +139,14 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 3, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(CleanPodPolicyNone, MXJobDefaultRestartPolicy, 3, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 
 		"Set spec with default node port name and port": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -168,14 +167,14 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 
 		"Set spec with node port": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -196,17 +195,17 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, 9999),
+			expected: expectedMXNetJob(CleanPodPolicyNone, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, 9999),
 		},
 
 		"set spec with cleanpod policy": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					RunPolicy: commonv1.RunPolicy{
-						CleanPodPolicy: cleanPodPolicyPointer(commonv1.CleanPodPolicyAll),
+					RunPolicy: RunPolicy{
+						CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
 					},
-					MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						MXJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						MXJobReplicaTypeWorker: &ReplicaSpec{
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -221,7 +220,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXNetJob(commonv1.CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
+			expected: expectedMXNetJob(CleanPodPolicyAll, MXJobDefaultRestartPolicy, 1, MXJobDefaultPortName, MXJobDefaultPort),
 		},
 	}
 

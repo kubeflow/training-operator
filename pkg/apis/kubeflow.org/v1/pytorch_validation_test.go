@@ -17,17 +17,16 @@ package v1
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
 func TestValidateV1PyTorchJob(t *testing.T) {
-	validPyTorchReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+	validPyTorchReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		PyTorchJobReplicaTypeMaster: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyOnFailure,
+			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -45,7 +44,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 		},
 		PyTorchJobReplicaTypeWorker: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyOnFailure,
+			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -95,7 +94,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -114,7 +113,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -138,7 +137,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -162,7 +161,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeMaster: {
 							Replicas: pointer.Int32(2),
 							Template: corev1.PodTemplateSpec{

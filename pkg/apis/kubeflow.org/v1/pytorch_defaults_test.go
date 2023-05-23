@@ -6,8 +6,6 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 func TestSetElasticPolicy(t *testing.T) {
@@ -31,7 +29,7 @@ func TestSetElasticPolicy(t *testing.T) {
 				job: &PyTorchJob{
 					Spec: PyTorchJobSpec{
 						ElasticPolicy: &ElasticPolicy{},
-						PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
 								Replicas: pointer.Int32(1),
 							},
@@ -53,7 +51,7 @@ func TestSetElasticPolicy(t *testing.T) {
 							MaxReplicas: pointer.Int32(1),
 							MinReplicas: pointer.Int32(1),
 						},
-						PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
 								Replicas: pointer.Int32(1),
 							},
@@ -75,7 +73,7 @@ func TestSetElasticPolicy(t *testing.T) {
 							MaxReplicas: pointer.Int32(1),
 							MinReplicas: pointer.Int32(1),
 						},
-						PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
 								Replicas: pointer.Int32(1),
 							},
@@ -97,7 +95,7 @@ func TestSetElasticPolicy(t *testing.T) {
 							MaxReplicas: pointer.Int32(1),
 							MinReplicas: nil,
 						},
-						PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
 								Replicas: pointer.Int32(1),
 							},
@@ -119,7 +117,7 @@ func TestSetElasticPolicy(t *testing.T) {
 							MaxReplicas: nil,
 							MinReplicas: pointer.Int32(1),
 						},
-						PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
 								Replicas: pointer.Int32(1),
 							},

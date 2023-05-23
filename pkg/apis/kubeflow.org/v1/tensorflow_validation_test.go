@@ -17,17 +17,16 @@ package v1
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
 func TestValidateV1TFJob(t *testing.T) {
-	validTFReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+	validTFReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		TFJobReplicaTypeWorker: {
 			Replicas:      pointer.Int32(2),
-			RestartPolicy: commonv1.RestartPolicyOnFailure,
+			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -75,7 +74,7 @@ func TestValidateV1TFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						TFJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -94,7 +93,7 @@ func TestValidateV1TFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						TFJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -116,7 +115,7 @@ func TestValidateV1TFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						TFJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -138,7 +137,7 @@ func TestValidateV1TFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						TFJobReplicaTypeChief: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -172,7 +171,7 @@ func TestValidateV1TFJob(t *testing.T) {
 
 func TestIsChieforMaster(t *testing.T) {
 	tc := []struct {
-		Type     commonv1.ReplicaType
+		Type     ReplicaType
 		Expected bool
 	}{
 		{
