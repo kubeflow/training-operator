@@ -63,7 +63,7 @@ spec:
                     type: integer
                   cleanPodPolicy:
                     description: CleanPodPolicy defines the policy to kill pods after
-                      the job completes. Default to Running.
+                      the job completes. Default to None.
                     type: string
                   schedulingPolicy:
                     description: SchedulingPolicy defines the policy related to scheduling,

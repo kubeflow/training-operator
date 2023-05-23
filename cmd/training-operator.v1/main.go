@@ -73,7 +73,8 @@ func main() {
 	flag.StringVar(&leaderElectionID, "leader-election-id", "1ca428e5.training-operator.kubeflow.org", "The ID for leader election.")
 	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
 		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob, PaddleJob. By default, all supported schemes will be enabled.")
-	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "none", "The scheduler to gang-schedule kubeflow jobs, defaults to none")
+	flag.StringVar(&gangSchedulerName, "gang-scheduler-name", "", "Now Supporting volcano and scheduler-plugins."+
+		" Note: If you set another scheduler name, the training-operator assumes it's the scheduler-plugins.")
 	flag.StringVar(&namespace, "namespace", os.Getenv(commonutil.EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
 	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
@@ -121,8 +122,8 @@ func main() {
 		cfg := mgr.GetConfig()
 		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
-	} else if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerSchedulerPlugins)) {
-		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient())
+	} else if gangSchedulerName != "" {
+		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient(), gangSchedulerName)
 	}
 
 	// TODO: We need a general manager. all rest reconciler addsToManager
