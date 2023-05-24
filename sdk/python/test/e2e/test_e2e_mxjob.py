@@ -51,7 +51,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
@@ -63,7 +63,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    server = V1ReplicaSpec(
+    server = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
@@ -75,7 +75,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    scheduler = V1ReplicaSpec(
+    scheduler = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
@@ -87,8 +87,8 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    unschedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=10), job_namespace)
-    schedulable_mxjob = generate_mxjob(scheduler, server, worker, V1SchedulingPolicy(min_available=3), job_namespace)
+    unschedulable_mxjob = generate_mxjob(scheduler, server, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_mxjob = generate_mxjob(scheduler, server, worker, KubeflowOrgV1SchedulingPolicy(min_available=3), job_namespace)
 
     TRAINING_CLIENT.create_mxjob(unschedulable_mxjob, job_namespace)
     logging.info(f"List of created {constants.MXJOB_KIND}s")
@@ -122,21 +122,21 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 def test_sdk_e2e(job_namespace):
     worker_container, server_container, scheduler_container = generate_containers()
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[worker_container])),
     )
 
-    server = V1ReplicaSpec(
+    server = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[server_container])),
     )
 
-    scheduler = V1ReplicaSpec(
+    scheduler = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
@@ -161,10 +161,10 @@ def test_sdk_e2e(job_namespace):
 
 
 def generate_mxjob(
-    scheduler: V1ReplicaSpec,
-    server: V1ReplicaSpec,
-    worker: V1ReplicaSpec,
-    scheduling_policy: V1SchedulingPolicy = None,
+    scheduler: KubeflowOrgV1ReplicaSpec,
+    server: KubeflowOrgV1ReplicaSpec,
+    worker: KubeflowOrgV1ReplicaSpec,
+    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
     job_namespace: str = "default",
 ) -> KubeflowOrgV1MXJob:
     return KubeflowOrgV1MXJob(
@@ -173,7 +173,7 @@ def generate_mxjob(
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1MXJobSpec(
             job_mode="MXTrain",
-            run_policy=V1RunPolicy(
+            run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",
                 scheduling_policy=scheduling_policy,
             ),

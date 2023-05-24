@@ -49,7 +49,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=2,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(
@@ -61,8 +61,8 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    unschedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=10), job_namespace)
-    schedulable_paddlejob = generate_paddlejob(worker, V1SchedulingPolicy(min_available=2), job_namespace)
+    unschedulable_paddlejob = generate_paddlejob(worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_paddlejob = generate_paddlejob(worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace)
 
     TRAINING_CLIENT.create_paddlejob(unschedulable_paddlejob, job_namespace)
     logging.info(f"List of created {constants.PADDLEJOB_KIND}s")
@@ -96,7 +96,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 def test_sdk_e2e(job_namespace):
     container = generate_container()
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=2,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
@@ -121,8 +121,8 @@ def test_sdk_e2e(job_namespace):
 
 
 def generate_paddlejob(
-    worker: V1ReplicaSpec,
-    scheduling_policy: V1SchedulingPolicy = None,
+    worker: KubeflowOrgV1ReplicaSpec,
+    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
     job_namespace: str = "default",
 ) -> KubeflowOrgV1PaddleJob:
     return KubeflowOrgV1PaddleJob(
@@ -130,7 +130,7 @@ def generate_paddlejob(
         kind="PaddleJob",
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1PaddleJobSpec(
-            run_policy=V1RunPolicy(
+            run_policy=KubeflowOrgV1RunPolicy(
                 scheduling_policy=scheduling_policy,
                 clean_pod_policy="None",
             ),

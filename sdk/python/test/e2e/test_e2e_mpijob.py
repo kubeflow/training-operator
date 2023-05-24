@@ -50,7 +50,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     launcher_container, worker_container = generate_containers()
 
-    launcher = V1ReplicaSpec(
+    launcher = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
@@ -62,7 +62,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
@@ -74,8 +74,8 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    mpijob = generate_mpijob(launcher, worker, V1SchedulingPolicy(min_available=10), job_namespace)
-    patched_mpijob = generate_mpijob(launcher, worker, V1SchedulingPolicy(min_available=2), job_namespace)
+    mpijob = generate_mpijob(launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
+    patched_mpijob = generate_mpijob(launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace)
 
     TRAINING_CLIENT.create_mpijob(mpijob, job_namespace)
     logging.info(f"List of created {constants.MPIJOB_KIND}s")
@@ -109,14 +109,14 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 def test_sdk_e2e(job_namespace):
     launcher_container, worker_container = generate_containers()
 
-    launcher = V1ReplicaSpec(
+    launcher = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[launcher_container])),
     )
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
@@ -141,9 +141,9 @@ def test_sdk_e2e(job_namespace):
 
 
 def generate_mpijob(
-    launcher: V1ReplicaSpec,
-    worker: V1ReplicaSpec,
-    scheduling_policy: V1SchedulingPolicy = None,
+    launcher: KubeflowOrgV1ReplicaSpec,
+    worker: KubeflowOrgV1ReplicaSpec,
+    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
     job_namespace: str = "default",
 ) -> KubeflowOrgV1MPIJob:
     return KubeflowOrgV1MPIJob(
@@ -152,7 +152,7 @@ def generate_mpijob(
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1MPIJobSpec(
             slots_per_worker=1,
-            run_policy=V1RunPolicy(
+            run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",
                 scheduling_policy=scheduling_policy,
             ),
