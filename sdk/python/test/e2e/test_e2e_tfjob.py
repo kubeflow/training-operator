@@ -23,11 +23,11 @@ from kubernetes.client import V1Container
 from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
-from kubeflow.training import V1ReplicaSpec
-from kubeflow.training import V1RunPolicy
+from kubeflow.training import KubeflowOrgV1ReplicaSpec
+from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1TFJob
 from kubeflow.training import KubeflowOrgV1TFJobSpec
-from kubeflow.training import V1SchedulingPolicy
+from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.constants import constants
 
 from test.e2e.utils import verify_job_e2e, verify_unschedulable_job_e2e, get_pod_spec_scheduler_name
