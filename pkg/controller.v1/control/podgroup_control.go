@@ -113,9 +113,8 @@ func (v *VolcanoControl) UpdatePodGroup(podGroup client.Object) error {
 
 func (v *VolcanoControl) CreatePodGroup(podGroup client.Object) error {
 	pg := podGroup.(*volcanov1beta1.PodGroup)
-	createPodGroup, err := v.Client.SchedulingV1beta1().PodGroups(pg.GetNamespace()).Create(context.TODO(), pg, metav1.CreateOptions{})
+	_, err := v.Client.SchedulingV1beta1().PodGroups(pg.GetNamespace()).Create(context.TODO(), pg, metav1.CreateOptions{})
 	if err != nil {
-		podGroup = createPodGroup
 		return fmt.Errorf("unable to create PodGroup: %v", err)
 	}
 	return nil

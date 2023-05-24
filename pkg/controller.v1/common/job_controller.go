@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/control"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 
@@ -98,7 +99,7 @@ func (c *JobControllerConfiguration) EnableGangScheduling() bool {
 //	jobStatus apiv1.JobStatus,
 //	runPolicy *apiv1.RunPolicy) error
 type JobController struct {
-	Controller ControllerInterface
+	Controller common.ControllerInterface
 
 	Config JobControllerConfiguration
 
@@ -186,7 +187,7 @@ var GenNonGangSchedulerSetupFunc = func() GangSchedulingSetupFunc {
 }
 
 func NewJobController(
-	controllerImpl ControllerInterface,
+	controllerImpl common.ControllerInterface,
 	reconcilerSyncPeriod metav1.Duration,
 	kubeClientSet kubeclientset.Interface,
 	setupPodGroup GangSchedulingSetupFunc,

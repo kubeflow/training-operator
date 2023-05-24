@@ -129,7 +129,7 @@ func (r *VolcanoReconciler) ReconcilePodGroup(
 		}
 
 		if runPolicy.SchedulingPolicy.MinResources != nil {
-			minResources = runPolicy.SchedulingPolicy.MinResources
+			minResources = (*corev1.ResourceList)(runPolicy.SchedulingPolicy.MinResources)
 		}
 	}
 

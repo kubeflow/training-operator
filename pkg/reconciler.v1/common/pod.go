@@ -274,5 +274,5 @@ func (r *PodReconciler) DeletePod(ctx context.Context, ns string, name string) e
 // DecoratePod decorates podTemplate before a Pod is submitted to the APIServer
 func (r *PodReconciler) DecoratePod(rtype string, podTemplate *corev1.PodTemplateSpec, job client.Object) {
 	// Default implementation applies nothing to podTemplate
-	return
+	// return
 }

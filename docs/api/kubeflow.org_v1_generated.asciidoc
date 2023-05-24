@@ -15,6 +15,8 @@ Package v1 is the v1 version of the API.
 
 Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
+Package util provides various helper routines.
+
 .Resource Types
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijob[$$MPIJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijoblist[$$MPIJobList$$]

@@ -98,7 +98,9 @@ func (jc *JobController) ReconcileJobs(
 	//    and it's safe to reset the expectations
 	// 2. Reset expectations can avoid dirty data such as `expectedDeletion = -1`
 	//    (pod or service was deleted unexpectedly)
-	jc.ResetExpectations(jobKey, replicas)
+	if err = jc.ResetExpectations(jobKey, replicas); err != nil {
+		log.Warnf("Failed to reset expectations: %v", err)
+	}
 
 	log.Infof("Reconciling for job %s", metaObject.GetName())
 	pods, err := jc.Controller.GetPodsForJob(job)
@@ -259,7 +261,7 @@ func (jc *JobController) ReconcileJobs(
 				minResources = jc.calcPGMinResources(minMember, replicas)
 			}
 
-			var pgSpecFill FillPodGroupSpecFunc = nil
+			var pgSpecFill FillPodGroupSpecFunc
 			switch jc.Config.GangScheduling {
 			case GangSchedulerVolcano:
 				pgSpecFill = func(pg metav1.Object) error {
@@ -273,7 +275,6 @@ func (jc *JobController) ReconcileJobs(
 						PriorityClassName: priorityClass,
 						MinResources:      minResources,
 					}
-					pg = volcanoPodGroup
 					return nil
 				}
 			default:
@@ -287,7 +288,6 @@ func (jc *JobController) ReconcileJobs(
 						MinResources:           *minResources,
 						ScheduleTimeoutSeconds: schedulerTimeout,
 					}
-					pg = schedulerPluginsPodGroup
 					return nil
 				}
 			}
@@ -344,13 +344,19 @@ func (jc *JobController) ReconcileJobs(
 }
 
 // ResetExpectations reset the expectation for creates and deletes of pod/service to zero.
-func (jc *JobController) ResetExpectations(jobKey string, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) {
+func (jc *JobController) ResetExpectations(jobKey string, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) error {
+	var allErrs error
 	for rtype := range replicas {
 		expectationPodsKey := expectation.GenExpectationPodsKey(jobKey, string(rtype))
-		jc.Expectations.SetExpectations(expectationPodsKey, 0, 0)
+		if err := jc.Expectations.SetExpectations(expectationPodsKey, 0, 0); err != nil {
+			allErrs = err
+		}
 		expectationServicesKey := expectation.GenExpectationServicesKey(jobKey, string(rtype))
-		jc.Expectations.SetExpectations(expectationServicesKey, 0, 0)
+		if err := jc.Expectations.SetExpectations(expectationServicesKey, 0, 0); err != nil {
+			allErrs = fmt.Errorf("%s: %w", allErrs.Error(), err)
+		}
 	}
+	return allErrs
 }
 
 // PastActiveDeadline checks if job has ActiveDeadlineSeconds field set and if it is exceeded.

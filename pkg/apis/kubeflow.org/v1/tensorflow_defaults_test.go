@@ -20,8 +20,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
-
-	"github.com/kubeflow/training-operator/pkg/util/common/util"
 )
 
 func expectedTFJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, portName string, port int32) *TFJob {
@@ -268,7 +266,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 	for name, tc := range testCases {
 		SetDefaults_TFJob(tc.original)
 		if !reflect.DeepEqual(tc.original, tc.expected) {
-			t.Errorf("%s: Want\n%v; Got\n %v", name, util.Pformat(tc.expected), util.Pformat(tc.original))
+			t.Errorf("%s: Want\n%v; Got\n %v", name, Pformat(tc.expected), Pformat(tc.original))
 		}
 	}
 }

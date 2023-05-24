@@ -222,5 +222,5 @@ func (r *ServiceReconciler) DeleteService(ns string, name string, job client.Obj
 // DecorateService decorates the Service before it's submitted to APIServer
 func (r *ServiceReconciler) DecorateService(rtype string, svc *corev1.Service, job client.Object) {
 	// Default implementation applies nothing to podTemplate
-	return
+	// return
 }

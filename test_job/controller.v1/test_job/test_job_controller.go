@@ -2,6 +2,7 @@ package test_job
 
 import (
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common"
 	v1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -9,10 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ commonv1.ControllerInterface = &TestJobController{}
+var _ common.ControllerInterface = &TestJobController{}
 
 type TestJobController struct {
-	commonv1.ControllerInterface
+	common.ControllerInterface
 	Job      *v1.TestJob
 	Pods     []*corev1.Pod
 	Services []*corev1.Service

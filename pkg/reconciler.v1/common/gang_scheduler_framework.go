@@ -110,7 +110,7 @@ func (r *SchedulerFrameworkReconciler) ReconcilePodGroup(
 			scheduleTimeoutSeconds = timeout
 		}
 		if mr := runPolicy.SchedulingPolicy.MinResources; mr != nil {
-			minResources = mr
+			minResources = (*corev1.ResourceList)(mr)
 		}
 	}
 

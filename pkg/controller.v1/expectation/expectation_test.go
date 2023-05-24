@@ -98,7 +98,8 @@ func TestControllerExpectations(t *testing.T) {
 	rcKey, err := KeyFunc(rc)
 	assert.NoError(t, err, "Couldn't get key for object %#v: %v", rc, err)
 
-	e.SetExpectations(rcKey, adds, dels)
+	err = e.SetExpectations(rcKey, adds, dels)
+	assert.NoError(t, err, "Could not register expectations for rc, err: %v", err)
 	var wg sync.WaitGroup
 	for i := 0; i < adds+1; i++ {
 		wg.Add(1)
@@ -134,7 +135,8 @@ func TestControllerExpectations(t *testing.T) {
 	assert.True(t, e.SatisfiedExpectations(rcKey), "Expectations are met but the rc will not sync")
 
 	// Next round of rc sync, old expectations are cleared
-	e.SetExpectations(rcKey, 1, 2)
+	err = e.SetExpectations(rcKey, 1, 2)
+	assert.NoError(t, err, "Could not register expectations for rc, err %v", err)
 	podExp, exists, err = e.GetExpectations(rcKey)
 	assert.NoError(t, err, "Could not get expectations for rc, exists %v and err %v", exists, err)
 	assert.True(t, exists, "Could not get expectations for rc, exists %v and err %v", exists, err)

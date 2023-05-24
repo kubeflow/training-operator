@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package util provides various helper routines.
-package util
+package v1
 
 import (
 	"encoding/json"
@@ -24,11 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	_ "k8s.io/code-generator/pkg/util"
 	_ "k8s.io/kube-openapi/pkg/common"
-)
-
-const (
-	// EnvKubeflowNamespace is a environment variable for namespace when deployed on kubernetes
-	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 )
 
 // Pformat returns a pretty format output of any value that can be marshaled to JSON.

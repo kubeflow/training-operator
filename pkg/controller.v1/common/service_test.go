@@ -3,6 +3,7 @@ package common
 import (
 	"testing"
 
+	"github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/core"
 
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -83,7 +84,7 @@ func TestCalculateServiceSliceSize(t *testing.T) {
 
 func TestJobController_CreateNewService(t *testing.T) {
 	type fields struct {
-		Controller                  apiv1.ControllerInterface
+		Controller                  common.ControllerInterface
 		Config                      JobControllerConfiguration
 		PodControl                  control.PodControlInterface
 		ServiceControl              control.ServiceControlInterface
@@ -106,8 +107,7 @@ func TestJobController_CreateNewService(t *testing.T) {
 		index string
 	}
 
-	var replicas int32
-	replicas = 2
+	var replicas int32 = 2
 	tests := []struct {
 		name    string
 		fields  fields

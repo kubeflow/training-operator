@@ -125,7 +125,7 @@ func (r *JobReconciler) ReconcileJob(
 
 	oldStatus := status.DeepCopy()
 
-	var err error = nil
+	var err error
 	if r.ShouldCleanUp(*status) {
 		if err = r.CleanupResources(runPolicy, *status, job); err != nil {
 			return err
