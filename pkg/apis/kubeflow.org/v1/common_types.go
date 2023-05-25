@@ -210,7 +210,6 @@ type RunPolicy struct {
 
 // SchedulingPolicy encapsulates various scheduling policies of the distributed training
 // job, for example `minAvailable` for gang-scheduling.
-
 type SchedulingPolicy struct {
 	MinAvailable           *int32                                 `json:"minAvailable,omitempty"`
 	Queue                  string                                 `json:"queue,omitempty"`

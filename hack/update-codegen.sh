@@ -70,24 +70,11 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
-${CODEGEN_PKG}/generate-groups.sh "client" \
+${CODEGEN_PKG}/generate-groups.sh "client,lister,informer" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
     kubeflow.org:v1 \
     --output-base "${TEMP_DIR}" \
     --go-header-file hack/boilerplate/boilerplate.go.txt
-
-${CODEGEN_PKG}/generate-groups.sh "lister" \
-    github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
-    kubeflow.org:v1 \
-    --output-base "${TEMP_DIR}" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt
-
-${CODEGEN_PKG}/generate-groups.sh "informer" \
-    github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
-    kubeflow.org:v1 \
-    --output-base "${TEMP_DIR}" \
-    --go-header-file hack/boilerplate/boilerplate.go.txt
-
 
 # Notice: The code in code-generator does not generate defaulter by default.
 # We need to build binary from vendor cmd folder.

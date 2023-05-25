@@ -1,5 +1,6 @@
 # KubeflowOrgV1SchedulingPolicy
 
+SchedulingPolicy encapsulates various scheduling policies of the distributed training job, for example `minAvailable` for gang-scheduling.
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------

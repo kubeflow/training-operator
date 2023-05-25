@@ -535,7 +535,7 @@ RunPolicy encapsulates various runtime policies of the distributed training job,
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-schedulingpolicy"]
 ==== SchedulingPolicy 
 
-
+SchedulingPolicy encapsulates various scheduling policies of the distributed training job, for example `minAvailable` for gang-scheduling.
 
 .Appears In:
 ****
