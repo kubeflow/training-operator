@@ -35,8 +35,8 @@ class KubeflowOrgV1MPIJobSpec(object):
     openapi_types = {
         'clean_pod_policy': 'str',
         'main_container': 'str',
-        'mpi_replica_specs': 'dict(str, V1ReplicaSpec)',
-        'run_policy': 'V1RunPolicy',
+        'mpi_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)',
+        'run_policy': 'KubeflowOrgV1RunPolicy',
         'slots_per_worker': 'int'
     }
 
@@ -124,7 +124,7 @@ class KubeflowOrgV1MPIJobSpec(object):
         `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that specify the MPI replicas to run.  # noqa: E501
 
         :return: The mpi_replica_specs of this KubeflowOrgV1MPIJobSpec.  # noqa: E501
-        :rtype: dict(str, V1ReplicaSpec)
+        :rtype: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         return self._mpi_replica_specs
 
@@ -135,7 +135,7 @@ class KubeflowOrgV1MPIJobSpec(object):
         `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that specify the MPI replicas to run.  # noqa: E501
 
         :param mpi_replica_specs: The mpi_replica_specs of this KubeflowOrgV1MPIJobSpec.  # noqa: E501
-        :type: dict(str, V1ReplicaSpec)
+        :type: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         if self.local_vars_configuration.client_side_validation and mpi_replica_specs is None:  # noqa: E501
             raise ValueError("Invalid value for `mpi_replica_specs`, must not be `None`")  # noqa: E501
@@ -148,7 +148,7 @@ class KubeflowOrgV1MPIJobSpec(object):
 
 
         :return: The run_policy of this KubeflowOrgV1MPIJobSpec.  # noqa: E501
-        :rtype: V1RunPolicy
+        :rtype: KubeflowOrgV1RunPolicy
         """
         return self._run_policy
 
@@ -158,7 +158,7 @@ class KubeflowOrgV1MPIJobSpec(object):
 
 
         :param run_policy: The run_policy of this KubeflowOrgV1MPIJobSpec.  # noqa: E501
-        :type: V1RunPolicy
+        :type: KubeflowOrgV1RunPolicy
         """
 
         self._run_policy = run_policy

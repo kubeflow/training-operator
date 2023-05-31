@@ -20,12 +20,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
-	"github.com/kubeflow/common/pkg/util"
 )
 
-func expectedTFJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy commonv1.RestartPolicy, portName string, port int32) *TFJob {
+func expectedTFJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, portName string, port int32) *TFJob {
 	var ports []corev1.ContainerPort
 
 	// port not set
@@ -53,11 +50,11 @@ func expectedTFJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy commonv
 	return &TFJob{
 		Spec: TFJobSpec{
 			SuccessPolicy: &defaultSuccessPolicy,
-			RunPolicy: commonv1.RunPolicy{
+			RunPolicy: RunPolicy{
 				CleanPodPolicy: &cleanPodPolicy,
 			},
-			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				TFJobReplicaTypeWorker: &ReplicaSpec{
 					Replicas:      pointer.Int32(1),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
@@ -78,8 +75,8 @@ func expectedTFJob(cleanPodPolicy commonv1.CleanPodPolicy, restartPolicy commonv
 }
 
 func TestSetTypeNames(t *testing.T) {
-	spec := &commonv1.ReplicaSpec{
-		RestartPolicy: commonv1.RestartPolicyAlways,
+	spec := &ReplicaSpec{
+		RestartPolicy: RestartPolicyAlways,
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
@@ -98,10 +95,10 @@ func TestSetTypeNames(t *testing.T) {
 		},
 	}
 
-	workerUpperCase := commonv1.ReplicaType("WORKER")
+	workerUpperCase := ReplicaType("WORKER")
 	original := &TFJob{
 		Spec: TFJobSpec{
-			TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+			TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 				workerUpperCase: spec,
 			},
 		},
@@ -119,7 +116,7 @@ func TestSetTypeNames(t *testing.T) {
 func TestSetDefaultTFJob(t *testing.T) {
 	customPortName := "customPort"
 	var customPort int32 = 1234
-	customRestartPolicy := commonv1.RestartPolicyAlways
+	customRestartPolicy := RestartPolicyAlways
 
 	testCases := map[string]struct {
 		original *TFJob
@@ -128,8 +125,8 @@ func TestSetDefaultTFJob(t *testing.T) {
 		"set replicas": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						TFJobReplicaTypeWorker: &ReplicaSpec{
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -151,13 +148,13 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(commonv1.CleanPodPolicyNone, customRestartPolicy, TFJobDefaultPortName, TFJobDefaultPort),
+			expected: expectedTFJob(CleanPodPolicyNone, customRestartPolicy, TFJobDefaultPortName, TFJobDefaultPort),
 		},
 		"set replicas with default restartpolicy": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						TFJobReplicaTypeWorker: &ReplicaSpec{
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -178,13 +175,13 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(commonv1.CleanPodPolicyNone, TFJobDefaultRestartPolicy, TFJobDefaultPortName, TFJobDefaultPort),
+			expected: expectedTFJob(CleanPodPolicyNone, TFJobDefaultRestartPolicy, TFJobDefaultPortName, TFJobDefaultPort),
 		},
 		"set replicas with default port": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						TFJobReplicaTypeWorker: &ReplicaSpec{
 							Replicas:      pointer.Int32(1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
@@ -201,13 +198,13 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(commonv1.CleanPodPolicyNone, customRestartPolicy, "", 0),
+			expected: expectedTFJob(CleanPodPolicyNone, customRestartPolicy, "", 0),
 		},
 		"set replicas adding default port": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						TFJobReplicaTypeWorker: &ReplicaSpec{
 							Replicas:      pointer.Int32(1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
@@ -230,16 +227,16 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(commonv1.CleanPodPolicyNone, customRestartPolicy, customPortName, customPort),
+			expected: expectedTFJob(CleanPodPolicyNone, customRestartPolicy, customPortName, customPort),
 		},
 		"set custom cleanpod policy": {
 			original: &TFJob{
 				Spec: TFJobSpec{
-					RunPolicy: commonv1.RunPolicy{
-						CleanPodPolicy: cleanPodPolicyPointer(commonv1.CleanPodPolicyAll),
+					RunPolicy: RunPolicy{
+						CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
 					},
-					TFReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-						TFJobReplicaTypeWorker: &commonv1.ReplicaSpec{
+					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						TFJobReplicaTypeWorker: &ReplicaSpec{
 							Replicas:      pointer.Int32(1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
@@ -262,14 +259,14 @@ func TestSetDefaultTFJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedTFJob(commonv1.CleanPodPolicyAll, customRestartPolicy, customPortName, customPort),
+			expected: expectedTFJob(CleanPodPolicyAll, customRestartPolicy, customPortName, customPort),
 		},
 	}
 
 	for name, tc := range testCases {
 		SetDefaults_TFJob(tc.original)
 		if !reflect.DeepEqual(tc.original, tc.expected) {
-			t.Errorf("%s: Want\n%v; Got\n %v", name, util.Pformat(tc.expected), util.Pformat(tc.original))
+			t.Errorf("%s: Want\n%v; Got\n %v", name, tc.expected, tc.original)
 		}
 	}
 }

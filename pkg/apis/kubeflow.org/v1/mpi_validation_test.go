@@ -17,7 +17,6 @@ package v1
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 )
@@ -28,8 +27,8 @@ func TestValidateV1MpiJobSpec(t *testing.T) {
 			MPIReplicaSpecs: nil,
 		},
 		{
-			MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MPIJobReplicaTypeLauncher: &commonv1.ReplicaSpec{
+			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				MPIJobReplicaTypeLauncher: &ReplicaSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{},
@@ -39,8 +38,8 @@ func TestValidateV1MpiJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MPIJobReplicaTypeLauncher: &commonv1.ReplicaSpec{
+			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				MPIJobReplicaTypeLauncher: &ReplicaSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -54,8 +53,8 @@ func TestValidateV1MpiJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MPIJobReplicaTypeLauncher: &commonv1.ReplicaSpec{
+			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				MPIJobReplicaTypeLauncher: &ReplicaSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -70,8 +69,8 @@ func TestValidateV1MpiJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MPIReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
-				MPIJobReplicaTypeLauncher: &commonv1.ReplicaSpec{
+			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+				MPIJobReplicaTypeLauncher: &ReplicaSpec{
 					Replicas: pointer.Int32(2),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{

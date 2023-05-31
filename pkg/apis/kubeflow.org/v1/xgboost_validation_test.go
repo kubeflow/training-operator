@@ -17,17 +17,16 @@ package v1
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
 func TestValidateV1XGBoostJob(t *testing.T) {
-	validXGBoostReplicaSpecs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+	validXGBoostReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		XGBoostJobReplicaTypeMaster: {
 			Replicas:      pointer.Int32(1),
-			RestartPolicy: commonv1.RestartPolicyNever,
+			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -52,7 +51,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 		},
 		XGBoostJobReplicaTypeWorker: {
 			Replicas:      pointer.Int32(2),
-			RestartPolicy: commonv1.RestartPolicyExitCode,
+			RestartPolicy: RestartPolicyExitCode,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -107,7 +106,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: XGBoostJobSpec{
-					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -126,7 +125,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: XGBoostJobSpec{
-					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -148,7 +147,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: XGBoostJobSpec{
-					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -170,7 +169,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: XGBoostJobSpec{
-					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeMaster: {
 							Replicas: pointer.Int32(2),
 							Template: corev1.PodTemplateSpec{
@@ -193,7 +192,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: XGBoostJobSpec{
-					XGBReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 							Template: corev1.PodTemplateSpec{

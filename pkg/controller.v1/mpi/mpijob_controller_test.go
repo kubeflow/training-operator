@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	common "github.com/kubeflow/common/pkg/apis/common/v1"
+	common "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"

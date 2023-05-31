@@ -65,13 +65,12 @@ echo ">> Temporary output directory ${TEMP_DIR}"
 
 # Ensure we can execute.
 chmod +x ${CODEGEN_PKG}/generate-groups.sh
-
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
-${CODEGEN_PKG}/generate-groups.sh "all" \
+${CODEGEN_PKG}/generate-groups.sh "client,lister,informer" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
     kubeflow.org:v1 \
     --output-base "${TEMP_DIR}" \
@@ -98,7 +97,7 @@ echo "Building openapi-gen"
 go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
 
 echo "Generating OpenAPI specification for kubeflow.org/v1"
-./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1,github.com/kubeflow/common/pkg/apis/common/v1 \
+./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
     --report-filename=hack/violation_exception.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
     --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
@@ -108,6 +107,5 @@ cd - >/dev/null
 
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
-
 # Clean up binaries we build for update codegen
 rm ./openapi-gen

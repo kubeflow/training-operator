@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kubeflow/common/pkg/controller.v1/common"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"

@@ -17,8 +17,6 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 // addTensorflowDefaultingFuncs is used to register default funcs
@@ -36,7 +34,7 @@ func setTensorflowDefaultPort(spec *corev1.PodSpec) {
 
 // setTensorflowTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
 func setTensorflowTypeNamesToCamelCase(tfJob *TFJob) {
-	replicaTypes := []commonv1.ReplicaType{
+	replicaTypes := []ReplicaType{
 		TFJobReplicaTypePS,
 		TFJobReplicaTypeWorker,
 		TFJobReplicaTypeChief,
@@ -52,7 +50,7 @@ func setTensorflowTypeNamesToCamelCase(tfJob *TFJob) {
 func SetDefaults_TFJob(tfJob *TFJob) {
 	// Set default cleanpod policy to None.
 	if tfJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		running := commonv1.CleanPodPolicyNone
+		running := CleanPodPolicyNone
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &running
 	}
 	// Set default success policy to "".

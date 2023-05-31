@@ -23,11 +23,11 @@ from kubernetes.client import V1Container
 from kubernetes.client import V1ResourceRequirements
 
 from kubeflow.training import TrainingClient
-from kubeflow.training import V1ReplicaSpec
+from kubeflow.training import KubeflowOrgV1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PyTorchJob
 from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
-from kubeflow.training import V1RunPolicy
-from kubeflow.training import V1SchedulingPolicy
+from kubeflow.training import KubeflowOrgV1RunPolicy
+from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.constants import constants
 
 from test.e2e.utils import verify_job_e2e, verify_unschedulable_job_e2e, get_pod_spec_scheduler_name
@@ -49,7 +49,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
 
-    master = V1ReplicaSpec(
+    master = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(
@@ -61,7 +61,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(
@@ -73,8 +73,8 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         ),
     )
 
-    unschedulable_pytorchjob = generate_pytorchjob(master, worker, V1SchedulingPolicy(min_available=10), job_namespace)
-    schedulable_pytorchjob = generate_pytorchjob(master, worker, V1SchedulingPolicy(min_available=2), job_namespace)
+    unschedulable_pytorchjob = generate_pytorchjob(master, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
+    schedulable_pytorchjob = generate_pytorchjob(master, worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace)
 
     TRAINING_CLIENT.create_pytorchjob(unschedulable_pytorchjob, job_namespace)
     logging.info(f"List of created {constants.PYTORCHJOB_KIND}s")
@@ -109,14 +109,14 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 def test_sdk_e2e(job_namespace):
     container = generate_container()
 
-    master = V1ReplicaSpec(
+    master = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
                                    spec=V1PodSpec(containers=[container])),
     )
 
-    worker = V1ReplicaSpec(
+    worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="OnFailure",
         template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
@@ -142,9 +142,9 @@ def test_sdk_e2e(job_namespace):
 
 
 def generate_pytorchjob(
-    master: V1ReplicaSpec,
-    worker: V1ReplicaSpec,
-    scheduling_policy: V1SchedulingPolicy = None,
+    master: KubeflowOrgV1ReplicaSpec,
+    worker: KubeflowOrgV1ReplicaSpec,
+    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
     job_namespace: str = "default",
 ) -> KubeflowOrgV1PyTorchJob:
     return KubeflowOrgV1PyTorchJob(
@@ -152,7 +152,7 @@ def generate_pytorchjob(
         kind="PyTorchJob",
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1PyTorchJobSpec(
-            run_policy=V1RunPolicy(
+            run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",
                 scheduling_policy=scheduling_policy,
             ),

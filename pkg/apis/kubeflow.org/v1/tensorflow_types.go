@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,7 +27,7 @@ const (
 	// TFJobDefaultPort is default value of the port.
 	TFJobDefaultPort = 2222
 	// TFJobDefaultRestartPolicy is default RestartPolicy for TFReplicaSpec.
-	TFJobDefaultRestartPolicy = commonv1.RestartPolicyNever
+	TFJobDefaultRestartPolicy = RestartPolicyNever
 	// TFJobKind is the kind name.
 	TFJobKind = "TFJob"
 	// TFJobPlural is the TensorflowPlural for TFJob.
@@ -63,7 +62,7 @@ type TFJob struct {
 	// Populated by the system.
 	// Read-only.
 	// +optional
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Status JobStatus `json:"status,omitempty"`
 }
 
 // TFJobSpec is a desired state description of the TFJob.
@@ -72,7 +71,7 @@ type TFJobSpec struct {
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
 	//+kubebuilder:validation:Optional
-	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
+	RunPolicy RunPolicy `json:"runPolicy"`
 
 	// SuccessPolicy defines the policy to mark the TFJob as succeeded.
 	// Default to "", using the default rules.
@@ -85,7 +84,7 @@ type TFJobSpec struct {
 	//     "PS": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	TFReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"tfReplicaSpecs"`
+	TFReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"tfReplicaSpecs"`
 
 	// A switch to enable dynamic worker
 	EnableDynamicWorker bool `json:"enableDynamicWorker,omitempty"`
@@ -104,23 +103,23 @@ const (
 
 const (
 	// TFJobReplicaTypePS is the type for parameter servers of distributed TensorFlow.
-	TFJobReplicaTypePS commonv1.ReplicaType = "PS"
+	TFJobReplicaTypePS ReplicaType = "PS"
 
 	// TFJobReplicaTypeWorker is the type for workers of distributed TensorFlow.
 	// This is also used for non-distributed TensorFlow.
-	TFJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	TFJobReplicaTypeWorker ReplicaType = "Worker"
 
 	// TFJobReplicaTypeChief is the type for chief worker of distributed TensorFlow.
 	// If there is "chief" replica type, it's the "chief worker".
 	// Else, worker:0 is the chief worker.
-	TFJobReplicaTypeChief commonv1.ReplicaType = "Chief"
+	TFJobReplicaTypeChief ReplicaType = "Chief"
 
 	// TFJobReplicaTypeMaster is the type for master worker of distributed TensorFlow.
 	// This is similar to chief, and kept just for backwards compatibility.
-	TFJobReplicaTypeMaster commonv1.ReplicaType = "Master"
+	TFJobReplicaTypeMaster ReplicaType = "Master"
 
 	// TFJobReplicaTypeEval is the type for evaluation replica in TensorFlow.
-	TFJobReplicaTypeEval commonv1.ReplicaType = "Evaluator"
+	TFJobReplicaTypeEval ReplicaType = "Evaluator"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

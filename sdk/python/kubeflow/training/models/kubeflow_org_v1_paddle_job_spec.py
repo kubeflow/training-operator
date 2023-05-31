@@ -34,8 +34,8 @@ class KubeflowOrgV1PaddleJobSpec(object):
     """
     openapi_types = {
         'elastic_policy': 'KubeflowOrgV1PaddleElasticPolicy',
-        'paddle_replica_specs': 'dict(str, V1ReplicaSpec)',
-        'run_policy': 'V1RunPolicy'
+        'paddle_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)',
+        'run_policy': 'KubeflowOrgV1RunPolicy'
     }
 
     attribute_map = {
@@ -88,7 +88,7 @@ class KubeflowOrgV1PaddleJobSpec(object):
         A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,   {     \"Master\": PaddleReplicaSpec,     \"Worker\": PaddleReplicaSpec,   }  # noqa: E501
 
         :return: The paddle_replica_specs of this KubeflowOrgV1PaddleJobSpec.  # noqa: E501
-        :rtype: dict(str, V1ReplicaSpec)
+        :rtype: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         return self._paddle_replica_specs
 
@@ -99,7 +99,7 @@ class KubeflowOrgV1PaddleJobSpec(object):
         A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,   {     \"Master\": PaddleReplicaSpec,     \"Worker\": PaddleReplicaSpec,   }  # noqa: E501
 
         :param paddle_replica_specs: The paddle_replica_specs of this KubeflowOrgV1PaddleJobSpec.  # noqa: E501
-        :type: dict(str, V1ReplicaSpec)
+        :type: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         if self.local_vars_configuration.client_side_validation and paddle_replica_specs is None:  # noqa: E501
             raise ValueError("Invalid value for `paddle_replica_specs`, must not be `None`")  # noqa: E501
@@ -112,7 +112,7 @@ class KubeflowOrgV1PaddleJobSpec(object):
 
 
         :return: The run_policy of this KubeflowOrgV1PaddleJobSpec.  # noqa: E501
-        :rtype: V1RunPolicy
+        :rtype: KubeflowOrgV1RunPolicy
         """
         return self._run_policy
 
@@ -122,7 +122,7 @@ class KubeflowOrgV1PaddleJobSpec(object):
 
 
         :param run_policy: The run_policy of this KubeflowOrgV1PaddleJobSpec.  # noqa: E501
-        :type: V1RunPolicy
+        :type: KubeflowOrgV1RunPolicy
         """
         if self.local_vars_configuration.client_side_validation and run_policy is None:  # noqa: E501
             raise ValueError("Invalid value for `run_policy`, must not be `None`")  # noqa: E501

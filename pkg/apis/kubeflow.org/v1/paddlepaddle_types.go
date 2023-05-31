@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +28,7 @@ const (
 	// PaddleJobDefaultPort is default value of the port.
 	PaddleJobDefaultPort = 36543
 	// PaddleJobDefaultRestartPolicy is default RestartPolicy for PaddleReplicaSpec.
-	PaddleJobDefaultRestartPolicy = commonv1.RestartPolicyOnFailure
+	PaddleJobDefaultRestartPolicy = RestartPolicyOnFailure
 	// PaddleJobKind is the kind name.
 	PaddleJobKind = "PaddleJob"
 	// PaddleJobPlural is the PaddlePlural for paddleJob.
@@ -39,9 +38,9 @@ const (
 	// PaddleJobFrameworkName is the name of the ML Framework
 	PaddleJobFrameworkName = "paddle"
 	// PaddleJobReplicaTypeMaster is the type of Master of distributed Paddle
-	PaddleJobReplicaTypeMaster commonv1.ReplicaType = "Master"
+	PaddleJobReplicaTypeMaster ReplicaType = "Master"
 	// PaddleJobReplicaTypeWorker is the type for workers of distributed Paddle.
-	PaddleJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	PaddleJobReplicaTypeWorker ReplicaType = "Worker"
 )
 
 // +genclient
@@ -65,7 +64,7 @@ type PaddleJob struct {
 
 	// Most recently observed status of the PaddleJob.
 	// Read-only (modified by the system).
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Status JobStatus `json:"status,omitempty"`
 }
 
 // PaddleJobSpec is a desired state description of the PaddleJob.
@@ -74,7 +73,7 @@ type PaddleJobSpec struct {
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
 	//+kubebuilder:validation:Optional
-	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
+	RunPolicy RunPolicy `json:"runPolicy"`
 
 	// ElasticPolicy holds the elastic policy for paddle job.
 	ElasticPolicy *PaddleElasticPolicy `json:"elasticPolicy,omitempty"`
@@ -85,7 +84,7 @@ type PaddleJobSpec struct {
 	//     "Master": PaddleReplicaSpec,
 	//     "Worker": PaddleReplicaSpec,
 	//   }
-	PaddleReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"paddleReplicaSpecs"`
+	PaddleReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"paddleReplicaSpecs"`
 }
 
 type PaddleElasticPolicy struct {

@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -34,7 +33,7 @@ func setMXNetDefaultPort(spec *corev1.PodSpec) {
 
 // setMXNetTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
 func setMXNetTypeNamesToCamelCase(mxJob *MXJob) {
-	replicaTypes := []commonv1.ReplicaType{
+	replicaTypes := []ReplicaType{
 		MXJobReplicaTypeScheduler,
 		MXJobReplicaTypeServer,
 		MXJobReplicaTypeWorker,
@@ -48,7 +47,7 @@ func setMXNetTypeNamesToCamelCase(mxJob *MXJob) {
 func SetDefaults_MXJob(mxjob *MXJob) {
 	// Set default cleanpod policy to None.
 	if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := commonv1.CleanPodPolicyNone
+		all := CleanPodPolicyNone
 		mxjob.Spec.RunPolicy.CleanPodPolicy = &all
 	}
 

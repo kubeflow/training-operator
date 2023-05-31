@@ -16,8 +16,6 @@ package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 func addMPIJobDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -27,7 +25,7 @@ func addMPIJobDefaultingFuncs(scheme *runtime.Scheme) error {
 func SetDefaults_MPIJob(mpiJob *MPIJob) {
 	// Set default CleanPodPolicy to None when neither fields specified.
 	if mpiJob.Spec.CleanPodPolicy == nil && mpiJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		none := commonv1.CleanPodPolicyNone
+		none := CleanPodPolicyNone
 		mpiJob.Spec.CleanPodPolicy = &none
 		mpiJob.Spec.RunPolicy.CleanPodPolicy = &none
 	}

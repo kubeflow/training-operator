@@ -107,3 +107,4 @@ This project was originally started as a distributed training operator for Tenso
 - MPI Operator: [list of contributors](https://github.com/kubeflow/mpi-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mpi-operator/blob/master/OWNERS).
 - XGBoost Operator: [list of contributors](https://github.com/kubeflow/xgboost-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/xgboost-operator/blob/master/OWNERS).
 - MXNet Operator: [list of contributors](https://github.com/kubeflow/mxnet-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mxnet-operator/blob/master/OWNERS).
+- Common library: [list of contributors](https://github.com/kubeflow/common/graphs/contributors) and [maintainers](https://github.com/kubeflow/common/blob/master/OWNERS).

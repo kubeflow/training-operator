@@ -39,16 +39,16 @@ class TestKubeflowOrgV1MPIJobSpec(unittest.TestCase):
                 clean_pod_policy = '0', 
                 main_container = '0', 
                 mpi_replica_specs = {
-                    'key' : V1ReplicaSpec(
+                    'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                         replicas = 56, 
                         restart_policy = '0', 
                         template = None, )
                     }, 
-                run_policy = V1RunPolicy(
+                run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                     active_deadline_seconds = 56, 
                     backoff_limit = 56, 
                     clean_pod_policy = '0', 
-                    scheduling_policy = V1SchedulingPolicy(
+                    scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                         min_available = 56, 
                         min_resources = {
                             'key' : None
@@ -62,7 +62,7 @@ class TestKubeflowOrgV1MPIJobSpec(unittest.TestCase):
         else :
             return KubeflowOrgV1MPIJobSpec(
                 mpi_replica_specs = {
-                    'key' : V1ReplicaSpec(
+                    'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                         replicas = 56, 
                         restart_policy = '0', 
                         template = None, )

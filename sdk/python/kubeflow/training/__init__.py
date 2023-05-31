@@ -28,6 +28,8 @@ from kubeflow.training.exceptions import ApiKeyError
 from kubeflow.training.exceptions import ApiException
 # import models into sdk package
 from kubeflow.training.models.kubeflow_org_v1_elastic_policy import KubeflowOrgV1ElasticPolicy
+from kubeflow.training.models.kubeflow_org_v1_job_condition import KubeflowOrgV1JobCondition
+from kubeflow.training.models.kubeflow_org_v1_job_status import KubeflowOrgV1JobStatus
 from kubeflow.training.models.kubeflow_org_v1_mpi_job import KubeflowOrgV1MPIJob
 from kubeflow.training.models.kubeflow_org_v1_mpi_job_list import KubeflowOrgV1MPIJobList
 from kubeflow.training.models.kubeflow_org_v1_mpi_job_spec import KubeflowOrgV1MPIJobSpec
@@ -42,17 +44,15 @@ from kubeflow.training.models.kubeflow_org_v1_py_torch_job import KubeflowOrgV1P
 from kubeflow.training.models.kubeflow_org_v1_py_torch_job_list import KubeflowOrgV1PyTorchJobList
 from kubeflow.training.models.kubeflow_org_v1_py_torch_job_spec import KubeflowOrgV1PyTorchJobSpec
 from kubeflow.training.models.kubeflow_org_v1_rdzv_conf import KubeflowOrgV1RDZVConf
+from kubeflow.training.models.kubeflow_org_v1_replica_spec import KubeflowOrgV1ReplicaSpec
+from kubeflow.training.models.kubeflow_org_v1_replica_status import KubeflowOrgV1ReplicaStatus
+from kubeflow.training.models.kubeflow_org_v1_run_policy import KubeflowOrgV1RunPolicy
+from kubeflow.training.models.kubeflow_org_v1_scheduling_policy import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.models.kubeflow_org_v1_tf_job import KubeflowOrgV1TFJob
 from kubeflow.training.models.kubeflow_org_v1_tf_job_list import KubeflowOrgV1TFJobList
 from kubeflow.training.models.kubeflow_org_v1_tf_job_spec import KubeflowOrgV1TFJobSpec
 from kubeflow.training.models.kubeflow_org_v1_xg_boost_job import KubeflowOrgV1XGBoostJob
 from kubeflow.training.models.kubeflow_org_v1_xg_boost_job_list import KubeflowOrgV1XGBoostJobList
 from kubeflow.training.models.kubeflow_org_v1_xg_boost_job_spec import KubeflowOrgV1XGBoostJobSpec
-from kubeflow.training.models.v1_job_condition import V1JobCondition
-from kubeflow.training.models.v1_job_status import V1JobStatus
-from kubeflow.training.models.v1_replica_spec import V1ReplicaSpec
-from kubeflow.training.models.v1_replica_status import V1ReplicaStatus
-from kubeflow.training.models.v1_run_policy import V1RunPolicy
-from kubeflow.training.models.v1_scheduling_policy import V1SchedulingPolicy
 
 from kubeflow.training.api.training_client import TrainingClient

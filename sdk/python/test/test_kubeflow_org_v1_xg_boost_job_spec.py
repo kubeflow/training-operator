@@ -36,11 +36,11 @@ class TestKubeflowOrgV1XGBoostJobSpec(unittest.TestCase):
         # model = kubeflow.training.models.kubeflow_org_v1_xg_boost_job_spec.KubeflowOrgV1XGBoostJobSpec()  # noqa: E501
         if include_optional :
             return KubeflowOrgV1XGBoostJobSpec(
-                run_policy = V1RunPolicy(
+                run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                     active_deadline_seconds = 56, 
                     backoff_limit = 56, 
                     clean_pod_policy = '0', 
-                    scheduling_policy = V1SchedulingPolicy(
+                    scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                         min_available = 56, 
                         min_resources = {
                             'key' : None
@@ -50,7 +50,7 @@ class TestKubeflowOrgV1XGBoostJobSpec(unittest.TestCase):
                         schedule_timeout_seconds = 56, ), 
                     ttl_seconds_after_finished = 56, ), 
                 xgb_replica_specs = {
-                    'key' : V1ReplicaSpec(
+                    'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                         replicas = 56, 
                         restart_policy = '0', 
                         template = None, )
@@ -58,11 +58,11 @@ class TestKubeflowOrgV1XGBoostJobSpec(unittest.TestCase):
             )
         else :
             return KubeflowOrgV1XGBoostJobSpec(
-                run_policy = V1RunPolicy(
+                run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                     active_deadline_seconds = 56, 
                     backoff_limit = 56, 
                     clean_pod_policy = '0', 
-                    scheduling_policy = V1SchedulingPolicy(
+                    scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                         min_available = 56, 
                         min_resources = {
                             'key' : None
@@ -72,7 +72,7 @@ class TestKubeflowOrgV1XGBoostJobSpec(unittest.TestCase):
                         schedule_timeout_seconds = 56, ), 
                     ttl_seconds_after_finished = 56, ),
                 xgb_replica_specs = {
-                    'key' : V1ReplicaSpec(
+                    'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                         replicas = 56, 
                         restart_policy = '0', 
                         template = None, )

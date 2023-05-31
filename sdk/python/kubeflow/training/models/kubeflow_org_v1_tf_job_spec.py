@@ -34,9 +34,9 @@ class KubeflowOrgV1TFJobSpec(object):
     """
     openapi_types = {
         'enable_dynamic_worker': 'bool',
-        'run_policy': 'V1RunPolicy',
+        'run_policy': 'KubeflowOrgV1RunPolicy',
         'success_policy': 'str',
-        'tf_replica_specs': 'dict(str, V1ReplicaSpec)'
+        'tf_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)'
     }
 
     attribute_map = {
@@ -94,7 +94,7 @@ class KubeflowOrgV1TFJobSpec(object):
 
 
         :return: The run_policy of this KubeflowOrgV1TFJobSpec.  # noqa: E501
-        :rtype: V1RunPolicy
+        :rtype: KubeflowOrgV1RunPolicy
         """
         return self._run_policy
 
@@ -104,7 +104,7 @@ class KubeflowOrgV1TFJobSpec(object):
 
 
         :param run_policy: The run_policy of this KubeflowOrgV1TFJobSpec.  # noqa: E501
-        :type: V1RunPolicy
+        :type: KubeflowOrgV1RunPolicy
         """
         if self.local_vars_configuration.client_side_validation and run_policy is None:  # noqa: E501
             raise ValueError("Invalid value for `run_policy`, must not be `None`")  # noqa: E501
@@ -141,7 +141,7 @@ class KubeflowOrgV1TFJobSpec(object):
         A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,   {     \"PS\": ReplicaSpec,     \"Worker\": ReplicaSpec,   }  # noqa: E501
 
         :return: The tf_replica_specs of this KubeflowOrgV1TFJobSpec.  # noqa: E501
-        :rtype: dict(str, V1ReplicaSpec)
+        :rtype: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         return self._tf_replica_specs
 
@@ -152,7 +152,7 @@ class KubeflowOrgV1TFJobSpec(object):
         A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,   {     \"PS\": ReplicaSpec,     \"Worker\": ReplicaSpec,   }  # noqa: E501
 
         :param tf_replica_specs: The tf_replica_specs of this KubeflowOrgV1TFJobSpec.  # noqa: E501
-        :type: dict(str, V1ReplicaSpec)
+        :type: dict(str, KubeflowOrgV1ReplicaSpec)
         """
         if self.local_vars_configuration.client_side_validation and tf_replica_specs is None:  # noqa: E501
             raise ValueError("Invalid value for `tf_replica_specs`, must not be `None`")  # noqa: E501

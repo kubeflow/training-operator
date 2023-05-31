@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,7 +26,7 @@ const (
 	// MPIJobDefaultContainerName is the name of the MPIJob container.
 	MPIJobDefaultContainerName = "mpi"
 	// MPIJobDefaultRestartPolicy is default RestartPolicy for ReplicaSpec.
-	MPIJobDefaultRestartPolicy = commonv1.RestartPolicyNever
+	MPIJobDefaultRestartPolicy = RestartPolicyNever
 	MPIJobKind                 = "MPIJob"
 	// MPIJobPlural is the MPIJobPlural for TFJob.
 	MPIJobPlural = "mpijobs"
@@ -36,9 +35,9 @@ const (
 	// MPIJobFrameworkName is the name of the ML Framework
 	MPIJobFrameworkName = "mpi"
 	// MPIJobReplicaTypeLauncher is the type for launcher replica.
-	MPIJobReplicaTypeLauncher commonv1.ReplicaType = "Launcher"
+	MPIJobReplicaTypeLauncher ReplicaType = "Launcher"
 	// MPIJobReplicaTypeWorker is the type for worker replicas.
-	MPIJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	MPIJobReplicaTypeWorker ReplicaType = "Worker"
 )
 
 // +genclient
@@ -52,8 +51,8 @@ const (
 type MPIJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              MPIJobSpec         `json:"spec,omitempty"`
-	Status            commonv1.JobStatus `json:"status,omitempty"`
+	Spec              MPIJobSpec `json:"spec,omitempty"`
+	Status            JobStatus  `json:"status,omitempty"`
 }
 
 type MPIJobSpec struct {
@@ -65,11 +64,11 @@ type MPIJobSpec struct {
 
 	// CleanPodPolicy defines the policy that whether to kill pods after the job completes.
 	// Defaults to None.
-	CleanPodPolicy *commonv1.CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
+	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
 	// `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that
 	// specify the MPI replicas to run.
-	MPIReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"mpiReplicaSpecs"`
+	MPIReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"mpiReplicaSpecs"`
 
 	// MainContainer specifies name of the main container which
 	// executes the MPI code.
@@ -78,7 +77,7 @@ type MPIJobSpec struct {
 	// `RunPolicy` encapsulates various runtime policies of the distributed training
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
-	RunPolicy commonv1.RunPolicy `json:"runPolicy,omitempty"`
+	RunPolicy RunPolicy `json:"runPolicy,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"k8s.io/utils/pointer"

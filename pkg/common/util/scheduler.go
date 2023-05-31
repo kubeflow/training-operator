@@ -14,7 +14,7 @@
 
 package util
 
-import commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+import commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 func IsGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, schedulerName string) bool {
 	for _, spec := range replicas {

@@ -15,7 +15,6 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,7 +27,7 @@ const (
 	// MXJobDefaultPort is default value of the port.
 	MXJobDefaultPort = 9091
 	// MXJobDefaultRestartPolicy is default RestartPolicy for MXReplicaSpec.
-	MXJobDefaultRestartPolicy = commonv1.RestartPolicyNever
+	MXJobDefaultRestartPolicy = RestartPolicyNever
 	// MXJobKind is the kind name.
 	MXJobKind = "MXJob"
 	// MXJobPlural is the MXNetPlural for mxJob.
@@ -38,25 +37,25 @@ const (
 	// MXJobFrameworkName is the name of the ML Framework
 	MXJobFrameworkName = "mxnet"
 	// MXJobReplicaTypeScheduler is the type for scheduler replica in MXNet.
-	MXJobReplicaTypeScheduler commonv1.ReplicaType = "Scheduler"
+	MXJobReplicaTypeScheduler ReplicaType = "Scheduler"
 
 	// MXJobReplicaTypeServer is the type for parameter servers of distributed MXNet.
-	MXJobReplicaTypeServer commonv1.ReplicaType = "Server"
+	MXJobReplicaTypeServer ReplicaType = "Server"
 
 	// MXJobReplicaTypeWorker is the type for workers of distributed MXNet.
 	// This is also used for non-distributed MXNet.
-	MXJobReplicaTypeWorker commonv1.ReplicaType = "Worker"
+	MXJobReplicaTypeWorker ReplicaType = "Worker"
 
 	// MXJobReplicaTypeTunerTracker
 	// This the auto-tuning tracker e.g. autotvm tracker, it will dispatch tuning task to TunerServer
-	MXJobReplicaTypeTunerTracker commonv1.ReplicaType = "TunerTracker"
+	MXJobReplicaTypeTunerTracker ReplicaType = "TunerTracker"
 
 	// MXJobReplicaTypeTunerServer
-	MXJobReplicaTypeTunerServer commonv1.ReplicaType = "TunerServer"
+	MXJobReplicaTypeTunerServer ReplicaType = "TunerServer"
 
 	// MXJobReplicaTypeTuner is the type for auto-tuning of distributed MXNet.
 	// This is also used for non-distributed MXNet.
-	MXJobReplicaTypeTuner commonv1.ReplicaType = "Tuner"
+	MXJobReplicaTypeTuner ReplicaType = "Tuner"
 )
 
 // MXJobSpec defines the desired state of MXJob
@@ -65,21 +64,21 @@ type MXJobSpec struct {
 	// job, for example how to clean up resources and how long the job can stay
 	// active.
 	//+kubebuilder:validation:Optional
-	RunPolicy commonv1.RunPolicy `json:"runPolicy"`
+	RunPolicy RunPolicy `json:"runPolicy"`
 
 	// JobMode specify the kind of MXjob to do. Different mode may have
 	// different MXReplicaSpecs request
 	JobMode JobModeType `json:"jobMode"`
 
-	// MXReplicaSpecs is map of commonv1.ReplicaType and commonv1.ReplicaSpec
+	// MXReplicaSpecs is map of ReplicaType and ReplicaSpec
 	// specifies the MX replicas to run.
 	// For example,
 	//   {
-	//     "Scheduler": commonv1.ReplicaSpec,
-	//     "Server": commonv1.ReplicaSpec,
-	//     "Worker": commonv1.ReplicaSpec,
+	//     "Scheduler": ReplicaSpec,
+	//     "Server": ReplicaSpec,
+	//     "Worker": ReplicaSpec,
 	//   }
-	MXReplicaSpecs map[commonv1.ReplicaType]*commonv1.ReplicaSpec `json:"mxReplicaSpecs"`
+	MXReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"mxReplicaSpecs"`
 }
 
 // JobModeType id the type for JobMode
@@ -114,8 +113,8 @@ type MXJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MXJobSpec          `json:"spec,omitempty"`
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Spec   MXJobSpec `json:"spec,omitempty"`
+	Status JobStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -16,8 +16,6 @@ package v1
 
 import (
 	"fmt"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 func ValidateV1MpiJobSpec(c *MPIJobSpec) error {
@@ -30,7 +28,7 @@ func ValidateV1MpiJobSpec(c *MPIJobSpec) error {
 			return fmt.Errorf("MPIReplicaSpecs is not valid: containers definition expected in %v", rType)
 		}
 		// Make sure the replica type is valid.
-		validReplicaTypes := []commonv1.ReplicaType{MPIJobReplicaTypeLauncher, MPIJobReplicaTypeWorker}
+		validReplicaTypes := []ReplicaType{MPIJobReplicaTypeLauncher, MPIJobReplicaTypeWorker}
 
 		isValidReplicaType := false
 		for _, t := range validReplicaTypes {

@@ -37,7 +37,7 @@ class KubeflowOrgV1PaddleJob(object):
         'kind': 'str',
         'metadata': 'V1ObjectMeta',
         'spec': 'KubeflowOrgV1PaddleJobSpec',
-        'status': 'V1JobStatus'
+        'status': 'KubeflowOrgV1JobStatus'
     }
 
     attribute_map = {
@@ -166,7 +166,7 @@ class KubeflowOrgV1PaddleJob(object):
 
 
         :return: The status of this KubeflowOrgV1PaddleJob.  # noqa: E501
-        :rtype: V1JobStatus
+        :rtype: KubeflowOrgV1JobStatus
         """
         return self._status
 
@@ -176,7 +176,7 @@ class KubeflowOrgV1PaddleJob(object):
 
 
         :param status: The status of this KubeflowOrgV1PaddleJob.  # noqa: E501
-        :type: V1JobStatus
+        :type: KubeflowOrgV1JobStatus
         """
 
         self._status = status

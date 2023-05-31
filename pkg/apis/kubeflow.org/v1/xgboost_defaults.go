@@ -17,8 +17,6 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 )
 
 func addXGBoostJobDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -35,7 +33,7 @@ func setXGBoostJobDefaultPort(spec *corev1.PodSpec) {
 
 // setXGBoostJobTypeNamesToCamelCase sets the name of all replica types from any case to correct case.
 func setXGBoostJobTypeNamesToCamelCase(xgboostJob *XGBoostJob) {
-	replicaTypes := []commonv1.ReplicaType{
+	replicaTypes := []ReplicaType{
 		XGBoostJobReplicaTypeMaster,
 		XGBoostJobReplicaTypeWorker,
 	}
@@ -48,7 +46,7 @@ func setXGBoostJobTypeNamesToCamelCase(xgboostJob *XGBoostJob) {
 func SetDefaults_XGBoostJob(xgboostJob *XGBoostJob) {
 	// Set default cleanpod policy to None.
 	if xgboostJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := commonv1.CleanPodPolicyNone
+		all := CleanPodPolicyNone
 		xgboostJob.Spec.RunPolicy.CleanPodPolicy = &all
 	}
 
