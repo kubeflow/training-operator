@@ -45,16 +45,7 @@ if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
   # TODO: Once we support new API group, we should switch the scheduler-plugins version.
   git checkout df16b76a226e58b6961b30ba800e5a713d433c44
 
-  # We need to use a values.yaml for v1.23 if K8S cluster version is v1.23.x since latest helm chart does not have compatible with v1.23.
-  # TODO (tenzen-y): Once we stop supporting v1.23, we must remove the below:
-  K8S_MINOR=$(echo "${KUBERNETES_VERSION}" | cut -d . -f 2)
-  if [ "$K8S_MINOR" = "23" ]; then \
-      helm install \
-        -f https://raw.githubusercontent.com/kubernetes-sigs/scheduler-plugins/release-1.23/manifests/install/charts/as-a-second-scheduler/values.yaml \
-        scheduler-plugins as-a-second-scheduler/
-  else
-    helm install scheduler-plugins as-a-second-scheduler/
-  fi
+  helm install scheduler-plugins as-a-second-scheduler/
   popd
   rm -rf scheduler-plugins
 

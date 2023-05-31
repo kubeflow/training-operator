@@ -16,7 +16,7 @@ jobs:
     # strategy:
     #   fail-fast: false
     #   matrix:
-    #     kubernetes-version: ["v1.23.12", "v1.24.6", "v1.25.2"]
+    #     kubernetes-version: ["v1.24.6", "v1.25.2", "v1.26.4"]
     #     gang-scheduler-name: ["none", "scheduler-plugins"]
     # ```
     # The difference is that each combination is randomly assigned various Python versions
@@ -26,7 +26,7 @@ jobs:
       matrix:
         # TODO (tenzen-y): Add volcano.
         include:
-          - kubernetes-version: v1.23.12
+          - kubernetes-version: v1.26.4
             gang-scheduler-name: "none"
             python-version: "3.10"
           - kubernetes-version: v1.24.6
@@ -35,7 +35,7 @@ jobs:
           - kubernetes-version: v1.25.2
             gang-scheduler-name: "none"
             python-version: "3.8"
-          - kubernetes-version: v1.23.12
+          - kubernetes-version: v1.26.4
             gang-scheduler-name: "scheduler-plugins"
             python-version: "3.9"
           - kubernetes-version: v1.24.6

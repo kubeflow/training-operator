@@ -62,7 +62,7 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	golangci-lint run --timeout 5m --go 1.19 ./...
 
-ENVTEST_K8S_VERSION ?= 1.25
+ENVTEST_K8S_VERSION ?= 1.26
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
@@ -72,7 +72,7 @@ test: envtest
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
-	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@4b208abbf44562af057fafc512b4baff2c75c196 # v0.13.0
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@cd65cb25d314f40a329a688f4714fe3282589e97 # v0.14.6
 	@echo "setup-envtest has been installed"
 endif
 	@echo "setup-envtest has already installed"
@@ -108,7 +108,7 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0
+	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.4
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
