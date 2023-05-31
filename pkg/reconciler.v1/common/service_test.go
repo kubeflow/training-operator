@@ -15,6 +15,7 @@
 package common_test
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -25,7 +26,9 @@ import (
 	test_utilv1 "github.com/kubeflow/training-operator/test_job/test_util/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestCreateNewService(t *testing.T) {
@@ -80,21 +83,15 @@ func TestCreateNewService(t *testing.T) {
 			t.Errorf("Got error when CreateNewService: %v", err)
 			continue
 		}
-
-		found := false
-		for _, obj := range testReconciler.DC.Cache {
-			if obj.GetName() == c.expectedService.GetName() && obj.GetNamespace() == c.expectedService.GetNamespace() {
-				found = true
-				svcCreated := obj.(*corev1.Service)
-				svcExpected := c.expectedService
-				if !reflect.DeepEqual(svcExpected.Spec, svcCreated.Spec) {
-					t.Errorf("Spec mismatch for service %s/%s", svcExpected.GetNamespace(), svcExpected.GetName())
-				}
+		var got corev1.Service
+		if err = testReconciler.FC.Get(context.Background(), client.ObjectKeyFromObject(c.expectedService), &got, &client.GetOptions{}); err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Errorf("Cannot find Service %s/%s created", c.expectedService.GetNamespace(), c.expectedService.GetName())
 			}
+			t.Errorf("Got error when Get service: %v", err)
 		}
-
-		if !found {
-			t.Errorf("Cannot find Service %s/%s created", c.expectedService.GetNamespace(), c.expectedService.GetName())
+		if !reflect.DeepEqual(c.expectedService.Spec, got.Spec) {
+			t.Errorf("Spec mismatch for service %s/%s", c.expectedService.GetNamespace(), c.expectedService.GetName())
 		}
 	}
 }

@@ -14,6 +14,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -24,7 +25,7 @@ type TestReconciler struct {
 	common_reconciler.VolcanoReconciler
 	common_reconciler.JobReconciler
 
-	DC       *DummyClient
+	FC       client.Client
 	Job      *v1.TestJob
 	Pods     []*corev1.Pod
 	Services []*corev1.Service
@@ -32,31 +33,31 @@ type TestReconciler struct {
 }
 
 func NewTestReconciler() *TestReconciler {
-	scheme := runtime.NewScheme()
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1.AddToScheme(scheme))
+	scm := runtime.NewScheme()
+	utilruntime.Must(clientgoscheme.AddToScheme(scm))
+	utilruntime.Must(v1.AddToScheme(scm))
 
-	dummy_client := &DummyClient{}
+	fakeClient := fake.NewClientBuilder().WithScheme(scm).Build()
 
 	r := &TestReconciler{
-		DC: dummy_client,
+		FC: fakeClient,
 	}
 
 	// Generate Bare Components
-	jobR := common_reconciler.BareJobReconciler(dummy_client)
+	jobR := common_reconciler.BareJobReconciler(fakeClient)
 	jobR.OverrideForJobInterface(r, r, r, r)
 
-	podR := common_reconciler.BarePodReconciler(dummy_client)
+	podR := common_reconciler.BarePodReconciler(fakeClient)
 	podR.OverrideForPodInterface(r, r, r)
 
-	svcR := common_reconciler.BareServiceReconciler(dummy_client)
+	svcR := common_reconciler.BareServiceReconciler(fakeClient)
 	svcR.OverrideForServiceInterface(r, r, r)
 
-	gangR := common_reconciler.BareVolcanoReconciler(dummy_client, nil, false)
+	gangR := common_reconciler.BareVolcanoReconciler(fakeClient, nil, false)
 	gangR.OverrideForGangSchedulingInterface(r)
 
 	Log := log.Log
-	utilR := common_reconciler.BareUtilReconciler(nil, Log, scheme)
+	utilR := common_reconciler.BareUtilReconciler(nil, Log, scm)
 	//kubeflowReconciler := common_reconciler.BareKubeflowReconciler()
 
 	r.JobReconciler = *jobR
