@@ -54,6 +54,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.3.0
         with:
