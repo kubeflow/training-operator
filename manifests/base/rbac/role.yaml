@@ -249,7 +249,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - scheduling.sigs.k8s.io
+  - scheduling.volcano.sh
   resources:
   - podgroups
   verbs:
@@ -261,7 +261,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - scheduling.volcano.sh
+  - scheduling.x-k8s.io
   resources:
   - podgroups
   verbs:

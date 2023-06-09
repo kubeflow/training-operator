@@ -14,10 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This shell script is used to build a cluster and create a namespace from our
-# argo workflow
-
-
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -34,20 +30,14 @@ echo "Installing training operator manifests"
 kustomize build . | kubectl apply -f -
 
 if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
-  echo "Installing Scheduler Plugins..."
-  # We need to use latest helm chart since older helm chart has bugs in RBAC.
-  git clone https://github.com/kubernetes-sigs/scheduler-plugins.git
-  pushd scheduler-plugins/manifests/install/charts
+  SCHEDULER_PLUGINS_VERSION=$(go list -m -f "{{.Version}}" sigs.k8s.io/scheduler-plugins)
+  git clone https://github.com/kubernetes-sigs/scheduler-plugins.git -b "${SCHEDULER_PLUGINS_VERSION}"
 
-  # Since https://github.com/kubernetes-sigs/scheduler-plugins/pull/526, the scheduler-plugins switch the API group to 'x-k8s.io'.
-  # So we must use the specific commit version to available the older API group, 'sigs.k8s.io'.
-  # Details: https://github.com/kubeflow/training-operator/issues/1769
-  # TODO: Once we support new API group, we should switch the scheduler-plugins version.
-  git checkout df16b76a226e58b6961b30ba800e5a713d433c44
-
-  helm install scheduler-plugins as-a-second-scheduler/
-  popd
-  rm -rf scheduler-plugins
+  echo "Installing Scheduler Plugins ${SCHEDULER_PLUGINS_VERSION}..."
+  helm install scheduler-plugins scheduler-plugins/manifests/install/charts/as-a-second-scheduler/ --create-namespace \
+    --namespace scheduler-plugins \
+    --set controller.image="registry.k8s.io/scheduler-plugins/controller:${SCHEDULER_PLUGINS_VERSION}" \
+    --set scheduler.image="registry.k8s.io/scheduler-plugins/kube-scheduler:${SCHEDULER_PLUGINS_VERSION}"
 
   echo "Configure gang-scheduling using scheduler-plugins to training-operator"
   kubectl patch -n kubeflow deployments training-operator --type='json' \
@@ -60,7 +50,8 @@ until kubectl get pods -n kubeflow | grep training-operator | grep 1/1 || [[ $TI
   TIMEOUT=$(( TIMEOUT - 1 ))
 done
 if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
-  kubectl wait pods --for=condition=ready -n scheduler-plugins --timeout "${TIMEOUT}s" --all
+  kubectl wait pods --for=condition=ready -n scheduler-plugins --timeout "${TIMEOUT}s" --all || \
+    (kubectl get pods -n scheduler-plugins && kubectl describe pods -n scheduler-plugins; exit 1)
 fi
 
 kubectl version
