@@ -10,6 +10,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# os and arch setup
+OS=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=amd64
+ifeq (darwin,${OS})
+ifeq ($(shell uname -m),arm64)
+ARCH=arm64  # m1 or m2
+endif
+endif
+
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -68,7 +78,7 @@ HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
 
 test: envtest
-	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=${ARCH} --os=${OS} use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
