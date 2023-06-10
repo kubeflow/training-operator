@@ -68,7 +68,7 @@ HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
 
 test: envtest
-	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=${ARCH} --os=${OS} use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
