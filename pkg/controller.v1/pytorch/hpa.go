@@ -39,7 +39,7 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) e
 
 	current := &autoscalingv2.HorizontalPodAutoscaler{}
 
-	// Get the exepected HPA.
+	// Get the expected HPA.
 	expected, err := desiredHPA(pytorchJob, r.Scheme)
 	if err != nil {
 		return err
