@@ -42,6 +42,16 @@ if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
   echo "Configure gang-scheduling using scheduler-plugins to training-operator"
   kubectl patch -n kubeflow deployments training-operator --type='json' \
     -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/1", "value": "--gang-scheduler-name=scheduler-plugins"}]'
+elif  [ "${GANG_SCHEDULER_NAME}" = "volcano" ]; then
+  VOLCANO_SCHEDULER_VERSION=$(go list -m -f "{{.Version}}" volcano.sh/apis)
+
+  # patch scheduler first so that it is ready when scheduler-deployment installing finished
+  echo "Configure gang-scheduling using volcano to training-operator"
+  kubectl patch -n kubeflow deployments training-operator --type='json' \
+    -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/1", "value": "--gang-scheduler-name=volcano"}]'
+
+  echo "Installing volcano scheduler ${VOLCANO_SCHEDULER_VERSION}..."
+  kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/${VOLCANO_SCHEDULER_VERSION}/installer/volcano-development.yaml
 fi
 
 TIMEOUT=30
@@ -52,6 +62,14 @@ done
 if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
   kubectl wait pods --for=condition=ready -n scheduler-plugins --timeout "${TIMEOUT}s" --all || \
     (kubectl get pods -n scheduler-plugins && kubectl describe pods -n scheduler-plugins; exit 1)
+fi
+
+# wait for volcano up
+if [ "${GANG_SCHEDULER_NAME}" = "volcano" ]; then
+  kubectl rollout status deployment -n volcano-system volcano-admission --timeout "${TIMEOUT}s" && \
+  kubectl rollout status deployment -n volcano-system volcano-scheduler --timeout "${TIMEOUT}s" && \
+  kubectl rollout status deployment -n volcano-system volcano-controllers --timeout "${TIMEOUT}s" || \
+    (kubectl get pods -n volcano-system && kubectl describe pods -n volcano-system; exit 1)
 fi
 
 kubectl version

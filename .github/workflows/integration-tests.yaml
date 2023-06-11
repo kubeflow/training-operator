@@ -44,6 +44,15 @@ jobs:
           - kubernetes-version: v1.25.2
             gang-scheduler-name: "scheduler-plugins"
             python-version: "3.10"
+          - kubernetes-version: v1.26.4
+            gang-scheduler-name: "volcano"
+            python-version: "3.9"
+          - kubernetes-version: v1.24.6
+            gang-scheduler-name: "volcano"
+            python-version: "3.10"
+          - kubernetes-version: v1.25.2
+            gang-scheduler-name: "volcano"
+            python-version: "3.10"
 
     steps:
       - name: Checkout
