@@ -186,92 +186,66 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		Reconciler:              jc,
 		MaxConcurrentReconciles: controllerThreads,
 	})
-
 	if err != nil {
 		return err
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(&source.Kind{Type: &kubeflowv1.MPIJob{}}, &handler.EnqueueRequestForObject{},
+	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.MPIJob{}), &handler.EnqueueRequestForObject{},
 		predicate.Funcs{CreateFunc: jc.onOwnerCreateFunc()},
 	); err != nil {
 		return err
 	}
 
-	// inject watching for job related pod
-	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.MPIJob{},
-	}, predicate.Funcs{
+	// eventHandler for owned objects
+	eventHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner())
+	predicates := predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(jc.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&jc.JobController),
 		DeleteFunc: util.OnDependentDeleteFunc(jc.Expectations),
-	}); err != nil {
-		return err
 	}
-
 	// Create generic predicates
-	predicates := predicate.Funcs{
+	genericPredicates := predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
 		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
 		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
 	}
-
+	// inject watching for job related pod
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+		return err
+	}
 	// inject watching for job related ConfigMap
-	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.MPIJob{},
-	}, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ConfigMap{}), eventHandler, genericPredicates); err != nil {
 		return err
 	}
-
 	// inject watching for job related Role
-	if err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.MPIJob{},
-	}, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.Role{}), eventHandler, genericPredicates); err != nil {
 		return err
 	}
-
 	// inject watching for job related RoleBinding
-	if err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.MPIJob{},
-	}, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.RoleBinding{}), eventHandler, genericPredicates); err != nil {
 		return err
 	}
-
 	// inject watching for job related ServiceAccount
-	if err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubeflowv1.MPIJob{},
-	}, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ServiceAccount{}), eventHandler, genericPredicates); err != nil {
 		return err
 	}
-
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
-	_, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
-		v1beta1.SchemeGroupVersion.Version)
-	if err == nil {
+	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.GroupName, Kind: "PodGroup"},
+		v1beta1.SchemeGroupVersion.Version,
+	); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(&source.Kind{Type: &v1beta1.PodGroup{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &kubeflowv1.MPIJob{},
-		}, predicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
 			return err
 		}
 	}
-
 	// skip watching scheduler-plugins PodGroup if scheduler-plugins PodGroup is not installed
-	_, err = mgr.GetRESTMapper().RESTMapping(
+	if _, err = mgr.GetRESTMapper().RESTMapping(
 		schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
-		schedulerpluginsv1alpha1.SchemeGroupVersion.Version)
-	if err == nil {
+		schedulerpluginsv1alpha1.SchemeGroupVersion.Version,
+	); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(&source.Kind{Type: &schedulerpluginsv1alpha1.PodGroup{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &kubeflowv1.MPIJob{},
-		}, predicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
 			return err
 		}
 	}

@@ -19,10 +19,9 @@ package fake
 import (
 	"context"
 
-	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,25 +33,25 @@ type FakeMXJobs struct {
 	ns   string
 }
 
-var mxjobsResource = schema.GroupVersionResource{Group: "kubeflow.org", Version: "v1", Resource: "mxjobs"}
+var mxjobsResource = v1.SchemeGroupVersion.WithResource("mxjobs")
 
-var mxjobsKind = schema.GroupVersionKind{Group: "kubeflow.org", Version: "v1", Kind: "MXJob"}
+var mxjobsKind = v1.SchemeGroupVersion.WithKind("MXJob")
 
 // Get takes name of the mXJob, and returns the corresponding mXJob object, and an error if there is any.
-func (c *FakeMXJobs) Get(ctx context.Context, name string, options v1.GetOptions) (result *kubefloworgv1.MXJob, err error) {
+func (c *FakeMXJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.MXJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(mxjobsResource, c.ns, name), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewGetAction(mxjobsResource, c.ns, name), &v1.MXJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.MXJob), err
+	return obj.(*v1.MXJob), err
 }
 
 // List takes label and field selectors, and returns the list of MXJobs that match those selectors.
-func (c *FakeMXJobs) List(ctx context.Context, opts v1.ListOptions) (result *kubefloworgv1.MXJobList, err error) {
+func (c *FakeMXJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.MXJobList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(mxjobsResource, mxjobsKind, c.ns, opts), &kubefloworgv1.MXJobList{})
+		Invokes(testing.NewListAction(mxjobsResource, mxjobsKind, c.ns, opts), &v1.MXJobList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +61,8 @@ func (c *FakeMXJobs) List(ctx context.Context, opts v1.ListOptions) (result *kub
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &kubefloworgv1.MXJobList{ListMeta: obj.(*kubefloworgv1.MXJobList).ListMeta}
-	for _, item := range obj.(*kubefloworgv1.MXJobList).Items {
+	list := &v1.MXJobList{ListMeta: obj.(*v1.MXJobList).ListMeta}
+	for _, item := range obj.(*v1.MXJobList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -72,69 +71,69 @@ func (c *FakeMXJobs) List(ctx context.Context, opts v1.ListOptions) (result *kub
 }
 
 // Watch returns a watch.Interface that watches the requested mXJobs.
-func (c *FakeMXJobs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeMXJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(mxjobsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a mXJob and creates it.  Returns the server's representation of the mXJob, and an error, if there is any.
-func (c *FakeMXJobs) Create(ctx context.Context, mXJob *kubefloworgv1.MXJob, opts v1.CreateOptions) (result *kubefloworgv1.MXJob, err error) {
+func (c *FakeMXJobs) Create(ctx context.Context, mXJob *v1.MXJob, opts metav1.CreateOptions) (result *v1.MXJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(mxjobsResource, c.ns, mXJob), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewCreateAction(mxjobsResource, c.ns, mXJob), &v1.MXJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.MXJob), err
+	return obj.(*v1.MXJob), err
 }
 
 // Update takes the representation of a mXJob and updates it. Returns the server's representation of the mXJob, and an error, if there is any.
-func (c *FakeMXJobs) Update(ctx context.Context, mXJob *kubefloworgv1.MXJob, opts v1.UpdateOptions) (result *kubefloworgv1.MXJob, err error) {
+func (c *FakeMXJobs) Update(ctx context.Context, mXJob *v1.MXJob, opts metav1.UpdateOptions) (result *v1.MXJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(mxjobsResource, c.ns, mXJob), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewUpdateAction(mxjobsResource, c.ns, mXJob), &v1.MXJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.MXJob), err
+	return obj.(*v1.MXJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeMXJobs) UpdateStatus(ctx context.Context, mXJob *kubefloworgv1.MXJob, opts v1.UpdateOptions) (*kubefloworgv1.MXJob, error) {
+func (c *FakeMXJobs) UpdateStatus(ctx context.Context, mXJob *v1.MXJob, opts metav1.UpdateOptions) (*v1.MXJob, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(mxjobsResource, "status", c.ns, mXJob), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewUpdateSubresourceAction(mxjobsResource, "status", c.ns, mXJob), &v1.MXJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.MXJob), err
+	return obj.(*v1.MXJob), err
 }
 
 // Delete takes name of the mXJob and deletes it. Returns an error if one occurs.
-func (c *FakeMXJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeMXJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(mxjobsResource, c.ns, name, opts), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewDeleteActionWithOptions(mxjobsResource, c.ns, name, opts), &v1.MXJob{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeMXJobs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeMXJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(mxjobsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &kubefloworgv1.MXJobList{})
+	_, err := c.Fake.Invokes(action, &v1.MXJobList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched mXJob.
-func (c *FakeMXJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubefloworgv1.MXJob, err error) {
+func (c *FakeMXJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MXJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(mxjobsResource, c.ns, name, pt, data, subresources...), &kubefloworgv1.MXJob{})
+		Invokes(testing.NewPatchSubresourceAction(mxjobsResource, c.ns, name, pt, data, subresources...), &v1.MXJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.MXJob), err
+	return obj.(*v1.MXJob), err
 }
