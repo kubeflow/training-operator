@@ -19,10 +19,9 @@ package fake
 import (
 	"context"
 
-	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,25 +33,25 @@ type FakeTFJobs struct {
 	ns   string
 }
 
-var tfjobsResource = schema.GroupVersionResource{Group: "kubeflow.org", Version: "v1", Resource: "tfjobs"}
+var tfjobsResource = v1.SchemeGroupVersion.WithResource("tfjobs")
 
-var tfjobsKind = schema.GroupVersionKind{Group: "kubeflow.org", Version: "v1", Kind: "TFJob"}
+var tfjobsKind = v1.SchemeGroupVersion.WithKind("TFJob")
 
 // Get takes name of the tFJob, and returns the corresponding tFJob object, and an error if there is any.
-func (c *FakeTFJobs) Get(ctx context.Context, name string, options v1.GetOptions) (result *kubefloworgv1.TFJob, err error) {
+func (c *FakeTFJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(tfjobsResource, c.ns, name), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewGetAction(tfjobsResource, c.ns, name), &v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.TFJob), err
+	return obj.(*v1.TFJob), err
 }
 
 // List takes label and field selectors, and returns the list of TFJobs that match those selectors.
-func (c *FakeTFJobs) List(ctx context.Context, opts v1.ListOptions) (result *kubefloworgv1.TFJobList, err error) {
+func (c *FakeTFJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.TFJobList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(tfjobsResource, tfjobsKind, c.ns, opts), &kubefloworgv1.TFJobList{})
+		Invokes(testing.NewListAction(tfjobsResource, tfjobsKind, c.ns, opts), &v1.TFJobList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +61,8 @@ func (c *FakeTFJobs) List(ctx context.Context, opts v1.ListOptions) (result *kub
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &kubefloworgv1.TFJobList{ListMeta: obj.(*kubefloworgv1.TFJobList).ListMeta}
-	for _, item := range obj.(*kubefloworgv1.TFJobList).Items {
+	list := &v1.TFJobList{ListMeta: obj.(*v1.TFJobList).ListMeta}
+	for _, item := range obj.(*v1.TFJobList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -72,69 +71,69 @@ func (c *FakeTFJobs) List(ctx context.Context, opts v1.ListOptions) (result *kub
 }
 
 // Watch returns a watch.Interface that watches the requested tFJobs.
-func (c *FakeTFJobs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeTFJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(tfjobsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a tFJob and creates it.  Returns the server's representation of the tFJob, and an error, if there is any.
-func (c *FakeTFJobs) Create(ctx context.Context, tFJob *kubefloworgv1.TFJob, opts v1.CreateOptions) (result *kubefloworgv1.TFJob, err error) {
+func (c *FakeTFJobs) Create(ctx context.Context, tFJob *v1.TFJob, opts metav1.CreateOptions) (result *v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(tfjobsResource, c.ns, tFJob), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewCreateAction(tfjobsResource, c.ns, tFJob), &v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.TFJob), err
+	return obj.(*v1.TFJob), err
 }
 
 // Update takes the representation of a tFJob and updates it. Returns the server's representation of the tFJob, and an error, if there is any.
-func (c *FakeTFJobs) Update(ctx context.Context, tFJob *kubefloworgv1.TFJob, opts v1.UpdateOptions) (result *kubefloworgv1.TFJob, err error) {
+func (c *FakeTFJobs) Update(ctx context.Context, tFJob *v1.TFJob, opts metav1.UpdateOptions) (result *v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(tfjobsResource, c.ns, tFJob), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewUpdateAction(tfjobsResource, c.ns, tFJob), &v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.TFJob), err
+	return obj.(*v1.TFJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeTFJobs) UpdateStatus(ctx context.Context, tFJob *kubefloworgv1.TFJob, opts v1.UpdateOptions) (*kubefloworgv1.TFJob, error) {
+func (c *FakeTFJobs) UpdateStatus(ctx context.Context, tFJob *v1.TFJob, opts metav1.UpdateOptions) (*v1.TFJob, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewUpdateSubresourceAction(tfjobsResource, "status", c.ns, tFJob), &v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.TFJob), err
+	return obj.(*v1.TFJob), err
 }
 
 // Delete takes name of the tFJob and deletes it. Returns an error if one occurs.
-func (c *FakeTFJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeTFJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(tfjobsResource, c.ns, name, opts), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewDeleteActionWithOptions(tfjobsResource, c.ns, name, opts), &v1.TFJob{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeTFJobs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeTFJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(tfjobsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &kubefloworgv1.TFJobList{})
+	_, err := c.Fake.Invokes(action, &v1.TFJobList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched tFJob.
-func (c *FakeTFJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubefloworgv1.TFJob, err error) {
+func (c *FakeTFJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.TFJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, pt, data, subresources...), &kubefloworgv1.TFJob{})
+		Invokes(testing.NewPatchSubresourceAction(tfjobsResource, c.ns, name, pt, data, subresources...), &v1.TFJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.TFJob), err
+	return obj.(*v1.TFJob), err
 }
