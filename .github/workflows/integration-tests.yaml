@@ -96,3 +96,15 @@ jobs:
           python3 -m pip install -e sdk/python; pytest sdk/python/test --log-cli-level=info --namespace=default
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
+
+      - name: Collect volcano logs
+        if: ${{ failure() &&  matrix.gang-scheduler-name == 'volcano' }}
+        run: |
+          echo "dump volcano-scheduler logs..."
+          kubectl logs -n volcano-system -l app=volcano-scheduler --tail=-1
+          echo "dump volcano-admission logs..."
+          kubectl logs -n volcano-system -l app=volcano-admission --tail=-1
+          echo "dump volcano-controllers logs..."
+          kubectl logs -n volcano-system -l app=volcano-controller --tail=-1
+          echo "dump podgroups description..."
+          kubectl describe podgroups.scheduling.volcano.sh -A
