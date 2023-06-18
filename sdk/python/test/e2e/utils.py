@@ -1,4 +1,5 @@
 import logging
+import time
 
 from kubeflow.training import TrainingClient
 from kubeflow.training.constants import constants
@@ -17,13 +18,19 @@ def verify_unschedulable_job_e2e(
     logging.info(f"\n\n\n{job_kind} is creating")
     client.wait_for_job_conditions(name, namespace, job_kind, {constants.JOB_CONDITION_CREATED})
 
-    # Job should have a Created condition.
-    if not client.is_job_created(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should be in Created condition")
+    logging.info("Checking 3 times that pods are not scheduled")
+    for num in range(3):
+        logging.info(f"Number of attempts: {int(num)+1}/3")
+        # Job should have a Created condition.
+        if not client.is_job_created(name, namespace, job_kind):
+            raise Exception(f"{job_kind} should be in Created condition")
 
-    # Job shouldn't have a Running condition.
-    if client.is_job_running(name, namespace, job_kind):
-        raise Exception(f"{job_kind} shouldn't be in Running condition")
+        # Job shouldn't have a Running condition.
+        if client.is_job_running(name, namespace, job_kind):
+            raise Exception(f"{job_kind} shouldn't be in Running condition")
+
+        logging.info("Sleeping 5 seconds...")
+        time.sleep(5)
 
 
 def verify_job_e2e(
@@ -68,8 +75,7 @@ def verify_job_e2e(
 def get_pod_spec_scheduler_name(gang_scheduler_name: str) -> str:
     if gang_scheduler_name == TEST_GANG_SCHEDULER_NAME_SCHEDULER_PLUGINS:
         return DEFAULT_SCHEDULER_PLUGINS_NAME
-    # TODO (tenzen-y): Implement E2E tests using volcano.
     elif gang_scheduler_name == TEST_GANG_SCHEDULER_NAME_VOLCANO:
-        return ""
+        return TEST_GANG_SCHEDULER_NAME_VOLCANO
 
     return ""
