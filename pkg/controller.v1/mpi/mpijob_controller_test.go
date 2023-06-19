@@ -709,6 +709,91 @@ var _ = Describe("MPIJob controller", func() {
 		})
 	})
 
+	Context("Test launcher's Intel MPI handling", func() {
+		It("Should create a launcher job with Intel MPI env variables", func() {
+			By("By creating MPIJobs with and without preset env variables")
+
+			testCases := map[string]struct {
+				envVariables         map[string]string
+				expectedEnvVariables map[string]string
+			}{
+				"withoutIMPIValues": {
+					envVariables: map[string]string{
+						"X_MPI_HYDRA_BOOTSTRAP": "foo",
+					},
+					expectedEnvVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP":      iMPIDefaultBootstrap,
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": fmt.Sprintf("%s/%s", configMountPath, kubexecScriptName),
+					},
+				},
+				"withIMPIBootstrap": {
+					envVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP": "RSH",
+					},
+					expectedEnvVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP":      "RSH",
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": fmt.Sprintf("%s/%s", configMountPath, kubexecScriptName),
+					},
+				},
+				"withIMPIBootstrapExec": {
+					envVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": "/script.sh",
+					},
+					expectedEnvVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP":      iMPIDefaultBootstrap,
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": "/script.sh",
+					},
+				},
+				"withIMPIBootstrapAndExec": {
+					envVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP":      "RSH",
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": "/script.sh",
+					},
+					expectedEnvVariables: map[string]string{
+						"I_MPI_HYDRA_BOOTSTRAP":      "RSH",
+						"I_MPI_HYDRA_BOOTSTRAP_EXEC": "/script.sh",
+					},
+				},
+			}
+
+			for testName, testCase := range testCases {
+				ctx := context.Background()
+				startTime := metav1.Now()
+				completionTime := metav1.Now()
+
+				jobName := "test-launcher-creation-" + strings.ToLower(testName)
+
+				mpiJob := newMPIJob(jobName, pointer.Int32(1), 1, gpuResourceName, &startTime, &completionTime)
+				Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
+
+				template := &mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template
+				Expect(len(template.Spec.Containers) == 1).To(BeTrue())
+
+				cont := &template.Spec.Containers[0]
+
+				for k, v := range testCase.envVariables {
+					cont.Env = append(cont.Env,
+						corev1.EnvVar{
+							Name:  k,
+							Value: v,
+						},
+					)
+				}
+
+				launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", false)
+
+				Expect(len(launcher.Spec.Containers) == 1).To(BeTrue())
+				for expectedKey, expectedValue := range testCase.expectedEnvVariables {
+					Expect(launcher.Spec.Containers[0].Env).Should(ContainElements(
+						corev1.EnvVar{
+							Name:  expectedKey,
+							Value: expectedValue,
+						}),
+					)
+				}
+			}
+		})
+	})
 })
 
 func ReplicaStatusMatch(replicaStatuses map[common.ReplicaType]*common.ReplicaStatus,

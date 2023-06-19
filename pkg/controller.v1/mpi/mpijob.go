@@ -45,6 +45,7 @@ const (
 	initContainerCpu        = "100m"
 	initContainerEphStorage = "5Gi"
 	initContainerMem        = "512Mi"
+	iMPIDefaultBootstrap    = "rsh"
 )
 
 const (
@@ -216,6 +217,26 @@ func isGPULauncher(mpiJob *kubeflowv1.MPIJob) bool {
 		}
 	}
 	return false
+}
+
+// hasIntelMPIBootstrapValues returns the existence of I_MPI_HYDRA_BOOTSTRAP
+// and I_MPI_HYDRA_BOOTSTRAP_EXEC values.
+// There are also _EXEC_EXTRA_ARGS and _AUTOFORK under the I_MPI_HYDRA_BOOTSTRAP
+// prefix but those are not checked on purpose.
+func hasIntelMPIBootstrapValues(envs []corev1.EnvVar) (bootstrap, exec bool) {
+	for _, env := range envs {
+		if env.Name == "I_MPI_HYDRA_BOOTSTRAP" {
+			bootstrap = true
+		} else if env.Name == "I_MPI_HYDRA_BOOTSTRAP_EXEC" {
+			exec = true
+		}
+
+		if bootstrap && exec {
+			break
+		}
+	}
+
+	return bootstrap, exec
 }
 
 func defaultReplicaLabels(genericLabels map[string]string, roleLabelVal string) map[string]string {
