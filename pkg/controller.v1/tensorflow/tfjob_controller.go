@@ -72,9 +72,6 @@ const (
 
 	controllerName = "tfjob-controller"
 
-	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
-	volcanoTaskSpecKey = "volcano.sh/task-spec"
-
 	// tfConfig is the environment variable name of TensorFlow cluster spec.
 	tfConfig = "TF_CONFIG"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
@@ -877,9 +874,6 @@ func (r *TFJobReconciler) createNewPod(tfjob *kubeflowv1.TFJob, rt, index string
 		}
 
 		r.PodGroupControl.DecoratePodTemplateSpec(podTemplate, tfjob, rt)
-		if gangSchedulerName == "volcano" {
-			podTemplate.Annotations[volcanoTaskSpecKey] = rt
-		}
 	}
 
 	err = r.PodControl.CreatePodsWithControllerRef(tfjob.Namespace, podTemplate, tfjob, controllerRef)

@@ -998,9 +998,6 @@ func (jc *MPIJobReconciler) newWorker(mpiJob *kubeflowv1.MPIJob, name string) *c
 
 		rtWorker := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeWorker))
 		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rtWorker)
-		if jc.PodGroupControl.GetSchedulerName() == "volcano" {
-			podSpec.Annotations[volcanoTaskSpecKey] = rtWorker
-		}
 	}
 
 	return &corev1.Pod{
@@ -1050,9 +1047,6 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 
 		rt := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher))
 		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rt)
-		if jc.PodGroupControl.GetSchedulerName() == "volcano" {
-			podSpec.Annotations[volcanoTaskSpecKey] = rt
-		}
 	}
 
 	podSpec.Spec.ServiceAccountName = launcherName

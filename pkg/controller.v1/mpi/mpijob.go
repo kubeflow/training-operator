@@ -73,9 +73,6 @@ const (
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-
-	// volcanoTaskSpecKey task spec key used in pod annotation when EnableGangScheduling is true
-	volcanoTaskSpecKey = "volcano.sh/task-spec"
 )
 
 const (
