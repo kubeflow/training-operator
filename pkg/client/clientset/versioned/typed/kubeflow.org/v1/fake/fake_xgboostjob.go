@@ -19,10 +19,9 @@ package fake
 import (
 	"context"
 
-	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,25 +33,25 @@ type FakeXGBoostJobs struct {
 	ns   string
 }
 
-var xgboostjobsResource = schema.GroupVersionResource{Group: "kubeflow.org", Version: "v1", Resource: "xgboostjobs"}
+var xgboostjobsResource = v1.SchemeGroupVersion.WithResource("xgboostjobs")
 
-var xgboostjobsKind = schema.GroupVersionKind{Group: "kubeflow.org", Version: "v1", Kind: "XGBoostJob"}
+var xgboostjobsKind = v1.SchemeGroupVersion.WithKind("XGBoostJob")
 
 // Get takes name of the xGBoostJob, and returns the corresponding xGBoostJob object, and an error if there is any.
-func (c *FakeXGBoostJobs) Get(ctx context.Context, name string, options v1.GetOptions) (result *kubefloworgv1.XGBoostJob, err error) {
+func (c *FakeXGBoostJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.XGBoostJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(xgboostjobsResource, c.ns, name), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewGetAction(xgboostjobsResource, c.ns, name), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.XGBoostJob), err
+	return obj.(*v1.XGBoostJob), err
 }
 
 // List takes label and field selectors, and returns the list of XGBoostJobs that match those selectors.
-func (c *FakeXGBoostJobs) List(ctx context.Context, opts v1.ListOptions) (result *kubefloworgv1.XGBoostJobList, err error) {
+func (c *FakeXGBoostJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.XGBoostJobList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(xgboostjobsResource, xgboostjobsKind, c.ns, opts), &kubefloworgv1.XGBoostJobList{})
+		Invokes(testing.NewListAction(xgboostjobsResource, xgboostjobsKind, c.ns, opts), &v1.XGBoostJobList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +61,8 @@ func (c *FakeXGBoostJobs) List(ctx context.Context, opts v1.ListOptions) (result
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &kubefloworgv1.XGBoostJobList{ListMeta: obj.(*kubefloworgv1.XGBoostJobList).ListMeta}
-	for _, item := range obj.(*kubefloworgv1.XGBoostJobList).Items {
+	list := &v1.XGBoostJobList{ListMeta: obj.(*v1.XGBoostJobList).ListMeta}
+	for _, item := range obj.(*v1.XGBoostJobList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -72,69 +71,69 @@ func (c *FakeXGBoostJobs) List(ctx context.Context, opts v1.ListOptions) (result
 }
 
 // Watch returns a watch.Interface that watches the requested xGBoostJobs.
-func (c *FakeXGBoostJobs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeXGBoostJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(xgboostjobsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a xGBoostJob and creates it.  Returns the server's representation of the xGBoostJob, and an error, if there is any.
-func (c *FakeXGBoostJobs) Create(ctx context.Context, xGBoostJob *kubefloworgv1.XGBoostJob, opts v1.CreateOptions) (result *kubefloworgv1.XGBoostJob, err error) {
+func (c *FakeXGBoostJobs) Create(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.CreateOptions) (result *v1.XGBoostJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(xgboostjobsResource, c.ns, xGBoostJob), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewCreateAction(xgboostjobsResource, c.ns, xGBoostJob), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.XGBoostJob), err
+	return obj.(*v1.XGBoostJob), err
 }
 
 // Update takes the representation of a xGBoostJob and updates it. Returns the server's representation of the xGBoostJob, and an error, if there is any.
-func (c *FakeXGBoostJobs) Update(ctx context.Context, xGBoostJob *kubefloworgv1.XGBoostJob, opts v1.UpdateOptions) (result *kubefloworgv1.XGBoostJob, err error) {
+func (c *FakeXGBoostJobs) Update(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.UpdateOptions) (result *v1.XGBoostJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(xgboostjobsResource, c.ns, xGBoostJob), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewUpdateAction(xgboostjobsResource, c.ns, xGBoostJob), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.XGBoostJob), err
+	return obj.(*v1.XGBoostJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeXGBoostJobs) UpdateStatus(ctx context.Context, xGBoostJob *kubefloworgv1.XGBoostJob, opts v1.UpdateOptions) (*kubefloworgv1.XGBoostJob, error) {
+func (c *FakeXGBoostJobs) UpdateStatus(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.UpdateOptions) (*v1.XGBoostJob, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(xgboostjobsResource, "status", c.ns, xGBoostJob), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewUpdateSubresourceAction(xgboostjobsResource, "status", c.ns, xGBoostJob), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.XGBoostJob), err
+	return obj.(*v1.XGBoostJob), err
 }
 
 // Delete takes name of the xGBoostJob and deletes it. Returns an error if one occurs.
-func (c *FakeXGBoostJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeXGBoostJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(xgboostjobsResource, c.ns, name, opts), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewDeleteActionWithOptions(xgboostjobsResource, c.ns, name, opts), &v1.XGBoostJob{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeXGBoostJobs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeXGBoostJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(xgboostjobsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &kubefloworgv1.XGBoostJobList{})
+	_, err := c.Fake.Invokes(action, &v1.XGBoostJobList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched xGBoostJob.
-func (c *FakeXGBoostJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubefloworgv1.XGBoostJob, err error) {
+func (c *FakeXGBoostJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.XGBoostJob, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, name, pt, data, subresources...), &kubefloworgv1.XGBoostJob{})
+		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, name, pt, data, subresources...), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*kubefloworgv1.XGBoostJob), err
+	return obj.(*v1.XGBoostJob), err
 }
