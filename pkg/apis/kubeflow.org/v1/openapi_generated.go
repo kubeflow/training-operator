@@ -124,13 +124,6 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"nProcPerNode": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int].",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"maxRestarts": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
@@ -907,6 +900,13 @@ func schema_pkg_apis_kubefloworg_v1_PyTorchJobSpec(ref common.ReferenceCallback)
 									},
 								},
 							},
+						},
+					},
+					"nprocPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of workers per node",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

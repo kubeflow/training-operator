@@ -49,8 +49,8 @@ const (
 
 	// Worker/node size related arguments.
 
-	// EnvNProcPerNode is the environment variable name for the number of processes per node.
-	EnvNProcPerNode = "PET_NPROC_PER_NODE"
+	// EnvNprocPerNode is the environment variable name for the number of processes per node.
+	EnvNprocPerNode = "PET_NPROC_PER_NODE"
 	// EnvNNodes is the environment variable name for the number of nodes.
 	EnvNNodes = "PET_NNODES"
 )
@@ -99,12 +99,6 @@ func (e ElasticEnvVarGenerator) Generate(
 		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvMaxRestarts,
 			Value: strconv.Itoa(int(*elasticPolicy.MaxRestarts)),
-		})
-	}
-	if elasticPolicy.NProcPerNode != nil {
-		envVars = append(envVars, corev1.EnvVar{
-			Name:  EnvNProcPerNode,
-			Value: strconv.Itoa(int(*elasticPolicy.NProcPerNode)),
 		})
 	}
 	if elasticPolicy.RDZVID != nil {

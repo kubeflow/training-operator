@@ -84,6 +84,8 @@ type PyTorchJobSpec struct {
 	//     "Worker": PyTorchReplicaSpec,
 	//   }
 	PyTorchReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"pytorchReplicaSpecs"`
+	// Number of workers per node
+	NprocPerNode *int32 `json:"nprocPerNode,omitempty"`
 }
 
 type ElasticPolicy struct {
@@ -106,8 +108,6 @@ type ElasticPolicy struct {
 	// --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values
 	// are ignored.
 	Standalone *bool `json:"standalone,omitempty"`
-	// Number of workers per node; supported values: [auto, cpu, gpu, int].
-	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
 
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
 

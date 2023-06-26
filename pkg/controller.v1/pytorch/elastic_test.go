@@ -73,8 +73,7 @@ func TestElasticGenerate(t *testing.T) {
 								Value: "rdzv-conf-value-1",
 							},
 						},
-						NProcPerNode: pointer.Int32(1),
-						MaxRestarts:  pointer.Int32(3),
+						MaxRestarts: pointer.Int32(3),
 					},
 					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
@@ -88,10 +87,6 @@ func TestElasticGenerate(t *testing.T) {
 				{
 					Name:  EnvMaxRestarts,
 					Value: "3",
-				},
-				{
-					Name:  EnvNProcPerNode,
-					Value: "1",
 				},
 				{
 					Name:  EnvRDZVBackend,

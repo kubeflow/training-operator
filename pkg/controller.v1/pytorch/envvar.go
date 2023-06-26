@@ -69,14 +69,24 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			}
 
 			totalReplicas := getTotalReplicas(pytorchjob)
+			worldSize := getWorldSize(pytorchjob)
+			nprocPerNode := getNprocPerNode(pytorchjob)
 
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "WORLD_SIZE",
-				Value: strconv.Itoa(int(totalReplicas)),
+				Value: strconv.Itoa(int(worldSize)),
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "RANK",
 				Value: strconv.Itoa(rank),
+			})
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  EnvNprocPerNode,
+				Value: strconv.Itoa(int(nprocPerNode)),
+			})
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  EnvNNodes,
+				Value: strconv.Itoa(int(totalReplicas)),
 			})
 		}
 
@@ -93,6 +103,23 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	}
 
 	return nil
+}
+
+func getNprocPerNode(job *kubeflowv1.PyTorchJob) int32 {
+	if job.Spec.NprocPerNode != nil {
+		return *job.Spec.NprocPerNode
+	} else {
+		return 1
+	}
+}
+
+func getWorldSize(job *kubeflowv1.PyTorchJob) int32 {
+	worldSize := int32(0)
+	nprocPerNode := getNprocPerNode(job)
+	for _, r := range job.Spec.PyTorchReplicaSpecs {
+		worldSize += *r.Replicas * nprocPerNode
+	}
+	return worldSize
 }
 
 func getTotalReplicas(job *kubeflowv1.PyTorchJob) int32 {

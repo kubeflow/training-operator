@@ -32,11 +32,6 @@
           "type": "integer",
           "format": "int32"
         },
-        "nProcPerNode": {
-          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int].",
-          "type": "integer",
-          "format": "int32"
-        },
         "rdzvBackend": {
           "type": "string"
         },
@@ -490,6 +485,11 @@
       "properties": {
         "elasticPolicy": {
           "$ref": "#/definitions/kubeflow.org.v1.ElasticPolicy"
+        },
+        "nprocPerNode": {
+          "description": "Number of workers per node",
+          "type": "integer",
+          "format": "int32"
         },
         "pytorchReplicaSpecs": {
           "description": "A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,\n  {\n    \"Master\": PyTorchReplicaSpec,\n    \"Worker\": PyTorchReplicaSpec,\n  }",
