@@ -47,12 +47,7 @@ const (
 	// EnvStartMethod is the environment variable name for the multiprocessing start method to use when creating workers, which could be fork, spawn and forkserver.
 	EnvStartMethod = "PET_START_METHOD"
 
-	// Worker/node size related arguments.
-
-	// EnvNprocPerNode is the environment variable name for the number of processes per node.
-	EnvNprocPerNode = "PET_NPROC_PER_NODE"
-	// EnvNNodes is the environment variable name for the number of nodes.
-	EnvNNodes = "PET_NNODES"
+	// EnvNNodes is the common environment variable name from envvar
 )
 
 var (
@@ -89,7 +84,7 @@ func (e ElasticEnvVarGenerator) Generate(
 	// Generate RDZV_BACKEND.
 	envVars = append(envVars, e.generateEnvBackend(elasticPolicy))
 	// Generate NNODES.
-	if envVar, err := e.generateEnvNNodes(job); err != nil {
+	if envVar, err := e.generateEnvNnodes(job); err != nil {
 		return nil, err
 	} else {
 		envVars = append(envVars, *envVar)
@@ -120,7 +115,7 @@ func (e ElasticEnvVarGenerator) Generate(
 	return envVars, nil
 }
 
-func (e ElasticEnvVarGenerator) generateEnvNNodes(job *kubeflowv1.PyTorchJob) (*corev1.EnvVar, error) {
+func (e ElasticEnvVarGenerator) generateEnvNnodes(job *kubeflowv1.PyTorchJob) (*corev1.EnvVar, error) {
 	// Return worker.replicas if there is no max and min replicas specified.
 	if job.Spec.ElasticPolicy.MinReplicas == nil &&
 		job.Spec.ElasticPolicy.MaxReplicas == nil {
@@ -128,7 +123,7 @@ func (e ElasticEnvVarGenerator) generateEnvNNodes(job *kubeflowv1.PyTorchJob) (*
 			return nil, fmt.Errorf("cannot find the worker spec")
 		}
 		return &corev1.EnvVar{
-			Name: EnvNNodes,
+			Name: EnvNnodes,
 			Value: strconv.Itoa(
 				int(*job.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeWorker].
 					Replicas)),
@@ -136,7 +131,7 @@ func (e ElasticEnvVarGenerator) generateEnvNNodes(job *kubeflowv1.PyTorchJob) (*
 	}
 
 	return &corev1.EnvVar{
-		Name: EnvNNodes,
+		Name: EnvNnodes,
 		Value: fmt.Sprintf("%d:%d",
 			*job.Spec.ElasticPolicy.MinReplicas, *job.Spec.ElasticPolicy.MaxReplicas),
 	}, nil

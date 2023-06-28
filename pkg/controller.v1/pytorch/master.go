@@ -14,6 +14,9 @@ var (
 	onceMaster      sync.Once
 	EnvMasterPort   = "MASTER_PORT"
 	EnvMasterAddr   = "MASTER_ADDR"
+
+	PETMasterPort = "PET_MASTER_PORT"
+	PETMasterAddr = "PET_MASTER_ADDR"
 )
 
 // MasterEnvVarGenerator is the environment variable generator for Master related arguments.
@@ -43,7 +46,15 @@ func (e MasterEnvVarGenerator) Generate(
 			Value: strconv.Itoa(int(masterPort)),
 		})
 		envVars = append(envVars, corev1.EnvVar{
+			Name:  PETMasterPort,
+			Value: strconv.Itoa(int(masterPort)),
+		})
+		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvMasterAddr,
+			Value: masterAddr,
+		})
+		envVars = append(envVars, corev1.EnvVar{
+			Name:  PETMasterAddr,
 			Value: masterAddr,
 		})
 	}

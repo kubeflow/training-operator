@@ -552,11 +552,6 @@ spec:
                       to null.
                     format: int32
                     type: integer
-                  nProcPerNode:
-                    description: 'Number of workers per node; supported values: [auto,
-                      cpu, gpu, int].'
-                    format: int32
-                    type: integer
                   rdzvBackend:
                     type: string
                   rdzvConf:
@@ -585,6 +580,10 @@ spec:
                       set values are ignored.
                     type: boolean
                 type: object
+              nprocPerNode:
+                description: Number of workers per node
+                format: int32
+                type: integer
               pytorchReplicaSpecs:
                 additionalProperties:
                   description: ReplicaSpec is a description of the replica

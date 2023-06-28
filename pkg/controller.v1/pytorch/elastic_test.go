@@ -105,7 +105,7 @@ func TestElasticGenerate(t *testing.T) {
 					Value: "rdzv-conf-name=rdzv-conf-value,rdzv-conf-name-1=rdzv-conf-value-1",
 				},
 				{
-					Name:  EnvNNodes,
+					Name:  EnvNnodes,
 					Value: "1:3",
 				},
 			},

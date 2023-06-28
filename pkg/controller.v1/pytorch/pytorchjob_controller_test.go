@@ -247,7 +247,7 @@ var _ = Describe("PyTorchJob controller", func() {
 				Name:  EnvRDZVBackend,
 				Value: string(backendC10D),
 			}, corev1.EnvVar{
-				Name:  EnvNNodes,
+				Name:  EnvNnodes,
 				Value: fmt.Sprintf("%d:%d", *minReplicas, *maxReplicas),
 			}, corev1.EnvVar{
 				Name:  EnvRDZVEndpoint,

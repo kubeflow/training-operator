@@ -25,6 +25,17 @@ import (
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
+const (
+	// Worker/node size related arguments.
+
+	// EnvNprocPerNode is the environment variable name for the number of processes per node.
+	EnvNprocPerNode = "PET_NPROC_PER_NODE"
+	// EnvNnodes is the environment variable name for the number of nodes.
+	EnvNnodes = "PET_NNODES"
+	// EnvNodeRank is the environment variable name for the rank of nodes.
+	EnvNodeRank = "PET_NODE_RANK"
+)
+
 // EnvVarGenerator is the environment variable generator interface.
 type EnvVarGenerator interface {
 	Generate(job *kubeflowv1.PyTorchJob) ([]corev1.EnvVar, error)
@@ -49,6 +60,10 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 				Value: "0",
 			})
 
+		totalReplicas := getTotalReplicas(pytorchjob)
+		nprocPerNode := getNprocPerNode(pytorchjob)
+		worldSize := totalReplicas * nprocPerNode
+
 		// If the master is not null, then we need to set the MASTER_ADDR and RANK.
 		if pytorchjob.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeMaster] != nil {
 			envVars, err := GetMasterEnvVarGenerator().Generate(pytorchjob)
@@ -68,10 +83,6 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 				rank = rank + 1
 			}
 
-			totalReplicas := getTotalReplicas(pytorchjob)
-			worldSize := getWorldSize(pytorchjob)
-			nprocPerNode := getNprocPerNode(pytorchjob)
-
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "WORLD_SIZE",
 				Value: strconv.Itoa(int(worldSize)),
@@ -85,12 +96,14 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 				Value: strconv.Itoa(int(nprocPerNode)),
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-				Name:  EnvNNodes,
-				Value: strconv.Itoa(int(totalReplicas)),
+				Name:  EnvNodeRank,
+				Value: strconv.Itoa(rank),
 			})
 		}
 
 		// Set the elastic environment variables if the elasticPolicy is not null.
+		// nnodes is set in range format in elastic mode, e.g. nnodes=1:4
+		// otherwise, nnodes is set by int, e.g. nnodes=2
 		if pytorchjob.Spec.ElasticPolicy != nil {
 			envVars, err := GetElasticEnvVarGenerator().Generate(pytorchjob)
 			if err != nil {
@@ -99,6 +112,12 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			// Set elastic related environment variables.
 			podTemplateSpec.Spec.Containers[i].Env = append(
 				podTemplateSpec.Spec.Containers[i].Env, envVars...)
+		} else {
+			podTemplateSpec.Spec.Containers[i].Env = append(
+				podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+					Name:  EnvNnodes,
+					Value: strconv.Itoa(int(totalReplicas)),
+				})
 		}
 	}
 
@@ -111,15 +130,6 @@ func getNprocPerNode(job *kubeflowv1.PyTorchJob) int32 {
 	} else {
 		return 1
 	}
-}
-
-func getWorldSize(job *kubeflowv1.PyTorchJob) int32 {
-	worldSize := int32(0)
-	nprocPerNode := getNprocPerNode(job)
-	for _, r := range job.Spec.PyTorchReplicaSpecs {
-		worldSize += *r.Replicas * nprocPerNode
-	}
-	return worldSize
 }
 
 func getTotalReplicas(job *kubeflowv1.PyTorchJob) int32 {
