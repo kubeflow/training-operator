@@ -552,6 +552,11 @@ spec:
                       to null.
                     format: int32
                     type: integer
+                  nProcPerNode:
+                    description: 'Number of workers per node; supported values: [auto,
+                      cpu, gpu, int].'
+                    format: int32
+                    type: integer
                   rdzvBackend:
                     type: string
                   rdzvConf:

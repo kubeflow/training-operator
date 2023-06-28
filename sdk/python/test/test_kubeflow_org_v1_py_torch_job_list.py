@@ -50,6 +50,7 @@ class TestKubeflowOrgV1PyTorchJobList(unittest.TestCase):
                                     None
                                     ], 
                                 min_replicas = 56, 
+                                n_proc_per_node = 56, 
                                 rdzv_backend = '0', 
                                 rdzv_conf = [
                                     kubeflow_org_v1_rdzv_conf.KubeflowOrgV1RDZVConf(
@@ -120,6 +121,7 @@ class TestKubeflowOrgV1PyTorchJobList(unittest.TestCase):
                                     None
                                     ], 
                                 min_replicas = 56, 
+                                n_proc_per_node = 56, 
                                 rdzv_backend = '0', 
                                 rdzv_conf = [
                                     kubeflow_org_v1_rdzv_conf.KubeflowOrgV1RDZVConf(

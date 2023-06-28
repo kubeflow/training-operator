@@ -70,6 +70,11 @@ func (in *ElasticPolicy) DeepCopyInto(out *ElasticPolicy) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NProcPerNode != nil {
+		in, out := &in.NProcPerNode, &out.NProcPerNode
+		*out = new(int32)
+		**out = **in
+	}
 	if in.MaxRestarts != nil {
 		in, out := &in.MaxRestarts, &out.MaxRestarts
 		*out = new(int32)

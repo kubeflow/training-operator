@@ -108,6 +108,8 @@ type ElasticPolicy struct {
 	// --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values
 	// are ignored.
 	Standalone *bool `json:"standalone,omitempty"`
+	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
 
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
 

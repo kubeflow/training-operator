@@ -48,6 +48,9 @@ const (
 	EnvStartMethod = "PET_START_METHOD"
 
 	// EnvNNodes is the common environment variable name from envvar
+
+	// EnvNProcPerNode is the environment variable name for the number of processes per node.
+	EnvNProcPerNode = "PET_NPROC_PER_NODE"
 )
 
 var (
@@ -100,6 +103,12 @@ func (e ElasticEnvVarGenerator) Generate(
 		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvRDZVID,
 			Value: *elasticPolicy.RDZVID,
+		})
+	}
+	if elasticPolicy.NProcPerNode != nil {
+		envVars = append(envVars, corev1.EnvVar{
+			Name:  EnvNProcPerNode,
+			Value: strconv.Itoa(int(*elasticPolicy.NProcPerNode)),
 		})
 	}
 	if envVar := e.generateEnvRDZVConf(elasticPolicy); envVar != nil {

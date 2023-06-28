@@ -32,6 +32,11 @@
           "type": "integer",
           "format": "int32"
         },
+        "nProcPerNode": {
+          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int].",
+          "type": "integer",
+          "format": "int32"
+        },
         "rdzvBackend": {
           "type": "string"
         },

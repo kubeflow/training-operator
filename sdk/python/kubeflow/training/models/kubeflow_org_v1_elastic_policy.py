@@ -37,6 +37,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         'max_restarts': 'int',
         'metrics': 'list[K8sIoApiAutoscalingV2MetricSpec]',
         'min_replicas': 'int',
+        'n_proc_per_node': 'int',
         'rdzv_backend': 'str',
         'rdzv_conf': 'list[KubeflowOrgV1RDZVConf]',
         'rdzv_host': 'str',
@@ -50,6 +51,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         'max_restarts': 'maxRestarts',
         'metrics': 'metrics',
         'min_replicas': 'minReplicas',
+        'n_proc_per_node': 'nProcPerNode',
         'rdzv_backend': 'rdzvBackend',
         'rdzv_conf': 'rdzvConf',
         'rdzv_host': 'rdzvHost',
@@ -58,7 +60,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         'standalone': 'standalone'
     }
 
-    def __init__(self, max_replicas=None, max_restarts=None, metrics=None, min_replicas=None, rdzv_backend=None, rdzv_conf=None, rdzv_host=None, rdzv_id=None, rdzv_port=None, standalone=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, max_replicas=None, max_restarts=None, metrics=None, min_replicas=None, n_proc_per_node=None, rdzv_backend=None, rdzv_conf=None, rdzv_host=None, rdzv_id=None, rdzv_port=None, standalone=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV1ElasticPolicy - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -68,6 +70,7 @@ class KubeflowOrgV1ElasticPolicy(object):
         self._max_restarts = None
         self._metrics = None
         self._min_replicas = None
+        self._n_proc_per_node = None
         self._rdzv_backend = None
         self._rdzv_conf = None
         self._rdzv_host = None
@@ -84,6 +87,8 @@ class KubeflowOrgV1ElasticPolicy(object):
             self.metrics = metrics
         if min_replicas is not None:
             self.min_replicas = min_replicas
+        if n_proc_per_node is not None:
+            self.n_proc_per_node = n_proc_per_node
         if rdzv_backend is not None:
             self.rdzv_backend = rdzv_backend
         if rdzv_conf is not None:
@@ -186,6 +191,29 @@ class KubeflowOrgV1ElasticPolicy(object):
         """
 
         self._min_replicas = min_replicas
+
+    @property
+    def n_proc_per_node(self):
+        """Gets the n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+
+        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
+
+        :return: The n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :rtype: int
+        """
+        return self._n_proc_per_node
+
+    @n_proc_per_node.setter
+    def n_proc_per_node(self, n_proc_per_node):
+        """Sets the n_proc_per_node of this KubeflowOrgV1ElasticPolicy.
+
+        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
+
+        :param n_proc_per_node: The n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
+        :type: int
+        """
+
+        self._n_proc_per_node = n_proc_per_node
 
     @property
     def rdzv_backend(self):
