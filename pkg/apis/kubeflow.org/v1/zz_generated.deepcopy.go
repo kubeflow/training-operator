@@ -587,7 +587,7 @@ func (in *PyTorchJobSpec) DeepCopyInto(out *PyTorchJobSpec) {
 	}
 	if in.NprocPerNode != nil {
 		in, out := &in.NprocPerNode, &out.NprocPerNode
-		*out = new(int32)
+		*out = new(string)
 		**out = **in
 	}
 }

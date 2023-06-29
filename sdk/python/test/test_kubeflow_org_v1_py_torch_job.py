@@ -58,7 +58,7 @@ class TestKubeflowOrgV1PyTorchJob(unittest.TestCase):
                         rdzv_id = '0', 
                         rdzv_port = 56, 
                         standalone = True, ), 
-                    nproc_per_node = 56, 
+                    nproc_per_node = '0', 
                     pytorch_replica_specs = {
                         'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(
                             replicas = 56, 

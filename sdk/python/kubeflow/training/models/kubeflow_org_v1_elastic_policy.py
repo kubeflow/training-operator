@@ -196,7 +196,7 @@ class KubeflowOrgV1ElasticPolicy(object):
     def n_proc_per_node(self):
         """Gets the n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
 
-        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+  # noqa: E501
 
         :return: The n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
         :rtype: int
@@ -207,7 +207,7 @@ class KubeflowOrgV1ElasticPolicy(object):
     def n_proc_per_node(self, n_proc_per_node):
         """Sets the n_proc_per_node of this KubeflowOrgV1ElasticPolicy.
 
-        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+  # noqa: E501
 
         :param n_proc_per_node: The n_proc_per_node of this KubeflowOrgV1ElasticPolicy.  # noqa: E501
         :type: int

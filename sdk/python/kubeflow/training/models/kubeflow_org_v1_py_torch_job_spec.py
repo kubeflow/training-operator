@@ -34,7 +34,7 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     """
     openapi_types = {
         'elastic_policy': 'KubeflowOrgV1ElasticPolicy',
-        'nproc_per_node': 'int',
+        'nproc_per_node': 'str',
         'pytorch_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)',
         'run_policy': 'KubeflowOrgV1RunPolicy'
     }
@@ -90,10 +90,10 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     def nproc_per_node(self):
         """Gets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
 
-        Number of workers per node  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
 
         :return: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
-        :rtype: int
+        :rtype: str
         """
         return self._nproc_per_node
 
@@ -101,10 +101,10 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     def nproc_per_node(self, nproc_per_node):
         """Sets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.
 
-        Number of workers per node  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int].  # noqa: E501
 
         :param nproc_per_node: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
-        :type: int
+        :type: str
         """
 
         self._nproc_per_node = nproc_per_node

@@ -37,6 +37,7 @@ var _ = Describe("PyTorchJob controller", func() {
 		interval     = time.Millisecond * 250
 		expectedPort = int32(8080)
 	)
+	var nprocPerNode = "auto"
 
 	Context("When creating the PyTorchJob", func() {
 		It("Should get the corresponding resources successfully", func() {
@@ -89,6 +90,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					},
 				},
 			}
+			job.Spec.NprocPerNode = &nprocPerNode
 
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
@@ -119,13 +121,16 @@ var _ = Describe("PyTorchJob controller", func() {
 				Name:          kubeflowv1.PytorchJobDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
-			// Check MASTER_PORT and MASTER_ADDR env variable
+			// Check env variable
 			Expect(masterPod.Spec.Containers[0].Env).To(ContainElements(corev1.EnvVar{
 				Name:  EnvMasterPort,
 				Value: fmt.Sprintf("%d", masterSvc.Spec.Ports[0].Port),
 			}, corev1.EnvVar{
 				Name:  EnvMasterAddr,
 				Value: masterSvc.Name,
+			}, corev1.EnvVar{
+				Name:  EnvNprocPerNode,
+				Value: nprocPerNode,
 			}))
 			// Check service port.
 			Expect(masterSvc.Spec.Ports[0].Port).To(Equal(expectedPort))

@@ -57,12 +57,12 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 		podTemplateSpec.Spec.Containers[i].Env = append(
 			podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "PYTHONUNBUFFERED",
-				Value: "0",
+				Value: "1",
 			})
 
 		totalReplicas := getTotalReplicas(pytorchjob)
-		nprocPerNode := getNprocPerNode(pytorchjob)
-		worldSize := totalReplicas * nprocPerNode
+		nprocPerNode := getNprocPerNodeInt(pytorchjob)
+		worldSize := int(totalReplicas) * nprocPerNode
 
 		// If the master is not null, then we need to set the MASTER_ADDR and RANK.
 		if pytorchjob.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeMaster] != nil {
@@ -85,7 +85,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "WORLD_SIZE",
-				Value: strconv.Itoa(int(worldSize)),
+				Value: strconv.Itoa(worldSize),
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "RANK",
@@ -93,7 +93,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvNprocPerNode,
-				Value: strconv.Itoa(int(nprocPerNode)),
+				Value: getNprocPerNodeEnv(pytorchjob),
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvNodeRank,
@@ -124,11 +124,21 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	return nil
 }
 
-func getNprocPerNode(job *kubeflowv1.PyTorchJob) int32 {
-	if job.Spec.NprocPerNode != nil {
-		return *job.Spec.NprocPerNode
-	} else {
+func getNprocPerNodeInt(job *kubeflowv1.PyTorchJob) int {
+	if job.Spec.NprocPerNode == nil {
 		return 1
+	}
+	if np, err := strconv.Atoi(*job.Spec.NprocPerNode); err == nil {
+		return np
+	}
+	return 1
+}
+
+func getNprocPerNodeEnv(job *kubeflowv1.PyTorchJob) string {
+	if job.Spec.NprocPerNode == nil {
+		return "auto"
+	} else {
+		return *job.Spec.NprocPerNode
 	}
 }
 
