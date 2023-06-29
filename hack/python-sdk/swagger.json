@@ -33,7 +33,7 @@
           "format": "int32"
         },
         "nProcPerNode": {
-          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+",
+          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+ Use .spec.nprocPerNode instead.",
           "type": "integer",
           "format": "int32"
         },
@@ -492,7 +492,7 @@
           "$ref": "#/definitions/kubeflow.org.v1.ElasticPolicy"
         },
         "nprocPerNode": {
-          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int].",
+          "description": "Number of workers per node; supported values: [auto, cpu, gpu, int]. Defaults to auto.",
           "type": "string"
         },
         "pytorchReplicaSpecs": {

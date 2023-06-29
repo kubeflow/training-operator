@@ -126,7 +126,7 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 					},
 					"nProcPerNode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+",
+							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+ Use .spec.nprocPerNode instead.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -911,7 +911,7 @@ func schema_pkg_apis_kubefloworg_v1_PyTorchJobSpec(ref common.ReferenceCallback)
 					},
 					"nprocPerNode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int].",
+							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int]. Defaults to auto.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

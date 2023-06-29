@@ -86,6 +86,7 @@ type PyTorchJobSpec struct {
 	PyTorchReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"pytorchReplicaSpecs"`
 
 	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	// Defaults to auto.
 	NprocPerNode *string `json:"nprocPerNode,omitempty"`
 }
 
@@ -111,6 +112,7 @@ type ElasticPolicy struct {
 	Standalone *bool `json:"standalone,omitempty"`
 	// Number of workers per node; supported values: [auto, cpu, gpu, int].
 	// Deprecated: This API is deprecated in v1.7+
+	// Use .spec.nprocPerNode instead.
 	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
 
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`

@@ -554,7 +554,8 @@ spec:
                     type: integer
                   nProcPerNode:
                     description: 'Number of workers per node; supported values: [auto,
-                      cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+'
+                      cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+
+                      Use .spec.nprocPerNode instead.'
                     format: int32
                     type: integer
                   rdzvBackend:
@@ -587,7 +588,7 @@ spec:
                 type: object
               nprocPerNode:
                 description: 'Number of workers per node; supported values: [auto,
-                  cpu, gpu, int].'
+                  cpu, gpu, int]. Defaults to auto.'
                 type: string
               pytorchReplicaSpecs:
                 additionalProperties:
