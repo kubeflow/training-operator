@@ -79,4 +79,9 @@ func SetDefaults_PyTorchJob(job *PyTorchJob) {
 	}
 	// Set default elastic policy.
 	setElasticPolicy(job)
+
+	if job.Spec.NprocPerNode == nil {
+		defaultNprocPerNode := "auto"
+		job.Spec.NprocPerNode = &defaultNprocPerNode
+	}
 }

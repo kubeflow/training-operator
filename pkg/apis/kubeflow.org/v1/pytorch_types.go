@@ -67,6 +67,10 @@ type PyTorchJob struct {
 	Status JobStatus `json:"status,omitempty"`
 }
 
+// For PyTorch launch/run related spec declaration, please see the following doc for more detail:
+// https://pytorch.org/docs/stable/elastic/run.html
+// Or run command `torchrun --help` for a brief description.
+
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
 type PyTorchJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training

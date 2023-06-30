@@ -27,6 +27,16 @@ func ValidateV1PyTorchJob(pytorchJob *PyTorchJob) error {
 	if err := validatePyTorchReplicaSpecs(pytorchJob.Spec.PyTorchReplicaSpecs); err != nil {
 		return err
 	}
+	if err := validateNprocPerNode(pytorchJob); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateNprocPerNode(pytorchJob *PyTorchJob) error {
+	if pytorchJob.Spec.NprocPerNode != nil && pytorchJob.Spec.ElasticPolicy != nil && pytorchJob.Spec.ElasticPolicy.NProcPerNode != nil {
+		return fmt.Errorf(".spec.elasticPolicy.nProcPerNode is deprecated, use .spec.nprocPerNode instead")
+	}
 	return nil
 }
 

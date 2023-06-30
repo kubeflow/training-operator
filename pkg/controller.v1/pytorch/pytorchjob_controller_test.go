@@ -90,7 +90,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					},
 				},
 			}
-			job.Spec.NprocPerNode = &nprocPerNode
+			job.Spec.NprocPerNode = nil
 
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 

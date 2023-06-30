@@ -93,7 +93,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvNprocPerNode,
-				Value: getNprocPerNodeEnv(pytorchjob),
+				Value: *pytorchjob.Spec.NprocPerNode,
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvNodeRank,
@@ -132,14 +132,6 @@ func getNprocPerNodeInt(job *kubeflowv1.PyTorchJob) int {
 		return np
 	}
 	return 1
-}
-
-func getNprocPerNodeEnv(job *kubeflowv1.PyTorchJob) string {
-	if job.Spec.NprocPerNode == nil {
-		return "auto"
-	} else {
-		return *job.Spec.NprocPerNode
-	}
 }
 
 func getTotalReplicas(job *kubeflowv1.PyTorchJob) int32 {
