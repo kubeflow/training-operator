@@ -17,6 +17,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -26,7 +27,7 @@ import (
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
+	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
 )
 
 var _ = Describe("TFJob controller", func() {
@@ -176,18 +177,18 @@ var _ = Describe("TFJob controller", func() {
 				jobName := fmt.Sprintf(jobNameTemplate, caseIdx)
 				caseIdx++
 
-				tfJob := testutil.NewTFJob(tc.worker, tc.ps)
+				tfJob := tftestutil.NewTFJob(tc.worker, tc.ps)
 				tfJob.SetName(jobName)
 				tfJob.SetUID(uuid.NewUUID())
 
 				refs := []metav1.OwnerReference{*reconciler.GenOwnerReference(tfJob)}
 				basicLabels := reconciler.GenLabels(tfJob.GetName())
 
-				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, refs, basicLabels)
-				testutil.SetPodsStatuses(testK8sClient, tfJob, testutil.LabelPS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, refs, basicLabels)
+				tftestutil.SetPodsStatuses(testK8sClient, tfJob, kubeflowv1.TFJobReplicaTypeWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, refs, basicLabels)
+				tftestutil.SetPodsStatuses(testK8sClient, tfJob, kubeflowv1.TFJobReplicaTypePS, tc.pendingPSPods, tc.activePSPods, tc.succeededPSPods, tc.failedPSPods, nil, refs, basicLabels)
 
-				testutil.SetServices(testK8sClient, tfJob, testutil.LabelWorker, tc.activeWorkerServices, refs, basicLabels)
-				testutil.SetServices(testK8sClient, tfJob, testutil.LabelPS, tc.activePSServices, refs, basicLabels)
+				tftestutil.SetServices(testK8sClient, tfJob, kubeflowv1.TFJobReplicaTypeWorker, tc.activeWorkerServices, refs, basicLabels)
+				tftestutil.SetServices(testK8sClient, tfJob, kubeflowv1.TFJobReplicaTypePS, tc.activePSServices, refs, basicLabels)
 
 				totalPodNumber := int(tc.pendingWorkerPods + tc.activeWorkerPods + tc.succeededWorkerPods + tc.failedWorkerPods + tc.pendingPSPods + tc.activePSPods + tc.succeededPSPods + tc.failedPSPods)
 				totalServiceNumber := int(tc.activeWorkerServices + tc.activePSServices)
@@ -313,7 +314,7 @@ var _ = Describe("TFJob controller", func() {
 
 				// Validate Conditions
 				if tc.expectedCondition != nil {
-					Expect(testutil.CheckCondition(tfJob, *tc.expectedCondition, tc.expectedConditionReason)).Should(BeTrue())
+					Expect(tftestutil.CheckCondition(tfJob, *tc.expectedCondition, tc.expectedConditionReason)).Should(BeTrue())
 				}
 			}
 		})

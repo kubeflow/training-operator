@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/common/util/v1/testutil"
+	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
 )
 
 var _ = Describe("TFJob controller", func() {
@@ -44,14 +44,14 @@ var _ = Describe("TFJob controller", func() {
 	Context("Test Failed", func() {
 		It("should update TFJob with failed status", func() {
 			By("creating a TFJob with replicaStatues initialized")
-			tfJob := testutil.NewTFJob(3, 0)
+			tfJob := tftestutil.NewTFJob(3, 0)
 			initializeReplicaStatuses(&tfJob.Status, kubeflowv1.TFJobReplicaTypeWorker)
 
 			By("prepare pod")
 			refs := []metav1.OwnerReference{
 				*reconciler.GenOwnerReference(tfJob),
 			}
-			pod := testutil.NewBasePod("pod", tfJob, refs)
+			pod := tftestutil.NewBasePod("pod", tfJob, refs)
 			pod.Status.Phase = v1.PodFailed
 
 			By("update job replica statuses")
@@ -99,7 +99,7 @@ var _ = Describe("TFJob controller", func() {
 			testCases := []testCase{
 				{
 					description:             "Chief worker is succeeded",
-					tfJob:                   testutil.NewTFJobWithChief(1, 0),
+					tfJob:                   tftestutil.NewTFJobWithChief(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -115,7 +115,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief worker is running",
-					tfJob:                   testutil.NewTFJobWithChief(1, 0),
+					tfJob:                   tftestutil.NewTFJobWithChief(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -131,7 +131,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief worker is failed",
-					tfJob:                   testutil.NewTFJobWithChief(1, 0),
+					tfJob:                   tftestutil.NewTFJobWithChief(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -147,7 +147,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) Worker is failed",
-					tfJob:                   testutil.NewTFJob(1, 0),
+					tfJob:                   tftestutil.NewTFJob(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -163,7 +163,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) Worker is succeeded",
-					tfJob:                   testutil.NewTFJob(1, 0),
+					tfJob:                   tftestutil.NewTFJob(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -179,7 +179,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) Worker is running",
-					tfJob:                   testutil.NewTFJob(1, 0),
+					tfJob:                   tftestutil.NewTFJob(1, 0),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -195,7 +195,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) 2 workers are succeeded, 2 workers are active",
-					tfJob:                   testutil.NewTFJob(4, 2),
+					tfJob:                   tftestutil.NewTFJob(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -211,7 +211,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) 2 workers are running, 2 workers are failed",
-					tfJob:                   testutil.NewTFJob(4, 2),
+					tfJob:                   tftestutil.NewTFJob(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -227,7 +227,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) 2 workers are succeeded, 2 workers are failed",
-					tfJob:                   testutil.NewTFJob(4, 2),
+					tfJob:                   tftestutil.NewTFJob(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -243,7 +243,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker) worker-0 are succeeded, 3 workers are active",
-					tfJob:                   testutil.NewTFJob(4, 2),
+					tfJob:                   tftestutil.NewTFJob(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -259,7 +259,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 are succeeded, 3 workers are active",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
+					tfJob:                   tftestutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -275,7 +275,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) 4 workers are succeeded",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
+					tfJob:                   tftestutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -291,7 +291,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
-					tfJob:                   testutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
+					tfJob:                   tftestutil.NewTFJobWithSuccessPolicy(4, 0, kubeflowv1.SuccessPolicyAllWorkers),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        0,
@@ -307,7 +307,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is running, workers are failed",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -323,7 +323,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is running, workers are succeeded",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -339,7 +339,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is running, a PS is failed",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        1,
 					expectedSucceededPS:     0,
 					expectedActivePS:        1,
@@ -355,7 +355,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is failed, workers are succeeded",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -371,7 +371,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is succeeded, workers are failed",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -387,7 +387,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description:             "Chief is failed and restarting",
-					tfJob:                   testutil.NewTFJobWithChief(4, 2),
+					tfJob:                   tftestutil.NewTFJobWithChief(4, 2),
 					expectedFailedPS:        0,
 					expectedSucceededPS:     0,
 					expectedActivePS:        2,
@@ -477,18 +477,11 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 
 	ctx := context.Background()
 
-	var typ string
-	switch rtype {
-	case kubeflowv1.TFJobReplicaTypeWorker:
-		typ = testutil.LabelWorker
-	case kubeflowv1.TFJobReplicaTypePS:
-		typ = testutil.LabelPS
-	case kubeflowv1.TFJobReplicaTypeChief:
-		typ = testutil.LabelChief
-	default:
-		fmt.Println("wrong type")
-	}
-	Expect(typ).ShouldNot(Equal(""))
+	Expect(rtype).Should(BeElementOf([]kubeflowv1.ReplicaType{
+		kubeflowv1.TFJobReplicaTypeWorker,
+		kubeflowv1.TFJobReplicaTypePS,
+		kubeflowv1.TFJobReplicaTypeChief,
+	}))
 
 	refs := []metav1.OwnerReference{
 		*reconciler.GenOwnerReference(tfJob),
@@ -497,7 +490,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 	var i int32
 	index := 0
 	for i = 0; i < succeeded; i++ {
-		pod := testutil.NewPod(tfJob, typ, index, refs)
+		pod := tftestutil.NewPod(tfJob, rtype, index, refs)
 		for k, v := range basicLabels {
 			pod.Labels[k] = v
 		}
@@ -534,7 +527,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 	}
 
 	for i = 0; i < failed; i++ {
-		pod := testutil.NewPod(tfJob, typ, index, refs)
+		pod := tftestutil.NewPod(tfJob, rtype, index, refs)
 		for k, v := range basicLabels {
 			pod.Labels[k] = v
 		}
@@ -572,7 +565,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 	}
 
 	for i = 0; i < active; i++ {
-		pod := testutil.NewPod(tfJob, typ, index, refs)
+		pod := tftestutil.NewPod(tfJob, rtype, index, refs)
 		for k, v := range basicLabels {
 			pod.Labels[k] = v
 		}
