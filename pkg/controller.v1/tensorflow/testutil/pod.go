@@ -17,6 +17,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -52,15 +53,15 @@ func NewBasePod(name string, job metav1.Object, refs []metav1.OwnerReference) *c
 	}
 }
 
-func NewPod(job metav1.Object, typ string, index int, refs []metav1.OwnerReference) *corev1.Pod {
-	pod := NewBasePod(fmt.Sprintf("%s-%s-%d", job.GetName(), typ, index), job, refs)
-	pod.Labels[commonv1.ReplicaTypeLabel] = typ
+func NewPod(job metav1.Object, typ commonv1.ReplicaType, index int, refs []metav1.OwnerReference) *corev1.Pod {
+	pod := NewBasePod(fmt.Sprintf("%s-%s-%d", job.GetName(), strings.ToLower(string(typ)), index), job, refs)
+	pod.Labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(typ))
 	pod.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return pod
 }
 
 // NewPodList create count pods with the given phase for the given tfJob
-func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ string, start int32, refs []metav1.OwnerReference) []*corev1.Pod {
+func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ commonv1.ReplicaType, start int32, refs []metav1.OwnerReference) []*corev1.Pod {
 	pods := []*corev1.Pod{}
 	for i := int32(0); i < count; i++ {
 		newPod := NewPod(job, typ, int(start+i), refs)
@@ -70,7 +71,7 @@ func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ stri
 	return pods
 }
 
-func SetPodsStatuses(client client.Client, job metav1.Object, typ string,
+func SetPodsStatuses(client client.Client, job metav1.Object, typ commonv1.ReplicaType,
 	pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
 	timeout := 10 * time.Second

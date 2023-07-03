@@ -15,14 +15,14 @@
 package testutil
 
 import (
-	"time"
-
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
+
+const TestTFJobName = "test-tfjob"
 
 func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *kubeflowv1.TFJob {
 	if chief == 1 {
@@ -113,7 +113,7 @@ func NewTFJobWithSuccessPolicy(worker, ps int, successPolicy kubeflowv1.SuccessP
 func NewTFJob(worker, ps int) *kubeflowv1.TFJob {
 	tfJob := &kubeflowv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
-			Kind: TFJobKind,
+			Kind: kubeflowv1.TFJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestTFJobName,
@@ -148,7 +148,7 @@ func NewTFJob(worker, ps int) *kubeflowv1.TFJob {
 func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 	tfJob := &kubeflowv1.TFJob{
 		TypeMeta: metav1.TypeMeta{
-			Kind: TFJobKind,
+			Kind: kubeflowv1.TFJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestTFJobName,
@@ -227,7 +227,7 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:  kubeflowv1.TFJobDefaultContainerName,
-					Image: TestImageName,
+					Image: "test-image-for-kubeflow-training-operator:latest",
 					Args:  []string{"Fake", "Fake"},
 					Ports: []v1.ContainerPort{
 						v1.ContainerPort{
@@ -241,7 +241,11 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 	}
 }
 
-func SetTFJobCompletionTime(tfJob *kubeflowv1.TFJob) {
-	now := metav1.Time{Time: time.Now()}
-	tfJob.Status.CompletionTime = &now
+func CheckCondition(tfJob *kubeflowv1.TFJob, condition commonv1.JobConditionType, reason string) bool {
+	for _, v := range tfJob.Status.Conditions {
+		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
+			return true
+		}
+	}
+	return false
 }
