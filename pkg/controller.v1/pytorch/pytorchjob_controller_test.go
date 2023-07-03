@@ -31,7 +31,7 @@ import (
 )
 
 var _ = Describe("PyTorchJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
+	// Define utility constants for object names.
 	const (
 		expectedPort = int32(8080)
 	)

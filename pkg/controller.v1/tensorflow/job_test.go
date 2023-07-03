@@ -648,11 +648,11 @@ var _ = Describe("Test for controller.v1/common", func() {
 				Eventually(func() bool {
 					gotErr := testK8sClient.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &kubeflowv1.TFJob{})
 					return errors.IsNotFound(gotErr)
-				}).Should(BeTrue())
+				}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 			} else {
 				Eventually(func() error {
 					return testK8sClient.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &kubeflowv1.TFJob{})
-				}).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 			}
 		},
 		Entry("TFJob shouldn't be removed since TTL is nil", &cleanUpCases{
@@ -766,7 +766,7 @@ var _ = Describe("Test for controller.v1/common", func() {
 					svc := &corev1.Service{}
 					Expect(testK8sClient.Get(ctx, client.ObjectKeyFromObject(wantSvc), svc)).Should(Succeed())
 					return svc
-				}).Should(BeComparableTo(wantSvc,
+				}, testutil.Timeout, testutil.Interval).Should(BeComparableTo(wantSvc,
 					cmpopts.IgnoreFields(metav1.ObjectMeta{}, "UID", "ResourceVersion", "Generation", "CreationTimestamp", "ManagedFields")))
 			}
 		},

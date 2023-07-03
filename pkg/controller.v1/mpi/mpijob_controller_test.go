@@ -17,6 +17,7 @@ package mpi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	common "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"strings"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
