@@ -17,224 +17,180 @@ limitations under the License.
 package common
 
 import (
-	"strconv"
+	"context"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/control"
 	testjobv1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
-	testjob "github.com/kubeflow/training-operator/test_job/controller.v1/test_job"
-	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/record"
 )
 
 func TestDeletePodsAndServices(T *testing.T) {
-	type testCase struct {
-		cleanPodPolicy               apiv1.CleanPodPolicy
-		deleteRunningPodAndService   bool
-		deleteSucceededPodAndService bool
+	pods := []runtime.Object{
+		newPod("runningPod", corev1.PodRunning),
+		newPod("succeededPod", corev1.PodSucceeded),
+	}
+	services := []runtime.Object{
+		newService("runningPod"),
+		newService("succeededPod"),
 	}
 
-	var testcase = []testCase{
-		{
-			cleanPodPolicy:               apiv1.CleanPodPolicyRunning,
-			deleteRunningPodAndService:   true,
-			deleteSucceededPodAndService: false,
+	cases := map[string]struct {
+		cleanPodPolicy apiv1.CleanPodPolicy
+		wantPods       *corev1.PodList
+		wantService    *corev1.ServiceList
+	}{
+		"CleanPodPolicy is Running": {
+			cleanPodPolicy: apiv1.CleanPodPolicyRunning,
+			wantPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*pods[1].(*corev1.Pod),
+				},
+			},
+			wantService: &corev1.ServiceList{
+				Items: []corev1.Service{
+					*services[1].(*corev1.Service),
+				},
+			},
 		},
-		{
-			cleanPodPolicy:               apiv1.CleanPodPolicyAll,
-			deleteRunningPodAndService:   true,
-			deleteSucceededPodAndService: true,
+		"CleanPodPolicy is All": {
+			cleanPodPolicy: apiv1.CleanPodPolicyAll,
+			wantPods:       &corev1.PodList{},
+			wantService:    &corev1.ServiceList{},
 		},
-		{
-			cleanPodPolicy:               apiv1.CleanPodPolicyNone,
-			deleteRunningPodAndService:   false,
-			deleteSucceededPodAndService: false,
+		"CleanPodPolicy is None": {
+			cleanPodPolicy: apiv1.CleanPodPolicyNone,
+			wantPods: &corev1.PodList{
+				Items: []corev1.Pod{
+					*pods[0].(*corev1.Pod),
+					*pods[1].(*corev1.Pod),
+				},
+			},
+			wantService: &corev1.ServiceList{
+				Items: []corev1.Service{
+					*services[0].(*corev1.Service),
+					*services[1].(*corev1.Service),
+				},
+			},
 		},
 	}
-
-	for _, tc := range testcase {
-		runningPod := newPod("runningPod", corev1.PodRunning)
-		succeededPod := newPod("succeededPod", corev1.PodSucceeded)
-		allPods := []*corev1.Pod{runningPod, succeededPod}
-		runningPodService := newService("runningPod")
-		succeededPodService := newService("succeededPod")
-		allServices := []*corev1.Service{runningPodService, succeededPodService}
-
-		testJobController := testjob.TestJobController{
-			Pods:     allPods,
-			Services: allServices,
-		}
-
-		fakePodControl := &control.FakePodControl{}
-		fakeServiceControl := &control.FakeServiceControl{}
-
-		mainJobController := JobController{
-			Controller:     &testJobController,
-			PodControl:     fakePodControl,
-			ServiceControl: fakeServiceControl,
-		}
-		runPolicy := apiv1.RunPolicy{
-			CleanPodPolicy: &tc.cleanPodPolicy,
-		}
-
-		job := &testjobv1.TestJob{}
-		err := mainJobController.DeletePodsAndServices(&runPolicy, job, allPods)
-
-		if assert.NoError(T, err) {
-			if tc.deleteRunningPodAndService {
-				// should delete the running pod and its service
-				assert.Contains(T, fakePodControl.DeletePodName, runningPod.Name)
-				assert.Contains(T, fakeServiceControl.DeleteServiceName, runningPodService.Name)
-			} else {
-				// should NOT delete the running pod and its service
-				assert.NotContains(T, fakePodControl.DeletePodName, runningPod.Name)
-				assert.NotContains(T, fakeServiceControl.DeleteServiceName, runningPodService.Name)
+	for name, tc := range cases {
+		T.Run(name, func(t *testing.T) {
+			fakeClient := fake.NewSimpleClientset(append(pods, services...)...)
+			jobController := JobController{
+				PodControl:     control.RealPodControl{KubeClient: fakeClient, Recorder: &record.FakeRecorder{}},
+				ServiceControl: control.RealServiceControl{KubeClient: fakeClient, Recorder: &record.FakeRecorder{}},
 			}
 
-			if tc.deleteSucceededPodAndService {
-				// should delete the SUCCEEDED pod and its service
-				assert.Contains(T, fakePodControl.DeletePodName, succeededPod.Name)
-				assert.Contains(T, fakeServiceControl.DeleteServiceName, succeededPodService.Name)
-			} else {
-				// should NOT delete the SUCCEEDED pod and its service
-				assert.NotContains(T, fakePodControl.DeletePodName, succeededPod.Name)
-				assert.NotContains(T, fakeServiceControl.DeleteServiceName, succeededPodService.Name)
+			var inPods []*corev1.Pod
+			for i := range pods {
+				inPods = append(inPods, pods[i].(*corev1.Pod))
 			}
-		}
+			if err := jobController.DeletePodsAndServices(&apiv1.RunPolicy{
+				CleanPodPolicy: &tc.cleanPodPolicy,
+			}, &testjobv1.TestJob{}, inPods); err != nil {
+				T.Errorf("Failed to delete pods and services: %v", err)
+			}
+			gotPods, err := fakeClient.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				t.Errorf("Failed to list pods: %v", err)
+			}
+			if diff := cmp.Diff(tc.wantPods, gotPods); len(diff) != 0 {
+				t.Errorf("Unexpected pods after running DeletePodsAndServices (-want,+got):%s\n", diff)
+			}
+			gotServices, err := fakeClient.CoreV1().Services("").List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				t.Errorf("Failed to list services: %v", err)
+			}
+			if diff := cmp.Diff(tc.wantService, gotServices); len(diff) != 0 {
+				t.Errorf("Unexpected services after running DeletePodsAndServices (-want,+got):%s\n", diff)
+			}
+		})
 	}
 }
 
 func TestPastBackoffLimit(T *testing.T) {
-	type testCase struct {
-		backOffLimit           int32
-		shouldPassBackoffLimit bool
+	backoffLimitExceededPod := newPod("runningPodWithBackoff", corev1.PodRunning)
+	backoffLimitExceededPod.Status.ContainerStatuses = []corev1.ContainerStatus{
+		{RestartCount: 3},
 	}
-
-	var testcase = []testCase{
-		{
-			backOffLimit:           int32(0),
-			shouldPassBackoffLimit: false,
+	allPods := []*corev1.Pod{
+		newPod("runningPod", corev1.PodRunning),
+		newPod("succeededPod", corev1.PodSucceeded),
+		backoffLimitExceededPod,
+	}
+	cases := map[string]struct {
+		pods                 []*corev1.Pod
+		backOffLimit         int32
+		wantPastBackOffLimit bool
+	}{
+		"backOffLimit is 0": {
+			pods:                 allPods[:2],
+			backOffLimit:         0,
+			wantPastBackOffLimit: false,
+		},
+		"backOffLimit is 3": {
+			pods:                 allPods,
+			backOffLimit:         3,
+			wantPastBackOffLimit: true,
 		},
 	}
-
-	for _, tc := range testcase {
-		runningPod := newPod("runningPod", corev1.PodRunning)
-		succeededPod := newPod("succeededPod", corev1.PodSucceeded)
-		allPods := []*corev1.Pod{runningPod, succeededPod}
-
-		testJobController := testjob.TestJobController{
-			Pods: allPods,
-		}
-
-		mainJobController := JobController{
-			Controller: &testJobController,
-		}
-		runPolicy := apiv1.RunPolicy{
-			BackoffLimit: &tc.backOffLimit,
-		}
-
-		result, err := mainJobController.PastBackoffLimit("fake-job", &runPolicy, nil, allPods)
-
-		if assert.NoError(T, err) {
-			assert.Equal(T, result, tc.shouldPassBackoffLimit)
-		}
+	for name, tc := range cases {
+		T.Run(name, func(t *testing.T) {
+			jobController := JobController{}
+			runPolicy := &apiv1.RunPolicy{
+				BackoffLimit: &tc.backOffLimit,
+			}
+			replica := map[apiv1.ReplicaType]*apiv1.ReplicaSpec{
+				"test": {RestartPolicy: apiv1.RestartPolicyOnFailure},
+			}
+			got, err := jobController.PastBackoffLimit("test-job", runPolicy, replica, tc.pods)
+			if err != nil {
+				t.Errorf("Failaed to do PastBackoffLimit: %v", err)
+			}
+			if tc.wantPastBackOffLimit != got {
+				t.Errorf("Unexpected pastBackoffLimit: \nwant: %v\ngot: %v\n", tc.wantPastBackOffLimit, got)
+			}
+		})
 	}
 }
 
 func TestPastActiveDeadline(T *testing.T) {
-	type testCase struct {
-		activeDeadlineSeconds    int64
-		shouldPassActiveDeadline bool
-	}
-
-	var testcase = []testCase{
-		{
-			activeDeadlineSeconds:    int64(0),
-			shouldPassActiveDeadline: true,
+	cases := map[string]struct {
+		activeDeadlineSeconds         int64
+		wantPastActiveDeadlineSeconds bool
+	}{
+		"activeDeadlineSeconds is 0": {
+			activeDeadlineSeconds:         0,
+			wantPastActiveDeadlineSeconds: true,
 		},
-		{
-			activeDeadlineSeconds:    int64(2),
-			shouldPassActiveDeadline: false,
+		"activeDeadlineSeconds is 2": {
+			activeDeadlineSeconds:         2,
+			wantPastActiveDeadlineSeconds: false,
 		},
 	}
-
-	for _, tc := range testcase {
-
-		testJobController := testjob.TestJobController{}
-
-		mainJobController := JobController{
-			Controller: &testJobController,
-		}
-		runPolicy := apiv1.RunPolicy{
-			ActiveDeadlineSeconds: &tc.activeDeadlineSeconds,
-		}
-		jobStatus := apiv1.JobStatus{
-			StartTime: &metav1.Time{
-				Time: time.Now(),
-			},
-		}
-
-		result := mainJobController.PastActiveDeadline(&runPolicy, jobStatus)
-		assert.Equal(
-			T, result, tc.shouldPassActiveDeadline,
-			"Result is not expected for activeDeadlineSeconds == "+strconv.FormatInt(tc.activeDeadlineSeconds, 10))
-	}
-}
-
-func TestCleanupJobIfTTL(T *testing.T) {
-	ttl := int32(0)
-	runPolicy := apiv1.RunPolicy{
-		TTLSecondsAfterFinished: &ttl,
-	}
-	oneDayAgo := time.Now()
-	// one day ago
-	_ = oneDayAgo.AddDate(0, 0, -1)
-	jobStatus := apiv1.JobStatus{
-		CompletionTime: &metav1.Time{
-			Time: oneDayAgo,
-		},
-	}
-
-	testJobController := &testjob.TestJobController{
-		Job: &testjobv1.TestJob{},
-	}
-	mainJobController := JobController{
-		Controller: testJobController,
-	}
-
-	var job interface{}
-	err := mainJobController.CleanupJob(&runPolicy, jobStatus, job)
-	if assert.NoError(T, err) {
-		// job field is zeroed
-		assert.Empty(T, testJobController.Job)
-	}
-}
-
-func TestCleanupJob(T *testing.T) {
-	ttl := int32(0)
-	runPolicy := apiv1.RunPolicy{
-		TTLSecondsAfterFinished: &ttl,
-	}
-	jobStatus := apiv1.JobStatus{
-		CompletionTime: &metav1.Time{
-			Time: time.Now(),
-		},
-	}
-
-	testJobController := &testjob.TestJobController{
-		Job: &testjobv1.TestJob{},
-	}
-	mainJobController := JobController{
-		Controller: testJobController,
-	}
-
-	var job interface{}
-	err := mainJobController.CleanupJob(&runPolicy, jobStatus, job)
-	if assert.NoError(T, err) {
-		assert.Empty(T, testJobController.Job)
+	for name, tc := range cases {
+		T.Run(name, func(t *testing.T) {
+			jobController := JobController{}
+			runPolicy := &apiv1.RunPolicy{
+				ActiveDeadlineSeconds: &tc.activeDeadlineSeconds,
+			}
+			jobStatus := apiv1.JobStatus{
+				StartTime: &metav1.Time{
+					Time: time.Now(),
+				},
+			}
+			if got := jobController.PastActiveDeadline(runPolicy, jobStatus); tc.wantPastActiveDeadlineSeconds != got {
+				t.Errorf("Unexpected PastActiveDeadline: \nwant: %v\ngot: %v\n", tc.wantPastActiveDeadlineSeconds, got)
+			}
+		})
 	}
 }
 
@@ -242,6 +198,9 @@ func newPod(name string, phase corev1.PodPhase) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
+			Labels: map[string]string{
+				apiv1.ReplicaTypeLabel: "test",
+			},
 		},
 		Status: corev1.PodStatus{
 			Phase: phase,

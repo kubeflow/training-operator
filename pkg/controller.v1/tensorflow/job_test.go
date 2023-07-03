@@ -17,8 +17,10 @@ package tensorflow
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
@@ -28,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -608,5 +611,198 @@ var _ = Describe("TFJob controller", func() {
 			}
 		})
 	})
+})
 
+var _ = Describe("Test for controller.v1/common", func() {
+	var (
+		ctx = context.Background()
+		ns  *corev1.Namespace
+		now metav1.Time
+	)
+	BeforeEach(func() {
+		ns = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "tfjob-ns-",
+			},
+		}
+		now = metav1.Now()
+		Expect(testK8sClient.Create(ctx, ns)).Should(Succeed())
+	})
+	AfterEach(func() {
+		Expect(testK8sClient.Delete(ctx, ns)).Should(Succeed())
+	})
+
+	type cleanUpCases struct {
+		tfJob              *kubeflowv1.TFJob
+		runPolicy          *kubeflowv1.RunPolicy
+		jobStatus          kubeflowv1.JobStatus
+		wantTFJobIsRemoved bool
+		wantErr            bool
+	}
+	DescribeTable("TFJob is created and is cleaned up",
+		func(tc *cleanUpCases) {
+			tc.tfJob.SetNamespace(ns.Name)
+			Expect(testK8sClient.Create(ctx, tc.tfJob)).Should(Succeed())
+
+			if tc.wantErr {
+				Expect(reconciler.CleanupJob(tc.runPolicy, tc.jobStatus, tc.tfJob)).ShouldNot(Succeed())
+			} else {
+				Expect(reconciler.CleanupJob(tc.runPolicy, tc.jobStatus, tc.tfJob)).Should(Succeed())
+			}
+			if tc.wantTFJobIsRemoved {
+				Eventually(func() bool {
+					gotErr := testK8sClient.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &kubeflowv1.TFJob{})
+					return errors.IsNotFound(gotErr)
+				}).Should(BeTrue())
+			} else {
+				Eventually(func() error {
+					return testK8sClient.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &kubeflowv1.TFJob{})
+				}).Should(BeNil())
+			}
+		},
+		Entry("TFJob shouldn't be removed since TTL is nil", &cleanUpCases{
+			tfJob: testutil.NewTFJobWithCleanupJobDelay(1, 2, 0, nil),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: nil,
+			},
+			jobStatus:          kubeflowv1.JobStatus{},
+			wantTFJobIsRemoved: false,
+			wantErr:            false,
+		}),
+		Entry("Error is occurred since completionTime is nil", &cleanUpCases{
+			tfJob: testutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(10)),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: pointer.Int32(10),
+			},
+			jobStatus: kubeflowv1.JobStatus{
+				CompletionTime: nil,
+			},
+			wantTFJobIsRemoved: false,
+			wantErr:            true,
+		}),
+		Entry("TFJob is removed since exceeded TTL (TTL is 180s)", &cleanUpCases{
+			tfJob: testutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(180)),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: pointer.Int32(180),
+			},
+			jobStatus: kubeflowv1.JobStatus{
+				CompletionTime: &metav1.Time{
+					Time: now.AddDate(0, 0, -1),
+				},
+			},
+			wantTFJobIsRemoved: true,
+			wantErr:            false,
+		}),
+		Entry("TFJob is removed since (TTL is 0s)", &cleanUpCases{
+			tfJob: testutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(0)),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: pointer.Int32(0),
+			},
+			jobStatus: kubeflowv1.JobStatus{
+				CompletionTime: &now,
+			},
+			wantTFJobIsRemoved: true,
+			wantErr:            false,
+		}),
+	)
+
+	type createServiceCases struct {
+		tfJob   *kubeflowv1.TFJob
+		rType   kubeflowv1.ReplicaType
+		spec    *kubeflowv1.ReplicaSpec
+		uid     types.UID
+		index   int
+		wantErr bool
+	}
+	DescribeTable("CreateNewService",
+		func(tc *createServiceCases) {
+			tc.tfJob.SetUID(tc.uid)
+			tc.tfJob.SetNamespace(ns.Name)
+
+			gotErr := reconciler.CreateNewService(tc.tfJob, tc.rType, tc.spec, strconv.Itoa(tc.index))
+			if tc.wantErr {
+				Expect(gotErr).ShouldNot(Succeed())
+			} else {
+				Expect(gotErr).Should(Succeed())
+
+				svcInternalTPC := corev1.ServiceInternalTrafficPolicyCluster
+				svcSingleStack := corev1.IPFamilyPolicySingleStack
+				wantSvc := &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-%s-%d", tc.tfJob.Name, tc.rType, tc.index),
+						Namespace: ns.Name,
+						OwnerReferences: []metav1.OwnerReference{
+							*reconciler.GenOwnerReference(tc.tfJob),
+						},
+						Labels: map[string]string{
+							kubeflowv1.JobNameLabel:      tc.tfJob.Name,
+							kubeflowv1.OperatorNameLabel: controllerName,
+							kubeflowv1.ReplicaIndexLabel: strconv.Itoa(tc.index),
+							kubeflowv1.ReplicaTypeLabel:  "",
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name:     kubeflowv1.TFJobDefaultPortName,
+								Protocol: corev1.ProtocolTCP,
+								Port:     kubeflowv1.TFJobDefaultPort,
+								TargetPort: intstr.IntOrString{
+									IntVal: kubeflowv1.TFJobDefaultPort,
+								},
+							},
+						},
+						Selector: map[string]string{
+							kubeflowv1.JobNameLabel:      tc.tfJob.Name,
+							kubeflowv1.OperatorNameLabel: controllerName,
+							kubeflowv1.ReplicaIndexLabel: strconv.Itoa(tc.index),
+							kubeflowv1.ReplicaTypeLabel:  "",
+						},
+						ClusterIP:             corev1.ClusterIPNone,
+						Type:                  corev1.ServiceTypeClusterIP,
+						ClusterIPs:            []string{corev1.ClusterIPNone},
+						SessionAffinity:       corev1.ClusterIPNone,
+						IPFamilies:            []corev1.IPFamily{corev1.IPv4Protocol},
+						IPFamilyPolicy:        &svcSingleStack,
+						InternalTrafficPolicy: &svcInternalTPC,
+					},
+				}
+				Eventually(func() *corev1.Service {
+					svc := &corev1.Service{}
+					Expect(testK8sClient.Get(ctx, client.ObjectKeyFromObject(wantSvc), svc)).Should(Succeed())
+					return svc
+				}).Should(BeComparableTo(wantSvc,
+					cmpopts.IgnoreFields(metav1.ObjectMeta{}, "UID", "ResourceVersion", "Generation", "CreationTimestamp", "ManagedFields")))
+			}
+		},
+		Entry("Failed to create service since containerPort is missing", &createServiceCases{
+			tfJob: testutil.NewTFJobV2(2, 0, 0, 1, 0),
+			spec: &kubeflowv1.ReplicaSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: kubeflowv1.TFJobDefaultContainerName,
+							},
+						},
+					},
+				},
+			},
+			index:   0,
+			wantErr: true,
+		}),
+		Entry("Failed to create service since Job's ownerReference is invalid", &createServiceCases{
+			tfJob:   testutil.NewTFJobV2(2, 0, 0, 1, 0),
+			spec:    &kubeflowv1.ReplicaSpec{Template: testutil.NewTFReplicaSpecTemplate()},
+			index:   1,
+			wantErr: true,
+		}),
+		Entry("Succeeded to create service", &createServiceCases{
+			tfJob:   testutil.NewTFJobV2(2, 0, 0, 1, 0),
+			spec:    &kubeflowv1.ReplicaSpec{Template: testutil.NewTFReplicaSpecTemplate()},
+			index:   0,
+			wantErr: false,
+			uid:     uuid.NewUUID(),
+		}),
+	)
 })

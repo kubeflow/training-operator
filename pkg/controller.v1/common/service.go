@@ -206,7 +206,7 @@ func (jc *JobController) GetPortsFromJob(spec *apiv1.ReplicaSpec) (map[string]in
 	return core.GetPortsFromJob(spec, jc.Controller.GetDefaultContainerName())
 }
 
-// createNewService creates a new service for the given index and type.
+// CreateNewService creates a new service for the given index and type.
 func (jc *JobController) CreateNewService(job metav1.Object, rtype apiv1.ReplicaType,
 	spec *apiv1.ReplicaSpec, index string) error {
 	jobKey, err := KeyFunc(job)
