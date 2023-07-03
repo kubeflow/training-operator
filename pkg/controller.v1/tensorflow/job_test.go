@@ -37,15 +37,10 @@ import (
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 var _ = Describe("TFJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
-
 	Context("Test Add TFJob", func() {
 		It("should get the exact TFJob", func() {
 			By("submitting an TFJob")
@@ -75,7 +70,7 @@ var _ = Describe("TFJob controller", func() {
 			Eventually(func() error {
 				job := &kubeflowv1.TFJob{}
 				return reconciler.Get(ctx, key, job)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			Expect(testK8sClient.Delete(ctx, tfJob)).Should(Succeed())
 			Expect(testK8sClient.Delete(ctx, decoyJob)).Should(Succeed())
@@ -139,7 +134,7 @@ var _ = Describe("TFJob controller", func() {
 				}
 
 				return nil
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 		})
 	})
 
@@ -562,7 +557,7 @@ var _ = Describe("TFJob controller", func() {
 				var updatedTFJob kubeflowv1.TFJob
 				Eventually(func() error {
 					return reconciler.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &updatedTFJob)
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 				initializeReplicaStatuses(&updatedTFJob.Status, kubeflowv1.TFJobReplicaTypeWorker)
 
@@ -586,7 +581,7 @@ var _ = Describe("TFJob controller", func() {
 					var getTFJob kubeflowv1.TFJob
 					Expect(reconciler.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &getTFJob)).Should(Succeed())
 					return getTFJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker]
-				}, timeout, interval).ShouldNot(BeNil())
+				}, testutil.Timeout, testutil.Interval).ShouldNot(BeNil())
 
 				ttl := updatedTFJob.Spec.RunPolicy.TTLSecondsAfterFinished
 				if ttl != nil {
@@ -607,7 +602,7 @@ var _ = Describe("TFJob controller", func() {
 						return err
 					}
 					return fmt.Errorf("job %s still remains", name)
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 			}
 		})
 	})

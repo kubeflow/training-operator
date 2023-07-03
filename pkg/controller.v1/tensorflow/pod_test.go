@@ -17,11 +17,8 @@ package tensorflow
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/core"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -29,18 +26,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
+	"github.com/kubeflow/training-operator/pkg/core"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 var _ = Describe("TFJob controller", func() {
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
-
 	Context("Test ClusterSpec", func() {
 		It("should generate desired cluster spec", func() {
 			type tc struct {
@@ -264,7 +259,7 @@ var _ = Describe("TFJob controller", func() {
 					return fmt.Errorf("pod status is not Failed")
 				}
 				return nil
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
@@ -276,7 +271,7 @@ var _ = Describe("TFJob controller", func() {
 					return noPod.GetDeletionTimestamp() != nil
 				}
 				return errors.IsNotFound(err)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -326,7 +321,7 @@ var _ = Describe("TFJob controller", func() {
 					return fmt.Errorf("expecting %d Pods while got %d", 3, len(podList.Items))
 				}
 				return nil
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
@@ -341,7 +336,7 @@ var _ = Describe("TFJob controller", func() {
 					return false
 				}
 				return errors.IsNotFound(err)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -388,7 +383,7 @@ var _ = Describe("TFJob controller", func() {
 					return fmt.Errorf("before reconciling, expecting %d Pods while got %d", 1, len(podList.Items))
 				}
 				return nil
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
@@ -412,7 +407,7 @@ var _ = Describe("TFJob controller", func() {
 					return fmt.Errorf("after reconciling, expecting %d Pods while got %d", 3, len(podList.Items))
 				}
 				return nil
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 		})
 	})
 
@@ -538,7 +533,7 @@ var _ = Describe("TFJob controller", func() {
 							len(podList.Items), tt.tfJob.GetName(), totalExpectedPodCount)
 					}
 					return nil
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 				got, err := reconciler.IsWorker0Completed(tt.tfJob, tt.replicas)
 

@@ -23,6 +23,7 @@ import (
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -55,10 +56,6 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	testCtx, testCancel = context.WithCancel(context.TODO())
@@ -108,7 +105,7 @@ var _ = BeforeSuite(func() {
 			return fmt.Errorf("cannot get at lease one namespace, got %d", len(nsList.Items))
 		}
 		return nil
-	}, timeout, interval).Should(BeNil())
+	}, testutil.Timeout, testutil.Interval).Should(BeNil())
 })
 
 var _ = AfterSuite(func() {
