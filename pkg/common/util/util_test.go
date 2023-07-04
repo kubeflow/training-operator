@@ -22,33 +22,33 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 func TestDurationUntilExpireTime(t *testing.T) {
 	tests := []struct {
 		name      string
-		runPolicy *commonv1.RunPolicy
-		jobStatus commonv1.JobStatus
+		runPolicy *kubeflowv1.RunPolicy
+		jobStatus kubeflowv1.JobStatus
 		want      time.Duration
 		wantErr   bool
 	}{
 		{
 			name:      "running job",
-			runPolicy: &commonv1.RunPolicy{},
-			jobStatus: commonv1.JobStatus{
-				Conditions: []commonv1.JobCondition{newJobCondition(commonv1.JobRunning)},
+			runPolicy: &kubeflowv1.RunPolicy{},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions: []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobRunning)},
 			},
 			want:    -1,
 			wantErr: false,
 		},
 		{
 			name: "succeeded job with remaining time 1s",
-			runPolicy: &commonv1.RunPolicy{
+			runPolicy: &kubeflowv1.RunPolicy{
 				TTLSecondsAfterFinished: pointer.Int32(5),
 			},
-			jobStatus: commonv1.JobStatus{
-				Conditions:     []commonv1.JobCondition{newJobCondition(commonv1.JobSucceeded)},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
 				CompletionTime: &metav1.Time{Time: time.Now().Add(4 * time.Second)},
 			},
 			want:    1,
@@ -56,11 +56,11 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		},
 		{
 			name: "failed job with remaining time 1s",
-			runPolicy: &commonv1.RunPolicy{
+			runPolicy: &kubeflowv1.RunPolicy{
 				TTLSecondsAfterFinished: pointer.Int32(5),
 			},
-			jobStatus: commonv1.JobStatus{
-				Conditions:     []commonv1.JobCondition{newJobCondition(commonv1.JobFailed)},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobFailed)},
 				CompletionTime: &metav1.Time{Time: time.Now().Add(4 * time.Second)},
 			},
 			want:    1,
@@ -68,9 +68,9 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		},
 		{
 			name:      "succeeded job with infinite TTL",
-			runPolicy: &commonv1.RunPolicy{},
-			jobStatus: commonv1.JobStatus{
-				Conditions:     []commonv1.JobCondition{newJobCondition(commonv1.JobSucceeded)},
+			runPolicy: &kubeflowv1.RunPolicy{},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
 				CompletionTime: &metav1.Time{Time: time.Now().Add(4 * time.Second)},
 			},
 			want:    -1,
@@ -78,11 +78,11 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		},
 		{
 			name: "succeeded job without remaining time",
-			runPolicy: &commonv1.RunPolicy{
+			runPolicy: &kubeflowv1.RunPolicy{
 				TTLSecondsAfterFinished: pointer.Int32(5),
 			},
-			jobStatus: commonv1.JobStatus{
-				Conditions:     []commonv1.JobCondition{newJobCondition(commonv1.JobSucceeded)},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
 				CompletionTime: &metav1.Time{Time: time.Now().Add(6 * time.Second)},
 			},
 			want:    0,
@@ -90,11 +90,11 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		},
 		{
 			name: "succeeded job with nil completion time error",
-			runPolicy: &commonv1.RunPolicy{
+			runPolicy: &kubeflowv1.RunPolicy{
 				TTLSecondsAfterFinished: pointer.Int32(5),
 			},
-			jobStatus: commonv1.JobStatus{
-				Conditions: []commonv1.JobCondition{newJobCondition(commonv1.JobSucceeded)},
+			jobStatus: kubeflowv1.JobStatus{
+				Conditions: []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
 			},
 			want:    -1,
 			wantErr: true,
@@ -116,8 +116,8 @@ func TestDurationUntilExpireTime(t *testing.T) {
 	}
 }
 
-func newJobCondition(t commonv1.JobConditionType) commonv1.JobCondition {
-	return commonv1.JobCondition{
+func newJobCondition(t kubeflowv1.JobConditionType) kubeflowv1.JobCondition {
+	return kubeflowv1.JobCondition{
 		Type:   t,
 		Status: corev1.ConditionTrue,
 	}

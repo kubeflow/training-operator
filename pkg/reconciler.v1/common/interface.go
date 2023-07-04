@@ -17,7 +17,7 @@ package common
 import (
 	"context"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
@@ -73,8 +73,8 @@ type GangSchedulingInterface interface {
 	DeletePodGroup(ctx context.Context, job client.Object) error
 
 	// ReconcilePodGroup CAN be overridden if the logic to reconcile PodGroup changes.
-	ReconcilePodGroup(ctx context.Context, job client.Object, runPolicy *commonv1.RunPolicy,
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error
+	ReconcilePodGroup(ctx context.Context, job client.Object, runPolicy *kubeflowv1.RunPolicy,
+		replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error
 
 	// DecoratePodForGangScheduling SHOULD be overridden if gang scheduler demands Pods associated with PodGroup to be
 	// decorated with specific requests.
@@ -106,15 +106,15 @@ type PodInterface interface {
 	ReconcilePods(
 		ctx context.Context,
 		job client.Object,
-		jobStatus *commonv1.JobStatus,
+		jobStatus *kubeflowv1.JobStatus,
 		pods []*corev1.Pod,
-		rtype commonv1.ReplicaType,
-		spec *commonv1.ReplicaSpec,
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error
+		rtype kubeflowv1.ReplicaType,
+		spec *kubeflowv1.ReplicaSpec,
+		replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error
 
 	// CreateNewPod CAN be overridden to customize how to create a new pod.
 	CreateNewPod(job client.Object, rt string, index string,
-		spec *commonv1.ReplicaSpec, masterRole bool, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error
+		spec *kubeflowv1.ReplicaSpec, masterRole bool, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error
 
 	// DeletePod CAN be overridden to customize how to delete a pod of {name} in namespace {ns}.
 	DeletePod(ctx context.Context, ns string, name string) error
@@ -130,7 +130,7 @@ type ServiceInterface interface {
 	OverrideForServiceInterface(ui ReconcilerUtilInterface, pi PodInterface, ji JobInterface)
 
 	// GetPortsFromJob CAN be overridden to customize how to find ports defined in the ReplicasSpec.
-	GetPortsFromJob(spec *commonv1.ReplicaSpec) (map[string]int32, error)
+	GetPortsFromJob(spec *kubeflowv1.ReplicaSpec) (map[string]int32, error)
 
 	// GetServicesForJob CAN be overridden to customize how to find all services associated with this job.
 	GetServicesForJob(ctx context.Context, job client.Object) ([]*corev1.Service, error)
@@ -145,12 +145,12 @@ type ServiceInterface interface {
 	ReconcileServices(
 		job client.Object,
 		services []*corev1.Service,
-		rtype commonv1.ReplicaType,
-		spec *commonv1.ReplicaSpec) error
+		rtype kubeflowv1.ReplicaType,
+		spec *kubeflowv1.ReplicaSpec) error
 
 	// CreateNewService CAN be overridden to customize how to create a new service.
-	CreateNewService(job client.Object, rtype commonv1.ReplicaType,
-		spec *commonv1.ReplicaSpec, index string) error
+	CreateNewService(job client.Object, rtype kubeflowv1.ReplicaType,
+		spec *kubeflowv1.ReplicaSpec, index string) error
 
 	// DeleteService CAN be overridden to customize how to delete the service of {name} in namespace {ns}.
 	DeleteService(ns string, name string, job client.Object) error
@@ -175,25 +175,25 @@ type JobInterface interface {
 	GetJob(ctx context.Context, req ctrl.Request) (client.Object, error)
 
 	// ExtractReplicasSpec MUST be overridden to extract ReplicasSpec from a job
-	ExtractReplicasSpec(job client.Object) (map[commonv1.ReplicaType]*commonv1.ReplicaSpec, error)
+	ExtractReplicasSpec(job client.Object) (map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, error)
 
 	// ExtractRunPolicy MUST be overridden to extract the pointer of RunPolicy from a job
-	ExtractRunPolicy(job client.Object) (*commonv1.RunPolicy, error)
+	ExtractRunPolicy(job client.Object) (*kubeflowv1.RunPolicy, error)
 
 	// ExtractJobStatus MUST be overridden to extract the pointer of JobStatus from a job
-	ExtractJobStatus(job client.Object) (*commonv1.JobStatus, error)
+	ExtractJobStatus(job client.Object) (*kubeflowv1.JobStatus, error)
 
 	// IsMasterRole MUST be overridden to determine whether this ReplicaType with index specified is a master role.
 	// MasterRole pod will have "job-role=master" set in its label
-	IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool
+	IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, rtype kubeflowv1.ReplicaType, index int) bool
 
 	// ReconcileJob CAN be overridden to customize how to reconcile a job.
 	ReconcileJob(
 		ctx context.Context,
 		job client.Object,
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-		status *commonv1.JobStatus,
-		runPolicy *commonv1.RunPolicy) error
+		replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+		status *kubeflowv1.JobStatus,
+		runPolicy *kubeflowv1.RunPolicy) error
 
 	// DeleteJob CAN be overridden to customize how to delete a job.
 	DeleteJob(job client.Object) error
@@ -201,41 +201,41 @@ type JobInterface interface {
 	// UpdateJobStatus CAN be overridden to customize how to update job status without submitting to APIServer.
 	UpdateJobStatus(
 		job client.Object,
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-		jobStatus *commonv1.JobStatus) error
+		replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+		jobStatus *kubeflowv1.JobStatus) error
 
 	// UpdateJobStatusInAPIServer CAN be overridden to customize how to update job status directly to APIServer.
 	UpdateJobStatusInAPIServer(ctx context.Context, job client.Object) error
 
 	// CleanupResources CAN be overridden to customize how to delete all resources associated with this job.
-	CleanupResources(runPolicy *commonv1.RunPolicy, status commonv1.JobStatus, job client.Object) error
+	CleanupResources(runPolicy *kubeflowv1.RunPolicy, status kubeflowv1.JobStatus, job client.Object) error
 
 	// CleanupJob CAN be overridden to customize how to clean up this job.
-	CleanupJob(runPolicy *commonv1.RunPolicy, status commonv1.JobStatus, job client.Object) error
+	CleanupJob(runPolicy *kubeflowv1.RunPolicy, status kubeflowv1.JobStatus, job client.Object) error
 
 	// RecordAbnormalPods CAN be overridden to customize how to record abnormal pods
 	RecordAbnormalPods(activePods []*corev1.Pod, object client.Object)
 
 	// SetStatusForSuccessJob CAN be overridden to customize how to set status for success job
-	SetStatusForSuccessJob(status *commonv1.JobStatus)
+	SetStatusForSuccessJob(status *kubeflowv1.JobStatus)
 
 	// IsFlagReplicaTypeForJobStatus CAN be overridden to customize how to determine if this ReplicaType is the
 	// flag ReplicaType for the status of this kind of job
 	IsFlagReplicaTypeForJobStatus(rtype string) bool
 
 	// IsJobSucceeded CAN be overridden to customize how to determine if this job is succeeded.
-	IsJobSucceeded(status commonv1.JobStatus) bool
+	IsJobSucceeded(status kubeflowv1.JobStatus) bool
 
 	// IsJobFailed CAN be overridden to customize how to determine if this job is failed.
-	IsJobFailed(status commonv1.JobStatus) bool
+	IsJobFailed(status kubeflowv1.JobStatus) bool
 
 	// ShouldCleanUp CAN be overridden to customize how to determine if this job should be cleaned up.
-	ShouldCleanUp(status commonv1.JobStatus) bool
+	ShouldCleanUp(status kubeflowv1.JobStatus) bool
 
 	// PastBackoffLimit CAN be overridden to customize how to determine if this job has past backoff limit.
-	PastBackoffLimit(jobName string, runPolicy *commonv1.RunPolicy,
-		replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, pods []*corev1.Pod) (bool, error)
+	PastBackoffLimit(jobName string, runPolicy *kubeflowv1.RunPolicy,
+		replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, pods []*corev1.Pod) (bool, error)
 
 	// PastActiveDeadline CAN be overridden to customize how to determine if this job has past activate deadline.
-	PastActiveDeadline(runPolicy *commonv1.RunPolicy, jobStatus *commonv1.JobStatus) bool
+	PastActiveDeadline(runPolicy *kubeflowv1.RunPolicy, jobStatus *kubeflowv1.JobStatus) bool
 }

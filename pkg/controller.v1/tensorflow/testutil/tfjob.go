@@ -15,7 +15,6 @@
 package testutil
 
 import (
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -24,7 +23,7 @@ import (
 
 const TestTFJobName = "test-tfjob"
 
-func NewTFJobWithCleanPolicy(chief, worker, ps int, policy commonv1.CleanPodPolicy) *kubeflowv1.TFJob {
+func NewTFJobWithCleanPolicy(chief, worker, ps int, policy kubeflowv1.CleanPodPolicy) *kubeflowv1.TFJob {
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
@@ -39,13 +38,13 @@ func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *kubeflowv1.
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
-		policy := commonv1.CleanPodPolicyNone
+		policy := kubeflowv1.CleanPodPolicyNone
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
-	policy := commonv1.CleanPodPolicyNone
+	policy := kubeflowv1.CleanPodPolicyNone
 	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return tfJob
 }
@@ -54,13 +53,13 @@ func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *kubef
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
-		policy := commonv1.CleanPodPolicyAll
+		policy := kubeflowv1.CleanPodPolicyAll
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
-	policy := commonv1.CleanPodPolicyAll
+	policy := kubeflowv1.CleanPodPolicyAll
 	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return tfJob
 }
@@ -70,14 +69,14 @@ func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *kubef
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 		tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-		policy := commonv1.CleanPodPolicyAll
+		policy := kubeflowv1.CleanPodPolicyAll
 		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 	tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-	policy := commonv1.CleanPodPolicyAll
+	policy := kubeflowv1.CleanPodPolicyAll
 	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return tfJob
 }
@@ -85,7 +84,7 @@ func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *kubef
 func NewTFJobWithChief(worker, ps int) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	chief := int32(1)
-	tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeChief] = &commonv1.ReplicaSpec{
+	tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeChief] = &kubeflowv1.ReplicaSpec{
 		Replicas: &chief,
 		Template: NewTFReplicaSpecTemplate(),
 	}
@@ -96,7 +95,7 @@ func NewTFJobWithEvaluator(worker, ps, evaluator int) *kubeflowv1.TFJob {
 	tfJob := NewTFJob(worker, ps)
 	if evaluator > 0 {
 		evaluator := int32(evaluator)
-		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeEval] = &commonv1.ReplicaSpec{
+		tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeEval] = &kubeflowv1.ReplicaSpec{
 			Replicas: &evaluator,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -120,14 +119,14 @@ func NewTFJob(worker, ps int) *kubeflowv1.TFJob {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: kubeflowv1.TFJobSpec{
-			TFReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
+			TFReplicaSpecs: make(map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec),
 		},
 	}
 	kubeflowv1.SetObjectDefaults_TFJob(tfJob)
 
 	if worker > 0 {
 		worker := int32(worker)
-		workerReplicaSpec := &commonv1.ReplicaSpec{
+		workerReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &worker,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -136,7 +135,7 @@ func NewTFJob(worker, ps int) *kubeflowv1.TFJob {
 
 	if ps > 0 {
 		ps := int32(ps)
-		psReplicaSpec := &commonv1.ReplicaSpec{
+		psReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &ps,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -155,14 +154,14 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: kubeflowv1.TFJobSpec{
-			TFReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
+			TFReplicaSpecs: make(map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec),
 		},
 	}
 	kubeflowv1.SetObjectDefaults_TFJob(tfJob)
 
 	if worker > 0 {
 		worker := int32(worker)
-		workerReplicaSpec := &commonv1.ReplicaSpec{
+		workerReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &worker,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -171,7 +170,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 
 	if ps > 0 {
 		ps := int32(ps)
-		psReplicaSpec := &commonv1.ReplicaSpec{
+		psReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &ps,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -180,7 +179,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 
 	if master > 0 {
 		master := int32(master)
-		masterReplicaSpec := &commonv1.ReplicaSpec{
+		masterReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &master,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -189,7 +188,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 
 	if chief > 0 {
 		chief := int32(chief)
-		chiefReplicaSpec := &commonv1.ReplicaSpec{
+		chiefReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &chief,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -198,7 +197,7 @@ func NewTFJobV2(worker, ps, master, chief, evaluator int) *kubeflowv1.TFJob {
 
 	if evaluator > 0 {
 		evaluator := int32(evaluator)
-		evaluatorReplicaSpec := &commonv1.ReplicaSpec{
+		evaluatorReplicaSpec := &kubeflowv1.ReplicaSpec{
 			Replicas: &evaluator,
 			Template: NewTFReplicaSpecTemplate(),
 		}
@@ -241,7 +240,7 @@ func NewTFReplicaSpecTemplate() v1.PodTemplateSpec {
 	}
 }
 
-func CheckCondition(tfJob *kubeflowv1.TFJob, condition commonv1.JobConditionType, reason string) bool {
+func CheckCondition(tfJob *kubeflowv1.TFJob, condition kubeflowv1.JobConditionType, reason string) bool {
 	for _, v := range tfJob.Status.Conditions {
 		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
 			return true

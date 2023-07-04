@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/core"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
@@ -119,11 +119,11 @@ func (r *PodReconciler) FilterPodsForReplicaType(pods []*corev1.Pod, replicaType
 func (r *PodReconciler) ReconcilePods(
 	ctx context.Context,
 	job client.Object,
-	jobStatus *commonv1.JobStatus,
+	jobStatus *kubeflowv1.JobStatus,
 	pods []*corev1.Pod,
-	rType commonv1.ReplicaType,
-	spec *commonv1.ReplicaSpec,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	rType kubeflowv1.ReplicaType,
+	spec *kubeflowv1.ReplicaSpec,
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error {
 
 	rt := strings.ToLower(string(rType))
 	// Convert ReplicaType to lower string.
@@ -152,7 +152,7 @@ func (r *PodReconciler) ReconcilePods(
 			logger.Infof("Need to create new pod: %s-%d", rt, index)
 
 			// check if this replica is the master role
-			masterRole = r.IsMasterRole(replicas, commonv1.ReplicaType(rt), index)
+			masterRole = r.IsMasterRole(replicas, kubeflowv1.ReplicaType(rt), index)
 			err = r.CreateNewPod(job, rt, strconv.Itoa(index), spec, masterRole, replicas)
 			if err != nil {
 				return err
@@ -180,7 +180,7 @@ func (r *PodReconciler) ReconcilePods(
 				}
 			}
 			// Check if the pod is retryable.
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				if pod.Status.Phase == corev1.PodFailed && trainutil.IsRetryableExitCode(exitCode) {
 					failedPodsCount.Inc()
 					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
@@ -199,15 +199,15 @@ func (r *PodReconciler) ReconcilePods(
 
 // CreateNewPod generate Pods for this job and submits creation request to APIServer
 func (r *PodReconciler) CreateNewPod(job client.Object, rt string, index string,
-	spec *commonv1.ReplicaSpec, masterRole bool, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	spec *kubeflowv1.ReplicaSpec, masterRole bool, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error {
 
 	logger := commonutil.LoggerForReplica(job, rt)
 
 	podLabels := r.GenLabels(job.GetName())
-	podLabels[commonv1.ReplicaTypeLabel] = rt
-	podLabels[commonv1.ReplicaIndexLabel] = index
+	podLabels[kubeflowv1.ReplicaTypeLabel] = rt
+	podLabels[kubeflowv1.ReplicaIndexLabel] = index
 	if masterRole {
-		podLabels[commonv1.JobRoleLabel] = "master"
+		podLabels[kubeflowv1.JobRoleLabel] = "master"
 	}
 
 	podTemplate := spec.Template.DeepCopy()
@@ -227,7 +227,7 @@ func (r *PodReconciler) CreateNewPod(job client.Object, rt string, index string,
 		logger.Warning(errMsg)
 		r.GetRecorder().Event(job, corev1.EventTypeWarning, "SettedPodTemplateRestartPolicy", errMsg)
 	}
-	if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+	if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 		podTemplate.Spec.RestartPolicy = corev1.RestartPolicyNever
 	} else {
 		podTemplate.Spec.RestartPolicy = corev1.RestartPolicy(spec.RestartPolicy)

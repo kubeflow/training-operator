@@ -3,8 +3,8 @@ package test_job
 import (
 	"context"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	common_reconciler "github.com/kubeflow/training-operator/pkg/reconciler.v1/common"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	commonreconciler "github.com/kubeflow/training-operator/pkg/reconciler.v1/common"
 	v1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
 	"github.com/kubeflow/training-operator/test_job/client/clientset/versioned/scheme"
 
@@ -19,11 +19,11 @@ import (
 )
 
 type TestReconciler struct {
-	common_reconciler.ReconcilerUtil
-	common_reconciler.ServiceReconciler
-	common_reconciler.PodReconciler
-	common_reconciler.VolcanoReconciler
-	common_reconciler.JobReconciler
+	commonreconciler.ReconcilerUtil
+	commonreconciler.ServiceReconciler
+	commonreconciler.PodReconciler
+	commonreconciler.VolcanoReconciler
+	commonreconciler.JobReconciler
 
 	FC       client.Client
 	Job      *v1.TestJob
@@ -44,21 +44,21 @@ func NewTestReconciler() *TestReconciler {
 	}
 
 	// Generate Bare Components
-	jobR := common_reconciler.BareJobReconciler(fakeClient)
+	jobR := commonreconciler.BareJobReconciler(fakeClient)
 	jobR.OverrideForJobInterface(r, r, r, r)
 
-	podR := common_reconciler.BarePodReconciler(fakeClient)
+	podR := commonreconciler.BarePodReconciler(fakeClient)
 	podR.OverrideForPodInterface(r, r, r)
 
-	svcR := common_reconciler.BareServiceReconciler(fakeClient)
+	svcR := commonreconciler.BareServiceReconciler(fakeClient)
 	svcR.OverrideForServiceInterface(r, r, r)
 
-	gangR := common_reconciler.BareVolcanoReconciler(fakeClient, nil, false)
+	gangR := commonreconciler.BareVolcanoReconciler(fakeClient, nil, false)
 	gangR.OverrideForGangSchedulingInterface(r)
 
 	Log := log.Log
-	utilR := common_reconciler.BareUtilReconciler(nil, Log, scm)
-	//kubeflowReconciler := common_reconciler.BareKubeflowReconciler()
+	utilR := commonreconciler.BareUtilReconciler(nil, Log, scm)
+	//kubeflowReconciler := commonreconciler.BareKubeflowReconciler()
 
 	r.JobReconciler = *jobR
 	r.PodReconciler = *podR
@@ -136,29 +136,29 @@ func (r *TestReconciler) GetServicesForJob(ctx context.Context, job client.Objec
 	return r.Services, nil
 }
 
-func (r *TestReconciler) ExtractReplicasSpec(job client.Object) (map[commonv1.ReplicaType]*commonv1.ReplicaSpec, error) {
+func (r *TestReconciler) ExtractReplicasSpec(job client.Object) (map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, error) {
 	tj := job.(*v1.TestJob)
 
-	rs := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
+	rs := map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{}
 	for k, v := range tj.Spec.TestReplicaSpecs {
-		rs[commonv1.ReplicaType(k)] = v
+		rs[kubeflowv1.ReplicaType(k)] = v
 	}
 
 	return rs, nil
 }
 
-func (r *TestReconciler) ExtractRunPolicy(job client.Object) (*commonv1.RunPolicy, error) {
+func (r *TestReconciler) ExtractRunPolicy(job client.Object) (*kubeflowv1.RunPolicy, error) {
 	tj := job.(*v1.TestJob)
 
 	return tj.Spec.RunPolicy, nil
 }
 
-func (r *TestReconciler) ExtractJobStatus(job client.Object) (*commonv1.JobStatus, error) {
+func (r *TestReconciler) ExtractJobStatus(job client.Object) (*kubeflowv1.JobStatus, error) {
 	tj := job.(*v1.TestJob)
 
 	return &tj.Status, nil
 }
 
-func (r *TestReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool {
+func (r *TestReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, rtype kubeflowv1.ReplicaType, index int) bool {
 	return string(rtype) == string(v1.TestReplicaTypeMaster)
 }

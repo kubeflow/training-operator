@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -103,12 +102,12 @@ func getTotalReplicas(job *kubeflowv1.PyTorchJob) int32 {
 	return jobReplicas
 }
 
-func replicaName(jobName string, rtype commonv1.ReplicaType, index int) string {
+func replicaName(jobName string, rtype kubeflowv1.ReplicaType, index int) string {
 	n := jobName + "-" + strings.ToLower(string(rtype)) + "-" + strconv.Itoa(index)
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func getPortFromPyTorchJob(job *kubeflowv1.PyTorchJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromPyTorchJob(job *kubeflowv1.PyTorchJob, rtype kubeflowv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == kubeflowv1.PytorchJobDefaultContainerName {

@@ -18,19 +18,20 @@ import (
 	"fmt"
 	"reflect"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
-	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
-	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
 // SatisfiedExpectations returns true if the required adds/dels for the given mxjob have been observed.
 // Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
 // manager.
-func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobKey string, replicaTypes []commonv1.ReplicaType) bool {
+func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobKey string, replicaTypes []kubeflowv1.ReplicaType) bool {
 	satisfied := false
 	for _, rtype := range replicaTypes {
 		// Check the expectations of the pods.
@@ -47,7 +48,7 @@ func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobK
 // OnDependentCreateFunc modify expectations when dependent (pod/service) creation observed.
 func OnDependentCreateFunc(exp expectation.ControllerExpectationsInterface) func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		rtype := e.Object.GetLabels()[commonv1.ReplicaTypeLabel]
+		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
 		}
@@ -145,7 +146,7 @@ func resolveControllerRef(jc *common.JobController, namespace string, controller
 func OnDependentDeleteFunc(exp expectation.ControllerExpectationsInterface) func(event.DeleteEvent) bool {
 	return func(e event.DeleteEvent) bool {
 
-		rtype := e.Object.GetLabels()[commonv1.ReplicaTypeLabel]
+		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
 		}

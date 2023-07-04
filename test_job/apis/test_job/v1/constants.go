@@ -15,7 +15,7 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -29,5 +29,5 @@ const (
 	// DefaultPort is default value of the port.
 	DefaultPort = 2222
 	// DefaultRestartPolicy is default RestartPolicy for TFReplicaSpec.
-	DefaultRestartPolicy = commonv1.RestartPolicyNever
+	DefaultRestartPolicy = kubeflowv1.RestartPolicyNever
 )

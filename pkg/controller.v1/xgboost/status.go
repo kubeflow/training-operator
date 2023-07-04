@@ -5,14 +5,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
-func setRunningCondition(logger *logrus.Entry, jobName string, jobStatus *commonv1.JobStatus) error {
+func setRunningCondition(logger *logrus.Entry, jobName string, jobStatus *kubeflowv1.JobStatus) error {
 	msg := fmt.Sprintf("XGBoostJob %s is running.", jobName)
-	if condition := findStatusCondition(jobStatus.Conditions, commonv1.JobRunning); condition == nil {
-		err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, xgboostJobRunningReason, msg)
+	if condition := findStatusCondition(jobStatus.Conditions, kubeflowv1.JobRunning); condition == nil {
+		err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, xgboostJobRunningReason, msg)
 		if err != nil {
 			logger.Infof("Append job condition error: %v", err)
 			return err
@@ -21,7 +21,7 @@ func setRunningCondition(logger *logrus.Entry, jobName string, jobStatus *common
 	return nil
 }
 
-func findStatusCondition(conditions []commonv1.JobCondition, conditionType commonv1.JobConditionType) *commonv1.JobCondition {
+func findStatusCondition(conditions []kubeflowv1.JobCondition, conditionType kubeflowv1.JobConditionType) *kubeflowv1.JobCondition {
 	for i := range conditions {
 		if conditions[i].Type == conditionType {
 			return &conditions[i]

@@ -17,7 +17,7 @@ package common_test
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 	"github.com/kubeflow/training-operator/test_job/reconciler.v1/test_job"
 )
@@ -32,8 +32,8 @@ func TestGenLabels(t *testing.T) {
 			return tc{
 				testJobName: "test/job1",
 				expectedLabel: map[string]string{
-					commonv1.JobNameLabel:      "test-job1",
-					commonv1.OperatorNameLabel: "Test Reconciler",
+					kubeflowv1.JobNameLabel:      "test-job1",
+					kubeflowv1.OperatorNameLabel: "Test Reconciler",
 				},
 			}
 		}(),

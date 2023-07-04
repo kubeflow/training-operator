@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
@@ -45,7 +44,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			By("By creating a new PyTorchJob")
 			ctx := context.Background()
 			job := newPyTorchJobForTest(name, namespace)
-			job.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+			job.Spec.PyTorchReplicaSpecs = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 				kubeflowv1.PyTorchJobReplicaTypeMaster: {
 					Replicas: pointer.Int32(1),
 					Template: corev1.PodTemplateSpec{
@@ -159,7 +158,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					ReplicaStatuses[kubeflowv1.PyTorchJobReplicaTypeMaster].Succeeded == 1
 			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 			// Check if the job is succeeded.
-			cond := getCondition(created.Status, commonv1.JobSucceeded)
+			cond := getCondition(created.Status, kubeflowv1.JobSucceeded)
 			Expect(cond.Status).To(Equal(corev1.ConditionTrue))
 			By("Deleting the PyTorchJob")
 			Expect(testK8sClient.Delete(ctx, job)).Should(Succeed())
@@ -188,7 +187,7 @@ var _ = Describe("PyTorchJob controller", func() {
 				MinReplicas: minReplicas,
 				MaxRestarts: maxRestarts,
 			}
-			job.Spec.PyTorchReplicaSpecs = map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+			job.Spec.PyTorchReplicaSpecs = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 				kubeflowv1.PyTorchJobReplicaTypeWorker: {
 					Replicas: pointer.Int32(1),
 					Template: corev1.PodTemplateSpec{
@@ -287,7 +286,7 @@ var _ = Describe("PyTorchJob controller", func() {
 					ReplicaStatuses[kubeflowv1.PyTorchJobReplicaTypeWorker].Succeeded == 1
 			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 			// Check if the job is succeeded.
-			cond := getCondition(created.Status, commonv1.JobSucceeded)
+			cond := getCondition(created.Status, kubeflowv1.JobSucceeded)
 			Expect(cond.Status).To(Equal(corev1.ConditionTrue))
 			By("Deleting the PyTorchJob")
 			Expect(testK8sClient.Delete(ctx, job)).Should(Succeed())
@@ -305,7 +304,7 @@ func newPyTorchJobForTest(name, namespace string) *kubeflowv1.PyTorchJob {
 }
 
 // getCondition returns the condition with the provided type.
-func getCondition(status commonv1.JobStatus, condType commonv1.JobConditionType) *commonv1.JobCondition {
+func getCondition(status kubeflowv1.JobStatus, condType kubeflowv1.JobConditionType) *kubeflowv1.JobCondition {
 	for _, condition := range status.Conditions {
 		if condition.Type == condType {
 			return &condition

@@ -21,9 +21,7 @@ import (
 	"strings"
 	"time"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/core"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/k8sutil"
@@ -33,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -102,8 +101,8 @@ func (r *JobReconciler) OverrideForJobInterface(ui ReconcilerUtilInterface, pi P
 func (r *JobReconciler) GenLabels(jobName string) map[string]string {
 	jobName = strings.Replace(jobName, "/", "-", -1)
 	return map[string]string{
-		commonv1.OperatorNameLabel: r.GetReconcilerName(),
-		commonv1.JobNameLabel:      jobName,
+		kubeflowv1.OperatorNameLabel: r.GetReconcilerName(),
+		kubeflowv1.JobNameLabel:      jobName,
 	}
 }
 
@@ -116,9 +115,9 @@ func (r *JobReconciler) GetGroupNameLabelValue() string {
 func (r *JobReconciler) ReconcileJob(
 	ctx context.Context,
 	job client.Object,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	status *commonv1.JobStatus,
-	runPolicy *commonv1.RunPolicy) error {
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	status *kubeflowv1.JobStatus,
+	runPolicy *kubeflowv1.RunPolicy) error {
 
 	logger := r.GetLogger(job)
 	logger.Info(MsgReconcileStart)
@@ -214,7 +213,7 @@ func (r *JobReconciler) ReconcileJob(
 
 		r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
 
-		if err = commonutil.UpdateJobConditions(status, commonv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
+		if err = commonutil.UpdateJobConditions(status, kubeflowv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
 			logrus.Infof(ErrAppendJobConditionTemplate, err)
 			return err
 		}
@@ -270,7 +269,7 @@ func (r *JobReconciler) RecordAbnormalPods(activePods []*corev1.Pod, object clie
 }
 
 // SetStatusForSuccessJob sets the status for job that succeed
-func (r *JobReconciler) SetStatusForSuccessJob(status *commonv1.JobStatus) {
+func (r *JobReconciler) SetStatusForSuccessJob(status *kubeflowv1.JobStatus) {
 	for rytpe := range status.ReplicaStatuses {
 		status.ReplicaStatuses[rytpe].Succeeded += status.ReplicaStatuses[rytpe].Active
 		status.ReplicaStatuses[rytpe].Active = 0
@@ -280,8 +279,8 @@ func (r *JobReconciler) SetStatusForSuccessJob(status *commonv1.JobStatus) {
 // UpdateJobStatus updates the status of this generic training job WITHOUT pushing the updated status to the APIServer
 func (r *JobReconciler) UpdateJobStatus(
 	job client.Object,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	jobStatus *commonv1.JobStatus) error {
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	jobStatus *kubeflowv1.JobStatus) error {
 
 	logrus.Warnf(WarnDefaultImplementationTemplate, "UpdateJobStatus")
 
@@ -307,7 +306,7 @@ func (r *JobReconciler) UpdateJobStatus(
 		if r.IsFlagReplicaTypeForJobStatus(string(rtype)) {
 			if running > 0 {
 				msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -322,7 +321,7 @@ func (r *JobReconciler) UpdateJobStatus(
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 				}
@@ -331,11 +330,11 @@ func (r *JobReconciler) UpdateJobStatus(
 		}
 
 		if failed > 0 {
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("%s %s is restarting because %d %s replica(s) failed.",
 					jobKind, jobNamespacedName, failed, rtype)
 				r.GetRecorder().Event(job, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -347,7 +346,7 @@ func (r *JobReconciler) UpdateJobStatus(
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -360,7 +359,7 @@ func (r *JobReconciler) UpdateJobStatus(
 	msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
 	logger.Info(msg)
 
-	if err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
+	if err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
 		logger.Error(err, ErrUpdateJobConditionsFailed, jobKind)
 		return err
 	}
@@ -374,12 +373,12 @@ func (r *JobReconciler) UpdateJobStatusInAPIServer(ctx context.Context, job clie
 }
 
 // CleanupResources cleans up all resources associated with this generic training job
-func (r *JobReconciler) CleanupResources(runPolicy *commonv1.RunPolicy, status commonv1.JobStatus, job client.Object) error {
-	if *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyNone {
+func (r *JobReconciler) CleanupResources(runPolicy *kubeflowv1.RunPolicy, status kubeflowv1.JobStatus, job client.Object) error {
+	if *runPolicy.CleanPodPolicy == kubeflowv1.CleanPodPolicyNone {
 		return nil
 	}
 	ctx := context.Background()
-	cleanRunningPod := *runPolicy.CleanPodPolicy == commonv1.CleanPodPolicyRunning
+	cleanRunningPod := *runPolicy.CleanPodPolicy == kubeflowv1.CleanPodPolicyRunning
 
 	if err := r.DeletePodGroup(ctx, job); err != nil {
 		return err
@@ -416,7 +415,7 @@ func (r *JobReconciler) CleanupResources(runPolicy *commonv1.RunPolicy, status c
 }
 
 // CleanupJob cleans up all resources associated with this generic training job as well as the job itself
-func (r *JobReconciler) CleanupJob(runPolicy *commonv1.RunPolicy, status commonv1.JobStatus, job client.Object) error {
+func (r *JobReconciler) CleanupJob(runPolicy *kubeflowv1.RunPolicy, status kubeflowv1.JobStatus, job client.Object) error {
 	currentTime := time.Now()
 
 	ttl := runPolicy.TTLSecondsAfterFinished
@@ -451,28 +450,28 @@ func (r *JobReconciler) IsFlagReplicaTypeForJobStatus(rtype string) bool {
 }
 
 // IsJobSucceeded checks if this generic training job succeeded
-func (r *JobReconciler) IsJobSucceeded(status commonv1.JobStatus) bool {
+func (r *JobReconciler) IsJobSucceeded(status kubeflowv1.JobStatus) bool {
 	return commonutil.IsSucceeded(status)
 }
 
 // IsJobFailed checks if this generic training job failed
-func (r *JobReconciler) IsJobFailed(status commonv1.JobStatus) bool {
+func (r *JobReconciler) IsJobFailed(status kubeflowv1.JobStatus) bool {
 	return commonutil.IsFailed(status)
 }
 
 // ShouldCleanUp checks if resources associated with this generic training job should be cleaned up
-func (r *JobReconciler) ShouldCleanUp(status commonv1.JobStatus) bool {
+func (r *JobReconciler) ShouldCleanUp(status kubeflowv1.JobStatus) bool {
 	return r.IsJobSucceeded(status) || r.IsJobFailed(status)
 }
 
 // PastBackoffLimit checks if this generic training job has past backoff limit
-func (r *JobReconciler) PastBackoffLimit(jobName string, runPolicy *commonv1.RunPolicy,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, pods []*corev1.Pod) (bool, error) {
+func (r *JobReconciler) PastBackoffLimit(jobName string, runPolicy *kubeflowv1.RunPolicy,
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, pods []*corev1.Pod) (bool, error) {
 	return core.PastBackoffLimit(jobName, runPolicy, replicas, pods, r.FilterPodsForReplicaType)
 }
 
 // PastActiveDeadline checks if this generic training job has ActiveDeadlineSeconds field set and if it is exceeded.
-func (r *JobReconciler) PastActiveDeadline(runPolicy *commonv1.RunPolicy, jobStatus *commonv1.JobStatus) bool {
+func (r *JobReconciler) PastActiveDeadline(runPolicy *kubeflowv1.RunPolicy, jobStatus *kubeflowv1.JobStatus) bool {
 	return core.PastActiveDeadline(runPolicy, *jobStatus)
 }
 
@@ -480,18 +479,18 @@ func (r *JobReconciler) GetJob(ctx context.Context, req ctrl.Request) (client.Ob
 	panic("implement me")
 }
 
-func (r *JobReconciler) ExtractReplicasSpec(job client.Object) (map[commonv1.ReplicaType]*commonv1.ReplicaSpec, error) {
+func (r *JobReconciler) ExtractReplicasSpec(job client.Object) (map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, error) {
 	panic("implement me")
 }
 
-func (r *JobReconciler) ExtractRunPolicy(job client.Object) (*commonv1.RunPolicy, error) {
+func (r *JobReconciler) ExtractRunPolicy(job client.Object) (*kubeflowv1.RunPolicy, error) {
 	panic("implement me")
 }
 
-func (r *JobReconciler) ExtractJobStatus(job client.Object) (*commonv1.JobStatus, error) {
+func (r *JobReconciler) ExtractJobStatus(job client.Object) (*kubeflowv1.JobStatus, error) {
 	panic("implement me")
 }
 
-func (r *JobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool {
+func (r *JobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, rtype kubeflowv1.ReplicaType, index int) bool {
 	panic("implement me")
 }

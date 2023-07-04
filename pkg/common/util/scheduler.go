@@ -14,9 +14,9 @@
 
 package util
 
-import commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+import kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
-func IsGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, schedulerName string) bool {
+func IsGangSchedulerSet(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, schedulerName string) bool {
 	for _, spec := range replicas {
 		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName == schedulerName {
 			return true
@@ -25,7 +25,7 @@ func IsGangSchedulerSet(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
 	return false
 }
 
-func GetSchedulerName(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) string {
+func GetSchedulerName(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) string {
 	for _, spec := range replicas {
 		if len(spec.Template.Spec.SchedulerName) > 0 {
 			return spec.Template.Spec.SchedulerName

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -58,7 +57,7 @@ var _ = Describe("TFJob controller", func() {
 			By("finding failed job status")
 			found := false
 			for _, condition := range tfJob.Status.Conditions {
-				if condition.Type == commonv1.JobFailed {
+				if condition.Type == kubeflowv1.JobFailed {
 					found = true
 				}
 			}
@@ -87,7 +86,7 @@ var _ = Describe("TFJob controller", func() {
 				restart          bool
 				worker0Completed bool
 
-				expectedType commonv1.JobConditionType
+				expectedType kubeflowv1.JobConditionType
 			}
 
 			testCases := []testCase{
@@ -105,7 +104,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobSucceeded,
+					expectedType:            kubeflowv1.JobSucceeded,
 				},
 				{
 					description:             "Chief worker is running",
@@ -121,7 +120,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     1,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "Chief worker is failed",
@@ -137,7 +136,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "(No chief worker) Worker is failed",
@@ -153,7 +152,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "(No chief worker) Worker is succeeded",
@@ -169,7 +168,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobSucceeded,
+					expectedType:            kubeflowv1.JobSucceeded,
 				},
 				{
 					description:             "(No chief worker) Worker is running",
@@ -185,7 +184,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "(No chief worker) 2 workers are succeeded, 2 workers are active",
@@ -201,7 +200,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "(No chief worker) 2 workers are running, 2 workers are failed",
@@ -217,7 +216,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "(No chief worker) 2 workers are succeeded, 2 workers are failed",
@@ -233,7 +232,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "(No chief worker) worker-0 are succeeded, 3 workers are active",
@@ -249,7 +248,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        true,
-					expectedType:            commonv1.JobSucceeded,
+					expectedType:            kubeflowv1.JobSucceeded,
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 are succeeded, 3 workers are active",
@@ -265,7 +264,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        true,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) 4 workers are succeeded",
@@ -281,7 +280,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        true,
-					expectedType:            commonv1.JobSucceeded,
+					expectedType:            kubeflowv1.JobSucceeded,
 				},
 				{
 					description:             "(No chief worker, successPolicy: AllWorkers) worker-0 is succeeded, 2 workers are running, 1 worker is failed",
@@ -297,7 +296,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        true,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "Chief is running, workers are failed",
@@ -313,7 +312,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     1,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "Chief is running, workers are succeeded",
@@ -329,7 +328,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     1,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRunning,
+					expectedType:            kubeflowv1.JobRunning,
 				},
 				{
 					description:             "Chief is running, a PS is failed",
@@ -345,7 +344,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     1,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "Chief is failed, workers are succeeded",
@@ -361,7 +360,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobFailed,
+					expectedType:            kubeflowv1.JobFailed,
 				},
 				{
 					description:             "Chief is succeeded, workers are failed",
@@ -377,7 +376,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 false,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobSucceeded,
+					expectedType:            kubeflowv1.JobSucceeded,
 				},
 				{
 					description:             "Chief is failed and restarting",
@@ -393,7 +392,7 @@ var _ = Describe("TFJob controller", func() {
 					expectedActiveChief:     0,
 					restart:                 true,
 					worker0Completed:        false,
-					expectedType:            commonv1.JobRestarting,
+					expectedType:            kubeflowv1.JobRestarting,
 				},
 			}
 
@@ -457,9 +456,9 @@ var _ = Describe("TFJob controller", func() {
 	})
 })
 
-func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, failed, succeeded, active int32, restart bool, worker0Completed bool, client client.Client) {
+func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype kubeflowv1.ReplicaType, failed, succeeded, active int32, restart bool, worker0Completed bool, client client.Client) {
 	if restart == true {
-		tfJob.Spec.TFReplicaSpecs[rtype].RestartPolicy = commonv1.RestartPolicyExitCode
+		tfJob.Spec.TFReplicaSpecs[rtype].RestartPolicy = kubeflowv1.RestartPolicyExitCode
 	}
 
 	basicLabels := reconciler.GenLabels(tfJob.GetName())
@@ -588,10 +587,10 @@ func genKeyFromJob(job client.Object) types.NamespacedName {
 	}
 }
 
-func filterOutConditionTest(status commonv1.JobStatus) error {
+func filterOutConditionTest(status kubeflowv1.JobStatus) error {
 	flag := util.IsFailed(status) || util.IsSucceeded(status)
 	for _, condition := range status.Conditions {
-		if flag && condition.Type == commonv1.JobRunning && condition.Status == corev1.ConditionTrue {
+		if flag && condition.Type == kubeflowv1.JobRunning && condition.Status == corev1.ConditionTrue {
 			return fmt.Errorf("error condition status when succeeded or failed")
 		}
 	}

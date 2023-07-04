@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
@@ -54,15 +54,15 @@ func NewBasePod(name string, job metav1.Object, refs []metav1.OwnerReference) *c
 	}
 }
 
-func NewPod(job metav1.Object, typ commonv1.ReplicaType, index int, refs []metav1.OwnerReference) *corev1.Pod {
+func NewPod(job metav1.Object, typ kubeflowv1.ReplicaType, index int, refs []metav1.OwnerReference) *corev1.Pod {
 	pod := NewBasePod(fmt.Sprintf("%s-%s-%d", job.GetName(), strings.ToLower(string(typ)), index), job, refs)
-	pod.Labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(typ))
-	pod.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	pod.Labels[kubeflowv1.ReplicaTypeLabel] = strings.ToLower(string(typ))
+	pod.Labels[kubeflowv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return pod
 }
 
 // NewPodList create count pods with the given phase for the given tfJob
-func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ commonv1.ReplicaType, start int32, refs []metav1.OwnerReference) []*corev1.Pod {
+func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ kubeflowv1.ReplicaType, start int32, refs []metav1.OwnerReference) []*corev1.Pod {
 	pods := []*corev1.Pod{}
 	for i := int32(0); i < count; i++ {
 		newPod := NewPod(job, typ, int(start+i), refs)
@@ -72,7 +72,7 @@ func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ comm
 	return pods
 }
 
-func SetPodsStatuses(client client.Client, job metav1.Object, typ commonv1.ReplicaType,
+func SetPodsStatuses(client client.Client, job metav1.Object, typ kubeflowv1.ReplicaType,
 	pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
 	var index int32

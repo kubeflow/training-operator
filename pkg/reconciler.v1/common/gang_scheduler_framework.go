@@ -17,7 +17,7 @@ package common
 import (
 	"context"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	"github.com/kubeflow/training-operator/pkg/util/k8sutil"
 
@@ -95,8 +95,8 @@ func (r *SchedulerFrameworkReconciler) DeletePodGroup(ctx context.Context, job c
 func (r *SchedulerFrameworkReconciler) ReconcilePodGroup(
 	ctx context.Context,
 	job client.Object,
-	runPolicy *commonv1.RunPolicy,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
+	runPolicy *kubeflowv1.RunPolicy,
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
 ) error {
 	minMember := k8sutil.GetTotalReplicas(replicas)
 	var scheduleTimeoutSeconds *int32
@@ -178,7 +178,7 @@ func (r *SchedulerFrameworkReconciler) DecoratePodForGangScheduling(
 // calcPGMinResources calculates the minimal resources needed for this job. The value will be embedded into the associated PodGroup
 func (r *SchedulerFrameworkReconciler) calcPGMinResources(
 	minMember int32,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
 ) *corev1.ResourceList {
 	return controllerv1.CalcPGMinResources(minMember, replicas,
 		func(pc string) (*schedulingv1.PriorityClass, error) {

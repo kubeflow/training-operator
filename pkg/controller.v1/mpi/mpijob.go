@@ -17,7 +17,6 @@ package mpi
 import (
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -89,25 +88,24 @@ const (
 )
 
 // initializeMPIJobStatuses initializes the ReplicaStatuses for MPIJob.
-func initializeMPIJobStatuses(mpiJob *kubeflowv1.MPIJob, mtype commonv1.ReplicaType) {
-	replicaType := commonv1.ReplicaType(mtype)
+func initializeMPIJobStatuses(mpiJob *kubeflowv1.MPIJob, rType kubeflowv1.ReplicaType) {
 	if mpiJob.Status.ReplicaStatuses == nil {
-		mpiJob.Status.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
+		mpiJob.Status.ReplicaStatuses = make(map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaStatus)
 	}
 
-	mpiJob.Status.ReplicaStatuses[replicaType] = &commonv1.ReplicaStatus{}
+	mpiJob.Status.ReplicaStatuses[rType] = &kubeflowv1.ReplicaStatus{}
 }
 
 // updateMPIJobConditions updates the conditions of the given mpiJob.
-func updateMPIJobConditions(mpiJob *kubeflowv1.MPIJob, conditionType commonv1.JobConditionType, reason, message string) error {
+func updateMPIJobConditions(mpiJob *kubeflowv1.MPIJob, conditionType kubeflowv1.JobConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)
 	setCondition(&mpiJob.Status, condition)
 	return nil
 }
 
 // newCondition creates a new mpiJob condition.
-func newCondition(conditionType commonv1.JobConditionType, reason, message string) commonv1.JobCondition {
-	return commonv1.JobCondition{
+func newCondition(conditionType kubeflowv1.JobConditionType, reason, message string) kubeflowv1.JobCondition {
+	return kubeflowv1.JobCondition{
 		Type:               conditionType,
 		Status:             corev1.ConditionTrue,
 		LastUpdateTime:     metav1.Now(),
@@ -118,7 +116,7 @@ func newCondition(conditionType commonv1.JobConditionType, reason, message strin
 }
 
 // getCondition returns the condition with the provided type.
-func getCondition(status commonv1.JobStatus, condType commonv1.JobConditionType) *commonv1.JobCondition {
+func getCondition(status kubeflowv1.JobStatus, condType kubeflowv1.JobConditionType) *kubeflowv1.JobCondition {
 	for _, condition := range status.Conditions {
 		if condition.Type == condType {
 			return &condition
@@ -127,9 +125,9 @@ func getCondition(status commonv1.JobStatus, condType commonv1.JobConditionType)
 	return nil
 }
 
-func isEvicted(status commonv1.JobStatus) bool {
+func isEvicted(status kubeflowv1.JobStatus) bool {
 	for _, condition := range status.Conditions {
-		if condition.Type == commonv1.JobFailed &&
+		if condition.Type == kubeflowv1.JobFailed &&
 			condition.Status == corev1.ConditionTrue &&
 			condition.Reason == mpiJobEvict {
 			return true
@@ -141,7 +139,7 @@ func isEvicted(status commonv1.JobStatus) bool {
 // setCondition updates the mpiJob to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
-func setCondition(status *commonv1.JobStatus, condition commonv1.JobCondition) {
+func setCondition(status *kubeflowv1.JobStatus, condition kubeflowv1.JobCondition) {
 
 	currentCond := getCondition(*status, condition.Type)
 
@@ -161,13 +159,13 @@ func setCondition(status *commonv1.JobStatus, condition commonv1.JobCondition) {
 }
 
 // filterOutCondition returns a new slice of mpiJob conditions without conditions with the provided type.
-func filterOutCondition(conditions []commonv1.JobCondition, condType commonv1.JobConditionType) []commonv1.JobCondition {
-	var newConditions []commonv1.JobCondition
+func filterOutCondition(conditions []kubeflowv1.JobCondition, condType kubeflowv1.JobConditionType) []kubeflowv1.JobCondition {
+	var newConditions []kubeflowv1.JobCondition
 	for _, c := range conditions {
-		if condType == commonv1.JobRestarting && c.Type == commonv1.JobRunning {
+		if condType == kubeflowv1.JobRestarting && c.Type == kubeflowv1.JobRunning {
 			continue
 		}
-		if condType == commonv1.JobRunning && c.Type == commonv1.JobRestarting {
+		if condType == kubeflowv1.JobRunning && c.Type == kubeflowv1.JobRestarting {
 			continue
 		}
 
@@ -176,7 +174,7 @@ func filterOutCondition(conditions []commonv1.JobCondition, condType commonv1.Jo
 		}
 
 		// Set the running condition status to be false when current condition failed or succeeded
-		if (condType == commonv1.JobFailed || condType == commonv1.JobSucceeded) && (c.Type == commonv1.JobRunning || c.Type == commonv1.JobFailed) {
+		if (condType == kubeflowv1.JobFailed || condType == kubeflowv1.JobSucceeded) && (c.Type == kubeflowv1.JobRunning || c.Type == kubeflowv1.JobFailed) {
 			c.Status = corev1.ConditionFalse
 		}
 
@@ -242,7 +240,7 @@ func defaultReplicaLabels(genericLabels map[string]string, roleLabelVal string) 
 		replicaLabels[k] = v
 	}
 
-	replicaLabels[commonv1.ReplicaTypeLabel] = roleLabelVal
+	replicaLabels[kubeflowv1.ReplicaTypeLabel] = roleLabelVal
 	return replicaLabels
 }
 
@@ -271,10 +269,10 @@ func workerSelector(genericLabels map[string]string) (labels.Selector, error) {
 
 // initializeReplicaStatuses initializes the ReplicaStatuses for replica.
 // originally from pkg/controller.v1/tensorflow/status.go (deleted)
-func initializeReplicaStatuses(jobStatus *commonv1.JobStatus, rtype commonv1.ReplicaType) {
+func initializeReplicaStatuses(jobStatus *kubeflowv1.JobStatus, rtype kubeflowv1.ReplicaType) {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
+		jobStatus.ReplicaStatuses = make(map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaStatus)
 	}
 
-	jobStatus.ReplicaStatuses[rtype] = &commonv1.ReplicaStatus{}
+	jobStatus.ReplicaStatuses[rtype] = &kubeflowv1.ReplicaStatus{}
 }

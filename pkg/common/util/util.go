@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"time"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
 type ObjectFilterFunction func(obj metav1.Object) bool
@@ -53,8 +54,8 @@ func JobControlledPodList(list []corev1.Pod, job metav1.Object) []*corev1.Pod {
 	return ret
 }
 
-func GetReplicaTypes(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) []commonv1.ReplicaType {
-	keys := make([]commonv1.ReplicaType, 0, len(specs))
+func GetReplicaTypes(specs map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) []kubeflowv1.ReplicaType {
+	keys := make([]kubeflowv1.ReplicaType, 0, len(specs))
 	for k := range specs {
 		keys = append(keys, k)
 	}
@@ -62,7 +63,7 @@ func GetReplicaTypes(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) []com
 }
 
 // DurationUntilExpireTime returns the duration until job needs to be cleaned up, or -1 if it's infinite.
-func DurationUntilExpireTime(runPolicy *commonv1.RunPolicy, jobStatus commonv1.JobStatus) (time.Duration, error) {
+func DurationUntilExpireTime(runPolicy *kubeflowv1.RunPolicy, jobStatus kubeflowv1.JobStatus) (time.Duration, error) {
 	if !commonutil.IsSucceeded(jobStatus) && !commonutil.IsFailed(jobStatus) {
 		return -1, nil
 	}

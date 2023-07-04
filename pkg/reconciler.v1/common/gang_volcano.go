@@ -17,7 +17,7 @@ package common
 import (
 	"context"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/k8sutil"
@@ -107,8 +107,8 @@ func (r *VolcanoReconciler) DeletePodGroup(ctx context.Context, job client.Objec
 func (r *VolcanoReconciler) ReconcilePodGroup(
 	ctx context.Context,
 	job client.Object,
-	runPolicy *commonv1.RunPolicy,
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
+	runPolicy *kubeflowv1.RunPolicy,
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) error {
 
 	minMember := k8sutil.GetTotalReplicas(replicas)
 	queue := ""
@@ -192,7 +192,7 @@ func (r *VolcanoReconciler) DecoratePodForGangScheduling(rtype string, podTempla
 }
 
 // calcPGMinResources calculates the minimal resources needed for this job. The value will be embedded into the associated PodGroup
-func (r *VolcanoReconciler) calcPGMinResources(minMember int32, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) *corev1.ResourceList {
+func (r *VolcanoReconciler) calcPGMinResources(minMember int32, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) *corev1.ResourceList {
 	pcGetFunc := func(pc string) (*schedulingv1.PriorityClass, error) {
 		priorityClass := &schedulingv1.PriorityClass{}
 		err := r.Get(context.Background(), types.NamespacedName{Name: pc}, priorityClass)

@@ -19,10 +19,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	log "github.com/sirupsen/logrus"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -53,7 +53,7 @@ func LoggerForGenericKind(obj metav1.Object, kind string) *log.Entry {
 // OnDependentCreateFuncGeneric modify expectations when dependent (pod/service) creation observed.
 func OnDependentCreateFuncGeneric(exp expectation.ControllerExpectationsInterface) func(event.CreateEvent) bool {
 	return func(e event.CreateEvent) bool {
-		rtype := e.Object.GetLabels()[commonv1.ReplicaTypeLabel]
+		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
 		}
@@ -114,7 +114,7 @@ func OnDependentUpdateFuncGeneric(jc *common.JobController) func(updateEvent eve
 func OnDependentDeleteFuncGeneric(exp expectation.ControllerExpectationsInterface) func(event.DeleteEvent) bool {
 	return func(e event.DeleteEvent) bool {
 
-		rtype := e.Object.GetLabels()[commonv1.ReplicaTypeLabel]
+		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
 		}
