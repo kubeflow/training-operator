@@ -17,7 +17,6 @@ package pytorch
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -42,7 +41,7 @@ func TestElasticGenerate(t *testing.T) {
 			name: "Without ElasticPolicy",
 			job: &kubeflowv1.PyTorchJob{
 				Spec: kubeflowv1.PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 						},
@@ -76,7 +75,7 @@ func TestElasticGenerate(t *testing.T) {
 						NProcPerNode: pointer.Int32(1),
 						MaxRestarts:  pointer.Int32(3),
 					},
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 						},

@@ -20,10 +20,10 @@ import (
 	"strings"
 	"testing"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	testjobv1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
 	"github.com/kubeflow/training-operator/test_job/reconciler.v1/test_job"
-	test_utilv1 "github.com/kubeflow/training-operator/test_job/test_util/v1"
+	testutilv1 "github.com/kubeflow/training-operator/test_job/test_util/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,14 +34,14 @@ import (
 func TestCreateNewService(t *testing.T) {
 	type tc struct {
 		testJob         *testjobv1.TestJob
-		testRType       commonv1.ReplicaType
-		testSpec        *commonv1.ReplicaSpec
+		testRType       kubeflowv1.ReplicaType
+		testSpec        *kubeflowv1.ReplicaSpec
 		testIndex       string
 		expectedService *corev1.Service
 	}
 	testCase := []tc{
 		func() tc {
-			tj := test_utilv1.NewTestJob(3)
+			tj := testutilv1.NewTestJob(3)
 			jobName := "testjob1"
 			tj.SetName(jobName)
 			idx := "0"
@@ -59,16 +59,16 @@ func TestCreateNewService(t *testing.T) {
 					},
 					ClusterIP: corev1.ClusterIPNone,
 					Selector: map[string]string{
-						commonv1.OperatorNameLabel: "Test Reconciler",
-						commonv1.JobNameLabel:      jobName,
-						commonv1.ReplicaTypeLabel:  strings.ToLower(string(testjobv1.TestReplicaTypeWorker)),
-						commonv1.ReplicaIndexLabel: idx,
+						kubeflowv1.OperatorNameLabel: "Test Reconciler",
+						kubeflowv1.JobNameLabel:      jobName,
+						kubeflowv1.ReplicaTypeLabel:  strings.ToLower(string(testjobv1.TestReplicaTypeWorker)),
+						kubeflowv1.ReplicaIndexLabel: idx,
 					},
 				},
 			}
 			return tc{
 				testJob:         tj,
-				testRType:       commonv1.ReplicaType(testjobv1.TestReplicaTypeWorker),
+				testRType:       kubeflowv1.ReplicaType(testjobv1.TestReplicaTypeWorker),
 				testSpec:        tj.Spec.TestReplicaSpecs[testjobv1.TestReplicaTypeWorker],
 				testIndex:       idx,
 				expectedService: svc,

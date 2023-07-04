@@ -20,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 
@@ -202,7 +201,7 @@ func genLabelsSpec(mxjob *kubeflowv1.MXJob) (LabelsSpec, error) {
 	return labelsSpec, nil
 }
 
-func getConfigAddr(mxConfigData *MXConfig, rtype commonv1.ReplicaType, index int) UrlPort {
+func getConfigAddr(mxConfigData *MXConfig, rtype kubeflowv1.ReplicaType, index int) UrlPort {
 	rt := strings.ToLower(string(rtype))
 	var urlPort UrlPort
 	if len(mxConfigData.Cluster[rt]) <= index {
@@ -217,13 +216,13 @@ func getConfigAddr(mxConfigData *MXConfig, rtype commonv1.ReplicaType, index int
 	return urlPort
 }
 
-func getConfigReplica(mxConfigData *MXConfig, rtype commonv1.ReplicaType) int {
+func getConfigReplica(mxConfigData *MXConfig, rtype kubeflowv1.ReplicaType) int {
 	rt := strings.ToLower(string(rtype))
 	return len(mxConfigData.Cluster[rt])
 }
 
 // getPortFromMXJob gets the port of mxnet container.
-func getPortFromMXJob(mxJob *kubeflowv1.MXJob, rtype commonv1.ReplicaType) (int32, error) {
+func getPortFromMXJob(mxJob *kubeflowv1.MXJob, rtype kubeflowv1.ReplicaType) (int32, error) {
 	containers := mxJob.Spec.MXReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == kubeflowv1.MXJobDefaultContainerName {

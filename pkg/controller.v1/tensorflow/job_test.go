@@ -21,9 +21,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
-	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -36,7 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
@@ -163,7 +162,7 @@ var _ = Describe("TFJob controller", func() {
 			testCases := []testCase{
 				{
 					description: "4 workers and 2 ps is running, policy is all",
-					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, commonv1.CleanPodPolicyAll),
+					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, kubeflowv1.CleanPodPolicyAll),
 
 					pendingWorkerPods:   0,
 					activeWorkerPods:    4,
@@ -182,7 +181,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description: "4 workers and 2 ps is running, policy is running",
-					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, commonv1.CleanPodPolicyRunning),
+					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, kubeflowv1.CleanPodPolicyRunning),
 
 					pendingWorkerPods:   0,
 					activeWorkerPods:    4,
@@ -201,7 +200,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description: "4 workers and 2 ps is succeeded, policy is running",
-					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, commonv1.CleanPodPolicyRunning),
+					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, kubeflowv1.CleanPodPolicyRunning),
 
 					pendingWorkerPods:   0,
 					activeWorkerPods:    0,
@@ -220,7 +219,7 @@ var _ = Describe("TFJob controller", func() {
 				},
 				{
 					description: "4 workers and 2 ps is succeeded, policy is None",
-					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, commonv1.CleanPodPolicyNone),
+					tfJob:       tftestutil.NewTFJobWithCleanPolicy(0, 4, 2, kubeflowv1.CleanPodPolicyNone),
 
 					pendingWorkerPods:   0,
 					activeWorkerPods:    0,
@@ -245,7 +244,7 @@ var _ = Describe("TFJob controller", func() {
 				ctx := context.Background()
 				tc.tfJob.SetName(fmt.Sprintf(jobNameTemplate, idx))
 				tc.tfJob.SetUID(uuid.NewUUID())
-				Expect(commonutil.UpdateJobConditions(&tc.tfJob.Status, commonv1.JobSucceeded, tfJobSucceededReason, "")).Should(Succeed())
+				Expect(commonutil.UpdateJobConditions(&tc.tfJob.Status, kubeflowv1.JobSucceeded, tfJobSucceededReason, "")).Should(Succeed())
 
 				refs := []metav1.OwnerReference{
 					*reconciler.GenOwnerReference(tc.tfJob),
@@ -577,7 +576,7 @@ var _ = Describe("TFJob controller", func() {
 				Expect(reconciler.Status().Update(ctx, &updatedTFJob)).To(Succeed())
 
 				By("waiting for updating replicaStatus for workers")
-				Eventually(func() *commonv1.ReplicaStatus {
+				Eventually(func() *kubeflowv1.ReplicaStatus {
 					var getTFJob kubeflowv1.TFJob
 					Expect(reconciler.Get(ctx, client.ObjectKeyFromObject(tc.tfJob), &getTFJob)).Should(Succeed())
 					return getTFJob.Status.ReplicaStatuses[kubeflowv1.TFJobReplicaTypeWorker]

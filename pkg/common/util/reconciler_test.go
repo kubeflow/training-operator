@@ -3,12 +3,13 @@ package util
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 )
 
 func TestOnDependentXXXFunc(t *testing.T) {
@@ -24,7 +25,7 @@ func TestOnDependentXXXFunc(t *testing.T) {
 			object: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						commonv1.ReplicaTypeLabel: "Worker",
+						kubeflowv1.ReplicaTypeLabel: "Worker",
 					},
 				},
 			},

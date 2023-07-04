@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/core"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 
@@ -72,7 +72,7 @@ func (r *ServiceReconciler) OverrideForServiceInterface(ui ReconcilerUtilInterfa
 }
 
 // GetPortsFromJob gets the ports of job container. Port could be nil, if distributed communication strategy doesn't need and no other ports that need to be exposed.
-func (r *ServiceReconciler) GetPortsFromJob(spec *commonv1.ReplicaSpec) (map[string]int32, error) {
+func (r *ServiceReconciler) GetPortsFromJob(spec *kubeflowv1.ReplicaSpec) (map[string]int32, error) {
 	defaultContainerName := r.GetDefaultContainerName()
 	return core.GetPortsFromJob(spec, defaultContainerName)
 }
@@ -108,8 +108,8 @@ func (r *ServiceReconciler) GetServiceSlices(services []*corev1.Service, replica
 func (r *ServiceReconciler) ReconcileServices(
 	job client.Object,
 	services []*corev1.Service,
-	rtype commonv1.ReplicaType,
-	spec *commonv1.ReplicaSpec) error {
+	rtype kubeflowv1.ReplicaType,
+	spec *kubeflowv1.ReplicaSpec) error {
 
 	// Convert ReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
@@ -155,15 +155,15 @@ func (r *ServiceReconciler) ReconcileServices(
 }
 
 // CreateNewService generates Service based the job, replica info. and index and submits it to APIServer
-func (r *ServiceReconciler) CreateNewService(job client.Object, rtype commonv1.ReplicaType,
-	spec *commonv1.ReplicaSpec, index string) error {
+func (r *ServiceReconciler) CreateNewService(job client.Object, rtype kubeflowv1.ReplicaType,
+	spec *kubeflowv1.ReplicaSpec, index string) error {
 
 	// Convert ReplicaType to lower string.
 	rt := strings.ToLower(string(rtype))
 	// Append ReplicaTypeLabel and ReplicaIndexLabel labels.
 	labels := r.GenLabels(job.GetName())
-	labels[commonv1.ReplicaTypeLabel] = rt
-	labels[commonv1.ReplicaIndexLabel] = index
+	labels[kubeflowv1.ReplicaTypeLabel] = rt
+	labels[kubeflowv1.ReplicaIndexLabel] = index
 
 	ports, err := r.GetPortsFromJob(spec)
 	if err != nil {

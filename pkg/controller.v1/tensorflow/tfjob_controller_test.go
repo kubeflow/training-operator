@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
 )
@@ -34,8 +33,8 @@ var _ = Describe("TFJob controller", func() {
 	Context("Test Normal Path", func() {
 		It("should create desired Pods and Services", func() {
 			var (
-				tfJobRunning   = commonv1.JobRunning
-				tfJobSucceeded = commonv1.JobSucceeded
+				tfJobRunning   = kubeflowv1.JobRunning
+				tfJobSucceeded = kubeflowv1.JobSucceeded
 			)
 
 			testCases := map[string]struct {
@@ -72,7 +71,7 @@ var _ = Describe("TFJob controller", func() {
 				expectedSucceededPSPods int32
 				expectedFailedPSPods    int32
 
-				expectedCondition       *commonv1.JobConditionType
+				expectedCondition       *kubeflowv1.JobConditionType
 				expectedConditionReason string
 
 				// There are some cases that should not check start time since the field should be set in the previous sync loop.

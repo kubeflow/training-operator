@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
@@ -334,9 +333,9 @@ func (r *PaddleJobReconciler) DeleteJob(job interface{}) error {
 }
 
 func (jc *PaddleJobReconciler) GenLabelSelector(jobName string,
-	rtype commonv1.ReplicaType) *metav1.LabelSelector {
+	rtype kubeflowv1.ReplicaType) *metav1.LabelSelector {
 	labels := jc.GenLabels(jobName)
-	labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
+	labels[kubeflowv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
 
 	return &metav1.LabelSelector{
 		MatchLabels: labels,
@@ -345,8 +344,8 @@ func (jc *PaddleJobReconciler) GenLabelSelector(jobName string,
 
 // UpdateJobStatus updates the job status and job conditions
 func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
-	replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	jobStatus *commonv1.JobStatus) error {
+	replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	jobStatus *kubeflowv1.JobStatus) error {
 	paddlejob, ok := job.(*kubeflowv1.PaddleJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PaddleJob", job)
@@ -386,10 +385,10 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			paddlejob.Name, rtype, expected, running, succeeded, failed, specReplicas)
 
 		if ContainsMasterSpec(replicas) {
-			if rtype == commonv1.ReplicaType(kubeflowv1.PaddleJobReplicaTypeMaster) {
+			if rtype == kubeflowv1.PaddleJobReplicaTypeMaster {
 				if running > 0 {
 					msg := fmt.Sprintf("PaddleJob %s is running.", paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 						return err
@@ -404,7 +403,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 						return err
@@ -425,7 +424,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						jobStatus.CompletionTime = &now
 					}
 					err := commonutil.UpdateJobConditions(jobStatus,
-						commonv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+						kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
 						return err
@@ -435,7 +434,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("PaddleJob %s/%s is running.",
 						paddlejob.Namespace, paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
 						return err
@@ -445,10 +444,10 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 		}
 
 		if failed > 0 && (specReplicas > succeeded+running) {
-			if spec.RestartPolicy != commonv1.RestartPolicyNever {
+			if spec.RestartPolicy != kubeflowv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PaddleJob %s is restarting because %d %s replica(s) failed.", paddlejob.Name, failed, rtype)
 				r.Recorder.Event(paddlejob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 					return err
@@ -461,7 +460,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 					return err
@@ -475,7 +474,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 }
 
 // ContainsMasterSpec returns true if the paddlejob contains master spec.
-func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
+func ContainsMasterSpec(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) bool {
 	if _, ok := replicas[kubeflowv1.PaddleJobReplicaTypeMaster]; ok {
 		return true
 	}
@@ -483,9 +482,9 @@ func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec)
 }
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
-func (r *PaddleJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+func (r *PaddleJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *kubeflowv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaStatus{}
 	}
 
 	paddlejob, ok := job.(*kubeflowv1.PaddleJob)
@@ -530,8 +529,8 @@ func (r *PaddleJobReconciler) GetDefaultContainerPortName() string {
 	return kubeflowv1.PaddleJobDefaultPortName
 }
 
-func (r *PaddleJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	rtype commonv1.ReplicaType, index int) bool {
+func (r *PaddleJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	rtype kubeflowv1.ReplicaType, index int) bool {
 	return string(rtype) == string(kubeflowv1.PaddleJobReplicaTypeMaster)
 }
 
@@ -546,7 +545,7 @@ func (r *PaddleJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("PaddleJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(paddlejob.Namespace, kubeflowv1.PaddleJobFrameworkName)
-		if err := commonutil.UpdateJobConditions(&paddlejob.Status, commonv1.JobCreated, "PaddleJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&paddlejob.Status, kubeflowv1.JobCreated, "PaddleJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

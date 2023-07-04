@@ -21,7 +21,6 @@ import (
 )
 
 const (
-
 	// ReplicaIndexLabel represents the label key for the replica-index, e.g. 0, 1, 2.. etc
 	ReplicaIndexLabel = "training.kubeflow.org/replica-index"
 

@@ -17,9 +17,10 @@ package v1
 import (
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 // Int32 is a helper routine that allocates a new int32 value
@@ -57,7 +58,7 @@ func setDefaultPort(spec *v1.PodSpec) {
 	}
 }
 
-func setDefaultReplicas(spec *commonv1.ReplicaSpec) {
+func setDefaultReplicas(spec *kubeflowv1.ReplicaSpec) {
 	if spec.Replicas == nil {
 		spec.Replicas = Int32(1)
 	}
@@ -89,7 +90,7 @@ func setTypeNameToCamelCase(testJob *TestJob, typ TestReplicaType) {
 func SetDefaults_TestJob(testjob *TestJob) {
 	// Set default RunPolicy
 	if testjob.Spec.RunPolicy == nil {
-		testjob.Spec.RunPolicy = &commonv1.RunPolicy{
+		testjob.Spec.RunPolicy = &kubeflowv1.RunPolicy{
 			CleanPodPolicy:          nil,
 			TTLSecondsAfterFinished: nil,
 			ActiveDeadlineSeconds:   nil,
@@ -100,7 +101,7 @@ func SetDefaults_TestJob(testjob *TestJob) {
 
 	// Set default cleanpod policy to Running.
 	if testjob.Spec.RunPolicy.CleanPodPolicy == nil {
-		running := commonv1.CleanPodPolicyRunning
+		running := kubeflowv1.CleanPodPolicyRunning
 		testjob.Spec.RunPolicy.CleanPodPolicy = &running
 	}
 

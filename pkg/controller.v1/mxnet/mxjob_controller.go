@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"time"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
@@ -156,10 +155,10 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Set default priorities to mxnet job
 	r.Scheme.Default(mxjob)
 
-	// Convert MX.Spec.MXReplicasSpecs to  map[commonv1.ReplicaType]*commonv1.ReplicaSpec
-	replicas := map[commonv1.ReplicaType]*commonv1.ReplicaSpec{}
+	// Convert MX.Spec.MXReplicasSpecs to  map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec
+	replicas := map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{}
 	for k, v := range mxjob.Spec.MXReplicaSpecs {
-		replicas[commonv1.ReplicaType(k)] = v
+		replicas[k] = v
 	}
 
 	// Use common to reconcile the job related pod and service
@@ -336,7 +335,7 @@ func (r *MXJobReconciler) DeleteJob(job interface{}) error {
 	return nil
 }
 
-func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, jobStatus *kubeflowv1.JobStatus) error {
 	mxjob, ok := job.(*kubeflowv1.MXJob)
 	if !ok {
 		return fmt.Errorf("%v is not a type of MXJob", mxjob)
@@ -373,10 +372,10 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 		r.Log.Info(fmt.Sprintf("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d, failed=%d, singleTraining=%t",
 			mxjob.Name, rtype, expected, running, succeeded, failed, singleTraining))
 
-		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) || singleTraining {
+		if rtype == kubeflowv1.MXJobReplicaTypeScheduler || singleTraining {
 			if running > 0 {
 				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, mxJobRunningReason, msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -390,7 +389,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, mxJobSucceededReason, msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -400,10 +399,10 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 			}
 		}
 		if failed > 0 {
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeWarning, mxJobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, mxJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, mxJobRestartingReason, msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -416,7 +415,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, mxJobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, mxJobFailedReason, msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -430,9 +429,9 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1
 }
 
 // UpdateJobStatusInApiServer updates the status of the given MXJob.
-func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+func (r *MXJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *kubeflowv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaStatus{}
 	}
 
 	mxJob, ok := job.(*kubeflowv1.MXJob)
@@ -465,8 +464,8 @@ func (r *MXJobReconciler) GetDefaultContainerPortName() string {
 	return kubeflowv1.MXJobDefaultPortName
 }
 
-func (r *MXJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	rtype commonv1.ReplicaType, index int) bool {
+func (r *MXJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	rtype kubeflowv1.ReplicaType, index int) bool {
 	return string(rtype) == string(kubeflowv1.MXJobReplicaTypeServer)
 }
 
@@ -483,7 +482,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(mxJob.Namespace, kubeflowv1.MXJobFrameworkName)
-		if err := commonutil.UpdateJobConditions(&mxJob.Status, commonv1.JobCreated, "MXJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&mxJob.Status, kubeflowv1.JobCreated, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}
@@ -491,15 +490,15 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 	}
 }
 
-func (r *MXJobReconciler) isSingleWorker(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec) bool {
+func (r *MXJobReconciler) isSingleWorker(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec) bool {
 	var workerNum, scheNum, svrNum int32 = 0, 0, 0
 
 	for rtype, spec := range replicas {
-		if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeScheduler) {
+		if rtype == kubeflowv1.MXJobReplicaTypeScheduler {
 			scheNum += *spec.Replicas
-		} else if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeServer) {
+		} else if rtype == kubeflowv1.MXJobReplicaTypeServer {
 			svrNum += *spec.Replicas
-		} else if rtype == commonv1.ReplicaType(kubeflowv1.MXJobReplicaTypeWorker) {
+		} else if rtype == kubeflowv1.MXJobReplicaTypeWorker {
 			workerNum += *spec.Replicas
 		}
 	}

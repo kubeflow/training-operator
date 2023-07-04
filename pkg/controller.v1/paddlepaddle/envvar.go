@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -152,12 +151,12 @@ func getTotalReplicas(job *kubeflowv1.PaddleJob) int32 {
 	return jobReplicas
 }
 
-func replicaName(jobName string, rtype commonv1.ReplicaType, index int) string {
+func replicaName(jobName string, rtype kubeflowv1.ReplicaType, index int) string {
 	n := jobName + "-" + strings.ToLower(string(rtype)) + "-" + strconv.Itoa(index)
 	return strings.Replace(n, "/", "-", -1)
 }
 
-func getPortFromPaddleJob(job *kubeflowv1.PaddleJob, rtype commonv1.ReplicaType) int32 {
+func getPortFromPaddleJob(job *kubeflowv1.PaddleJob, rtype kubeflowv1.ReplicaType) int32 {
 	containers := job.Spec.PaddleReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == kubeflowv1.PaddleJobDefaultContainerName {

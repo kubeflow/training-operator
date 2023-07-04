@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -106,8 +105,8 @@ var _ = Describe("TFJob controller", func() {
 
 				jobName := c.tfJob.GetName()
 				labels := reconciler.GenLabels(jobName)
-				labels[commonv1.ReplicaTypeLabel] = c.rt
-				labels[commonv1.ReplicaIndexLabel] = c.index
+				labels[kubeflowv1.ReplicaTypeLabel] = c.rt
+				labels[kubeflowv1.ReplicaIndexLabel] = c.index
 
 				Expect(reconciler.SetClusterSpec(c.tfJob, podTemplate, c.rt, c.index)).Should(Succeed())
 
@@ -157,12 +156,12 @@ var _ = Describe("TFJob controller", func() {
 			type tc struct {
 				tfJob                 *kubeflowv1.TFJob
 				expectedRestartPolicy corev1.RestartPolicy
-				expectedType          commonv1.ReplicaType
+				expectedType          kubeflowv1.ReplicaType
 			}
 			testCase := []tc{
 				func() tc {
 					tfJob := tftestutil.NewTFJob(1, 0)
-					specRestartPolicy := commonv1.RestartPolicyExitCode
+					specRestartPolicy := kubeflowv1.RestartPolicyExitCode
 					tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
@@ -172,7 +171,7 @@ var _ = Describe("TFJob controller", func() {
 				}(),
 				func() tc {
 					tfJob := tftestutil.NewTFJob(1, 0)
-					specRestartPolicy := commonv1.RestartPolicyNever
+					specRestartPolicy := kubeflowv1.RestartPolicyNever
 					tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
@@ -182,7 +181,7 @@ var _ = Describe("TFJob controller", func() {
 				}(),
 				func() tc {
 					tfJob := tftestutil.NewTFJob(1, 0)
-					specRestartPolicy := commonv1.RestartPolicyAlways
+					specRestartPolicy := kubeflowv1.RestartPolicyAlways
 					tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
@@ -192,7 +191,7 @@ var _ = Describe("TFJob controller", func() {
 				}(),
 				func() tc {
 					tfJob := tftestutil.NewTFJob(1, 0)
-					specRestartPolicy := commonv1.RestartPolicyOnFailure
+					specRestartPolicy := kubeflowv1.RestartPolicyOnFailure
 					tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = specRestartPolicy
 					return tc{
 						tfJob:                 tfJob,
@@ -218,7 +217,7 @@ var _ = Describe("TFJob controller", func() {
 			tfJob := tftestutil.NewTFJob(1, 0)
 			tfJob.SetName("test-exit-code")
 			tfJob.SetUID(uuid.NewUUID())
-			tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = commonv1.RestartPolicyExitCode
+			tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = kubeflowv1.RestartPolicyExitCode
 
 			refs := []metav1.OwnerReference{
 				*reconciler.GenOwnerReference(tfJob),
@@ -420,7 +419,7 @@ var _ = Describe("TFJob controller", func() {
 				// worker failed, succeeded, running num
 				workers     [3]int32
 				tfJob       *kubeflowv1.TFJob
-				replicas    map[commonv1.ReplicaType]*commonv1.ReplicaSpec
+				replicas    map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec
 				expected    bool
 				expectedErr bool
 			}{
@@ -429,7 +428,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(1, 1, 0, 0, 0),
 					expected:    false,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeWorker: {
 							Replicas: newInt32(1),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),
@@ -445,7 +444,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(1, 0, 0, 0, 0),
 					expected:    true,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeWorker: {
 							Replicas: newInt32(1),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),
@@ -457,7 +456,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(0, 0, 1, 0, 0),
 					expected:    true,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeMaster: {
 							Replicas: newInt32(1),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),
@@ -469,7 +468,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(0, 0, 0, 1, 0),
 					expected:    true,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeChief: {
 							Replicas: newInt32(1),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),
@@ -481,7 +480,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(2, 0, 0, 0, 0),
 					expected:    true,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeWorker: {
 							Replicas: newInt32(2),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),
@@ -493,7 +492,7 @@ var _ = Describe("TFJob controller", func() {
 					tfJob:       tftestutil.NewTFJobV2(2, 0, 0, 0, 0),
 					expected:    false,
 					expectedErr: false,
-					replicas: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					replicas: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.TFJobReplicaTypeWorker: {
 							Replicas: newInt32(2),
 							Template: tftestutil.NewTFReplicaSpecTemplate(),

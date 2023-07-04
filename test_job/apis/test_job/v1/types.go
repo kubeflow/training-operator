@@ -15,7 +15,7 @@
 package v1
 
 import (
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,17 +37,17 @@ type TestJob struct {
 	// This data may not be up to date.
 	// Populated by the system.
 	// Read-only.
-	Status commonv1.JobStatus `json:"status,omitempty"`
+	Status kubeflowv1.JobStatus `json:"status,omitempty"`
 }
 
 // TestJobSpec is a desired state description of the TestJob.
 type TestJobSpec struct {
-	RunPolicy        *commonv1.RunPolicy                       `json:"runPolicy,omitempty"`
-	TestReplicaSpecs map[TestReplicaType]*commonv1.ReplicaSpec `json:"testReplicaSpecs"`
+	RunPolicy        *kubeflowv1.RunPolicy                       `json:"runPolicy,omitempty"`
+	TestReplicaSpecs map[TestReplicaType]*kubeflowv1.ReplicaSpec `json:"testReplicaSpecs"`
 }
 
 // TestReplicaType is the type for TestReplica.
-type TestReplicaType commonv1.ReplicaType
+type TestReplicaType kubeflowv1.ReplicaType
 
 const (
 	TestReplicaTypeWorker TestReplicaType = "Worker"

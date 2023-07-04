@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"k8s.io/utils/pointer"
@@ -38,7 +37,7 @@ func TestInitContainer(t *testing.T) {
 
 	testCases := []struct {
 		job         *kubeflowv1.PyTorchJob
-		rtype       commonv1.ReplicaType
+		rtype       kubeflowv1.ReplicaType
 		index       string
 		expected    int
 		exepctedErr error
@@ -46,7 +45,7 @@ func TestInitContainer(t *testing.T) {
 		{
 			job: &kubeflowv1.PyTorchJob{
 				Spec: kubeflowv1.PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 						},
@@ -61,7 +60,7 @@ func TestInitContainer(t *testing.T) {
 		{
 			job: &kubeflowv1.PyTorchJob{
 				Spec: kubeflowv1.PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 						},
@@ -79,7 +78,7 @@ func TestInitContainer(t *testing.T) {
 		{
 			job: &kubeflowv1.PyTorchJob{
 				Spec: kubeflowv1.PyTorchJobSpec{
-					PyTorchReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
 							Replicas: pointer.Int32(1),
 						},

@@ -17,7 +17,7 @@ package common_test
 import (
 	"testing"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	testjobv1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
 	"github.com/kubeflow/training-operator/test_job/reconciler.v1/test_job"
 	testutilv1 "github.com/kubeflow/training-operator/test_job/test_util/v1"
@@ -81,7 +81,7 @@ func TestFilterPodsForReplicaType(t *testing.T) {
 					Name:      "pod0",
 					Namespace: "default",
 					Labels: map[string]string{
-						commonv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeMaster),
+						kubeflowv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeMaster),
 					},
 				},
 				Spec:   corev1.PodSpec{},
@@ -93,7 +93,7 @@ func TestFilterPodsForReplicaType(t *testing.T) {
 					Name:      "pod1",
 					Namespace: "default",
 					Labels: map[string]string{
-						commonv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeWorker),
+						kubeflowv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeWorker),
 					},
 				},
 				Spec:   corev1.PodSpec{},
@@ -105,7 +105,7 @@ func TestFilterPodsForReplicaType(t *testing.T) {
 					Name:      "pod2",
 					Namespace: "default",
 					Labels: map[string]string{
-						commonv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeWorker),
+						kubeflowv1.ReplicaTypeLabel: string(testjobv1.TestReplicaTypeWorker),
 					},
 				},
 				Spec:   corev1.PodSpec{},

@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"time"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/common/util"
@@ -345,7 +344,7 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 }
 
 // UpdateJobStatus updates the job status and job conditions
-func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, jobStatus *kubeflowv1.JobStatus) error {
 	xgboostJob, ok := job.(*kubeflowv1.XGBoostJob)
 	if !ok {
 		return fmt.Errorf("%+v is not a type of xgboostJob", xgboostJob)
@@ -381,7 +380,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			xgboostJob.Name, rtype, expected, running, succeeded, failed)
 
-		if rtype == commonv1.ReplicaType(kubeflowv1.XGBoostJobReplicaTypeMaster) {
+		if rtype == kubeflowv1.XGBoostJobReplicaTypeMaster {
 			if running > 0 {
 				if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
 					return err
@@ -399,7 +398,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, xgboostJobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, xgboostJobSucceededReason, msg)
 				if err != nil {
 					logger.Infof("Append job condition error: %v", err)
 					return err
@@ -412,10 +411,10 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 			if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
 				return err
 			}
-			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeWarning, xgboostJobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, xgboostJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, xgboostJobRestartingReason, msg)
 				if err != nil {
 					logger.Infof("Append job condition error: %v", err)
 					return err
@@ -428,7 +427,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, xgboostJobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, xgboostJobFailedReason, msg)
 				if err != nil {
 					logger.Infof("Append job condition error: %v", err)
 					return err
@@ -441,9 +440,9 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 }
 
 // UpdateJobStatusInApiServer updates the job status in to cluster.
-func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *kubeflowv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaStatus{}
 	}
 
 	xgboostjob, ok := job.(*kubeflowv1.XGBoostJob)
@@ -480,8 +479,8 @@ func (r *XGBoostJobReconciler) GetDefaultContainerPortName() string {
 	return kubeflowv1.XGBoostJobDefaultPortName
 }
 
-func (r *XGBoostJobReconciler) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec,
-	rtype commonv1.ReplicaType, index int) bool {
+func (r *XGBoostJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	rtype kubeflowv1.ReplicaType, index int) bool {
 	return string(rtype) == string(kubeflowv1.XGBoostJobReplicaTypeMaster)
 }
 
@@ -496,7 +495,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
-		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, commonv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, kubeflowv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false
 		}

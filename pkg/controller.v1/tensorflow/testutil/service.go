@@ -19,12 +19,13 @@ import (
 	"fmt"
 	"strings"
 
-	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
@@ -51,15 +52,15 @@ func NewBaseService(name string, job metav1.Object, refs []metav1.OwnerReference
 	}
 }
 
-func NewService(job metav1.Object, typ commonv1.ReplicaType, index int, refs []metav1.OwnerReference) *corev1.Service {
+func NewService(job metav1.Object, typ kubeflowv1.ReplicaType, index int, refs []metav1.OwnerReference) *corev1.Service {
 	svc := NewBaseService(fmt.Sprintf("%s-%s-%d", job.GetName(), strings.ToLower(string(typ)), index), job, refs)
-	svc.Labels[commonv1.ReplicaTypeLabel] = strings.ToLower(string(typ))
-	svc.Labels[commonv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
+	svc.Labels[kubeflowv1.ReplicaTypeLabel] = strings.ToLower(string(typ))
+	svc.Labels[kubeflowv1.ReplicaIndexLabel] = fmt.Sprintf("%d", index)
 	return svc
 }
 
 // NewServiceList creates count pods with the given phase for the given tfJob
-func NewServiceList(count int32, job metav1.Object, typ commonv1.ReplicaType, refs []metav1.OwnerReference) []*corev1.Service {
+func NewServiceList(count int32, job metav1.Object, typ kubeflowv1.ReplicaType, refs []metav1.OwnerReference) []*corev1.Service {
 	services := []*corev1.Service{}
 	for i := int32(0); i < count; i++ {
 		newService := NewService(job, typ, int(i), refs)
@@ -68,7 +69,7 @@ func NewServiceList(count int32, job metav1.Object, typ commonv1.ReplicaType, re
 	return services
 }
 
-func SetServices(client client.Client, job metav1.Object, typ commonv1.ReplicaType, activeWorkerServices int32,
+func SetServices(client client.Client, job metav1.Object, typ kubeflowv1.ReplicaType, activeWorkerServices int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
 	ctx := context.Background()
 	for _, svc := range NewServiceList(activeWorkerServices, job, typ, refs) {
