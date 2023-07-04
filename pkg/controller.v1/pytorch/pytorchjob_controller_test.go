@@ -17,7 +17,6 @@ package pytorch
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,13 +27,12 @@ import (
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 var _ = Describe("PyTorchJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
+	// Define utility constants for object names.
 	const (
-		timeout      = time.Second * 10
-		interval     = time.Millisecond * 250
 		expectedPort = int32(8080)
 	)
 
@@ -99,20 +97,20 @@ var _ = Describe("PyTorchJob controller", func() {
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, key, created)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			masterKey := types.NamespacedName{Name: fmt.Sprintf("%s-master-0", name), Namespace: namespace}
 			masterPod := &corev1.Pod{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, masterKey, masterPod)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			masterSvc := &corev1.Service{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, masterKey, masterSvc)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			// Check the pod port.
 			Expect(masterPod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
@@ -159,7 +157,7 @@ var _ = Describe("PyTorchJob controller", func() {
 				}
 				return created.Status.ReplicaStatuses != nil && created.Status.
 					ReplicaStatuses[kubeflowv1.PyTorchJobReplicaTypeMaster].Succeeded == 1
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 			// Check if the job is succeeded.
 			cond := getCondition(created.Status, commonv1.JobSucceeded)
 			Expect(cond.Status).To(Equal(corev1.ConditionTrue))
@@ -222,20 +220,20 @@ var _ = Describe("PyTorchJob controller", func() {
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, key, created)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			workerKey := types.NamespacedName{Name: fmt.Sprintf("%s-worker-0", name), Namespace: namespace}
 			pod := &corev1.Pod{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, workerKey, pod)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			svc := &corev1.Service{}
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, workerKey, svc)
 				return err == nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			// Check pod port.
 			Expect(pod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
@@ -287,7 +285,7 @@ var _ = Describe("PyTorchJob controller", func() {
 				}
 				return created.Status.ReplicaStatuses != nil && created.Status.
 					ReplicaStatuses[kubeflowv1.PyTorchJobReplicaTypeWorker].Succeeded == 1
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 			// Check if the job is succeeded.
 			cond := getCondition(created.Status, commonv1.JobSucceeded)
 			Expect(cond.Status).To(Equal(corev1.ConditionTrue))

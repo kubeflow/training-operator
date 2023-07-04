@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	common "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,6 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 const (
@@ -129,12 +129,6 @@ func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, re
 }
 
 var _ = Describe("MPIJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
-
 	Context("Test launcher is GPU launcher", func() {
 		It("Should pass GPU Launcher verification", func() {
 			By("By creating MPIJobs with various resource configuration")
@@ -194,7 +188,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 				launcherCreated.Status.Phase = corev1.PodSucceeded
 				return testK8sClient.Status().Update(ctx, launcherCreated)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			created := &kubeflowv1.MPIJob{}
 			launcherStatus := &common.ReplicaStatus{
@@ -208,7 +202,7 @@ var _ = Describe("MPIJob controller", func() {
 					return false
 				}
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher, launcherStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -236,7 +230,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 				launcherCreated.Status.Phase = corev1.PodFailed
 				return testK8sClient.Status().Update(ctx, launcherCreated)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			launcherStatus := &common.ReplicaStatus{
 				Active:    0,
@@ -250,7 +244,7 @@ var _ = Describe("MPIJob controller", func() {
 					return false
 				}
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher, launcherStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -280,7 +274,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 				launcherCreated.Status.Phase = corev1.PodSucceeded
 				return testK8sClient.Status().Update(ctx, launcherCreated)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			created := &kubeflowv1.MPIJob{}
 			launcherStatus := &common.ReplicaStatus{
@@ -294,7 +288,7 @@ var _ = Describe("MPIJob controller", func() {
 					return false
 				}
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker, launcherStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -324,7 +318,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 				launcherCreated.Status.Phase = corev1.PodRunning
 				return testK8sClient.Status().Update(ctx, launcherCreated)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			for i := 0; i < int(replicas); i++ {
 				name := fmt.Sprintf("%s-%d", mpiJob.Name+workerSuffix, i)
@@ -340,7 +334,7 @@ var _ = Describe("MPIJob controller", func() {
 					}
 					workerCreated.Status.Phase = corev1.PodPending
 					return testK8sClient.Status().Update(ctx, workerCreated)
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 			}
 
 			key := types.NamespacedName{
@@ -366,7 +360,7 @@ var _ = Describe("MPIJob controller", func() {
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
 					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -396,7 +390,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 				launcherCreated.Status.Phase = corev1.PodRunning
 				return testK8sClient.Status().Update(ctx, launcherCreated)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			for i := 0; i < int(replicas); i++ {
 				name := fmt.Sprintf("%s-%d", mpiJob.Name+workerSuffix, i)
@@ -412,7 +406,7 @@ var _ = Describe("MPIJob controller", func() {
 					}
 					workerCreated.Status.Phase = corev1.PodRunning
 					return testK8sClient.Status().Update(ctx, workerCreated)
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 			}
 
 			key := types.NamespacedName{
@@ -438,7 +432,7 @@ var _ = Describe("MPIJob controller", func() {
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
 					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -470,7 +464,7 @@ var _ = Describe("MPIJob controller", func() {
 					}
 					workerCreated.Status.Phase = corev1.PodRunning
 					return testK8sClient.Status().Update(ctx, workerCreated)
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 			}
 
 			launcherKey := types.NamespacedName{
@@ -481,7 +475,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() bool {
 				err := testK8sClient.Get(ctx, launcherKey, launcher)
 				return err != nil
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			key := types.NamespacedName{
 				Namespace: metav1.NamespaceDefault,
@@ -506,7 +500,7 @@ var _ = Describe("MPIJob controller", func() {
 				return ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeLauncher,
 					launcherStatus) && ReplicaStatusMatch(created.Status.ReplicaStatuses, kubeflowv1.MPIJobReplicaTypeWorker,
 					workerStatus)
-			}, timeout, interval).Should(BeTrue())
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 		})
 	})
 
@@ -552,7 +546,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 
@@ -585,7 +579,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 
@@ -615,7 +609,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 
@@ -645,7 +639,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 
@@ -675,7 +669,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 
@@ -705,7 +699,7 @@ var _ = Describe("MPIJob controller", func() {
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
-			}, timeout, interval).Should(MatchError(expectedErr))
+			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
 		})
 	})
 

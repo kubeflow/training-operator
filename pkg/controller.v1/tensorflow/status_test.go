@@ -17,10 +17,8 @@ package tensorflow
 import (
 	"context"
 	"fmt"
-	"time"
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -32,15 +30,11 @@ import (
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
+	"github.com/kubeflow/training-operator/pkg/util"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 var _ = Describe("TFJob controller", func() {
-	// Define utility constants for object names and testing timeouts/durations and intervals.
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
-
 	Context("Test Failed", func() {
 		It("should update TFJob with failed status", func() {
 			By("creating a TFJob with replicaStatues initialized")
@@ -442,7 +436,7 @@ var _ = Describe("TFJob controller", func() {
 							len(podList.Items), c.tfJob.GetName(), totalExpectedPodCount)
 					}
 					return nil
-				}, timeout, interval).Should(BeNil())
+				}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 				_ = reconciler.ReconcileJobs(c.tfJob, c.tfJob.Spec.TFReplicaSpecs, c.tfJob.Status, &c.tfJob.Spec.RunPolicy)
 
@@ -469,12 +463,6 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 	}
 
 	basicLabels := reconciler.GenLabels(tfJob.GetName())
-
-	const (
-		timeout  = 10 * time.Second
-		interval = 1000 * time.Millisecond
-	)
-
 	ctx := context.Background()
 
 	Expect(rtype).Should(BeElementOf([]kubeflowv1.ReplicaType{
@@ -519,7 +507,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 			}
 
 			return client.Status().Update(ctx, po)
-		}, timeout, interval).Should(BeNil())
+		}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 		updateJobReplicaStatuses(&tfJob.Status, rtype, po)
 
@@ -558,7 +546,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 			}
 
 			return client.Status().Update(ctx, po)
-		}, timeout, interval).Should(BeNil())
+		}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 		updateJobReplicaStatuses(&tfJob.Status, rtype, po)
 		index++
@@ -582,7 +570,7 @@ func setStatusForTest(tfJob *kubeflowv1.TFJob, rtype commonv1.ReplicaType, faile
 			po.Status.Phase = corev1.PodRunning
 
 			return client.Status().Update(ctx, po)
-		}, timeout, interval).Should(BeNil())
+		}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 		updateJobReplicaStatuses(&tfJob.Status, rtype, po)
 		index++

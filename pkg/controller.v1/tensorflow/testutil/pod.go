@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	commonv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/gomega"
@@ -26,6 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 const (
@@ -74,8 +75,6 @@ func NewPodList(count int32, status corev1.PodPhase, job metav1.Object, typ comm
 func SetPodsStatuses(client client.Client, job metav1.Object, typ commonv1.ReplicaType,
 	pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32,
 	refs []metav1.OwnerReference, basicLabels map[string]string) {
-	timeout := 10 * time.Second
-	interval := 1000 * time.Millisecond
 	var index int32
 	taskMap := map[corev1.PodPhase]int32{
 		corev1.PodFailed:    failedPods,
@@ -105,7 +104,7 @@ func SetPodsStatuses(client client.Client, job metav1.Object, typ commonv1.Repli
 					po.Status.ContainerStatuses = []corev1.ContainerStatus{{RestartCount: restartCounts[i]}}
 				}
 				return client.Status().Update(ctx, po)
-			}, timeout, interval).Should(BeNil())
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 		}
 		index += desiredCount
 	}
