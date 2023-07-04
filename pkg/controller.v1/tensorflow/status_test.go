@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -442,13 +443,12 @@ var _ = Describe("TFJob controller", func() {
 				Expect(filterOutConditionTest(c.tfJob.Status)).Should(Succeed())
 
 				reconciler.Log.Info("checking status", "tfJob.Status", c.tfJob.Status)
-				found := false
-				for _, condition := range c.tfJob.Status.Conditions {
-					if condition.Type == c.expectedType {
-						found = true
-					}
-				}
-				Expect(found).To(BeTrue())
+				Eventually(func() []kubeflowv1.JobCondition {
+					return c.tfJob.Status.Conditions
+				}, testutil.Timeout, testutil.Interval).Should(ContainElements(BeComparableTo(
+					kubeflowv1.JobCondition{Type: c.expectedType},
+					cmpopts.IgnoreFields(kubeflowv1.JobCondition{}, "Status", "Reason", "Message", "LastUpdateTime", "LastTransitionTime"),
+				)))
 				reconciler.Log.Info("passed!",
 					"job name", c.tfJob.GetName(), "job description", c.description)
 			}
