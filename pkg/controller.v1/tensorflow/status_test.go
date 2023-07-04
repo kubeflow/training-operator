@@ -440,6 +440,11 @@ var _ = Describe("TFJob controller", func() {
 
 				_ = reconciler.ReconcileJobs(c.tfJob, c.tfJob.Spec.TFReplicaSpecs, c.tfJob.Status, &c.tfJob.Spec.RunPolicy)
 
+				// Ensure that the TFJob is registered to cache.
+				Eventually(func() error {
+					return reconciler.Get(context.Background(), client.ObjectKeyFromObject(c.tfJob), &kubeflowv1.TFJob{})
+				}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
 				Expect(filterOutConditionTest(c.tfJob.Status)).Should(Succeed())
 
 				reconciler.Log.Info("checking status", "tfJob.Status", c.tfJob.Status)
