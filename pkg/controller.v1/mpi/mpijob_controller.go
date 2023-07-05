@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -250,15 +251,6 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		}
 	}
 
-	return nil
-}
-
-// ReconcileServices is overridden because mpi-reconciler.v1 does not need to reconcile services
-func (jc *MPIJobReconciler) ReconcileServices(
-	job metav1.Object,
-	services []*corev1.Service,
-	rtype kubeflowv1.ReplicaType,
-	spec *kubeflowv1.ReplicaSpec) error {
 	return nil
 }
 
@@ -556,7 +548,19 @@ func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned services are pointers into the cache.
 func (jc *MPIJobReconciler) GetServicesForJob(jobObject interface{}) ([]*corev1.Service, error) {
-	return nil, nil
+	job, err := meta.Accessor(jobObject)
+	if err != nil {
+		return nil, err
+	}
+	serviceList := &corev1.ServiceList{}
+	err = jc.List(context.Background(), serviceList, client.MatchingLabels(jc.GenLabels(job.GetName())), client.InNamespace(job.GetNamespace()))
+	if err != nil {
+		return nil, err
+	}
+
+	ret := util.ConvertServiceList(serviceList.Items)
+	return ret, nil
+
 }
 
 func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec, jobStatus *kubeflowv1.JobStatus) error {
