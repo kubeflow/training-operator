@@ -79,6 +79,7 @@ class TestKubeflowOrgV1PyTorchJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), ), 
                         status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
                             completion_time = None, 
@@ -149,6 +150,7 @@ class TestKubeflowOrgV1PyTorchJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), ), 
                         status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
                             completion_time = None, 
