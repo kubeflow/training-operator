@@ -257,6 +257,10 @@ func (r *XGBoostJobReconciler) GetGroupNameLabelValue() string {
 	return kubeflowv1.GroupVersion.Group
 }
 
+func (r *XGBoostJobReconciler) GetFrameworkName() string {
+	return kubeflowv1.XGBoostJobFrameworkName
+}
+
 // GetJobFromInformerCache returns the Job from Informer Cache
 func (r *XGBoostJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
 	job := &kubeflowv1.XGBoostJob{}
@@ -339,7 +343,7 @@ func (r *XGBoostJobReconciler) DeleteJob(job interface{}) error {
 	}
 	r.recorder.Eventf(xgboostjob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", xgboostjob.Name)
 	r.Log.Info("job deleted", "namespace", xgboostjob.Namespace, "name", xgboostjob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(xgboostjob.Namespace, r.GetFrameworkName())
 	return nil
 }
 
@@ -403,7 +407,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 					logger.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
+				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 				return nil
 			}
 		}
@@ -419,7 +423,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 					logger.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, xgboostJobFailedReason, msg)
@@ -432,7 +436,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 					logger.Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 			}
 		}
 	}
@@ -494,7 +498,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, kubeflowv1.XGBoostJobFrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, kubeflowv1.JobCreated, xgboostJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false

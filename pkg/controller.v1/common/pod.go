@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainingoperatorcommon "github.com/kubeflow/training-operator/pkg/common"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/control"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	"github.com/kubeflow/training-operator/pkg/core"
@@ -356,6 +357,14 @@ func (jc *JobController) ReconcilePods(
 				// Deletion is expected
 				jc.Expectations.RaiseExpectations(expectationPodsKey, 0, 1)
 
+				msg := fmt.Sprintf("job %s is restarting because %s replica(s) failed.",
+					metaObject.GetName(), rType)
+				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, "JobRestarting", msg)
+				if err := commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting, "JobRestarting", msg); err != nil {
+					commonutil.LoggerForJob(metaObject).Infof("Append job condition error: %v", err)
+					return err
+				}
+				trainingoperatorcommon.RestartedJobsCounterInc(metaObject.GetNamespace(), jc.Controller.GetFrameworkName())
 			}
 
 			updateJobReplicaStatuses(jobStatus, rType, pod)
