@@ -277,6 +277,10 @@ func (jc *MPIJobReconciler) GetGroupNameLabelValue() string {
 	return kubeflowv1.GroupVersion.Group
 }
 
+func (jc *MPIJobReconciler) GetFrameworkName() string {
+	return kubeflowv1.MPIJobFrameworkName
+}
+
 // SetClusterSpec is overridden because no cluster spec is needed for MPIJob
 func (jc *MPIJobReconciler) SetClusterSpec(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, index string) error {
 	return nil
@@ -314,7 +318,7 @@ func (jc *MPIJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		jc.Scheme.Default(mpiJob)
 		msg := fmt.Sprintf("MPIJob %s/%s is created.", mpiJob.Namespace, e.Object.GetName())
 		logrus.Info(msg)
-		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, kubeflowv1.MPIJobFrameworkName)
+		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 		if err := commonutil.UpdateJobConditions(&mpiJob.Status, kubeflowv1.JobCreated, mpiJobCreatedReason, msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false
@@ -546,7 +550,7 @@ func (jc *MPIJobReconciler) DeleteJob(job interface{}) error {
 
 	jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", mpiJob.Name)
 	log.Infof("job %s/%s has been deleted", mpiJob.Namespace, mpiJob.Name)
-	trainingoperatorcommon.DeletedJobsCounterInc(mpiJob.Namespace, kubeflowv1.MPIJobFrameworkName)
+	trainingoperatorcommon.DeletedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 	return nil
 }
 
@@ -597,7 +601,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.SuccessfulJobsCounterInc(mpiJob.Namespace, kubeflowv1.MPIJobFrameworkName)
+				trainingoperatorcommon.SuccessfulJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 				return nil
 			}
 		}
@@ -610,7 +614,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, kubeflowv1.MPIJobFrameworkName)
+				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
 				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
@@ -623,7 +627,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
 				}
-				trainingoperatorcommon.FailedJobsCounterInc(mpiJob.Namespace, kubeflowv1.MPIJobFrameworkName)
+				trainingoperatorcommon.FailedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 			}
 		}
 	}
