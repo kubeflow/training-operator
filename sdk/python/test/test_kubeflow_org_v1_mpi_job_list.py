@@ -63,6 +63,7 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), 
                             slots_per_worker = 56, ), 
                         status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
@@ -118,6 +119,7 @@ class TestKubeflowOrgV1MPIJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), 
                             slots_per_worker = 56, ), 
                         status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(

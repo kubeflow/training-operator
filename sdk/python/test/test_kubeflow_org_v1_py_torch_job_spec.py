@@ -73,6 +73,7 @@ class TestKubeflowOrgV1PyTorchJobSpec(unittest.TestCase):
                         priority_class = '0', 
                         queue = '0', 
                         schedule_timeout_seconds = 56, ), 
+                    suspend = True, 
                     ttl_seconds_after_finished = 56, )
             )
         else :
@@ -95,6 +96,7 @@ class TestKubeflowOrgV1PyTorchJobSpec(unittest.TestCase):
                         priority_class = '0', 
                         queue = '0', 
                         schedule_timeout_seconds = 56, ), 
+                    suspend = True, 
                     ttl_seconds_after_finished = 56, ),
         )
 

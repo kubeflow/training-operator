@@ -52,6 +52,7 @@ class TestKubeflowOrgV1XGBoostJob(unittest.TestCase):
                             priority_class = '0', 
                             queue = '0', 
                             schedule_timeout_seconds = 56, ), 
+                        suspend = True, 
                         ttl_seconds_after_finished = 56, ), 
                     xgb_replica_specs = {
                         'key' : kubeflow_org_v1_replica_spec.KubeflowOrgV1ReplicaSpec(

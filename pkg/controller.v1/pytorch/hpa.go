@@ -22,10 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 )
 
 func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) error {
@@ -45,21 +47,23 @@ func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) e
 		return err
 	}
 
-	if err := r.Get(context.TODO(), types.NamespacedName{
-		Name:      pytorchJob.Name,
-		Namespace: pytorchJob.Namespace,
-	}, current); err != nil {
-		if !errors.IsNotFound(err) {
-			return err
+	err = r.Get(context.TODO(), client.ObjectKeyFromObject(expected), current)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			if trainutil.IsJobSuspended(&pytorchJob.Spec.RunPolicy) {
+				// If the job is suspended, it's correct behavior that HPA doesn't exist.
+				return nil
+			}
+			// Create the new HPA.
+			logger.V(1).Info("Creating HPA", "namespace", expected.Namespace, "name", expected.Name)
+			return r.Create(context.TODO(), expected)
 		}
-
-		// Create the new HPA.
-		logger.V(1).Info("Creating HPA", "namespace", expected.Namespace, "name", expected.Name)
-		err = r.Create(context.TODO(), expected)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
+	}
+	if trainutil.IsJobSuspended(&pytorchJob.Spec.RunPolicy) {
+		// Delete the current HPA
+		logger.V(1).Info("Deleting HPA", "HorizontalPodAutoscaler", klog.KObj(current))
+		return r.Delete(context.TODO(), current)
 	}
 
 	if !equality.Semantic.DeepEqual(expected.Spec, current.Spec) {
