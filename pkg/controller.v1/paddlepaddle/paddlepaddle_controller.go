@@ -17,6 +17,7 @@ package paddle
 import (
 	"context"
 	"fmt"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 	"strings"
 	"time"
 
@@ -364,7 +365,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 	logger := commonutil.LoggerForJob(paddlejob)
 
 	// Set StartTime.
-	if jobStatus.StartTime == nil {
+	if !trainutil.IsJobSuspended(&paddlejob.Spec.RunPolicy) && jobStatus.StartTime == nil {
 		now := metav1.Now()
 		jobStatus.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
