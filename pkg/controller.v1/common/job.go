@@ -93,6 +93,7 @@ func (jc *JobController) ReconcileJobs(
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for job object %#v: %v", job, err))
 		return err
 	}
+	jobKind := jc.Controller.GetAPIGroupVersionKind().Kind
 	// Reset expectations
 	// 1. Since `ReconcileJobs` is called, we expect that previous expectations are all satisfied,
 	//    and it's safe to reset the expectations
@@ -222,9 +223,9 @@ func (jc *JobController) ReconcileJobs(
 			}
 		}
 
-		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
+		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage)
 
-		if err := commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
+		if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage); err != nil {
 			log.Infof("Append job condition error: %v", err)
 			return err
 		}

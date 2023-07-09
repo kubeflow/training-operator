@@ -56,15 +56,6 @@ import (
 
 const (
 	controllerName = "mxjob-controller"
-
-	// mxJobSucceededReason is added in a mxjob when it is succeeded.
-	mxJobSucceededReason = "MXJobSucceeded"
-	// mxJobRunningReason is added in a mxjob when it is running.
-	mxJobRunningReason = "MXJobRunning"
-	// mxJobFailedReason is added in a mxjob when it is failed.
-	mxJobFailedReason = "MXJobFailed"
-	// mxJobRestarting is added in a mxjob when it is restarting.
-	mxJobRestartingReason = "MXJobRestarting"
 )
 
 // NewReconciler creates a MXJob Reconciler
@@ -133,7 +124,8 @@ func (r *MXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err = kubeflowv1.ValidateV1MXJob(mxjob); err != nil {
 		logger.Error(err, "MXJob failed validation")
-		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "MXJob failed validation because %s", err)
+		r.Recorder.Eventf(mxjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedValidationReason),
+			"MXJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
 
@@ -379,7 +371,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		if rtype == kubeflowv1.MXJobReplicaTypeScheduler || singleTraining {
 			if running > 0 {
 				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, mxJobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobRunningReason), msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -388,12 +380,12 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 			// when scheduler is succeeded, the job is finished.
 			if expected == 0 {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
-				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
+				r.Recorder.Event(mxjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobSucceededReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, mxJobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobSucceededReason), msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -405,8 +397,8 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		if failed > 0 {
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
-				r.Recorder.Event(mxjob, corev1.EventTypeWarning, mxJobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, mxJobRestartingReason, msg)
+				r.Recorder.Event(mxjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobRestartingReason), msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobRestartingReason), msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -414,12 +406,12 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 				trainingoperatorcommon.RestartedJobsCounterInc(mxjob.Namespace, r.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
-				r.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
+				r.Recorder.Event(mxjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobFailedReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, mxJobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobFailedReason), msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -486,7 +478,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(mxJob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&mxJob.Status, kubeflowv1.JobCreated, "MXJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&mxJob.Status, kubeflowv1.JobCreated, commonutil.NewReason(kubeflowv1.MXJobKind, commonutil.JobCreatedReason), msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

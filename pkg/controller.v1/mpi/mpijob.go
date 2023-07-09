@@ -72,17 +72,7 @@ const (
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
 	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
-)
 
-const (
-	// mpiJobCreatedReason is added in a mpijob when it is created.
-	mpiJobCreatedReason = "MPIJobCreated"
-	// mpiJobSucceededReason is added in a mpijob when it is succeeded.
-	mpiJobSucceededReason = "MPIJobSucceeded"
-	// mpiJobRunningReason is added in a mpijob when it is running.
-	mpiJobRunningReason = "MPIJobRunning"
-	// mpiJobFailedReason is added in a mpijob when it is failed.
-	mpiJobFailedReason = "MPIJobFailed"
 	// mpiJobEvict
 	mpiJobEvict = "MPIJobEvicted"
 )

@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
 var ignoreJobConditionsTimeOpts = cmpopts.IgnoreFields(kubeflowv1.JobCondition{}, "LastUpdateTime", "LastTransitionTime")
@@ -24,7 +25,7 @@ func TestSetRunningCondition(t *testing.T) {
 			input: []kubeflowv1.JobCondition{
 				{
 					Type:    kubeflowv1.JobSucceeded,
-					Reason:  "XGBoostJobSucceeded",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobSucceededReason),
 					Message: "XGBoostJob test-xbgoostjob is successfully completed.",
 					Status:  corev1.ConditionTrue,
 				},
@@ -32,13 +33,13 @@ func TestSetRunningCondition(t *testing.T) {
 			want: []kubeflowv1.JobCondition{
 				{
 					Type:    kubeflowv1.JobSucceeded,
-					Reason:  "XGBoostJobSucceeded",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobSucceededReason),
 					Message: "XGBoostJob test-xbgoostjob is successfully completed.",
 					Status:  corev1.ConditionTrue,
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
-					Reason:  "XGBoostJobRunning",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason),
 					Message: "XGBoostJob test-xbgoostjob is running.",
 					Status:  corev1.ConditionTrue,
 				},
@@ -48,13 +49,13 @@ func TestSetRunningCondition(t *testing.T) {
 			input: []kubeflowv1.JobCondition{
 				{
 					Type:    kubeflowv1.JobFailed,
-					Reason:  "XGBoostJobFailed",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobFailedReason),
 					Message: "XGBoostJob test-sgboostjob is failed because 2 Worker replica(s) failed.",
 					Status:  corev1.ConditionTrue,
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
-					Reason:  "XGBoostJobRunning",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason),
 					Message: "XGBoostJob test-xbgoostjob is running.",
 					Status:  corev1.ConditionTrue,
 				},
@@ -62,13 +63,13 @@ func TestSetRunningCondition(t *testing.T) {
 			want: []kubeflowv1.JobCondition{
 				{
 					Type:    kubeflowv1.JobFailed,
-					Reason:  "XGBoostJobFailed",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobFailedReason),
 					Message: "XGBoostJob test-sgboostjob is failed because 2 Worker replica(s) failed.",
 					Status:  corev1.ConditionTrue,
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
-					Reason:  "XGBoostJobRunning",
+					Reason:  commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason),
 					Message: "XGBoostJob test-xbgoostjob is running.",
 					Status:  corev1.ConditionTrue,
 				},
