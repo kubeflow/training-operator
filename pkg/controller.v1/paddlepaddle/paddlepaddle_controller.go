@@ -392,7 +392,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			if rtype == kubeflowv1.PaddleJobReplicaTypeMaster {
 				if running > 0 {
 					msg := fmt.Sprintf("PaddleJob %s is running.", paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 						return err
@@ -407,7 +407,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 						return err
@@ -428,7 +428,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						jobStatus.CompletionTime = &now
 					}
 					err := commonutil.UpdateJobConditions(jobStatus,
-						kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+						kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
 						return err
@@ -438,7 +438,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("PaddleJob %s/%s is running.",
 						paddlejob.Namespace, paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
 						return err
@@ -451,7 +451,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			if spec.RestartPolicy != kubeflowv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PaddleJob %s is restarting because %d %s replica(s) failed.", paddlejob.Name, failed, rtype)
 				r.Recorder.Event(paddlejob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.JobRestartingReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 					return err
@@ -464,7 +464,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.JobFailedReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
 					return err
@@ -549,7 +549,7 @@ func (r *PaddleJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("PaddleJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&paddlejob.Status, kubeflowv1.JobCreated, "PaddleJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&paddlejob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, "PaddleJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

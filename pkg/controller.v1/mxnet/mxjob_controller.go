@@ -379,7 +379,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		if rtype == kubeflowv1.MXJobReplicaTypeScheduler || singleTraining {
 			if running > 0 {
 				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, mxJobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, mxJobRunningReason, msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -393,7 +393,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, mxJobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, mxJobSucceededReason, msg)
 				if err != nil {
 					logrus.Infof("Append mxjob condition error: %v", err)
 					return err
@@ -406,7 +406,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
 				r.Recorder.Event(mxjob, corev1.EventTypeWarning, mxJobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, mxJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, mxJobRestartingReason, msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -419,7 +419,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, mxJobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, mxJobFailedReason, msg)
 				if err != nil {
 					logrus.Infof("Append job condition error: %v", err)
 					return err
@@ -486,7 +486,7 @@ func (r *MXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("MXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(mxJob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&mxJob.Status, kubeflowv1.JobCreated, "MXJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&mxJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, "MXJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

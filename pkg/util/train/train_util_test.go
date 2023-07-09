@@ -14,7 +14,12 @@
 
 package train
 
-import "testing"
+import (
+	"testing"
+
+	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"k8s.io/utils/pointer"
+)
 
 func TestIsRetryableExitCode(t *testing.T) {
 	tcs := []struct {
@@ -48,5 +53,43 @@ func TestIsRetryableExitCode(t *testing.T) {
 		if actual != tc.Expected {
 			t.Errorf("ExitCode %d: Expected %t, got %t", tc.ExitCode, tc.Expected, actual)
 		}
+	}
+}
+
+func TestIsJobSuspended(t *testing.T) {
+	cases := map[string]struct {
+		runPolicy *apiv1.RunPolicy
+		want      bool
+	}{
+		"runPolicy is nil": {
+			runPolicy: nil,
+			want:      false,
+		},
+		"suspend is nil": {
+			runPolicy: &apiv1.RunPolicy{
+				Suspend: nil,
+			},
+			want: false,
+		},
+		"suspend is false": {
+			runPolicy: &apiv1.RunPolicy{
+				Suspend: pointer.Bool(false),
+			},
+			want: false,
+		},
+		"suspend is true": {
+			runPolicy: &apiv1.RunPolicy{
+				Suspend: pointer.Bool(true),
+			},
+			want: true,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := IsJobSuspended(tc.runPolicy)
+			if tc.want != got {
+				t.Errorf("Unexpected suspended from IsJobSuspended \nwant: %v\n, \ngot: %v\n", tc.want, got)
+			}
+		})
 	}
 }

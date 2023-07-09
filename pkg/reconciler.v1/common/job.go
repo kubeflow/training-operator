@@ -213,7 +213,7 @@ func (r *JobReconciler) ReconcileJob(
 
 		r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
 
-		if err = commonutil.UpdateJobConditions(status, kubeflowv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
+		if err = commonutil.UpdateJobConditions(status, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.JobFailedReason, failureMessage); err != nil {
 			logrus.Infof(ErrAppendJobConditionTemplate, err)
 			return err
 		}
@@ -306,7 +306,7 @@ func (r *JobReconciler) UpdateJobStatus(
 		if r.IsFlagReplicaTypeForJobStatus(string(rtype)) {
 			if running > 0 {
 				msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -321,7 +321,7 @@ func (r *JobReconciler) UpdateJobStatus(
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.JobSucceededReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 				}
@@ -334,7 +334,7 @@ func (r *JobReconciler) UpdateJobStatus(
 				msg := fmt.Sprintf("%s %s is restarting because %d %s replica(s) failed.",
 					jobKind, jobNamespacedName, failed, rtype)
 				r.GetRecorder().Event(job, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.JobRestartingReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -346,7 +346,7 @@ func (r *JobReconciler) UpdateJobStatus(
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.JobFailedReason, msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -359,7 +359,7 @@ func (r *JobReconciler) UpdateJobStatus(
 	msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
 	logger.Info(msg)
 
-	if err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
+	if err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg); err != nil {
 		logger.Error(err, ErrUpdateJobConditionsFailed, jobKind)
 		return err
 	}

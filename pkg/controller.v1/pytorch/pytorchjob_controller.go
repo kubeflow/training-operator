@@ -27,6 +27,7 @@ import (
 	"github.com/kubeflow/training-operator/pkg/controller.v1/control"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
@@ -362,8 +363,8 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 
 	logger := commonutil.LoggerForJob(pytorchjob)
 
-	// Set StartTime.
-	if jobStatus.StartTime == nil {
+	if !trainutil.IsJobSuspended(&pytorchjob.Spec.RunPolicy) && jobStatus.StartTime == nil {
+		// Set StartTime.
 		now := metav1.Now()
 		jobStatus.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
@@ -391,7 +392,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			if rtype == kubeflowv1.PyTorchJobReplicaTypeMaster {
 				if running > 0 {
 					msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 						return err
@@ -406,7 +407,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 						return err
@@ -430,7 +431,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 						jobStatus.CompletionTime = &now
 					}
 					err := commonutil.UpdateJobConditions(jobStatus,
-						kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+						kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.JobSucceededReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(pytorchjob).Infof("Append pytorchjob condition error: %v", err)
 						return err
@@ -440,7 +441,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("PyTorchJob %s/%s is running.",
 						pytorchjob.Namespace, pytorchjob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.JobRunningReason, msg)
 					if err != nil {
 						commonutil.LoggerForJob(pytorchjob).Infof("Append pytorchjob condition error: %v", err)
 						return err
@@ -453,7 +454,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			if spec.RestartPolicy != kubeflowv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
 				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.JobRestartingReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
@@ -466,7 +467,7 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.JobFailedReason, msg)
 				if err != nil {
 					commonutil.LoggerForJob(pytorchjob).Infof("Append job condition error: %v", err)
 					return err
@@ -552,7 +553,7 @@ func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, kubeflowv1.JobCreated, "PyTorchJobCreated", msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&pytorchjob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, "PyTorchJobCreated", msg); err != nil {
 			logrus.Error(err, "append job condition error")
 			return false
 		}

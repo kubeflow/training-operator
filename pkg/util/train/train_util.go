@@ -15,6 +15,15 @@
 // Package that various helper routines for training.
 package train
 
+import (
+	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"k8s.io/utils/pointer"
+)
+
 func IsRetryableExitCode(exitCode int32) bool {
 	return exitCode >= 128
+}
+
+func IsJobSuspended(runPolicy *apiv1.RunPolicy) bool {
+	return runPolicy != nil && pointer.BoolDeref(runPolicy.Suspend, false)
 }

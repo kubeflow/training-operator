@@ -26,6 +26,7 @@ import (
 	"github.com/kubeflow/training-operator/pkg/core"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/k8sutil"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +39,7 @@ import (
 	volcanov1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 )
 
-func (jc *JobController) DeletePodsAndServices(runPolicy *apiv1.RunPolicy, job interface{}, pods []*corev1.Pod) error {
+func (jc *JobController) DeletePodsAndServices(runPolicy *apiv1.RunPolicy, runtimeObject runtime.Object, pods []*corev1.Pod) error {
 	if len(pods) == 0 {
 		return nil
 	}
@@ -55,11 +56,11 @@ func (jc *JobController) DeletePodsAndServices(runPolicy *apiv1.RunPolicy, job i
 		if *runPolicy.CleanPodPolicy == apiv1.CleanPodPolicyRunning && pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending {
 			continue
 		}
-		if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, job.(runtime.Object)); err != nil {
+		if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, runtimeObject); err != nil {
 			return err
 		}
 		// Pod and service have the same name, thus the service could be deleted using pod's name.
-		if err := jc.ServiceControl.DeleteService(pod.Namespace, pod.Name, job.(runtime.Object)); err != nil {
+		if err := jc.ServiceControl.DeleteService(pod.Namespace, pod.Name, runtimeObject); err != nil {
 			return err
 		}
 	}
@@ -117,22 +118,8 @@ func (jc *JobController) ReconcileJobs(
 
 	oldStatus := jobStatus.DeepCopy()
 	if commonutil.IsSucceeded(jobStatus) || commonutil.IsFailed(jobStatus) {
-		// If the Job is succeed or failed, delete all pods and services.
-		if err := jc.DeletePodsAndServices(runPolicy, job, pods); err != nil {
-			return err
-		}
-
-		if jc.Config.EnableGangScheduling() {
-			jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, "JobTerminated", "Job has been terminated. Deleting PodGroup")
-			if err := jc.DeletePodGroup(metaObject); err != nil {
-				jc.Recorder.Eventf(runtimeObject, corev1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
-				return err
-			} else {
-				jc.Recorder.Eventf(runtimeObject, corev1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", jobName)
-			}
-		}
-
-		if err := jc.CleanupJob(runPolicy, jobStatus, job); err != nil {
+		// If the Job is succeed or failed, delete all pods, services, and podGroup.
+		if err = jc.CleanUpResources(runPolicy, runtimeObject, metaObject, jobStatus, pods); err != nil {
 			return err
 		}
 
@@ -152,6 +139,37 @@ func (jc *JobController) ReconcileJobs(
 		}
 
 		return nil
+	}
+
+	if trainutil.IsJobSuspended(runPolicy) {
+		if err = jc.CleanUpResources(runPolicy, runtimeObject, metaObject, jobStatus, pods); err != nil {
+			return err
+		}
+		for rType := range jobStatus.ReplicaStatuses {
+			jobStatus.ReplicaStatuses[rType].Active = 0
+		}
+		jobStatus.StartTime = nil
+		msg := fmt.Sprintf("%s %s is suspended.", jc.Controller.GetAPIGroupVersionKind().Kind, jobName)
+		if commonutil.IsRunning(jobStatus) {
+			if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobRunning, corev1.ConditionFalse, commonutil.JobSuspendedReason, msg); err != nil {
+				return err
+			}
+		}
+		if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionTrue, commonutil.JobSuspendedReason, msg); err != nil {
+			return err
+		}
+		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.JobSuspendedReason, msg)
+		if !reflect.DeepEqual(*oldStatus, jobStatus) {
+			return jc.Controller.UpdateJobStatusInApiServer(job, &jobStatus)
+		}
+		return nil
+	}
+	if !trainutil.IsJobSuspended(runPolicy) && commonutil.IsSuspend(jobStatus) {
+		msg := fmt.Sprintf("%s %s is resumed.", jc.Controller.GetAPIGroupVersionKind().Kind, jobName)
+		if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionFalse, commonutil.JobResumedReason, msg); err != nil {
+			return err
+		}
+		jc.Recorder.Eventf(runtimeObject, corev1.EventTypeNormal, commonutil.JobResumedReason, msg)
 	}
 
 	// retrieve the previous number of retry
@@ -204,7 +222,7 @@ func (jc *JobController) ReconcileJobs(
 
 		// If the Job exceeds backoff limit or is past active deadline
 		// delete all pods and services, then set the status to failed
-		if err := jc.DeletePodsAndServices(runPolicy, job, pods); err != nil {
+		if err := jc.DeletePodsAndServices(runPolicy, runtimeObject, pods); err != nil {
 			return err
 		}
 
@@ -224,7 +242,7 @@ func (jc *JobController) ReconcileJobs(
 
 		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
 
-		if err := commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
+		if err := commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, corev1.ConditionTrue, commonutil.JobFailedReason, failureMessage); err != nil {
 			log.Infof("Append job condition error: %v", err)
 			return err
 		}
@@ -339,6 +357,32 @@ func (jc *JobController) ReconcileJobs(
 	// No need to update the job status if the status hasn't changed since last time.
 	if !reflect.DeepEqual(*oldStatus, jobStatus) {
 		return jc.Controller.UpdateJobStatusInApiServer(job, &jobStatus)
+	}
+	return nil
+}
+
+func (jc *JobController) CleanUpResources(
+	runPolicy *apiv1.RunPolicy,
+	runtimeObject runtime.Object,
+	metaObject metav1.Object,
+	jobStatus apiv1.JobStatus,
+	pods []*v1.Pod,
+) error {
+	if err := jc.DeletePodsAndServices(runPolicy, runtimeObject, pods); err != nil {
+		return err
+	}
+	if jc.Config.EnableGangScheduling() {
+
+		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, "JobTerminated", "Job has been terminated. Deleting PodGroup")
+		if err := jc.DeletePodGroup(metaObject); err != nil {
+			jc.Recorder.Eventf(runtimeObject, corev1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
+			return err
+		} else {
+			jc.Recorder.Eventf(runtimeObject, corev1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", metaObject.GetName())
+		}
+	}
+	if err := jc.CleanupJob(runPolicy, jobStatus, runtimeObject); err != nil {
+		return err
 	}
 	return nil
 }

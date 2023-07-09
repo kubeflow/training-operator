@@ -32,13 +32,37 @@ func TestIsFailed(t *testing.T) {
 	assert.True(t, IsFailed(jobStatus))
 }
 
+func TestIsRunning(t *testing.T) {
+	jobStatus := apiv1.JobStatus{
+		Conditions: []apiv1.JobCondition{
+			{
+				Type:   apiv1.JobRunning,
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	assert.True(t, IsRunning(jobStatus))
+}
+
+func TestIsSuspend(t *testing.T) {
+	jobStatus := apiv1.JobStatus{
+		Conditions: []apiv1.JobCondition{
+			{
+				Type:   apiv1.JobSuspended,
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	assert.True(t, IsSuspend(jobStatus))
+}
+
 func TestUpdateJobConditions(t *testing.T) {
 	jobStatus := apiv1.JobStatus{}
 	conditionType := apiv1.JobCreated
 	reason := "Job Created"
 	message := "Job Created"
 
-	err := UpdateJobConditions(&jobStatus, conditionType, reason, message)
+	err := UpdateJobConditions(&jobStatus, conditionType, corev1.ConditionTrue, reason, message)
 	if assert.NoError(t, err) {
 		// Check JobCreated condition is appended
 		conditionInStatus := jobStatus.Conditions[0]
@@ -50,7 +74,7 @@ func TestUpdateJobConditions(t *testing.T) {
 	conditionType = apiv1.JobRunning
 	reason = "Job Running"
 	message = "Job Running"
-	err = UpdateJobConditions(&jobStatus, conditionType, reason, message)
+	err = UpdateJobConditions(&jobStatus, conditionType, corev1.ConditionTrue, reason, message)
 	if assert.NoError(t, err) {
 		// Check JobRunning condition is appended
 		conditionInStatus := jobStatus.Conditions[1]
@@ -62,7 +86,7 @@ func TestUpdateJobConditions(t *testing.T) {
 	conditionType = apiv1.JobRestarting
 	reason = "Job Restarting"
 	message = "Job Restarting"
-	err = UpdateJobConditions(&jobStatus, conditionType, reason, message)
+	err = UpdateJobConditions(&jobStatus, conditionType, corev1.ConditionTrue, reason, message)
 	if assert.NoError(t, err) {
 		// Check JobRunning condition is filtered out and JobRestarting state is appended
 		conditionInStatus := jobStatus.Conditions[1]
@@ -74,7 +98,7 @@ func TestUpdateJobConditions(t *testing.T) {
 	conditionType = apiv1.JobRunning
 	reason = "Job Running"
 	message = "Job Running"
-	err = UpdateJobConditions(&jobStatus, conditionType, reason, message)
+	err = UpdateJobConditions(&jobStatus, conditionType, corev1.ConditionTrue, reason, message)
 	if assert.NoError(t, err) {
 		// Again, Check JobRestarting condition is filtered and JobRestarting is appended
 		conditionInStatus := jobStatus.Conditions[1]
@@ -86,7 +110,7 @@ func TestUpdateJobConditions(t *testing.T) {
 	conditionType = apiv1.JobFailed
 	reason = "Job Failed"
 	message = "Job Failed"
-	err = UpdateJobConditions(&jobStatus, conditionType, reason, message)
+	err = UpdateJobConditions(&jobStatus, conditionType, corev1.ConditionTrue, reason, message)
 	if assert.NoError(t, err) {
 		// Check JobRunning condition is set to false
 		jobRunningCondition := jobStatus.Conditions[1]

@@ -19,7 +19,10 @@ const (
 	JobRestartingReason = "JobRestarting"
 	// JobFailedValidationReason is added in a job when it failed validation
 	JobFailedValidationReason = "JobFailedValidation"
-
+	// JobSuspendedReason is added in a job when it is suspended.
+	JobSuspendedReason = "JobSuspended"
+	// JobResumedReason is added in a job when it is unsuspended.
+	JobResumedReason = "JobResumed"
 	// labels for pods and servers.
 
 )
@@ -34,9 +37,22 @@ func IsFailed(status apiv1.JobStatus) bool {
 	return hasCondition(status, apiv1.JobFailed)
 }
 
+func IsRunning(status apiv1.JobStatus) bool {
+	return hasCondition(status, apiv1.JobRunning)
+}
+
+func IsSuspend(status apiv1.JobStatus) bool {
+	return hasCondition(status, apiv1.JobSuspended)
+}
+
 // UpdateJobConditions adds to the jobStatus a new condition if needed, with the conditionType, reason, and message
-func UpdateJobConditions(jobStatus *apiv1.JobStatus, conditionType apiv1.JobConditionType, reason, message string) error {
-	condition := newCondition(conditionType, reason, message)
+func UpdateJobConditions(
+	jobStatus *apiv1.JobStatus,
+	conditionType apiv1.JobConditionType,
+	conditionStatus v1.ConditionStatus,
+	reason, message string,
+) error {
+	condition := newCondition(conditionType, conditionStatus, reason, message)
 	setCondition(jobStatus, condition)
 	return nil
 }
@@ -51,10 +67,10 @@ func hasCondition(status apiv1.JobStatus, condType apiv1.JobConditionType) bool 
 }
 
 // newCondition creates a new job condition.
-func newCondition(conditionType apiv1.JobConditionType, reason, message string) apiv1.JobCondition {
+func newCondition(conditionType apiv1.JobConditionType, conditionStatus v1.ConditionStatus, reason, message string) apiv1.JobCondition {
 	return apiv1.JobCondition{
 		Type:               conditionType,
-		Status:             v1.ConditionTrue,
+		Status:             conditionStatus,
 		LastUpdateTime:     metav1.Now(),
 		LastTransitionTime: metav1.Now(),
 		Reason:             reason,
