@@ -27,6 +27,7 @@ import (
 	"github.com/kubeflow/training-operator/pkg/controller.v1/control"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
@@ -351,7 +352,7 @@ func (r *MXJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		return err
 	}
 
-	if jobStatus.StartTime == nil {
+	if !trainutil.IsJobSuspended(&mxjob.Spec.RunPolicy) && jobStatus.StartTime == nil {
 		now := metav1.Now()
 		jobStatus.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds

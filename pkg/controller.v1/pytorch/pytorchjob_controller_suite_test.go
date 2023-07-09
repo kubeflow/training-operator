@@ -24,7 +24,6 @@ import (
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -85,12 +84,12 @@ var _ = BeforeSuite(func() {
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		MetricsBindAddress: "0",
 	})
-	Expect(err).NotTo(gomega.HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
 	r := NewReconciler(mgr, gangSchedulingSetupFunc)
 
-	Expect(r.SetupWithManager(mgr, 1)).NotTo(gomega.HaveOccurred())
+	Expect(r.SetupWithManager(mgr, 1)).NotTo(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
