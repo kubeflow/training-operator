@@ -99,16 +99,16 @@ func (e ElasticEnvVarGenerator) Generate(
 			Value: strconv.Itoa(int(*elasticPolicy.MaxRestarts)),
 		})
 	}
-	if elasticPolicy.RDZVID != nil {
-		envVars = append(envVars, corev1.EnvVar{
-			Name:  EnvRDZVID,
-			Value: *elasticPolicy.RDZVID,
-		})
-	}
 	if elasticPolicy.NProcPerNode != nil {
 		envVars = append(envVars, corev1.EnvVar{
 			Name:  EnvNProcPerNode,
 			Value: strconv.Itoa(int(*elasticPolicy.NProcPerNode)),
+		})
+	}
+	if elasticPolicy.RDZVID != nil {
+		envVars = append(envVars, corev1.EnvVar{
+			Name:  EnvRDZVID,
+			Value: *elasticPolicy.RDZVID,
 		})
 	}
 	if envVar := e.generateEnvRDZVConf(elasticPolicy); envVar != nil {

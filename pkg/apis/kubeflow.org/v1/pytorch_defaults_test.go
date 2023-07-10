@@ -152,3 +152,25 @@ func TestSetElasticPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestSetDefaultNprocPerNode(t *testing.T) {
+	gomega.RegisterFailHandler(ginkgo.Fail)
+	t.Run("test default nproc per node", func(t *testing.T) {
+		job := &PyTorchJob{
+			Spec: PyTorchJobSpec{
+				ElasticPolicy: &ElasticPolicy{
+					NProcPerNode: nil,
+				},
+				PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+					PyTorchJobReplicaTypeWorker: {
+						Replicas: pointer.Int32(1),
+					},
+				},
+			},
+		}
+
+		setDefaultNprocPerNode(job)
+		gomega.Expect(job.Spec.NprocPerNode).
+			To(gomega.Equal(&defaultNprocPerNode))
+	})
+}

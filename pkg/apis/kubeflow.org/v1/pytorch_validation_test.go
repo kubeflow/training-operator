@@ -180,6 +180,35 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		"Spec.NprocPerNode and Spec.ElasticPolicy.NProcPerNode are set": {
+			pytorchJob: &PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: PyTorchJobSpec{
+					NprocPerNode: pointer.String("1"),
+					ElasticPolicy: &ElasticPolicy{
+						NProcPerNode: pointer.Int32(1),
+					},
+					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+						PyTorchJobReplicaTypeMaster: {
+							Replicas: pointer.Int32(2),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for name, tc := range testCases {
