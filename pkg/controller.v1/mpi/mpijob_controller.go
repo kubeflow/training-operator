@@ -137,7 +137,8 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err = kubeflowv1.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
 		logger.Error(err, "MPIJob failed validation")
-		jc.Recorder.Eventf(mpijob, corev1.EventTypeWarning, commonutil.JobFailedValidationReason, "MPIJob failed validation because %s", err)
+		jc.Recorder.Eventf(mpijob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedValidationReason),
+			"MPIJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
 
@@ -319,7 +320,8 @@ func (jc *MPIJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("MPIJob %s/%s is created.", mpiJob.Namespace, e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&mpiJob.Status, kubeflowv1.JobCreated, mpiJobCreatedReason, msg); err != nil {
+		if err := commonutil.UpdateJobConditions(&mpiJob.Status, kubeflowv1.JobCreated,
+			commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobCreatedReason), msg); err != nil {
 			log.Log.Error(err, "append job condition error")
 			return false
 		}
@@ -395,10 +397,10 @@ func (jc *MPIJobReconciler) ReconcilePods(
 		if launcher == nil {
 			launcher, err = jc.KubeClientSet.CoreV1().Pods(mpiJob.Namespace).Create(context.Background(), jc.newLauncher(mpiJob, ctlrconfig.Config.MPIKubectlDeliveryImage, isGPULauncher), metav1.CreateOptions{})
 			if err != nil {
-				jc.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, mpiJobFailedReason, "launcher pod created failed: %v", err)
+				jc.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason), "launcher pod created failed: %v", err)
 				return err
 			} else {
-				jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, mpiJobRunningReason, "launcher pod created success: %v", launcher.Name)
+				jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRunningReason), "launcher pod created success: %v", launcher.Name)
 			}
 		}
 	}
@@ -418,12 +420,12 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *kubeflowv1.MPIJob, launch
 		if isPodSucceeded(launcher) {
 			mpiJob.Status.ReplicaStatuses[kubeflowv1.MPIJobReplicaTypeLauncher].Succeeded = 1
 			msg := fmt.Sprintf("MPIJob %s/%s successfully completed.", mpiJob.Namespace, mpiJob.Name)
-			jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, mpiJobSucceededReason, msg)
+			jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MPIJobPlural, commonutil.JobSucceededReason), msg)
 			if mpiJob.Status.CompletionTime == nil {
 				now := metav1.Now()
 				mpiJob.Status.CompletionTime = &now
 			}
-			err := updateMPIJobConditions(mpiJob, kubeflowv1.JobSucceeded, mpiJobSucceededReason, msg)
+			err := updateMPIJobConditions(mpiJob, kubeflowv1.JobSucceeded, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobSucceededReason), msg)
 			if err != nil {
 				return err
 			}
@@ -432,7 +434,7 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *kubeflowv1.MPIJob, launch
 			msg := fmt.Sprintf("MPIJob %s/%s has failed", mpiJob.Namespace, mpiJob.Name)
 			reason := launcher.Status.Reason
 			if reason == "" {
-				reason = mpiJobFailedReason
+				reason = commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason)
 			}
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, reason, msg)
 			if reason == "Evicted" {
@@ -482,11 +484,11 @@ func (jc *MPIJobReconciler) updateMPIJobStatus(mpiJob *kubeflowv1.MPIJob, launch
 
 	if launcher != nil && launcher.Status.Phase == corev1.PodRunning && running == len(worker) {
 		msg := fmt.Sprintf("MPIJob %s/%s is running.", mpiJob.Namespace, mpiJob.Name)
-		err := updateMPIJobConditions(mpiJob, kubeflowv1.JobRunning, mpiJobRunningReason, msg)
+		err := updateMPIJobConditions(mpiJob, kubeflowv1.JobRunning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRunningReason), msg)
 		if err != nil {
 			return err
 		}
-		jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, "MPIJobRunning", "MPIJob %s/%s is running", mpiJob.Namespace, mpiJob.Name)
+		jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRunningReason), "MPIJob %s/%s is running", mpiJob.Namespace, mpiJob.Name)
 	}
 	return nil
 }
@@ -581,7 +583,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 		if rtype == kubeflowv1.MPIJobReplicaTypeLauncher {
 			if running > 0 {
 				msg := fmt.Sprintf("MPIJob %s is running.", mpiJob.Name)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRunningReason), msg)
 				if err != nil {
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
@@ -591,12 +593,12 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 			if expected == 0 {
 				msg := fmt.Sprintf("MPIJob %s is successfully completed.", mpiJob.Name)
 				logrus.Info(msg)
-				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobSucceededReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobSucceededReason), msg)
 				if err != nil {
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
@@ -608,8 +610,8 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 		if failed > 0 {
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("MPIJob %s is restarting because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
-				jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRestartingReason), msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobRestartingReason), msg)
 				if err != nil {
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
@@ -617,12 +619,13 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubefl
 				trainingoperatorcommon.RestartedJobsCounterInc(mpiJob.Namespace, jc.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("MPIJob %s is failed because %d %s replica(s) failed.", mpiJob.Name, failed, rtype)
-				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.JobFailedReason, msg)
+				jc.Recorder.Event(mpiJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed,
+					commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason)), msg)
 				if err != nil {
 					commonutil.LoggerForJob(mpiJob).Infof("Append job condition error: %v", err)
 					return err
@@ -917,7 +920,8 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *kubeflowv1.MPIJob) ([]*cor
 		// can attempt processing again later. This could have been caused by a
 		// temporary network failure, or any other transient reason.
 		if err != nil && !errors.IsNotFound(err) {
-			jc.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, mpiJobFailedReason, "worker pod created failed: %v", err)
+			jc.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason),
+				"worker pod created failed: %v", err)
 			return nil, err
 		}
 		// If the worker is not controlled by this MPIJob resource, we should log

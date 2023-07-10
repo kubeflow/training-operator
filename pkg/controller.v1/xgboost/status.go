@@ -12,7 +12,7 @@ import (
 func setRunningCondition(logger *logrus.Entry, jobName string, jobStatus *kubeflowv1.JobStatus) error {
 	msg := fmt.Sprintf("XGBoostJob %s is running.", jobName)
 	if condition := findStatusCondition(jobStatus.Conditions, kubeflowv1.JobRunning); condition == nil {
-		err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, xgboostJobRunningReason, msg)
+		err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), msg)
 		if err != nil {
 			logger.Infof("Append job condition error: %v", err)
 			return err

@@ -359,8 +359,10 @@ func (jc *JobController) ReconcilePods(
 
 				msg := fmt.Sprintf("job %s is restarting because %s replica(s) failed.",
 					metaObject.GetName(), rType)
-				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, "JobRestarting", msg)
-				if err := commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting, "JobRestarting", msg); err != nil {
+				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning,
+					commonutil.NewReason(jc.Controller.GetAPIGroupVersionKind().Kind, commonutil.JobRestartingReason), msg)
+				if err := commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting,
+					commonutil.NewReason(jc.Controller.GetAPIGroupVersionKind().Kind, commonutil.JobRestartingReason), msg); err != nil {
 					commonutil.LoggerForJob(metaObject).Infof("Append job condition error: %v", err)
 					return err
 				}

@@ -1,28 +1,32 @@
 package util
 
 import (
-	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"fmt"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 const (
 	// JobCreatedReason is added in a job when it is created.
-	JobCreatedReason = "JobCreated"
+	JobCreatedReason = "Created"
 	// JobSucceededReason is added in a job when it is succeeded.
-	JobSucceededReason = "JobSucceeded"
+	JobSucceededReason = "Succeeded"
 	// JobRunningReason is added in a job when it is running.
-	JobRunningReason = "JobRunning"
+	JobRunningReason = "Running"
 	// JobFailedReason is added in a job when it is failed.
-	JobFailedReason = "JobFailed"
+	JobFailedReason = "Failed"
 	// JobRestartingReason is added in a job when it is restarting.
-	JobRestartingReason = "JobRestarting"
+	JobRestartingReason = "Restarting"
 	// JobFailedValidationReason is added in a job when it failed validation
-	JobFailedValidationReason = "JobFailedValidation"
-
-	// labels for pods and servers.
-
+	JobFailedValidationReason = "FailedValidation"
 )
+
+func NewReason(kind, reason string) string {
+	return fmt.Sprintf("%s%s", kind, reason)
+}
 
 // IsSucceeded checks if the job is succeeded
 func IsSucceeded(status apiv1.JobStatus) bool {

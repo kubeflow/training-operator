@@ -27,6 +27,7 @@ import (
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
 var _ = Describe("TFJob controller", func() {
@@ -119,7 +120,7 @@ var _ = Describe("TFJob controller", func() {
 					0, 0, 0,
 					4, 0, 0,
 					2, 0, 0,
-					&tfJobRunning, tfJobRunningReason,
+					&tfJobRunning, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason),
 					true,
 				},
 				"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending": {
@@ -141,7 +142,7 @@ var _ = Describe("TFJob controller", func() {
 					2, 0, 2,
 					1, 0, 0,
 					0, 0, 0,
-					&tfJobRunning, tfJobRunningReason,
+					&tfJobRunning, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason),
 					false,
 				},
 				"Distributed TFJob (4 workers, 2 PS) is created, 2 workers, 1 PS are pending, 1 worker is succeeded": {
@@ -163,7 +164,7 @@ var _ = Describe("TFJob controller", func() {
 					0, 0, 0,
 					0, 4, 0,
 					0, 2, 0,
-					&tfJobSucceeded, tfJobSucceededReason,
+					&tfJobSucceeded, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobSucceededReason),
 					false,
 				},
 			}

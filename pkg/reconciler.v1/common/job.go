@@ -121,6 +121,7 @@ func (r *JobReconciler) ReconcileJob(
 
 	logger := r.GetLogger(job)
 	logger.Info(MsgReconcileStart)
+	jobKind := job.GetObjectKind().GroupVersionKind().Kind
 
 	oldStatus := status.DeepCopy()
 
@@ -211,9 +212,9 @@ func (r *JobReconciler) ReconcileJob(
 			r.SetStatusForSuccessJob(status)
 		}
 
-		r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.JobFailedReason, failureMessage)
+		r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage)
 
-		if err = commonutil.UpdateJobConditions(status, kubeflowv1.JobFailed, commonutil.JobFailedReason, failureMessage); err != nil {
+		if err = commonutil.UpdateJobConditions(status, kubeflowv1.JobFailed, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage); err != nil {
 			logrus.Infof(ErrAppendJobConditionTemplate, err)
 			return err
 		}
@@ -306,7 +307,7 @@ func (r *JobReconciler) UpdateJobStatus(
 		if r.IsFlagReplicaTypeForJobStatus(string(rtype)) {
 			if running > 0 {
 				msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(jobKind, commonutil.JobRunningReason), msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -316,12 +317,12 @@ func (r *JobReconciler) UpdateJobStatus(
 			if expected == 0 {
 				msg := fmt.Sprintf("%s %s is successfully completed.", jobKind, jobNamespacedName)
 				logrus.Info(msg)
-				r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.JobSucceededReason, msg)
+				r.GetRecorder().Event(job, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobSucceededReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.JobSucceededReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, commonutil.NewReason(jobKind, commonutil.JobSucceededReason), msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 				}
@@ -333,8 +334,8 @@ func (r *JobReconciler) UpdateJobStatus(
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("%s %s is restarting because %d %s replica(s) failed.",
 					jobKind, jobNamespacedName, failed, rtype)
-				r.GetRecorder().Event(job, corev1.EventTypeWarning, commonutil.JobRestartingReason, msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.JobRestartingReason, msg)
+				r.GetRecorder().Event(job, corev1.EventTypeWarning, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -346,7 +347,7 @@ func (r *JobReconciler) UpdateJobStatus(
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.JobFailedReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, commonutil.NewReason(jobKind, commonutil.JobFailedReason), msg)
 				if err != nil {
 					logger.Info(ErrAppendJobConditionTemplate, err)
 					return err
@@ -359,7 +360,7 @@ func (r *JobReconciler) UpdateJobStatus(
 	msg := fmt.Sprintf("%s %s is running.", jobKind, jobNamespacedName)
 	logger.Info(msg)
 
-	if err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.JobRunningReason, msg); err != nil {
+	if err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(jobKind, commonutil.JobRunningReason), msg); err != nil {
 		logger.Error(err, ErrUpdateJobConditionsFailed, jobKind)
 		return err
 	}
