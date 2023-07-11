@@ -45,7 +45,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 		podTemplateSpec.Spec.Containers[i].Env = append(
 			podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "PYTHONUNBUFFERED",
-				Value: "0",
+				Value: "1",
 			})
 
 		// If the master is not null, then we need to set the MASTER_ADDR and RANK.
