@@ -911,7 +911,7 @@ func schema_pkg_apis_kubefloworg_v1_PyTorchJobSpec(ref common.ReferenceCallback)
 					},
 					"nprocPerNode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int]. Defaults to auto.",
+							Description: "Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

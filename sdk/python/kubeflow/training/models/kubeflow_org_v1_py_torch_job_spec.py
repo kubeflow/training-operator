@@ -90,7 +90,7 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     def nproc_per_node(self):
         """Gets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
 
-        Number of workers per node; supported values: [auto, cpu, gpu, int]. Defaults to auto.  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.  # noqa: E501
 
         :return: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
         :rtype: str
@@ -101,7 +101,7 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     def nproc_per_node(self, nproc_per_node):
         """Sets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.
 
-        Number of workers per node; supported values: [auto, cpu, gpu, int]. Defaults to auto.  # noqa: E501
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.  # noqa: E501
 
         :param nproc_per_node: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
         :type: str

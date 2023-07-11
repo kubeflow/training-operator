@@ -124,6 +124,9 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 	return nil
 }
 
+// getNprocPerNodeInt return the int value of NprocPerNode, return 1 if not int
+// When nproc_per_node set to auto, it means the number of process will be determinated
+// in the user process phase, in this case, world size env will not be used.
 func getNprocPerNodeInt(job *kubeflowv1.PyTorchJob) int {
 	if job.Spec.NprocPerNode == nil {
 		return 1
