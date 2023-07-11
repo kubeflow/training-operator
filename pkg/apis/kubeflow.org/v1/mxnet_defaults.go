@@ -47,8 +47,7 @@ func setMXNetTypeNamesToCamelCase(mxJob *MXJob) {
 func SetDefaults_MXJob(mxjob *MXJob) {
 	// Set default cleanpod policy to None.
 	if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := CleanPodPolicyNone
-		mxjob.Spec.RunPolicy.CleanPodPolicy = &all
+		mxjob.Spec.RunPolicy.CleanPodPolicy = CleanPodPolicyPointer(CleanPodPolicyNone)
 	}
 
 	// Update the key of MXReplicaSpecs to camel case.

@@ -65,8 +65,7 @@ func setPaddleTypeNamesToCamelCase(paddleJob *PaddleJob) {
 func SetDefaults_PaddleJob(job *PaddleJob) {
 	// Set default cleanpod policy to None.
 	if job.Spec.RunPolicy.CleanPodPolicy == nil {
-		policy := CleanPodPolicyNone
-		job.Spec.RunPolicy.CleanPodPolicy = &policy
+		job.Spec.RunPolicy.CleanPodPolicy = CleanPodPolicyPointer(CleanPodPolicyNone)
 	}
 
 	// Update the key of PaddleReplicaSpecs to camel case.

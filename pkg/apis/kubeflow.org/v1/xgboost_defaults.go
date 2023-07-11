@@ -46,8 +46,7 @@ func setXGBoostJobTypeNamesToCamelCase(xgboostJob *XGBoostJob) {
 func SetDefaults_XGBoostJob(xgboostJob *XGBoostJob) {
 	// Set default cleanpod policy to None.
 	if xgboostJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		all := CleanPodPolicyNone
-		xgboostJob.Spec.RunPolicy.CleanPodPolicy = &all
+		xgboostJob.Spec.RunPolicy.CleanPodPolicy = CleanPodPolicyPointer(CleanPodPolicyNone)
 	}
 
 	// Update the key of MXReplicaSpecs to camel case.

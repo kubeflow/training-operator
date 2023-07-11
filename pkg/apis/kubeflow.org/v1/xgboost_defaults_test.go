@@ -201,7 +201,7 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					RunPolicy: RunPolicy{
-						CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
+						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						XGBoostJobReplicaTypeWorker: &ReplicaSpec{

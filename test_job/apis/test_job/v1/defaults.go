@@ -101,8 +101,7 @@ func SetDefaults_TestJob(testjob *TestJob) {
 
 	// Set default cleanpod policy to Running.
 	if testjob.Spec.RunPolicy.CleanPodPolicy == nil {
-		running := kubeflowv1.CleanPodPolicyRunning
-		testjob.Spec.RunPolicy.CleanPodPolicy = &running
+		testjob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyRunning)
 	}
 
 	// Update the key of TestReplicaSpecs to camel case.

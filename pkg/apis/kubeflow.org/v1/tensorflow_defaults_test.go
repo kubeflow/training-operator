@@ -233,7 +233,7 @@ func TestSetDefaultTFJob(t *testing.T) {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					RunPolicy: RunPolicy{
-						CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
+						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						TFJobReplicaTypeWorker: &ReplicaSpec{

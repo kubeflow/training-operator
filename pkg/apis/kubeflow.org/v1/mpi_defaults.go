@@ -25,9 +25,8 @@ func addMPIJobDefaultingFuncs(scheme *runtime.Scheme) error {
 func SetDefaults_MPIJob(mpiJob *MPIJob) {
 	// Set default CleanPodPolicy to None when neither fields specified.
 	if mpiJob.Spec.CleanPodPolicy == nil && mpiJob.Spec.RunPolicy.CleanPodPolicy == nil {
-		none := CleanPodPolicyNone
-		mpiJob.Spec.CleanPodPolicy = &none
-		mpiJob.Spec.RunPolicy.CleanPodPolicy = &none
+		mpiJob.Spec.CleanPodPolicy = CleanPodPolicyPointer(CleanPodPolicyNone)
+		mpiJob.Spec.RunPolicy.CleanPodPolicy = CleanPodPolicyPointer(CleanPodPolicyNone)
 	}
 
 	// Set default replicas
