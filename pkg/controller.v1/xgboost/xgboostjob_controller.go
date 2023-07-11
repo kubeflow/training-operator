@@ -17,6 +17,7 @@ package xgboost
 import (
 	"context"
 	"fmt"
+	trainutil "github.com/kubeflow/training-operator/pkg/util/train"
 	"reflect"
 	"time"
 
@@ -363,7 +364,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 	logger := commonutil.LoggerForJob(xgboostJob)
 
 	// Set StartTime.
-	if jobStatus.StartTime == nil {
+	if !trainutil.IsJobSuspended(&xgboostJob.Spec.RunPolicy) && jobStatus.StartTime == nil {
 		now := metav1.Now()
 		jobStatus.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
