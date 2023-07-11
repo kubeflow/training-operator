@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	defaultNprocPerNode = "auto"
+	DefaultNprocPerNode = "auto"
 )
 
 func addPytorchDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -68,7 +68,7 @@ func setPytorchTypeNamesToCamelCase(pytorchJob *PyTorchJob) {
 func setDefaultNprocPerNode(job *PyTorchJob) {
 	if (job.Spec.ElasticPolicy != nil && job.Spec.ElasticPolicy.NProcPerNode == nil) || (job.Spec.ElasticPolicy == nil) {
 		if job.Spec.NprocPerNode == nil {
-			job.Spec.NprocPerNode = &defaultNprocPerNode
+			job.Spec.NprocPerNode = &DefaultNprocPerNode
 		}
 	}
 }

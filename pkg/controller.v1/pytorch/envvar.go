@@ -57,7 +57,7 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 		podTemplateSpec.Spec.Containers[i].Env = append(
 			podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  "PYTHONUNBUFFERED",
-				Value: "1",
+				Value: "0",
 			})
 
 		totalReplicas := getTotalReplicas(pytorchjob)

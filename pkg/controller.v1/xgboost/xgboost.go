@@ -93,7 +93,7 @@ func SetPodEnv(job interface{}, podTemplate *corev1.PodTemplateSpec, rtype, inde
 		})
 		podTemplate.Spec.Containers[i].Env = append(podTemplate.Spec.Containers[i].Env, corev1.EnvVar{
 			Name:  "PYTHONUNBUFFERED",
-			Value: "1",
+			Value: "0",
 		})
 		// This variables are used if it is a LightGBM job
 		if totalReplicas > 1 {

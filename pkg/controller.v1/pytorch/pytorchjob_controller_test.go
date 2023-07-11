@@ -37,7 +37,6 @@ var _ = Describe("PyTorchJob controller", func() {
 		interval     = time.Millisecond * 250
 		expectedPort = int32(8080)
 	)
-	var nprocPerNode = "auto"
 
 	Context("When creating the PyTorchJob", func() {
 		It("Should get the corresponding resources successfully", func() {
@@ -130,7 +129,7 @@ var _ = Describe("PyTorchJob controller", func() {
 				Value: masterSvc.Name,
 			}, corev1.EnvVar{
 				Name:  EnvNprocPerNode,
-				Value: nprocPerNode,
+				Value: kubeflowv1.DefaultNprocPerNode,
 			}))
 			// Check service port.
 			Expect(masterSvc.Spec.Ports[0].Port).To(Equal(expectedPort))

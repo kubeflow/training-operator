@@ -171,6 +171,22 @@ func TestSetDefaultNprocPerNode(t *testing.T) {
 
 		setDefaultNprocPerNode(job)
 		gomega.Expect(job.Spec.NprocPerNode).
-			To(gomega.Equal(&defaultNprocPerNode))
+			To(gomega.Equal(&DefaultNprocPerNode))
+	})
+	t.Run("test default nproc per node", func(t *testing.T) {
+		job := &PyTorchJob{
+			Spec: PyTorchJobSpec{
+				ElasticPolicy: nil,
+				PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
+					PyTorchJobReplicaTypeWorker: {
+						Replicas: pointer.Int32(1),
+					},
+				},
+			},
+		}
+
+		setDefaultNprocPerNode(job)
+		gomega.Expect(job.Spec.NprocPerNode).
+			To(gomega.Equal(&DefaultNprocPerNode))
 	})
 }
