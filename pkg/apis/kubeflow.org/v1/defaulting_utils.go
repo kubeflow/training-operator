@@ -58,6 +58,6 @@ func setTypeNameToCamelCase(replicaSpecs map[ReplicaType]*ReplicaSpec, typ Repli
 	}
 }
 
-func cleanPodPolicyPointer(cleanPodPolicy CleanPodPolicy) *CleanPodPolicy {
+func CleanPodPolicyPointer(cleanPodPolicy CleanPodPolicy) *CleanPodPolicy {
 	return &cleanPodPolicy
 }

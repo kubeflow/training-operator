@@ -202,7 +202,7 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					RunPolicy: RunPolicy{
-						CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
+						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						MXJobReplicaTypeWorker: &ReplicaSpec{

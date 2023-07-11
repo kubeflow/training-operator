@@ -38,14 +38,12 @@ func NewTFJobWithCleanupJobDelay(chief, worker, ps int, ttl *int32) *kubeflowv1.
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
-		policy := kubeflowv1.CleanPodPolicyNone
-		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+		tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyNone)
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
-	policy := kubeflowv1.CleanPodPolicyNone
-	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+	tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyNone)
 	return tfJob
 }
 
@@ -53,14 +51,12 @@ func NewTFJobWithActiveDeadlineSeconds(chief, worker, ps int, ads *int64) *kubef
 	if chief == 1 {
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
-		policy := kubeflowv1.CleanPodPolicyAll
-		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+		tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyAll)
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
-	policy := kubeflowv1.CleanPodPolicyAll
-	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+	tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyAll)
 	return tfJob
 }
 
@@ -69,15 +65,13 @@ func NewTFJobWithBackoffLimit(chief, worker, ps int, backoffLimit *int32) *kubef
 		tfJob := NewTFJobWithChief(worker, ps)
 		tfJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 		tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-		policy := kubeflowv1.CleanPodPolicyAll
-		tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+		tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyAll)
 		return tfJob
 	}
 	tfJob := NewTFJob(worker, ps)
 	tfJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 	tfJob.Spec.TFReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-	policy := kubeflowv1.CleanPodPolicyAll
-	tfJob.Spec.RunPolicy.CleanPodPolicy = &policy
+	tfJob.Spec.RunPolicy.CleanPodPolicy = kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyAll)
 	return tfJob
 }
 

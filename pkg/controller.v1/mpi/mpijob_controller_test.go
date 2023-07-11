@@ -39,7 +39,6 @@ const (
 )
 
 func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubeflowv1.MPIJob {
-	cleanPodPolicyAll := common.CleanPodPolicyAll
 	mpiJob := &kubeflowv1.MPIJob{
 		TypeMeta: metav1.TypeMeta{APIVersion: kubeflowv1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
@@ -48,7 +47,7 @@ func newMPIJobCommon(name string, startTime, completionTime *metav1.Time) *kubef
 		},
 		Spec: kubeflowv1.MPIJobSpec{
 			RunPolicy: common.RunPolicy{
-				CleanPodPolicy: &cleanPodPolicyAll,
+				CleanPodPolicy: kubeflowv1.CleanPodPolicyPointer(kubeflowv1.CleanPodPolicyAll),
 			},
 			MPIReplicaSpecs: map[common.ReplicaType]*common.ReplicaSpec{
 				kubeflowv1.MPIJobReplicaTypeWorker: {
