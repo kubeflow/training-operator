@@ -34,29 +34,34 @@ class KubeflowOrgV1PyTorchJobSpec(object):
     """
     openapi_types = {
         'elastic_policy': 'KubeflowOrgV1ElasticPolicy',
+        'nproc_per_node': 'str',
         'pytorch_replica_specs': 'dict(str, KubeflowOrgV1ReplicaSpec)',
         'run_policy': 'KubeflowOrgV1RunPolicy'
     }
 
     attribute_map = {
         'elastic_policy': 'elasticPolicy',
+        'nproc_per_node': 'nprocPerNode',
         'pytorch_replica_specs': 'pytorchReplicaSpecs',
         'run_policy': 'runPolicy'
     }
 
-    def __init__(self, elastic_policy=None, pytorch_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, elastic_policy=None, nproc_per_node=None, pytorch_replica_specs=None, run_policy=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV1PyTorchJobSpec - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
         self.local_vars_configuration = local_vars_configuration
 
         self._elastic_policy = None
+        self._nproc_per_node = None
         self._pytorch_replica_specs = None
         self._run_policy = None
         self.discriminator = None
 
         if elastic_policy is not None:
             self.elastic_policy = elastic_policy
+        if nproc_per_node is not None:
+            self.nproc_per_node = nproc_per_node
         self.pytorch_replica_specs = pytorch_replica_specs
         self.run_policy = run_policy
 
@@ -80,6 +85,29 @@ class KubeflowOrgV1PyTorchJobSpec(object):
         """
 
         self._elastic_policy = elastic_policy
+
+    @property
+    def nproc_per_node(self):
+        """Gets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
+
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.  # noqa: E501
+
+        :return: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
+        :rtype: str
+        """
+        return self._nproc_per_node
+
+    @nproc_per_node.setter
+    def nproc_per_node(self, nproc_per_node):
+        """Sets the nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.
+
+        Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.  # noqa: E501
+
+        :param nproc_per_node: The nproc_per_node of this KubeflowOrgV1PyTorchJobSpec.  # noqa: E501
+        :type: str
+        """
+
+        self._nproc_per_node = nproc_per_node
 
     @property
     def pytorch_replica_specs(self):

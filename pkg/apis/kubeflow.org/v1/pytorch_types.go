@@ -67,6 +67,10 @@ type PyTorchJob struct {
 	Status JobStatus `json:"status,omitempty"`
 }
 
+// For PyTorch launch/run related spec declaration, please see the following doc for more detail:
+// https://pytorch.org/docs/stable/elastic/run.html
+// Or run command `torchrun --help` for a brief description.
+
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
 type PyTorchJobSpec struct {
 	// RunPolicy encapsulates various runtime policies of the distributed training
@@ -84,6 +88,11 @@ type PyTorchJobSpec struct {
 	//     "Worker": PyTorchReplicaSpec,
 	//   }
 	PyTorchReplicaSpecs map[ReplicaType]*ReplicaSpec `json:"pytorchReplicaSpecs"`
+
+	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	// For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658.
+	// Defaults to auto.
+	NprocPerNode *string `json:"nprocPerNode,omitempty"`
 }
 
 type ElasticPolicy struct {
@@ -107,6 +116,8 @@ type ElasticPolicy struct {
 	// are ignored.
 	Standalone *bool `json:"standalone,omitempty"`
 	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	// Deprecated: This API is deprecated in v1.7+
+	// Use .spec.nprocPerNode instead.
 	NProcPerNode *int32 `json:"nProcPerNode,omitempty"`
 
 	MaxRestarts *int32 `json:"maxRestarts,omitempty"`

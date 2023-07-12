@@ -19,6 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+var (
+	DefaultNprocPerNode = "auto"
+)
+
 func addPytorchDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
@@ -61,6 +65,14 @@ func setPytorchTypeNamesToCamelCase(pytorchJob *PyTorchJob) {
 	}
 }
 
+func setDefaultNprocPerNode(job *PyTorchJob) {
+	if (job.Spec.ElasticPolicy != nil && job.Spec.ElasticPolicy.NProcPerNode == nil) || (job.Spec.ElasticPolicy == nil) {
+		if job.Spec.NprocPerNode == nil {
+			job.Spec.NprocPerNode = &DefaultNprocPerNode
+		}
+	}
+}
+
 // SetDefaults_PyTorchJob sets any unspecified values to defaults.
 func SetDefaults_PyTorchJob(job *PyTorchJob) {
 	// Set default cleanpod policy to None.
@@ -78,4 +90,7 @@ func SetDefaults_PyTorchJob(job *PyTorchJob) {
 	}
 	// Set default elastic policy.
 	setElasticPolicy(job)
+
+	// Set default nproc_per_node.
+	setDefaultNprocPerNode(job)
 }
