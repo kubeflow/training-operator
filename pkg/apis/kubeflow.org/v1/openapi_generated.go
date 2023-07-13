@@ -273,7 +273,6 @@ func schema_pkg_apis_kubefloworg_v1_JobStatus(ref common.ReferenceCallback) comm
 						},
 					},
 				},
-				Required: []string{"conditions", "replicaStatuses"},
 			},
 		},
 		Dependencies: []string{

@@ -40,11 +40,11 @@ const (
 // JobStatus represents the current observed state of the training Job.
 type JobStatus struct {
 	// Conditions is an array of current observed job conditions.
-	Conditions []JobCondition `json:"conditions"`
+	Conditions []JobCondition `json:"conditions,omitempty"`
 
 	// ReplicaStatuses is map of ReplicaType and ReplicaStatus,
 	// specifies the status of each replica.
-	ReplicaStatuses map[ReplicaType]*ReplicaStatus `json:"replicaStatuses"`
+	ReplicaStatuses map[ReplicaType]*ReplicaStatus `json:"replicaStatuses,omitempty"`
 
 	// Represents time when the job was acknowledged by the job controller.
 	// It is not guaranteed to be set in happens-before order across separate operations.

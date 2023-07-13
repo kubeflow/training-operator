@@ -105,10 +105,6 @@
     "kubeflow.org.v1.JobStatus": {
       "description": "JobStatus represents the current observed state of the training Job.",
       "type": "object",
-      "required": [
-        "conditions",
-        "replicaStatuses"
-      ],
       "properties": {
         "completionTime": {
           "description": "Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",

@@ -59,23 +59,6 @@ class TestKubeflowOrgV1JobStatus(unittest.TestCase):
             )
         else :
             return KubeflowOrgV1JobStatus(
-                conditions = [
-                    kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition(
-                        last_transition_time = None, 
-                        last_update_time = None, 
-                        message = '0', 
-                        reason = '0', 
-                        status = '0', 
-                        type = '0', )
-                    ],
-                replica_statuses = {
-                    'key' : kubeflow_org_v1_replica_status.KubeflowOrgV1ReplicaStatus(
-                        active = 56, 
-                        failed = 56, 
-                        label_selector = None, 
-                        selector = '0', 
-                        succeeded = 56, )
-                    },
         )
 
     def testKubeflowOrgV1JobStatus(self):
