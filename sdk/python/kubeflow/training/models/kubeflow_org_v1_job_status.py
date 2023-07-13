@@ -63,10 +63,12 @@ class KubeflowOrgV1JobStatus(object):
 
         if completion_time is not None:
             self.completion_time = completion_time
-        self.conditions = conditions
+        if conditions is not None:
+            self.conditions = conditions
         if last_reconcile_time is not None:
             self.last_reconcile_time = last_reconcile_time
-        self.replica_statuses = replica_statuses
+        if replica_statuses is not None:
+            self.replica_statuses = replica_statuses
         if start_time is not None:
             self.start_time = start_time
 
@@ -111,8 +113,6 @@ class KubeflowOrgV1JobStatus(object):
         :param conditions: The conditions of this KubeflowOrgV1JobStatus.  # noqa: E501
         :type: list[KubeflowOrgV1JobCondition]
         """
-        if self.local_vars_configuration.client_side_validation and conditions is None:  # noqa: E501
-            raise ValueError("Invalid value for `conditions`, must not be `None`")  # noqa: E501
 
         self._conditions = conditions
 
@@ -157,8 +157,6 @@ class KubeflowOrgV1JobStatus(object):
         :param replica_statuses: The replica_statuses of this KubeflowOrgV1JobStatus.  # noqa: E501
         :type: dict(str, KubeflowOrgV1ReplicaStatus)
         """
-        if self.local_vars_configuration.client_side_validation and replica_statuses is None:  # noqa: E501
-            raise ValueError("Invalid value for `replica_statuses`, must not be `None`")  # noqa: E501
 
         self._replica_statuses = replica_statuses
 

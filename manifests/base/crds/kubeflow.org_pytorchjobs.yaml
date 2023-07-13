@@ -8385,9 +8385,6 @@ spec:
                   and is in UTC.
                 format: date-time
                 type: string
-            required:
-            - conditions
-            - replicaStatuses
             type: object
         type: object
     served: true
