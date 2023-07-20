@@ -37,6 +37,7 @@ class KubeflowOrgV1RunPolicy(object):
         'backoff_limit': 'int',
         'clean_pod_policy': 'str',
         'scheduling_policy': 'KubeflowOrgV1SchedulingPolicy',
+        'suspend': 'bool',
         'ttl_seconds_after_finished': 'int'
     }
 
@@ -45,10 +46,11 @@ class KubeflowOrgV1RunPolicy(object):
         'backoff_limit': 'backoffLimit',
         'clean_pod_policy': 'cleanPodPolicy',
         'scheduling_policy': 'schedulingPolicy',
+        'suspend': 'suspend',
         'ttl_seconds_after_finished': 'ttlSecondsAfterFinished'
     }
 
-    def __init__(self, active_deadline_seconds=None, backoff_limit=None, clean_pod_policy=None, scheduling_policy=None, ttl_seconds_after_finished=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, active_deadline_seconds=None, backoff_limit=None, clean_pod_policy=None, scheduling_policy=None, suspend=None, ttl_seconds_after_finished=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV1RunPolicy - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -58,6 +60,7 @@ class KubeflowOrgV1RunPolicy(object):
         self._backoff_limit = None
         self._clean_pod_policy = None
         self._scheduling_policy = None
+        self._suspend = None
         self._ttl_seconds_after_finished = None
         self.discriminator = None
 
@@ -69,6 +72,8 @@ class KubeflowOrgV1RunPolicy(object):
             self.clean_pod_policy = clean_pod_policy
         if scheduling_policy is not None:
             self.scheduling_policy = scheduling_policy
+        if suspend is not None:
+            self.suspend = suspend
         if ttl_seconds_after_finished is not None:
             self.ttl_seconds_after_finished = ttl_seconds_after_finished
 
@@ -161,6 +166,29 @@ class KubeflowOrgV1RunPolicy(object):
         """
 
         self._scheduling_policy = scheduling_policy
+
+    @property
+    def suspend(self):
+        """Gets the suspend of this KubeflowOrgV1RunPolicy.  # noqa: E501
+
+        suspend specifies whether the Job controller should create Pods or not. If a Job is created with suspend set to true, no Pods are created by the Job controller. If a Job is suspended after creation (i.e. the flag goes from false to true), the Job controller will delete all active Pods and PodGroups associated with this Job. Users must design their workload to gracefully handle this. Suspending a Job will reset the StartTime field of the Job.  Defaults to false.  # noqa: E501
+
+        :return: The suspend of this KubeflowOrgV1RunPolicy.  # noqa: E501
+        :rtype: bool
+        """
+        return self._suspend
+
+    @suspend.setter
+    def suspend(self, suspend):
+        """Sets the suspend of this KubeflowOrgV1RunPolicy.
+
+        suspend specifies whether the Job controller should create Pods or not. If a Job is created with suspend set to true, no Pods are created by the Job controller. If a Job is suspended after creation (i.e. the flag goes from false to true), the Job controller will delete all active Pods and PodGroups associated with this Job. Users must design their workload to gracefully handle this. Suspending a Job will reset the StartTime field of the Job.  Defaults to false.  # noqa: E501
+
+        :param suspend: The suspend of this KubeflowOrgV1RunPolicy.  # noqa: E501
+        :type: bool
+        """
+
+        self._suspend = suspend
 
     @property
     def ttl_seconds_after_finished(self):

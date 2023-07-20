@@ -361,7 +361,7 @@ func (jc *JobController) ReconcilePods(
 					metaObject.GetName(), rType)
 				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning,
 					commonutil.NewReason(jc.Controller.GetAPIGroupVersionKind().Kind, commonutil.JobRestartingReason), msg)
-				if err := commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting,
+				if err := commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting, v1.ConditionTrue,
 					commonutil.NewReason(jc.Controller.GetAPIGroupVersionKind().Kind, commonutil.JobRestartingReason), msg); err != nil {
 					commonutil.LoggerForJob(metaObject).Infof("Append job condition error: %v", err)
 					return err

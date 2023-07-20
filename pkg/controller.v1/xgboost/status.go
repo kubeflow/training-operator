@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
@@ -12,7 +13,7 @@ import (
 func setRunningCondition(logger *logrus.Entry, jobName string, jobStatus *kubeflowv1.JobStatus) error {
 	msg := fmt.Sprintf("XGBoostJob %s is running.", jobName)
 	if condition := findStatusCondition(jobStatus.Conditions, kubeflowv1.JobRunning); condition == nil {
-		err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), msg)
+		err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), msg)
 		if err != nil {
 			logger.Infof("Append job condition error: %v", err)
 			return err

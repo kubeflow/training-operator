@@ -44,11 +44,13 @@ func TestDeletePodsAndServices(T *testing.T) {
 
 	cases := map[string]struct {
 		cleanPodPolicy apiv1.CleanPodPolicy
+		jobCondition   apiv1.JobConditionType
 		wantPods       *corev1.PodList
 		wantService    *corev1.ServiceList
 	}{
-		"CleanPodPolicy is Running": {
+		"Succeeded job and cleanPodPolicy is Running": {
 			cleanPodPolicy: apiv1.CleanPodPolicyRunning,
+			jobCondition:   apiv1.JobSucceeded,
 			wantPods: &corev1.PodList{
 				Items: []corev1.Pod{
 					*pods[1].(*corev1.Pod),
@@ -60,13 +62,21 @@ func TestDeletePodsAndServices(T *testing.T) {
 				},
 			},
 		},
-		"CleanPodPolicy is All": {
-			cleanPodPolicy: apiv1.CleanPodPolicyAll,
+		"Suspended job and cleanPodPolicy is Running": {
+			cleanPodPolicy: apiv1.CleanPodPolicyRunning,
+			jobCondition:   apiv1.JobSuspended,
 			wantPods:       &corev1.PodList{},
 			wantService:    &corev1.ServiceList{},
 		},
-		"CleanPodPolicy is None": {
+		"Finished job and cleanPodPolicy is All": {
+			cleanPodPolicy: apiv1.CleanPodPolicyAll,
+			jobCondition:   apiv1.JobSucceeded,
+			wantPods:       &corev1.PodList{},
+			wantService:    &corev1.ServiceList{},
+		},
+		"Finished job and cleanPodPolicy is None": {
 			cleanPodPolicy: apiv1.CleanPodPolicyNone,
+			jobCondition:   apiv1.JobFailed,
 			wantPods: &corev1.PodList{
 				Items: []corev1.Pod{
 					*pods[0].(*corev1.Pod),
@@ -79,6 +89,12 @@ func TestDeletePodsAndServices(T *testing.T) {
 					*services[1].(*corev1.Service),
 				},
 			},
+		},
+		"Suspended job and cleanPodPolicy is None": {
+			cleanPodPolicy: apiv1.CleanPodPolicyNone,
+			jobCondition:   apiv1.JobSuspended,
+			wantPods:       &corev1.PodList{},
+			wantService:    &corev1.ServiceList{},
 		},
 	}
 	for name, tc := range cases {
@@ -93,9 +109,18 @@ func TestDeletePodsAndServices(T *testing.T) {
 			for i := range pods {
 				inPods = append(inPods, pods[i].(*corev1.Pod))
 			}
-			if err := jobController.DeletePodsAndServices(&apiv1.RunPolicy{
+			runPolicy := &apiv1.RunPolicy{
 				CleanPodPolicy: &tc.cleanPodPolicy,
-			}, &testjobv1.TestJob{}, inPods); err != nil {
+			}
+			jobStatus := apiv1.JobStatus{
+				Conditions: []apiv1.JobCondition{
+					{
+						Type:   tc.jobCondition,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			}
+			if err := jobController.DeletePodsAndServices(&testjobv1.TestJob{}, runPolicy, jobStatus, inPods); err != nil {
 				T.Errorf("Failed to delete pods and services: %v", err)
 			}
 			gotPods, err := fakeClient.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})

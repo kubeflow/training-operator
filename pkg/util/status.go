@@ -22,30 +22,52 @@ const (
 	JobRestartingReason = "Restarting"
 	// JobFailedValidationReason is added in a job when it failed validation
 	JobFailedValidationReason = "FailedValidation"
+	// JobSuspendedReason is added in a job when it is suspended.
+	JobSuspendedReason = "Suspended"
+	// JobResumedReason is added in a job when it is unsuspended.
+	JobResumedReason = "Resumed"
 )
 
 func NewReason(kind, reason string) string {
 	return fmt.Sprintf("%s%s", kind, reason)
 }
 
+// IsFinished checks if the job is succeeded or failed
+func IsFinished(status apiv1.JobStatus) bool {
+	return IsSucceeded(status) || IsFailed(status)
+}
+
 // IsSucceeded checks if the job is succeeded
 func IsSucceeded(status apiv1.JobStatus) bool {
-	return hasCondition(status, apiv1.JobSucceeded)
+	return isStatusConditionTrue(status, apiv1.JobSucceeded)
 }
 
 // IsFailed checks if the job is failed
 func IsFailed(status apiv1.JobStatus) bool {
-	return hasCondition(status, apiv1.JobFailed)
+	return isStatusConditionTrue(status, apiv1.JobFailed)
+}
+
+func IsRunning(status apiv1.JobStatus) bool {
+	return isStatusConditionTrue(status, apiv1.JobRunning)
+}
+
+func IsSuspended(status apiv1.JobStatus) bool {
+	return isStatusConditionTrue(status, apiv1.JobSuspended)
 }
 
 // UpdateJobConditions adds to the jobStatus a new condition if needed, with the conditionType, reason, and message
-func UpdateJobConditions(jobStatus *apiv1.JobStatus, conditionType apiv1.JobConditionType, reason, message string) error {
-	condition := newCondition(conditionType, reason, message)
+func UpdateJobConditions(
+	jobStatus *apiv1.JobStatus,
+	conditionType apiv1.JobConditionType,
+	conditionStatus v1.ConditionStatus,
+	reason, message string,
+) error {
+	condition := newCondition(conditionType, conditionStatus, reason, message)
 	setCondition(jobStatus, condition)
 	return nil
 }
 
-func hasCondition(status apiv1.JobStatus, condType apiv1.JobConditionType) bool {
+func isStatusConditionTrue(status apiv1.JobStatus, condType apiv1.JobConditionType) bool {
 	for _, condition := range status.Conditions {
 		if condition.Type == condType && condition.Status == v1.ConditionTrue {
 			return true
@@ -55,10 +77,10 @@ func hasCondition(status apiv1.JobStatus, condType apiv1.JobConditionType) bool 
 }
 
 // newCondition creates a new job condition.
-func newCondition(conditionType apiv1.JobConditionType, reason, message string) apiv1.JobCondition {
+func newCondition(conditionType apiv1.JobConditionType, conditionStatus v1.ConditionStatus, reason, message string) apiv1.JobCondition {
 	return apiv1.JobCondition{
 		Type:               conditionType,
-		Status:             v1.ConditionTrue,
+		Status:             conditionStatus,
 		LastUpdateTime:     metav1.Now(),
 		LastTransitionTime: metav1.Now(),
 		Reason:             reason,

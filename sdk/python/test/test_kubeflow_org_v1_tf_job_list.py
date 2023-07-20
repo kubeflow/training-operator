@@ -56,6 +56,7 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), 
                             success_policy = '0', 
                             tf_replica_specs = {
@@ -110,6 +111,7 @@ class TestKubeflowOrgV1TFJobList(unittest.TestCase):
                                     priority_class = '0', 
                                     queue = '0', 
                                     schedule_timeout_seconds = 56, ), 
+                                suspend = True, 
                                 ttl_seconds_after_finished = 56, ), 
                             success_policy = '0', 
                             tf_replica_specs = {
