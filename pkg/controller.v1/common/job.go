@@ -153,17 +153,11 @@ func (jc *JobController) ReconcileJobs(
 		}
 		msg := fmt.Sprintf("%s %s is suspended.", jobKind, jobName)
 		if commonutil.IsRunning(jobStatus) {
-			if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobRunning, corev1.ConditionFalse,
-				commonutil.NewReason(jobKind, commonutil.JobSuspendedReason), msg); err != nil {
-				return err
-			}
+			commonutil.UpdateJobConditions(&jobStatus, apiv1.JobRunning, corev1.ConditionFalse, commonutil.NewReason(jobKind, commonutil.JobSuspendedReason), msg)
 		}
 		// We add the suspended condition to the job only when the job doesn't have a suspended condition.
 		if !commonutil.IsSuspended(jobStatus) {
-			if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionTrue,
-				commonutil.NewReason(jobKind, commonutil.JobSuspendedReason), msg); err != nil {
-				return err
-			}
+			commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobSuspendedReason), msg)
 		}
 		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobSuspendedReason), msg)
 		if !reflect.DeepEqual(*oldStatus, jobStatus) {
@@ -173,10 +167,7 @@ func (jc *JobController) ReconcileJobs(
 	}
 	if commonutil.IsSuspended(jobStatus) {
 		msg := fmt.Sprintf("%s %s is resumed.", jobKind, jobName)
-		if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionFalse,
-			commonutil.NewReason(jobKind, commonutil.JobResumedReason), msg); err != nil {
-			return err
-		}
+		commonutil.UpdateJobConditions(&jobStatus, apiv1.JobSuspended, corev1.ConditionFalse, commonutil.NewReason(jobKind, commonutil.JobResumedReason), msg)
 		now := metav1.Now()
 		jobStatus.StartTime = &now
 		jc.Recorder.Eventf(runtimeObject, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobResumedReason), msg)
@@ -252,10 +243,7 @@ func (jc *JobController) ReconcileJobs(
 
 		jc.Recorder.Event(runtimeObject, corev1.EventTypeNormal, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage)
 
-		if err = commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage); err != nil {
-			log.Infof("Append job condition error: %v", err)
-			return err
-		}
+		commonutil.UpdateJobConditions(&jobStatus, apiv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobFailedReason), failureMessage)
 
 		return jc.Controller.UpdateJobStatusInApiServer(job, &jobStatus)
 	} else {

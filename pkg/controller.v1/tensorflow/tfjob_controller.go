@@ -452,15 +452,8 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		if ContainsChiefOrMasterSpec(tfJob.Spec.TFReplicaSpecs) {
 			if kubeflowv1.IsChieforMaster(rtype) {
 				if running > 0 {
-					msg := fmt.Sprintf("TFJob %s/%s is running.",
-						tfJob.Namespace, tfJob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof(
-							"Append tfjob condition error: %v", err)
-						return err
-					}
+					msg := fmt.Sprintf("TFJob %s/%s is running.", tfJob.Namespace, tfJob.Name)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason), msg)
 				}
 				if expected == 0 {
 					msg := fmt.Sprintf("TFJob %s/%s successfully completed.",
@@ -470,12 +463,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus,
-						kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobSucceededReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, r.GetFrameworkName())
 				}
 			}
@@ -492,23 +480,12 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus,
-						kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobSucceededReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(tfJob.Namespace, r.GetFrameworkName())
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
-					msg := fmt.Sprintf("TFJob %s/%s is running.",
-						tfJob.Namespace, tfJob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-						return err
-					}
+					msg := fmt.Sprintf("TFJob %s/%s is running.", tfJob.Namespace, tfJob.Name)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason), msg)
 				}
 			}
 		}
@@ -518,11 +495,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 			// the restarting condition will be removed from jobStatus by kubeflowv1.filterOutCondition(),
 			// so we need to append the restarting condition back to jobStatus.
 			if existingRestartingCondition != nil {
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, existingRestartingCondition.Reason, existingRestartingCondition.Message)
-				if err != nil {
-					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, existingRestartingCondition.Reason, existingRestartingCondition.Message)
 				// job is restarting, no need to set it failed
 				// we know it because we update the status condition when reconciling the replicas
 				trainingoperatorcommon.RestartedJobsCounterInc(tfJob.Namespace, r.GetFrameworkName())
@@ -539,12 +512,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue,
-					commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobFailedReason), msg)
-				if err != nil {
-					commonutil.LoggerForJob(tfJob).Infof("Append tfjob condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobFailedReason), msg)
 				trainingoperatorcommon.FailedJobsCounterInc(tfJob.Namespace, r.GetFrameworkName())
 			}
 		}
@@ -700,11 +668,7 @@ func (r *TFJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("TFJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(tfJob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&tfJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue,
-			commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobCreatedReason), msg); err != nil {
-			log.Log.Error(err, "append job condition error")
-			return false
-		}
+		commonutil.UpdateJobConditions(&tfJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobCreatedReason), msg)
 		return true
 	}
 }
