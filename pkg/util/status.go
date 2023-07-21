@@ -61,10 +61,9 @@ func UpdateJobConditions(
 	conditionType apiv1.JobConditionType,
 	conditionStatus v1.ConditionStatus,
 	reason, message string,
-) error {
+) {
 	condition := newCondition(conditionType, conditionStatus, reason, message)
 	setCondition(jobStatus, condition)
-	return nil
 }
 
 func isStatusConditionTrue(status apiv1.JobStatus, condType apiv1.JobConditionType) bool {

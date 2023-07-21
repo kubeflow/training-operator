@@ -393,12 +393,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			if rtype == kubeflowv1.PaddleJobReplicaTypeMaster {
 				if running > 0 {
 					msg := fmt.Sprintf("PaddleJob %s is running.", paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRunningReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRunningReason), msg)
 				}
 				// when master is succeed, the job is finished.
 				if expected == 0 {
@@ -409,12 +404,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobSucceededReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
 					return nil
 				}
@@ -430,23 +420,13 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobSucceededReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("PaddleJob %s/%s is running.",
 						paddlejob.Namespace, paddlejob.Name)
-					err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-						commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRunningReason), msg)
-					if err != nil {
-						commonutil.LoggerForJob(paddlejob).Infof("Append paddlejob condition error: %v", err)
-						return err
-					}
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRunningReason), msg)
 				}
 			}
 		}
@@ -455,12 +435,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 			if spec.RestartPolicy != kubeflowv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PaddleJob %s is restarting because %d %s replica(s) failed.", paddlejob.Name, failed, rtype)
 				r.Recorder.Event(paddlejob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRestartingReason), msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue,
-					commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRestartingReason), msg)
-				if err != nil {
-					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobRestartingReason), msg)
 				trainingoperatorcommon.RestartedJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("PaddleJob %s is failed because %d %s replica(s) failed.", paddlejob.Name, failed, rtype)
@@ -469,12 +444,7 @@ func (r *PaddleJobReconciler) UpdateJobStatus(job interface{},
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue,
-					commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobFailedReason), msg)
-				if err != nil {
-					commonutil.LoggerForJob(paddlejob).Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobFailedReason), msg)
 				trainingoperatorcommon.FailedJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
 			}
 		}
@@ -555,11 +525,7 @@ func (r *PaddleJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 		msg := fmt.Sprintf("PaddleJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(paddlejob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&paddlejob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue,
-			commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobCreatedReason), msg); err != nil {
-			logrus.Error(err, "append job condition error")
-			return false
-		}
+		commonutil.UpdateJobConditions(&paddlejob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobCreatedReason), msg)
 		return true
 	}
 }

@@ -46,7 +46,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -378,19 +377,11 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 
 		if rtype == kubeflowv1.XGBoostJobReplicaTypeMaster {
 			if running > 0 {
-				if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-					commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
-					logger.Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg)
 			}
 			// when master is succeed, the job is finished.
 			if expected == 0 {
-				if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-					commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
-					logger.Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg)
 				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", xgboostJob.Name)
 				logrus.Info(msg)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobSucceededReason), msg)
@@ -398,29 +389,17 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobSucceededReason), msg)
-				if err != nil {
-					logger.Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobSucceededReason), msg)
 				trainingoperatorcommon.SuccessfulJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 				return nil
 			}
 		}
 		if failed > 0 {
-			if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
-				commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
-				logger.Infof("Append job condition error: %v", err)
-				return err
-			}
+			commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg)
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
 				msg := fmt.Sprintf("XGBoostJob %s is restarting because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
 				r.Recorder.Event(xgboostJob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRestartingReason), msg)
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRestartingReason), msg)
-				if err != nil {
-					logger.Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRestartingReason), msg)
 				trainingoperatorcommon.RestartedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("XGBoostJob %s is failed because %d %s replica(s) failed.", xgboostJob.Name, failed, rtype)
@@ -429,11 +408,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				err := commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobFailedReason), msg)
-				if err != nil {
-					logger.Infof("Append job condition error: %v", err)
-					return err
-				}
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobFailedReason), msg)
 				trainingoperatorcommon.FailedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 			}
 		}
@@ -497,11 +472,7 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		msg := fmt.Sprintf("XGBoostJob %s is created.", e.Object.GetName())
 		logrus.Info()
 		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
-		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue,
-			commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobCreatedReason), msg); err != nil {
-			log.Log.Error(err, "append job condition error")
-			return false
-		}
+		commonutil.UpdateJobConditions(&xgboostJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobCreatedReason), msg)
 		return true
 	}
 }
