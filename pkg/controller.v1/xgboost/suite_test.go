@@ -15,27 +15,34 @@
 package xgboost
 
 import (
-	"path/filepath"
+	"context"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
+	"path/filepath"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	v1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var k8sClient client.Client
-var testEnv *envtest.Environment
+var (
+	testK8sClient client.Client
+	testEnv       *envtest.Environment
+	testCtx       context.Context
+	testCancel    context.CancelFunc
+)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -45,6 +52,8 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+
+	testCtx, testCancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -63,14 +72,30 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	testK8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(testK8sClient).NotTo(BeNil())
 
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		MetricsBindAddress: "0",
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	r := NewReconciler(mgr, gangSchedulingSetupFunc)
+
+	Expect(r.SetupWithManager(mgr, 1)).NotTo(HaveOccurred())
+
+	go func() {
+		defer GinkgoRecover()
+		err = mgr.Start(testCtx)
+		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	testCancel()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
