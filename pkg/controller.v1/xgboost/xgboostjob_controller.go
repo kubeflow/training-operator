@@ -371,19 +371,24 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 		expected := *(spec.Replicas) - succeeded
 		running := status.Active
 		failed := status.Failed
+		runningMsg := fmt.Sprintf("XGBoostJob %s is running.", xgboostJob.Name)
 
 		logrus.Infof("XGBoostJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
 			xgboostJob.Name, rtype, expected, running, succeeded, failed)
 
 		if rtype == kubeflowv1.XGBoostJobReplicaTypeMaster {
 			if running > 0 {
-				if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
+				if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
+					commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
+					logger.Infof("Append job condition error: %v", err)
 					return err
 				}
 			}
 			// when master is succeed, the job is finished.
 			if expected == 0 {
-				if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
+				if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
+					commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
+					logger.Infof("Append job condition error: %v", err)
 					return err
 				}
 				msg := fmt.Sprintf("XGBoostJob %s is successfully completed.", xgboostJob.Name)
@@ -403,7 +408,9 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[kub
 			}
 		}
 		if failed > 0 {
-			if err := setRunningCondition(logger, xgboostJob.Name, jobStatus); err != nil {
+			if err = commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue,
+				commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobRunningReason), runningMsg); err != nil {
+				logger.Infof("Append job condition error: %v", err)
 				return err
 			}
 			if spec.RestartPolicy == kubeflowv1.RestartPolicyExitCode {
@@ -487,8 +494,8 @@ func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 			return true
 		}
 		r.Scheme.Default(xgboostJob)
-		msg := fmt.Sprintf("xgboostJob %s is created.", e.Object.GetName())
-		logrus.Info(msg)
+		msg := fmt.Sprintf("XGBoostJob %s is created.", e.Object.GetName())
+		logrus.Info()
 		trainingoperatorcommon.CreatedJobsCounterInc(xgboostJob.Namespace, r.GetFrameworkName())
 		if err := commonutil.UpdateJobConditions(&xgboostJob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue,
 			commonutil.NewReason(kubeflowv1.XGBoostJobKind, commonutil.JobCreatedReason), msg); err != nil {
