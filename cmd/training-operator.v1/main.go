@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 
@@ -120,33 +120,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Prepare GangSchedulingSetupFunc
-	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
-	if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerVolcano)) {
-		cfg := mgr.GetConfig()
-		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
-		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
-	} else if gangSchedulerName != "" {
-		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient(), gangSchedulerName)
-	}
+	// Set up controllers using goroutines to start the manager quickly.
+	go setupControllers(mgr, enabledSchemes, gangSchedulerName, controllerThreads)
 
-	// TODO: We need a general manager. all rest reconciler addsToManager
-	// Based on the user configuration, we start different controllers
-	if enabledSchemes.Empty() {
-		enabledSchemes.FillAll()
-	}
-	for _, s := range enabledSchemes {
-		setupFunc, supported := controllerv1.SupportedSchemeReconciler[s]
-		if !supported {
-			setupLog.Error(fmt.Errorf("cannot find %s in supportedSchemeReconciler", s),
-				"scheme not supported", "scheme", s)
-			os.Exit(1)
-		}
-		if err = setupFunc(mgr, gangSchedulingSetupFunc, controllerThreads); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", s)
-			os.Exit(1)
-		}
-	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -162,5 +138,37 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchemes, gangSchedulerName string, controllerThreads int) {
+	setupLog.Info("registering controllers...")
+
+	// Prepare GangSchedulingSetupFunc
+	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
+	if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerVolcano)) {
+		cfg := mgr.GetConfig()
+		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
+		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
+	} else if gangSchedulerName != "" {
+		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient(), gangSchedulerName)
+	}
+
+	// TODO: We need a general manager. all rest reconciler addsToManager
+	// Based on the user configuration, we start different controllers
+	if enabledSchemes.Empty() {
+		enabledSchemes.FillAll()
+	}
+	errMsg := "failed to set up controllers"
+	for _, s := range enabledSchemes {
+		setupFunc, supported := controllerv1.SupportedSchemeReconciler[s]
+		if !supported {
+			setupLog.Error(errors.New(errMsg), "scheme is not supported", "scheme", s)
+			os.Exit(1)
+		}
+		if err := setupFunc(mgr, gangSchedulingSetupFunc, controllerThreads); err != nil {
+			setupLog.Error(errors.New(errMsg), "unable to create controller", "scheme", s)
+			os.Exit(1)
+		}
 	}
 }
