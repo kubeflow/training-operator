@@ -20,7 +20,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491
 	sigs.k8s.io/controller-runtime v0.15.0
-	sigs.k8s.io/scheduler-plugins v0.25.7
+	sigs.k8s.io/scheduler-plugins v0.26.7
 	sigs.k8s.io/yaml v1.3.0
 	volcano.sh/apis v1.7.0
 )
