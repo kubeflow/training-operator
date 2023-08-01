@@ -37,7 +37,7 @@ var _ = Describe("XGBoost controller", func() {
 	const (
 		expectedPort = int32(9999)
 	)
-	Context("", func() {
+	Context("When creating the XGBoostJob", func() {
 		const name = "test-job"
 		var (
 			ns         *corev1.Namespace
