@@ -70,13 +70,13 @@ func validatePyTorchReplicaSpecs(specs map[ReplicaType]*ReplicaSpec) error {
 				msg := fmt.Sprintf("PyTorchJobSpec is not valid: Image is undefined in the container of %v", rType)
 				return fmt.Errorf(msg)
 			}
-			if container.Name == PytorchJobDefaultContainerName {
+			if container.Name == PyTorchJobDefaultContainerName {
 				defaultContainerPresent = true
 			}
 		}
 		//Make sure there has at least one container named "pytorch"
 		if !defaultContainerPresent {
-			msg := fmt.Sprintf("PyTorchJobSpec is not valid: There is no container named %s in %v", PytorchJobDefaultContainerName, rType)
+			msg := fmt.Sprintf("PyTorchJobSpec is not valid: There is no container named %s in %v", PyTorchJobDefaultContainerName, rType)
 			return fmt.Errorf(msg)
 		}
 		if rType == PyTorchJobReplicaTypeMaster {

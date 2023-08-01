@@ -31,7 +31,7 @@ import (
 )
 
 func (r *PyTorchJobReconciler) ReconcileHPA(pytorchJob *kubeflowv1.PyTorchJob) error {
-	logger := r.Log.WithValues(kubeflowv1.PytorchJobSingular, pytorchJob.Name)
+	logger := r.Log.WithValues(kubeflowv1.PyTorchJobSingular, pytorchJob.Name)
 
 	if pytorchJob.Spec.ElasticPolicy == nil || pytorchJob.Spec.ElasticPolicy.Metrics == nil {
 		logger.V(1).Info(
