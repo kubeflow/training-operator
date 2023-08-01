@@ -152,10 +152,10 @@ func replicaName(jobName string, rtype kubeflowv1.ReplicaType, index int) string
 func getPortFromPyTorchJob(job *kubeflowv1.PyTorchJob, rtype kubeflowv1.ReplicaType) (int32, error) {
 	containers := job.Spec.PyTorchReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
-		if container.Name == kubeflowv1.PytorchJobDefaultContainerName {
+		if container.Name == kubeflowv1.PyTorchJobDefaultContainerName {
 			ports := container.Ports
 			for _, port := range ports {
-				if port.Name == kubeflowv1.PytorchJobDefaultPortName {
+				if port.Name == kubeflowv1.PyTorchJobDefaultPortName {
 					return port.ContainerPort, nil
 				}
 			}

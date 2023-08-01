@@ -108,7 +108,7 @@ func setInitContainer(obj interface{}, podTemplate *corev1.PodTemplateSpec,
 	if !ok {
 		return fmt.Errorf("%+v is not a type of PyTorchJob", obj)
 	}
-	logger := log.WithValues(kubeflowv1.PytorchJobSingular, types.NamespacedName{
+	logger := log.WithValues(kubeflowv1.PyTorchJobSingular, types.NamespacedName{
 		Namespace: pytorchJob.Namespace,
 		Name:      pytorchJob.Name,
 	})

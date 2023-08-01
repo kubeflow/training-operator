@@ -77,10 +77,10 @@ var _ = Describe("PyTorchJob controller", func() {
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  kubeflowv1.PytorchJobDefaultContainerName,
+									Name:  kubeflowv1.PyTorchJobDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          kubeflowv1.PytorchJobDefaultPortName,
+											Name:          kubeflowv1.PyTorchJobDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -97,10 +97,10 @@ var _ = Describe("PyTorchJob controller", func() {
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  kubeflowv1.PytorchJobDefaultContainerName,
+									Name:  kubeflowv1.PyTorchJobDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          kubeflowv1.PytorchJobDefaultPortName,
+											Name:          kubeflowv1.PyTorchJobDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -142,7 +142,7 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			// Check the pod port.
 			Expect(masterPod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
-				Name:          kubeflowv1.PytorchJobDefaultPortName,
+				Name:          kubeflowv1.PyTorchJobDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
 			// Check env variable
@@ -162,7 +162,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			trueVal := true
 			Expect(masterPod.OwnerReferences).To(ContainElement(metav1.OwnerReference{
 				APIVersion:         kubeflowv1.SchemeGroupVersion.String(),
-				Kind:               kubeflowv1.PytorchJobKind,
+				Kind:               kubeflowv1.PyTorchJobKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
@@ -170,7 +170,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			}))
 			Expect(masterSvc.OwnerReferences).To(ContainElement(metav1.OwnerReference{
 				APIVersion:         kubeflowv1.SchemeGroupVersion.String(),
-				Kind:               kubeflowv1.PytorchJobKind,
+				Kind:               kubeflowv1.PyTorchJobKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
@@ -237,13 +237,13 @@ var _ = Describe("PyTorchJob controller", func() {
 				{
 					Type:    kubeflowv1.JobCreated,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobCreatedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobCreatedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is created.", name),
 				},
 				{
 					Type:    kubeflowv1.JobSuspended,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSuspendedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSuspendedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is suspended.", name),
 				},
 			}, testutil.IgnoreJobConditionsTimes))
@@ -306,18 +306,18 @@ var _ = Describe("PyTorchJob controller", func() {
 				{
 					Type:    kubeflowv1.JobCreated,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobCreatedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobCreatedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is created.", name),
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRunningReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRunningReason),
 					Message: fmt.Sprintf("PyTorchJob %s is running.", name),
 				},
 			}, testutil.IgnoreJobConditionsTimes))
 
-			By("Updating the PytorchJob with suspend=true")
+			By("Updating the PyTorchJob with suspend=true")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
 				created.Spec.RunPolicy.Suspend = pointer.Bool(true)
@@ -361,18 +361,18 @@ var _ = Describe("PyTorchJob controller", func() {
 				{
 					Type:    kubeflowv1.JobCreated,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobCreatedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobCreatedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is created.", name),
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
 					Status:  corev1.ConditionFalse,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSuspendedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSuspendedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is suspended.", name),
 				},
 				{
 					Type:    kubeflowv1.JobSuspended,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSuspendedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSuspendedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is suspended.", name),
 					Status:  corev1.ConditionTrue,
 				},
@@ -423,19 +423,19 @@ var _ = Describe("PyTorchJob controller", func() {
 				{
 					Type:    kubeflowv1.JobCreated,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobCreatedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobCreatedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is created.", name),
 				},
 				{
 					Type:    kubeflowv1.JobSuspended,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobResumedReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobResumedReason),
 					Message: fmt.Sprintf("PyTorchJob %s is resumed.", name),
 					Status:  corev1.ConditionFalse,
 				},
 				{
 					Type:    kubeflowv1.JobRunning,
 					Status:  corev1.ConditionTrue,
-					Reason:  commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRunningReason),
+					Reason:  commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRunningReason),
 					Message: fmt.Sprintf("PyTorchJob %s is running.", name),
 				},
 			}, testutil.IgnoreJobConditionsTimes))
@@ -499,10 +499,10 @@ var _ = Describe("PyTorchJob controller", func() {
 							Containers: []corev1.Container{
 								{
 									Image: "test-image",
-									Name:  kubeflowv1.PytorchJobDefaultContainerName,
+									Name:  kubeflowv1.PyTorchJobDefaultContainerName,
 									Ports: []corev1.ContainerPort{
 										{
-											Name:          kubeflowv1.PytorchJobDefaultPortName,
+											Name:          kubeflowv1.PyTorchJobDefaultPortName,
 											ContainerPort: expectedPort,
 											Protocol:      corev1.ProtocolTCP,
 										},
@@ -550,7 +550,7 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			// Check pod port.
 			Expect(pod.Spec.Containers[0].Ports).To(ContainElement(corev1.ContainerPort{
-				Name:          kubeflowv1.PytorchJobDefaultPortName,
+				Name:          kubeflowv1.PyTorchJobDefaultPortName,
 				ContainerPort: expectedPort,
 				Protocol:      corev1.ProtocolTCP}))
 			// Check environment variables.
@@ -572,7 +572,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			trueVal := true
 			Expect(pod.OwnerReferences).To(ContainElement(metav1.OwnerReference{
 				APIVersion:         kubeflowv1.SchemeGroupVersion.String(),
-				Kind:               kubeflowv1.PytorchJobKind,
+				Kind:               kubeflowv1.PyTorchJobKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,
@@ -580,7 +580,7 @@ var _ = Describe("PyTorchJob controller", func() {
 			}))
 			Expect(svc.OwnerReferences).To(ContainElement(metav1.OwnerReference{
 				APIVersion:         kubeflowv1.SchemeGroupVersion.String(),
-				Kind:               kubeflowv1.PytorchJobKind,
+				Kind:               kubeflowv1.PyTorchJobKind,
 				Name:               name,
 				UID:                created.UID,
 				Controller:         &trueVal,

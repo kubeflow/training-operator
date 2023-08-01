@@ -123,7 +123,7 @@ type PyTorchJobReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	logger := r.Log.WithValues(kubeflowv1.PytorchJobSingular, req.NamespacedName)
+	logger := r.Log.WithValues(kubeflowv1.PyTorchJobSingular, req.NamespacedName)
 
 	pytorchjob := &kubeflowv1.PyTorchJob{}
 	err := r.Get(ctx, req.NamespacedName, pytorchjob)
@@ -134,7 +134,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err = kubeflowv1.ValidateV1PyTorchJob(pytorchjob); err != nil {
 		logger.Error(err, "PyTorchJob failed validation")
-		r.Recorder.Eventf(pytorchjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobFailedValidationReason),
+		r.Recorder.Eventf(pytorchjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobFailedValidationReason),
 			"PyTorchJob failed validation because %s", err)
 		return ctrl.Result{}, err
 	}
@@ -242,7 +242,7 @@ func (r *PyTorchJobReconciler) ControllerName() string {
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return kubeflowv1.GroupVersion.WithKind(kubeflowv1.PytorchJobKind)
+	return kubeflowv1.GroupVersion.WithKind(kubeflowv1.PyTorchJobKind)
 }
 
 func (r *PyTorchJobReconciler) GetAPIGroupVersion() schema.GroupVersion {
@@ -254,7 +254,7 @@ func (r *PyTorchJobReconciler) GetGroupNameLabelValue() string {
 }
 
 func (r *PyTorchJobReconciler) GetFrameworkName() string {
-	return kubeflowv1.PytorchJobFrameworkName
+	return kubeflowv1.PyTorchJobFrameworkName
 }
 
 func (r *PyTorchJobReconciler) GetJobFromInformerCache(namespace, name string) (metav1.Object, error) {
@@ -392,18 +392,18 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 			if rtype == kubeflowv1.PyTorchJobReplicaTypeMaster {
 				if running > 0 {
 					msg := fmt.Sprintf("PyTorchJob %s is running.", pytorchjob.Name)
-					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRunningReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRunningReason), msg)
 				}
 				// when master is succeed, the job is finished.
 				if expected == 0 {
 					msg := fmt.Sprintf("PyTorchJob %s is successfully completed.", pytorchjob.Name)
 					logrus.Info(msg)
-					r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSucceededReason), msg)
+					r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSucceededReason), msg)
 					if jobStatus.CompletionTime == nil {
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSucceededReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
 					return nil
 				}
@@ -417,18 +417,18 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 				if expected == 0 || (pytorchjob.Spec.ElasticPolicy != nil && succeeded > 0) {
 					msg := fmt.Sprintf("PyTorchJob %s/%s successfully completed.",
 						pytorchjob.Namespace, pytorchjob.Name)
-					r.recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSucceededReason), msg)
+					r.recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSucceededReason), msg)
 					if jobStatus.CompletionTime == nil {
 						now := metav1.Now()
 						jobStatus.CompletionTime = &now
 					}
-					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobSucceededReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobSucceeded, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobSucceededReason), msg)
 					trainingoperatorcommon.SuccessfulJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
 				} else if running > 0 {
 					// Some workers are still running, leave a running condition.
 					msg := fmt.Sprintf("PyTorchJob %s/%s is running.",
 						pytorchjob.Namespace, pytorchjob.Name)
-					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRunningReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRunningReason), msg)
 				}
 			}
 		}
@@ -436,17 +436,17 @@ func (r *PyTorchJobReconciler) UpdateJobStatus(job interface{},
 		if failed > 0 && (specReplicas > succeeded+running) {
 			if spec.RestartPolicy != kubeflowv1.RestartPolicyNever {
 				msg := fmt.Sprintf("PyTorchJob %s is restarting because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
-				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRestartingReason), msg)
-				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobRestartingReason), msg)
+				r.Recorder.Event(pytorchjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRestartingReason), msg)
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRestarting, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobRestartingReason), msg)
 				trainingoperatorcommon.RestartedJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
 			} else {
 				msg := fmt.Sprintf("PyTorchJob %s is failed because %d %s replica(s) failed.", pytorchjob.Name, failed, rtype)
-				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobFailedReason), msg)
+				r.Recorder.Event(pytorchjob, corev1.EventTypeNormal, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobFailedReason), msg)
 				if jobStatus.CompletionTime == nil {
 					now := metav1.Now()
 					jobStatus.CompletionTime = &now
 				}
-				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobFailedReason), msg)
+				commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobFailed, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobFailedReason), msg)
 				trainingoperatorcommon.FailedJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
 			}
 		}
@@ -505,11 +505,11 @@ func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
-	return kubeflowv1.PytorchJobDefaultContainerName
+	return kubeflowv1.PyTorchJobDefaultContainerName
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerPortName() string {
-	return kubeflowv1.PytorchJobDefaultPortName
+	return kubeflowv1.PyTorchJobDefaultPortName
 }
 
 func (r *PyTorchJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
@@ -528,7 +528,7 @@ func (r *PyTorchJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool 
 		msg := fmt.Sprintf("PyTorchJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
 		trainingoperatorcommon.CreatedJobsCounterInc(pytorchjob.Namespace, r.GetFrameworkName())
-		commonutil.UpdateJobConditions(&pytorchjob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PytorchJobKind, commonutil.JobCreatedReason), msg)
+		commonutil.UpdateJobConditions(&pytorchjob.Status, kubeflowv1.JobCreated, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.PyTorchJobKind, commonutil.JobCreatedReason), msg)
 		return true
 	}
 }
