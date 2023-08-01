@@ -1,6 +1,6 @@
 module github.com/kubeflow/training-operator/hack/swagger
 
-go 1.19
+go 1.20
 
 require (
 	github.com/kubeflow/training-operator v0.0.0-00010101000000-000000000000

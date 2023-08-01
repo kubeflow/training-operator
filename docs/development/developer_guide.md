@@ -4,7 +4,7 @@ Kubeflow Training Operator is currently at v1.
 
 ## Requirements
 
-- [Go](https://golang.org/) (1.17 or later)
+- [Go](https://golang.org/) (1.20 or later)
 
 ## Building the operator
 
