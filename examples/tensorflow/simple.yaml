@@ -12,7 +12,9 @@ spec:
         spec:
           containers:
             - name: tensorflow
-              image: kubeflow/tf-mnist-with-summaries:latest
+# Source for the image is located here: https://github.com/kubeflow/katib/tree/master/examples/v1beta1/trial-images/tf-mnist-with-summaries
+              image: docker.io/kubeflowkatib/tf-mnist-with-summaries:latest
               command:
-                - "python"
-                - "/var/tf_mnist/mnist_with_summaries.py"
+              - "python"
+              - "/opt/tf-mnist-with-summaries/mnist.py"
+              - "--epochs=1"
