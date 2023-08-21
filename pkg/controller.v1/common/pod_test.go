@@ -19,8 +19,6 @@ import (
 
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/core"
-	testjobv1 "github.com/kubeflow/training-operator/test_job/apis/test_job/v1"
-	v12 "github.com/kubeflow/training-operator/test_job/test_util/v1"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -28,81 +26,103 @@ import (
 )
 
 func TestSetRestartPolicy(t *testing.T) {
-	type tc struct {
-		testJob               *testjobv1.TestJob
+	testCases := map[string]struct {
+		replicaSpec           *apiv1.ReplicaSpec
 		expectedRestartPolicy v1.RestartPolicy
-		expectedType          testjobv1.TestReplicaType
+	}{
+		"restartPolicy is ExitCode": {
+			replicaSpec: &apiv1.ReplicaSpec{
+				RestartPolicy: apiv1.RestartPolicyExitCode,
+			},
+			expectedRestartPolicy: v1.RestartPolicyNever,
+		},
+		"restartPolicy is Never": {
+			replicaSpec: &apiv1.ReplicaSpec{
+				RestartPolicy: apiv1.RestartPolicyNever,
+			},
+			expectedRestartPolicy: v1.RestartPolicyNever,
+		},
+		"restartPolicy is Always": {
+			replicaSpec: &apiv1.ReplicaSpec{
+				RestartPolicy: apiv1.RestartPolicyAlways,
+			},
+			expectedRestartPolicy: v1.RestartPolicyAlways,
+		},
+		"restartPolicy is OnFailure": {
+			replicaSpec: &apiv1.ReplicaSpec{
+				RestartPolicy: apiv1.RestartPolicyOnFailure,
+			},
+			expectedRestartPolicy: v1.RestartPolicyOnFailure,
+		},
 	}
-	testCase := []tc{
-		func() tc {
-			tj := v12.NewTestJob(2)
-			tj.Spec.TestReplicaSpecs[testjobv1.TestReplicaTypeWorker].RestartPolicy = apiv1.RestartPolicyExitCode
-			return tc{
-				testJob:               tj,
-				expectedRestartPolicy: v1.RestartPolicyNever,
-				expectedType:          testjobv1.TestReplicaTypeWorker,
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			podTemplate := &tc.replicaSpec.Template
+			core.SetRestartPolicy(podTemplate, tc.replicaSpec)
+			if podTemplate.Spec.RestartPolicy != tc.expectedRestartPolicy {
+				t.Errorf("Unexpected restartPolicy from SetRetartPolicy:\nwant:%v\ngot:%v\n", tc.expectedRestartPolicy, podTemplate.Spec.RestartPolicy)
 			}
-		}(),
-		func() tc {
-			tj := v12.NewTestJob(2)
-			tj.Spec.TestReplicaSpecs[testjobv1.TestReplicaTypeWorker].RestartPolicy = apiv1.RestartPolicyNever
-			return tc{
-				testJob:               tj,
-				expectedRestartPolicy: v1.RestartPolicyNever,
-				expectedType:          testjobv1.TestReplicaTypeWorker,
-			}
-		}(),
-		func() tc {
-			tj := v12.NewTestJob(2)
-			tj.Spec.TestReplicaSpecs[testjobv1.TestReplicaTypeWorker].RestartPolicy = apiv1.RestartPolicyAlways
-			return tc{
-				testJob:               tj,
-				expectedRestartPolicy: v1.RestartPolicyAlways,
-				expectedType:          testjobv1.TestReplicaTypeWorker,
-			}
-		}(),
-		func() tc {
-			tj := v12.NewTestJob(2)
-			tj.Spec.TestReplicaSpecs[testjobv1.TestReplicaTypeWorker].RestartPolicy = apiv1.RestartPolicyOnFailure
-			return tc{
-				testJob:               tj,
-				expectedRestartPolicy: v1.RestartPolicyOnFailure,
-				expectedType:          testjobv1.TestReplicaTypeWorker,
-			}
-		}(),
-	}
-	for _, c := range testCase {
-		spec := c.testJob.Spec.TestReplicaSpecs[c.expectedType]
-		podTemplate := spec.Template
-		core.SetRestartPolicy(&podTemplate, spec)
-		if podTemplate.Spec.RestartPolicy != c.expectedRestartPolicy {
-			t.Errorf("Expected %s, got %s", c.expectedRestartPolicy, podTemplate.Spec.RestartPolicy)
-		}
+		})
 	}
 }
 
 func TestIsCustomSchedulerSet(t *testing.T) {
-	gangSchedulerName := "test-gang-scheduler"
-	replicaSpecs := map[apiv1.ReplicaType]*apiv1.ReplicaSpec{}
-	assert.False(t, isCustomSchedulerSet(replicaSpecs, gangSchedulerName))
-
-	replicaSpecs[apiv1.ReplicaType(testjobv1.TestReplicaTypeWorker)] = &apiv1.ReplicaSpec{
-		Template: v1.PodTemplateSpec{
-			Spec: v1.PodSpec{
-				SchedulerName: gangSchedulerName,
+	testCases := map[string]struct {
+		replicaSpecs      map[apiv1.ReplicaType]*apiv1.ReplicaSpec
+		gangSchedulerName string
+		want              bool
+	}{
+		"replicaSpecs aren't set custom schedulerName": {
+			replicaSpecs: map[apiv1.ReplicaType]*apiv1.ReplicaSpec{
+				apiv1.ReplicaType("A"): {},
+				apiv1.ReplicaType("B"): {},
 			},
+			gangSchedulerName: "alpha",
+			want:              false,
+		},
+		"all replicaSpecs are set custom schedulerName": {
+			replicaSpecs: map[apiv1.ReplicaType]*apiv1.ReplicaSpec{
+				apiv1.ReplicaType("A"): {
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							SchedulerName: "custom-a",
+						},
+					},
+				},
+				apiv1.ReplicaType("B"): {
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							SchedulerName: "custom-b",
+						},
+					},
+				},
+			},
+			gangSchedulerName: "beta",
+			want:              true,
+		},
+		"one of replicaSpecs is set custom schedulerName": {
+			replicaSpecs: map[apiv1.ReplicaType]*apiv1.ReplicaSpec{
+				apiv1.ReplicaType("A"): {},
+				apiv1.ReplicaType("B"): {
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							SchedulerName: "custom-b",
+						},
+					},
+				},
+			},
+			gangSchedulerName: "gamma",
+			want:              true,
 		},
 	}
-	assert.False(t, isCustomSchedulerSet(replicaSpecs, gangSchedulerName))
-
-	replicaSpecs[apiv1.ReplicaType(testjobv1.TestReplicaTypeWorker)] = &apiv1.ReplicaSpec{
-		Template: v1.PodTemplateSpec{
-			Spec: v1.PodSpec{
-				SchedulerName: "other-scheduler",
-			},
-		},
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := isCustomSchedulerSet(tc.replicaSpecs, tc.gangSchedulerName)
+			if tc.want != got {
+				t.Errorf("Unexpected value from isCustomSchedulerSet:\nwant:%v\ngot:%v\n", tc.want, got)
+			}
+		})
 	}
-	assert.True(t, isCustomSchedulerSet(replicaSpecs, gangSchedulerName))
 }
 
 func TestCalculatePodSliceSize(t *testing.T) {
