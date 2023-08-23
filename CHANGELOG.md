@@ -1,5 +1,43 @@
 # Changelog
 
+
+## [v1.7.0-rc.0](https://github.com/kubeflow/training-operator/tree/v1.7.0-rc.0) (2023-07-07)
+
+**Breaking Changes**
+- Upgrade Scheduler Plugins version to v0.25.7 https://github.com/kubeflow/training-operator/pull/1824 ([tenzen-y](https://github.com/tenzen-y))
+- Upgrade the kubernetes dependencies to v1.27 https://github.com/kubeflow/training-operator/pull/1834 ([tenzen-y](https://github.com/tenzen-y))
+
+**New features**
+- Make scheduler-plugins the default gang scheduler. [\#1747](https://github.com/kubeflow/training-operator/pull/1747) ([Syulin7](https://github.com/Syulin7))
+- Merge kubeflow/common to training-operator [\#1813](https://github.com/kubeflow/training-operator/pull/1813) ([johnugeorge](https://github.com/johnugeorge))
+- Auto-generate RBAC manifests by the controller-gen [\#1815](https://github.com/kubeflow/training-operator/pull/1815) ([Syulin7](https://github.com/Syulin7)) 
+- Implement suspend semantics [\#1859](https://github.com/kubeflow/training-operator/pull/1859) ([tenzen-y](https://github.com/tenzen-y))
+- Set up controllers using goroutines to start the manager quickly [\#1869](https://github.com/kubeflow/training-operator/pull/1869) ([tenzen-y](https://github.com/tenzen-y))
+- Set correct ENV for PytorchJob to support torchrun [\#1840](https://github.com/kubeflow/training-operator/pull/1840) ([kuizhiqing](https://github.com/kuizhiqing))
+
+**Bug fixes**
+- Fix a bug that XGBoostJob's running condition isn't updated when the job is resumed [\#1866](https://github.com/kubeflow/training-operator/pull/1866) ([tenzen-y](https://github.com/tenzen-y))
+- Set a Running condition when the XGBoostJob is completed and doesn't have a Running condition [\#1789](https://github.com/kubeflow/training-operator/pull/1789) ([tenzen-y](https://github.com/tenzen-y))
+- Avoid to depend on local env when installing the code-generators [\#1810](https://github.com/kubeflow/training-operator/pull/1810) ([tenzen-y](https://github.com/tenzen-y))
+
+
+**Misc**
+- Removing reconciler code [\#1879](https://github.com/kubeflow/training-operator/pull/1879) ([johnugeorge](https://github.com/johnugeorge))
+- Make Condition and ReplicaStatus optional [\#1862](https://github.com/kubeflow/training-operator/pull/1862) ([tenzen-y](https://github.com/tenzen-y))
+- Use the same reasons for Condition and Event [\#1854](https://github.com/kubeflow/training-operator/pull/1854) ([tenzen-y](https://github.com/tenzen-y))
+- Fully consolidate tfjob-operator to training-operator [\#1850](https://github.com/kubeflow/training-operator/pull/1850) ([tenzen-y](https://github.com/tenzen-y))
+- Clean up /pkg/common/util/v1 [\#1845](https://github.com/kubeflow/training-operator/pull/1845) ([tenzen-y](https://github.com/tenzen-y))
+- Refactoring tests in common/controller.v1 [\#1843](https://github.com/kubeflow/training-operator/pull/1843) ([tenzen-y](https://github.com/tenzen-y))
+- remove duplicate code of add task spec annotation [\#1839](https://github.com/kubeflow/training-operator/pull/1839) ([lowang-bh](https://github.com/lowang-bh))
+- fetch volcano log when e2e failed [\#1837](https://github.com/kubeflow/training-operator/pull/1837) ([lowang-bh](https://github.com/lowang-bh))
+- Add check pods are not scheduled when testing gang-scheduler integrations in e2e [\#1835](https://github.com/kubeflow/training-operator/pull/1835) ([tenzen-y](https://github.com/tenzen-y))
+- Replace dummy client with fake client [\#1818](https://github.com/kubeflow/training-operator/pull/1818) ([tenzen-y](https://github.com/tenzen-y))
+- Add default Intel MPI env variables to MPIJob [\#1804](https://github.com/kubeflow/training-operator/pull/1804) ([tkatila](https://github.com/tkatila))
+- Improve E2E tests for the gang-scheduling [\#1801](https://github.com/kubeflow/training-operator/pull/1801) ([tenzen-y](https://github.com/tenzen-y))
+- xgb yaml container name should be consistent with xgb job default container name [\#1794](https://github.com/kubeflow/training-operator/pull/1794) ([Crisescode](https://github.com/Crisescode))
+- make timeout configurable from e2e tests [\#1787](https://github.com/kubeflow/training-operator/pull/1787) ([nagar-ajay](https://github.com/nagar-ajay))
+
+
 ## [v1.6.0](https://github.com/kubeflow/training-operator/tree/v1.6.0) (2023-03-21)
 
 Note: Since scheduler-plugins has changed API from `sigs.k8s.io` with the `x-k8s.io`, future releases of training operator(v1.7+) will not support scheduler-plugins v0.24.x or lower. Related: [\#1769](https://github.com/kubeflow/training-operator/issues/1769) 
