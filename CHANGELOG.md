@@ -46,7 +46,7 @@ Note: Since scheduler-plugins has changed API from `sigs.k8s.io` with the `x-k8s
 
 Note: Latest [Python SDK 1.6 version](https://pypi.org/project/kubeflow-training/1.6.0/) does not support earlier training operator versions. The minimum training operator version required is v1.6.0 release. Related: [\#1702](https://github.com/kubeflow/training-operator/pull/1702)
 
-[Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.4.0-rc.0...v1.6.0)
+[Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.5.0...v1.6.0)
 
 **New Features**
 - Support for k8s v1.25 in CI [\#1684](https://github.com/kubeflow/training-operator/pull/1684) ([johnugeorge](https://github.com/johnugeorge))
