@@ -70,10 +70,11 @@ Please refer to following API Documentation:
 
 ## Community
 
-You can:
+The following links provide information about getting involved in the community:
 
+- Attend [the AutoML and Training Working Group](https://docs.google.com/document/d/1MChKfzrKAeFRtYqypFbMXL6ZIc_OgijjkvbqmwRV-64/edit) community meeting.
 - Join our [Slack](https://www.kubeflow.org/docs/about/community/#kubeflow-slack) channel.
-- Check out [who is using this operator](./docs/adopters.md).
+- Check out [who is using the Training Operator](./docs/adopters.md).
 
 This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
 
