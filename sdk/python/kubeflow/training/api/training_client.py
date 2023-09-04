@@ -347,7 +347,6 @@ class TrainingClient(object):
                 f"Expected conditions: {expected_conditions} must be subset of {constants.JOB_CONDITIONS}"
             )
         for _ in range(round(timeout / polling_interval)):
-
             # We should get Job only once per cycle and check the statuses.
             job = utils.get_job(
                 custom_api=self.custom_api,
@@ -364,7 +363,9 @@ class TrainingClient(object):
             )
             if len(conditions) > 0:
                 status_logger(
-                    name, conditions[-1].type, conditions[-1].last_transition_time,
+                    name,
+                    conditions[-1].type,
+                    conditions[-1].last_transition_time,
                 )
             # Execute callback function.
             if callback:
@@ -471,7 +472,9 @@ class TrainingClient(object):
         pods = []
         try:
             thread = self.core_api.list_namespaced_pod(
-                namespace, label_selector=label_selector, async_req=True,
+                namespace,
+                label_selector=label_selector,
+                async_req=True,
             )
             response = thread.get(timeout)
         except multiprocessing.TimeoutError:
@@ -576,9 +579,7 @@ class TrainingClient(object):
                     )
                     logging.info("The logs of pod %s:\n %s", pod, pod_logs)
                 except Exception:
-                    raise RuntimeError(
-                        f"Failed to read logs for pod {namespace}/{pod}"
-                    )
+                    raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
 
     # ------------------------------------------------------------------------ #
     # TFJob Training Client APIs.
@@ -687,21 +688,24 @@ class TrainingClient(object):
             tfjob.spec.tf_replica_specs[
                 constants.REPLICA_TYPE_CHIEF
             ] = models.V1ReplicaSpec(
-                replicas=num_chief_replicas, template=pod_template_spec,
+                replicas=num_chief_replicas,
+                template=pod_template_spec,
             )
 
         if num_ps_replicas is not None:
             tfjob.spec.tf_replica_specs[
                 constants.REPLICA_TYPE_PS
             ] = models.V1ReplicaSpec(
-                replicas=num_ps_replicas, template=pod_template_spec,
+                replicas=num_ps_replicas,
+                template=pod_template_spec,
             )
 
         if num_worker_replicas is not None:
             tfjob.spec.tf_replica_specs[
                 constants.REPLICA_TYPE_WORKER
             ] = models.V1ReplicaSpec(
-                replicas=num_worker_replicas, template=pod_template_spec,
+                replicas=num_worker_replicas,
+                template=pod_template_spec,
             )
 
         # Create TFJob.
@@ -919,14 +923,18 @@ class TrainingClient(object):
         # Add Master and Worker replicas to the PyTorchJob.
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_MASTER
-        ] = models.V1ReplicaSpec(replicas=1, template=pod_template_spec,)
+        ] = models.V1ReplicaSpec(
+            replicas=1,
+            template=pod_template_spec,
+        )
 
         # If number of Worker replicas is 1, PyTorchJob uses only Master replica.
         if num_worker_replicas != 1:
             pytorchjob.spec.pytorch_replica_specs[
                 constants.REPLICA_TYPE_WORKER
             ] = models.V1ReplicaSpec(
-                replicas=num_worker_replicas, template=pod_template_spec,
+                replicas=num_worker_replicas,
+                template=pod_template_spec,
             )
 
         # Create PyTorchJob

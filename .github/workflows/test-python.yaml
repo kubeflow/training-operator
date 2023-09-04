@@ -1,0 +1,19 @@
+name: Python Test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Check Python code with Black
+        uses: psf/black@stable
+        version: 21.12b0
+        args: "black --check sdk/ --exclude '/*kubeflow_org_v1*'"

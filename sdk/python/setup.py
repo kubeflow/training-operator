@@ -14,7 +14,7 @@
 
 import setuptools
 
-TESTS_REQUIRES = ["pytest", "pytest-tornasync", "mypy"]
+TESTS_REQUIRES = ["pytest", "pytest-tornasync", "black==21.12b0", "flake==4.0.1"]
 
 REQUIRES = [
     "certifi>=14.05.14",

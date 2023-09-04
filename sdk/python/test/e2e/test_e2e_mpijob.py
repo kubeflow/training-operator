@@ -31,7 +31,11 @@ from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.constants import constants
 
-from test.e2e.utils import verify_job_e2e, verify_unschedulable_job_e2e, get_pod_spec_scheduler_name
+from test.e2e.utils import (
+    verify_job_e2e,
+    verify_unschedulable_job_e2e,
+    get_pod_spec_scheduler_name,
+)
 from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
@@ -45,7 +49,8 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS,
+    reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     launcher_container, worker_container = generate_containers()
@@ -54,11 +59,13 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
             spec=V1PodSpec(
                 containers=[launcher_container],
                 scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-            )
+            ),
         ),
     )
 
@@ -66,16 +73,22 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
             spec=V1PodSpec(
                 containers=[worker_container],
                 scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-            )
+            ),
         ),
     )
 
-    mpijob = generate_mpijob(launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
-    patched_mpijob = generate_mpijob(launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace)
+    mpijob = generate_mpijob(
+        launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace
+    )
+    patched_mpijob = generate_mpijob(
+        launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace
+    )
 
     TRAINING_CLIENT.create_mpijob(mpijob, job_namespace)
     logging.info(f"List of created {constants.MPIJOB_KIND}s")
@@ -104,7 +117,8 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     launcher_container, worker_container = generate_containers()
@@ -112,15 +126,23 @@ def test_sdk_e2e(job_namespace):
     launcher = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
-                                   spec=V1PodSpec(containers=[launcher_container])),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
+            spec=V1PodSpec(containers=[launcher_container]),
+        ),
     )
 
     worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
-                                   spec=V1PodSpec(containers=[worker_container])),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
+            spec=V1PodSpec(containers=[worker_container]),
+        ),
     )
 
     mpijob = generate_mpijob(launcher, worker, job_namespace=job_namespace)
