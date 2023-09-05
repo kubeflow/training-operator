@@ -3,7 +3,6 @@
 
 ## [v1.7.0-rc.0](https://github.com/kubeflow/training-operator/tree/v1.7.0-rc.0) (2023-07-07)
 
-**Breaking Changes**
 [Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.6.0...v1.7.0-rc.0)
 
 **Breaking Changes**
