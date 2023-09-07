@@ -113,33 +113,33 @@ PADDLEJOB_BASE_IMAGE = (
 # Dictionary to get plural, model, and container for each Job kind.
 JOB_PARAMETERS = {
     TFJOB_KIND: {
-        "plural": TFJOB_PLURAL,
         "model": models.KubeflowOrgV1TFJob,
+        "plural": TFJOB_PLURAL,
         "container": TFJOB_CONTAINER,
     },
     PYTORCHJOB_KIND: {
-        "plural": PYTORCHJOB_PLURAL,
         "model": models.KubeflowOrgV1PyTorchJob,
+        "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
     },
     MXJOB_KIND: {
-        "plural": MXJOB_PLURAL,
         "model": models.KubeflowOrgV1MXJob,
+        "plural": MXJOB_PLURAL,
         "container": MXJOB_CONTAINER,
     },
     XGBOOSTJOB_KIND: {
-        "plural": XGBOOSTJOB_PLURAL,
         "model": models.KubeflowOrgV1XGBoostJob,
+        "plural": XGBOOSTJOB_PLURAL,
         "container": XGBOOSTJOB_CONTAINER,
     },
     MPIJOB_KIND: {
-        "plural": MPIJOB_PLURAL,
         "model": models.KubeflowOrgV1MPIJob,
+        "plural": MPIJOB_PLURAL,
         "container": MPIJOB_CONTAINER,
     },
     PADDLEJOB_KIND: {
-        "plural": PADDLEJOB_PLURAL,
         "model": models.KubeflowOrgV1PaddleJob,
+        "plural": PADDLEJOB_PLURAL,
         "container": PADDLEJOB_CONTAINER,
     },
 }

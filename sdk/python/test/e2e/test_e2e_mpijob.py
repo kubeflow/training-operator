@@ -15,7 +15,7 @@
 import os
 import logging
 import pytest
-from typing import Tuple
+from typing import Tuple, Optional
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -45,7 +45,7 @@ logging.getLogger().setLevel(logging.INFO)
 TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "mpijob-mxnet-ci-test"
 CONTAINER_NAME = "mpi"
-GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
+GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
 
 @pytest.mark.skipif(
@@ -84,15 +84,15 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     mpijob = generate_mpijob(
-        launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace
+        job_namespace, launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=10)
     )
     patched_mpijob = generate_mpijob(
-        launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=2), job_namespace
+        job_namespace, launcher, worker, KubeflowOrgV1SchedulingPolicy(min_available=2)
     )
 
-    TRAINING_CLIENT.create_mpijob(mpijob, job_namespace)
+    TRAINING_CLIENT.create_job(job=mpijob, namespace=job_namespace)
     logging.info(f"List of created {constants.MPIJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mpijobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_unschedulable_job_e2e(
         TRAINING_CLIENT,
@@ -101,19 +101,19 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         constants.MPIJOB_KIND,
     )
 
-    TRAINING_CLIENT.patch_mpijob(patched_mpijob, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.update_job(patched_mpijob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.MPIJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mpijobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.MPIJOB_KIND,
-        CONTAINER_NAME,
+        timeout=900,
     )
 
-    TRAINING_CLIENT.delete_mpijob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
@@ -145,28 +145,28 @@ def test_sdk_e2e(job_namespace):
         ),
     )
 
-    mpijob = generate_mpijob(launcher, worker, job_namespace=job_namespace)
+    mpijob = generate_mpijob(job_namespace, launcher, worker)
 
-    TRAINING_CLIENT.create_mpijob(mpijob, job_namespace)
+    TRAINING_CLIENT.create_job(job=mpijob, namespace=job_namespace)
     logging.info(f"List of created {constants.MPIJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_mpijobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.MPIJOB_KIND,
-        CONTAINER_NAME,
+        timeout=900,
     )
 
-    TRAINING_CLIENT.delete_mpijob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
 def generate_mpijob(
+    job_namespace: str,
     launcher: KubeflowOrgV1ReplicaSpec,
     worker: KubeflowOrgV1ReplicaSpec,
-    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
-    job_namespace: str = "default",
+    scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1MPIJob:
     return KubeflowOrgV1MPIJob(
         api_version="kubeflow.org/v1",

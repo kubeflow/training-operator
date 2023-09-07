@@ -275,14 +275,14 @@ def get_script_for_python_packages(packages_to_install, pip_index_url):
 
 def get_pod_template_spec(
     container_name: str,
-    base_image: str,
+    base_image: Optional[str] = None,
     train_func: Optional[Callable] = None,
     parameters: Optional[Dict[str, Any]] = None,
     packages_to_install: Optional[List[str]] = None,
     pip_index_url: Optional[str] = None,
 ):
     """
-    Get Pod template spec from the given function and input parameters.
+    Get Pod template spec for the given function and base image.
     """
 
     # Assign the default base image.
@@ -303,6 +303,7 @@ def get_pod_template_spec(
         ),
     )
 
+    # If Training function is set, create Pod template from function.
     if train_func is not None:
         # Check if function is callable.
         if not callable(train_func):

@@ -15,6 +15,7 @@
 import os
 import logging
 import pytest
+from typing import Optional
 
 from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ObjectMeta
@@ -30,7 +31,11 @@ from kubeflow.training import KubeflowOrgV1TFJobSpec
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.constants import constants
 
-from test.e2e.utils import verify_job_e2e, verify_unschedulable_job_e2e, get_pod_spec_scheduler_name
+from test.e2e.utils import (
+    verify_job_e2e,
+    verify_unschedulable_job_e2e,
+    get_pod_spec_scheduler_name,
+)
 from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
@@ -40,11 +45,12 @@ logging.getLogger().setLevel(logging.INFO)
 TRAINING_CLIENT = TrainingClient()
 JOB_NAME = "tfjob-mnist-ci-test"
 CONTAINER_NAME = "tensorflow"
-GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY)
+GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS, reason="For gang-scheduling",
+    GANG_SCHEDULER_NAME in NONE_GANG_SCHEDULERS,
+    reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
     container = generate_container()
@@ -53,20 +59,26 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         replicas=1,
         restart_policy="Never",
         template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
             spec=V1PodSpec(
                 containers=[container],
                 scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
-            )
+            ),
         ),
     )
 
-    unschedulable_tfjob = generate_tfjob(worker, KubeflowOrgV1SchedulingPolicy(min_available=10), job_namespace)
-    schedulable_tfjob = generate_tfjob(worker, KubeflowOrgV1SchedulingPolicy(min_available=1), job_namespace)
+    unschedulable_tfjob = generate_tfjob(
+        job_namespace, worker, KubeflowOrgV1SchedulingPolicy(min_available=10)
+    )
+    schedulable_tfjob = generate_tfjob(
+        job_namespace, worker, KubeflowOrgV1SchedulingPolicy(min_available=1)
+    )
 
-    TRAINING_CLIENT.create_tfjob(unschedulable_tfjob, job_namespace)
+    TRAINING_CLIENT.create_job(job=unschedulable_tfjob, namespace=job_namespace)
     logging.info(f"List of created {constants.TFJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_tfjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_unschedulable_job_e2e(
         TRAINING_CLIENT,
@@ -75,23 +87,24 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         constants.TFJOB_KIND,
     )
 
-    TRAINING_CLIENT.patch_tfjob(schedulable_tfjob, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.update_job(schedulable_tfjob, JOB_NAME, job_namespace)
     logging.info(f"List of patched {constants.TFJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_tfjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_job_e2e(
         TRAINING_CLIENT,
         JOB_NAME,
         job_namespace,
         constants.TFJOB_KIND,
-        CONTAINER_NAME,
+        timeout=900,
     )
 
-    TRAINING_CLIENT.delete_tfjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
-    GANG_SCHEDULER_NAME in GANG_SCHEDULERS, reason="For plain scheduling",
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
     container = generate_container()
@@ -99,27 +112,35 @@ def test_sdk_e2e(job_namespace):
     worker = KubeflowOrgV1ReplicaSpec(
         replicas=1,
         restart_policy="Never",
-        template=V1PodTemplateSpec(metadata=V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
-                                   spec=V1PodSpec(containers=[container])),
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
+            spec=V1PodSpec(containers=[container]),
+        ),
     )
 
-    tfjob = generate_tfjob(worker, job_namespace=job_namespace)
+    tfjob = generate_tfjob(job_namespace, worker)
 
-    TRAINING_CLIENT.create_tfjob(tfjob, job_namespace)
+    TRAINING_CLIENT.create_job(job=tfjob, namespace=job_namespace)
     logging.info(f"List of created {constants.TFJOB_KIND}s")
-    logging.info(TRAINING_CLIENT.list_tfjobs(job_namespace))
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_job_e2e(
-        TRAINING_CLIENT, JOB_NAME, job_namespace, constants.TFJOB_KIND, CONTAINER_NAME,
+        TRAINING_CLIENT,
+        JOB_NAME,
+        job_namespace,
+        constants.TFJOB_KIND,
+        timeout=900,
     )
 
-    TRAINING_CLIENT.delete_tfjob(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
 def generate_tfjob(
+    job_namespace: str,
     worker: KubeflowOrgV1ReplicaSpec,
-    scheduling_policy: KubeflowOrgV1SchedulingPolicy = None,
-    job_namespace: str = "default",
+    scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1TFJob:
     return KubeflowOrgV1TFJob(
         api_version="kubeflow.org/v1",

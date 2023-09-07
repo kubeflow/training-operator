@@ -153,6 +153,7 @@ class TrainingClient(object):
                 "Job object can't be set with training function or base image"
             )
 
+        # If Training function or base image is set, configure Job template.
         if train_func is not None or base_image is not None:
             # Get Pod template spec from function or image.
             pod_template_spec = utils.get_pod_template_spec(
@@ -164,6 +165,8 @@ class TrainingClient(object):
                 pip_index_url=pip_index_url,
             )
 
+            # Configure template for different Jobs.
+            # TODO (andreyvelich): Add support for other kinds (e.g. MPIJob).
             if job_kind == constants.TFJOB_KIND:
                 job = utils.get_tfjob_template(
                     name=name,
@@ -185,6 +188,7 @@ class TrainingClient(object):
                     f"Job kind {job_kind} can't be created using function or image"
                 )
 
+        # Verify Job object type.
         if not isinstance(job, constants.JOB_MODELS):
             raise ValueError(f"Job must be one of these types: {constants.JOB_MODELS}")
 
@@ -326,7 +330,7 @@ class TrainingClient(object):
         job_kind: Optional[str] = None,
         job: constants.JOB_MODELS_TYPE = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> models.V1JobCondition:
+    ) -> List[models.V1JobCondition]:
         """Get the Training Job conditions. Training Job is in the condition when
         `status=True` for the appropriate condition `type`. For example,
         Training Job is Succeeded when `status=True` and `type=Succeeded`.

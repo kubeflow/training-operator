@@ -16,7 +16,9 @@ def verify_unschedulable_job_e2e(
 ):
     """Verify unschedulable Training Job e2e test."""
     logging.info(f"\n\n\n{job_kind} is creating")
-    client.wait_for_job_conditions(name, namespace, job_kind, {constants.JOB_CONDITION_CREATED})
+    client.wait_for_job_conditions(
+        name, namespace, job_kind, {constants.JOB_CONDITION_CREATED}
+    )
 
     logging.info("Checking 3 times that pods are not scheduled")
     for num in range(3):
@@ -34,33 +36,37 @@ def verify_unschedulable_job_e2e(
 
 
 def verify_job_e2e(
-    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str, timeout: int = 600
+    client: TrainingClient,
+    name: str,
+    namespace: str,
+    job_kind: str,
+    timeout: int = 600,
 ):
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
     logging.info(f"\n\n\n{job_kind} is running")
-    client.wait_for_job_conditions(name, namespace, job_kind, timeout=timeout)
+    job = client.wait_for_job_conditions(name, namespace, job_kind, timeout=timeout)
 
     # Job should have Created, Running, and Succeeded conditions.
-    conditions = client.get_job_conditions(name, namespace, job_kind)
+    conditions = client.get_job_conditions(job=job)
     if len(conditions) != 3:
         raise Exception(f"{job_kind} conditions are invalid: {conditions}")
 
     # Job should have correct conditions.
-    if not client.is_job_created(name, namespace, job_kind):
+    if not client.is_job_created(job=job):
         raise Exception(f"{job_kind} should be in Created condition")
 
-    if client.is_job_running(name, namespace, job_kind):
+    if client.is_job_running(job=job):
         raise Exception(f"{job_kind} should not be in Running condition")
 
-    if client.is_job_restarting(name, namespace, job_kind):
+    if client.is_job_restarting(job=job):
         raise Exception(f"{job_kind} should not be in Restarting condition")
 
-    if not client.is_job_succeeded(name, namespace, job_kind):
+    if not client.is_job_succeeded(job=job):
         raise Exception(f"{job_kind} should be in Succeeded condition")
 
-    if client.is_job_failed(name, namespace, job_kind):
+    if client.is_job_failed(job=job):
         raise Exception(f"{job_kind} should not be in Failed condition")
 
     # Print Job pod names.
@@ -69,7 +75,7 @@ def verify_job_e2e(
 
     # Print Job logs.
     logging.info(f"\n\n\n{job_kind} logs")
-    client.get_job_logs(name, namespace, container=container)
+    client.get_job_logs(name, namespace, job_kind)
 
 
 def get_pod_spec_scheduler_name(gang_scheduler_name: str) -> str:
