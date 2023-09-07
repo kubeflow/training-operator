@@ -112,7 +112,13 @@ sdk/python/kubeflow/training/api
 
 ### Python
 
-- Use [black](https://github.com/psf/black) to format Python code
+- Use [`black`](https://github.com/psf/black) to format Python code
+
+- Run the following to install `black`:
+
+  ```
+  pip install black==21.12b0
+  ```
 
 - To check your code:
 

@@ -58,7 +58,7 @@ def add_imports() -> None:
         f.write("from kubeflow.training.api.training_client import TrainingClient\n")
         f.write("from kubeflow.training.constants import constants\n")
     with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as f:
-        f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
+        f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)\n")
 
     # Add Kubernetes models to proper deserialization of Training models.
     with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "r") as f:

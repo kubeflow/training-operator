@@ -118,8 +118,8 @@ class TrainingClient(object):
                 If `train_func` parameter is set, this image is used to execute the training
                 function. The `constants` module contains some base images, the default image
                 is `docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime`
-            train_func: Function that Job uses to train the model. This function
-                must be Callable. Optionally, this function might have one dict
+            train_func: Function that Job uses to train the model on each training replica.
+                This function must be Callable. Optionally, this function might have one dict
                 argument to define input parameters for the function. If `train_func` is
                 set, Base Image must support `bash` CLI to execute the training script.
             parameters: Dict of input parameters that training function might receive.
