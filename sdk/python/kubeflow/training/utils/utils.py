@@ -69,163 +69,6 @@ def get_default_target_namespace():
         return f.readline()
 
 
-def create_job(
-    custom_api: client.CustomObjectsApi,
-    job: Union[
-        models.KubeflowOrgV1TFJob,
-        models.KubeflowOrgV1PyTorchJob,
-        models.KubeflowOrgV1MXJob,
-        models.KubeflowOrgV1XGBoostJob,
-        models.KubeflowOrgV1MPIJob,
-        models.KubeflowOrgV1PaddleJob,
-    ],
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-):
-    """Create the Training Job."""
-
-    try:
-        custom_api.create_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            job,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(
-            f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
-        )
-    except Exception:
-        raise RuntimeError(
-            f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
-        )
-
-    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been created")
-
-
-def get_job(
-    custom_api: client.CustomObjectsApi,
-    api_client: ApiClient,
-    name: str,
-    namespace: str,
-    job_model: object,
-    job_kind: str,
-    job_plural: str,
-    timeout: int,
-):
-    """Get the Training Job."""
-
-    try:
-        thread = custom_api.get_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name,
-            async_req=True,
-        )
-        response = FakeResponse(thread.get(timeout))
-        job = api_client.deserialize(response, job_model)
-        return job
-
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to get {job_kind}: {namespace}/{name}")
-    except Exception:
-        raise RuntimeError(f"Failed to get {job_kind}: {namespace}/{name}")
-
-
-def list_jobs(
-    custom_api: client.CustomObjectsApi,
-    api_client: ApiClient,
-    namespace: str,
-    job_model: object,
-    job_kind: str,
-    job_plural: str,
-    timeout: int,
-):
-    """List the Training Jobs."""
-
-    result = []
-    try:
-        thread = custom_api.list_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            async_req=True,
-        )
-        response = thread.get(timeout)
-        result = [
-            api_client.deserialize(FakeResponse(item), job_model)
-            for item in response.get("items")
-        ]
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to list {job_kind}s in namespace: {namespace}")
-    except Exception:
-        raise RuntimeError(f"Failed to list {job_kind}s in namespace: {namespace}")
-    return result
-
-
-def delete_job(
-    custom_api: client.CustomObjectsApi,
-    name: str,
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-    delete_options: models.V1DeleteOptions,
-):
-    """Delete the Training Job."""
-
-    try:
-        custom_api.delete_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name=name,
-            body=delete_options,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to delete {job_kind}: {namespace}/{name}")
-    except Exception:
-        raise RuntimeError(f"Failed to delete {job_kind}: {namespace}/{name}")
-
-    logging.info(f"{job_kind} {namespace}/{name} has been deleted")
-
-
-def patch_job(
-    custom_api: client.CustomObjectsApi,
-    job: object,
-    name: str,
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-):
-    """Patch the Training Job."""
-
-    try:
-        custom_api.patch_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name,
-            job,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(
-            f"Timeout to patch {job_kind}: {namespace}/{job.metadata.name}"
-        )
-    except Exception:
-        raise RuntimeError(
-            f"Failed to patch {job_kind}: {namespace}/{job.metadata.name}"
-        )
-
-    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been patched")
-
-
 def wrap_log_stream(q, stream):
     while True:
         try:
@@ -245,8 +88,9 @@ def get_log_queue_pool(streams):
     return pool
 
 
-def has_condition(conditions: object, condition_type: str):
-    """Verify if the condition list has the required condition.
+def has_condition(conditions: List[models.V1JobCondition], condition_type: str) -> bool:
+    """
+    Verify if the condition list has the required condition.
     Condition should be valid object with `type` and `status`.
     """
 
@@ -256,7 +100,12 @@ def has_condition(conditions: object, condition_type: str):
     return False
 
 
-def get_script_for_python_packages(packages_to_install, pip_index_url):
+def get_script_for_python_packages(
+    packages_to_install: List[str], pip_index_url: str
+) -> str:
+    """
+    Get init script to install Python packages from the given pip index URL.
+    """
     packages_str = " ".join([str(package) for package in packages_to_install])
 
     script_for_python_packages = textwrap.dedent(
@@ -359,7 +208,7 @@ def get_tfjob_template(
     name: str,
     namespace: str,
     pod_template_spec: models.V1PodTemplateSpec,
-    num_worker_replicas: int,
+    num_worker_replicas: Optional[int] = None,
     num_chief_replicas: Optional[int] = None,
     num_ps_replicas: Optional[int] = None,
 ):
@@ -416,7 +265,7 @@ def get_pytorchjob_template(
     name: str,
     namespace: str,
     pod_template_spec: models.V1PodTemplateSpec,
-    num_worker_replicas: int,
+    num_worker_replicas: Optional[int] = None,
 ):
     # Check if at least one replica is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.

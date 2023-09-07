@@ -39,7 +39,7 @@ class TrainingClient(object):
         config_file: Optional[str] = None,
         context: Optional[str] = None,
         client_configuration: Optional[client.Configuration] = None,
-        namespace: Optional[str] = utils.get_default_target_namespace(),
+        namespace: str = utils.get_default_target_namespace(),
         job_kind: Optional[str] = constants.PYTORCHJOB_KIND,
     ):
         """TrainingClient constructor.
@@ -155,6 +155,12 @@ class TrainingClient(object):
 
         # If Training function or base image is set, configure Job template.
         if train_func is not None or base_image is not None:
+            # Job name must be set to configure Job template.
+            if name is None:
+                raise ValueError(
+                    "Job name must be set to configure Job from function or image"
+                )
+
             # Get Pod template spec from function or image.
             pod_template_spec = utils.get_pod_template_spec(
                 base_image=base_image,
@@ -328,7 +334,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> List[models.V1JobCondition]:
         """Get the Training Job conditions. Training Job is in the condition when
@@ -371,6 +377,12 @@ class TrainingClient(object):
 
         # If Job is not set, get the Training Job.
         if job is None:
+            # Job name must be set when Job object is not set.
+            if name is None:
+                raise ValueError(
+                    "Job name must be set to configure Job from function or image"
+                )
+
             job = self.get_job(
                 name=name,
                 namespace=name,
@@ -386,7 +398,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> bool:
         """Check if Training Job is Created.
@@ -421,7 +433,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> bool:
         """Check if Training Job is Running.
@@ -456,7 +468,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> bool:
         """Check if Training Job is Restarting.
@@ -491,7 +503,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> bool:
         """Check if Training Job is Succeeded.
@@ -526,7 +538,7 @@ class TrainingClient(object):
         name: Optional[str] = None,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        job: constants.JOB_MODELS_TYPE = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> bool:
         """Check if Training Job is Failed.
@@ -558,13 +570,13 @@ class TrainingClient(object):
 
     def wait_for_job_conditions(
         self,
-        name: Optional[str] = None,
+        name: str,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
         expected_conditions: Set = {constants.JOB_CONDITION_SUCCEEDED},
         timeout: int = 600,
         polling_interval: int = 15,
-        callback: Callable = None,
+        callback: Optional[Callable] = None,
         apiserver_timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> constants.JOB_MODELS_TYPE:
         """Wait until Training Job reaches any of the specified conditions.
@@ -594,6 +606,9 @@ class TrainingClient(object):
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job or Job reaches unexpected Failed condition.
         """
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
 
         if not expected_conditions.issubset(constants.JOB_CONDITIONS):
             raise ValueError(
@@ -650,7 +665,7 @@ class TrainingClient(object):
         namespace: Optional[str] = None,
         is_master: bool = False,
         replica_type: Optional[str] = None,
-        replica_index: int = None,
+        replica_index: Optional[int] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> List[str]:
         """Get pod names for the Training Job.
@@ -747,7 +762,7 @@ class TrainingClient(object):
         job_kind: Optional[str] = None,
         is_master: bool = True,
         replica_type: Optional[str] = None,
-        replica_index: int = None,
+        replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ):
@@ -892,9 +907,9 @@ class TrainingClient(object):
     def delete_job(
         self,
         name: str,
-        namespace: str = None,
+        namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        delete_options: client.V1DeleteOptions = None,
+        delete_options: Optional[client.V1DeleteOptions] = None,
     ):
         """Delete the Training Job
 
