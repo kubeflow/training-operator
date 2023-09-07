@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from kubeflow.training import models
+from typing import Union
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
@@ -20,6 +21,7 @@ DEFAULT_TIMEOUT = 120
 # Common constants.
 KUBEFLOW_GROUP = "kubeflow.org"
 OPERATOR_VERSION = "v1"
+API_VERSION = f"{KUBEFLOW_GROUP}/{OPERATOR_VERSION}"
 ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
 
 # Training Job conditions.
@@ -50,12 +52,19 @@ REPLICA_TYPE_CHIEF = "Chief"
 REPLICA_TYPE_PS = "PS"
 REPLICA_TYPE_MASTER = "Master"
 REPLICA_TYPE_WORKER = "Worker"
+REPLICA_TYPE_SCHEDULER = "Scheduler"
+REPLICA_TYPE_SERVER = "Server"
+REPLICA_TYPE_LAUNCHER = "Launcher"
 
 # TFJob constants.
 TFJOB_KIND = "TFJob"
 TFJOB_PLURAL = "tfjobs"
 TFJOB_CONTAINER = "tensorflow"
-TFJOB_REPLICA_TYPES = {"ps", "chief", "worker"}
+TFJOB_REPLICA_TYPES = (
+    REPLICA_TYPE_PS.lower(),
+    REPLICA_TYPE_CHIEF.lower(),
+    REPLICA_TYPE_WORKER.lower(),
+)
 
 TFJOB_BASE_IMAGE = "docker.io/tensorflow/tensorflow:2.9.1"
 TFJOB_BASE_IMAGE_GPU = "docker.io/tensorflow/tensorflow:2.9.1-gpu"
@@ -64,49 +73,86 @@ TFJOB_BASE_IMAGE_GPU = "docker.io/tensorflow/tensorflow:2.9.1-gpu"
 PYTORCHJOB_KIND = "PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
-PYTORCHJOB_REPLICA_TYPES = {"master", "worker"}
+PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
 
 # MXJob constants
 MXJOB_KIND = "MXJob"
 MXJOB_PLURAL = "mxjobs"
-MXJOB_REPLICA_TYPES = {"scheduler", "server", "worker"}
+MXJOB_CONTAINER = "mxnet"
+MXJOB_REPLICA_TYPES = (
+    REPLICA_TYPE_SCHEDULER.lower(),
+    REPLICA_TYPE_SERVER.lower(),
+    REPLICA_TYPE_WORKER.lower(),
+)
 
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"
 XGBOOSTJOB_PLURAL = "xgboostjobs"
-XGBOOSTJOB_REPLICA_TYPES = {"master", "worker"}
+XGBOOSTJOB_CONTAINER = "xgboost"
+XGBOOSTJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 
 # MPIJob constants
 MPIJOB_KIND = "MPIJob"
 MPIJOB_PLURAL = "mpijobs"
-MPIJOB_REPLICA_TYPES = {"launcher", "worker"}
+MPIJOB_CONTAINER = "mpi"
+MPIJOB_REPLICA_TYPES = (REPLICA_TYPE_LAUNCHER.lower(), REPLICA_TYPE_WORKER.lower())
 
 # PaddleJob constants
 PADDLEJOB_KIND = "PaddleJob"
 PADDLEJOB_PLURAL = "paddlejobs"
-PADDLEJOB_REPLICA_TYPES = {"master", "worker"}
+PADDLEJOB_CONTAINER = "paddle"
+PADDLEJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 
 PADDLEJOB_BASE_IMAGE = (
     "docker.io/paddlepaddle/paddle:2.4.0rc0-gpu-cuda11.2-cudnn8.1-trt8.0"
 )
 
-# Dictionary to get plural and model for each Job kind.
-JOB_KINDS = {
-    TFJOB_KIND: {"plural": TFJOB_PLURAL, "model": models.KubeflowOrgV1TFJob},
+
+# Dictionary to get plural, model, and container for each Job kind.
+JOB_PARAMETERS = {
+    TFJOB_KIND: {
+        "plural": TFJOB_PLURAL,
+        "model": models.KubeflowOrgV1TFJob,
+        "container": TFJOB_CONTAINER,
+    },
     PYTORCHJOB_KIND: {
         "plural": PYTORCHJOB_PLURAL,
         "model": models.KubeflowOrgV1PyTorchJob,
+        "container": PYTORCHJOB_CONTAINER,
     },
-    MXJOB_KIND: {"plural": MXJOB_PLURAL, "model": models.KubeflowOrgV1MXJob},
+    MXJOB_KIND: {
+        "plural": MXJOB_PLURAL,
+        "model": models.KubeflowOrgV1MXJob,
+        "container": MXJOB_CONTAINER,
+    },
     XGBOOSTJOB_KIND: {
         "plural": XGBOOSTJOB_PLURAL,
         "model": models.KubeflowOrgV1XGBoostJob,
+        "container": XGBOOSTJOB_CONTAINER,
     },
-    MPIJOB_KIND: {"plural": MPIJOB_PLURAL, "model": models.KubeflowOrgV1MPIJob},
+    MPIJOB_KIND: {
+        "plural": MPIJOB_PLURAL,
+        "model": models.KubeflowOrgV1MPIJob,
+        "container": MPIJOB_CONTAINER,
+    },
     PADDLEJOB_KIND: {
         "plural": PADDLEJOB_PLURAL,
         "model": models.KubeflowOrgV1PaddleJob,
+        "container": PADDLEJOB_CONTAINER,
     },
 }
+
+# Tuple of all Job models.
+JOB_MODELS = tuple([d["model"] for d in list(JOB_PARAMETERS.values())])
+
+# Union type of all Job models.
+JOB_MODELS_TYPE = Union[
+    models.KubeflowOrgV1TFJob,
+    models.KubeflowOrgV1PyTorchJob,
+    models.KubeflowOrgV1MXJob,
+    models.KubeflowOrgV1XGBoostJob,
+    models.KubeflowOrgV1MPIJob,
+    models.KubeflowOrgV1PaddleJob,
+]
