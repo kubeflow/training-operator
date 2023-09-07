@@ -16,17 +16,13 @@ import os
 import logging
 import textwrap
 import inspect
-from typing import Optional, Union, Callable, List, Dict, Any
+from typing import Optional, Callable, List, Dict, Any
 import json
 import threading
 import queue
-import multiprocessing
-
-from kubernetes import client
 
 from kubeflow.training.constants import constants
 from kubeflow.training import models
-from kubeflow.training.api_client import ApiClient
 
 
 logging.basicConfig(format="%(message)s")
@@ -152,7 +148,7 @@ def get_pod_template_spec(
         ),
     )
 
-    # If Training function is set, create Pod template from function.
+    # If Training function is set, convert function to container execution script.
     if train_func is not None:
         # Check if function is callable.
         if not callable(train_func):
@@ -197,7 +193,7 @@ def get_pod_template_spec(
                 + exec_script
             )
 
-        # Create Pod template spec.
+        # Add execution script to container arguments.
         pod_template_spec.spec.containers[0].command = ["bash", "-c"]
         pod_template_spec.spec.containers[0].args = [exec_script]
 

@@ -40,14 +40,13 @@ class TrainingClient(object):
         context: Optional[str] = None,
         client_configuration: Optional[client.Configuration] = None,
         namespace: str = utils.get_default_target_namespace(),
-        job_kind: Optional[str] = constants.PYTORCHJOB_KIND,
+        job_kind: str = constants.PYTORCHJOB_KIND,
     ):
         """TrainingClient constructor.
 
         Args:
             config_file: Path to the kube-config file. Defaults to ~/.kube/config.
-            context: Set the active context.
-                Defaults to current_context from the kube-config.
+            context: Set the active context. Defaults to current_context from the kube-config.
             client_configuration: Client configuration for cluster authentication.
                 You have to provide valid configuration with Bearer token or
                 with username and password. You can find an example here:
@@ -96,7 +95,7 @@ class TrainingClient(object):
         num_chief_replicas: Optional[int] = None,
         num_ps_replicas: Optional[int] = None,
         packages_to_install: Optional[List[str]] = None,
-        pip_index_url: Optional[str] = "https://pypi.org/simple",
+        pip_index_url: str = "https://pypi.org/simple",
     ):
         """Create the Training Job.
         Job can be created using one of the following options:
@@ -355,7 +354,7 @@ class TrainingClient(object):
         Returns:
             list[V1JobCondition]: List of Job conditions with
                 last transition time, last update time, message, reason, type, and
-                status. It returns empty list if Training Job does not have any
+                status. It returns empty list if Job does not have any
                 conditions yet.
 
         Raises:
