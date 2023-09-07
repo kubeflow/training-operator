@@ -1035,7 +1035,6 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rt)
 	}
 
-	podSpec.Spec.ServiceAccountName = launcherName
 	podSpec.Spec.InitContainers = append(podSpec.Spec.InitContainers, corev1.Container{
 		Name:            kubectlDeliveryName,
 		Image:           kubectlDeliveryImage,
