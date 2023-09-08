@@ -1,15 +1,8 @@
 FROM alpine:3.17 AS build
 
 # Install kubectl.
-ENV K8S_VERSION v1.27.0
-Member
-@tenzen-y tenzen-y 14 minutes ago
-Suggested change
-ENV K8S_VERSION v1.27.0
 ENV K8S_VERSION v1.27.5
-Let's use the latest patch version.
 
-@rpemsel	Reply...
 RUN apk add --no-cache wget
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
