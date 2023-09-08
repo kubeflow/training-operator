@@ -43,7 +43,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient(constants.MXJOB_KIND)
+TRAINING_CLIENT = TrainingClient(job_kind=constants.MXJOB_KIND)
 JOB_NAME = "mxjob-mnist-ci-test"
 CONTAINER_NAME = "mxnet"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")

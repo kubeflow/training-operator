@@ -42,7 +42,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient(constants.TFJOB_KIND)
+TRAINING_CLIENT = TrainingClient(job_kind=constants.TFJOB_KIND)
 JOB_NAME = "tfjob-mnist-ci-test"
 CONTAINER_NAME = "tensorflow"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
