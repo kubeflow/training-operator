@@ -42,7 +42,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient()
+TRAINING_CLIENT = TrainingClient(job_kind=constants.PADDLEJOB_KIND)
 JOB_NAME = "paddlejob-cpu-ci-test"
 CONTAINER_NAME = "paddle"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
@@ -77,27 +77,16 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_paddlejob, namespace=job_namespace)
-    logging.info(f"List of created {constants.PADDLEJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.PADDLEJOB_KIND,
-    )
+    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(schedulable_paddlejob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {constants.PADDLEJOB_KIND}s")
+    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.PADDLEJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -123,16 +112,10 @@ def test_sdk_e2e(job_namespace):
     paddlejob = generate_paddlejob(job_namespace, worker)
 
     TRAINING_CLIENT.create_job(job=paddlejob, namespace=job_namespace)
-    logging.info(f"List of created {constants.PADDLEJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.PADDLEJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -143,8 +126,8 @@ def generate_paddlejob(
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1PaddleJob:
     return KubeflowOrgV1PaddleJob(
-        api_version="kubeflow.org/v1",
-        kind="PaddleJob",
+        api_version=constants.API_VERSION,
+        kind=constants.PADDLEJOB_KIND,
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1PaddleJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(

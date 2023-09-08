@@ -42,7 +42,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient()
+TRAINING_CLIENT = TrainingClient(constants.TFJOB_KIND)
 JOB_NAME = "tfjob-mnist-ci-test"
 CONTAINER_NAME = "tensorflow"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
@@ -77,27 +77,16 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_tfjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.TFJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.TFJOB_KIND,
-    )
+    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(schedulable_tfjob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {constants.TFJOB_KIND}s")
+    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.TFJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -123,16 +112,10 @@ def test_sdk_e2e(job_namespace):
     tfjob = generate_tfjob(job_namespace, worker)
 
     TRAINING_CLIENT.create_job(job=tfjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.TFJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.TFJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -143,8 +126,8 @@ def generate_tfjob(
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1TFJob:
     return KubeflowOrgV1TFJob(
-        api_version="kubeflow.org/v1",
-        kind="TFJob",
+        api_version=constants.API_VERSION,
+        kind=constants.TFJOB_KIND,
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1TFJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(

@@ -200,8 +200,8 @@ class TrainingClient(object):
         # Create the Training Job.
         try:
             self.custom_api.create_namespaced_custom_object(
-                constants.KUBEFLOW_GROUP,
-                constants.OPERATOR_VERSION,
+                constants.GROUP,
+                constants.VERSION,
                 namespace,
                 constants.JOB_PARAMETERS[job.kind]["plural"],
                 job,
@@ -252,8 +252,8 @@ class TrainingClient(object):
 
         try:
             thread = self.custom_api.get_namespaced_custom_object(
-                constants.KUBEFLOW_GROUP,
-                constants.OPERATOR_VERSION,
+                constants.GROUP,
+                constants.VERSION,
                 namespace,
                 constants.JOB_PARAMETERS[job_kind]["plural"],
                 name,
@@ -307,8 +307,8 @@ class TrainingClient(object):
         result = []
         try:
             thread = self.custom_api.list_namespaced_custom_object(
-                constants.KUBEFLOW_GROUP,
-                constants.OPERATOR_VERSION,
+                constants.GROUP,
+                constants.VERSION,
                 namespace,
                 constants.JOB_PARAMETERS[job_kind]["plural"],
                 async_req=True,
@@ -889,8 +889,8 @@ class TrainingClient(object):
 
         try:
             self.custom_api.patch_namespaced_custom_object(
-                constants.KUBEFLOW_GROUP,
-                constants.OPERATOR_VERSION,
+                constants.GROUP,
+                constants.VERSION,
                 namespace,
                 constants.JOB_PARAMETERS[job_kind]["plural"],
                 name,
@@ -931,8 +931,8 @@ class TrainingClient(object):
 
         try:
             self.custom_api.delete_namespaced_custom_object(
-                constants.KUBEFLOW_GROUP,
-                constants.OPERATOR_VERSION,
+                constants.GROUP,
+                constants.VERSION,
                 namespace,
                 constants.JOB_PARAMETERS[job_kind]["plural"],
                 name=name,

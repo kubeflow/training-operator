@@ -42,7 +42,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient()
+TRAINING_CLIENT = TrainingClient(job_kind=constants.MPIJOB_KIND)
 JOB_NAME = "mpijob-mxnet-ci-test"
 CONTAINER_NAME = "mpi"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
@@ -91,29 +91,18 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     TRAINING_CLIENT.create_job(job=mpijob, namespace=job_namespace)
-    logging.info(f"List of created {constants.MPIJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MPIJOB_KIND,
-    )
+    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(patched_mpijob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {constants.MPIJOB_KIND}s")
+    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MPIJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
-    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME)
 
 
 @pytest.mark.skipif(
@@ -148,16 +137,10 @@ def test_sdk_e2e(job_namespace):
     mpijob = generate_mpijob(job_namespace, launcher, worker)
 
     TRAINING_CLIENT.create_job(job=mpijob, namespace=job_namespace)
-    logging.info(f"List of created {constants.MPIJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MPIJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -169,8 +152,8 @@ def generate_mpijob(
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1MPIJob:
     return KubeflowOrgV1MPIJob(
-        api_version="kubeflow.org/v1",
-        kind="MPIJob",
+        api_version=constants.API_VERSION,
+        kind=constants.MPIJOB_KIND,
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1MPIJobSpec(
             slots_per_worker=1,

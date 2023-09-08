@@ -42,7 +42,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient()
+TRAINING_CLIENT = TrainingClient(job_kind=constants.XGBOOSTJOB_KIND)
 JOB_NAME = "xgboostjob-iris-ci-test"
 CONTAINER_NAME = "xgboost"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
@@ -91,27 +91,16 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_xgboostjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.XGBOOSTJOB_KIND,
-    )
+    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(schedulable_xgboostjob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {constants.XGBOOSTJOB_KIND}s")
+    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.XGBOOSTJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -148,16 +137,10 @@ def test_sdk_e2e(job_namespace):
     xgboostjob = generate_xgboostjob(job_namespace, master, worker)
 
     TRAINING_CLIENT.create_job(job=xgboostjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.XGBOOSTJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.XGBOOSTJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -169,8 +152,8 @@ def generate_xgboostjob(
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1XGBoostJob:
     return KubeflowOrgV1XGBoostJob(
-        api_version="kubeflow.org/v1",
-        kind="XGBoostJob",
+        api_version=constants.API_VERSION,
+        kind=constants.XGBOOSTJOB_KIND,
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1XGBoostJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(

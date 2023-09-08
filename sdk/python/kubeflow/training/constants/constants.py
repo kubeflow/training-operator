@@ -19,9 +19,9 @@ from typing import Union
 DEFAULT_TIMEOUT = 120
 
 # Common constants.
-KUBEFLOW_GROUP = "kubeflow.org"
-OPERATOR_VERSION = "v1"
-API_VERSION = f"{KUBEFLOW_GROUP}/{OPERATOR_VERSION}"
+GROUP = "kubeflow.org"
+VERSION = "v1"
+API_VERSION = f"{GROUP}/{VERSION}"
 ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
 
 # Training Job conditions.

@@ -43,7 +43,7 @@ from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
-TRAINING_CLIENT = TrainingClient()
+TRAINING_CLIENT = TrainingClient(constants.MXJOB_KIND)
 JOB_NAME = "mxjob-mnist-ci-test"
 CONTAINER_NAME = "mxnet"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
@@ -114,27 +114,16 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_mxjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.MXJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MXJOB_KIND,
-    )
+    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(schedulable_mxjob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {constants.MXJOB_KIND}s")
+    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MXJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -182,16 +171,10 @@ def test_sdk_e2e(job_namespace):
     mxjob = generate_mxjob(job_namespace, scheduler, server, worker)
 
     TRAINING_CLIENT.create_job(job=mxjob, namespace=job_namespace)
-    logging.info(f"List of created {constants.MXJOB_KIND}s")
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(
-        TRAINING_CLIENT,
-        JOB_NAME,
-        job_namespace,
-        constants.MXJOB_KIND,
-        timeout=900,
-    )
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -204,8 +187,8 @@ def generate_mxjob(
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
 ) -> KubeflowOrgV1MXJob:
     return KubeflowOrgV1MXJob(
-        api_version="kubeflow.org/v1",
-        kind="MXJob",
+        api_version=constants.API_VERSION,
+        kind=constants.MXJOB_KIND,
         metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
         spec=KubeflowOrgV1MXJobSpec(
             job_mode="MXTrain",
