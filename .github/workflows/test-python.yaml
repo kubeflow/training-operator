@@ -17,5 +17,6 @@ jobs:
         # linting and formatting for Training Operator SDK.
       - name: Check Python code with Black
         uses: psf/black@stable
-        version: 21.12b0
-        args: black --check sdk/ --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
+        with:
+          version: 21.12b0
+          options: --check sdk/ --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
