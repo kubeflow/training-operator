@@ -11,5 +11,6 @@ RUN mv ./kubectl /bin/kubectl
 FROM alpine:3.17
 COPY --from=build /bin/kubectl /bin/kubectl
 RUN apk add --no-cache bash
-COPY scripts/kubectl-delivery/deliver-kubectl.sh .
-ENTRYPOINT ["./deliver_kubectl.sh"]
+
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["cp /bin/kubectl /opt/kube/kubectl"]
