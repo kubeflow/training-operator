@@ -384,7 +384,7 @@ class TrainingClient(object):
 
             job = self.get_job(
                 name=name,
-                namespace=name,
+                namespace=namespace,
                 job_kind=job_kind,
                 timeout=timeout,
             )
