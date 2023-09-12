@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
         # TODO (andreyvelich): We need to replace this action with script to do
         # linting and formatting for Training Operator SDK.
