@@ -18,5 +18,5 @@ jobs:
       - name: Check Python code with Black
         uses: psf/black@stable
         with:
-          version: 21.12b0
+          version: 23.9.1
           options: --check sdk/ --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
