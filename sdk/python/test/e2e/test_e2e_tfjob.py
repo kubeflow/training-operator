@@ -83,7 +83,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
 
     TRAINING_CLIENT.update_job(schedulable_tfjob, JOB_NAME, job_namespace)
-    logging.info(f"List of patched {TRAINING_CLIENT.job_kind}s")
+    logging.info(f"List of updated {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)

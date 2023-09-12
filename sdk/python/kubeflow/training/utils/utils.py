@@ -119,19 +119,21 @@ def get_script_for_python_packages(
 
 
 def get_pod_template_spec(
-    container_name: str,
+    job_kind: str,
     base_image: Optional[str] = None,
     train_func: Optional[Callable] = None,
     parameters: Optional[Dict[str, Any]] = None,
     packages_to_install: Optional[List[str]] = None,
-    pip_index_url: Optional[str] = None,
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
 ):
     """
     Get Pod template spec for the given function and base image.
     """
 
     # Assign the default base image.
-    base_image = base_image or constants.PYTORCHJOB_BASE_IMAGE
+    # TODO (andreyvelich): Add base image for other Job kinds.
+    if base_image is None:
+        base_image = constants.JOB_PARAMETERS[job_kind]["base_image"]
 
     # Create Pod template spec.
     pod_template_spec = models.V1PodTemplateSpec(
@@ -141,7 +143,7 @@ def get_pod_template_spec(
         spec=models.V1PodSpec(
             containers=[
                 models.V1Container(
-                    name=container_name,
+                    name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
                 )
             ]
@@ -179,8 +181,8 @@ def get_pod_template_spec(
                 read -r -d '' SCRIPT << EOM\n
                 {func_code}
                 EOM
-                printf "%s" "$SCRIPT" > $program_path/ephemeral_script.py
-                python3 -u $program_path/ephemeral_script.py"""
+                printf "%s" \"$SCRIPT\" > \"$program_path/ephemeral_script.py\"
+                python3 -u \"$program_path/ephemeral_script.py\""""
         )
 
         # Add function code to the execute script.

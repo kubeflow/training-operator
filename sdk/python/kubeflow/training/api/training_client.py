@@ -95,7 +95,7 @@ class TrainingClient(object):
         num_chief_replicas: Optional[int] = None,
         num_ps_replicas: Optional[int] = None,
         packages_to_install: Optional[List[str]] = None,
-        pip_index_url: str = "https://pypi.org/simple",
+        pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
     ):
         """Create the Training Job.
         Job can be created using one of the following options:
@@ -162,8 +162,8 @@ class TrainingClient(object):
 
             # Get Pod template spec from function or image.
             pod_template_spec = utils.get_pod_template_spec(
+                job_kind=job_kind,
                 base_image=base_image,
-                container_name=constants.JOB_PARAMETERS[job_kind]["container"],
                 train_func=train_func,
                 parameters=parameters,
                 packages_to_install=packages_to_install,

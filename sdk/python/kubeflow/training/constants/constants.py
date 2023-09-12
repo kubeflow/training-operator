@@ -18,11 +18,16 @@ from typing import Union
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
 
+# The default PIP index URL to download Python packages.
+DEFAULT_PIP_INDEX_URL = "https://pypi.org/simple"
+
+# Annotation to disable Istio sidecar.
+ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
+
 # Common constants.
 GROUP = "kubeflow.org"
 VERSION = "v1"
 API_VERSION = f"{GROUP}/{VERSION}"
-ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
 
 # Training Job conditions.
 JOB_CONDITION_CREATED = "Created"
@@ -116,11 +121,13 @@ JOB_PARAMETERS = {
         "model": models.KubeflowOrgV1TFJob,
         "plural": TFJOB_PLURAL,
         "container": TFJOB_CONTAINER,
+        "base_image": TFJOB_BASE_IMAGE,
     },
     PYTORCHJOB_KIND: {
         "model": models.KubeflowOrgV1PyTorchJob,
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
+        "base_image": PYTORCHJOB_BASE_IMAGE,
     },
     MXJOB_KIND: {
         "model": models.KubeflowOrgV1MXJob,
@@ -141,6 +148,7 @@ JOB_PARAMETERS = {
         "model": models.KubeflowOrgV1PaddleJob,
         "plural": PADDLEJOB_PLURAL,
         "container": PADDLEJOB_CONTAINER,
+        "base_image": PADDLEJOB_BASE_IMAGE,
     },
 }
 
