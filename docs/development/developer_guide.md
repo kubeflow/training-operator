@@ -123,5 +123,5 @@ sdk/python/kubeflow/training/api
 - To check your code:
 
   ```sh
-  black --check sdk/ --exclude '/*kubeflow_org_v1*'
+  black --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py' sdk/
   ```

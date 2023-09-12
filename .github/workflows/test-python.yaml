@@ -19,4 +19,5 @@ jobs:
         uses: psf/black@stable
         with:
           version: 23.9.1
-          options: --check sdk/ --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
+          options: --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
+          src: sdk/
