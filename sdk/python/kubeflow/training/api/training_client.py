@@ -137,19 +137,17 @@ class TrainingClient(object):
             RuntimeError: Failed to create Job.
         """
 
-        # When Job is set, other parameters must be empty.
-        if job is not None and (
-            name is not None
-            or job_kind is not None
-            or base_image is not None
-            or train_func is not None
-            or parameters is not None
-            or num_worker_replicas is not None
-            or num_chief_replicas is not None
-            or num_ps_replicas is not None
-            or packages_to_install is not None
-        ):
-            raise ValueError("Job object can't be set with other function arguments")
+        # When Job is set, only namespace arg is allowed.
+        if job is not None:
+            for key, value in locals().items():
+                if (
+                    key not in ["self", "job", "namespace", "pip_index_url"]
+                    and value is not None
+                ):
+                    raise ValueError(
+                        "If `job` is set only `namespace` argument is allowed. "
+                        f"Argument `{key}` must be None."
+                    )
 
         namespace = namespace or self.namespace
         job_kind = job_kind or self.job_kind
