@@ -148,7 +148,6 @@ class TrainingClient(object):
             or num_chief_replicas is not None
             or num_ps_replicas is not None
             or packages_to_install is not None
-            or pip_index_url is not None
         ):
             raise ValueError("Job object can't be set with other function arguments")
 
