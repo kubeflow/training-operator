@@ -137,6 +137,21 @@ class TrainingClient(object):
             RuntimeError: Failed to create Job.
         """
 
+        # When Job is set, other parameters must be empty.
+        if job is not None and (
+            name is not None
+            or job_kind is not None
+            or base_image is not None
+            or train_func is not None
+            or parameters is not None
+            or num_worker_replicas is not None
+            or num_chief_replicas is not None
+            or num_ps_replicas is not None
+            or packages_to_install is not None
+            or pip_index_url is not None
+        ):
+            raise ValueError("Job object can't be set with other function arguments")
+
         namespace = namespace or self.namespace
         job_kind = job_kind or self.job_kind
         if job is not None:
@@ -145,11 +160,6 @@ class TrainingClient(object):
         if job_kind not in constants.JOB_PARAMETERS:
             raise ValueError(
                 f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
-            )
-
-        if job is not None and (train_func is not None or base_image is not None):
-            raise ValueError(
-                "Job object can't be set with training function or base image"
             )
 
         # If Training function or base image is set, configure Job template.
