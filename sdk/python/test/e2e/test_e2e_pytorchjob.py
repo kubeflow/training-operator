@@ -103,7 +103,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     logging.info(f"List of updated {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -143,7 +143,7 @@ def test_sdk_e2e(job_namespace):
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
 
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
@@ -176,7 +176,7 @@ def test_pytorchjob_from_func(job_namespace):
     logging.info("Get created PyTorchJob from function")
     logging.info(TRAINING_CLIENT.get_job(JOB_NAME, job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, timeout=900)
+    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 

@@ -573,10 +573,10 @@ class TrainingClient(object):
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
         expected_conditions: Set = {constants.JOB_CONDITION_SUCCEEDED},
-        timeout: int = 600,
+        wait_timeout: int = 600,
         polling_interval: int = 15,
         callback: Optional[Callable] = None,
-        apiserver_timeout: int = constants.DEFAULT_TIMEOUT,
+        timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> constants.JOB_MODELS_TYPE:
         """Wait until Training Job reaches any of the specified conditions.
         By default it waits for the Succeeded condition.
@@ -589,13 +589,13 @@ class TrainingClient(object):
                 is taken from `TrainingClient` object.
             expected_conditions: Set of expected conditions. It must be subset of this:
                 `{"Created", "Running", "Restarting", "Succeeded", "Failed"}`
-            timeout: How many seconds to wait until Job reaches one of
+            wait_timeout: How many seconds to wait until Job reaches one of
                 the expected conditions.
             polling_interval: The polling interval in seconds to get Job status.
             callback: Callback function that is invoked after Job
                 status is polled. This function takes a single argument which
                 is current Job object.
-            apiserver_timeout: Kubernetes API server timeout in seconds to execute the request.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             object: Job object. For example: KubeflowOrgV1PyTorchJob
@@ -614,17 +614,17 @@ class TrainingClient(object):
                 f"Expected conditions: {expected_conditions} must be subset of \
                     {constants.JOB_CONDITIONS}"
             )
-        for _ in range(round(timeout / polling_interval)):
+        for _ in range(round(wait_timeout / polling_interval)):
             # We should get Job only once per cycle and check the statuses.
             job = self.get_job(
                 name=name,
                 namespace=namespace,
                 job_kind=job_kind,
-                timeout=apiserver_timeout,
+                timeout=timeout,
             )
 
             # Get Job conditions.
-            conditions = self.get_job_conditions(job=job, timeout=apiserver_timeout)
+            conditions = self.get_job_conditions(job=job, timeout=timeout)
             if len(conditions) > 0:
                 status_logger(
                     name,

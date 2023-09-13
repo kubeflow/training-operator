@@ -37,13 +37,13 @@ def verify_job_e2e(
     client: TrainingClient,
     name: str,
     namespace: str,
-    timeout: int = 600,
+    wait_timeout: int = 600,
 ):
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
     logging.info(f"\n\n\n{client.job_kind} is running")
-    job = client.wait_for_job_conditions(name, namespace, timeout=timeout)
+    job = client.wait_for_job_conditions(name, namespace, wait_timeout=wait_timeout)
 
     # Job should have Created, Running, and Succeeded conditions.
     conditions = client.get_job_conditions(job=job)
