@@ -117,7 +117,7 @@ sdk/python/kubeflow/training/api
 - Run the following to install `black`:
 
   ```
-  pip install black==21.12b0
+  pip install black==23.9.1
   ```
 
 - To check your code:
