@@ -6,45 +6,32 @@ Thus, in this demo, distributed XGBoost job is able to do multi-class classifica
 User can extend provided data reader to read data from distributed data storage like HDFS, HBase or Hive etc.
 
 
-**Build image**
-
-The default image name and tag is `kubeflow/xgboost-dist-iris-test:1.1` respectiveily.
-
-```shell
-docker build -f Dockerfile -t kubeflow/xgboost-dist-iris-test:1.0 ./
-```
-
-Then you can push the docker image into repository
-```shell
-docker push kubeflow/xgboost-dist-iris-test:1.0 ./
-```
-
 **Configure the job runtime via Yaml file**
 
 The following files are available to setup distributed XGBoost computation runtime
  
 To store the model in OSS:
 
-* xgboostjob_v1alpha1_iris_train.yaml 
-* xgboostjob_v1alpha1_iris_predict.yaml
+* xgboostjob_v1_iris_train.yaml 
+* xgboostjob_v1_iris_predict.yaml
 
 To store the model in local path:
 
-* xgboostjob_v1alpha1_iris_train_local.yaml
-* xgboostjob_v1alpha1_iris_predict_local.yaml
+* xgboostjob_v1_iris_train_local.yaml
+* xgboostjob_v1_iris_predict_local.yaml
 
-For training jobs in OSS , you could configure xgboostjob_v1alpha1_iris_train.yaml and xgboostjob_v1alpha1_iris_predict.yaml
+For training jobs in OSS , you could configure xgboostjob_v1_iris_train.yaml and xgboostjob_v1_iris_predict.yaml
 Note, we use [OSS](https://www.alibabacloud.com/product/oss) to store the trained model,
-thus, you need to specify the OSS parameter in the yaml file. Therefore, remember to fill the OSS parameter in xgboostjob_v1alpha1_iris_train.yaml and xgboostjob_v1alpha1_iris_predict.yaml file.
+thus, you need to specify the OSS parameter in the yaml file. Therefore, remember to fill the OSS parameter in xgboostjob_v1_iris_train.yaml and xgboostjob_v1_iris_predict.yaml file.
 The oss parameter includes the account information such as access_id, access_key, access_bucket and endpoint.
 For Eg:
 --oss_param=endpoint:http://oss-ap-south-1.aliyuncs.com,access_id:XXXXXXXXXXX,access_key:XXXXXXXXXXXXXXXXXXX,access_bucket:XXXXXX
-Similarly, xgboostjob_v1alpha1_iris_predict.yaml is used to configure XGBoost job batch prediction.
+Similarly, xgboostjob_v1_iris_predict.yaml is used to configure XGBoost job batch prediction.
 
 
 **Start the distributed XGBoost train to store the model in OSS**
 ```
-kubectl create -f xgboostjob_v1alpha1_iris_train.yaml
+kubectl create -f xgboostjob_v1_iris_train.yaml
 ```
 
 **Look at the train job status**
@@ -57,13 +44,12 @@ Name:         xgboost-dist-iris-test
 Namespace:    default
 Labels:       <none>
 Annotations:  <none>
-API Version:  xgboostjob.kubeflow.org/v1alpha1
+API Version:  kubeflow.org/v1
 Kind:         XGBoostJob
 Metadata:
   Creation Timestamp:  2019-06-27T01:16:09Z
   Generation:          9
   Resource Version:    385834
-  Self Link:           /apis/xgboostjob.kubeflow.org/v1alpha1/namespaces/default/xgboostjobs/xgboost-dist-iris-test
   UID:                 2565e99a-9879-11e9-bbab-080027dfbfe2
 Spec:
   Run Policy:
@@ -156,7 +142,7 @@ Events:
 
 **Start the distributed XGBoost job predict**
 ```shell
-kubectl create -f xgboostjob_v1alpha1_iris_predict.yaml
+kubectl create -f xgboostjob_v1_iris_predict.yaml
 ```
 
 **Look at the batch predict job status**
@@ -169,13 +155,12 @@ Name:         xgboost-dist-iris-test-predict
 Namespace:    default
 Labels:       <none>
 Annotations:  <none>
-API Version:  xgboostjob.kubeflow.org/v1alpha1
+API Version:  kubeflow.org/v1
 Kind:         XGBoostJob
 Metadata:
   Creation Timestamp:  2019-06-27T06:06:53Z
   Generation:          8
-  Resource Version:    394523
-  Self Link:           /apis/xgboostjob.kubeflow.org/v1alpha1/namespaces/default/xgboostjobs/xgboost-dist-iris-test-predict
+  Resource Version:    394523 
   UID:                 c2a04cbc-98a1-11e9-bbab-080027dfbfe2
 Spec:
   Run Policy:
@@ -287,11 +272,11 @@ Note:
 
 * Please use the storage class which supports ReadWriteMany. The example yaml above uses glusterfs
 
-* Mention model_storage_type=local and model_path accordingly( In the example /tmp/xgboost_model/2 is used ) in xgboostjob_v1alpha1_iris_train_local.yaml and xgboostjob_v1alpha1_iris_predict_local.yaml"
+* Mention model_storage_type=local and model_path accordingly( In the example /tmp/xgboost_model/2 is used ) in xgboostjob_v1_iris_train_local.yaml and xgboostjob_v1_iris_predict_local.yaml"
 
 Now start the distributed XGBoost train. 
 ```
-kubectl create -f xgboostjob_v1alpha1_iris_train_local.yaml
+kubectl create -f xgboostjob_v1_iris_train_local.yaml
 ```
 
 **Look at the train job status**
@@ -301,7 +286,7 @@ kubectl create -f xgboostjob_v1alpha1_iris_train_local.yaml
  Here is a sample output when the job is finished. The output log like this
 ```
 
-apiVersion: xgboostjob.kubeflow.org/v1alpha1
+apiVersion: kubeflow.org/v1
 kind: XGBoostJob
 metadata:
   creationTimestamp: "2019-09-17T05:36:01Z"
@@ -309,7 +294,6 @@ metadata:
   name: xgboost-dist-iris-test-train_local
   namespace: default
   resourceVersion: "8919366"
-  selfLink: /apis/xgboostjob.kubeflow.org/v1alpha1/namespaces/default/xgboostjobs/xgboost-dist-iris-test-train_local
   uid: 08f85fad-d90d-11e9-aca1-fa163ea13108
 spec:
   RunPolicy:
@@ -402,7 +386,7 @@ status:
  ```
 **Start the distributed XGBoost job predict**
 ```
-kubectl create -f xgboostjob_v1alpha1_iris_predict_local.yaml
+kubectl create -f xgboostjob_v1_iris_predict_local.yaml
 ```
 
 **Look at the batch predict job status**
@@ -411,7 +395,7 @@ kubectl create -f xgboostjob_v1alpha1_iris_predict_local.yaml
  ```
  Here is a sample output when the job is finished. The output log like this
 ```
-apiVersion: xgboostjob.kubeflow.org/v1alpha1
+apiVersion: kubeflow.org/v1
 kind: XGBoostJob
 metadata:
   creationTimestamp: "2019-09-17T06:33:38Z"
@@ -419,7 +403,6 @@ metadata:
   name: xgboost-dist-iris-test-predict_local
   namespace: default
   resourceVersion: "8976054"
-  selfLink: /apis/xgboostjob.kubeflow.org/v1alpha1/namespaces/default/xgboostjobs/xgboost-dist-iris-test-predict_local
   uid: 151655b0-d915-11e9-aca1-fa163ea13108
 spec:
   RunPolicy:
