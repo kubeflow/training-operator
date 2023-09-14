@@ -36,7 +36,7 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: docker.io/merlintang/xgboost-dist-rabit-test:1.2
+          - image: docker.io/kubeflow/xgboost-dist-rabit-test:latest
             imagePullPolicy: Always
             name: xgboostjob
             ports:
@@ -51,7 +51,7 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: docker.io/merlintang/xgboost-dist-rabit-test:1.2
+          - image: docker.io/kubeflow/xgboost-dist-rabit-test:latest
             imagePullPolicy: Always
             name: xgboostjob
             ports:

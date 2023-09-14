@@ -71,7 +71,7 @@ Spec:
               --model_path=autoAI/xgb-opt/2
               --model_storage_type=oss
               --oss_param=unknown
-            Image:              docker.io/merlintang/xgboost-dist-iris:1.1
+            Image:              docker.io/kubeflow/xgboost-dist-iris:latest
             Image Pull Policy:  Always
             Name:               xgboostjob
             Ports:
@@ -93,7 +93,7 @@ Spec:
               --learning_rate=0.1
               --model_path="/tmp/xgboost_model"
               --model_storage_type=oss
-            Image:              docker.io/merlintang/xgboost-dist-iris:1.1
+            Image:              docker.io/kubeflow/xgboost-dist-iris:latest
             Image Pull Policy:  Always
             Name:               xgboostjob
             Ports:
@@ -179,7 +179,7 @@ Spec:
               --model_path=autoAI/xgb-opt/3
               --model_storage_type=oss
               --oss_param=unkown
-            Image:              docker.io/merlintang/xgboost-dist-iris:1.1
+            Image:              docker.io/kubeflow/xgboost-dist-iris:latest
             Image Pull Policy:  Always
             Name:               xgboostjob
             Ports:
@@ -199,7 +199,7 @@ Spec:
               --model_path=autoAI/xgb-opt/3
               --model_storage_type=oss
               --oss_param=unkown
-            Image:              docker.io/merlintang/xgboost-dist-iris:1.1
+            Image:              docker.io/kubeflow/xgboost-dist-iris:latest
             Image Pull Policy:  Always
             Name:               xgboostjob
             Ports:
@@ -314,7 +314,7 @@ spec:
             - --learning_rate=0.1
             - --model_path=/tmp/xgboost_model/2
             - --model_storage_type=local
-            image: docker.io/merlintang/xgboost-dist-iris:1.1
+            image: docker.io/kubeflow/xgboost-dist-iris:latest
             imagePullPolicy: Always
             name: xgboostjob
             ports:
@@ -420,7 +420,7 @@ spec:
             - --job_type=Predict
             - --model_path=/tmp/xgboost_model/2
             - --model_storage_type=local
-            image: docker.io/merlintang/xgboost-dist-iris:1.1
+            image: docker.io/kubeflow/xgboost-dist-iris:latest
             imagePullPolicy: Always
             name: xgboostjob
             ports:
@@ -446,7 +446,7 @@ spec:
             - --job_type=Predict
             - --model_path=/tmp/xgboost_model/2
             - --model_storage_type=local
-            image: docker.io/merlintang/xgboost-dist-iris:1.1
+            image: docker.io/kubeflow/xgboost-dist-iris:latest
             imagePullPolicy: Always
             name: xgboostjob
             ports:
