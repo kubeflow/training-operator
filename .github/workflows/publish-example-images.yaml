@@ -24,28 +24,20 @@ jobs:
         include:
           - component-name: tf-dist-mnist-test
             dockerfile: examples/tensorflow/dist-mnist/Dockerfile
-            context: .
           - component-name: tf-distributed-worker
             dockerfile: examples/tensorflow/distribution_strategy/estimator-API/Dockerfile
-            context: .
           - component-name: tf-multi-worker-strategy
             dockerfile: examples/tensorflow/distribution_strategy/keras-API/Dockerfile
-            context: .
           - component-name: tf-mnist-with-summaries
             dockerfile: examples/tensorflow/mnist_with_summaries/Dockerfile
-            context: .
           - component-name: tf-smoke
             dockerfile: examples/tensorflow/tf_sample/Dockerfile
-            context: .
           - component-name: pytorch-dist-sendrecv-test
             dockerfile: examples/pytorch/smoke-dist/Dockerfile
-            context: .
           - component-name: pytorch-elastic-example-imagenet
             dockerfile: examples/pytorch/elastic/imagenet/Dockerfile
-            context: .
           - component-name: pytorch-elastic-example-echo
             dockerfile: examples/pytorch/elastic/echo/Dockerfile
-            context: .
           - component-name: xgboost-dist-iris
             dockerfile: examples/xgboost/xgboost-dist/Dockerfile
             context: examples/xgboost/xgboost-dist

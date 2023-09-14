@@ -13,7 +13,8 @@ inputs:
     required: true
     description: e.g, linux/amd64
   context:
-    required: true
+    required: false
+    default: .
     description: e.g, examples/xgboost/xgboost-dist
   push:
     required: true
