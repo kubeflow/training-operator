@@ -31,11 +31,7 @@ from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training.constants import constants
 
-from test.e2e.utils import (
-    verify_job_e2e,
-    verify_unschedulable_job_e2e,
-    get_pod_spec_scheduler_name,
-)
+import test.e2e.utils as utils
 from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
@@ -64,7 +60,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
             ),
             spec=V1PodSpec(
                 containers=[launcher_container],
-                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+                scheduler_name=utils.get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
             ),
         ),
     )
@@ -78,7 +74,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
             ),
             spec=V1PodSpec(
                 containers=[worker_container],
-                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+                scheduler_name=utils.get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
             ),
         ),
     )
@@ -94,15 +90,26 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    try:
+        utils.verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"MPIJob E2E fails. Exception: {e}")
 
     TRAINING_CLIENT.update_job(patched_mpijob, JOB_NAME, job_namespace)
     logging.info(f"List of updated {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"MPIJob E2E fails. Exception: {e}")
 
-    TRAINING_CLIENT.delete_job(JOB_NAME)
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
 @pytest.mark.skipif(
@@ -140,8 +147,14 @@ def test_sdk_e2e(job_namespace):
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"MPIJob E2E fails. Exception: {e}")
 
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 

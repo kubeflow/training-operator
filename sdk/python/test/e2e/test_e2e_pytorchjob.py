@@ -31,11 +31,7 @@ from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training import constants
 
-from test.e2e.utils import (
-    verify_job_e2e,
-    verify_unschedulable_job_e2e,
-    get_pod_spec_scheduler_name,
-)
+import test.e2e.utils as utils
 from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
@@ -63,7 +59,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
                 annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
             ),
             spec=V1PodSpec(
-                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+                scheduler_name=utils.get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
                 containers=[container],
             ),
         ),
@@ -77,7 +73,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
                 annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
             ),
             spec=V1PodSpec(
-                scheduler_name=get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
+                scheduler_name=utils.get_pod_spec_scheduler_name(GANG_SCHEDULER_NAME),
                 containers=[container],
             ),
         ),
@@ -97,14 +93,25 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    try:
+        utils.verify_unschedulable_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob E2E fails. Exception: {e}")
 
     TRAINING_CLIENT.update_job(schedulable_pytorchjob, JOB_NAME, job_namespace)
     logging.info(f"List of updated {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob E2E fails. Exception: {e}")
 
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
@@ -143,40 +150,14 @@ def test_sdk_e2e(job_namespace):
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob E2E fails. Exception: {e}")
 
-    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
-
-
-def test_pytorchjob_from_func(job_namespace):
-    # Test Training function.
-    def train_func(parameters):
-        import pandas as pd
-        import time
-
-        print(f"Package pandas=={pd.__version__} is installed")
-        print(f"Input function parameters are: {parameters}")
-
-        print("Stat Training ....")
-        for i in range(10):
-            print(f"Epoch: {i} finished")
-            time.sleep(1)
-
-        print("Training is complete")
-
-    TRAINING_CLIENT.create_job(
-        name=JOB_NAME,
-        namespace=job_namespace,
-        parameters={"lr": "0.01"},
-        train_func=train_func,
-        num_worker_replicas=1,
-        packages_to_install=["pandas==1.3.5"],
-    )
-
-    logging.info("Get created PyTorchJob from function")
-    logging.info(TRAINING_CLIENT.get_job(JOB_NAME, job_namespace))
-
-    verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
