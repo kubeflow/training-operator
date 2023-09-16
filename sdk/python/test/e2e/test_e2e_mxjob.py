@@ -134,8 +134,6 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
-    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
-
 
 @pytest.mark.skipif(
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
