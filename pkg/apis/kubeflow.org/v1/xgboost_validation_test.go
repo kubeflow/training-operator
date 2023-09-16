@@ -31,7 +31,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "xgboost",
-						Image: "docker.io/merlintang/xgboost-dist-iris:1.1",
+						Image: "docker.io/kubeflow/xgboost-dist-iris:latest",
 						Ports: []corev1.ContainerPort{{
 							Name:          "xgboostjob-port",
 							ContainerPort: 9991,
@@ -56,7 +56,7 @@ func TestValidateV1XGBoostJob(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "xgboost",
-						Image: "docker.io/merlintang/xgboost-dist-iris:1.",
+						Image: "docker.io/kubeflow/xgboost-dist-iris:latest",
 						Ports: []corev1.ContainerPort{{
 							Name:          "xgboostjob-port",
 							ContainerPort: 9991,

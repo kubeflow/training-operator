@@ -13,6 +13,7 @@ jobs:
       # TODO (tenzen-y): Support linux/arm64 platform
       platforms: linux/amd64
       dockerfile: ${{ matrix.dockerfile }}
+      context: ${{ matrix.context }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -37,14 +38,17 @@ jobs:
             dockerfile: examples/pytorch/elastic/imagenet/Dockerfile
           - component-name: pytorch-elastic-example-echo
             dockerfile: examples/pytorch/elastic/echo/Dockerfile
+          - component-name: xgboost-dist-iris
+            dockerfile: examples/xgboost/xgboost-dist/Dockerfile
+            context: examples/xgboost/xgboost-dist
+          - component-name: lightgbm-dist-py-test
+            dockerfile: examples/xgboost/lightgbm-dist/Dockerfile
+            context: examples/xgboost/lightgbm-dist
+          - component-name: xgboost-dist-rabit-test
+            dockerfile: examples/xgboost/smoke-dist/Dockerfile
+            context: examples/xgboost/smoke-dist
 
 # TODO (tenzen-y): Fix the below broken Dockerfiles
-#          - component-name: lightgbm-dist-py-test
-#            dockerfile: examples/xgboost/lightgbm-dist/Dockerfile
-#          - component-name: xgboost-dist-rabit-test
-#            dockerfile: examples/xgboost/smoke-dist/Dockerfile
-#          - component-name: xgboost-dist-iris
-#            dockerfile: examples/xgboost/xgboost-dist
 #          - component-name: mxnet-gpu
 #            dockerfile: examples/mxnet/train/Dockerfile
 #          - component-name: mxnet-auto-tuning

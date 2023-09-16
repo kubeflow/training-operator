@@ -12,6 +12,10 @@ inputs:
   platforms:
     required: true
     description: e.g, linux/amd64
+  context:
+    required: false
+    default: .
+    description: e.g, examples/xgboost/xgboost-dist
   push:
     required: true
     description: whether to push container images or not
@@ -40,7 +44,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         platforms: ${{ inputs.platforms }}
-        context: .
+        context: ${{ inputs.context }}
         file: ${{ inputs.dockerfile }}
         push: ${{ inputs.push }}
         tags: ${{ steps.meta.outputs.tags }}

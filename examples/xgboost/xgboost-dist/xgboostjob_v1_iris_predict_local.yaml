@@ -1,15 +1,13 @@
 apiVersion: kubeflow.org/v1
 kind: XGBoostJob
 metadata:
-  name: xgboost-dist-iris-test-train-local
+  name: xgboost-dist-iris-test-predict-local
 spec:
   xgbReplicaSpecs:
     Master:
       replicas: 1
       restartPolicy: Never
       template:
-        apiVersion: v1
-        kind: Pod
         spec:
           volumes:
           - name: task-pv-storage
@@ -17,7 +15,7 @@ spec:
               claimName: xgboostlocal
           containers:
           - name: xgboost
-            image: docker.io/merlintang/xgboost-dist-iris:1.1
+            image: docker.io/kubeflow/xgboost-dist-iris:latest
             volumeMounts:
               - name: task-pv-storage
                 mountPath: /tmp/xgboost_model
@@ -26,18 +24,13 @@ spec:
               name: xgboostjob-port
             imagePullPolicy: Always
             args:
-              - --job_type=Train
-              - --xgboost_parameter=objective:multi:softprob,num_class:3
-              - --n_estimators=10
-              - --learning_rate=0.1
+              - --job_type=Predict
               - --model_path=/tmp/xgboost_model/2
               - --model_storage_type=local
     Worker:
       replicas: 2
       restartPolicy: ExitCode
       template:
-        apiVersion: v1
-        kind: Pod
         spec:
           volumes:
           - name: task-pv-storage
@@ -45,7 +38,7 @@ spec:
               claimName: xgboostlocal
           containers:
           - name: xgboost
-            image: docker.io/merlintang/xgboost-dist-iris:1.1
+            image: docker.io/kubeflow/xgboost-dist-iris:latest
             volumeMounts:
               - name: task-pv-storage
                 mountPath: /tmp/xgboost_model
@@ -54,9 +47,6 @@ spec:
               name: xgboostjob-port
             imagePullPolicy: Always
             args:
-              - --job_type=Train
-              - --xgboost_parameter="objective:multi:softprob,num_class:3"
-              - --n_estimators=10
-              - --learning_rate=0.1
-              - --model_path=/tmp/xgboost_model/2
-              - --model_storage_type=local
+             - --job_type=Predict
+             - --model_path=/tmp/xgboost_model/2
+             - --model_storage_type=local

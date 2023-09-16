@@ -7,3 +7,4 @@ joblib>=0.13.2
 scikit-learn>=0.20
 oss2>=2.7.0
 pandas>=0.24.2
+xgboost==1.5.2

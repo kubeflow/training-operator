@@ -4,13 +4,6 @@ This folder containers Dockerfile and Python scripts to run a distributed Lightg
 The code is based in this [example](https://github.com/microsoft/LightGBM/tree/master/examples/parallel_learning) in the official github repository of the library.
 
 
-**Build image**
-The default image name and tag is `kubeflow/lightgbm-dist-py-test:1.0` respectiveily.
-
-```shell
-docker build -f Dockerfile -t kubeflow/lightgbm-dist-py-test:1.0 ./
-```
-
 **Start the training**
 
 ```
@@ -24,7 +17,7 @@ kubectl create -f xgboostjob_v1_lightgbm_dist_training.yaml
 Here is sample output when the job is running. The output result like this
 
 ```
-apiVersion: xgboostjob.kubeflow.org/v1
+apiVersion: kubeflow.org/v1
 kind: XGBoostJob
 metadata:
   annotations:
