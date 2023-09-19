@@ -97,7 +97,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
         job_namespace,
         constants.PYTORCHJOB_KIND,
         CONTAINER_NAME,
-        timeout=10000,
+        timeout=900,
     )
 
     TRAINING_CLIENT.delete_pytorchjob(JOB_NAME, job_namespace)
@@ -135,7 +135,7 @@ def test_sdk_e2e(job_namespace):
         job_namespace,
         constants.PYTORCHJOB_KIND,
         CONTAINER_NAME,
-        timeout=10000,
+        timeout=900,
     )
 
     TRAINING_CLIENT.delete_pytorchjob(JOB_NAME, job_namespace)
