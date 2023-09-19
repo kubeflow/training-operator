@@ -1,37 +1,40 @@
-FROM ubuntu:16.04
+# inspired from https://github.com/microsoft/LightGBM/blob/v4.1.0/docker/dockerfile-cli
+FROM ubuntu:20.04 as builder
 
-ARG CONDA_DIR=/opt/conda
-ENV PATH $CONDA_DIR/bin:$PATH
+ENV \
+    DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
 
-RUN apt-get update && \
+RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
-    ca-certificates \
-    cmake \
-    build-essential \
-    gcc \
-    g++ \
-    git \
-    curl && \
-    # python environment
-    curl -sL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o conda.sh && \
-    /bin/bash conda.sh -f -b -p $CONDA_DIR && \
-    export PATH="$CONDA_DIR/bin:$PATH" && \
-    conda config --set always_yes yes --set changeps1 no && \
-    # lightgbm
-    conda install -q -y numpy==1.20.3 scipy==1.6.2 scikit-learn==0.24.2 pandas==1.3.0 && \
-    git clone --recursive --branch stable --depth 1 https://github.com/Microsoft/LightGBM && \
+        ca-certificates \
+        cmake \
+        build-essential \
+        gcc \
+        g++ \
+        git \
+        libomp-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone \
+        --recursive \
+        --branch v4.1.0 \
+        --depth 1 \
+        https://github.com/Microsoft/LightGBM && \
     mkdir LightGBM/build && \
     cd LightGBM/build && \
     cmake .. && \
     make -j4 && \
     make install && \
-    cd ../python-package && \
-    python setup.py install_lib && \
-    # clean
-    apt-get autoremove -y && apt-get clean && \
-    conda clean -a -y && \
-    rm -rf /usr/local/src/* && \
-    rm -rf /LightGBM
+    cd "${HOME}" && \
+    rm -rf LightGBM
+
+FROM python:3.7
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY --from=builder /usr/local/bin/lightgbm /usr/local/bin/lightgbm
 
 WORKDIR /app
 

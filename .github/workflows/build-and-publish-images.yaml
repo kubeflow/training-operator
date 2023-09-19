@@ -13,6 +13,10 @@ on:
       dockerfile:
         required: true
         type: string
+      context:
+        required: false
+        type: string
+        default: .
     secrets:
       DOCKERHUB_USERNAME:
         required: false
@@ -48,6 +52,7 @@ jobs:
           image: docker.io/kubeflow/${{ inputs.component-name }}
           dockerfile: ${{ inputs.dockerfile }}
           platforms: ${{ inputs.platforms }}
+          context: ${{ inputs.context }}
           push: true
 
       - name: Test Build For Component ${{ inputs.component-name }}
@@ -57,4 +62,5 @@ jobs:
           image: docker.io/kubeflow/${{ inputs.component-name }}
           dockerfile: ${{ inputs.dockerfile }}
           platforms: ${{ inputs.platforms }}
+          context: ${{ inputs.context }}
           push: false
