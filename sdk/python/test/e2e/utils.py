@@ -34,7 +34,7 @@ def verify_unschedulable_job_e2e(
 
 
 def verify_job_e2e(
-    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str, timeout: int = 7200
+    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str, timeout: int = 600
 ):
     """Verify Training Job e2e test."""
 
