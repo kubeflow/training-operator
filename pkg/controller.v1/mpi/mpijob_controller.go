@@ -724,8 +724,14 @@ func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *kubeflowv1.MPIJob, work
 // by this MPIJob, or creates one if it doesn't exist.
 func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1.MPIJob) (*corev1.ServiceAccount, error) {
 
+	saName := mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+
+	if len(saName) == 0 {
+		saName = mpiJob.Name + launcherSuffix
+	}
+
 	sa := &corev1.ServiceAccount{}
-	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
+	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: saName}
 	err := jc.Get(context.Background(), NamespacedName, sa)
 
 	if err == nil {
@@ -1033,6 +1039,10 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 
 		rt := strings.ToLower(string(kubeflowv1.MPIJobReplicaTypeLauncher))
 		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rt)
+	}
+
+	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) == 0 {
+		podSpec.Spec.ServiceAccountName = launcherName
 	}
 
 	podSpec.Spec.InitContainers = append(podSpec.Spec.InitContainers, corev1.Container{
@@ -1350,6 +1360,12 @@ func newLauncherRole(mpiJob *kubeflowv1.MPIJob, workerReplicas int32) *rbacv1.Ro
 // handleObject can discover the MPIJob resource that 'owns' it.
 func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 	launcherName := mpiJob.Name + launcherSuffix
+	saName := launcherName
+
+	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) > 0 {
+		saName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+	}
+
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      launcherName,
@@ -1364,7 +1380,7 @@ func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      rbacv1.ServiceAccountKind,
-				Name:      launcherName,
+				Name:      saName,
 				Namespace: mpiJob.Namespace,
 			},
 		},
