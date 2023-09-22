@@ -15,7 +15,7 @@
 import multiprocessing
 import logging
 import time
-from typing import Callable, List, Dict, Any, Set
+from typing import Optional, Callable, List, Dict, Any, Set
 import queue
 from kubernetes import client, config, watch
 
@@ -36,9 +36,11 @@ status_logger = utils.StatusLogger(
 class TrainingClient(object):
     def __init__(
         self,
-        config_file: str = None,
-        context: str = None,
-        client_configuration: client.Configuration = None,
+        config_file: Optional[str] = None,
+        context: Optional[str] = None,
+        client_configuration: Optional[client.Configuration] = None,
+        namespace: str = utils.get_default_target_namespace(),
+        job_kind: str = constants.PYTORCHJOB_KIND,
     ):
         """TrainingClient constructor.
 
@@ -47,8 +49,17 @@ class TrainingClient(object):
             context: Set the active context. Defaults to current_context from the kube-config.
             client_configuration: Client configuration for cluster authentication.
                 You have to provide valid configuration with Bearer token or
-                with username and password.
-                You can find an example here: https://github.com/kubernetes-client/python/blob/67f9c7a97081b4526470cad53576bc3b71fa6fcc/examples/remote_cluster.py#L31
+                with username and password. You can find an example here:
+                https://github.com/kubernetes-client/python/blob/67f9c7a97081b4526470cad53576bc3b71fa6fcc/examples/remote_cluster.py#L31
+            namespace: Target Kubernetes namespace. By default it takes namespace
+                from `/var/run/secrets/kubernetes.io/serviceaccount/namespace` location
+                or set as `default`. Namespace can be overridden during method invocations.
+            job_kind: Target Training Job kind (e.g. `TFJob`, `PyTorchJob`, `MPIJob`).
+                Job kind can be overridden during method invocations.
+                The default Job kind is `PyTorchJob`.
+
+        Raises:
+            ValueError: Job kind is invalid.
         """
 
         # If client configuration is not set, use kube-config to access Kubernetes APIs.
@@ -64,62 +75,324 @@ class TrainingClient(object):
         self.core_api = client.CoreV1Api(k8s_client)
         self.api_client = ApiClient()
 
-    # ------------------------------------------------------------------------ #
-    # Common Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def get_job_conditions(
+        self.namespace = namespace
+        if job_kind not in constants.JOB_PARAMETERS:
+            raise ValueError(
+                f"Job kind must be one of these: {list(constants.JOB_PARAMETERS.keys())}"
+            )
+        self.job_kind = job_kind
+
+    def create_job(
+        self,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        base_image: Optional[str] = None,
+        train_func: Optional[Callable] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+        num_worker_replicas: Optional[int] = None,
+        num_chief_replicas: Optional[int] = None,
+        num_ps_replicas: Optional[int] = None,
+        packages_to_install: Optional[List[str]] = None,
+        pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+    ):
+        """Create the Training Job.
+        Job can be created using one of the following options:
+
+        - Define custom resource object in `job` parameter (e.g. TFJob or PyTorchJob).
+        - Define training function in `train_func` parameter and number of workers.
+        - Define Docker image in `base_image` parameter and number of workers.
+
+        Args:
+            job: Job object. Object must be one of these types: KubeflowOrgV1TFJob,
+                KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+            name: Name for the Job. It must be set if `job` parameter is omitted.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). It must be set if
+                `job` parameter is omitted. By default Job kind is taken from
+                `TrainingClient` object.
+            base_image: Image that Job uses to train the model on each training replica.
+                If `train_func` parameter is set, this image is used to execute the training
+                function. The `constants` module contains some base images, the default image
+                is `docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime`
+            train_func: Function that Job uses to train the model on each training replica.
+                This function must be Callable. Optionally, this function might have one dict
+                argument to define input parameters for the function. If `train_func` is
+                set, Base Image must support `bash` CLI to execute the training script.
+            parameters: Dict of input parameters that training function might receive.
+            num_worker_replicas: Number of Worker replicas for the Job.
+            num_chief_replicas: Number of Chief replicas for the TFJob. Number
+                of Chief replicas can't be more than 1.
+            num_ps_replicas: Number of Parameter Server replicas for the TFJob.
+            packages_to_install: List of Python packages to install in addition
+                to the base image packages if `train_func` parameter is set.
+                These packages are installed before executing the objective function.
+            pip_index_url: The PyPI url from which to install Python packages.
+
+        Raises:
+            ValueError: Invalid input parameters.
+            TimeoutError: Timeout to create Job.
+            RuntimeError: Failed to create Job.
+        """
+
+        # When Job is set, only namespace arg is allowed.
+        if job is not None:
+            for key, value in locals().items():
+                if (
+                    key not in ["self", "job", "namespace", "pip_index_url"]
+                    and value is not None
+                ):
+                    raise ValueError(
+                        "If `job` is set only `namespace` argument is allowed. "
+                        f"Argument `{key}` must be None."
+                    )
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+        if job is not None:
+            job_kind = job.kind
+
+        if job_kind not in constants.JOB_PARAMETERS:
+            raise ValueError(
+                f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
+            )
+
+        # If Training function or base image is set, configure Job template.
+        if train_func is not None or base_image is not None:
+            # Job name must be set to configure Job template.
+            if name is None:
+                raise ValueError(
+                    "Job name must be set to configure Job from function or image"
+                )
+
+            # Get Pod template spec from function or image.
+            pod_template_spec = utils.get_pod_template_spec(
+                job_kind=job_kind,
+                base_image=base_image,
+                train_func=train_func,
+                parameters=parameters,
+                packages_to_install=packages_to_install,
+                pip_index_url=pip_index_url,
+            )
+
+            # Configure template for different Jobs.
+            # TODO (andreyvelich): Add support for other kinds (e.g. MPIJob).
+            if job_kind == constants.TFJOB_KIND:
+                job = utils.get_tfjob_template(
+                    name=name,
+                    namespace=namespace,
+                    pod_template_spec=pod_template_spec,
+                    num_worker_replicas=num_worker_replicas,
+                    num_chief_replicas=num_chief_replicas,
+                    num_ps_replicas=num_ps_replicas,
+                )
+            elif job_kind == constants.PYTORCHJOB_KIND:
+                job = utils.get_pytorchjob_template(
+                    name=name,
+                    namespace=namespace,
+                    pod_template_spec=pod_template_spec,
+                    num_worker_replicas=num_worker_replicas,
+                )
+            else:
+                raise ValueError(
+                    f"Job kind {job_kind} can't be created using function or image"
+                )
+
+        # Verify Job object type.
+        if not isinstance(job, constants.JOB_MODELS):
+            raise ValueError(f"Job must be one of these types: {constants.JOB_MODELS}")
+
+        # Create the Training Job.
+        try:
+            self.custom_api.create_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
+                namespace,
+                constants.JOB_PARAMETERS[job.kind]["plural"],
+                job,
+            )
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(
+                f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
+            )
+        except Exception:
+            raise RuntimeError(
+                f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
+            )
+
+        logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been created")
+
+    def get_job(
         self,
         name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> constants.JOB_MODELS_TYPE:
+        """Get the Training Job.
+
+        Args:
+            name: Name for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
+
+        Returns:
+            object: Job object. For example: KubeflowOrgV1PyTorchJob
+
+        Raises:
+            TimeoutError: Timeout to get Job.
+            RuntimeError: Failed to get Job.
+        """
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+
+        if job_kind not in constants.JOB_PARAMETERS:
+            raise ValueError(
+                f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
+            )
+
+        try:
+            thread = self.custom_api.get_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
+                namespace,
+                constants.JOB_PARAMETERS[job_kind]["plural"],
+                name,
+                async_req=True,
+            )
+            response = utils.FakeResponse(thread.get(timeout))
+            job = self.api_client.deserialize(
+                response, constants.JOB_PARAMETERS[job_kind]["model"]
+            )
+
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to get {job_kind}: {namespace}/{name}")
+        except Exception:
+            raise RuntimeError(f"Failed to get {job_kind}: {namespace}/{name}")
+
+        return job
+
+    def list_jobs(
+        self,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        timeout: int = constants.DEFAULT_TIMEOUT,
+    ) -> List[constants.JOB_MODELS_TYPE]:
+        """List of all Training Jobs with specific kind in namespace.
+
+        Args:
+            namespace: Namespace to list the Jobs. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
+
+        Returns:
+            list[object]: List of Job objects.
+                For example: list of KubeflowOrgV1PyTorchJob objects. It returns empty list
+                if Jobs can't be found.
+
+        Raises:
+            TimeoutError: Timeout to list Jobs
+            RuntimeError: Failed to list Jobs
+        """
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+
+        if job_kind not in constants.JOB_PARAMETERS:
+            raise ValueError(
+                f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
+            )
+
+        result = []
+        try:
+            thread = self.custom_api.list_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
+                namespace,
+                constants.JOB_PARAMETERS[job_kind]["plural"],
+                async_req=True,
+            )
+            response = thread.get(timeout)
+            result = [
+                self.api_client.deserialize(
+                    utils.FakeResponse(item),
+                    constants.JOB_PARAMETERS[job_kind]["model"],
+                )
+                for item in response.get("items")
+            ]
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to list {job_kind}s in namespace: {namespace}")
+        except Exception:
+            raise RuntimeError(f"Failed to list {job_kind}s in namespace: {namespace}")
+
+        return result
+
+    def get_job_conditions(
+        self,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
+        timeout: int = constants.DEFAULT_TIMEOUT,
+    ) -> List[models.V1JobCondition]:
         """Get the Training Job conditions. Training Job is in the condition when
         `status=True` for the appropriate condition `type`. For example,
         Training Job is Succeeded when `status=True` and `type=Succeeded`.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to get conditions.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to get the conditions.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             list[V1JobCondition]: List of Job conditions with
                 last transition time, last update time, message, reason, type, and
-                status. It returns empty list if Training Job does not have any
+                status. It returns empty list if Job does not have any
                 conditions yet.
 
         Raises:
-            ValueError: Job kind is invalid.
-            TimeoutError: Timeout to get Training Job.
-            RuntimeError: Failed to get Training Job.
+            ValueError: Invalid input parameters.
+            TimeoutError: Timeout to get Job.
+            RuntimeError: Failed to get Job.
         """
 
-        models = tuple([d["model"] for d in list(constants.JOB_KINDS.values())])
-        if job is not None and not isinstance(job, models):
-            raise ValueError(f"Job must be one of these types: {models}")
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+
+        if job_kind not in constants.JOB_PARAMETERS:
+            raise ValueError(
+                f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
+            )
+
+        if job is not None and not isinstance(job, constants.JOB_MODELS):
+            raise ValueError(f"Job must be one of these types: {constants.JOB_MODELS}")
 
         # If Job is not set, get the Training Job.
         if job is None:
-            if job_kind not in constants.JOB_KINDS:
+            # Job name must be set when Job object is not set.
+            if name is None:
                 raise ValueError(
-                    f"Job kind must be one of these: {list(constants.JOB_KINDS.keys())}"
+                    "Job name must be set to configure Job from function or image"
                 )
-            job = utils.get_job(
-                custom_api=self.custom_api,
-                api_client=self.api_client,
+
+            job = self.get_job(
                 name=name,
                 namespace=namespace,
-                job_model=constants.JOB_KINDS[job_kind]["model"],
                 job_kind=job_kind,
-                job_plural=constants.JOB_KINDS[job_kind]["plural"],
                 timeout=timeout,
             )
         if job.status and job.status.conditions and len(job.status.conditions) > 0:
@@ -128,30 +401,30 @@ class TrainingClient(object):
 
     def is_job_created(
         self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> bool:
         """Check if Training Job is Created.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to check the status.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to check the status.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             bool: True if Job is Created, else False.
 
         Raises:
-            ValueError: Job kind is invalid.
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -163,30 +436,30 @@ class TrainingClient(object):
 
     def is_job_running(
         self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> bool:
         """Check if Training Job is Running.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to check the status.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to check the status.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             bool: True if Job is Running, else False.
 
         Raises:
-            ValueError: Job kind is invalid.
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -198,30 +471,30 @@ class TrainingClient(object):
 
     def is_job_restarting(
         self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> bool:
         """Check if Training Job is Restarting.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to check the status.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to check the status.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             bool: True if Job is Restarting, else False.
 
         Raises:
-            ValueError: Job kind is invalid.
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -233,30 +506,30 @@ class TrainingClient(object):
 
     def is_job_succeeded(
         self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> bool:
         """Check if Training Job is Succeeded.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to check the status.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to check the status.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             bool: True if Job is Succeeded, else False.
 
         Raises:
-            ValueError: Job kind is invalid.
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -268,30 +541,30 @@ class TrainingClient(object):
 
     def is_job_failed(
         self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
-        job: object = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        job: Optional[constants.JOB_MODELS_TYPE] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> bool:
         """Check if Training Job is Failed.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to check the status.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
-            job: Optionally, Training Job object can be set to check the status.
-                It should be type of `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob,
-                KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or KubeflowOrgV1PaddleJob`
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            job: Job object can be set to get the conditions. Object must be one of
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                If this parameter is omitted, it gets Job with the given name and kind.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             bool: True if Job is Failed, else False.
 
         Raises:
-            ValueError: Job kind is invalid.
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
             RuntimeError: Failed to get Job.
         """
@@ -304,69 +577,69 @@ class TrainingClient(object):
     def wait_for_job_conditions(
         self,
         name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        job_kind: str = constants.TFJOB_KIND,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
         expected_conditions: Set = {constants.JOB_CONDITION_SUCCEEDED},
-        timeout: int = 600,
+        wait_timeout: int = 600,
         polling_interval: int = 15,
-        callback: Callable = None,
-        apiserver_timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+        callback: Optional[Callable] = None,
+        timeout: int = constants.DEFAULT_TIMEOUT,
+    ) -> constants.JOB_MODELS_TYPE:
         """Wait until Training Job reaches any of the specified conditions.
         By default it waits for the Succeeded condition.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
-            job_kind: Kind for the Training job to wait for conditions.
-                It should be one of these: `TFJob, PyTorchJob, MXJob, XGBoostJob, MPIJob, or PaddleJob`.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
             expected_conditions: Set of expected conditions. It must be subset of this:
                 `{"Created", "Running", "Restarting", "Succeeded", "Failed"}`
-            timeout: How many seconds to wait until Job reaches one of
+            wait_timeout: How many seconds to wait until Job reaches one of
                 the expected conditions.
             polling_interval: The polling interval in seconds to get Job status.
-            callback: Optional callback function that is invoked after Job
+            callback: Callback function that is invoked after Job
                 status is polled. This function takes a single argument which
                 is current Job object.
-            apiserver_timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
-            object: Training Job object of type `KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob,
-            KubeflowOrgV1MXJob, KubeflowOrgV1XGBoostJob, KubeflowOrgV1MPIJob, or
-            KubeflowOrgV1PaddleJob` which is reached required condition.
+            object: Job object. For example: KubeflowOrgV1PyTorchJob
 
         Raises:
-            ValueError: Expected conditions are invalid or Job kind is invalid
+            ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
-            RuntimeError: Failed to get Job.
+            RuntimeError: Failed to get Job or Job reaches unexpected Failed condition.
         """
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
 
         if not expected_conditions.issubset(constants.JOB_CONDITIONS):
             raise ValueError(
-                f"Expected conditions: {expected_conditions} must be subset of {constants.JOB_CONDITIONS}"
+                f"Expected conditions: {expected_conditions} must be subset of \
+                    {constants.JOB_CONDITIONS}"
             )
-        for _ in range(round(timeout / polling_interval)):
-
+        for _ in range(round(wait_timeout / polling_interval)):
             # We should get Job only once per cycle and check the statuses.
-            job = utils.get_job(
-                custom_api=self.custom_api,
-                api_client=self.api_client,
+            job = self.get_job(
                 name=name,
                 namespace=namespace,
-                job_model=constants.JOB_KINDS[job_kind]["model"],
                 job_kind=job_kind,
-                job_plural=constants.JOB_KINDS[job_kind]["plural"],
-                timeout=apiserver_timeout,
+                timeout=timeout,
             )
-            conditions = self.get_job_conditions(
-                name, namespace, job_kind, job, timeout
-            )
+
+            # Get Job conditions.
+            conditions = self.get_job_conditions(job=job, timeout=timeout)
             if len(conditions) > 0:
                 status_logger(
-                    name, conditions[-1].type, conditions[-1].last_transition_time,
+                    name,
+                    conditions[-1].type,
+                    conditions[-1].last_transition_time,
                 )
-            # Execute callback function.
+
+            # Execute callback function is it is set.
             if callback:
                 callback(job)
 
@@ -388,27 +661,29 @@ class TrainingClient(object):
             time.sleep(polling_interval)
 
         raise TimeoutError(
-            f"Timeout waiting for {job_kind}: {namespace}/{name} to reach expected conditions: {expected_conditions}"
+            f"Timeout waiting for {job_kind}: {namespace}/{name} to reach expected conditions: \
+                {expected_conditions}"
         )
 
     def get_job_pod_names(
         self,
         name: str,
-        namespace: str = utils.get_default_target_namespace(),
+        namespace: Optional[str] = None,
         is_master: bool = False,
-        replica_type: str = None,
-        replica_index: int = None,
+        replica_type: Optional[str] = None,
+        replica_index: Optional[int] = None,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> List[str]:
         """Get pod names for the Training Job.
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
             is_master: Whether to get pods only with the label
                 `training.kubeflow.org/job-role: master`.
-            replica_type: Optional, type of the Job replica.
-                For TFJob one of `chief`, `ps`, or `worker`.
+            replica_type: Type of the Job replica.
+                For TFJob one of `Chief`, `PS`, or `worker`.
 
                 For PyTorchJob one of `master` or `worker`.
 
@@ -420,9 +695,8 @@ class TrainingClient(object):
 
                 For PaddleJob one of `master` or `worker`.
 
-            replica_index: Optional, index for the Job replica.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
+            replica_index: Index for the Job replica.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
 
         Returns:
             list[str]: List of the Job pod names.
@@ -432,6 +706,8 @@ class TrainingClient(object):
             TimeoutError: Timeout to get Job pods.
             RuntimeError: Failed to get Job pods.
         """
+
+        namespace = namespace or self.namespace
 
         if (
             replica_type is not None
@@ -471,7 +747,9 @@ class TrainingClient(object):
         pods = []
         try:
             thread = self.core_api.list_namespaced_pod(
-                namespace, label_selector=label_selector, async_req=True,
+                namespace,
+                label_selector=label_selector,
+                async_req=True,
             )
             response = thread.get(timeout)
         except multiprocessing.TimeoutError:
@@ -486,11 +764,11 @@ class TrainingClient(object):
     def get_job_logs(
         self,
         name: str,
-        namespace: str = utils.get_default_target_namespace(),
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
         is_master: bool = True,
-        replica_type: str = None,
-        replica_index: int = None,
-        container: str = constants.TFJOB_CONTAINER,
+        replica_type: Optional[str] = None,
+        replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ):
@@ -499,7 +777,10 @@ class TrainingClient(object):
 
         Args:
             name: Name for the Job.
-            namespace: Namespace for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
             is_master: Whether to get logs for the pod with the label
                 `training.kubeflow.org/job-role: master`.
             replica_type: Optional, type of the Job replica.
@@ -526,6 +807,9 @@ class TrainingClient(object):
             RuntimeError: Failed to get Job pods.
         """
 
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+
         pods = self.get_job_pod_names(
             name=name,
             namespace=namespace,
@@ -543,7 +827,7 @@ class TrainingClient(object):
                         self.core_api.read_namespaced_pod_log,
                         name=pod,
                         namespace=namespace,
-                        container=container,
+                        container=constants.JOB_PARAMETERS[job_kind]["container"],
                     )
                 )
             finished = [False for _ in log_streams]
@@ -572,1089 +856,98 @@ class TrainingClient(object):
             for pod in pods:
                 try:
                     pod_logs = self.core_api.read_namespaced_pod_log(
-                        pod, namespace, container=container
+                        pod,
+                        namespace,
+                        container=constants.JOB_PARAMETERS[job_kind]["container"],
                     )
                     logging.info("The logs of pod %s:\n %s", pod, pod_logs)
                 except Exception:
-                    raise RuntimeError(
-                        f"Failed to read logs for pod {namespace}/{pod}"
-                    )
+                    raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
 
-    # ------------------------------------------------------------------------ #
-    # TFJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_tfjob(
+    def update_job(
         self,
-        tfjob: models.KubeflowOrgV1TFJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the TFJob.
-
-        Args:
-            tfjob: TFJob object of type KubeflowOrgV1TFJob.
-            namespace: Namespace for the TFJob.
-
-        Raises:
-            TimeoutError: Timeout to create TFJob.
-            RuntimeError: Failed to create TFJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=tfjob,
-            namespace=namespace,
-            job_kind=constants.TFJOB_KIND,
-            job_plural=constants.TFJOB_PLURAL,
-        )
-
-    def create_tfjob_from_func(
-        self,
+        job: constants.JOB_MODELS_TYPE,
         name: str,
-        func: Callable,
-        parameters: Dict[str, Any] = None,
-        base_image: str = constants.TFJOB_BASE_IMAGE,
-        namespace: str = utils.get_default_target_namespace(),
-        num_chief_replicas: int = None,
-        num_ps_replicas: int = None,
-        num_worker_replicas: int = None,
-        packages_to_install: List[str] = None,
-        pip_index_url: str = "https://pypi.org/simple",
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
     ):
-        """Create TFJob from the function.
+        """Update the Training Job by using patch Kubernetes API.
 
         Args:
-            name: Name for the TFJob.
-            func: Function that TFJob uses to train the model. This function
-                must be Callable. Optionally, this function might have one dict
-                argument to define input parameters for the function.
-            parameters: Dict of input parameters that training function might receive.
-            base_image: Image to use when executing the training function.
-            namespace: Namespace for the TFJob.
-            num_chief_replicas: Number of Chief replicas for the TFJob. Number
-                of Chief replicas can't be more than 1.
-            num_ps_replicas: Number of Parameter Server replicas for the TFJob.
-            num_worker_replicas: Number of Worker replicas for the TFJob.
-            packages_to_install: List of Python packages to install in addition
-                to the base image packages. These packages are installed before
-                executing the objective function.
-            pip_index_url: The PyPI url from which to install Python packages.
-
+            job: Job object. For example, object with type
+                KubeflowOrgV1TFJob or KubeflowOrgV1PyTorchJob.
+            name: Name for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
         Raises:
-            ValueError: TFJob replicas are missing or training function is invalid.
-            TimeoutError: Timeout to create TFJob.
-            RuntimeError: Failed to create TFJob.
+            TimeoutError: Timeout to update Job
+            RuntimeError: Failed to update Job
         """
 
-        # Check if at least one replica is set.
-        # TODO (andreyvelich): Remove this check once we have CEL validation.
-        # Ref: https://github.com/kubeflow/training-operator/issues/1708
-        if (
-            num_chief_replicas is None
-            and num_ps_replicas is None
-            and num_worker_replicas is None
-        ):
-            raise ValueError("At least one replica for TFJob must be set")
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
 
-        # Check if function is callable.
-        if not callable(func):
+        if job_kind not in constants.JOB_PARAMETERS:
             raise ValueError(
-                f"Training function must be callable, got function type: {type(func)}"
+                f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
             )
 
-        # Get TFJob Pod template spec.
-        pod_template_spec = utils.get_pod_template_spec(
-            func=func,
-            parameters=parameters,
-            base_image=base_image,
-            container_name=constants.TFJOB_CONTAINER,
-            packages_to_install=packages_to_install,
-            pip_index_url=pip_index_url,
-        )
-
-        # Create TFJob template.
-        tfjob = models.KubeflowOrgV1TFJob(
-            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.OPERATOR_VERSION}",
-            kind=constants.TFJOB_KIND,
-            metadata=client.V1ObjectMeta(name=name, namespace=namespace),
-            spec=models.KubeflowOrgV1TFJobSpec(
-                run_policy=models.V1RunPolicy(clean_pod_policy=None),
-                tf_replica_specs={},
-            ),
-        )
-
-        # Add Chief, PS, and Worker replicas to the TFJob.
-        if num_chief_replicas is not None:
-            tfjob.spec.tf_replica_specs[
-                constants.REPLICA_TYPE_CHIEF
-            ] = models.V1ReplicaSpec(
-                replicas=num_chief_replicas, template=pod_template_spec,
+        try:
+            self.custom_api.patch_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
+                namespace,
+                constants.JOB_PARAMETERS[job_kind]["plural"],
+                name,
+                job,
             )
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to update {job_kind}: {namespace}/{name}")
+        except Exception:
+            raise RuntimeError(f"Failed to update {job_kind}: {namespace}/{name}")
 
-        if num_ps_replicas is not None:
-            tfjob.spec.tf_replica_specs[
-                constants.REPLICA_TYPE_PS
-            ] = models.V1ReplicaSpec(
-                replicas=num_ps_replicas, template=pod_template_spec,
+        logging.info(f"{job_kind} {namespace}/{name} has been updated")
+
+    def delete_job(
+        self,
+        name: str,
+        namespace: Optional[str] = None,
+        job_kind: Optional[str] = None,
+        delete_options: Optional[client.V1DeleteOptions] = None,
+    ):
+        """Delete the Training Job
+
+        Args:
+            name: Name for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
+                is taken from `TrainingClient` object.
+            delete_options: Optional, V1DeleteOptions to set while deleting
+                the Job. For example, grace period seconds.
+
+        Raises:
+            TimeoutError: Timeout to delete Job.
+            RuntimeError: Failed to delete Job.
+        """
+
+        namespace = namespace or self.namespace
+        job_kind = job_kind or self.job_kind
+
+        try:
+            self.custom_api.delete_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
+                namespace,
+                constants.JOB_PARAMETERS[job_kind]["plural"],
+                name=name,
+                body=delete_options,
             )
-
-        if num_worker_replicas is not None:
-            tfjob.spec.tf_replica_specs[
-                constants.REPLICA_TYPE_WORKER
-            ] = models.V1ReplicaSpec(
-                replicas=num_worker_replicas, template=pod_template_spec,
-            )
-
-        # Create TFJob.
-        self.create_tfjob(tfjob=tfjob, namespace=namespace)
-
-    def get_tfjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the TFJob.
-
-        Args:
-            name: Name for the TFJob.
-            namespace: Namespace for the TFJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1TFJob: TFJob object.
-
-        Raises:
-            TimeoutError: Timeout to get TFJob.
-            RuntimeError: Failed to get TFJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1TFJob,
-            job_kind=constants.TFJOB_KIND,
-            job_plural=constants.TFJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_tfjobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all TFJobs in namespace.
-
-        Args:
-            namespace: Namespace to list the TFJobs.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1TFJob]: List of TFJobs objects. It returns
-            empty list if TFJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list TFJobs.
-            RuntimeError: Failed to list TFJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1TFJob,
-            job_kind=constants.TFJOB_KIND,
-            job_plural=constants.TFJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_tfjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the TFJob
-
-        Args:
-            name: Name for the TFJob.
-            namespace: Namespace for the TFJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the TFJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete TFJob.
-            RuntimeError: Failed to delete TFJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.TFJOB_KIND,
-            job_plural=constants.TFJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_tfjob(
-        self,
-        tfjob: models.KubeflowOrgV1TFJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the TFJob.
-
-        Args:
-            tfjob: TFJob object of type KubeflowOrgV1TFJob to patch.
-            name: Name for the TFJob.
-            namespace: Namespace for the TFJob.
-
-        Raises:
-            TimeoutError: Timeout to patch TFJob.
-            RuntimeError: Failed to patch TFJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=tfjob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.TFJOB_KIND,
-            job_plural=constants.TFJOB_PLURAL,
-        )
-
-    # ------------------------------------------------------------------------ #
-    # PyTorchJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_pytorchjob(
-        self,
-        pytorchjob: models.KubeflowOrgV1PyTorchJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the PyTorchJob.
-
-        Args:
-            pytorchjob: PyTorchJob object of type KubeflowOrgV1PyTorchJob.
-            namespace: Namespace for the PyTorchJob.
-
-        Raises:
-            TimeoutError: Timeout to create PyTorchJob.
-            RuntimeError: Failed to create PyTorchJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=pytorchjob,
-            namespace=namespace,
-            job_kind=constants.PYTORCHJOB_KIND,
-            job_plural=constants.PYTORCHJOB_PLURAL,
-        )
-
-    def create_pytorchjob_from_func(
-        self,
-        name: str,
-        func: Callable,
-        parameters: Dict[str, Any] = None,
-        base_image: str = constants.PYTORCHJOB_BASE_IMAGE,
-        namespace: str = utils.get_default_target_namespace(),
-        num_worker_replicas: int = None,
-        packages_to_install: List[str] = None,
-        pip_index_url: str = "https://pypi.org/simple",
-    ):
-        """Create PyTorchJob from the function.
-
-        Args:
-            name: Name for the PyTorchJob.
-            func: Function that PyTorchJob uses to train the model. This function
-                must be Callable. Optionally, this function might have one dict
-                argument to define input parameters for the function.
-            parameters: Dict of input parameters that training function might receive.
-            base_image: Image to use when executing the training function.
-            namespace: Namespace for the PyTorchJob.
-            num_worker_replicas: Number of Worker replicas for the PyTorchJob.
-                If number of Worker replicas is 1, PyTorchJob uses only
-                Master replica.
-            packages_to_install: List of Python packages to install in addition
-                to the base image packages. These packages are installed before
-                executing the objective function.
-            pip_index_url: The PyPI url from which to install Python packages.
-        """
-
-        # Check if at least one worker replica is set.
-        # TODO (andreyvelich): Remove this check once we have CEL validation.
-        # Ref: https://github.com/kubeflow/training-operator/issues/1708
-        if num_worker_replicas is None:
-            raise ValueError("At least one Worker replica for PyTorchJob must be set")
-
-        # Check if function is callable.
-        if not callable(func):
-            raise ValueError(
-                f"Training function must be callable, got function type: {type(func)}"
-            )
-
-        # Get PyTorchJob Pod template spec.
-        pod_template_spec = utils.get_pod_template_spec(
-            func=func,
-            parameters=parameters,
-            base_image=base_image,
-            container_name=constants.PYTORCHJOB_CONTAINER,
-            packages_to_install=packages_to_install,
-            pip_index_url=pip_index_url,
-        )
-
-        # Create PyTorchJob template.
-        pytorchjob = models.KubeflowOrgV1PyTorchJob(
-            api_version=f"{constants.KUBEFLOW_GROUP}/{constants.OPERATOR_VERSION}",
-            kind=constants.PYTORCHJOB_KIND,
-            metadata=client.V1ObjectMeta(name=name, namespace=namespace),
-            spec=models.KubeflowOrgV1PyTorchJobSpec(
-                run_policy=models.V1RunPolicy(clean_pod_policy=None),
-                pytorch_replica_specs={},
-            ),
-        )
-
-        # Add Master and Worker replicas to the PyTorchJob.
-        pytorchjob.spec.pytorch_replica_specs[
-            constants.REPLICA_TYPE_MASTER
-        ] = models.V1ReplicaSpec(replicas=1, template=pod_template_spec,)
-
-        # If number of Worker replicas is 1, PyTorchJob uses only Master replica.
-        if num_worker_replicas != 1:
-            pytorchjob.spec.pytorch_replica_specs[
-                constants.REPLICA_TYPE_WORKER
-            ] = models.V1ReplicaSpec(
-                replicas=num_worker_replicas, template=pod_template_spec,
-            )
-
-        # Create PyTorchJob
-        self.create_pytorchjob(pytorchjob=pytorchjob, namespace=namespace)
-
-    def get_pytorchjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the PyTorchJob.
-
-        Args:
-            name: Name for the PyTorchJob.
-            namespace: Namespace for the PyTorchJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1PyTorchJob: PyTorchJob object.
-
-        Raises:
-            TimeoutError: Timeout to get PyTorchJob.
-            RuntimeError: Failed to get PyTorchJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1PyTorchJob,
-            job_kind=constants.PYTORCHJOB_KIND,
-            job_plural=constants.PYTORCHJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_pytorchjobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all PyTorchJob in namespace.
-
-        Args:
-            namespace: Namespace to list the PyTorchJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1PyTorchJob]: List of PyTorchJob objects. It returns
-            empty list if PyTorchJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list PyTorchJobs.
-            RuntimeError: Failed to list PyTorchJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1PyTorchJob,
-            job_kind=constants.PYTORCHJOB_KIND,
-            job_plural=constants.PYTORCHJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_pytorchjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the PyTorchJob
-
-        Args:
-            name: Name for the PyTorchJob.
-            namespace: Namespace for the PyTorchJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the PyTorchJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete PyTorchJob.
-            RuntimeError: Failed to delete PyTorchJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.PYTORCHJOB_KIND,
-            job_plural=constants.PYTORCHJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_pytorchjob(
-        self,
-        pytorchjob: models.KubeflowOrgV1PyTorchJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the PyTorchJob.
-
-        Args:
-            pytorchjob: PyTorchJob object of type KubeflowOrgV1PyTorchJob.
-            name: Name for the PyTorchJob.
-            namespace: Namespace for the PyTorchJob.
-
-        Raises:
-            TimeoutError: Timeout to patch PyTorchJob.
-            RuntimeError: Failed to patch PyTorchJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=pytorchjob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.PYTORCHJOB_KIND,
-            job_plural=constants.PYTORCHJOB_PLURAL,
-        )
-
-    # ------------------------------------------------------------------------ #
-    # MXJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_mxjob(
-        self,
-        mxjob: models.KubeflowOrgV1MXJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the MXJob.
-
-        Args:
-            mxjob: MXJob object of type KubeflowOrgV1MXJob.
-            namespace: Namespace for the MXJob.
-
-        Raises:
-            TimeoutError: Timeout to create MXJob.
-            RuntimeError: Failed to create MXJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=mxjob,
-            namespace=namespace,
-            job_kind=constants.MXJOB_KIND,
-            job_plural=constants.MXJOB_PLURAL,
-        )
-
-    def create_mxjob_from_func(self):
-        """Create MXJob from the function.
-        TODO (andreyvelich): Implement this function.
-        """
-        logging.warning("This API has not been implemented yet.")
-
-    def get_mxjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the MXJob.
-
-        Args:
-            name: Name for the MXJob.
-            namespace: Namespace for the MXJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1MXJob: MXJob object.
-
-        Raises:
-            TimeoutError: Timeout to get MXJob.
-            RuntimeError: Failed to get MXJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1MXJob,
-            job_kind=constants.MXJOB_KIND,
-            job_plural=constants.MXJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_mxjobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all MXJobs in namespace.
-
-        Args:
-            namespace: Namespace to list the MXJobs.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1MXJob]: List of MXJobs objects. It returns
-            empty list if MXJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list MXJobs.
-            RuntimeError: Failed to list MXJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1MXJob,
-            job_kind=constants.MXJOB_KIND,
-            job_plural=constants.MXJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_mxjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the MXJob
-
-        Args:
-            name: Name for the MXJob.
-            namespace: Namespace for the MXJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the MXJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete MXJob.
-            RuntimeError: Failed to delete MXJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.MXJOB_KIND,
-            job_plural=constants.MXJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_mxjob(
-        self,
-        mxjob: models.KubeflowOrgV1MXJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the MXJob.
-
-        Args:
-            mxjob: MXJob object of type KubeflowOrgV1MXJob.
-            name: Name for the MXJob.
-            namespace: Namespace for the MXJob.
-
-        Raises:
-            TimeoutError: Timeout to patch MXJob.
-            RuntimeError: Failed to patch MXJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=mxjob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.MXJOB_KIND,
-            job_plural=constants.MXJOB_PLURAL,
-        )
-
-    # ------------------------------------------------------------------------ #
-    # XGBoostJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_xgboostjob(
-        self,
-        xgboostjob: models.KubeflowOrgV1XGBoostJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the XGBoostJob.
-
-        Args:
-            xgboostjob: XGBoostJob object of type KubeflowOrgV1XGBoostJob.
-            namespace: Namespace for the XGBoostJob.
-
-        Raises:
-            TimeoutError: Timeout to create XGBoostJob.
-            RuntimeError: Failed to create XGBoostJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=xgboostjob,
-            namespace=namespace,
-            job_kind=constants.XGBOOSTJOB_KIND,
-            job_plural=constants.XGBOOSTJOB_PLURAL,
-        )
-
-    def create_xgboostjob_from_func(self):
-        """Create XGBoost from the function.
-        TODO (andreyvelich): Implement this function.
-        """
-        logging.warning("This API has not been implemented yet.")
-
-    def get_xgboostjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the XGBoostJob.
-
-        Args:
-            name: Name for the XGBoostJob.
-            namespace: Namespace for the XGBoostJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1XGBoostJob: XGBoostJob object.
-
-        Raises:
-            TimeoutError: Timeout to get XGBoostJob.
-            RuntimeError: Failed to get XGBoostJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1XGBoostJob,
-            job_kind=constants.XGBOOSTJOB_KIND,
-            job_plural=constants.XGBOOSTJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_xgboostjobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all XGBoostJobs in namespace.
-
-        Args:
-            namespace: Namespace to list the XGBoostJobs.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1XGBoostJob]: List of XGBoostJobs objects. It returns
-            empty list if XGBoostJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list XGBoostJobs.
-            RuntimeError: Failed to list XGBoostJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1XGBoostJob,
-            job_kind=constants.XGBOOSTJOB_KIND,
-            job_plural=constants.XGBOOSTJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_xgboostjob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the XGBoostJob
-
-        Args:
-            name: Name for the XGBoostJob.
-            namespace: Namespace for the XGBoostJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the XGBoostJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete XGBoostJob.
-            RuntimeError: Failed to delete XGBoostJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.XGBOOSTJOB_KIND,
-            job_plural=constants.XGBOOSTJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_xgboostjob(
-        self,
-        xgboostjob: models.KubeflowOrgV1XGBoostJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the XGBoostJob.
-
-        Args:
-            xgboostjob: XGBoostJob object of type KubeflowOrgV1XGBoostJob.
-            name: Name for the XGBoostJob.
-            namespace: Namespace for the XGBoostJob.
-
-        Raises:
-            TimeoutError: Timeout to patch XGBoostJob.
-            RuntimeError: Failed to patch XGBoostJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=xgboostjob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.XGBOOSTJOB_KIND,
-            job_plural=constants.XGBOOSTJOB_PLURAL,
-        )
-
-    # ------------------------------------------------------------------------ #
-    # MPIJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_mpijob(
-        self,
-        mpijob: models.KubeflowOrgV1MPIJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the MPIJob.
-
-        Args:
-            mpijob: MPIJob object of type KubeflowOrgV1MPIJob.
-            namespace: Namespace for the MPIJob.
-
-        Raises:
-            TimeoutError: Timeout to create MPIJob.
-            RuntimeError: Failed to create MPIJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=mpijob,
-            namespace=namespace,
-            job_kind=constants.MPIJOB_KIND,
-            job_plural=constants.MPIJOB_PLURAL,
-        )
-
-    def create_mpijob_from_func(self):
-        """Create MPIJob from the function.
-        TODO (andreyvelich): Implement this function.
-        """
-        logging.warning("This API has not been implemented yet.")
-
-    def get_mpijob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the MPIJob.
-
-        Args:
-            name: Name for the MPIJob.
-            namespace: Namespace for the MPIJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1MPIJob: MPIJob object.
-
-        Raises:
-            TimeoutError: Timeout to get MPIJob.
-            RuntimeError: Failed to get MPIJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1MPIJob,
-            job_kind=constants.MPIJOB_KIND,
-            job_plural=constants.MPIJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_mpijobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all MPIJobs in namespace.
-
-        Args:
-            namespace: Namespace to list the MPIJobs.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1MPIJob]: List of MPIJobs objects. It returns
-            empty list if MPIJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list MPIJobs.
-            RuntimeError: Failed to list MPIJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1MPIJob,
-            job_kind=constants.MPIJOB_KIND,
-            job_plural=constants.MPIJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_mpijob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the MPIJob
-
-        Args:
-            name: Name for the MPIJob.
-            namespace: Namespace for the MPIJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the MPIJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete MPIJob.
-            RuntimeError: Failed to delete MPIJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.MPIJOB_KIND,
-            job_plural=constants.MPIJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_mpijob(
-        self,
-        mpijob: models.KubeflowOrgV1MPIJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the MPIJob.
-
-        Args:
-            mpijob: MPIJob object of type KubeflowOrgV1MPIJob.
-            name: Name for the MPIJob.
-            namespace: Namespace for the MPIJob.
-
-        Raises:
-            TimeoutError: Timeout to patch MPIJob.
-            RuntimeError: Failed to patch MPIJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=mpijob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.MPIJOB_KIND,
-            job_plural=constants.MPIJOB_PLURAL,
-        )
-
-    # ------------------------------------------------------------------------ #
-    # PaddleJob Training Client APIs.
-    # ------------------------------------------------------------------------ #
-    def create_paddlejob(
-        self,
-        paddlejob: models.KubeflowOrgV1PaddleJob,
-        namespace=utils.get_default_target_namespace(),
-    ):
-        """Create the PaddleJob.
-
-        Args:
-            paddlejob: PaddleJob object of type KubeflowOrgV1PaddleJob.
-            namespace: Namespace for the PaddleJob.
-
-        Raises:
-            TimeoutError: Timeout to create PaddleJob.
-            RuntimeError: Failed to create PaddleJob.
-        """
-
-        utils.create_job(
-            custom_api=self.custom_api,
-            job=paddlejob,
-            namespace=namespace,
-            job_kind=constants.PADDLEJOB_KIND,
-            job_plural=constants.PADDLEJOB_PLURAL,
-        )
-
-    def create_paddlejob_from_func(self):
-        """Create PaddleJob from the function.
-        TODO (andreyvelich): Implement this function.
-        """
-        logging.warning("This API has not been implemented yet.")
-
-    def get_paddlejob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """Get the PaddleJob.
-
-        Args:
-            name: Name for the PaddleJob.
-            namespace: Namespace for the PaddleJob.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            KubeflowOrgV1PaddleJob: PaddleJob object.
-
-        Raises:
-            TimeoutError: Timeout to get PaddleJob.
-            RuntimeError: Failed to get PaddleJob.
-        """
-
-        return utils.get_job(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            name=name,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1PaddleJob,
-            job_kind=constants.PADDLEJOB_KIND,
-            job_plural=constants.PADDLEJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def list_paddlejobs(
-        self,
-        namespace: str = utils.get_default_target_namespace(),
-        timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
-        """List of all PaddleJobs in namespace.
-
-        Args:
-            namespace: Namespace to list the PaddleJobs.
-            timeout: Optional, Kubernetes API server timeout in seconds
-                to execute the request.
-
-        Returns:
-            list[KubeflowOrgV1PaddleJob]: List of PaddleJobs objects. It returns
-            empty list if PaddleJobs cannot be found.
-
-        Raises:
-            TimeoutError: Timeout to list PaddleJobs.
-            RuntimeError: Failed to list PaddleJobs.
-        """
-
-        return utils.list_jobs(
-            custom_api=self.custom_api,
-            api_client=self.api_client,
-            namespace=namespace,
-            job_model=models.KubeflowOrgV1PaddleJob,
-            job_kind=constants.PADDLEJOB_KIND,
-            job_plural=constants.PADDLEJOB_PLURAL,
-            timeout=timeout,
-        )
-
-    def delete_paddlejob(
-        self,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-        delete_options: client.V1DeleteOptions = None,
-    ):
-        """Delete the PaddleJob
-
-        Args:
-            name: Name for the PaddleJob.
-            namespace: Namespace for the PaddleJob.
-            delete_options: Optional, V1DeleteOptions to set while deleting
-                the PaddleJob. For example, grace period seconds.
-
-        Raises:
-            TimeoutError: Timeout to delete PaddleJob.
-            RuntimeError: Failed to delete PaddleJob.
-        """
-
-        utils.delete_job(
-            custom_api=self.custom_api,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.PADDLEJOB_KIND,
-            job_plural=constants.PADDLEJOB_PLURAL,
-            delete_options=delete_options,
-        )
-
-    def patch_paddlejob(
-        self,
-        paddlejob: models.KubeflowOrgV1PaddleJob,
-        name: str,
-        namespace: str = utils.get_default_target_namespace(),
-    ):
-        """Patch the PaddleJob.
-
-        Args:
-            paddlejob: PaddleJob object of type KubeflowOrgV1PaddleJob.
-            name: Name for the PaddleJob.
-            namespace: Namespace for the PaddleJob.
-
-        Raises:
-            TimeoutError: Timeout to patch PaddleJob.
-            RuntimeError: Failed to patch PaddleJob.
-        """
-
-        return utils.patch_job(
-            custom_api=self.custom_api,
-            job=paddlejob,
-            name=name,
-            namespace=namespace,
-            job_kind=constants.PADDLEJOB_KIND,
-            job_plural=constants.PADDLEJOB_PLURAL,
-        )
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to delete {job_kind}: {namespace}/{name}")
+        except Exception:
+            raise RuntimeError(f"Failed to delete {job_kind}: {namespace}/{name}")
+
+        logging.info(f"{job_kind} {namespace}/{name} has been deleted")

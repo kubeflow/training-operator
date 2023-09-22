@@ -44,7 +44,7 @@ def fix_test_files() -> None:
     test_folder_dir = os.path.join(sdk_dir, "test")
     test_files = os.listdir(test_folder_dir)
     for test_file in test_files:
-        print(f"Precessing file {test_file}")
+        print(f"Processing file {test_file}")
         if test_file.endswith(".py"):
             with fileinput.FileInput(
                 os.path.join(test_folder_dir, test_file), inplace=True
@@ -56,8 +56,9 @@ def fix_test_files() -> None:
 def add_imports() -> None:
     with open(os.path.join(sdk_dir, "kubeflow/training/__init__.py"), "a") as f:
         f.write("from kubeflow.training.api.training_client import TrainingClient\n")
+        f.write("from kubeflow.training.constants import constants\n")
     with open(os.path.join(sdk_dir, "kubeflow/__init__.py"), "a") as f:
-        f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)")
+        f.write("__path__ = __import__('pkgutil').extend_path(__path__, __name__)\n")
 
     # Add Kubernetes models to proper deserialization of Training models.
     with open(os.path.join(sdk_dir, "kubeflow/training/models/__init__.py"), "r") as f:

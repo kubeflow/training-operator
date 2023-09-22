@@ -112,16 +112,16 @@ sdk/python/kubeflow/training/api
 
 ### Python
 
-- Use [yapf](https://github.com/google/yapf) to format Python code
-- `yapf` style is configured in `.style.yapf` file
-- To autoformat code
+- Use [`black`](https://github.com/psf/black) to format Python code
 
-  ```sh
-  yapf -i py/**/*.py
+- Run the following to install `black`:
+
+  ```
+  pip install black==23.9.1
   ```
 
-- To sort imports
+- To check your code:
 
   ```sh
-  isort path/to/module.py
+  black --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py' sdk/
   ```
