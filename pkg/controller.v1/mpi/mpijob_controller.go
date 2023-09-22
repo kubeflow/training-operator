@@ -1364,7 +1364,7 @@ func newLauncherRole(mpiJob *kubeflowv1.MPIJob, workerReplicas int32) *rbacv1.Ro
 // handleObject can discover the MPIJob resource that 'owns' it.
 func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 	launcherName := mpiJob.Name + launcherSuffix
-	saName := mpiJob.Name + launcherSuffix
+	saName := launcherName
 
 	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) > 0 {
 		saName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
