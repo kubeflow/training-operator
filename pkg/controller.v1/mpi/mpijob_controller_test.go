@@ -557,8 +557,11 @@ var _ = Describe("MPIJob controller", func() {
 					Namespace: metav1.NamespaceDefault,
 					Name:      mpiJob.Name + launcherSuffix,
 				}
-				testK8sClient.Get(ctx, launcherKey, launcherCreated)
-
+				
+				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated) != nil {
+					return err
+				}
+				
 				return launcherCreated.Spec.ServiceAccountName
 			}, testutil.Timeout, testutil.Interval).Should(Equal(launcherSaName))
 		})
