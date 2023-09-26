@@ -522,6 +522,47 @@ var _ = Describe("MPIJob controller", func() {
 		})
 	})
 
+	Context("MPI Job succeeds with predefined service account", func() {
+		It("should run with the defined service account", func() {
+			By("Calling Reconcile method")
+			jobName := "test-sa-orphan"
+			launcherSaName := "launcher-sa"
+
+			ctx := context.Background()
+			startTime := metav1.Now()
+			completionTime := metav1.Now()
+
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName = launcherSaName
+			sa := newLauncherServiceAccount(mpiJob)
+			Expect(sa.Name).Should(Equal("launcher-sa"))
+
+			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
+			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
+
+			req := ctrl.Request{NamespacedName: types.NamespacedName{
+				Namespace: metav1.NamespaceDefault,
+				Name:      mpiJob.GetName(),
+			}}
+			Eventually(func() ctrl.Result {
+				result, _ := reconciler.Reconcile(ctx, req)
+				return result
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
+			Eventually(func() string {
+				launcherCreated := &corev1.Pod{}
+
+				launcherKey := types.NamespacedName{
+					Namespace: metav1.NamespaceDefault,
+					Name:      mpiJob.Name + launcherSuffix,
+				}
+				testK8sClient.Get(ctx, launcherKey, launcherCreated)
+
+				return launcherCreated.Spec.ServiceAccountName
+			}, testutil.Timeout, testutil.Interval).Should(Equal(launcherSaName))
+		})
+	})
+
 	Context("MPIJob with launcher Pod not controlled by itself", func() {
 		It("Should return error", func() {
 			By("Calling Reconcile method")
