@@ -541,12 +541,18 @@ var _ = Describe("MPIJob controller", func() {
 			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
-			req := ctrl.Request{NamespacedName: types.NamespacedName{
-				Namespace: metav1.NamespaceDefault,
-				Name:      mpiJob.GetName(),
-			}}
 			Eventually(func() ctrl.Result {
-				result, _ := reconciler.Reconcile(ctx, req)
+				req := ctrl.Request{NamespacedName: types.NamespacedName{
+					Namespace: metav1.NamespaceDefault,
+					Name:      mpiJob.GetName(),
+				}}
+
+				result, err := reconciler.Reconcile(ctx, req)
+				
+				if (err != nil) {
+					return err
+				}
+
 				return result
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
@@ -557,8 +563,8 @@ var _ = Describe("MPIJob controller", func() {
 					Namespace: metav1.NamespaceDefault,
 					Name:      mpiJob.Name + launcherSuffix,
 				}
-				
-				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated) != nil {
+
+				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated); err != nil {
 					return err
 				}
 				
