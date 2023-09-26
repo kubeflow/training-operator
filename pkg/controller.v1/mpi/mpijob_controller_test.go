@@ -535,8 +535,9 @@ var _ = Describe("MPIJob controller", func() {
 			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
 			mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName = launcherSaName
 			sa := newLauncherServiceAccount(mpiJob)
-			Expect(sa.Name).Should(Equal("launcher-sa"))
+			sa.OwnerReferences = nil
 
+			Expect(sa.Name).Should(Equal(launcherSaName))
 			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
