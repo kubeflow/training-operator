@@ -541,7 +541,7 @@ var _ = Describe("MPIJob controller", func() {
 			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
-			Eventually(func() ctrl.Result {
+			Eventually(func() error {
 				req := ctrl.Request{NamespacedName: types.NamespacedName{
 					Namespace: metav1.NamespaceDefault,
 					Name:      mpiJob.GetName(),
@@ -553,8 +553,8 @@ var _ = Describe("MPIJob controller", func() {
 					return err
 				}
 
-				return result
-			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+				return nil
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
 
 			Eventually(func() string {
 				launcherCreated := &corev1.Pod{}
@@ -565,7 +565,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 
 				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated); err != nil {
-					return err
+					return "false"
 				}
 				
 				return launcherCreated.Spec.ServiceAccountName
