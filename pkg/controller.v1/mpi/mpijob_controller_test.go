@@ -547,9 +547,9 @@ var _ = Describe("MPIJob controller", func() {
 					Name:      mpiJob.GetName(),
 				}}
 
-				result, err := reconciler.Reconcile(ctx, req)
+				_, err := reconciler.Reconcile(ctx, req)
 				
-				if (err != nil) {
+				if err != nil {
 					return err
 				}
 
