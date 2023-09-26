@@ -548,7 +548,7 @@ var _ = Describe("MPIJob controller", func() {
 				}}
 
 				_, err := reconciler.Reconcile(ctx, req)
-				
+
 				if err != nil {
 					return err
 				}
@@ -567,7 +567,7 @@ var _ = Describe("MPIJob controller", func() {
 				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated); err != nil {
 					return "false"
 				}
-				
+
 				return launcherCreated.Spec.ServiceAccountName
 			}, testutil.Timeout, testutil.Interval).Should(Equal(launcherSaName))
 		})
