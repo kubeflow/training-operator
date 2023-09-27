@@ -64,13 +64,16 @@ trap "cleanup" EXIT SIGINT
 echo ">> Temporary output directory ${TEMP_DIR}"
 
 # Ensure we can execute.
-chmod +x ${CODEGEN_PKG}/kube_codegen.sh
+chmod +x ${CODEGEN_PKG}/generate-groups.sh
+chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
+
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
-${CODEGEN_PKG}/kube_codegen.sh "client,lister,informer" \
+echo "Generating client,lister,informer for kubeflow.org/v1"
+${CODEGEN_PKG}/generate-groups.sh "client,lister,informer" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
     kubeflow.org:v1 \
     --output-base "${TEMP_DIR}" \
