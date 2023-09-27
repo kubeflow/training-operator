@@ -746,12 +746,6 @@ func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1
 	if err != nil {
 		return nil, err
 	}
-	// If the launcher ServiceAccount is not controlled by this MPIJob resource, we
-	// should log a warning to the event recorder.
-	if !metav1.IsControlledBy(sa, mpiJob) {
-		msg := fmt.Sprintf(MessageResourceExists, sa.Name, sa.Kind)
-		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-	}
 
 	return sa, nil
 }
