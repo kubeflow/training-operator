@@ -181,7 +181,7 @@ def generate_xgboostjob(
 def generate_container() -> V1Container:
     return V1Container(
         name=CONTAINER_NAME,
-        image="docker.io/merlintang/xgboost-dist-iris:1.1",
+        image="docker.io/kubeflow/xgboost-dist-iris:latest",
         args=[
             "--job_type=Train",
             "--xgboost_parameter=objective:multi:softprob,num_class:3",
