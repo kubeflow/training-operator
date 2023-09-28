@@ -565,7 +565,7 @@ var _ = Describe("MPIJob controller", func() {
 				}
 
 				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated); err != nil {
-					return "false"
+					return ""
 				}
 
 				return launcherCreated.Spec.ServiceAccountName
