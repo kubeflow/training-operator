@@ -746,13 +746,6 @@ func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1
 	if err != nil {
 		return nil, err
 	}
-	// If the launcher ServiceAccount is not controlled by this MPIJob resource, we
-	// should log a warning to the event recorder and return.
-	if !metav1.IsControlledBy(sa, mpiJob) {
-		msg := fmt.Sprintf(MessageResourceExists, sa.Name, sa.Kind)
-		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return nil, fmt.Errorf(msg)
-	}
 
 	return sa, nil
 }
@@ -1365,9 +1358,10 @@ func newLauncherRole(mpiJob *kubeflowv1.MPIJob, workerReplicas int32) *rbacv1.Ro
 // handleObject can discover the MPIJob resource that 'owns' it.
 func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 	launcherName := mpiJob.Name + launcherSuffix
+	saName := launcherName
 
 	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) > 0 {
-		launcherName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+		saName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
 	}
 
 	return &rbacv1.RoleBinding{
@@ -1384,7 +1378,7 @@ func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      rbacv1.ServiceAccountKind,
-				Name:      launcherName,
+				Name:      saName,
 				Namespace: mpiJob.Namespace,
 			},
 		},

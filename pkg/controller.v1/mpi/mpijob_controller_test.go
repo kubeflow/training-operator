@@ -522,6 +522,57 @@ var _ = Describe("MPIJob controller", func() {
 		})
 	})
 
+	Context("MPI Job succeeds with predefined service account", func() {
+		It("should run with the defined service account", func() {
+			By("Calling Reconcile method")
+			jobName := "test-sa-orphan"
+			launcherSaName := "launcher-sa"
+
+			ctx := context.Background()
+			startTime := metav1.Now()
+			completionTime := metav1.Now()
+
+			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName = launcherSaName
+			sa := newLauncherServiceAccount(mpiJob)
+			sa.OwnerReferences = nil
+
+			Expect(sa.Name).Should(Equal(launcherSaName))
+			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
+			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
+
+			Eventually(func() error {
+				req := ctrl.Request{NamespacedName: types.NamespacedName{
+					Namespace: metav1.NamespaceDefault,
+					Name:      mpiJob.GetName(),
+				}}
+
+				_, err := reconciler.Reconcile(ctx, req)
+
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
+
+			Eventually(func() string {
+				launcherCreated := &corev1.Pod{}
+
+				launcherKey := types.NamespacedName{
+					Namespace: metav1.NamespaceDefault,
+					Name:      mpiJob.Name + launcherSuffix,
+				}
+
+				if err := testK8sClient.Get(ctx, launcherKey, launcherCreated); err != nil {
+					return ""
+				}
+
+				return launcherCreated.Spec.ServiceAccountName
+			}, testutil.Timeout, testutil.Interval).Should(Equal(launcherSaName))
+		})
+	})
+
 	Context("MPIJob with launcher Pod not controlled by itself", func() {
 		It("Should return error", func() {
 			By("Calling Reconcile method")
@@ -608,36 +659,6 @@ var _ = Describe("MPIJob controller", func() {
 				Name:      mpiJob.GetName(),
 			}}
 			expectedErr := fmt.Errorf(MessageResourceExists, cm.Name, testKind)
-			Eventually(func() error {
-				_, err := reconciler.Reconcile(ctx, req)
-				return err
-			}, testutil.Timeout, testutil.Interval).Should(MatchError(expectedErr))
-		})
-	})
-
-	Context("MPIJob with ServiceAccount not controlled by itself", func() {
-		It("Should return error", func() {
-			By("Calling Reconcile method")
-			jobName := "test-sa-orphan"
-			testKind := "ServiceAccount"
-
-			ctx := context.Background()
-			startTime := metav1.Now()
-			completionTime := metav1.Now()
-
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
-
-			sa := newLauncherServiceAccount(mpiJob)
-			sa.OwnerReferences = nil
-			Expect(testK8sClient.Create(ctx, sa)).Should(Succeed())
-
-			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
-
-			req := ctrl.Request{NamespacedName: types.NamespacedName{
-				Namespace: metav1.NamespaceDefault,
-				Name:      mpiJob.GetName(),
-			}}
-			expectedErr := fmt.Errorf(MessageResourceExists, sa.Name, testKind)
 			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, req)
 				return err
