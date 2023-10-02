@@ -16,16 +16,13 @@ import os
 import logging
 import textwrap
 import inspect
-from typing import Callable, List, Dict, Any
+from typing import Optional, Callable, List, Dict, Any
 import json
 import threading
 import queue
-import multiprocessing
-
-from kubernetes import client
 
 from kubeflow.training.constants import constants
-from kubeflow.training.api_client import ApiClient
+from kubeflow.training import models
 
 
 logging.basicConfig(format="%(message)s")
@@ -68,156 +65,6 @@ def get_default_target_namespace():
         return f.readline()
 
 
-def create_job(
-    custom_api: client.CustomObjectsApi,
-    job: object,
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-):
-    """Create the Training Job."""
-
-    try:
-        custom_api.create_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            job,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(
-            f"Timeout to create {job_kind}: {namespace}/{job.metadata.name}"
-        )
-    except Exception:
-        raise RuntimeError(
-            f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
-        )
-
-    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been created")
-
-
-def get_job(
-    custom_api: client.CustomObjectsApi,
-    api_client: ApiClient,
-    name: str,
-    namespace: str,
-    job_model: object,
-    job_kind: str,
-    job_plural: str,
-    timeout: int,
-):
-    """Get the Training Job."""
-
-    try:
-        thread = custom_api.get_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name,
-            async_req=True,
-        )
-        response = FakeResponse(thread.get(timeout))
-        job = api_client.deserialize(response, job_model)
-        return job
-
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to get {job_kind}: {namespace}/{name}")
-    except Exception:
-        raise RuntimeError(f"Failed to get {job_kind}: {namespace}/{name}")
-
-
-def list_jobs(
-    custom_api: client.CustomObjectsApi,
-    api_client: ApiClient,
-    namespace: str,
-    job_model: object,
-    job_kind: str,
-    job_plural: str,
-    timeout: int,
-):
-    """List the Training Jobs."""
-
-    result = []
-    try:
-        thread = custom_api.list_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            async_req=True,
-        )
-        response = thread.get(timeout)
-        result = [
-            api_client.deserialize(FakeResponse(item), job_model)
-            for item in response.get("items")
-        ]
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to list {job_kind}s in namespace: {namespace}")
-    except Exception:
-        raise RuntimeError(f"Failed to list {job_kind}s in namespace: {namespace}")
-    return result
-
-
-def delete_job(
-    custom_api: client.CustomObjectsApi,
-    name: str,
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-    delete_options: client.V1DeleteOptions,
-):
-    """Delete the Training Job."""
-
-    try:
-        custom_api.delete_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name=name,
-            body=delete_options,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(f"Timeout to delete {job_kind}: {namespace}/{name}")
-    except Exception:
-        raise RuntimeError(f"Failed to delete {job_kind}: {namespace}/{name}")
-
-    logging.info(f"{job_kind} {namespace}/{name} has been deleted")
-
-
-def patch_job(
-    custom_api: client.CustomObjectsApi,
-    job: object,
-    name: str,
-    namespace: str,
-    job_kind: str,
-    job_plural: str,
-):
-    """Patch the Training Job."""
-
-    try:
-        custom_api.patch_namespaced_custom_object(
-            constants.KUBEFLOW_GROUP,
-            constants.OPERATOR_VERSION,
-            namespace,
-            job_plural,
-            name,
-            job,
-        )
-    except multiprocessing.TimeoutError:
-        raise TimeoutError(
-            f"Timeout to patch {job_kind}: {namespace}/{job.metadata.name}"
-        )
-    except Exception:
-        raise RuntimeError(
-            f"Failed to patch {job_kind}: {namespace}/{job.metadata.name}"
-        )
-
-    logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been patched")
-
-
 def wrap_log_stream(q, stream):
     while True:
         try:
@@ -237,8 +84,9 @@ def get_log_queue_pool(streams):
     return pool
 
 
-def has_condition(conditions: object, condition_type: str):
-    """Verify if the condition list has the required condition.
+def has_condition(conditions: List[models.V1JobCondition], condition_type: str) -> bool:
+    """
+    Verify if the condition list has the required condition.
     Condition should be valid object with `type` and `status`.
     """
 
@@ -248,7 +96,12 @@ def has_condition(conditions: object, condition_type: str):
     return False
 
 
-def get_script_for_python_packages(packages_to_install, pip_index_url):
+def get_script_for_python_packages(
+    packages_to_install: List[str], pip_index_url: str
+) -> str:
+    """
+    Get init script to install Python packages from the given pip index URL.
+    """
     packages_str = " ".join([str(package) for package in packages_to_install])
 
     script_for_python_packages = textwrap.dedent(
@@ -266,73 +119,184 @@ def get_script_for_python_packages(packages_to_install, pip_index_url):
 
 
 def get_pod_template_spec(
-    func: Callable,
-    parameters: Dict[str, Any],
-    base_image: str,
-    container_name: str,
-    packages_to_install: List[str],
-    pip_index_url: str,
+    job_kind: str,
+    base_image: Optional[str] = None,
+    train_func: Optional[Callable] = None,
+    parameters: Optional[Dict[str, Any]] = None,
+    packages_to_install: Optional[List[str]] = None,
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
 ):
     """
-    Get Pod template spec from the given function and input parameters.
+    Get Pod template spec for the given function and base image.
     """
 
-    # Check if function is callable.
-    if not callable(func):
-        raise ValueError(
-            f"Training function must be callable, got function type: {type(func)}"
-        )
-
-    # Extract function implementation.
-    func_code = inspect.getsource(func)
-
-    # Function might be defined in some indented scope (e.g. in another function).
-    # We need to dedent the function code.
-    func_code = textwrap.dedent(func_code)
-
-    # Wrap function code to execute it from the file. For example:
-    # def train(parameters):
-    #     print('Start Training...')
-    # train({'lr': 0.01})
-    if parameters is None:
-        func_code = f"{func_code}\n{func.__name__}()\n"
-    else:
-        func_code = f"{func_code}\n{func.__name__}({parameters})\n"
-
-    # Prepare execute script template.
-    exec_script = textwrap.dedent(
-        """
-            program_path=$(mktemp -d)
-            read -r -d '' SCRIPT << EOM\n
-            {func_code}
-            EOM
-            printf "%s" "$SCRIPT" > $program_path/ephemeral_script.py
-            python3 -u $program_path/ephemeral_script.py"""
-    )
-
-    # Add function code to the execute script.
-    exec_script = exec_script.format(func_code=func_code)
-
-    # Install Python packages if that is required.
-    if packages_to_install is not None:
-        exec_script = (
-            get_script_for_python_packages(packages_to_install, pip_index_url)
-            + exec_script
-        )
+    # Assign the default base image.
+    # TODO (andreyvelich): Add base image for other Job kinds.
+    if base_image is None:
+        base_image = constants.JOB_PARAMETERS[job_kind]["base_image"]
 
     # Create Pod template spec.
-    pod_template_spec = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}),
-        spec=client.V1PodSpec(
+    pod_template_spec = models.V1PodTemplateSpec(
+        metadata=models.V1ObjectMeta(
+            annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+        ),
+        spec=models.V1PodSpec(
             containers=[
-                client.V1Container(
-                    name=container_name,
+                models.V1Container(
+                    name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
-                    command=["bash", "-c"],
-                    args=[exec_script],
                 )
             ]
         ),
     )
 
+    # If Training function is set, convert function to container execution script.
+    if train_func is not None:
+        # Check if function is callable.
+        if not callable(train_func):
+            raise ValueError(
+                f"Training function must be callable, got function type: {type(train_func)}"
+            )
+
+        # Extract function implementation.
+        func_code = inspect.getsource(train_func)
+
+        # Function might be defined in some indented scope (e.g. in another function).
+        # We need to dedent the function code.
+        func_code = textwrap.dedent(func_code)
+
+        # Wrap function code to execute it from the file. For example:
+        # def train(parameters):
+        #     print('Start Training...')
+        # train({'lr': 0.01})
+        if parameters is None:
+            func_code = f"{func_code}\n{train_func.__name__}()\n"
+        else:
+            func_code = f"{func_code}\n{train_func.__name__}({parameters})\n"
+
+        # Prepare execute script template.
+        exec_script = textwrap.dedent(
+            """
+                program_path=$(mktemp -d)
+                read -r -d '' SCRIPT << EOM\n
+                {func_code}
+                EOM
+                printf "%s" \"$SCRIPT\" > \"$program_path/ephemeral_script.py\"
+                python3 -u \"$program_path/ephemeral_script.py\""""
+        )
+
+        # Add function code to the execute script.
+        exec_script = exec_script.format(func_code=func_code)
+
+        # Install Python packages if that is required.
+        if packages_to_install is not None:
+            exec_script = (
+                get_script_for_python_packages(packages_to_install, pip_index_url)
+                + exec_script
+            )
+
+        # Add execution script to container arguments.
+        pod_template_spec.spec.containers[0].command = ["bash", "-c"]
+        pod_template_spec.spec.containers[0].args = [exec_script]
+
     return pod_template_spec
+
+
+def get_tfjob_template(
+    name: str,
+    namespace: str,
+    pod_template_spec: models.V1PodTemplateSpec,
+    num_worker_replicas: Optional[int] = None,
+    num_chief_replicas: Optional[int] = None,
+    num_ps_replicas: Optional[int] = None,
+):
+    # Check if at least one replica is set.
+    # TODO (andreyvelich): Remove this check once we have CEL validation.
+    # Ref: https://github.com/kubeflow/training-operator/issues/1708
+    if (
+        num_worker_replicas is None
+        and num_chief_replicas is None
+        and num_ps_replicas is None
+    ):
+        raise ValueError("At least one replica for TFJob must be set")
+
+    # Create TFJob template.
+    tfjob = models.KubeflowOrgV1TFJob(
+        api_version=constants.API_VERSION,
+        kind=constants.TFJOB_KIND,
+        metadata=models.V1ObjectMeta(name=name, namespace=namespace),
+        spec=models.KubeflowOrgV1TFJobSpec(
+            run_policy=models.KubeflowOrgV1RunPolicy(clean_pod_policy=None),
+            tf_replica_specs={},
+        ),
+    )
+
+    # Add Chief, PS, and Worker replicas to the TFJob.
+    if num_chief_replicas is not None:
+        tfjob.spec.tf_replica_specs[
+            constants.REPLICA_TYPE_CHIEF
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=num_chief_replicas,
+            template=pod_template_spec,
+        )
+
+    if num_ps_replicas is not None:
+        tfjob.spec.tf_replica_specs[
+            constants.REPLICA_TYPE_PS
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=num_ps_replicas,
+            template=pod_template_spec,
+        )
+
+    if num_worker_replicas is not None:
+        tfjob.spec.tf_replica_specs[
+            constants.REPLICA_TYPE_WORKER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=num_worker_replicas,
+            template=pod_template_spec,
+        )
+
+    return tfjob
+
+
+def get_pytorchjob_template(
+    name: str,
+    namespace: str,
+    pod_template_spec: models.V1PodTemplateSpec,
+    num_worker_replicas: Optional[int] = None,
+):
+    # Check if at least one replica is set.
+    # TODO (andreyvelich): Remove this check once we have CEL validation.
+    # Ref: https://github.com/kubeflow/training-operator/issues/1708
+    if num_worker_replicas is None:
+        raise ValueError("At least one Worker replica for PyTorchJob must be set")
+
+    # Create PyTorchJob template.
+    pytorchjob = models.KubeflowOrgV1PyTorchJob(
+        api_version=constants.API_VERSION,
+        kind=constants.PYTORCHJOB_KIND,
+        metadata=models.V1ObjectMeta(name=name, namespace=namespace),
+        spec=models.KubeflowOrgV1PyTorchJobSpec(
+            run_policy=models.KubeflowOrgV1RunPolicy(clean_pod_policy=None),
+            pytorch_replica_specs={},
+        ),
+    )
+
+    # Add Master and Worker replicas to the PyTorchJob.
+    pytorchjob.spec.pytorch_replica_specs[
+        constants.REPLICA_TYPE_MASTER
+    ] = models.KubeflowOrgV1ReplicaSpec(
+        replicas=1,
+        template=pod_template_spec,
+    )
+
+    # If number of Worker replicas is 1, PyTorchJob uses only Master replica.
+    if num_worker_replicas != 1:
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_WORKER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=num_worker_replicas,
+            template=pod_template_spec,
+        )
+
+    return pytorchjob
