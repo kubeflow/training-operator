@@ -12,23 +12,28 @@ spec:
         spec:
           containers:
           - name: mxnet
-            image: mxjob/auto-tuning:gpu
+            image: kubeflow/mxnet-auto-tuning:latest
             command: ["python3"]
-            args: ["/home/scripts/start-job.py"]
+            args: ["/start-job.py"]
+            ports:
+            - containerPort: 9991
+              name: mxjob-port
     TunerServer:
-      label: 2080ti
       replicas: 1
       restartPolicy: Never
       template:
         spec:
           containers:
           - name: mxnet
-            image: mxjob/auto-tuning:gpu
+            image: kubeflow/mxnet-auto-tuning:latest
             command: ["python3"]
-            args: ["/home/scripts/start-job.py"]
+            args: ["/start-job.py"]
             resources:
               limits:
                 nvidia.com/gpu: 1
+            ports:
+            - containerPort: 9991
+              name: mxjob-port
     Tuner:
       replicas: 1
       restartPolicy: Never
@@ -36,6 +41,9 @@ spec:
         spec:
           containers:
           - name: mxnet
-            image: mxjob/auto-tuning:gpu
+            image: kubeflow/mxnet-auto-tuning:latest
             command: ["python3"]
-            args: ["/home/scripts/start-job.py"]
+            args: ["/start-job.py"]
+            ports:
+            - containerPort: 9991
+              name: mxjob-port
