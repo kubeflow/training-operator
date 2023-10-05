@@ -221,11 +221,10 @@ def generate_mxjob(
 def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
     worker_container = V1Container(
         name=CONTAINER_NAME,
-        # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
-        image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
+        image="docker.io/kubeflow/mxnet-gpu:latest",
         command=["/usr/local/bin/python3"],
         args=[
-            "incubator-mxnet/example/image-classification/train_mnist.py",
+            "/mxnet/mxnet/example/image-classification/train_mnist.py",
             "--num-epochs",
             "1",
             "--num-examples",
@@ -239,16 +238,14 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
 
     server_container = V1Container(
         name=CONTAINER_NAME,
-        # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
-        image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
+        image="docker.io/kubeflow/mxnet-gpu:latest",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
         resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
     )
 
     scheduler_container = V1Container(
         name=CONTAINER_NAME,
-        # TODO (tenzen-y): Replace the below image with the kubeflow hosted image
-        image="docker.io/johnugeorge/mxnet:1.9.1_cpu_py3",
+        image="docker.io/kubeflow/mxnet-gpu:latest",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
         resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
     )
