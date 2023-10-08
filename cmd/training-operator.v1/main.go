@@ -70,7 +70,7 @@ func main() {
 	var enabledSchemes controllerv1.EnabledSchemes
 	var gangSchedulerName string
 	var namespace string
-	var monitoringPort int
+	var webhookServerPort int
 	var controllerThreads int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -84,8 +84,7 @@ func main() {
 		" Note: If you set another scheduler name, the training-operator assumes it's the scheduler-plugins.")
 	flag.StringVar(&namespace, "namespace", os.Getenv(EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
-	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
-		"It can be set to \"0\" to disable the metrics serving.")
+	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
 	flag.IntVar(&controllerThreads, "controller-threads", 1, "Number of worker threads used by the controller.")
 
 	// PyTorch related flags
@@ -124,7 +123,7 @@ func main() {
 			BindAddress: metricsAddr,
 		},
 		WebhookServer: &webhook.DefaultServer{Options: webhook.Options{
-			Port: monitoringPort,
+			Port: webhookServerPort,
 		}},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
