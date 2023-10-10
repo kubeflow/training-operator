@@ -23,7 +23,9 @@ import (
 	"strings"
 
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -165,8 +167,12 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 		cfg := mgr.GetConfig()
 		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
+		gvk := v1beta1.SchemeGroupVersion.WithKind("PodGroup")
+		validateCRD(mgr, gvk)
 	} else if gangSchedulerName != "" {
 		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient(), gangSchedulerName)
+		gvk := schedulerpluginsv1alpha1.SchemeGroupVersion.WithKind("PodGroup")
+		validateCRD(mgr, gvk)
 	}
 
 	// TODO: We need a general manager. all rest reconciler addsToManager
@@ -185,5 +191,17 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 			setupLog.Error(errors.New(errMsg), "unable to create controller", "scheme", s)
 			os.Exit(1)
 		}
+	}
+}
+
+func validateCRD(mgr ctrl.Manager, gvk schema.GroupVersionKind) {
+	_, err := mgr.GetRESTMapper().RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		if meta.IsNoMatchError(err) {
+			setupLog.Error(err, "crd might be missing, please install crd", "apiVersion", gvk.GroupVersion().String(), "kind", gvk.Kind)
+			os.Exit(1)
+		}
+		setupLog.Error(err, "unable to get crd", "apiVersion", gvk.GroupVersion().String(), "kind", gvk.Kind)
+		os.Exit(1)
 	}
 }
