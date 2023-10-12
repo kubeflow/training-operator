@@ -47,8 +47,7 @@ from kubeflow.training import utils
 from kubeflow.training import V1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PyTorchJob
 from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
-from kubeflow.training import PyTorchJobClient
-
+from kubeflow.training import TrainingClient
   container = V1Container(
     name="pytorch",
     image="gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0",
