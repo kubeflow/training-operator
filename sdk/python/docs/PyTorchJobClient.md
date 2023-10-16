@@ -87,7 +87,7 @@ from kubeflow.training import PyTorchJobClient
   )
 
 pytorchjob_client = PyTorchJobClient()
-pytorchjob_client.create(pytorchjob)
+pytorchjob_client.create_pytorchjob(pytorchjob, namespace=None)
 
 ```
 
