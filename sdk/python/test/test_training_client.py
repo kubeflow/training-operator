@@ -21,19 +21,22 @@ from kubernetes.client import V1ResourceRequirements
 CONTAINER_NAME = "pytorch"
 JOB_NAME = "pytorchjob-mnist-ci-test"
 
+
 def create_namespaced_custom_object_response(*args, **kwargs):
-    if args[2] == 'timeout':
+    if args[2] == "timeout":
         raise multiprocessing.TimeoutError()
-    elif args[2] == 'runtime':
+    elif args[2] == "runtime":
         raise RuntimeError()
+
 
 def generate_container() -> V1Container:
     return V1Container(
         name=CONTAINER_NAME,
         image="gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0",
         args=["--backend", "gloo"],
-        resources=V1ResourceRequirements(limits={"memory": '1Gi', "cpu": "0.4"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
+
 
 def generate_pytorchjob(
     job_namespace: str,
@@ -53,6 +56,7 @@ def generate_pytorchjob(
             pytorch_replica_specs={"Master": master, "Worker": worker},
         ),
     )
+
 
 def create_job():
     job_namespace = "test"
@@ -81,35 +85,99 @@ def create_job():
     pytorchjob = generate_pytorchjob(job_namespace, master, worker)
     return pytorchjob
 
+
 class DummyJobClass:
-    def __init__(self,kind) -> None:
+    def __init__(self, kind) -> None:
         self.kind = kind
 
-class TestTrainingClient(unittest.TestCase):
 
-    @patch('kubernetes.client.CustomObjectsApi', return_value=Mock(create_namespaced_custom_object=Mock(side_effect=create_namespaced_custom_object_response)))
-    @patch('kubernetes.client.CoreV1Api', return_value=Mock())
-    @patch('kubernetes.config.load_kube_config', return_value=Mock())   
+class TestTrainingClient(unittest.TestCase):
+    @patch(
+        "kubernetes.client.CustomObjectsApi",
+        return_value=Mock(
+            create_namespaced_custom_object=Mock(
+                side_effect=create_namespaced_custom_object_response
+            )
+        ),
+    )
+    @patch("kubernetes.client.CoreV1Api", return_value=Mock())
+    @patch("kubernetes.config.load_kube_config", return_value=Mock())
     def setUp(self, mock_custom_api, mock_core_api, mock_load_kube_config) -> None:
         self.training_client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
 
-
-    @parameterized.expand([
-        ("invalid extra parameter", {"job":create_job(), "namespace": "test", "base_image":"test_image" },ValueError),
-        ("invalid job kind", {"job_kind": "invalid_job_kind" },ValueError),
-        ("job name missing ", {"train_func": lambda: "test train function"}, ValueError),
-        ("job name missing", {"base_image":"test_image"}, ValueError),
-        ("uncallable train function", {"name": "test job", "train_func":"uncallable train function"}, ValueError),
-        ("invalid TFJob replica", {"name": "test job", "train_func": lambda: "test train function", "job_kind": constants.TFJOB_KIND }, ValueError ),
-        ("invalid PyTorchJob replica", {"name": "test job", "train_func": lambda: "test train function","job_kind": constants.PYTORCHJOB_KIND }, ValueError ),
-        ("invalid pod template spec parameters", {"name": "test job", "train_func": lambda: "test train function","job_kind": constants.MXJOB_KIND }, KeyError ),
-        ("paddle job can't be created using function", {"name": "test job", "train_func": lambda: "test train function","job_kind": constants.PADDLEJOB_KIND }, ValueError ),
-        ("invalid job object", {"job": DummyJobClass(constants.TFJOB_KIND)}, ValueError),
-        ("create_namespaced_custom_object timeout error", {"job":create_job(), "namespace": "timeout" },TimeoutError),
-        ("create_namespaced_custom_object runtime error", {"job":create_job(), "namespace": "runtime" },RuntimeError),
-
-    ])
-    def test_create_job(self,test_name, kwargs, expected_output ):
+    @parameterized.expand(
+        [
+            (
+                "invalid extra parameter",
+                {"job": create_job(), "namespace": "test", "base_image": "test_image"},
+                ValueError,
+            ),
+            ("invalid job kind", {"job_kind": "invalid_job_kind"}, ValueError),
+            (
+                "job name missing ",
+                {"train_func": lambda: "test train function"},
+                ValueError,
+            ),
+            ("job name missing", {"base_image": "test_image"}, ValueError),
+            (
+                "uncallable train function",
+                {"name": "test job", "train_func": "uncallable train function"},
+                ValueError,
+            ),
+            (
+                "invalid TFJob replica",
+                {
+                    "name": "test job",
+                    "train_func": lambda: "test train function",
+                    "job_kind": constants.TFJOB_KIND,
+                },
+                ValueError,
+            ),
+            (
+                "invalid PyTorchJob replica",
+                {
+                    "name": "test job",
+                    "train_func": lambda: "test train function",
+                    "job_kind": constants.PYTORCHJOB_KIND,
+                },
+                ValueError,
+            ),
+            (
+                "invalid pod template spec parameters",
+                {
+                    "name": "test job",
+                    "train_func": lambda: "test train function",
+                    "job_kind": constants.MXJOB_KIND,
+                },
+                KeyError,
+            ),
+            (
+                "paddle job can't be created using function",
+                {
+                    "name": "test job",
+                    "train_func": lambda: "test train function",
+                    "job_kind": constants.PADDLEJOB_KIND,
+                },
+                ValueError,
+            ),
+            (
+                "invalid job object",
+                {"job": DummyJobClass(constants.TFJOB_KIND)},
+                ValueError,
+            ),
+            (
+                "create_namespaced_custom_object timeout error",
+                {"job": create_job(), "namespace": "timeout"},
+                TimeoutError,
+            ),
+            (
+                "create_namespaced_custom_object runtime error",
+                {"job": create_job(), "namespace": "runtime"},
+                RuntimeError,
+            ),
+        ]
+    )
+    def test_create_job(self, test_name, kwargs, expected_output):
         """
         test create_job function of training client
         """
@@ -117,9 +185,9 @@ class TestTrainingClient(unittest.TestCase):
         try:
             self.training_client.create_job(**kwargs)
         except Exception as e:
-            self.assertEqual(type(e),expected_output)
+            self.assertEqual(type(e), expected_output)
         print("test execution complete")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
