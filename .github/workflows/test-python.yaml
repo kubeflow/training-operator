@@ -1,0 +1,23 @@
+name: Python Test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+        # TODO (andreyvelich): We need to replace this action with script to do
+        # linting and formatting for Training Operator SDK.
+      - name: Check Python code with Black
+        uses: psf/black@stable
+        with:
+          version: 23.9.1
+          options: --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
+          src: sdk/

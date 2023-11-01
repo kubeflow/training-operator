@@ -723,9 +723,14 @@ func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *kubeflowv1.MPIJob, work
 // getOrCreateLauncherServiceAccount gets the launcher ServiceAccount controlled
 // by this MPIJob, or creates one if it doesn't exist.
 func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1.MPIJob) (*corev1.ServiceAccount, error) {
+	saName := mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+
+	if len(saName) == 0 {
+		saName = mpiJob.Name + launcherSuffix
+	}
 
 	sa := &corev1.ServiceAccount{}
-	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
+	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: saName}
 	err := jc.Get(context.Background(), NamespacedName, sa)
 
 	if err == nil {
@@ -740,13 +745,6 @@ func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1
 	// temporary network failure, or any other transient reason.
 	if err != nil {
 		return nil, err
-	}
-	// If the launcher ServiceAccount is not controlled by this MPIJob resource, we
-	// should log a warning to the event recorder and return.
-	if !metav1.IsControlledBy(sa, mpiJob) {
-		msg := fmt.Sprintf(MessageResourceExists, sa.Name, sa.Kind)
-		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return nil, fmt.Errorf(msg)
 	}
 
 	return sa, nil
@@ -1035,7 +1033,10 @@ func (jc *MPIJobReconciler) newLauncher(mpiJob *kubeflowv1.MPIJob, kubectlDelive
 		jc.PodGroupControl.DecoratePodTemplateSpec(podSpec, mpiJob, rt)
 	}
 
-	podSpec.Spec.ServiceAccountName = launcherName
+	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) == 0 {
+		podSpec.Spec.ServiceAccountName = launcherName
+	}
+
 	podSpec.Spec.InitContainers = append(podSpec.Spec.InitContainers, corev1.Container{
 		Name:            kubectlDeliveryName,
 		Image:           kubectlDeliveryImage,
@@ -1297,9 +1298,15 @@ func updateDiscoverHostsInConfigMap(configMap *corev1.ConfigMap, mpiJob *kubeflo
 // resource. It also sets the appropriate OwnerReferences on the resource so
 // handleObject can discover the MPIJob resource that 'owns' it.
 func newLauncherServiceAccount(mpiJob *kubeflowv1.MPIJob) *corev1.ServiceAccount {
+	launcherName := mpiJob.Name + launcherSuffix
+
+	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) > 0 {
+		launcherName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+	}
+
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      mpiJob.Name + launcherSuffix,
+			Name:      launcherName,
 			Namespace: mpiJob.Namespace,
 			Labels: map[string]string{
 				"app": mpiJob.Name,
@@ -1351,6 +1358,12 @@ func newLauncherRole(mpiJob *kubeflowv1.MPIJob, workerReplicas int32) *rbacv1.Ro
 // handleObject can discover the MPIJob resource that 'owns' it.
 func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 	launcherName := mpiJob.Name + launcherSuffix
+	saName := launcherName
+
+	if len(mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName) > 0 {
+		saName = mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName
+	}
+
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      launcherName,
@@ -1365,7 +1378,7 @@ func newLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) *rbacv1.RoleBinding {
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      rbacv1.ServiceAccountKind,
-				Name:      launcherName,
+				Name:      saName,
 				Namespace: mpiJob.Namespace,
 			},
 		},

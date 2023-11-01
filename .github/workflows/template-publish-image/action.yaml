@@ -12,6 +12,10 @@ inputs:
   platforms:
     required: true
     description: e.g, linux/amd64
+  context:
+    required: false
+    default: .
+    description: e.g, examples/xgboost/xgboost-dist
   push:
     required: true
     description: whether to push container images or not
@@ -19,6 +23,22 @@ inputs:
 runs:
   using: composite
   steps:
+    # This step is a Workaround to avoid the "No space left on device" error.
+    # ref: https://github.com/actions/runner-images/issues/2840
+    - name: Remove unnecessary files
+      shell: bash
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/local/share/powershell
+        sudo rm -rf /usr/share/swift
+        
+        echo "Disk usage after cleanup:"
+        df -h
+
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v2
       with:
@@ -40,7 +60,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         platforms: ${{ inputs.platforms }}
-        context: .
+        context: ${{ inputs.context }}
         file: ${{ inputs.dockerfile }}
         push: ${{ inputs.push }}
         tags: ${{ steps.meta.outputs.tags }}

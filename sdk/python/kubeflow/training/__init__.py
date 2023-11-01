@@ -56,3 +56,4 @@ from kubeflow.training.models.kubeflow_org_v1_xg_boost_job_list import KubeflowO
 from kubeflow.training.models.kubeflow_org_v1_xg_boost_job_spec import KubeflowOrgV1XGBoostJobSpec
 
 from kubeflow.training.api.training_client import TrainingClient
+from kubeflow.training.constants import constants

@@ -11,65 +11,57 @@ logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
 
-def verify_unschedulable_job_e2e(
-    client: TrainingClient, name: str, namespace: str, job_kind: str
-):
+def verify_unschedulable_job_e2e(client: TrainingClient, name: str, namespace: str):
     """Verify unschedulable Training Job e2e test."""
-    logging.info(f"\n\n\n{job_kind} is creating")
-    client.wait_for_job_conditions(name, namespace, job_kind, {constants.JOB_CONDITION_CREATED})
+    logging.info(f"\n\n\n{client.job_kind} is creating")
+    job = client.wait_for_job_conditions(
+        name, namespace, expected_conditions={constants.JOB_CONDITION_CREATED}
+    )
 
     logging.info("Checking 3 times that pods are not scheduled")
     for num in range(3):
         logging.info(f"Number of attempts: {int(num)+1}/3")
-        # Job should have a Created condition.
-        if not client.is_job_created(name, namespace, job_kind):
-            raise Exception(f"{job_kind} should be in Created condition")
 
-        # Job shouldn't have a Running condition.
-        if client.is_job_running(name, namespace, job_kind):
-            raise Exception(f"{job_kind} shouldn't be in Running condition")
+        # Job should have correct conditions
+        if not client.is_job_created(job=job) or client.is_job_running(job=job):
+            raise Exception(
+                f"{client.job_kind} should be in Created condition. "
+                f"{client.job_kind} should not be in Running condition."
+            )
 
         logging.info("Sleeping 5 seconds...")
         time.sleep(5)
 
 
 def verify_job_e2e(
-    client: TrainingClient, name: str, namespace: str, job_kind: str, container: str, timeout: int = 600
+    client: TrainingClient,
+    name: str,
+    namespace: str,
+    wait_timeout: int = 600,
 ):
     """Verify Training Job e2e test."""
 
     # Wait until Job is Succeeded.
-    logging.info(f"\n\n\n{job_kind} is running")
-    client.wait_for_job_conditions(name, namespace, job_kind, timeout=timeout)
+    logging.info(f"\n\n\n{client.job_kind} is running")
+    job = client.wait_for_job_conditions(name, namespace, wait_timeout=wait_timeout)
 
     # Job should have Created, Running, and Succeeded conditions.
-    conditions = client.get_job_conditions(name, namespace, job_kind)
+    conditions = client.get_job_conditions(job=job)
     if len(conditions) != 3:
-        raise Exception(f"{job_kind} conditions are invalid: {conditions}")
+        raise Exception(f"{client.job_kind} conditions are invalid: {conditions}")
 
     # Job should have correct conditions.
-    if not client.is_job_created(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should be in Created condition")
-
-    if client.is_job_running(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should not be in Running condition")
-
-    if client.is_job_restarting(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should not be in Restarting condition")
-
-    if not client.is_job_succeeded(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should be in Succeeded condition")
-
-    if client.is_job_failed(name, namespace, job_kind):
-        raise Exception(f"{job_kind} should not be in Failed condition")
-
-    # Print Job pod names.
-    logging.info(f"\n\n\n{job_kind} pod names")
-    logging.info(client.get_job_pod_names(name, namespace))
-
-    # Print Job logs.
-    logging.info(f"\n\n\n{job_kind} logs")
-    client.get_job_logs(name, namespace, container=container)
+    if (
+        not client.is_job_created(job=job)
+        or not client.is_job_succeeded(job=job)
+        or client.is_job_running(job=job)
+        or client.is_job_restarting(job=job)
+        or client.is_job_failed(job=job)
+    ):
+        raise Exception(
+            f"{client.job_kind} should be in Succeeded and Created conditions. "
+            f"{client.job_kind} should not be in Running, Restarting, or Failed conditions."
+        )
 
 
 def get_pod_spec_scheduler_name(gang_scheduler_name: str) -> str:
@@ -79,3 +71,17 @@ def get_pod_spec_scheduler_name(gang_scheduler_name: str) -> str:
         return TEST_GANG_SCHEDULER_NAME_VOLCANO
 
     return ""
+
+
+def print_job_results(client: TrainingClient, name: str, namespace: str):
+    # Print Job.
+    logging.info(f"\n\n\n{client.job_kind} info")
+    logging.info(client.get_job(name, namespace))
+
+    # Print Job pod names.
+    logging.info(f"\n\n\n{client.job_kind} pod names")
+    logging.info(client.get_job_pod_names(name, namespace))
+
+    # Print Job logs.
+    logging.info(f"\n\n\n{client.job_kind} logs")
+    client.get_job_logs(name, namespace)

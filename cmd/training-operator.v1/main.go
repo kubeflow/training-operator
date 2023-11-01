@@ -23,13 +23,18 @@ import (
 	"strings"
 
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
@@ -67,7 +72,7 @@ func main() {
 	var enabledSchemes controllerv1.EnabledSchemes
 	var gangSchedulerName string
 	var namespace string
-	var monitoringPort int
+	var webhookServerPort int
 	var controllerThreads int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -81,8 +86,7 @@ func main() {
 		" Note: If you set another scheduler name, the training-operator assumes it's the scheduler-plugins.")
 	flag.StringVar(&namespace, "namespace", os.Getenv(EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
-	flag.IntVar(&monitoringPort, "monitoring-port", 9443, "Endpoint port for displaying monitoring metrics. "+
-		"It can be set to \"0\" to disable the metrics serving.")
+	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
 	flag.IntVar(&controllerThreads, "controller-threads", 1, "Number of worker threads used by the controller.")
 
 	// PyTorch related flags
@@ -106,14 +110,27 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	var cacheOpts cache.Options
+	if namespace != "" {
+		cacheOpts = cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				namespace: {},
+			},
+		}
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   monitoringPort,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
+		WebhookServer: &webhook.DefaultServer{Options: webhook.Options{
+			Port: webhookServerPort,
+		}},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       leaderElectionID,
-		Namespace:              namespace,
+		Cache:                  cacheOpts,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -150,8 +167,12 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 		cfg := mgr.GetConfig()
 		volcanoClientSet := volcanoclient.NewForConfigOrDie(cfg)
 		gangSchedulingSetupFunc = common.GenVolcanoSetupFunc(volcanoClientSet)
+		gvk := v1beta1.SchemeGroupVersion.WithKind("PodGroup")
+		validateCRD(mgr, gvk)
 	} else if gangSchedulerName != "" {
 		gangSchedulingSetupFunc = common.GenSchedulerPluginsSetupFunc(mgr.GetClient(), gangSchedulerName)
+		gvk := schedulerpluginsv1alpha1.SchemeGroupVersion.WithKind("PodGroup")
+		validateCRD(mgr, gvk)
 	}
 
 	// TODO: We need a general manager. all rest reconciler addsToManager
@@ -170,5 +191,17 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 			setupLog.Error(errors.New(errMsg), "unable to create controller", "scheme", s)
 			os.Exit(1)
 		}
+	}
+}
+
+func validateCRD(mgr ctrl.Manager, gvk schema.GroupVersionKind) {
+	_, err := mgr.GetRESTMapper().RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		if meta.IsNoMatchError(err) {
+			setupLog.Error(err, "crd might be missing, please install crd", "apiVersion", gvk.GroupVersion().String(), "kind", gvk.Kind)
+			os.Exit(1)
+		}
+		setupLog.Error(err, "unable to get crd", "apiVersion", gvk.GroupVersion().String(), "kind", gvk.Kind)
+		os.Exit(1)
 	}
 }
