@@ -770,7 +770,7 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> dict[str, str]:
         """Print the training logs for the Job. By default it returns logs from
         the `master` pod.
 
@@ -799,6 +799,10 @@ class TrainingClient(object):
             follow: Whether to follow the log stream of the pod.
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
+
+        Returns:
+            dict[str, str]: A dictionary in which the keys are pod names and the
+            values are the corresponding logs.
 
         Raises:
             ValueError: Job replica type is invalid.
@@ -848,10 +852,11 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
-                            logger.debug("[Pod %s]: %s", pods[index], logline)
+                            print(f"[Pod {pods[index]}]: {logline}")
                         except queue.Empty:
                             break
         elif pods:
+            logs_dict = {}
             for pod in pods:
                 try:
                     pod_logs = self.core_api.read_namespaced_pod_log(
@@ -859,9 +864,11 @@ class TrainingClient(object):
                         namespace,
                         container=constants.JOB_PARAMETERS[job_kind]["container"],
                     )
-                    logger.debug("The logs of pod %s:\n %s", pod, pod_logs)
+                    logs_dict[pod] = pod_logs
                 except Exception:
                     raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
+
+        return logs_dict
 
     def update_job(
         self,
