@@ -24,8 +24,7 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
-logging.basicConfig(format="%(message)s")
-logging.getLogger().setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 status_logger = utils.StatusLogger(
     header="{:<30.30} {:<20.20} {}".format("NAME", "STATE", "TIME"),
@@ -222,7 +221,7 @@ class TrainingClient(object):
                 f"Failed to create {job_kind}: {namespace}/{job.metadata.name}"
             )
 
-        logging.info(f"{job_kind} {namespace}/{job.metadata.name} has been created")
+        logger.debug(f"{job_kind} {namespace}/{job.metadata.name} has been created")
 
     def get_job(
         self,
@@ -771,7 +770,7 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ):
+    ) -> Dict[str, str]:
         """Print the training logs for the Job. By default it returns logs from
         the `master` pod.
 
@@ -801,6 +800,10 @@ class TrainingClient(object):
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
 
+        Returns:
+            Dict[str, str]: A dictionary in which the keys are pod names and the
+            values are the corresponding logs.
+
         Raises:
             ValueError: Job replica type is invalid.
             TimeoutError: Timeout to get Job pods.
@@ -819,6 +822,7 @@ class TrainingClient(object):
             timeout=timeout,
         )
 
+        logs_dict = {}
         if pods and follow:
             log_streams = []
             for pod in pods:
@@ -849,7 +853,7 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
-                            logging.info("[Pod %s]: %s", pods[index], logline)
+                            print(f"[Pod {pods[index]}]: {logline}")
                         except queue.Empty:
                             break
         elif pods:
@@ -860,9 +864,11 @@ class TrainingClient(object):
                         namespace,
                         container=constants.JOB_PARAMETERS[job_kind]["container"],
                     )
-                    logging.info("The logs of pod %s:\n %s", pod, pod_logs)
+                    logs_dict[pod] = pod_logs
                 except Exception:
                     raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
+
+        return logs_dict
 
     def update_job(
         self,
@@ -908,7 +914,7 @@ class TrainingClient(object):
         except Exception:
             raise RuntimeError(f"Failed to update {job_kind}: {namespace}/{name}")
 
-        logging.info(f"{job_kind} {namespace}/{name} has been updated")
+        logger.debug(f"{job_kind} {namespace}/{name} has been updated")
 
     def delete_job(
         self,
@@ -950,4 +956,4 @@ class TrainingClient(object):
         except Exception:
             raise RuntimeError(f"Failed to delete {job_kind}: {namespace}/{name}")
 
-        logging.info(f"{job_kind} {namespace}/{name} has been deleted")
+        logger.debug(f"{job_kind} {namespace}/{name} has been deleted")
