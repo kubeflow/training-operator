@@ -770,7 +770,7 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> dict[str, str]:
+    ) -> Dict[str, str]:
         """Print the training logs for the Job. By default it returns logs from
         the `master` pod.
 
@@ -801,7 +801,7 @@ class TrainingClient(object):
                 to execute the request.
 
         Returns:
-            dict[str, str]: A dictionary in which the keys are pod names and the
+            Dict[str, str]: A dictionary in which the keys are pod names and the
             values are the corresponding logs.
 
         Raises:
@@ -822,6 +822,7 @@ class TrainingClient(object):
             timeout=timeout,
         )
 
+        logs_dict = {}
         if pods and follow:
             log_streams = []
             for pod in pods:
@@ -856,7 +857,6 @@ class TrainingClient(object):
                         except queue.Empty:
                             break
         elif pods:
-            logs_dict = {}
             for pod in pods:
                 try:
                     pod_logs = self.core_api.read_namespaced_pod_log(
