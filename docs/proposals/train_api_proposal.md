@@ -46,32 +46,45 @@ In many cases like in LLM, training core code template is a standard and it does
 ```python
 From kubeflow.training import trainingClient
 # Arguments related to the model provider including credentials
-model_provider_arguments = {key:value pairs}
+model_args = modelProviderClass()
 # Arguments related to the dataset provider including credentials
-dataset_provider_arguments = {key:value pairs}
+dataset_args = datasetProviderClass()
 # Arguments related to the trainer code
-training_parameters = {key:value pairs}
+parameters = {key:value pairs}
 trainingClient.train(
    nodes=1, 
    nprocs_per_node=4, 
-   model='repo/model_name', 
-   dataset= 'dataset_path',
-   model_provider_arguments, 
-   dataset_provider_arguments, 
-   training_parameters
+   model='provider://repo/model_name', 
+   dataset= 'provider://train_dataset_path',
+   eval_dataset = "provider://eval_dataset_path"
+   model_args, 
+   dataset_args, 
+   parameters
 )
 ```
 
 Example: 
 
 ```python
+@dataclass
+class HuggingFace:
+    access_token = field()
+    peft_config = field()
+    transformerClass = field()
+
+@dataclass
+class S3:
+    access_token = field()
+    region = field()
+ 
 trainingClient.train(
    nodes=1, 
    nprocs_per_node=4, 
-   model='openchat/openchat_3.5', 
-   dataset= 'https://s3.us-west-2.amazonaws.com/DOC-EXAMPLE-BUCKET1/dataset',
-   {provider="hugging_face", access_token ="hf_..."}, 
-   {provider="s3", access_token = "s3 access token" }, 
+   model='hf://openchat/openchat_3.5', 
+   dataset= 's3://doc-example-bucket1/train_dataset',
+   eval_dataset = "s3://doc-example-bucket1/eval_dataset"
+   HuggingFace(access_token = "hf_..." , peft_config = {lora_alpha: 16}, transformerClass="Trainer"), 
+   s3(access_token = "s3 access token", region="us-west-2"), 
    {learning_rate=0.1}
 )
 ```
@@ -85,7 +98,18 @@ The new proposed API takes following arguments
 
 **<h3>Implementation</h3>**
 
-1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container. 
+1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.
+A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers.
+```
+sdk/python
+        -> kubeflow
+            -> model_init_container_images
+                -> hugging_face.py
+            -> dataset_init_container_images
+                -> s3.py
+```
+
+
 2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in[ https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
 
 ```python
@@ -104,6 +128,10 @@ exec_script = textwrap.dedent(
    {func_code}
    EOM
    printf "%s" \"$SCRIPT\" > \"$program_path/ephemeral_script.py\"
-   "torchrun", "--nproc_per_node=1","--rdzv_backend=c10d","--rdzv_id=test","--rdzv_endpoint=torchrun-test-worker-0:29400" "$program_path/ephemeral_script.py\
-   """")
+   "torchrun", "$program_path/ephemeral_script.py\
+   """"
+   )
 ```
+
+**<h3>Limitations</h3>**
+The dataset is assumed to be preprocessed by the user.
