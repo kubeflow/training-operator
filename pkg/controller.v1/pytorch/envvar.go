@@ -91,12 +91,15 @@ func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, 
 				Value: strconv.Itoa(rank),
 			})
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-				Name:  EnvNprocPerNode,
-				Value: *pytorchjob.Spec.NprocPerNode,
-			})
-			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvNodeRank,
 				Value: strconv.Itoa(rank),
+			})
+		}
+
+		if pytorchjob.Spec.NprocPerNode != nil {
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  EnvNprocPerNode,
+				Value: *pytorchjob.Spec.NprocPerNode,
 			})
 		}
 
