@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  test:
+  python-test:
     name: Test
     runs-on: ubuntu-latest
 
@@ -21,3 +21,16 @@ jobs:
           version: 23.9.1
           options: --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
           src: sdk/
+
+      - name: Install dependencies
+        run: pip install pytest pytest-md pytest-emoji python-dateutil urllib3 kubernetes
+
+      - name: Run unit test for training sdk
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          click-to-expand: true
+          report-title: 'Test Report'
+          custom-arguments: ./sdk/python/kubeflow/training/api/training_client_test.py
