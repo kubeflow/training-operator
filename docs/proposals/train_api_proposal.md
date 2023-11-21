@@ -11,7 +11,7 @@
 
 **<h3>Abstract</h3>**
 
-LLMs are being widely used for generative AI tasks and as their adoption is increasing across various domains, the need for LLMops in the Kubernetes environment has also risen. There is a need to fine-tune these large models on task-specific datasets. The user/data scientist should be able to do this simplistically in the Kubernetes environment using the Kubeflow training operator SDK without any infrastructure knowledge.
+LLMs are being widely used for generative AI tasks and as their adoption is increasing across various domains, the need for LLMOps in the Kubernetes environment has also risen. There is a need to fine-tune these large models on task-specific datasets. The user/data scientist should be able to do this simplistically in the Kubernetes environment using the Kubeflow training operator SDK without any infrastructure knowledge.
 
 **<h3>Background</h3>**
 
