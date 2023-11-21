@@ -110,7 +110,7 @@ sdk/python
 ```
 
 
-2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in[ https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
+2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in [https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
 
 ```python
 training_client.create_job(name="pytorchjob_name",train_func=custom_training_function, num_of_nodes=1, gpus_per_node = 4)
