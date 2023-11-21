@@ -99,16 +99,31 @@ The new proposed API takes following arguments
 **<h3>Implementation</h3>**
 
 1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.
-A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers.
+A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images.
+
 ```
 sdk/python
         -> kubeflow
             -> model_init_container_images
+                -> abstract_model_provider.py
                 -> hugging_face.py
             -> dataset_init_container_images
+                -> abstract_data_provider.py
                 -> s3.py
 ```
+```python
+# code present in abstract_model_provider.py
+class modelProvider():
+    @abstractmethod
+    def download_model(self):
+        pass
 
+# code present in hugging_face.py
+class HuggingFace(modelProvider):
+    def download_model(self):
+        # implementation for downloading the model
+
+```
 
 2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in [https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
 
@@ -134,4 +149,6 @@ exec_script = textwrap.dedent(
 ```
 
 **<h3>Limitations</h3>**
-The dataset is assumed to be preprocessed by the user.
+1. The dataset is assumed to be preprocessed by the user.
+
+2. Currently only pytorch framework will be supported for running distributed training.
