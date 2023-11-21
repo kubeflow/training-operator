@@ -27,7 +27,7 @@ This method requires infrastructure knowledge including image creation, registry
 
 **<h4>Higher level SDK</h4>**
 
-To provide a better user experience, a new higher level SDK was added in[ https://github.com/kubeflow/training-operator/pull/1659](https://github.com/kubeflow/training-operator/pull/1659)  which avoided the need of image creation. Instead of creating the image, we can directly pass the custom script to train_func parameter and final pytorch job is created
+To provide a better user experience, a new higher level SDK was added in[ https://github.com/kubeflow/training-operator/pull/1659](https://github.com/kubeflow/training-operator/pull/1659) which avoided the need of image creation. Instead of creating the image, we can directly pass the custom script to train_func parameter and final pytorch job is created
 
 ```python
 training_client.create_job(
