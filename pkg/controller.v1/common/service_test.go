@@ -8,7 +8,6 @@ import (
 	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -71,7 +70,7 @@ func TestCalculateServiceSliceSize(t *testing.T) {
 }
 
 func TestFilterServicesForReplicaType(t *testing.T) {
-	services := []*v1.Service{
+	services := []*corev1.Service{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "a",
@@ -110,6 +109,6 @@ func TestFilterServicesForReplicaType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FilterPodsForReplicaType returned error: %v", err)
 	}
-	want := []*v1.Service{services[0], services[2], services[4]}
+	want := []*corev1.Service{services[0], services[2], services[4]}
 	assert.Equal(t, want, got)
 }
