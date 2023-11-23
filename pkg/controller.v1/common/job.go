@@ -30,7 +30,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -253,7 +252,7 @@ func (jc *JobController) ReconcileJobs(
 			queue := ""
 			priorityClass := ""
 			var schedulerTimeout *int32
-			var minResources *v1.ResourceList
+			var minResources *corev1.ResourceList
 
 			if runPolicy.SchedulingPolicy != nil {
 				if minAvailable := runPolicy.SchedulingPolicy.MinAvailable; minAvailable != nil {
@@ -266,7 +265,7 @@ func (jc *JobController) ReconcileJobs(
 					priorityClass = pc
 				}
 				if mr := runPolicy.SchedulingPolicy.MinResources; mr != nil {
-					minResources = (*v1.ResourceList)(mr)
+					minResources = (*corev1.ResourceList)(mr)
 				}
 				if timeout := runPolicy.SchedulingPolicy.ScheduleTimeoutSeconds; timeout != nil {
 					schedulerTimeout = timeout
@@ -364,7 +363,7 @@ func (jc *JobController) CleanUpResources(
 	runtimeObject runtime.Object,
 	metaObject metav1.Object,
 	jobStatus apiv1.JobStatus,
-	pods []*v1.Pod,
+	pods []*corev1.Pod,
 ) error {
 	if err := jc.DeletePodsAndServices(runtimeObject, runPolicy, jobStatus, pods); err != nil {
 		return err
@@ -448,6 +447,6 @@ func (jc *JobController) CleanupJob(runPolicy *apiv1.RunPolicy, jobStatus apiv1.
 	}
 }
 
-func (jc *JobController) calcPGMinResources(minMember int32, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) *v1.ResourceList {
+func (jc *JobController) calcPGMinResources(minMember int32, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) *corev1.ResourceList {
 	return CalcPGMinResources(minMember, replicas, jc.PriorityClassLister.Get)
 }
