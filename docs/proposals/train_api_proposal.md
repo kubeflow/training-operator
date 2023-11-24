@@ -44,7 +44,7 @@ In many cases like in LLM, training core code template is a standard and it does
 **<h3>New Train API proposal:</h3>**
 
 ```python
-From kubeflow.training import trainingClient
+from kubeflow.training import TrainingClient
 # Arguments related to the model provider including credentials
 model_args = modelProviderClass()
 # Arguments related to the dataset provider including credentials
