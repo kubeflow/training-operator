@@ -67,31 +67,35 @@ Example:
 
 ```python
 @dataclass
-class HuggingFace:
+class HuggingFaceModelParams:
     access_token = field()
-    peft_config = field()
     transformerClass = field()
 
 @dataclass
-class S3:
+class S3DatasetParams:
     access_token = field()
     region = field()
+
+@dataclass
+class HuggingFaceTrainParams:
+    learning_rate = field()
+    peft_config = field()
  
 trainingClient.train(
-   nodes=1, 
-   nprocs_per_node=4, 
+   workers=1, 
+   nprocs_per_worker=4, 
    model='hf://openchat/openchat_3.5', 
    dataset= 's3://doc-example-bucket1/train_dataset',
    eval_dataset = "s3://doc-example-bucket1/eval_dataset"
-   HuggingFace(access_token = "hf_..." , peft_config = {lora_alpha: 16}, transformerClass="Trainer"), 
-   s3(access_token = "s3 access token", region="us-west-2"), 
-   {learning_rate=0.1}
+   HuggingFaceModelParams(access_token = "hf_..." , peft_config = {lora_alpha: 16}, transformerClass="Trainer"), 
+   S3DatasetParams(access_token = "s3 access token", region="us-west-2"), 
+   HuggingFaceTrainParams(learning_rate=0.1, peft_config = {})
 )
 ```
 
 The new proposed API takes following arguments 
 
-1. System parameters - Number of nodes, number of procs per node(GPUs per node).
+1. System parameters - Number of workers, number of procs per workers(GPUs per worker).
 2. Model parameters - Model provider and repository details.
 3. Dataset parameters - Dataset provider and dataset details.
 4. Training parameters - Training specific parameters like learning rate etc.
@@ -104,25 +108,31 @@ A new folder containing the code for downloading model and dataset can be added 
 ```
 sdk/python
         -> kubeflow
-            -> model_init_container_images
+            -> storage_init_container
                 -> abstract_model_provider.py
-                -> hugging_face.py
-            -> dataset_init_container_images
                 -> abstract_data_provider.py
+                -> hugging_face.py
                 -> s3.py
+                -> storage.py #this is the file which will be invoked from the dockerfile
+                -> Dockerfile
 ```
 ```python
 # code present in abstract_model_provider.py
 class modelProvider():
+    @abstractmethod
+    def load_config(self):
+        pass 
+
     @abstractmethod
     def download_model(self):
         pass
 
 # code present in hugging_face.py
 class HuggingFace(modelProvider):
+    def load_config(self):
+        # implementation for loading the config
     def download_model(self):
         # implementation for downloading the model
-
 ```
 
 2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in [https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
