@@ -52,8 +52,8 @@ dataset_args = datasetProviderClass()
 # Arguments related to the trainer code
 parameters = {key:value pairs}
 trainingClient.train(
-   nodes=1, 
-   nprocs_per_node=4, 
+   workers=1, 
+   resources_per_worker=4, 
    model='provider://repo/model_name', 
    dataset= 'provider://train_dataset_path',
    eval_dataset = "provider://eval_dataset_path"
@@ -83,7 +83,7 @@ class HuggingFaceTrainParams:
  
 trainingClient.train(
    workers=1, 
-   nprocs_per_worker=4, 
+   resources_per_worker=4, 
    model='hf://openchat/openchat_3.5', 
    dataset= 's3://doc-example-bucket1/train_dataset',
    eval_dataset = "s3://doc-example-bucket1/eval_dataset"
@@ -95,7 +95,7 @@ trainingClient.train(
 
 The new proposed API takes following arguments 
 
-1. System parameters - Number of workers, number of procs per workers(GPUs per worker).
+1. System parameters - Number of workers, number of resources per workers(GPUs per worker).
 2. Model parameters - Model provider and repository details.
 3. Dataset parameters - Dataset provider and dataset details.
 4. Training parameters - Training specific parameters like learning rate etc.
