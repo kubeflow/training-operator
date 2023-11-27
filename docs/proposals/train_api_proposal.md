@@ -53,10 +53,7 @@ dataset_args = datasetProviderClass()
 parameters = {key:value pairs}
 trainingClient.train(
    workers=1, 
-   resources_per_worker=4, 
-   model='provider://repo/model_name', 
-   dataset= 'provider://train_dataset_path',
-   eval_dataset = "provider://eval_dataset_path"
+   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
    model_args, 
    dataset_args, 
    parameters
@@ -69,10 +66,12 @@ Example:
 @dataclass
 class HuggingFaceModelParams:
     access_token = field()
-    transformerClass = field()
+    model = field()
 
 @dataclass
 class S3DatasetParams:
+    dataset = field()
+    eval_dataset = field()
     access_token = field()
     region = field()
 
@@ -80,16 +79,14 @@ class S3DatasetParams:
 class HuggingFaceTrainParams:
     learning_rate = field()
     peft_config = field()
- 
+    transformerClass = field()
+
 trainingClient.train(
    workers=1, 
-   resources_per_worker=4, 
-   model='hf://openchat/openchat_3.5', 
-   dataset= 's3://doc-example-bucket1/train_dataset',
-   eval_dataset = "s3://doc-example-bucket1/eval_dataset"
-   HuggingFaceModelParams(access_token = "hf_..." , peft_config = {lora_alpha: 16}, transformerClass="Trainer"), 
-   S3DatasetParams(access_token = "s3 access token", region="us-west-2"), 
-   HuggingFaceTrainParams(learning_rate=0.1, peft_config = {})
+   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
+   HuggingFaceModelParams(model='hf://openchat/openchat_3.5', access_token = "hf_..." ),
+   S3DatasetParams(dataset= 's3://doc-example-bucket1/train_dataset', eval_dataset = "s3://doc-example-bucket1/eval_dataset", access_token = "s3 access token", region="us-west-2"), 
+   HuggingFaceTrainParams(learning_rate=0.1, transformerClass="Trainer", peft_config = {})
 )
 ```
 
@@ -99,6 +96,8 @@ The new proposed API takes following arguments
 2. Model parameters - Model provider and repository details.
 3. Dataset parameters - Dataset provider and dataset details.
 4. Training parameters - Training specific parameters like learning rate etc.
+
+These parameters will be passed as container args or environment variables.
 
 **<h3>Implementation</h3>**
 
