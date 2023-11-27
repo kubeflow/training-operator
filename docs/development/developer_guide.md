@@ -11,8 +11,8 @@ Kubeflow Training Operator is currently at v1.
 Create a symbolic link inside your GOPATH to the location you checked out the code
 
 ```sh
-mkdir -p ${go env GOPATH}/src/github.com/kubeflow
-ln -sf ${GIT_TRAINING} ${go env GOPATH}/src/github.com/kubeflow/training-operator
+mkdir -p $(go env GOPATH)/src/github.com/kubeflow
+ln -sf ${GIT_TRAINING} $(go env GOPATH)/src/github.com/kubeflow/training-operator
 ```
 
 - GIT_TRAINING should be the location where you checked out https://github.com/kubeflow/training-operator
