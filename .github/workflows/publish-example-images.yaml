@@ -47,11 +47,6 @@ jobs:
           - component-name: xgboost-dist-rabit-test
             dockerfile: examples/xgboost/smoke-dist/Dockerfile
             context: examples/xgboost/smoke-dist
-          - component-name: mxnet-gpu
-            dockerfile: examples/mxnet/train/Dockerfile
-          - component-name: mxnet-auto-tuning
-            dockerfile: examples/mxnet/tune/Dockerfile
-            context: examples/mxnet/tune
 
 # TODO (tenzen-y): Fix the below broken Dockerfiles
 #          - component-name: pytorch-dist-mnist-mpi
