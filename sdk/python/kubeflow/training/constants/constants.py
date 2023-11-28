@@ -82,16 +82,6 @@ PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.low
 
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
 
-# MXJob constants
-MXJOB_KIND = "MXJob"
-MXJOB_PLURAL = "mxjobs"
-MXJOB_CONTAINER = "mxnet"
-MXJOB_REPLICA_TYPES = (
-    REPLICA_TYPE_SCHEDULER.lower(),
-    REPLICA_TYPE_SERVER.lower(),
-    REPLICA_TYPE_WORKER.lower(),
-)
-
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"
 XGBOOSTJOB_PLURAL = "xgboostjobs"
