@@ -50,4 +50,4 @@ java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${repo_root}"/hack/python-sdk/sw
 echo "Kubeflow Training Operator Python SDK is generated successfully to folder ${SDK_OUTPUT_PATH}/."
 
 echo "Running post-generation script ..."
-"${repo_root}"/hack/python-sdk/post_gen.py
+python3 "${repo_root}"/hack/python-sdk/post_gen.py
