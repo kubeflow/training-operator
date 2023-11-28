@@ -119,11 +119,6 @@ JOB_PARAMETERS = {
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
     },
-    MXJOB_KIND: {
-        "model": models.KubeflowOrgV1MXJob,
-        "plural": MXJOB_PLURAL,
-        "container": MXJOB_CONTAINER,
-    },
     XGBOOSTJOB_KIND: {
         "model": models.KubeflowOrgV1XGBoostJob,
         "plural": XGBOOSTJOB_PLURAL,
@@ -149,7 +144,6 @@ JOB_MODELS = tuple([d["model"] for d in list(JOB_PARAMETERS.values())])
 JOB_MODELS_TYPE = Union[
     models.KubeflowOrgV1TFJob,
     models.KubeflowOrgV1PyTorchJob,
-    models.KubeflowOrgV1MXJob,
     models.KubeflowOrgV1XGBoostJob,
     models.KubeflowOrgV1MPIJob,
     models.KubeflowOrgV1PaddleJob,
