@@ -24,7 +24,7 @@ SWAGGER_JAR_URL="https://repo1.maven.org/maven2/org/openapitools/openapi-generat
 SWAGGER_CODEGEN_JAR="${repo_root}/hack/python-sdk/openapi-generator-cli.jar"
 SWAGGER_CODEGEN_CONF="${repo_root}/hack/python-sdk/swagger_config.json"
 SDK_OUTPUT_PATH="${repo_root}/sdk/python"
-VERSION=1.5.0
+VERSION=1.7.0
 SWAGGER_CODEGEN_FILE="${repo_root}/hack/python-sdk/swagger.json"
 
 if [ -z "${GOPATH:-}" ]; then
@@ -43,7 +43,7 @@ echo "Generating swagger file ..."
 go run "${repo_root}"/hack/swagger/main.go ${VERSION} >"${SWAGGER_CODEGEN_FILE}"
 
 echo "Removing previously generated files ..."
-rm -rf "${SDK_OUTPUT_PATH}"/docs/V1*.md "${SDK_OUTPUT_PATH}"/kubeflow/training/models "${SDK_OUTPUT_PATH}"/kubeflow/training/*.py "${SDK_OUTPUT_PATH}"/test/test_*.py
+rm -rf "${SDK_OUTPUT_PATH}"/docs/KubeflowOrgV1*.md "${SDK_OUTPUT_PATH}"/kubeflow/training/models "${SDK_OUTPUT_PATH}"/kubeflow/training/*.py "${SDK_OUTPUT_PATH}"/test/test_*.py
 echo "Generating Python SDK for Training Operator ..."
 java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${repo_root}"/hack/python-sdk/swagger.json -g python -o "${SDK_OUTPUT_PATH}" -c "${SWAGGER_CODEGEN_CONF}"
 

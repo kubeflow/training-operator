@@ -25,8 +25,7 @@ from kubeflow.training.constants import constants
 from kubeflow.training import models
 
 
-logging.basicConfig(format="%(message)s")
-logging.getLogger().setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class StatusLogger:
@@ -39,9 +38,9 @@ class StatusLogger:
 
     def __call__(self, *values):
         if self.first_call:
-            logging.info(self.header)
+            logger.debug(self.header)
             self.first_call = False
-        logging.info(self.column_format.format(*values))
+        logger.debug(self.column_format.format(*values))
 
 
 class FakeResponse:
