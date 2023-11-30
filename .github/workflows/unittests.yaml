@@ -41,12 +41,12 @@ jobs:
           working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
           parallel: true
 
-    finish:
-      needs: test
-      runs-on: ubuntu-latest
-      steps:
-        - uses: shogo82148/actions-goveralls@v1
-          with:
-            parallel-finished: true
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
 
 
