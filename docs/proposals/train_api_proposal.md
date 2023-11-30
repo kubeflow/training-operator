@@ -8,6 +8,7 @@
 **<h3>Status</h3>**
 
 * 10 Nov 2023 (v1)
+* 30 Nov 2023 (v2)
 
 **<h3>Abstract</h3>**
 
@@ -53,6 +54,7 @@ dataset_args = datasetProviderClass()
 parameters = {key:value pairs}
 trainingClient.train(
    workers=1, 
+   num_procs_per_worker = 1,
    resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
    model_args, 
    dataset_args, 
@@ -83,6 +85,7 @@ class HuggingFaceTrainParams:
 
 trainingClient.train(
    workers=1, 
+   num_procs_per_worker = 1,
    resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
    HuggingFaceModelParams(model='hf://openchat/openchat_3.5', access_token = "hf_..." ),
    S3DatasetParams(dataset= 's3://doc-example-bucket1/train_dataset', eval_dataset = "s3://doc-example-bucket1/eval_dataset", access_token = "s3 access token", region="us-west-2"), 
@@ -101,7 +104,8 @@ These parameters will be passed as container args or environment variables.
 
 **<h3>Implementation</h3>**
 
-1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.
+1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container. 
+Users need to provide a ReadManyWriteOnce PVC to avoid repeated downloading of models/datasets across all nodes.
 A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images.
 
 ```
