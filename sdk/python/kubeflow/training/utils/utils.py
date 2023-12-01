@@ -295,16 +295,18 @@ def get_tfjob_template(
 def get_pytorchjob_template(
     name: str,
     namespace: str,
-    pod_template_spec: models.V1PodTemplateSpec,
+    master_pod_template_spec: models.V1PodTemplateSpec = None,
+    pod_template_spec: models.V1PodTemplateSpec = None,
     num_worker_replicas: Optional[int] = None,
+    num_chief_replicas: int = 1,
     nproc_per_node: Optional[int] = None,
     elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
     # Check if at least one replica is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_worker_replicas is None:
-        raise ValueError("At least one Worker replica for PyTorchJob must be set")
+    if num_worker_replicas is None and num_chief_replicas == 0:
+        raise ValueError("At least one replica for PyTorchJob must be set")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -321,12 +323,22 @@ def get_pytorchjob_template(
         pytorchjob.spec.nproc_per_node = nproc_per_node
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
+    if not master_pod_template_spec:
+        master_pod_template_spec = pod_template_spec
 
     pytorchjob.spec.pytorch_replica_specs[
-        constants.REPLICA_TYPE_WORKER
+        constants.REPLICA_TYPE_MASTER
     ] = models.KubeflowOrgV1ReplicaSpec(
-        replicas=num_worker_replicas,
-        template=pod_template_spec,
+        replicas=1,
+        template=master_pod_template_spec,
     )
+
+    if num_worker_replicas >= 1:
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_WORKER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=num_worker_replicas,
+            template=pod_template_spec,
+        )
 
     return pytorchjob
