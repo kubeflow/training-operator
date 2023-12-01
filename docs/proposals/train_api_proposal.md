@@ -161,7 +161,10 @@ exec_script = textwrap.dedent(
    )
 ```
 
-**<h3>Limitations</h3>**
+**<h3>Goals</h3>**
+1. To add a higher level train api for fine-tuning/training LLMs.
+
+**<h3>Non Goals / Limitations</h3>**
 1. The dataset is assumed to be preprocessed by the user.
 
 2. Currently only pytorch framework will be supported for running distributed training.
