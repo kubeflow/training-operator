@@ -170,3 +170,7 @@ exec_script = textwrap.dedent(
 2. Currently only pytorch framework will be supported for running distributed training.
 
 3. Currently torchrun launcher will be used by default, in future other launcher methods can be supported.
+
+4. Sdk is not currently moved out of the training operator. (https://github.com/kubeflow/training-operator/pull/1945#issuecomment-1825387814)
+
+5. For allowing users to add different custom providers we can have configmap or crd approach in future.(https://github.com/kubeflow/training-operator/pull/1945#discussion_r1404541570)
