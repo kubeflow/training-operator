@@ -78,7 +78,6 @@ TFJOB_BASE_IMAGE_GPU = "docker.io/tensorflow/tensorflow:2.9.1-gpu"
 PYTORCHJOB_KIND = "PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
-PYTORCHJOB_STORAGE_CONTAINER = "pytorch-storage"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
@@ -129,7 +128,6 @@ JOB_PARAMETERS = {
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
-        "init_container": PYTORCHJOB_STORAGE_CONTAINER,
     },
     MXJOB_KIND: {
         "model": models.KubeflowOrgV1MXJob,
