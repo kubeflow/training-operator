@@ -10,6 +10,20 @@
 * 10 Nov 2023 (v1)
 * 30 Nov 2023 (v2)
 
+**<h3>Goals</h3>**
+1. To add a higher level train api for fine-tuning/training LLMs.
+
+**<h3>Non Goals / Limitations</h3>**
+1. The dataset is assumed to be preprocessed by the user.
+
+2. Currently only pytorch framework will be supported for running distributed training.
+
+3. Currently torchrun launcher will be used by default, in future other launcher methods can be supported.
+
+4. Sdk is not currently moved out of the training operator. (https://github.com/kubeflow/training-operator/pull/1945#issuecomment-1825387814)
+
+5. For allowing users to add different custom providers we can have configmap or crd approach in future.(https://github.com/kubeflow/training-operator/pull/1945#discussion_r1404541570)
+
 **<h3>Abstract</h3>**
 
 LLMs are being widely used for generative AI tasks and as their adoption is increasing across various domains, the need for LLMOps in the Kubernetes environment has also risen. There is a need to fine-tune these large models on task-specific datasets. The user/data scientist should be able to do this simplistically in the Kubernetes environment using the Kubeflow training operator SDK without any infrastructure knowledge.
@@ -105,7 +119,9 @@ These parameters will be passed as container args or environment variables.
 **<h3>Implementation</h3>**
 
 1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container. 
-Users need to provide a ReadManyWriteOnce PVC to avoid repeated downloading of models/datasets across all nodes.
+
+This way to download models allows using ReadWriteOnce and ReadOnlyMany PVCs. If we adopt the way of creating batch/v1 Job to download models to PVC, we need to force users to prepare ReadWriteOnce and  ReadOnlyMany PVCs.
+
 A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images.
 
 ```
@@ -160,17 +176,3 @@ exec_script = textwrap.dedent(
    """"
    )
 ```
-
-**<h3>Goals</h3>**
-1. To add a higher level train api for fine-tuning/training LLMs.
-
-**<h3>Non Goals / Limitations</h3>**
-1. The dataset is assumed to be preprocessed by the user.
-
-2. Currently only pytorch framework will be supported for running distributed training.
-
-3. Currently torchrun launcher will be used by default, in future other launcher methods can be supported.
-
-4. Sdk is not currently moved out of the training operator. (https://github.com/kubeflow/training-operator/pull/1945#issuecomment-1825387814)
-
-5. For allowing users to add different custom providers we can have configmap or crd approach in future.(https://github.com/kubeflow/training-operator/pull/1945#discussion_r1404541570)
