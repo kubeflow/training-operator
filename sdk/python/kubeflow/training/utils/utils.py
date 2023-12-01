@@ -325,6 +325,8 @@ def get_pytorchjob_template(
         pytorchjob.spec.nproc_per_node = num_procs_per_worker
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
+    if not master_pod_template_spec:
+        master_pod_template_spec = pod_template_spec
 
     if master_pod_template_spec:
         pytorchjob.spec.pytorch_replica_specs[
