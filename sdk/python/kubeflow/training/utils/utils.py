@@ -296,9 +296,9 @@ def get_pytorchjob_template(
     name: str,
     namespace: str,
     master_pod_template_spec: models.V1PodTemplateSpec = None,
-    pod_template_spec: models.V1PodTemplateSpec = None,
+    worker_pod_template_spec: models.V1PodTemplateSpec = None,
     num_worker_replicas: Optional[int] = None,
-    num_chief_replicas: int = 1,
+    num_chief_replicas: Optional[int] = 0,
     nproc_per_node: Optional[int] = None,
     elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
@@ -307,6 +307,9 @@ def get_pytorchjob_template(
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
     if num_worker_replicas is None and num_chief_replicas == 0:
         raise ValueError("At least one replica for PyTorchJob must be set")
+
+    if num_chief_replicas >1:
+        raise ValueError("master replica cannot be more than 1")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -324,21 +327,23 @@ def get_pytorchjob_template(
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
     if not master_pod_template_spec:
-        master_pod_template_spec = pod_template_spec
+        master_pod_template_spec = worker_pod_template_spec
 
-    pytorchjob.spec.pytorch_replica_specs[
-        constants.REPLICA_TYPE_MASTER
-    ] = models.KubeflowOrgV1ReplicaSpec(
-        replicas=1,
-        template=master_pod_template_spec,
-    )
+    # for elastic policy currently mandating the presence of master replica, will be removed in future
+    if elastic_policy or num_chief_replicas==1:
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_MASTER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=1,
+            template=master_pod_template_spec,
+        )
 
     if num_worker_replicas >= 1:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
         ] = models.KubeflowOrgV1ReplicaSpec(
             replicas=num_worker_replicas,
-            template=pod_template_spec,
+            template=worker_pod_template_spec,
         )
 
     return pytorchjob
