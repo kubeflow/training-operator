@@ -1,4 +1,4 @@
-**<h1>Train API Proposal for LLMs</h1>**
+**<h1>Train/Fine-tune API Proposal for LLMs</h1>**
 
 **<h3>Authors:</h3>**
 
@@ -165,3 +165,5 @@ exec_script = textwrap.dedent(
 1. The dataset is assumed to be preprocessed by the user.
 
 2. Currently only pytorch framework will be supported for running distributed training.
+
+3. Currently torchrun launcher will be used by default, in future other launcher methods can be supported.
