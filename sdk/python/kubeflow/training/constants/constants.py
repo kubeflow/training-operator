@@ -129,7 +129,7 @@ JOB_PARAMETERS = {
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
-        "init_container": PYTORCHJOB_STORAGE_CONTAINER
+        "init_container": PYTORCHJOB_STORAGE_CONTAINER,
     },
     MXJOB_KIND: {
         "model": models.KubeflowOrgV1MXJob,
