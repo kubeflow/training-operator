@@ -323,14 +323,7 @@ def get_pytorchjob_template(
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
 
-    # for elastic policy currently mandating the presence of master replica, will be removed in future
-    if elastic_policy and master_pod_template_spec is None:
-        raise ValueError(
-            "master_pod_template_spec cannot be none when elastic policy is set."
-        )
-
-    # for elastic policy currently mandating the presence of master replica, will be removed in future
-    if elastic_policy or master_pod_template_spec:
+    if master_pod_template_spec:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_MASTER
         ] = models.KubeflowOrgV1ReplicaSpec(
