@@ -67,7 +67,7 @@ dataset_args = datasetProviderClass()
 # Arguments related to the trainer code
 parameters = {key:value pairs}
 trainingClient.train(
-   workers=1, 
+   num_workers=1, 
    num_procs_per_worker = 1,
    resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
    model_args, 
@@ -98,7 +98,7 @@ class HuggingFaceTrainParams:
     transformerClass = field()
 
 trainingClient.train(
-   workers=1, 
+   num_workers=1, 
    num_procs_per_worker = 1,
    resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
    HuggingFaceModelParams(model='hf://openchat/openchat_3.5', access_token = "hf_..." ),
@@ -114,11 +114,9 @@ The new proposed API takes following arguments
 3. Dataset parameters - Dataset provider and dataset details.
 4. Training parameters - Training specific parameters like learning rate etc.
 
-These parameters will be passed as container args or environment variables.
-
 **<h3>Implementation</h3>**
 
-1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.<br /> <br /> This way to download models allows using ReadWriteOnce and ReadOnlyMany PVCs. If we adopt the way of creating batch/v1 Job to download models to PVC, we need to force users to prepare ReadWriteOnce and  ReadOnlyMany PVCs.<br /> <br /> A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images.
+1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.<br /> <br /> This way to download models allows using ReadWriteOnce and ReadOnlyMany PVCs. If we adopt the way of creating batch/v1 Job to download models to PVC, we need to force users to prepare ReadWriteOnce and  ReadOnlyMany PVCs.<br /> <br /> A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images. <br /> These parameters will be passed as container args or environment variables.
 
 ```
 sdk/python
@@ -150,7 +148,7 @@ class HuggingFace(modelProvider):
         # implementation for downloading the model
 ```
 
-2. Currently, **create_job** api doesn’t support **num_of_nodes** and **gpus_per_node.** We need to add support for that as well, so that the pytorch job with the spec mentioned in [https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
+2. Currently, **create_job** api doesn’t support **num_procs_per_worker** and **resources_per_worker.** We need to add support for that as well, so that the pytorch job with the spec mentioned in [https://github.com/kubeflow/training-operator/issues/1872#issue comment-1659445716](https://github.com/kubeflow/training-operator/issues/1872#issuecomment-1659445716) can be created.
 
 ```python
 training_client.create_job(name="pytorchjob_name",train_func=custom_training_function, num_of_nodes=1, gpus_per_node = 4)
