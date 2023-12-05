@@ -117,7 +117,7 @@ def get_script_for_python_packages(
     return script_for_python_packages
 
 
-def generate_container_spec(
+def get_container_spec(
     name: str,
     image: str,
     args: Optional[List[str]] = None,
@@ -298,18 +298,14 @@ def get_pytorchjob_template(
     master_pod_template_spec: models.V1PodTemplateSpec = None,
     worker_pod_template_spec: models.V1PodTemplateSpec = None,
     num_worker_replicas: Optional[int] = None,
-    num_chief_replicas: Optional[int] = 0,
-    nproc_per_node: Optional[int] = None,
+    num_procs_per_worker: Optional[int] = None,
     elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
     # Check if at least one replica is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_worker_replicas is None and num_chief_replicas == 0:
+    if num_worker_replicas is None and master_pod_template_spec is None:
         raise ValueError("At least one replica for PyTorchJob must be set")
-
-    if num_chief_replicas > 1:
-        raise ValueError("master replica cannot be more than 1")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -322,15 +318,19 @@ def get_pytorchjob_template(
         ),
     )
 
-    if nproc_per_node > 0:
-        pytorchjob.spec.nproc_per_node = nproc_per_node
+    if num_procs_per_worker > 0:
+        pytorchjob.spec.nproc_per_node = num_procs_per_worker
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
-    if not master_pod_template_spec:
-        master_pod_template_spec = worker_pod_template_spec
 
     # for elastic policy currently mandating the presence of master replica, will be removed in future
-    if elastic_policy or num_chief_replicas == 1:
+    if elastic_policy and master_pod_template_spec is None:
+        raise ValueError(
+            "master_pod_template_spec cannot be none when elastic policy is set."
+        )
+
+    # for elastic policy currently mandating the presence of master replica, will be removed in future
+    if elastic_policy or master_pod_template_spec:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_MASTER
         ] = models.KubeflowOrgV1ReplicaSpec(
