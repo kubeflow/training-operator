@@ -310,9 +310,6 @@ def get_pytorchjob_template(
     if num_worker_replicas is None and master_pod_template_spec is None:
         raise ValueError("At least one replica for PyTorchJob must be set")
 
-    if num_chief_replicas > 1:
-        raise ValueError("master replica cannot be more than 1")
-
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
         api_version=constants.API_VERSION,
@@ -328,8 +325,6 @@ def get_pytorchjob_template(
         pytorchjob.spec.nproc_per_node = num_procs_per_worker
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
-    if not master_pod_template_spec:
-        master_pod_template_spec = worker_pod_template_spec
 
     if master_pod_template_spec:
         pytorchjob.spec.pytorch_replica_specs[
