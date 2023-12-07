@@ -15,6 +15,7 @@
 import multiprocessing
 import logging
 import time
+import json
 from typing import Optional, Callable, List, Dict, Any, Set
 import queue
 from kubernetes import client, config, watch
@@ -86,6 +87,78 @@ class TrainingClient(object):
                 f"Job kind must be one of these: {list(constants.JOB_PARAMETERS.keys())}"
             )
         self.job_kind = job_kind
+
+    def train(
+        self,
+        name=None,
+        namespace=None,
+        workers=1,
+        model_args=None,
+        dataset_args=None,
+        parameters=None,
+        resources_per_worker={"gpu": 0, "cpu": 0, "memory": "10Gi"},
+    ):
+        """
+        Higher level train api
+        """
+        if not name or not namespace:
+            raise ValueError("job name or namespace cannot be null")
+
+        # create init container spec
+        init_container_spec = utils.get_container_spec(
+            name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["init_container"],
+            image=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND][
+                "init_container_image"
+            ],
+            args=[
+                "--model_provider",
+                mp,
+                "--model_provider_args",
+                json.dumps(model_args.__dict__),
+                "--dataset_provider",
+                dp,
+                "--dataset_provider_args",
+                json.dumps(dataset_args.__dict__),
+            ],
+            volume_mounts=models.V1VolumeMount(),
+        )
+
+        # create app container spec
+        container_spec = utils.get_container_spec(
+            name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
+            image=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND][
+                "train_container_image"
+            ],
+            args=["--parameters", json.dumps(parameters.__dict__)],
+            volume_mounts=models.V1VolumeMount(),
+            resources=resources_per_worker,
+        )
+
+        # create worker pod spec
+        worker_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[container_spec],
+            volumes_spec=[models.V1Volume()],
+        )
+
+        # create master pod spec
+        master_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[init_container_spec, container_spec],
+            volumes_spec=[models.V1Volume()],
+        )
+
+        job = utils.get_pytorchjob_template(
+            name=name,
+            namespace=namespace,
+            master_pod_template_spec=master_pod_template_spec,
+            worker_pod_template_spec=worker_pod_template_spec,
+            num_worker_replicas=workers,
+            num_procs_per_worker=resources_per_worker["gpu"],
+            elastic_policy=models.KubeflowOrgV1ElasticPolicy(rdzv_backend="c10d"),
+        )
+
+        self.create_job(job)
 
     def create_job(
         self,

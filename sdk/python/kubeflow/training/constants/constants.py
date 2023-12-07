@@ -79,8 +79,10 @@ PYTORCHJOB_KIND = "PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
-
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
+PYTORCHJOB_STORAGE_CONTAINER = "pytorch-storage"
+PYTORCHJOB_STORAGE_CONTAINER_IMAGE = "docker image path"
+PYTORCHJOB_TRAIN_CONTAINER_IMAGE = "docker image path"
 
 # MXJob constants
 MXJOB_KIND = "MXJob"
@@ -128,6 +130,9 @@ JOB_PARAMETERS = {
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
+        "init_container": PYTORCHJOB_STORAGE_CONTAINER,
+        "init_container_image": PYTORCHJOB_STORAGE_CONTAINER_IMAGE,
+        "train_container_image": PYTORCHJOB_TRAIN_CONTAINER_IMAGE,
     },
     MXJOB_KIND: {
         "model": models.KubeflowOrgV1MXJob,
