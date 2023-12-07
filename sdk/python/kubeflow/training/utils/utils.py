@@ -128,7 +128,10 @@ def get_container_spec(
     get container spec for given name and image.
     """
     if name is None or image is None:
-        container_spec = models.V1Container(name=name, image=image)
+        raise ValueError("container name or image cannot be none")
+
+    container_spec = models.V1Container(name=name, image=image)
+
     if args:
         container_spec.args = args
 
@@ -168,7 +171,7 @@ def get_pod_template_spec(
         ),
         spec=models.V1PodSpec(
             containers=[
-                models.V1Container(
+                get_container_spec(
                     name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
                 )
