@@ -21,7 +21,7 @@ class HuggingFaceModelParams:
     access_token: str
     model_uri: str
     transformer_type: Literal[*TRANSFORMER_TYPES]
-    mount_path: str = field(default="/workspace/models")
+    download_dir: str = field(default="/workspace/models")
 
     def __post_init__(self):
         # Custom checks or validations can be added here
@@ -48,9 +48,9 @@ class HuggingFace(modelProvider):
         transformer_type_class.from_pretrained(
             self.model,
             token=self.config.access_token,
-            cache_dir=self.config.mount_path,
+            cache_dir=self.config.download_dir,
             trust_remote_code=True,
         )
         transformers.AutoTokenizer.from_pretrained(
-            self.model, cache_dir=self.config.mount_path
+            self.model, cache_dir=self.config.download_dir
         )
