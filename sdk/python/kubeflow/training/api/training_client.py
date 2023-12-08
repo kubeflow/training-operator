@@ -191,7 +191,7 @@ class TrainingClient(object):
                 job = utils.get_pytorchjob_template(
                     name=name,
                     namespace=namespace,
-                    pod_template_spec=pod_template_spec,
+                    worker_pod_template_spec=pod_template_spec,
                     num_worker_replicas=num_worker_replicas,
                 )
             else:
