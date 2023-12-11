@@ -16,7 +16,7 @@ import multiprocessing
 import logging
 import time
 import json
-from typing import Optional, Callable, List, Dict, Any, Set
+from typing import Optional, Callable, List, Dict, Any, Set, Literal
 import queue
 from kubernetes import client, config, watch
 
@@ -24,6 +24,13 @@ from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
+
+from typing import Union
+from kubeflow.storage_init_container.hugging_face import (
+    HuggingFaceModelParams,
+    HuggingFaceTrainParams,
+)
+from kubeflow.storage_init_container.s3 import S3DatasetParams
 
 logger = logging.getLogger(__name__)
 
@@ -90,19 +97,38 @@ class TrainingClient(object):
 
     def train(
         self,
-        name=None,
-        namespace=None,
-        workers=1,
-        model_args=None,
-        dataset_args=None,
-        parameters=None,
-        resources_per_worker={"gpu": 0, "cpu": 0, "memory": "10Gi"},
+        name: str = None,
+        namespace: str = None,
+        num_workers: int = 1,
+        num_procs_per_worker: int = 1,
+        pvc: Dict[Literal["name", "claimName"], str] = None,
+        model_params: HuggingFaceModelParams = None,
+        dataset_params: S3DatasetParams = None,
+        parameters: HuggingFaceTrainParams = None,
+        resources_per_worker: Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
         Higher level train api
         """
-        if not name or not namespace:
-            raise ValueError("job name or namespace cannot be null")
+        if (
+            not name
+            or not namespace
+            or not pvc
+            or not model_params
+            or not dataset_params
+            or not parameters
+            or not resources_per_worker
+        ):
+            raise ValueError("One of the required parameters is None")
+
+        if num_procs_per_worker > resources_per_worker["gpu"]:
+            raise ValueError("Insufficient gpu resources allocated to the container.")
+
+        if isinstance(model_params, HuggingFaceModelParams):
+            mp = "hf"
+
+        if isinstance(dataset_params, S3DatasetParams):
+            dp = "s3"
 
         # create init container spec
         init_container_spec = utils.get_container_spec(
@@ -114,13 +140,15 @@ class TrainingClient(object):
                 "--model_provider",
                 mp,
                 "--model_provider_args",
-                json.dumps(model_args.__dict__),
+                json.dumps(model_params.__dict__),
                 "--dataset_provider",
                 dp,
                 "--dataset_provider_args",
-                json.dumps(dataset_args.__dict__),
+                json.dumps(dataset_params.__dict__),
             ],
-            volume_mounts=models.V1VolumeMount(),
+            volume_mounts=models.V1VolumeMount(
+                name="model_dataset_store", mount_path="/workspace"
+            ),
         )
 
         # create app container spec
@@ -130,7 +158,9 @@ class TrainingClient(object):
                 "train_container_image"
             ],
             args=["--parameters", json.dumps(parameters.__dict__)],
-            volume_mounts=models.V1VolumeMount(),
+            volume_mounts=models.V1VolumeMount(
+                name=pvc["name"], mount_path="/workspace"
+            ),
             resources=resources_per_worker,
         )
 
@@ -138,14 +168,22 @@ class TrainingClient(object):
         worker_pod_template_spec = utils.get_pod_template_spec(
             job_kind=constants.PYTORCHJOB_KIND,
             containers_spec=[container_spec],
-            volumes_spec=[models.V1Volume()],
+            volumes_spec=[
+                models.V1Volume(
+                    name=pvc["name"], persistent_volume_claim=pvc["claimName"]
+                )
+            ],
         )
 
         # create master pod spec
         master_pod_template_spec = utils.get_pod_template_spec(
             job_kind=constants.PYTORCHJOB_KIND,
             containers_spec=[init_container_spec, container_spec],
-            volumes_spec=[models.V1Volume()],
+            volumes_spec=[
+                models.V1Volume(
+                    name=pvc["name"], persistent_volume_claim=pvc["claimName"]
+                )
+            ],
         )
 
         job = utils.get_pytorchjob_template(
@@ -153,8 +191,8 @@ class TrainingClient(object):
             namespace=namespace,
             master_pod_template_spec=master_pod_template_spec,
             worker_pod_template_spec=worker_pod_template_spec,
-            num_worker_replicas=workers,
-            num_procs_per_worker=resources_per_worker["gpu"],
+            num_worker_replicas=num_workers,
+            num_procs_per_worker=num_procs_per_worker,
             elastic_policy=models.KubeflowOrgV1ElasticPolicy(rdzv_backend="c10d"),
         )
 
