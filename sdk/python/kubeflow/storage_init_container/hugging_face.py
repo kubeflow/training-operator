@@ -27,6 +27,8 @@ class HuggingFaceModelParams:
         # Custom checks or validations can be added here
         if self.transformer_type not in TRANSFORMER_TYPES:
             raise ValueError("transformer_type must be one of %s", TRANSFORMER_TYPES)
+        if self.model_uri is None:
+            raise ValueError("model_uri cannot be none.")
 
 
 @dataclass
