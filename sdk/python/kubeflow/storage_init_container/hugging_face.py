@@ -34,6 +34,7 @@ class HuggingFaceModelParams:
 @dataclass
 class HuggingFaceTrainParams:
     additional_data: Dict[str, Any] = field(default_factory=dict)
+    peft_config: Dict[str, Any] = field(default_factory=dict)
 
 
 class HuggingFace(modelProvider):
