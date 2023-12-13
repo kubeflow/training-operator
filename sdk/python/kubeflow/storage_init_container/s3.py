@@ -25,6 +25,12 @@ class S3DatasetParams:
 
     def __post_init__(self):
         # Custom checks or validations can be added here
+        if (
+            self.bucket_name is None
+            or self.endpoint_url is None
+            or self.file_key is None
+        ):
+            raise ValueError("bucket_name or endpoint_url or file_key is None")
         self.is_valid_url(self.endpoint_url)
 
 
@@ -39,7 +45,7 @@ class S3(datasetProvider):
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             endpoint_url=self.config.endpoint_url,
-            region_name=self.config.egion_name,
+            region_name=self.config.region_name,
         )
 
         # Download the file
