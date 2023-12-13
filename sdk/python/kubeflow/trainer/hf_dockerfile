@@ -15,3 +15,4 @@ FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
  # Run storage.py when the container launches
  ENTRYPOINT ["python", "hf_llm_training.py"]
+ 

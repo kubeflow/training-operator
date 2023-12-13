@@ -38,7 +38,7 @@ def load_and_preprocess_data(dataset_dir, tokenizer):
     train_data = load_dataset(dataset_dir, split="train").map(
         lambda x: tokenizer(x["text"]), batched=True
     )
-    train_data = train_data.train_test_split(shuffle=True, test_size=200)
+    train_data = train_data.train_test_split(shuffle=True, test_size=0.1)
 
     try:
         eval_data = load_dataset(dataset_dir, split="eval")

@@ -19,5 +19,5 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - component-name: train-api-training-image
-            dockerfile: sdk/python/kubeflow/training/training_container/Dockerfile
+          - component-name: train-api-hf-image
+            dockerfile: sdk/python/kubeflow/trainer/hf_dockerfile
