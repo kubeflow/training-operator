@@ -1,5 +1,6 @@
 import argparse
 from hugging_face import HuggingFace
+from s3 import S3
 
 
 def model_factory(model_provider, model_provider_args):
@@ -8,6 +9,16 @@ def model_factory(model_provider, model_provider_args):
             hf = HuggingFace()
             hf.load_config(model_provider_args)
             hf.download_model_and_tokenizer()
+        case _:
+            return "This is the default case"
+
+
+def dataset_factory(dataset_provider, dataset_provider_args):
+    match dataset_provider:
+        case "s3":
+            s3 = S3()
+            s3.load_config(dataset_provider_args)
+            s3.download_dataset()
         case _:
             return "This is the default case"
 
@@ -28,3 +39,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_factory(args.model_provider, args.model_provider_args)
+    dataset_factory(args.dataset_provider, args.dataset_provider_args)
