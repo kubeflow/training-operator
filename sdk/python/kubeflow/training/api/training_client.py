@@ -101,10 +101,10 @@ class TrainingClient(object):
         namespace: str = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        pvc: Dict[Literal["name", "claimName"], str] = None,
-        model_params: HuggingFaceModelParams = None,
-        dataset_params: S3DatasetParams = None,
-        parameters: HuggingFaceTrainParams = None,
+        storage_config: Dict[Literal["size", "storage_class"], str] = None,
+        model_provider_parameters: HuggingFaceModelParams = None,
+        dataset_provider_parameters: S3DatasetParams = None,
+        train_parameters: HuggingFaceTrainParams = None,
         resources_per_worker: Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
@@ -113,21 +113,41 @@ class TrainingClient(object):
         if (
             not name
             or not namespace
-            or not pvc
-            or not model_params
-            or not dataset_params
-            or not parameters
+            or not storage_config
+            or not model_provider_parameters
+            or not dataset_provider_parameters
+            or not train_parameters
             or not resources_per_worker
         ):
             raise ValueError("One of the required parameters is None")
 
-        if num_procs_per_worker > resources_per_worker["gpu"]:
+        try:
+            self.core_api.create_namespace(
+                body=utils.get_namespace_spec(namespace=namespace)
+            )
+        except Exception as e:
+            print(e)
+
+        PVC_NAME = "train-job-pvc"
+        self.core_api.create_namespaced_persistent_volume_claim(
+            namespace=namespace,
+            body=utils.get_pvc_spec(
+                pvc_name=PVC_NAME,
+                namespace=namespace,
+                storage_size=storage_config["size"],
+                storage_class=storage_config["storage_class"],
+            ),
+        )
+
+        if (
+            resources_per_worker["gpu"] is None and num_procs_per_worker != 0
+        ) or num_procs_per_worker > resources_per_worker["gpu"]:
             raise ValueError("Insufficient gpu resources allocated to the container.")
 
-        if isinstance(model_params, HuggingFaceModelParams):
+        if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
 
-        if isinstance(dataset_params, S3DatasetParams):
+        if isinstance(dataset_provider_parameters, S3DatasetParams):
             dp = "s3"
 
         # create init container spec
@@ -139,17 +159,15 @@ class TrainingClient(object):
             args=[
                 "--model_provider",
                 mp,
-                "--model_provider_args",
-                json.dumps(model_params.__dict__),
+                "--model_provider_parameters",
+                json.dumps(model_provider_parameters.__dict__),
                 "--dataset_provider",
                 dp,
-                "--dataset_provider_args",
-                json.dumps(dataset_params.__dict__),
+                "--dataset_provider_parameters",
+                json.dumps(dataset_provider_parameters.__dict__),
             ],
             volume_mounts=[
-                models.V1VolumeMount(
-                    name="model_dataset_store", mount_path="/workspace"
-                )
+                models.V1VolumeMount(name="train_job_pv", mount_path="/workspace")
             ],
         )
 
@@ -159,9 +177,9 @@ class TrainingClient(object):
             image=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND][
                 "train_container_image"
             ],
-            args=["--parameters", json.dumps(parameters.__dict__)],
+            args=["--train_parameters", json.dumps(train_parameters.__dict__)],
             volume_mounts=[
-                models.V1VolumeMount(name=pvc["name"], mount_path="/workspace")
+                models.V1VolumeMount(name="train_job_pv", mount_path="/workspace")
             ],
             resources=models.V1ResourceRequirements(
                 limits={
@@ -178,9 +196,9 @@ class TrainingClient(object):
             containers_spec=[container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name=pvc["name"],
+                    name="train_job_pv",
                     persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=pvc["claimName"]
+                        claim_name=PVC_NAME
                     ),
                 )
             ],
@@ -192,9 +210,9 @@ class TrainingClient(object):
             containers_spec=[init_container_spec, container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name=pvc["name"],
+                    name="train_job_pv",
                     persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=pvc["claimName"]
+                        claim_name=PVC_NAME
                     ),
                 )
             ],

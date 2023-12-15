@@ -343,3 +343,33 @@ def get_pytorchjob_template(
         )
 
     return pytorchjob
+
+
+def get_pvc_spec(
+    pvc_name: str, namespace: str, storage_size: str, storage_class: str = None
+):
+    if pvc_name is None or namespace is None or storage_size is None:
+        raise ValueError("One of the arguments is None")
+
+    pvc_spec = models.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata={"name": pvc_name, "namepsace": namespace},
+        spec=models.V1PersistentVolumeClaimSpec(
+            access_modes=["ReadWriteOnce", "ReadOnlyMany"],
+            resources=models.V1ResourceRequirements(requests={"storage": storage_size}),
+        ),
+    )
+
+    if storage_class is not None:
+        pvc_spec.spec.storage_class_name = storage_class
+
+    return pvc_spec
+
+
+def get_namespace_spec(namespace):
+    namespace_spec = models.V1Namespace(
+        api_version="v1", kind="Namespace", metadata=models.V1ObjectMeta(name=namespace)
+    )
+
+    return namespace_spec
