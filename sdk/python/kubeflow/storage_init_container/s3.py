@@ -1,4 +1,4 @@
-from abstract_dataset_provider import datasetProvider
+from .abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
 import json
 import boto3
@@ -7,12 +7,12 @@ from urllib.parse import urlparse
 
 @dataclass
 class S3DatasetParams:
-    access_key: str
-    secret_key: str
     endpoint_url: str
     bucket_name: str
     file_key: str
-    region_name: str
+    region_name: str = None
+    access_key: str = None
+    secret_key: str = None
     download_dir: str = field(default="/workspace/datasets")
 
     def is_valid_url(self, url):

@@ -122,7 +122,7 @@ def get_container_spec(
     image: str,
     args: Optional[List[str]] = None,
     resources: Optional[models.V1ResourceRequirements] = None,
-    volume_mounts: Optional[models.V1VolumeMount] = None,
+    volume_mounts: Optional[List[models.V1VolumeMount]] = None,
 ) -> models.V1Container:
     """
     get container spec for given name and image.
@@ -321,8 +321,8 @@ def get_pytorchjob_template(
         ),
     )
 
-    if num_procs_per_worker:
-        pytorchjob.spec.nproc_per_node = num_procs_per_worker
+    if num_procs_per_worker > 0:
+        pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
 

@@ -146,9 +146,11 @@ class TrainingClient(object):
                 "--dataset_provider_args",
                 json.dumps(dataset_params.__dict__),
             ],
-            volume_mounts=models.V1VolumeMount(
-                name="model_dataset_store", mount_path="/workspace"
-            ),
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name="model_dataset_store", mount_path="/workspace"
+                )
+            ],
         )
 
         # create app container spec
@@ -158,10 +160,16 @@ class TrainingClient(object):
                 "train_container_image"
             ],
             args=["--parameters", json.dumps(parameters.__dict__)],
-            volume_mounts=models.V1VolumeMount(
-                name=pvc["name"], mount_path="/workspace"
+            volume_mounts=[
+                models.V1VolumeMount(name=pvc["name"], mount_path="/workspace")
+            ],
+            resources=models.V1ResourceRequirements(
+                limits={
+                    "nvidia.com/gpu": resources_per_worker["gpu"],
+                    "cpu": resources_per_worker["cpu"],
+                    "memory": resources_per_worker["memory"],
+                }
             ),
-            resources=resources_per_worker,
         )
 
         # create worker pod spec
@@ -170,7 +178,10 @@ class TrainingClient(object):
             containers_spec=[container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name=pvc["name"], persistent_volume_claim=pvc["claimName"]
+                    name=pvc["name"],
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=pvc["claimName"]
+                    ),
                 )
             ],
         )
@@ -181,7 +192,10 @@ class TrainingClient(object):
             containers_spec=[init_container_spec, container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name=pvc["name"], persistent_volume_claim=pvc["claimName"]
+                    name=pvc["name"],
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=pvc["claimName"]
+                    ),
                 )
             ],
         )
@@ -196,7 +210,7 @@ class TrainingClient(object):
             elastic_policy=models.KubeflowOrgV1ElasticPolicy(rdzv_backend="c10d"),
         )
 
-        self.create_job(job)
+        self.create_job(job, namespace=namespace)
 
     def create_job(
         self,

@@ -1,4 +1,4 @@
-from abstract_model_provider import modelProvider
+from .abstract_model_provider import modelProvider
 from dataclasses import dataclass, field
 from typing import Literal
 import transformers
@@ -18,9 +18,16 @@ TRANSFORMER_TYPES = [
 
 @dataclass
 class HuggingFaceModelParams:
-    access_token: str
     model_uri: str
-    transformer_type: Literal[*TRANSFORMER_TYPES]
+    transformer_type: Literal[
+        "AutoModelForSequenceClassification",
+        "AutoModelForTokenClassification",
+        "AutoModelForQuestionAnswering",
+        "AutoModelForCausalLM",
+        "AutoModelForMaskedLM",
+        "AutoModelForImageClassification",
+    ]
+    access_token: str = None
     download_dir: str = field(default="/workspace/models")
 
     def __post_init__(self):
