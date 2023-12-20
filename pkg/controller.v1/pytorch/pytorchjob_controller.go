@@ -52,6 +52,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
+	"strconv"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 )
 
@@ -498,10 +499,30 @@ func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 	if err := setPodEnv(job, podTemplate, rtype, index); err != nil {
 		return err
 	}
-	if err := setInitContainer(job, podTemplate, rtype, index, r.Log); err != nil {
+	pytorchJob, ok := job.(*kubeflowv1.PyTorchJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of PyTorchJob", job)
+	}
+	if idx, err := strconv.Atoi(index); err != nil {
 		return err
+	} else {
+		if r.IsMasterRole(pytorchJob.Spec.PyTorchReplicaSpecs, kubeflowv1.ReplicaType(rtype), int(idx)) {
+			logrus.Info(fmt.Sprintf("pod has the master role"))
+		} else {
+			logrus.Debug(fmt.Sprintf("pod doesn't have a master role"))
+			podTemplate.Spec.InitContainers = []corev1.Container{}
+		}
 	}
 	return nil
+}
+
+func (r *PyTorchJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	rtype kubeflowv1.ReplicaType, index int) bool {
+	if _, ok := replicas[kubeflowv1.PyTorchJobReplicaTypeMaster]; ok {
+		return string(rtype) == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeMaster))
+	}
+	// else check if it is worker with index 0
+	return string(rtype) == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeWorker)) && index == 0
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
@@ -510,11 +531,6 @@ func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
 
 func (r *PyTorchJobReconciler) GetDefaultContainerPortName() string {
 	return kubeflowv1.PyTorchJobDefaultPortName
-}
-
-func (r *PyTorchJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
-	rtype kubeflowv1.ReplicaType, index int) bool {
-	return string(rtype) == string(kubeflowv1.PyTorchJobReplicaTypeMaster)
 }
 
 // onOwnerCreateFunc modify creation condition.
