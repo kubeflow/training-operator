@@ -81,7 +81,7 @@ def parse_arguments():
     parser.add_argument("--token_dir", help="directory containing tokenizer")
     parser.add_argument("--dataset_dir", help="directory contaning dataset")
     parser.add_argument("--peft_config", help="peft_config")
-    parser.add_argument("--train_params", help="hugging face training parameters")
+    parser.add_argument("--train_parameters", help="hugging face training parameters")
 
     return parser.parse_args()
 
@@ -91,4 +91,4 @@ if __name__ == "__main__":
     model, tokenizer = setup_model_and_tokenizer(args.token_dir, args.model_dir)
     train_data, eval_data = load_and_preprocess_data(args.dataset_dir, tokenizer)
     model = setup_peft_model(model, args.peft_config)
-    train_model(model, train_data, eval_data, tokenizer, args)
+    train_model(model, train_data, eval_data, tokenizer, args.train_parameters)

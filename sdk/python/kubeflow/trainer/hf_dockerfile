@@ -7,12 +7,9 @@ FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
  # Copy the Python package and its source code into the container
  COPY . /app
 
- # Copy the requirements.txt file into the container
- COPY requirements.txt /app/requirements.txt
-
  # Install any needed packages specified in requirements.txt
- RUN pip install --no-cache-dir -r requirements.txt
+ RUN pip install --no-cache-dir -r /app/requirements.txt
 
  # Run storage.py when the container launches
- ENTRYPOINT ["python", "hf_llm_training.py"]
+ ENTRYPOINT ["python", "/app/hf_llm_training.py"]
  
