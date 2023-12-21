@@ -504,17 +504,21 @@ func (r *PyTorchJobReconciler) SetClusterSpec(job interface{}, podTemplate *core
 	return nil
 }
 
+func (r *PyTorchJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
+	rtype kubeflowv1.ReplicaType, index int) bool {
+	if _, ok := replicas[kubeflowv1.PyTorchJobReplicaTypeMaster]; ok {
+		return string(rtype) == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeMaster))
+	}
+	// else check if it is worker with index 0
+	return string(rtype) == strings.ToLower(string(kubeflowv1.PyTorchJobReplicaTypeWorker)) && index == 0
+}
+
 func (r *PyTorchJobReconciler) GetDefaultContainerName() string {
 	return kubeflowv1.PyTorchJobDefaultContainerName
 }
 
 func (r *PyTorchJobReconciler) GetDefaultContainerPortName() string {
 	return kubeflowv1.PyTorchJobDefaultPortName
-}
-
-func (r *PyTorchJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec,
-	rtype kubeflowv1.ReplicaType, index int) bool {
-	return string(rtype) == string(kubeflowv1.PyTorchJobReplicaTypeMaster)
 }
 
 // onOwnerCreateFunc modify creation condition.
