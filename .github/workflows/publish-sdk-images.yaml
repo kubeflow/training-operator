@@ -22,3 +22,4 @@ jobs:
         include:
           - component-name: train-api-hf-image
             dockerfile: sdk/python/kubeflow/trainer/hf_dockerfile
+            context: sdk/python/kubeflow/trainer

@@ -5,7 +5,7 @@ FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
  WORKDIR /app
 
  # Copy the Python package and its source code into the container
- COPY . /app
+ COPY . .
 
  # Install any needed packages specified in requirements.txt
  RUN pip install --no-cache-dir -r /app/requirements.txt
