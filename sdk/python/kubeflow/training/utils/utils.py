@@ -365,11 +365,3 @@ def get_pvc_spec(
         pvc_spec.spec.storage_class_name = storage_class
 
     return pvc_spec
-
-
-def get_namespace_spec(namespace):
-    namespace_spec = models.V1Namespace(
-        api_version="v1", kind="Namespace", metadata=models.V1ObjectMeta(name=namespace)
-    )
-
-    return namespace_spec

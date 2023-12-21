@@ -16,7 +16,7 @@ import multiprocessing
 import logging
 import time
 import json
-from typing import Optional, Callable, List, Dict, Any, Set, Literal
+from typing import Optional, Callable, List, Dict, Any, Set, Literal, Union
 import queue
 from kubernetes import client, config, watch
 
@@ -25,12 +25,12 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
-from typing import Union
+from kubeflow.storage_init_container.s3 import S3DatasetParams
 from kubeflow.storage_init_container.hugging_face import (
     HuggingFaceModelParams,
     HuggingFaceTrainParams,
+    HfDatasetParams,
 )
-from kubeflow.storage_init_container.s3 import S3DatasetParams
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class TrainingClient(object):
         num_procs_per_worker: int = 1,
         storage_config: Dict[Literal["size", "storage_class"], str] = None,
         model_provider_parameters: HuggingFaceModelParams = None,
-        dataset_provider_parameters: S3DatasetParams = None,
+        dataset_provider_parameters: Union[HfDatasetParams, S3DatasetParams] = None,
         train_parameters: HuggingFaceTrainParams = None,
         resources_per_worker: Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
@@ -122,26 +122,22 @@ class TrainingClient(object):
             raise ValueError("One of the required parameters is None")
 
         try:
-            self.core_api.create_namespace(
-                body=utils.get_namespace_spec(namespace=namespace)
+            self.core_api.create_namespaced_persistent_volume_claim(
+                namespace=namespace,
+                body=utils.get_pvc_spec(
+                    pvc_name=constants.TRAINER_PVC_NAME,
+                    namespace=namespace,
+                    storage_size=storage_config["size"],
+                    storage_class=storage_config["storage_class"],
+                ),
             )
         except Exception as e:
             print(e)
 
-        PVC_NAME = "train-job-pvc"
-        self.core_api.create_namespaced_persistent_volume_claim(
-            namespace=namespace,
-            body=utils.get_pvc_spec(
-                pvc_name=PVC_NAME,
-                namespace=namespace,
-                storage_size=storage_config["size"],
-                storage_class=storage_config["storage_class"],
-            ),
-        )
-
         if (
-            resources_per_worker["gpu"] is None and num_procs_per_worker != 0
-        ) or num_procs_per_worker > resources_per_worker["gpu"]:
+            resources_per_worker["gpu"] is not None
+            and num_procs_per_worker > resources_per_worker["gpu"]
+        ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
             raise ValueError("Insufficient gpu resources allocated to the container.")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
@@ -149,13 +145,13 @@ class TrainingClient(object):
 
         if isinstance(dataset_provider_parameters, S3DatasetParams):
             dp = "s3"
+        elif isinstance(dataset_provider_parameters, HfDatasetParams):
+            dp = "hf"
 
         # create init container spec
         init_container_spec = utils.get_container_spec(
-            name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["init_container"],
-            image=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND][
-                "init_container_image"
-            ],
+            name=constants.STORAGE_CONTAINER,
+            image=constants.STORAGE_CONTAINER_IMAGE,
             args=[
                 "--model_provider",
                 mp,
@@ -167,19 +163,17 @@ class TrainingClient(object):
                 json.dumps(dataset_provider_parameters.__dict__),
             ],
             volume_mounts=[
-                models.V1VolumeMount(name="train_job_pv", mount_path="/workspace")
+                models.V1VolumeMount(name=constants.TRAINER_PV, mount_path="/workspace")
             ],
         )
 
         # create app container spec
         container_spec = utils.get_container_spec(
             name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
-            image=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND][
-                "train_container_image"
-            ],
+            image=constants.TRAINER_TRANSFORMER_IMAGE,
             args=["--train_parameters", json.dumps(train_parameters.__dict__)],
             volume_mounts=[
-                models.V1VolumeMount(name="train_job_pv", mount_path="/workspace")
+                models.V1VolumeMount(name=constants.TRAINER_PV, mount_path="/workspace")
             ],
             resources=models.V1ResourceRequirements(
                 limits={
@@ -196,9 +190,9 @@ class TrainingClient(object):
             containers_spec=[container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name="train_job_pv",
+                    name=constants.TRAINER_PV,
                     persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=PVC_NAME
+                        claim_name=constants.TRAINER_PVC_NAME
                     ),
                 )
             ],
@@ -210,9 +204,9 @@ class TrainingClient(object):
             containers_spec=[init_container_spec, container_spec],
             volumes_spec=[
                 models.V1Volume(
-                    name="train_job_pv",
+                    name=constants.TRAINER_PV,
                     persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=PVC_NAME
+                        claim_name=constants.TRAINER_PVC_NAME
                     ),
                 )
             ],
@@ -223,7 +217,7 @@ class TrainingClient(object):
             namespace=namespace,
             master_pod_template_spec=master_pod_template_spec,
             worker_pod_template_spec=worker_pod_template_spec,
-            num_worker_replicas=num_workers,
+            num_worker_replicas=num_workers - 1,
             num_procs_per_worker=num_procs_per_worker,
             elastic_policy=models.KubeflowOrgV1ElasticPolicy(rdzv_backend="c10d"),
         )
