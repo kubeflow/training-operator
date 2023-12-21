@@ -1,5 +1,5 @@
 import argparse
-from hugging_face import HuggingFace
+from hugging_face import HuggingFace, HuggingFaceDataset
 from s3 import S3
 
 
@@ -19,6 +19,10 @@ def dataset_factory(dataset_provider, dataset_provider_parameters):
             s3 = S3()
             s3.load_config(dataset_provider_parameters)
             s3.download_dataset()
+        case "hf":
+            hf = HuggingFaceDataset()
+            hf.load_config(dataset_provider_parameters)
+            hf.download_dataset()
         case _:
             return "This is the default case"
 

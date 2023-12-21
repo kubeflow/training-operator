@@ -7,5 +7,5 @@ class modelProvider(ABC):
         pass
 
     @abstractmethod
-    def download_model(self):
+    def download_model_and_tokenizer(self):
         pass
