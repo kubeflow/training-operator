@@ -112,7 +112,6 @@ class TrainingClient(object):
         """
         if (
             not name
-            or not namespace
             or not storage_config
             or not model_provider_parameters
             or not dataset_provider_parameters
@@ -120,6 +119,27 @@ class TrainingClient(object):
             or not resources_per_worker
         ):
             raise ValueError("One of the required parameters is None")
+
+        namespace = namespace or self.namespace
+
+        if "cpu" not in resources_per_worker or "memory" not in resources_per_worker:
+            raise ValueError("cpu and memory resources not specified")
+        else:
+            limits = {
+                "cpu": resources_per_worker["cpu"],
+                "memory": resources_per_worker["memory"],
+            }
+
+        if (
+            resources_per_worker["gpu"] is not None
+            and num_procs_per_worker > resources_per_worker["gpu"]
+        ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
+            raise ValueError("Insufficient gpu resources allocated to the container.")
+
+        if "gpu" in resources_per_worker:
+            limits["nvidia.com/gpu"] = resources_per_worker["gpu"]
+
+        requests = limits.copy()
 
         try:
             self.core_api.create_namespaced_persistent_volume_claim(
@@ -133,12 +153,6 @@ class TrainingClient(object):
             )
         except Exception as e:
             print(e)
-
-        if (
-            resources_per_worker["gpu"] is not None
-            and num_procs_per_worker > resources_per_worker["gpu"]
-        ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
-            raise ValueError("Insufficient gpu resources allocated to the container.")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
@@ -175,13 +189,7 @@ class TrainingClient(object):
             volume_mounts=[
                 models.V1VolumeMount(name=constants.TRAINER_PV, mount_path="/workspace")
             ],
-            resources=models.V1ResourceRequirements(
-                limits={
-                    "nvidia.com/gpu": resources_per_worker["gpu"],
-                    "cpu": resources_per_worker["cpu"],
-                    "memory": resources_per_worker["memory"],
-                }
-            ),
+            resources=models.V1ResourceRequirements(requests=requests, limits=limits),
         )
 
         # create worker pod spec

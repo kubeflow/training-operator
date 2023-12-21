@@ -27,24 +27,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="script for downloading model and datasets to PVC."
     )
-    parser.add_argument(
-        "--model_provider", type=str, help="name of model provider", required=False
-    )
+    parser.add_argument("--model_provider", type=str, help="name of model provider")
     parser.add_argument(
         "--model_provider_parameters",
         type=str,
         help="model provider serialised arguments",
-        required=False,
     )
 
-    parser.add_argument(
-        "--dataset_provider", type=str, help="name of dataset provider", required=False
-    )
+    parser.add_argument("--dataset_provider", type=str, help="name of dataset provider")
     parser.add_argument(
         "--dataset_provider_parameters",
         type=str,
         help="dataset provider serialised arguments",
-        required=False,
     )
     args = parser.parse_args()
 
