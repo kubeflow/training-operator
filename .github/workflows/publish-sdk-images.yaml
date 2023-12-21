@@ -1,6 +1,7 @@
 name: Publish Training Operator SDK Images
 
 on:
+  - push
   - pull_request
 
 jobs:
