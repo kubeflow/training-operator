@@ -772,9 +772,12 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> Dict[str, str]:
-        """Print the training logs for the Job. By default it returns logs from
-        the `master` pod.
+    ) -> Optional[Dict[str, str]]:
+        """Get the logs for every Training Job pod. By default it returns logs from
+        the `master` pod. Logs are returned in this format: { "pod-name": "Log data" }.
+
+        If follow = True, this function prints logs to StdOut and returns None.
+
 
         Args:
             name: Name for the Job.
@@ -845,7 +848,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return {}
+                        return
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
