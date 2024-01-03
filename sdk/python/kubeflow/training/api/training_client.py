@@ -24,7 +24,9 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 status_logger = utils.StatusLogger(
     header="{:<30.30} {:<20.20} {}".format("NAME", "STATE", "TIME"),
@@ -843,7 +845,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return
+                        return {}
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
@@ -853,7 +855,7 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
-                            print(f"[Pod {pods[index]}]: {logline}")
+                            logger.info(f"[Pod {pods[index]}]: {logline}")
                         except queue.Empty:
                             break
         elif pods:

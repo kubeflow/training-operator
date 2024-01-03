@@ -321,7 +321,7 @@ def get_pytorchjob_template(
         ),
     )
 
-    if num_procs_per_worker > 0:
+    if num_procs_per_worker:
         pytorchjob.spec.nproc_per_node = num_procs_per_worker
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
@@ -334,7 +334,7 @@ def get_pytorchjob_template(
             template=master_pod_template_spec,
         )
 
-    if num_worker_replicas >= 1:
+    if num_worker_replicas:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
         ] = models.KubeflowOrgV1ReplicaSpec(
