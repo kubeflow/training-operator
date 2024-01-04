@@ -24,9 +24,7 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 status_logger = utils.StatusLogger(
     header="{:<30.30} {:<20.20} {}".format("NAME", "STATE", "TIME"),
@@ -43,7 +41,13 @@ class TrainingClient(object):
         namespace: str = utils.get_default_target_namespace(),
         job_kind: str = constants.PYTORCHJOB_KIND,
     ):
-        """TrainingClient constructor.
+        """TrainingClient constructor. Configure logging in your application
+            as follows to see detailed information from the TrainingClient APIs:
+            .. code-block:: python
+                import logging
+                logging.basicConfig()
+                log = logging.getLogger("kubeflow.training.api.training_client")
+                log.setLevel(logging.DEBUG)
 
         Args:
             config_file: Path to the kube-config file. Defaults to ~/.kube/config.
@@ -858,7 +862,7 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
-                            logger.info(f"[Pod {pods[index]}]: {logline}")
+                            print(f"[Pod {pods[index]}]: {logline}")
                         except queue.Empty:
                             break
         elif pods:
