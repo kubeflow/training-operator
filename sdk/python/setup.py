@@ -37,8 +37,8 @@ REQUIRES = [
     "einops>=0.7.0",
     "transformers_stream_generator>=0.0.4",
     "peft>=0.7.0",
-    "datasets>=2.15.0"
-    "huggingface-hub>=0.19.4"
+    "datasets>=2.15.0",
+    "huggingface-hub>=0.19.4",
 ]
 
 setuptools.setup(

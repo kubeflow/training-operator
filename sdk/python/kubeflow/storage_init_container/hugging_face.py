@@ -36,7 +36,7 @@ class HuggingFaceModelParams:
 
     def __post_init__(self):
         # Custom checks or validations can be added here
-        if self.model_uri == "":
+        if self.model_uri == "" or self.model_uri is None:
             raise ValueError("model_uri cannot be empty.")
 
     @property
@@ -88,7 +88,7 @@ class HfDatasetParams:
 
     def __post_init__(self):
         # Custom checks or validations can be added here
-        if self.repo_id is None:
+        if self.repo_id == "" or self.repo_id is None:
             raise ValueError("repo_id is None")
 
     @property

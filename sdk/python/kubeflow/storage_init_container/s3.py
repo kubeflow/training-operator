@@ -1,4 +1,4 @@
-from .abstract_dataset_provider import datasetProvider
+from kubeflow.storage_init_container.abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
 import json, os
 import boto3
