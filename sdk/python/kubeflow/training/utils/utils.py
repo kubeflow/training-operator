@@ -131,7 +131,7 @@ def get_container_spec(
         raise ValueError("container name or image cannot be none")
 
     container_spec = models.V1Container(name=name, image=image)
-
+    container_spec.image_pull_policy = "Always"
     if args:
         container_spec.args = args
 
@@ -175,7 +175,8 @@ def get_pod_template_spec(
                     name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
                 )
-            ]
+            ],
+            image_pull_secrets=[models.V1LocalObjectReference(name="regcred")],
         ),
     )
 
@@ -365,3 +366,10 @@ def get_pvc_spec(
         pvc_spec.spec.storage_class_name = storage_class
 
     return pvc_spec
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)

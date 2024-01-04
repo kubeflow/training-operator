@@ -30,7 +30,9 @@ from kubeflow.storage_init_container.hugging_face import (
     HuggingFaceModelParams,
     HuggingFaceTrainParams,
     HfDatasetParams,
+    INIT_CONTAINER_MOUNT_PATH,
 )
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -101,45 +103,51 @@ class TrainingClient(object):
         namespace: str = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        storage_config: Dict[Literal["size", "storage_class"], str] = None,
+        storage_config: Dict[Literal["size", "storage_class"], str] = {"size": "10Gi"},
         model_provider_parameters: HuggingFaceModelParams = None,
         dataset_provider_parameters: Union[HfDatasetParams, S3DatasetParams] = None,
         train_parameters: HuggingFaceTrainParams = None,
-        resources_per_worker: Dict[Literal["gpu", "cpu", "memory"], any] = None,
+        resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = {
+            "cpu": 1,
+            "memory": "2Gi",
+        },
+        # Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
         Higher level train api
         """
         if (
             not name
-            or not storage_config
             or not model_provider_parameters
             or not dataset_provider_parameters
             or not train_parameters
-            or not resources_per_worker
         ):
             raise ValueError("One of the required parameters is None")
 
         namespace = namespace or self.namespace
 
-        if "cpu" not in resources_per_worker or "memory" not in resources_per_worker:
-            raise ValueError("cpu and memory resources not specified")
-        else:
-            limits = {
-                "cpu": resources_per_worker["cpu"],
-                "memory": resources_per_worker["memory"],
-            }
+        if isinstance(resources_per_worker, dict):
+            if "gpu" in resources_per_worker:
+                resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop("gpu")
 
-        if (
-            resources_per_worker["gpu"] is not None
-            and num_procs_per_worker > resources_per_worker["gpu"]
-        ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
-            raise ValueError("Insufficient gpu resources allocated to the container.")
+            if (
+                resources_per_worker["gpu"] is not None
+                and num_procs_per_worker > resources_per_worker["gpu"]
+            ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
+                raise ValueError(
+                    "Insufficient gpu resources allocated to the container."
+                )
 
-        if "gpu" in resources_per_worker:
-            limits["nvidia.com/gpu"] = resources_per_worker["gpu"]
+            if (
+                "cpu" not in resources_per_worker
+                or "memory" not in resources_per_worker
+            ):
+                raise ValueError("cpu and memory resources not specified")
 
-        requests = limits.copy()
+            resources_per_worker = client.V1ResourceRequirements(
+                requests=resources_per_worker,
+                limits=resources_per_worker,
+            )
 
         try:
             self.core_api.create_namespaced_persistent_volume_claim(
@@ -152,7 +160,7 @@ class TrainingClient(object):
                 ),
             )
         except Exception as e:
-            print(e)
+            raise RuntimeError("failed to create pvc")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
@@ -177,7 +185,10 @@ class TrainingClient(object):
                 json.dumps(dataset_provider_parameters.__dict__),
             ],
             volume_mounts=[
-                models.V1VolumeMount(name=constants.TRAINER_PV, mount_path="/workspace")
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
+                )
             ],
         )
 
@@ -185,11 +196,29 @@ class TrainingClient(object):
         container_spec = utils.get_container_spec(
             name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
             image=constants.TRAINER_TRANSFORMER_IMAGE,
-            args=["--train_parameters", json.dumps(train_parameters.__dict__)],
-            volume_mounts=[
-                models.V1VolumeMount(name=constants.TRAINER_PV, mount_path="/workspace")
+            args=[
+                "--model_uri",
+                model_provider_parameters.model_uri,
+                "--transformer_type",
+                model_provider_parameters.transformer_type,
+                "--model_dir",
+                model_provider_parameters.download_dir,
+                "--dataset_dir",
+                dataset_provider_parameters.download_dir,
+                "--dataset_name",
+                dataset_provider_parameters.repo_id,
+                "--lora_config",
+                json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
+                "--training_parameters",
+                json.dumps(train_parameters.training_parameters.to_dict()),
             ],
-            resources=models.V1ResourceRequirements(requests=requests, limits=limits),
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=constants.TRAINER_CONTAINER_MOUNT_PATH,
+                )
+            ],
+            resources=resources_per_worker,
         )
 
         # create worker pod spec
@@ -227,7 +256,6 @@ class TrainingClient(object):
             worker_pod_template_spec=worker_pod_template_spec,
             num_worker_replicas=num_workers - 1,
             num_procs_per_worker=num_procs_per_worker,
-            elastic_policy=models.KubeflowOrgV1ElasticPolicy(rdzv_backend="c10d"),
         )
 
         self.create_job(job, namespace=namespace)

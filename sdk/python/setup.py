@@ -29,6 +29,9 @@ REQUIRES = [
     "urllib3>=1.15.1",
     "kubernetes>=23.6.0",
     "retrying>=1.3.3",
+    "boto3>=1.33.9",
+    "transformers>=4.35.2",
+    "peft>=0.7.0",
 ]
 
 setuptools.setup(
