@@ -3,38 +3,55 @@ from abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
 from typing import Literal
 from urllib.parse import urlparse
-import json
-from typing import Dict, Any
+import json, os
+from typing import Dict, Any, Union
+from datasets import load_dataset
+from peft import LoraConfig
+import transformers
+from transformers import TrainingArguments
+import enum
+import huggingface_hub
 
-TRANSFORMER_TYPES = [
-    "AutoModelForSequenceClassification",
-    "AutoModelForTokenClassification",
-    "AutoModelForQuestionAnswering",
-    "AutoModelForCausalLM",
-    "AutoModelForMaskedLM",
-    "AutoModelForImageClassification",
-]
+
+class TRANSFORMER_TYPES(str, enum.Enum):
+    """Types of Transformers."""
+
+    AutoModelForSequenceClassification = "AutoModelForSequenceClassification"
+    AutoModelForTokenClassification = "AutoModelForTokenClassification"
+    AutoModelForQuestionAnswering = "AutoModelForQuestionAnswering"
+    AutoModelForCausalLM = "AutoModelForCausalLM"
+    AutoModelForMaskedLM = "AutoModelForMaskedLM"
+    AutoModelForImageClassification = "AutoModelForImageClassification"
+
+
+INIT_CONTAINER_MOUNT_PATH = "/workspace"
 
 
 @dataclass
 class HuggingFaceModelParams:
-    access_token: str
     model_uri: str
-    transformer_type: Literal[*TRANSFORMER_TYPES]
-    download_dir: str = field(default="/workspace/models")
+    transformer_type: TRANSFORMER_TYPES
+    access_token: str = None
+    download_dir: str = field(default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "models"))
 
     def __post_init__(self):
         # Custom checks or validations can be added here
-        if self.transformer_type not in TRANSFORMER_TYPES:
-            raise ValueError("transformer_type must be one of %s", TRANSFORMER_TYPES)
-        if self.model_uri is None:
-            raise ValueError("model_uri cannot be none.")
+        if self.model_uri == "":
+            raise ValueError("model_uri cannot be empty.")
+
+    @property
+    def download_dir(self):
+        return self.download_dir
+
+    @download_dir.setter
+    def download_dir(self, value):
+        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 @dataclass
 class HuggingFaceTrainParams:
-    additional_data: Dict[str, Any] = field(default_factory=dict)
-    peft_config: Dict[str, Any] = field(default_factory=dict)
+    training_parameters: TrainingArguments = field(default_factory=TrainingArguments)
+    lora_config: LoraConfig = field(default_factory=LoraConfig)
 
 
 class HuggingFace(modelProvider):
@@ -45,8 +62,6 @@ class HuggingFace(modelProvider):
     def download_model_and_tokenizer(self):
         # implementation for downloading the model
         print("downloading model")
-        import transformers
-
         transformer_type_class = getattr(transformers, self.config.transformer_type)
         parsed_uri = urlparse(self.config.model_uri)
         self.model = parsed_uri.netloc + parsed_uri.path
@@ -67,12 +82,22 @@ class HfDatasetParams:
     access_token: str = None
     allow_patterns: list[str] = None
     ignore_patterns: list[str] = None
-    download_dir: str = field(default="/workspace/datasets")
+    download_dir: str = field(
+        default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "datasets")
+    )
 
     def __post_init__(self):
         # Custom checks or validations can be added here
         if self.repo_id is None:
             raise ValueError("repo_id is None")
+
+    @property
+    def download_dir(self):
+        return self.download_dir
+
+    @download_dir.setter
+    def download_dir(self, value):
+        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 class HuggingFaceDataset(datasetProvider):
@@ -81,15 +106,8 @@ class HuggingFaceDataset(datasetProvider):
 
     def download_dataset(self):
         print("downloading dataset")
-        import huggingface_hub
-        from huggingface_hub import snapshot_download
 
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)
-        snapshot_download(
-            repo_id=self.config.repo_id,
-            repo_type="dataset",
-            allow_patterns=self.config.allow_patterns,
-            ignore_patterns=self.config.ignore_patterns,
-            local_dir=self.config.download_dir,
-        )
+
+        load_dataset(self.config.repo_id, cache_dir=self.config.download_dir)
