@@ -4,4 +4,6 @@ torchaudio==2.1.1
 einops==0.7.0
 transformers_stream_generator==0.0.4
 boto3==1.33.9
-huggingface_hub
+transformers>=4.35.2
+peft>=0.7.0
+huggingface_hub==0.19.4

@@ -1,6 +1,6 @@
 from .abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
-import json
+import json, os
 import boto3
 from urllib.parse import urlparse
 import os
