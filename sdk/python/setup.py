@@ -31,6 +31,11 @@ REQUIRES = [
     "retrying>=1.3.3",
     "boto3>=1.33.9",
     "transformers>=4.35.2",
+    "torch>=2.1.1",
+    "torchvision>=0.16.1",
+    "torchaudio>=2.1.1",
+    "einops>=0.7.0",
+    "transformers_stream_generator>=0.0.4",
     "peft>=0.7.0",
 ]
 

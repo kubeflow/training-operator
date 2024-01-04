@@ -5,6 +5,7 @@ import boto3
 from urllib.parse import urlparse
 import os
 
+
 @dataclass
 class S3DatasetParams:
     endpoint_url: str
@@ -50,6 +51,8 @@ class S3(datasetProvider):
 
         # Download the file
         s3_client.download_file(
-            self.config.bucket_name, self.config.file_key, os.path.join(self.config.download_dir,self.config.file_key)
+            self.config.bucket_name,
+            self.config.file_key,
+            os.path.join(self.config.download_dir, self.config.file_key),
         )
         print(f"File downloaded to: {self.config.download_dir}")
