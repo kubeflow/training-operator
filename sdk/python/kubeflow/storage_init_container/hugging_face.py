@@ -1,5 +1,5 @@
-from abstract_model_provider import modelProvider
-from abstract_dataset_provider import datasetProvider
+from kubeflow.storage_init_container.abstract_model_provider import modelProvider
+from kubeflow.storage_init_container.abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
 from typing import Literal
 from urllib.parse import urlparse
