@@ -32,7 +32,6 @@ from kubeflow.storage_init_container.hugging_face import (
     HfDatasetParams,
     INIT_CONTAINER_MOUNT_PATH,
 )
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +106,7 @@ class TrainingClient(object):
         model_provider_parameters: HuggingFaceModelParams = None,
         dataset_provider_parameters: Union[HfDatasetParams, S3DatasetParams] = None,
         train_parameters: HuggingFaceTrainParams = None,
-        resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = {
-            "cpu": 1,
-            "memory": "2Gi",
-        },
+        resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = None,
         # Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
