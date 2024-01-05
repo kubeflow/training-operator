@@ -75,4 +75,5 @@ setuptools.setup(
     install_requires=REQUIRES,
     tests_require=TESTS_REQUIRES,
     extras_require={"test": TESTS_REQUIRES},
+    dependency_links=["https://download.pytorch.org/whl/cu118"],
 )

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Dockerfile for building the source code of conformance tests
-FROM python:3.10-alpine
+FROM python:3.10
 
 WORKDIR /kubeflow/training-operator/sdk/python
 
