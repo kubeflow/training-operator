@@ -782,7 +782,6 @@ class TrainingClient(object):
 
         If follow = True, this function prints logs to StdOut and returns None.
 
-
         Args:
             name: Name for the Job.
             namespace: Namespace for the Job. By default namespace is taken from
