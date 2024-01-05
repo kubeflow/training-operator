@@ -80,8 +80,6 @@ class HuggingFace(modelProvider):
 class HfDatasetParams:
     repo_id: str
     access_token: str = None
-    allow_patterns: list[str] = None
-    ignore_patterns: list[str] = None
     download_dir: str = field(
         default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "datasets")
     )
