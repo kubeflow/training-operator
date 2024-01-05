@@ -16,7 +16,7 @@ import multiprocessing
 import logging
 import time
 import json
-from typing import Optional, Callable, List, Dict, Any, Set, Literal, Union
+from typing import Optional, Callable, List, Dict, Any, Set, Union
 import queue
 from kubernetes import client, config, watch
 
@@ -102,7 +102,7 @@ class TrainingClient(object):
         namespace: str = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        storage_config: Dict[Literal["size", "storage_class"], str] = {"size": "10Gi"},
+        storage_config: Dict[str, str] = {"size": "10Gi", "storage_class": None},
         model_provider_parameters: HuggingFaceModelParams = None,
         dataset_provider_parameters: Union[HfDatasetParams, S3DatasetParams] = None,
         train_parameters: HuggingFaceTrainParams = None,
