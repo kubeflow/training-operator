@@ -31,14 +31,14 @@ REQUIRES = [
     "retrying>=1.3.3",
     "boto3>=1.33.9",
     "transformers>=4.20.0",
-    "torch>=1.8.1",
+    "torch>=1.13.1",
     "torchvision>=0.9.1",
     "torchaudio>=0.8.1",
-    "einops>=0.7.0",
+    "einops>=0.6.1",
     "transformers_stream_generator>=0.0.4",
-    "peft>=0.7.0",
-    "datasets>=2.15.0",
-    "huggingface-hub>=0.19.4",
+    "peft>=0.3.0",
+    "datasets>=2.13.2",
+    "huggingface_hub>=0.16.4",
 ]
 
 setuptools.setup(
