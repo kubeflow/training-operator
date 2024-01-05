@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import logging
 import textwrap
@@ -375,3 +376,29 @@ class SetEncoder(json.JSONEncoder):
         if isinstance(obj, type):
             return obj.__name__
         return json.JSONEncoder.default(self, obj)
+
+
+def add_event_to_dict(
+    events_dict: Dict[str, List[str]],
+    event: models.CoreV1Event,
+    object_kind: str,
+    object_name: str,
+    object_creation_timestamp: datetime,
+):
+    """Add Kubernetes event to the dict with this format:
+    ```
+    {"Object Name": "<Event Timestamp> <Event Message>"}
+    ```
+    """
+    if (
+        event.involved_object.kind == object_kind
+        and event.involved_object.name == object_name
+        and event.metadata.creation_timestamp >= object_creation_timestamp
+    ):
+        event_time = event.metadata.creation_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        event_msg = f"{event_time} {event.message}"
+        if object_name not in events_dict:
+            events_dict[object_name] = [event_msg]
+        else:
+            events_dict[object_name] += [event_msg]
+    return events_dict
