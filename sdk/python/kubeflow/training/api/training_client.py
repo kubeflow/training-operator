@@ -41,7 +41,13 @@ class TrainingClient(object):
         namespace: str = utils.get_default_target_namespace(),
         job_kind: str = constants.PYTORCHJOB_KIND,
     ):
-        """TrainingClient constructor.
+        """TrainingClient constructor. Configure logging in your application
+            as follows to see detailed information from the TrainingClient APIs:
+            .. code-block:: python
+                import logging
+                logging.basicConfig()
+                log = logging.getLogger("kubeflow.training.api.training_client")
+                log.setLevel(logging.DEBUG)
 
         Args:
             config_file: Path to the kube-config file. Defaults to ~/.kube/config.
@@ -771,8 +777,8 @@ class TrainingClient(object):
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
     ) -> Dict[str, str]:
-        """Print the training logs for the Job. By default it returns logs from
-        the `master` pod.
+        """Get the logs for every Training Job pod. By default it returns logs from
+        the `master` pod. Logs are returned in this format: { "pod-name": "Log data" }.
 
         Args:
             name: Name for the Job.
@@ -796,7 +802,7 @@ class TrainingClient(object):
                 For PaddleJob one of `master` or `worker`.
             replica_index: Optional, index for the Job replica.
             container: Pod container to get the logs.
-            follow: Whether to follow the log stream of the pod.
+            follow: Whether to follow the log stream of the pod and print logs to StdOut.
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
 
@@ -843,7 +849,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return
+                        return logs_dict
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
@@ -853,7 +859,14 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
+
+                            # Print logs to the StdOut
                             print(f"[Pod {pods[index]}]: {logline}")
+                            # Add logs to the results dict.
+                            if pods[index] not in logs_dict:
+                                logs_dict[pods[index]] = logline
+                            else:
+                                logs_dict[pods[index]] += logline
                         except queue.Empty:
                             break
         elif pods:
