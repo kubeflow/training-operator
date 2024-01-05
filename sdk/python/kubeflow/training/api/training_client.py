@@ -776,11 +776,9 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> Optional[Dict[str, str]]:
+    ) -> Dict[str, str]:
         """Get the logs for every Training Job pod. By default it returns logs from
         the `master` pod. Logs are returned in this format: { "pod-name": "Log data" }.
-
-        If follow = True, this function prints logs to StdOut and returns None.
 
         Args:
             name: Name for the Job.
@@ -804,7 +802,7 @@ class TrainingClient(object):
                 For PaddleJob one of `master` or `worker`.
             replica_index: Optional, index for the Job replica.
             container: Pod container to get the logs.
-            follow: Whether to follow the log stream of the pod.
+            follow: Whether to follow the log stream of the pod and print logs to StdOut.
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
 
@@ -851,7 +849,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return
+                        return logs_dict
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
@@ -861,7 +859,14 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
+
+                            # Print logs to the StdOut
                             print(f"[Pod {pods[index]}]: {logline}")
+                            # Add logs to the results dict.
+                            if pods[index] not in logs_dict:
+                                logs_dict[pods[index]] = logline
+                            else:
+                                logs_dict[pods[index]] += logline
                         except queue.Empty:
                             break
         elif pods:
