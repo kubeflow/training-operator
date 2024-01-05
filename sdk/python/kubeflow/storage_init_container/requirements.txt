@@ -1,6 +1,6 @@
-torch>=1.8.2
-torchvision>=0.9.2
-torchaudio>=0.8.2
+torch>=1.8.1
+torchvision>=0.9.1
+torchaudio>=0.8.1
 einops==0.7.0
 transformers_stream_generator==0.0.4
 boto3==1.33.9
