@@ -1,9 +1,9 @@
-torch==2.1.1
-torchvision==0.16.1
-torchaudio==2.1.1
+torch>=1.8.2
+torchvision>=0.9.2
+torchaudio>=0.8.2
 einops==0.7.0
 transformers_stream_generator==0.0.4
 boto3==1.33.9
-transformers>=4.35.2
+transformers>=4.20.0
 peft>=0.7.0
 huggingface_hub==0.19.4
