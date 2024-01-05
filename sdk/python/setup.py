@@ -31,9 +31,6 @@ REQUIRES = [
     "retrying>=1.3.3",
     "boto3>=1.33.9",
     "transformers>=4.20.0",
-    "torch>=1.13.1",
-    "torchvision>=0.9.1",
-    "torchaudio>=0.8.1",
     "einops>=0.6.1",
     "transformers_stream_generator>=0.0.4",
     "peft>=0.3.0",
@@ -75,5 +72,4 @@ setuptools.setup(
     install_requires=REQUIRES,
     tests_require=TESTS_REQUIRES,
     extras_require={"test": TESTS_REQUIRES},
-    dependency_links=["https://download.pytorch.org/whl/cu118"],
 )
