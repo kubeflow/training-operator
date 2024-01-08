@@ -39,7 +39,6 @@ logging.basicConfig(format="%(message)s")
 logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
-JOB_NAME = "pytorchjob-mnist-ci-test"
 CONTAINER_NAME = "pytorch"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
@@ -49,6 +48,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
     reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
+    JOB_NAME = "pytorchjob-gang-scheduling"
     container = generate_container()
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -120,6 +120,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
+    JOB_NAME = "pytorchjob-e2e"
     container = generate_container()
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -162,6 +163,8 @@ def test_sdk_e2e(job_namespace):
 
 
 def test_sdk_e2e_create_from_func(job_namespace):
+    JOB_NAME = "pytorchjob-from-func"
+
     def train_func():
         import time
 
