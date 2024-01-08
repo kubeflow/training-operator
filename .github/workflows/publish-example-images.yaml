@@ -52,7 +52,9 @@ jobs:
           - component-name: mxnet-auto-tuning
             dockerfile: examples/mxnet/tune/Dockerfile
             context: examples/mxnet/tune
-
+          - component-name: train-api-hf-image
+            dockerfile: sdk/python/kubeflow/trainer/hf_dockerfile
+            context: sdk/python/kubeflow/trainer
 # TODO (tenzen-y): Fix the below broken Dockerfiles
 #          - component-name: pytorch-dist-mnist-mpi
 #            dockerfile: examples/pytorch/mnist/Dockerfile-mpi
