@@ -36,7 +36,7 @@ from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
 logging.basicConfig(format="%(message)s")
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PADDLEJOB_KIND)
 JOB_NAME = "paddlejob-cpu-ci-test"
