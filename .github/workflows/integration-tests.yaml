@@ -109,6 +109,7 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest
+          pip install -r sdk/python/kubeflow/storage_init_container/requirements.txt
           python3 -m pip install -e sdk/python; pytest sdk/python/test --log-cli-level=info --namespace=default
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}

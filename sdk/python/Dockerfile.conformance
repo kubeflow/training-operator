@@ -25,6 +25,7 @@ COPY sdk/python/conformance/run.sh .
 RUN chmod +x run.sh
 
 RUN pip install pytest
+RUN pip install -r ./kubeflow/storage_init_container/requirements.txt
 RUN python -m pip install -e .
 
 ENTRYPOINT [ "./run.sh" ]
