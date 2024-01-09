@@ -81,12 +81,17 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
     unschedulable_pytorchjob = generate_pytorchjob(
         job_namespace,
+        JOB_NAME,
         master,
         worker,
         KubeflowOrgV1SchedulingPolicy(min_available=10),
     )
     schedulable_pytorchjob = generate_pytorchjob(
-        job_namespace, master, worker, KubeflowOrgV1SchedulingPolicy(min_available=2)
+        job_namespace,
+        JOB_NAME,
+        master,
+        worker,
+        KubeflowOrgV1SchedulingPolicy(min_available=2),
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_pytorchjob, namespace=job_namespace)
@@ -145,7 +150,7 @@ def test_sdk_e2e(job_namespace):
         ),
     )
 
-    pytorchjob = generate_pytorchjob(job_namespace, master, worker)
+    pytorchjob = generate_pytorchjob(job_namespace, JOB_NAME, master, worker)
 
     TRAINING_CLIENT.create_job(job=pytorchjob, namespace=job_namespace)
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
@@ -205,6 +210,7 @@ def test_sdk_e2e_create_from_func(job_namespace):
 
 def generate_pytorchjob(
     job_namespace: str,
+    job_name: str,
     master: KubeflowOrgV1ReplicaSpec,
     worker: KubeflowOrgV1ReplicaSpec,
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
@@ -212,7 +218,7 @@ def generate_pytorchjob(
     return KubeflowOrgV1PyTorchJob(
         api_version=constants.API_VERSION,
         kind=constants.PYTORCHJOB_KIND,
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
+        metadata=V1ObjectMeta(name=job_name, namespace=job_namespace),
         spec=KubeflowOrgV1PyTorchJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",
