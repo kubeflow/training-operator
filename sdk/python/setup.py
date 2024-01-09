@@ -29,13 +29,6 @@ REQUIRES = [
     "urllib3>=1.15.1",
     "kubernetes>=23.6.0",
     "retrying>=1.3.3",
-    "boto3>=1.33.9",
-    "transformers>=4.20.0",
-    "einops>=0.6.1",
-    "transformers_stream_generator>=0.0.4",
-    "peft>=0.3.0",
-    "datasets>=2.13.2",
-    "huggingface_hub>=0.16.4",
 ]
 
 setuptools.setup(

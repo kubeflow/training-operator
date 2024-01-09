@@ -4,3 +4,7 @@ boto3==1.33.9
 transformers>=4.20.0
 peft>=0.3.0
 huggingface_hub==0.16.4
+datasets>=2.13.2
+torch>=1.13.1
+torchvision>=0.9.1
+torchaudio>=0.8.1

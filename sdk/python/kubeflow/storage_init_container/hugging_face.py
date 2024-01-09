@@ -1,26 +1,6 @@
+from kubeflow.storage_init_container.types import *
 from kubeflow.storage_init_container.abstract_model_provider import modelProvider
 from kubeflow.storage_init_container.abstract_dataset_provider import datasetProvider
-from dataclasses import dataclass, field
-from urllib.parse import urlparse
-import json, os
-from datasets import load_dataset
-from peft import LoraConfig
-import transformers
-from transformers import TrainingArguments
-import enum
-import huggingface_hub
-
-
-class TRANSFORMER_TYPES(str, enum.Enum):
-    """Types of Transformers."""
-
-    AutoModelForSequenceClassification = "AutoModelForSequenceClassification"
-    AutoModelForTokenClassification = "AutoModelForTokenClassification"
-    AutoModelForQuestionAnswering = "AutoModelForQuestionAnswering"
-    AutoModelForCausalLM = "AutoModelForCausalLM"
-    AutoModelForMaskedLM = "AutoModelForMaskedLM"
-    AutoModelForImageClassification = "AutoModelForImageClassification"
-
 
 INIT_CONTAINER_MOUNT_PATH = "/workspace"
 

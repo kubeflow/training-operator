@@ -196,7 +196,7 @@ class TrainingClient(object):
                 "--model_uri",
                 model_provider_parameters.model_uri,
                 "--transformer_type",
-                model_provider_parameters.transformer_type,
+                model_provider_parameters.transformer_type.__class__.__name__,
                 "--model_dir",
                 model_provider_parameters.download_dir,
                 "--dataset_dir",
