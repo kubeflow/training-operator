@@ -46,9 +46,6 @@ const (
 	EnvMonitorInterval = "PET_MONITOR_INTERVAL"
 	// EnvStartMethod is the environment variable name for the multiprocessing start method to use when creating workers, which could be fork, spawn and forkserver.
 	EnvStartMethod = "PET_START_METHOD"
-
-	// EnvNNodes is the common environment variable name from envvar
-
 	// EnvNProcPerNode is the environment variable name for the number of processes per node.
 	EnvNProcPerNode = "PET_NPROC_PER_NODE"
 )

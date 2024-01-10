@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	// EnvKubeflowNamespace is a environment variable for namespace when deployed on kubernetes
+	// EnvKubeflowNamespace is an environment variable for namespace when deployed on kubernetes
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
 )
 

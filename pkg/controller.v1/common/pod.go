@@ -44,12 +44,12 @@ import (
 const (
 	// podTemplateRestartPolicyReason is the warning reason when the restart
 	// policy is set in pod template.
-	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
+	podTemplateRestartPolicyReason = "SetPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
 	exitedWithCodeReason = "ExitedWithCode"
 	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
 	// in pod templates with gang-scheduling enabled
-	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
+	podTemplateSchedulerNameReason = "SetPodTemplateSchedulerName"
 )
 
 var (
@@ -167,7 +167,7 @@ func (jc *JobController) DeletePod(obj interface{}) {
 
 	logger := commonutil.LoggerForPod(pod, jc.Controller.GetAPIGroupVersionKind().Kind)
 
-	// When a delete is dropped, the relist will notice a pod in the store not
+	// When delete is dropped, the relist will notice a pod in the store not
 	// in the list, leading to the insertion of a tombstone object which contains
 	// the deleted key/value. Note that this value might be stale. If the pod
 	// changed labels the new job will not be woken up till the periodic resync.

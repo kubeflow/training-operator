@@ -337,9 +337,9 @@ func (r *PyTorchJobReconciler) DeleteJob(job interface{}) error {
 	return nil
 }
 
-func (jc *PyTorchJobReconciler) GenLabelSelector(jobName string,
+func (r *PyTorchJobReconciler) GenLabelSelector(jobName string,
 	rtype kubeflowv1.ReplicaType) *metav1.LabelSelector {
-	labels := jc.GenLabels(jobName)
+	labels := r.GenLabels(jobName)
 	labels[kubeflowv1.ReplicaTypeLabel] = strings.ToLower(string(rtype))
 
 	return &metav1.LabelSelector{
