@@ -79,8 +79,12 @@ PYTORCHJOB_KIND = "PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
-
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
+STORAGE_CONTAINER = "storage-initializer"
+STORAGE_CONTAINER_IMAGE = "quay.io/deepanker_gupta/storage:v1"
+TRAINER_TRANSFORMER_IMAGE = "quay.io/deepanker_gupta/trainer:v1"
+TRAINER_PVC_NAME = "storage-initializer"
+TRAINER_PV = "storage-pv"
 
 # MXJob constants
 MXJOB_KIND = "MXJob"

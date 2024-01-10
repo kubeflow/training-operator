@@ -1,19 +1,19 @@
-from abstract_dataset_provider import datasetProvider
 from dataclasses import dataclass, field
-import json
+import json, os
 import boto3
 from urllib.parse import urlparse
+from .abstract_dataset_provider import datasetProvider
+from .constants import VOLUME_PATH_DATASET
 
 
 @dataclass
 class S3DatasetParams:
-    access_key: str
-    secret_key: str
     endpoint_url: str
     bucket_name: str
     file_key: str
-    region_name: str
-    download_dir: str = field(default="/workspace/datasets")
+    region_name: str = None
+    access_key: str = None
+    secret_key: str = None
 
     def is_valid_url(self, url):
         try:
@@ -50,6 +50,8 @@ class S3(datasetProvider):
 
         # Download the file
         s3_client.download_file(
-            self.config.bucket_name, self.config.file_key, self.config.download_dir
+            self.config.bucket_name,
+            self.config.file_key,
+            os.path.join(VOLUME_PATH_DATASET, self.config.file_key),
         )
-        print(f"File downloaded to: {self.config.download_dir}")
+        print(f"File downloaded to: {VOLUME_PATH_DATASET}")

@@ -24,3 +24,6 @@ jobs:
             dockerfile: build/images/training-operator/Dockerfile
           - component-name: kubectl-delivery
             dockerfile: build/images/kubectl-delivery/Dockerfile
+          - component-name: storage-initializer
+             dockerfile: sdk/python/kubeflow/storage_initializer/Dockerfile
+             context: sdk/python/kubeflow/storage_initializer

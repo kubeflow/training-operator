@@ -15,7 +15,8 @@
 import multiprocessing
 import logging
 import time
-from typing import Optional, Callable, List, Dict, Any, Set
+import json
+from typing import Optional, Callable, List, Dict, Any, Set, Union
 import queue
 from kubernetes import client, config, watch
 
@@ -23,6 +24,11 @@ from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
+from kubeflow.storage_initializer.constants import (
+    INIT_CONTAINER_MOUNT_PATH,
+    VOLUME_PATH_DATASET,
+    VOLUME_PATH_MODEL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +92,185 @@ class TrainingClient(object):
                 f"Job kind must be one of these: {list(constants.JOB_PARAMETERS.keys())}"
             )
         self.job_kind = job_kind
+
+    def train(
+        self,
+        name: str = None,
+        namespace: str = None,
+        num_workers: int = 1,
+        num_procs_per_worker: int = 1,
+        storage_config: Dict[str, str] = {"size": "10Gi", "storage_class": None},
+        model_provider_parameters=None,
+        dataset_provider_parameters=None,
+        train_parameters=None,
+        resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = None,
+        # Dict[Literal["gpu", "cpu", "memory"], any] = None,
+    ):
+        """
+        Higher level train api
+        model_provider_parameters: It can be of type HuggingFaceModelParams
+        dataset_provider_parameters: It can be of type HfDatasetParams or S3DatasetParams
+        train_parameters: It can be of type HuggingFaceTrainParams
+        """
+        try:
+            import peft
+            import transformers
+        except ImportError:
+            print(
+                "train api dependencies not installed. Run pip install -U 'kubeflow-training[huggingface]' "
+            )
+        from kubeflow.storage_initializer.s3 import S3DatasetParams
+        from kubeflow.storage_initializer.hugging_face import (
+            HuggingFaceModelParams,
+            HuggingFaceTrainParams,
+            HfDatasetParams,
+        )
+
+        if (
+            not name
+            or not model_provider_parameters
+            or not dataset_provider_parameters
+            or not train_parameters
+        ):
+            raise ValueError("One of the required parameters is None")
+
+        namespace = namespace or self.namespace
+
+        if isinstance(resources_per_worker, dict):
+            if "gpu" in resources_per_worker:
+                if resources_per_worker["gpu"] is not None and (
+                    num_procs_per_worker > resources_per_worker["gpu"]
+                ):
+                    raise ValueError(
+                        "Insufficient gpu resources allocated to the container."
+                    )
+                if resources_per_worker["gpu"] is not None:
+                    resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop(
+                        "gpu"
+                    )
+
+            if (
+                "cpu" not in resources_per_worker
+                or "memory" not in resources_per_worker
+            ):
+                raise ValueError("cpu and memory resources not specified")
+
+            resources_per_worker = client.V1ResourceRequirements(
+                requests=resources_per_worker,
+                limits=resources_per_worker,
+            )
+
+        try:
+            self.core_api.create_namespaced_persistent_volume_claim(
+                namespace=namespace,
+                body=utils.get_pvc_spec(
+                    pvc_name=constants.TRAINER_PVC_NAME,
+                    namespace=namespace,
+                    storage_size=storage_config["size"],
+                    storage_class=storage_config["storage_class"],
+                ),
+            )
+        except Exception as e:
+            pass  # local
+            # raise RuntimeError("failed to create pvc")
+
+        if isinstance(model_provider_parameters, HuggingFaceModelParams):
+            mp = "hf"
+
+        if isinstance(dataset_provider_parameters, S3DatasetParams):
+            dp = "s3"
+        elif isinstance(dataset_provider_parameters, HfDatasetParams):
+            dp = "hf"
+
+        # create init container spec
+        init_container_spec = utils.get_container_spec(
+            name=constants.STORAGE_CONTAINER,
+            image=constants.STORAGE_CONTAINER_IMAGE,
+            args=[
+                "--model_provider",
+                mp,
+                "--model_provider_parameters",
+                json.dumps(model_provider_parameters.__dict__, cls=utils.SetEncoder),
+                "--dataset_provider",
+                dp,
+                "--dataset_provider_parameters",
+                json.dumps(dataset_provider_parameters.__dict__),
+            ],
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
+                )
+            ],
+        )
+
+        # create app container spec
+        container_spec = utils.get_container_spec(
+            name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
+            image=constants.TRAINER_TRANSFORMER_IMAGE,
+            args=[
+                "--model_uri",
+                model_provider_parameters.model_uri,
+                "--transformer_type",
+                model_provider_parameters.transformer_type.__name__,
+                "--model_dir",
+                VOLUME_PATH_MODEL,
+                "--dataset_dir",
+                VOLUME_PATH_DATASET,
+                "--dataset_name",
+                dataset_provider_parameters.repo_id,
+                "--lora_config",
+                json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
+                "--training_parameters",
+                json.dumps(train_parameters.training_parameters.to_dict()),
+            ],
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
+                )
+            ],
+            resources=resources_per_worker,
+        )
+
+        # create worker pod spec
+        worker_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[container_spec],
+            volumes_spec=[
+                models.V1Volume(
+                    name=constants.TRAINER_PV,
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=constants.TRAINER_PVC_NAME
+                    ),
+                )
+            ],
+        )
+
+        # create master pod spec
+        master_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[init_container_spec, container_spec],
+            volumes_spec=[
+                models.V1Volume(
+                    name=constants.TRAINER_PV,
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=constants.TRAINER_PVC_NAME
+                    ),
+                )
+            ],
+        )
+
+        job = utils.get_pytorchjob_template(
+            name=name,
+            namespace=namespace,
+            master_pod_template_spec=master_pod_template_spec,
+            worker_pod_template_spec=worker_pod_template_spec,
+            num_worker_replicas=num_workers - 1,
+            num_procs_per_worker=num_procs_per_worker,
+        )
+
+        self.create_job(job, namespace=namespace)
 
     def create_job(
         self,

@@ -122,7 +122,7 @@ def get_container_spec(
     image: str,
     args: Optional[List[str]] = None,
     resources: Optional[models.V1ResourceRequirements] = None,
-    volume_mounts: Optional[models.V1VolumeMount] = None,
+    volume_mounts: Optional[List[models.V1VolumeMount]] = None,
 ) -> models.V1Container:
     """
     get container spec for given name and image.
@@ -131,7 +131,7 @@ def get_container_spec(
         raise ValueError("container name or image cannot be none")
 
     container_spec = models.V1Container(name=name, image=image)
-
+    container_spec.image_pull_policy = "Always"
     if args:
         container_spec.args = args
 
@@ -175,7 +175,8 @@ def get_pod_template_spec(
                     name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
                 )
-            ]
+            ],
+            image_pull_secrets=[models.V1LocalObjectReference(name="regcred")],
         ),
     )
 
@@ -321,8 +322,8 @@ def get_pytorchjob_template(
         ),
     )
 
-    if num_procs_per_worker:
-        pytorchjob.spec.nproc_per_node = num_procs_per_worker
+    if num_procs_per_worker > 0:
+        pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
 
@@ -343,3 +344,34 @@ def get_pytorchjob_template(
         )
 
     return pytorchjob
+
+
+def get_pvc_spec(
+    pvc_name: str, namespace: str, storage_size: str, storage_class: str = None
+):
+    if pvc_name is None or namespace is None or storage_size is None:
+        raise ValueError("One of the arguments is None")
+
+    pvc_spec = models.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata={"name": pvc_name, "namepsace": namespace},
+        spec=models.V1PersistentVolumeClaimSpec(
+            access_modes=["ReadWriteOnce", "ReadOnlyMany"],
+            resources=models.V1ResourceRequirements(requests={"storage": storage_size}),
+        ),
+    )
+
+    if storage_class is not None:
+        pvc_spec.spec.storage_class_name = storage_class
+
+    return pvc_spec
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        if isinstance(obj, type):
+            return obj.__name__
+        return json.JSONEncoder.default(self, obj)
