@@ -124,15 +124,6 @@ test_data = [
         ValueError,
     ),
     (
-        "invalid pod template spec parameters",
-        {
-            "name": "test job",
-            "train_func": lambda: "test train function",
-            "job_kind": constants.MXJOB_KIND,
-        },
-        KeyError,
-    ),
-    (
         "paddle job can't be created using function",
         {
             "name": "test job",

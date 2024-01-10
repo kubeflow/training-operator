@@ -18,8 +18,6 @@ package v1
 
 type MPIJobExpansion interface{}
 
-type MXJobExpansion interface{}
-
 type PaddleJobExpansion interface{}
 
 type PyTorchJobExpansion interface{}
