@@ -30,7 +30,6 @@ from kubeflow.storage_initializer.constants import (
     VOLUME_PATH_MODEL,
 )
 
-
 logger = logging.getLogger(__name__)
 
 status_logger = utils.StatusLogger(
