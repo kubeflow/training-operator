@@ -24,7 +24,11 @@ from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
-from kubeflow.storage_init_container.constants import INIT_CONTAINER_MOUNT_PATH
+from kubeflow.storage_initializer.constants import (
+    INIT_CONTAINER_MOUNT_PATH,
+    VOLUME_PATH_DATASET,
+    VOLUME_PATH_MODEL,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -116,8 +120,8 @@ class TrainingClient(object):
             print(
                 "train api dependencies not installed. Run pip install -U 'kubeflow-training[huggingface]' "
             )
-        from kubeflow.storage_init_container.s3 import S3DatasetParams
-        from kubeflow.storage_init_container.hugging_face import (
+        from kubeflow.storage_initializer.s3 import S3DatasetParams
+        from kubeflow.storage_initializer.hugging_face import (
             HuggingFaceModelParams,
             HuggingFaceTrainParams,
             HfDatasetParams,
@@ -209,9 +213,9 @@ class TrainingClient(object):
                 "--transformer_type",
                 model_provider_parameters.transformer_type.__class__.__name__,
                 "--model_dir",
-                model_provider_parameters.download_dir,
+                VOLUME_PATH_MODEL,
                 "--dataset_dir",
-                dataset_provider_parameters.download_dir,
+                VOLUME_PATH_DATASET,
                 "--dataset_name",
                 dataset_provider_parameters.repo_id,
                 "--lora_config",
@@ -222,7 +226,7 @@ class TrainingClient(object):
             volume_mounts=[
                 models.V1VolumeMount(
                     name=constants.TRAINER_PV,
-                    mount_path=constants.TRAINER_CONTAINER_MOUNT_PATH,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
                 )
             ],
             resources=resources_per_worker,

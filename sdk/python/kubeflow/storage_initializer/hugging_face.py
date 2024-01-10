@@ -4,7 +4,7 @@ from peft import LoraConfig
 from urllib.parse import urlparse
 import json, os
 from typing import Union
-from .constants import INIT_CONTAINER_MOUNT_PATH
+from .constants import VOLUME_PATH_DATASET, VOLUME_PATH_MODEL
 from .abstract_model_provider import modelProvider
 from .abstract_dataset_provider import datasetProvider
 
@@ -24,20 +24,11 @@ class HuggingFaceModelParams:
     model_uri: str
     transformer_type: TRANSFORMER_TYPES
     access_token: str = None
-    download_dir: str = field(default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "models"))
 
     def __post_init__(self):
         # Custom checks or validations can be added here
         if self.model_uri == "" or self.model_uri is None:
             raise ValueError("model_uri cannot be empty.")
-
-    @property
-    def download_dir(self):
-        return self.download_dir
-
-    @download_dir.setter
-    def download_dir(self, value):
-        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 @dataclass
@@ -62,11 +53,11 @@ class HuggingFace(modelProvider):
         transformer_type_class.from_pretrained(
             self.model,
             token=self.config.access_token,
-            cache_dir=self.config.download_dir,
+            cache_dir=VOLUME_PATH_MODEL,
             trust_remote_code=True,
         )
         transformers.AutoTokenizer.from_pretrained(
-            self.model, cache_dir=self.config.download_dir
+            self.model, cache_dir=VOLUME_PATH_MODEL
         )
 
 
@@ -74,22 +65,11 @@ class HuggingFace(modelProvider):
 class HfDatasetParams:
     repo_id: str
     access_token: str = None
-    download_dir: str = field(
-        default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "datasets")
-    )
 
     def __post_init__(self):
         # Custom checks or validations can be added here
         if self.repo_id == "" or self.repo_id is None:
             raise ValueError("repo_id is None")
-
-    @property
-    def download_dir(self):
-        return self.download_dir
-
-    @download_dir.setter
-    def download_dir(self, value):
-        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 class HuggingFaceDataset(datasetProvider):
@@ -104,4 +84,4 @@ class HuggingFaceDataset(datasetProvider):
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)
 
-        load_dataset(self.config.repo_id, cache_dir=self.config.download_dir)
+        load_dataset(self.config.repo_id, cache_dir=VOLUME_PATH_DATASET)

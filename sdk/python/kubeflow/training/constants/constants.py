@@ -168,5 +168,3 @@ JOB_MODELS_TYPE = Union[
     models.KubeflowOrgV1MPIJob,
     models.KubeflowOrgV1PaddleJob,
 ]
-
-TRAINER_CONTAINER_MOUNT_PATH = "/workspace"

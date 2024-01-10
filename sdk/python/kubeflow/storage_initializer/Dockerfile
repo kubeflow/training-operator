@@ -5,7 +5,7 @@ FROM python:3.11
 WORKDIR /app
 
 # Copy the Python package and its source code into the container
-COPY . /app/storage_init_container
+COPY . /app/storage_initializer
 
 # Copy the requirements.txt file into the container
 COPY requirements.txt /app/requirements.txt
@@ -14,4 +14,4 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Run storage.py when the container launches
-ENTRYPOINT ["python", "-m", "storage_init_container.storage"]
+ENTRYPOINT ["python", "-m", "storage_initializer.storage"]

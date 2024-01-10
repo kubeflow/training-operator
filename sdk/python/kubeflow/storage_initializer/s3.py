@@ -3,7 +3,7 @@ import json, os
 import boto3
 from urllib.parse import urlparse
 from .abstract_dataset_provider import datasetProvider
-from .constants import INIT_CONTAINER_MOUNT_PATH
+from .constants import VOLUME_PATH_DATASET
 
 
 @dataclass
@@ -14,9 +14,6 @@ class S3DatasetParams:
     region_name: str = None
     access_key: str = None
     secret_key: str = None
-    download_dir: str = field(
-        default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "datasets")
-    )
 
     def is_valid_url(self, url):
         try:
@@ -35,14 +32,6 @@ class S3DatasetParams:
         ):
             raise ValueError("bucket_name or endpoint_url or file_key is None")
         self.is_valid_url(self.endpoint_url)
-
-    @property
-    def download_dir(self):
-        return self.download_dir
-
-    @download_dir.setter
-    def download_dir(self, value):
-        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 class S3(datasetProvider):
@@ -63,6 +52,6 @@ class S3(datasetProvider):
         s3_client.download_file(
             self.config.bucket_name,
             self.config.file_key,
-            os.path.join(self.config.download_dir, self.config.file_key),
+            os.path.join(VOLUME_PATH_DATASET, self.config.file_key),
         )
-        print(f"File downloaded to: {self.config.download_dir}")
+        print(f"File downloaded to: {VOLUME_PATH_DATASET}")
