@@ -1,5 +1,9 @@
-from .types import *
-from kubeflow.storage_init_container.abstract_dataset_provider import datasetProvider
+from dataclasses import dataclass, field
+import json, os
+import boto3
+from urllib.parse import urlparse
+from .abstract_dataset_provider import datasetProvider
+from .constants import INIT_CONTAINER_MOUNT_PATH
 
 
 @dataclass
@@ -10,7 +14,9 @@ class S3DatasetParams:
     region_name: str = None
     access_key: str = None
     secret_key: str = None
-    download_dir: str = field(default="/workspace/datasets")
+    download_dir: str = field(
+        default=os.path.join(INIT_CONTAINER_MOUNT_PATH, "datasets")
+    )
 
     def is_valid_url(self, url):
         try:
@@ -29,6 +35,14 @@ class S3DatasetParams:
         ):
             raise ValueError("bucket_name or endpoint_url or file_key is None")
         self.is_valid_url(self.endpoint_url)
+
+    @property
+    def download_dir(self):
+        return self.download_dir
+
+    @download_dir.setter
+    def download_dir(self, value):
+        raise AttributeError("Cannot modify read-only field 'download_dir'")
 
 
 class S3(datasetProvider):

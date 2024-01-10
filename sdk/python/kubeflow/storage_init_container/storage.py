@@ -1,6 +1,6 @@
 import argparse
-from hugging_face import HuggingFace, HuggingFaceDataset
-from s3 import S3
+from .hugging_face import HuggingFace, HuggingFaceDataset
+from .s3 import S3
 
 
 def model_factory(model_provider, model_provider_parameters):

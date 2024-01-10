@@ -1,8 +1,22 @@
-from kubeflow.storage_init_container.types import *
-from kubeflow.storage_init_container.abstract_model_provider import modelProvider
-from kubeflow.storage_init_container.abstract_dataset_provider import datasetProvider
+from dataclasses import dataclass, field
+import transformers
+from peft import LoraConfig
+from urllib.parse import urlparse
+import json, os
+from typing import Union
+from .constants import INIT_CONTAINER_MOUNT_PATH
+from .abstract_model_provider import modelProvider
+from .abstract_dataset_provider import datasetProvider
 
-INIT_CONTAINER_MOUNT_PATH = "/workspace"
+
+TRANSFORMER_TYPES = Union[
+    transformers.AutoModelForSequenceClassification,
+    transformers.AutoModelForTokenClassification,
+    transformers.AutoModelForQuestionAnswering,
+    transformers.AutoModelForCausalLM,
+    transformers.AutoModelForMaskedLM,
+    transformers.AutoModelForImageClassification,
+]
 
 
 @dataclass
@@ -28,7 +42,9 @@ class HuggingFaceModelParams:
 
 @dataclass
 class HuggingFaceTrainParams:
-    training_parameters: TrainingArguments = field(default_factory=TrainingArguments)
+    training_parameters: transformers.TrainingArguments = field(
+        default_factory=transformers.TrainingArguments
+    )
     lora_config: LoraConfig = field(default_factory=LoraConfig)
 
 
@@ -82,6 +98,8 @@ class HuggingFaceDataset(datasetProvider):
 
     def download_dataset(self):
         print("downloading dataset")
+        import huggingface_hub
+        from datasets import load_dataset
 
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)
