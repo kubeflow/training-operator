@@ -30,8 +30,6 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
         device_map="auto",
     )
 
-    # print(model)
-
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_name,
         cache_dir=model_dir,
@@ -41,8 +39,6 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.add_pad_token = True
-
-    # print(tokenizer)
 
     # Freeze model parameters
     for param in model.parameters():
@@ -56,7 +52,7 @@ def load_and_preprocess_data(dataset_name, dataset_dir):
     print("loading dataset")
     dataset = load_dataset(dataset_name, cache_dir=dataset_dir)
     train_data = dataset["train"]
-    # print(train_data)
+
     try:
         eval_data = dataset["eval"]
     except Exception as err:
@@ -89,6 +85,7 @@ def train_model(model, train_data, eval_data, tokenizer, train_params):
     )
 
     trainer.train()
+    print("training done")
 
 
 def parse_arguments():
