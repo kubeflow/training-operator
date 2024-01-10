@@ -54,6 +54,15 @@ class FakeResponse:
         self.data = json.dumps(obj)
 
 
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        if isinstance(obj, type):
+            return obj.__name__
+        return json.JSONEncoder.default(self, obj)
+
+
 def is_running_in_k8s():
     return os.path.isdir("/var/run/secrets/kubernetes.io/")
 
@@ -367,15 +376,6 @@ def get_pvc_spec(
         pvc_spec.spec.storage_class_name = storage_class
 
     return pvc_spec
-
-
-class SetEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, set):
-            return list(obj)
-        if isinstance(obj, type):
-            return obj.__name__
-        return json.JSONEncoder.default(self, obj)
 
 
 def add_event_to_dict(
