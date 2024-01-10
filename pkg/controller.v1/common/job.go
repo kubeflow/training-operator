@@ -249,7 +249,7 @@ func (jc *JobController) ReconcileJobs(
 		// General cases which need to reconcile
 		if jc.Config.EnableGangScheduling() {
 			minMember := totalReplicas
-			queue := ""
+			queue := "default"
 			priorityClass := ""
 			var schedulerTimeout *int32
 			var minResources *corev1.ResourceList
