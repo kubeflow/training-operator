@@ -194,6 +194,11 @@ def test_sdk_e2e_create_from_func(job_namespace):
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        logging.info(
+            os.popen(
+                f"kubectl describe pytorchjob {JOB_NAME} -n {job_namespace}"
+            ).read()
+        )
         raise Exception(f"PyTorchJob create from function E2E fails. Exception: {e}")
 
     # Verify that PyTorchJob has correct pods.
