@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package common
 
 import (
@@ -99,7 +100,7 @@ func (jc *JobController) DeleteService(obj interface{}) {
 	// TODO(CPH): handle this gracefully.
 }
 
-// getServicesForJob returns the set of services that this job should manage.
+// GetServicesForJob returns the set of services that this job should manage.
 // It also reconciles ControllerRef by adopting/orphaning.
 // Note that the returned services are pointers into the cache.
 func (jc *JobController) GetServicesForJob(jobObject interface{}) ([]*v1.Service, error) {
@@ -151,7 +152,7 @@ func (jc *JobController) GetServiceSlices(services []*v1.Service, replicas int, 
 	return core.GetServiceSlices(services, replicas, logger)
 }
 
-// reconcileServices checks and updates services for each given ReplicaSpec.
+// ReconcileServices checks and updates services for each given ReplicaSpec.
 // It will requeue the job in case of an error while creating/deleting services.
 func (jc *JobController) ReconcileServices(
 	job metav1.Object,

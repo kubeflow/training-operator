@@ -120,14 +120,14 @@ func (jc *JobController) ReconcileJobs(
 
 	oldStatus := jobStatus.DeepCopy()
 	if commonutil.IsFinished(jobStatus) {
-		// If the Job is succeed or failed, delete all pods, services, and podGroup.
+		// If the Job is succeeded or failed, delete all pods, services, and podGroup.
 		if err = jc.CleanUpResources(runPolicy, runtimeObject, metaObject, jobStatus, pods); err != nil {
 			return err
 		}
 
 		// At this point the pods may have been deleted.
 		// 1) If the job succeeded, we manually set the replica status.
-		// 2) If any replicas are still active, set their status to succeeded.
+		// 2) If any replicas are still active, set their status to 'succeeded'.
 		if commonutil.IsSucceeded(jobStatus) {
 			for rtype := range jobStatus.ReplicaStatuses {
 				jobStatus.ReplicaStatuses[rtype].Succeeded += jobStatus.ReplicaStatuses[rtype].Active
@@ -192,7 +192,7 @@ func (jc *JobController) ReconcileJobs(
 	if runPolicy.BackoffLimit != nil {
 		jobHasNewFailure := failed > prevReplicasFailedNum
 		// new failures happen when status does not reflect the failures and active
-		// is different than parallelism, otherwise the previous controller loop
+		// is different from parallelism, otherwise the previous controller loop
 		// failed updating status so even if we pick up failure it is not a new one
 		exceedsBackoffLimit = jobHasNewFailure && (active != totalReplicas) &&
 			(int32(previousRetry)+1 > *runPolicy.BackoffLimit)
