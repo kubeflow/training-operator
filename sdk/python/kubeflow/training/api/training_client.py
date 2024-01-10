@@ -139,15 +139,19 @@ class TrainingClient(object):
 
         if isinstance(resources_per_worker, dict):
             if "gpu" in resources_per_worker:
-                resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop("gpu")
-
-            if (
-                resources_per_worker["gpu"] is not None
-                and num_procs_per_worker > resources_per_worker["gpu"]
-            ) or (resources_per_worker["gpu"] is None and num_procs_per_worker != 0):
-                raise ValueError(
-                    "Insufficient gpu resources allocated to the container."
-                )
+                if (
+                    resources_per_worker["gpu"] is not None
+                    and (num_procs_per_worker > resources_per_worker["gpu"])
+                ) or (
+                    resources_per_worker["gpu"] is None and num_procs_per_worker != 0
+                ):
+                    raise ValueError(
+                        "Insufficient gpu resources allocated to the container."
+                    )
+                if resources_per_worker["gpu"] is not None:
+                    resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop(
+                        "gpu"
+                    )
 
             if (
                 "cpu" not in resources_per_worker
@@ -171,7 +175,8 @@ class TrainingClient(object):
                 ),
             )
         except Exception as e:
-            raise RuntimeError("failed to create pvc")
+            pass  # local
+            # raise RuntimeError("failed to create pvc")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
@@ -189,7 +194,7 @@ class TrainingClient(object):
                 "--model_provider",
                 mp,
                 "--model_provider_parameters",
-                json.dumps(model_provider_parameters.__dict__),
+                json.dumps(model_provider_parameters.__dict__, cls=utils.SetEncoder),
                 "--dataset_provider",
                 dp,
                 "--dataset_provider_parameters",
@@ -211,7 +216,7 @@ class TrainingClient(object):
                 "--model_uri",
                 model_provider_parameters.model_uri,
                 "--transformer_type",
-                model_provider_parameters.transformer_type.__class__.__name__,
+                model_provider_parameters.transformer_type.__name__,
                 "--model_dir",
                 VOLUME_PATH_MODEL,
                 "--dataset_dir",
