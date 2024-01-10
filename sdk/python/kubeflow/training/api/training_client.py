@@ -139,11 +139,8 @@ class TrainingClient(object):
 
         if isinstance(resources_per_worker, dict):
             if "gpu" in resources_per_worker:
-                if (
-                    resources_per_worker["gpu"] is not None
-                    and (num_procs_per_worker > resources_per_worker["gpu"])
-                ) or (
-                    resources_per_worker["gpu"] is None and num_procs_per_worker != 0
+                if resources_per_worker["gpu"] is not None and (
+                    num_procs_per_worker > resources_per_worker["gpu"]
                 ):
                     raise ValueError(
                         "Insufficient gpu resources allocated to the container."
