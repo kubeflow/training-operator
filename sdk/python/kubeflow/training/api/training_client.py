@@ -24,7 +24,6 @@ from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
-
 from kubeflow.storage_init_container.constants import INIT_CONTAINER_MOUNT_PATH
 
 
