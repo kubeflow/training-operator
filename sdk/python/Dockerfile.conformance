@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Dockerfile for building the source code of conformance tests
-FROM python:3.10
+FROM python:3.10-alpine
 
 WORKDIR /kubeflow/training-operator/sdk/python
 
@@ -25,7 +25,6 @@ COPY sdk/python/conformance/run.sh .
 RUN chmod +x run.sh
 
 RUN pip install pytest
-RUN pip install -r ./kubeflow/storage_init_container/requirements.txt
 RUN python -m pip install -e .
 
 ENTRYPOINT [ "./run.sh" ]

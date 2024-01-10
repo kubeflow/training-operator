@@ -25,13 +25,8 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 
-from kubeflow.storage_init_container.s3 import S3DatasetParams
-from kubeflow.storage_init_container.hugging_face import (
-    HuggingFaceModelParams,
-    HuggingFaceTrainParams,
-    HfDatasetParams,
-    INIT_CONTAINER_MOUNT_PATH,
-)
+from kubeflow.storage_init_container.constants import INIT_CONTAINER_MOUNT_PATH
+
 
 logger = logging.getLogger(__name__)
 
@@ -103,15 +98,32 @@ class TrainingClient(object):
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
         storage_config: Dict[str, str] = {"size": "10Gi", "storage_class": None},
-        model_provider_parameters: HuggingFaceModelParams = None,
-        dataset_provider_parameters: Union[HfDatasetParams, S3DatasetParams] = None,
-        train_parameters: HuggingFaceTrainParams = None,
+        model_provider_parameters=None,
+        dataset_provider_parameters=None,
+        train_parameters=None,
         resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = None,
         # Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
         Higher level train api
+        model_provider_parameters: It can be of type HuggingFaceModelParams
+        dataset_provider_parameters: It can be of type HfDatasetParams or S3DatasetParams
+        train_parameters: It can be of type HuggingFaceTrainParams
         """
+        try:
+            import peft
+            import transformers
+        except ImportError:
+            print(
+                "train api dependencies not installed. Run pip install -U 'kubeflow-training[huggingface]' "
+            )
+        from kubeflow.storage_init_container.s3 import S3DatasetParams
+        from kubeflow.storage_init_container.hugging_face import (
+            HuggingFaceModelParams,
+            HuggingFaceTrainParams,
+            HfDatasetParams,
+        )
+
         if (
             not name
             or not model_provider_parameters
