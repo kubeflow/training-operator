@@ -161,6 +161,19 @@ test_data = [
         {"job": create_job(), "namespace": "test"},
         "success",
     ),
+    (
+        "valid flow to create job from func",
+        {
+            "name": "test-job",
+            "namespace": "test",
+            "train_func": lambda: print("Test Training Function"),
+            "base_image": "docker.io/test-training",
+            "num_worker_replicas": "3",
+            "packages_to_install": ["boto3==1.34.14"],
+            "pip_index_url": "https://pypi.custom.com/simple",
+        },
+        "success",
+    ),
 ]
 
 
