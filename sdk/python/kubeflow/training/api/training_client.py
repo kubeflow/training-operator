@@ -171,8 +171,7 @@ class TrainingClient(object):
                 ),
             )
         except Exception as e:
-            pass  # local
-            # raise RuntimeError("failed to create pvc")
+            raise RuntimeError("failed to create pvc")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"

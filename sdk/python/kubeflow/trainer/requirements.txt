@@ -1,3 +1,5 @@
-peft==0.7.0
+peft>=0.3.0
 datasets==2.15.0
-transformers==4.35.2
+transformers>=4.20.0
+bitsandbytes>=0.42.0
+einops>=0.6.1

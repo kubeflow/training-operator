@@ -16,9 +16,8 @@ import os
 import json
 
 
-def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
+def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, train_args):
     # Set up the model and tokenizer
-
     parsed_uri = urlparse(model_uri)
     model_name = parsed_uri.netloc + parsed_uri.path
     transformer_type_class = getattr(transformers, transformer_type)
@@ -28,6 +27,7 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
         cache_dir=model_dir,
         local_files_only=True,
         device_map="auto",
+        trust_remote_code=True,
     )
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
@@ -47,16 +47,24 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
     return model, tokenizer
 
 
-def load_and_preprocess_data(dataset_name, dataset_dir):
+def load_and_preprocess_data(dataset_name, dataset_dir, transformer_type, tokenizer):
     # Load and preprocess the dataset
     print("loading dataset")
-    dataset = load_dataset(dataset_name, cache_dir=dataset_dir)
+    transformer_type_class = getattr(transformers, transformer_type)
+    if transformer_type_class != transformers.AutoModelForImageClassification:
+        dataset = load_dataset(dataset_name, cache_dir=dataset_dir).map(
+            lambda x: tokenizer(x["text"]), batched=True
+        )
+    else:
+        dataset = load_dataset(dataset_name, cache_dir=dataset_dir)
+
     train_data = dataset["train"]
 
     try:
         eval_data = dataset["eval"]
     except Exception as err:
         eval_data = None
+        print("Evaluation dataset is not found")
 
     return train_data, eval_data
 
@@ -64,26 +72,23 @@ def load_and_preprocess_data(dataset_name, dataset_dir):
 def setup_peft_model(model, lora_config):
     # Set up the PEFT model
     lora_config = LoraConfig(**json.loads(lora_config))
-    print(lora_config)
+    model.enable_input_require_grads()
     model = get_peft_model(model, lora_config)
     return model
 
 
-def train_model(model, train_data, eval_data, tokenizer, train_params):
+def train_model(model, train_data, eval_data, tokenizer, train_args):
     # Train the model
     trainer = Trainer(
         model=model,
         train_dataset=train_data,
         eval_dataset=eval_data,
         tokenizer=tokenizer,
-        args=TrainingArguments(
-            **train_params,
-            data_collator=DataCollatorForLanguageModeling(
-                tokenizer, pad_to_multiple_of=8, return_tensors="pt", mlm=False
-            )
+        args=train_args,
+        data_collator=DataCollatorForLanguageModeling(
+            tokenizer, pad_to_multiple_of=8, mlm=False
         ),
     )
-
     trainer.train()
     print("training done")
 
@@ -108,11 +113,12 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
+    train_args = TrainingArguments(**json.loads(args.training_parameters))
     model, tokenizer = setup_model_and_tokenizer(
-        args.model_uri, args.transformer_type, args.model_dir
+        args.model_uri, args.transformer_type, args.model_dir, train_args
     )
     train_data, eval_data = load_and_preprocess_data(
-        args.dataset_name, args.dataset_dir
+        args.dataset_name, args.dataset_dir, args.transformer_type, tokenizer
     )
     model = setup_peft_model(model, args.lora_config)
-    train_model(model, train_data, eval_data, tokenizer, args.training_parameters)
+    train_model(model, train_data, eval_data, tokenizer, train_args)
