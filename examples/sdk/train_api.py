@@ -8,19 +8,12 @@ from peft import LoraConfig
 import transformers
 from transformers import TrainingArguments
 
-client = TrainingClient(
-    config_file="/Users/deepanker/Downloads/deepanker-test-kubectl.cfg"
-)
+client = TrainingClient()
 
 client.train(
-    name="deepanker-test",
-    namespace="test",
+    name="hf-test",
     num_workers=2,
     num_procs_per_worker=0,
-    storage_config={
-        "size": "10Gi",
-        "storage_class": "deepanker-test",
-    },
     model_provider_parameters=HuggingFaceModelParams(
         model_uri="hf://Jedalc/codeparrot-gp2-finetune",
         transformer_type=transformers.AutoModelForCausalLM,
@@ -57,11 +50,7 @@ client.train(
             remove_unused_columns=True,
             evaluation_strategy="steps",
             eval_steps=0.01,
-            # eval_accumulation_steps=1,
             per_device_eval_batch_size=1,
-            # load_best_model_at_end=True,
-            # report_to="wandb",
-            # run_name=f"{1}",
         ),
     ),
     resources_per_worker={"gpu": 0, "cpu": 8, "memory": "8Gi"},
