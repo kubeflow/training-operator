@@ -16,7 +16,7 @@ import os
 import json
 
 
-def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, train_args):
+def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
     # Set up the model and tokenizer
     parsed_uri = urlparse(model_uri)
     model_name = parsed_uri.netloc + parsed_uri.path
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     train_args = TrainingArguments(**json.loads(args.training_parameters))
     model, tokenizer = setup_model_and_tokenizer(
-        args.model_uri, args.transformer_type, args.model_dir, train_args
+        args.model_uri, args.transformer_type, args.model_dir
     )
     train_data, eval_data = load_and_preprocess_data(
         args.dataset_name, args.dataset_dir, args.transformer_type, tokenizer

@@ -300,7 +300,7 @@ def get_pytorchjob_template(
     master_pod_template_spec: models.V1PodTemplateSpec = None,
     worker_pod_template_spec: models.V1PodTemplateSpec = None,
     num_worker_replicas: Optional[int] = None,
-    num_procs_per_worker: Optional[int] = None,
+    num_procs_per_worker: Optional[int] = 0,
     elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
     # Check if at least one replica is set.
