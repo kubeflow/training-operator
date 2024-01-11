@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import logging
 import textwrap
@@ -51,6 +52,15 @@ class FakeResponse:
 
     def __init__(self, obj):
         self.data = json.dumps(obj)
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        if isinstance(obj, type):
+            return obj.__name__
+        return json.JSONEncoder.default(self, obj)
 
 
 def is_running_in_k8s():
@@ -368,10 +378,27 @@ def get_pvc_spec(
     return pvc_spec
 
 
-class SetEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, set):
-            return list(obj)
-        if isinstance(obj, type):
-            return obj.__name__
-        return json.JSONEncoder.default(self, obj)
+def add_event_to_dict(
+    events_dict: Dict[str, List[str]],
+    event: models.CoreV1Event,
+    object_kind: str,
+    object_name: str,
+    object_creation_timestamp: datetime,
+):
+    """Add Kubernetes event to the dict with this format:
+    ```
+    {"<Object Kind> <Object Name>": "<Event Timestamp> <Event Message>"}
+    ```
+    """
+    if (
+        event.involved_object.kind == object_kind
+        and event.involved_object.name == object_name
+        and event.metadata.creation_timestamp >= object_creation_timestamp
+    ):
+        event_time = event.metadata.creation_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        event_msg = f"{event_time} {event.message}"
+        if object_name not in events_dict:
+            events_dict[f"{object_kind} {object_name}"] = [event_msg]
+        else:
+            events_dict[f"{object_kind} {object_name}"] += [event_msg]
+    return events_dict

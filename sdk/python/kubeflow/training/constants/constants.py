@@ -29,6 +29,13 @@ GROUP = "kubeflow.org"
 VERSION = "v1"
 API_VERSION = f"{GROUP}/{VERSION}"
 
+# Kind for pod.
+POD_KIND = "Pod"
+
+# Pending status for pod phase.
+POD_PHASE_PENDING = "Pending"
+
+
 # Training Job conditions.
 JOB_CONDITION_CREATED = "Created"
 JOB_CONDITION_RUNNING = "Running"

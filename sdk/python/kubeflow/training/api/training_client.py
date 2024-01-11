@@ -16,7 +16,7 @@ import multiprocessing
 import logging
 import time
 import json
-from typing import Optional, Callable, List, Dict, Any, Set, Union
+from typing import Optional, Callable, Tuple, List, Dict, Any, Set, Union
 import queue
 from kubernetes import client, config, watch
 
@@ -855,6 +855,97 @@ class TrainingClient(object):
                 {expected_conditions}"
         )
 
+    def get_job_pods(
+        self,
+        name: str,
+        namespace: Optional[str] = None,
+        is_master: bool = False,
+        replica_type: Optional[str] = None,
+        replica_index: Optional[int] = None,
+        timeout: int = constants.DEFAULT_TIMEOUT,
+    ) -> List[models.V1Pod]:
+        """Get pods for the Training Job.
+
+        Args:
+            name: Name for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            is_master: Whether to get pods only with the label
+                `training.kubeflow.org/job-role: master`.
+            replica_type: Type of the Job replica.
+                For TFJob one of `Chief`, `PS`, or `worker`.
+
+                For PyTorchJob one of `master` or `worker`.
+
+                For MXJob one of `scheduler`, `server`, or `worker`.
+
+                For XGBoostJob one of `master` or `worker`.
+
+                For MPIJob one of `launcher` or `worker`.
+
+                For PaddleJob one of `master` or `worker`.
+
+            replica_index: Index for the Job replica.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
+
+        Returns:
+            list[V1Pod]: List of the Job pods.
+
+        Raises:
+            ValueError: Job replica type is invalid.
+            TimeoutError: Timeout to get Job pods.
+            RuntimeError: Failed to get Job pods.
+        """
+
+        namespace = namespace or self.namespace
+
+        if (
+            replica_type is not None
+            and replica_type not in constants.TFJOB_REPLICA_TYPES
+            and replica_type not in constants.PYTORCHJOB_REPLICA_TYPES
+            and replica_type not in constants.MXJOB_REPLICA_TYPES
+            and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
+            and replica_type not in constants.MPIJOB_REPLICA_TYPES
+            and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
+        ):
+            raise ValueError(
+                f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
+                f"PyTorchJob replica type must be one of {constants.PYTORCHJOB_REPLICA_TYPES}\n"
+                f"MXJob replica type must be one of {constants.MXJOB_REPLICA_TYPES}\n"
+                f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
+                f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
+                f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
+            )
+
+        label_selector = f"{constants.JOB_NAME_LABEL}={name}"
+
+        # Add Job role label if that is required.
+        if is_master:
+            label_selector += f",{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER}"
+
+        # Add Replica type label if that is required.
+        if replica_type:
+            label_selector += (
+                f",{constants.REPLICA_TYPE_LABEL}={str.lower(replica_type)}"
+            )
+
+        # Add Replica index label if that is required.
+        if replica_index is not None:
+            label_selector += f",{constants.REPLICA_INDEX_LABEL}={replica_index}"
+
+        # Return list of Training Job pods.
+        try:
+            thread = self.core_api.list_namespaced_pod(
+                namespace,
+                label_selector=label_selector,
+                async_req=True,
+            )
+            return thread.get(timeout).items
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to list pods for Job: {namespace}/{name}")
+        except Exception:
+            raise RuntimeError(f"Failed to list pods for Job: {namespace}/{name}")
+
     def get_job_pod_names(
         self,
         name: str,
@@ -899,57 +990,18 @@ class TrainingClient(object):
 
         namespace = namespace or self.namespace
 
-        if (
-            replica_type is not None
-            and replica_type not in constants.TFJOB_REPLICA_TYPES
-            and replica_type not in constants.PYTORCHJOB_REPLICA_TYPES
-            and replica_type not in constants.MXJOB_REPLICA_TYPES
-            and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
-            and replica_type not in constants.MPIJOB_REPLICA_TYPES
-            and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
-        ):
-            raise ValueError(
-                f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
-                f"PyTorchJob replica type must be one of {constants.PYTORCHJOB_REPLICA_TYPES}\n"
-                f"MXJob replica type must be one of {constants.MXJOB_REPLICA_TYPES}\n"
-                f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
-                f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
-                f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
-            )
-
-        label_selector = f"{constants.JOB_NAME_LABEL}={name}"
-
-        # Add Job role label if that is required.
-        if is_master:
-            label_selector += f",{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER}"
-
-        # Add Replica type label if that is required.
-        if replica_type:
-            label_selector += (
-                f",{constants.REPLICA_TYPE_LABEL}={str.lower(replica_type)}"
-            )
-
-        # Add Replica index label if that is required.
-        if replica_index is not None:
-            label_selector += f",{constants.REPLICA_INDEX_LABEL}={replica_index}"
-
-        # List Training Job pods.
-        pods = []
-        try:
-            thread = self.core_api.list_namespaced_pod(
-                namespace,
-                label_selector=label_selector,
-                async_req=True,
-            )
-            response = thread.get(timeout)
-        except multiprocessing.TimeoutError:
-            raise TimeoutError(f"Timeout to list pods for Job: {namespace}/{name}")
-        except Exception:
-            raise RuntimeError(f"Failed to list pods for Job: {namespace}/{name}")
-
-        for pod in response.items:
-            pods.append(pod.metadata.name)
-        return pods
+        pods = self.get_job_pods(
+            name=name,
+            namespace=namespace,
+            is_master=is_master,
+            replica_type=replica_type,
+            replica_index=replica_index,
+            timeout=timeout,
+        )
+        pod_names = []
+        for pod in pods:
+            pod_names.append(pod.metadata.name)
+        return pod_names
 
     def get_job_logs(
         self,
@@ -961,7 +1013,8 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> Dict[str, str]:
+        verbose: bool = False,
+    ) -> Tuple[Dict[str, str], Dict[str, List[str]]]:
         """Get the logs for every Training Job pod. By default it returns logs from
         the `master` pod. Logs are returned in this format: { "pod-name": "Log data" }.
 
@@ -990,21 +1043,35 @@ class TrainingClient(object):
             follow: Whether to follow the log stream of the pod and print logs to StdOut.
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
+            verbose: Whether to get Kubernetes events for Job and corresponding pods.
 
         Returns:
             Dict[str, str]: A dictionary in which the keys are pod names and the
             values are the corresponding logs.
+            Dict[str, str]: A dictionary in which the keys are object kind and name, and the
+            values are list of the corresponding Kubernetes events with their timestamps. This
+            value is returned only if `verbose = True`. For example:
+            ```json
+            {
+              "PyTorchJob train-mnist": [
+                "2024-01-05 22:58:20 Created pod: train-mnist-worker-0"
+              ],
+              "Pod train-mnist-worker-0": [
+                "2024-01-05 22:58:20 Created container init-pytorch"
+              ]
+            }
+            ```
 
         Raises:
             ValueError: Job replica type is invalid.
-            TimeoutError: Timeout to get Job pods.
-            RuntimeError: Failed to get Job pods.
+            TimeoutError: Timeout to get Job or Job's pods
+            RuntimeError: Failed to get Job or Job's pods.
         """
 
         namespace = namespace or self.namespace
         job_kind = job_kind or self.job_kind
 
-        pods = self.get_job_pod_names(
+        pods = self.get_job_pods(
             name=name,
             namespace=namespace,
             is_master=is_master,
@@ -1014,17 +1081,22 @@ class TrainingClient(object):
         )
 
         logs_dict = {}
+        events_dict = {}
         if pods and follow:
             log_streams = []
             for pod in pods:
-                log_streams.append(
-                    watch.Watch().stream(
-                        self.core_api.read_namespaced_pod_log,
-                        name=pod,
-                        namespace=namespace,
-                        container=constants.JOB_PARAMETERS[job_kind]["container"],
+                if (
+                    pod.status is not None
+                    and pod.status.phase != constants.POD_PHASE_PENDING
+                ):
+                    log_streams.append(
+                        watch.Watch().stream(
+                            self.core_api.read_namespaced_pod_log,
+                            name=pod.metadata.name,
+                            namespace=namespace,
+                            container=constants.JOB_PARAMETERS[job_kind]["container"],
+                        )
                     )
-                )
             finished = [False for _ in log_streams]
 
             # Create thread and queue per stream, for non-blocking iteration
@@ -1034,7 +1106,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return logs_dict
+                        break
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
@@ -1046,27 +1118,58 @@ class TrainingClient(object):
                                 break
 
                             # Print logs to the StdOut
-                            print(f"[Pod {pods[index]}]: {logline}")
+                            print(f"[Pod {pods[index].metadata.name}]: {logline}")
                             # Add logs to the results dict.
-                            if pods[index] not in logs_dict:
-                                logs_dict[pods[index]] = logline
+                            if pods[index].metadata.name not in logs_dict:
+                                logs_dict[pods[index].metadata.name] = logline
                             else:
-                                logs_dict[pods[index]] += logline
+                                logs_dict[pods[index].metadata.name] += logline
                         except queue.Empty:
                             break
+                if all(finished):
+                    break
         elif pods:
             for pod in pods:
-                try:
-                    pod_logs = self.core_api.read_namespaced_pod_log(
-                        pod,
-                        namespace,
-                        container=constants.JOB_PARAMETERS[job_kind]["container"],
-                    )
-                    logs_dict[pod] = pod_logs
-                except Exception:
-                    raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
+                if (
+                    pod.status is not None
+                    and pod.status.phase != constants.POD_PHASE_PENDING
+                ):
+                    try:
+                        pod_logs = self.core_api.read_namespaced_pod_log(
+                            name=pod.metadata.name,
+                            namespace=namespace,
+                            container=constants.JOB_PARAMETERS[job_kind]["container"],
+                        )
+                        logs_dict[pod.metadata.name] = pod_logs
+                    except Exception:
+                        raise RuntimeError(
+                            f"Failed to read logs for pod {namespace}/{pod.metadata.name}"
+                        )
+        # If verbose is set, return Kubernetes events for Job and pods.
+        if verbose:
+            job = self.get_job(name=name, namespace=namespace)
+            events = self.core_api.list_namespaced_event(namespace=namespace)
 
-        return logs_dict
+            # Get events for the Job and Job's pods.
+            for event in events.items:
+                utils.add_event_to_dict(
+                    events_dict=events_dict,
+                    event=event,
+                    object_kind=job_kind,
+                    object_name=name,
+                    object_creation_timestamp=job.metadata.creation_timestamp,
+                )
+                if pods:
+                    for pod in pods:
+                        utils.add_event_to_dict(
+                            events_dict=events_dict,
+                            event=event,
+                            object_kind=constants.POD_KIND,
+                            object_name=pod.metadata.name,
+                            object_creation_timestamp=pod.metadata.creation_timestamp,
+                        )
+
+        return logs_dict, events_dict
 
     def update_job(
         self,
