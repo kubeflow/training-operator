@@ -387,7 +387,7 @@ def add_event_to_dict(
 ):
     """Add Kubernetes event to the dict with this format:
     ```
-    {"Object Name": "<Event Timestamp> <Event Message>"}
+    {"<Object Kind> <Object Name>": "<Event Timestamp> <Event Message>"}
     ```
     """
     if (
@@ -398,7 +398,7 @@ def add_event_to_dict(
         event_time = event.metadata.creation_timestamp.strftime("%Y-%m-%d %H:%M:%S")
         event_msg = f"{event_time} {event.message}"
         if object_name not in events_dict:
-            events_dict[object_name] = [event_msg]
+            events_dict[f"{object_kind} {object_name}"] = [event_msg]
         else:
-            events_dict[object_name] += [event_msg]
+            events_dict[f"{object_kind} {object_name}"] += [event_msg]
     return events_dict
