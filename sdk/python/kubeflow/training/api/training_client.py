@@ -1048,10 +1048,19 @@ class TrainingClient(object):
         Returns:
             Dict[str, str]: A dictionary in which the keys are pod names and the
             values are the corresponding logs.
-            Dict[str, str]: A dictionary in which the keys are Job and pod names and the
+            Dict[str, str]: A dictionary in which the keys are object kind and name, and the
             values are list of the corresponding Kubernetes events with their timestamps. This
-            value is returned only if `verbose = True`.
-
+            value is returned only if `verbose = True`. For example:
+            ```json
+            {
+              "PyTorchJob train-mnist": [
+                "2024-01-05 22:58:20 Created pod: train-mnist-worker-0"
+              ],
+              "Pod train-mnist-worker-0": [
+                "2024-01-05 22:58:20 Created container init-pytorch"
+              ]
+            }
+            ```
 
         Raises:
             ValueError: Job replica type is invalid.
