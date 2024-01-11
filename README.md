@@ -10,6 +10,10 @@ Kubeflow Training Operator is a Kubernetes-native project for fine-tuning and
 scalable distributed training of machine learning (ML) models created with various ML frameworks
 such as PyTorch, Tensorflow, XGBoost, MPI, Paddle and others.
 
+Training Operator allows you to use Kubernetes workloads to effectively train your large models
+via [Kubernetes Custom Resources APIs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+or using Training Operator Python SDK
+
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
@@ -50,8 +54,8 @@ kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/stand
 
 ### Python SDK for Kubeflow Training Operator
 
-Training Operator provides Python SDK for the custom resources. For the APIs check
-[the SDK `TrainingClient`](sdk/python/kubeflow/training/api/training_client.py).
+Training Operator provides Python SDK for the custom resources. To learn more about available
+SDK APIs check [the `TrainingClient`](sdk/python/kubeflow/training/api/training_client.py).
 
 Use `pip install` command to install the latest release of the SDK:
 
@@ -64,7 +68,10 @@ Training Operator controller and Python SDK have the same release versions.
 ## Quickstart
 
 Please refer to the [getting started guide](https://www.kubeflow.org/docs/components/training/overview/#getting-started)
-to quickly create your first Training Operator Job.
+to quickly create your first Training Operator Job using Python SDK.
+
+If you want to work directly with Kubernetes Custom Resources provided by Training Operator,
+follow [the PyTorchJob MNIST guide](https://www.kubeflow.org/docs/components/training/tftraining/#running-the-mnist-example)
 
 ## API Documentation
 
