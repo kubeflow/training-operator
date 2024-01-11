@@ -171,8 +171,16 @@ class TrainingClient(object):
                 ),
             )
         except Exception as e:
-            pass  # local
-            # raise RuntimeError("failed to create pvc")
+            pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
+            # Check if the PVC with the specified name exists
+            for pvc in pvc_list.items:
+                if pvc.metadata.name == constants.TRAINER_PVC_NAME:
+                    print(
+                        f"PVC '{constants.TRAINER_PVC_NAME}' already exists in namespace '{namespace}'."
+                    )
+                    break
+            else:
+                raise RuntimeError("failed to create pvc")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
