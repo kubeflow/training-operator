@@ -36,10 +36,9 @@ from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
 from test.e2e.constants import GANG_SCHEDULERS, NONE_GANG_SCHEDULERS
 
 logging.basicConfig(format="%(message)s")
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
-JOB_NAME = "pytorchjob-mnist-ci-test"
 CONTAINER_NAME = "pytorch"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
@@ -49,6 +48,7 @@ GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
     reason="For gang-scheduling",
 )
 def test_sdk_e2e_with_gang_scheduling(job_namespace):
+    JOB_NAME = "pytorchjob-gang-scheduling"
     container = generate_container()
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -81,12 +81,17 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
 
     unschedulable_pytorchjob = generate_pytorchjob(
         job_namespace,
+        JOB_NAME,
         master,
         worker,
         KubeflowOrgV1SchedulingPolicy(min_available=10),
     )
     schedulable_pytorchjob = generate_pytorchjob(
-        job_namespace, master, worker, KubeflowOrgV1SchedulingPolicy(min_available=2)
+        job_namespace,
+        JOB_NAME,
+        master,
+        worker,
+        KubeflowOrgV1SchedulingPolicy(min_available=2),
     )
 
     TRAINING_CLIENT.create_job(job=unschedulable_pytorchjob, namespace=job_namespace)
@@ -120,6 +125,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     reason="For plain scheduling",
 )
 def test_sdk_e2e(job_namespace):
+    JOB_NAME = "pytorchjob-e2e"
     container = generate_container()
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -144,7 +150,7 @@ def test_sdk_e2e(job_namespace):
         ),
     )
 
-    pytorchjob = generate_pytorchjob(job_namespace, master, worker)
+    pytorchjob = generate_pytorchjob(job_namespace, JOB_NAME, master, worker)
 
     TRAINING_CLIENT.create_job(job=pytorchjob, namespace=job_namespace)
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
@@ -161,8 +167,54 @@ def test_sdk_e2e(job_namespace):
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
+)
+def test_sdk_e2e_create_from_func(job_namespace):
+    JOB_NAME = "pytorchjob-from-func"
+
+    def train_func():
+        import time
+
+        for i in range(10):
+            print(f"Start training for Epoch {i}")
+            time.sleep(1)
+
+    num_workers = 1
+
+    TRAINING_CLIENT.create_job(
+        name=JOB_NAME,
+        namespace=job_namespace,
+        train_func=train_func,
+        num_worker_replicas=num_workers,
+    )
+
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
+
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob create from function E2E fails. Exception: {e}")
+
+    # Verify that PyTorchJob has correct pods.
+    pod_names = TRAINING_CLIENT.get_job_pod_names(
+        name=JOB_NAME, namespace=job_namespace
+    )
+
+    if len(pod_names) != num_workers or f"{JOB_NAME}-worker-0" not in pod_names:
+        raise Exception(f"PyTorchJob has incorrect pods: {pod_names}")
+
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+
+
 def generate_pytorchjob(
     job_namespace: str,
+    job_name: str,
     master: KubeflowOrgV1ReplicaSpec,
     worker: KubeflowOrgV1ReplicaSpec,
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
@@ -170,7 +222,7 @@ def generate_pytorchjob(
     return KubeflowOrgV1PyTorchJob(
         api_version=constants.API_VERSION,
         kind=constants.PYTORCHJOB_KIND,
-        metadata=V1ObjectMeta(name=JOB_NAME, namespace=job_namespace),
+        metadata=V1ObjectMeta(name=job_name, namespace=job_namespace),
         spec=KubeflowOrgV1PyTorchJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",

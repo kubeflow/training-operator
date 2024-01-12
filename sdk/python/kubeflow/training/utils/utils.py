@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import logging
 import textwrap
@@ -51,6 +52,15 @@ class FakeResponse:
 
     def __init__(self, obj):
         self.data = json.dumps(obj)
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        if isinstance(obj, type):
+            return obj.__name__
+        return json.JSONEncoder.default(self, obj)
 
 
 def is_running_in_k8s():
@@ -117,6 +127,32 @@ def get_script_for_python_packages(
     return script_for_python_packages
 
 
+def get_container_spec(
+    name: str,
+    image: str,
+    args: Optional[List[str]] = None,
+    resources: Optional[models.V1ResourceRequirements] = None,
+    volume_mounts: Optional[List[models.V1VolumeMount]] = None,
+) -> models.V1Container:
+    """
+    get container spec for given name and image.
+    """
+    if name is None or image is None:
+        raise ValueError("container name or image cannot be none")
+
+    container_spec = models.V1Container(name=name, image=image)
+    if args:
+        container_spec.args = args
+
+    if resources:
+        container_spec.resources = resources
+
+    if volume_mounts:
+        container_spec.volume_mounts = volume_mounts
+
+    return container_spec
+
+
 def get_pod_template_spec(
     job_kind: str,
     base_image: Optional[str] = None,
@@ -124,6 +160,9 @@ def get_pod_template_spec(
     parameters: Optional[Dict[str, Any]] = None,
     packages_to_install: Optional[List[str]] = None,
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+    init_containers_spec: Optional[List[models.V1Container]] = None,
+    containers_spec: Optional[List[models.V1Container]] = None,
+    volumes_spec: Optional[List[models.V1Volume]] = None,
 ):
     """
     Get Pod template spec for the given function and base image.
@@ -141,13 +180,20 @@ def get_pod_template_spec(
         ),
         spec=models.V1PodSpec(
             containers=[
-                models.V1Container(
+                get_container_spec(
                     name=constants.JOB_PARAMETERS[job_kind]["container"],
                     image=base_image,
                 )
             ]
         ),
     )
+
+    if containers_spec:
+        pod_template_spec.spec.containers = containers_spec
+    if init_containers_spec:
+        pod_template_spec.spec.init_containers = init_containers_spec
+    if volumes_spec:
+        pod_template_spec.spec.volumes = volumes_spec
 
     # If Training function is set, convert function to container execution script.
     if train_func is not None:
@@ -261,14 +307,17 @@ def get_tfjob_template(
 def get_pytorchjob_template(
     name: str,
     namespace: str,
-    pod_template_spec: models.V1PodTemplateSpec,
+    master_pod_template_spec: models.V1PodTemplateSpec = None,
+    worker_pod_template_spec: models.V1PodTemplateSpec = None,
     num_worker_replicas: Optional[int] = None,
+    num_procs_per_worker: Optional[int] = 0,
+    elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
     # Check if at least one replica is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_worker_replicas is None:
-        raise ValueError("At least one Worker replica for PyTorchJob must be set")
+    if num_worker_replicas is None and master_pod_template_spec is None:
+        raise ValueError("At least one replica for PyTorchJob must be set")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -281,21 +330,73 @@ def get_pytorchjob_template(
         ),
     )
 
-    # Add Master and Worker replicas to the PyTorchJob.
-    pytorchjob.spec.pytorch_replica_specs[
-        constants.REPLICA_TYPE_MASTER
-    ] = models.KubeflowOrgV1ReplicaSpec(
-        replicas=1,
-        template=pod_template_spec,
-    )
+    if num_procs_per_worker > 0:
+        pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
+    if elastic_policy:
+        pytorchjob.spec.elastic_policy = elastic_policy
 
-    # If number of Worker replicas is 1, PyTorchJob uses only Master replica.
-    if num_worker_replicas != 1:
+    if master_pod_template_spec:
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_MASTER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=1,
+            template=master_pod_template_spec,
+        )
+
+    if num_worker_replicas:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
         ] = models.KubeflowOrgV1ReplicaSpec(
             replicas=num_worker_replicas,
-            template=pod_template_spec,
+            template=worker_pod_template_spec,
         )
 
     return pytorchjob
+
+
+def get_pvc_spec(
+    pvc_name: str, namespace: str, storage_size: str, storage_class: str = None
+):
+    if pvc_name is None or namespace is None or storage_size is None:
+        raise ValueError("One of the arguments is None")
+
+    pvc_spec = models.V1PersistentVolumeClaim(
+        api_version="v1",
+        kind="PersistentVolumeClaim",
+        metadata={"name": pvc_name, "namepsace": namespace},
+        spec=models.V1PersistentVolumeClaimSpec(
+            access_modes=["ReadWriteOnce", "ReadOnlyMany"],
+            resources=models.V1ResourceRequirements(requests={"storage": storage_size}),
+        ),
+    )
+
+    if storage_class is not None:
+        pvc_spec.spec.storage_class_name = storage_class
+
+    return pvc_spec
+
+
+def add_event_to_dict(
+    events_dict: Dict[str, List[str]],
+    event: models.CoreV1Event,
+    object_kind: str,
+    object_name: str,
+    object_creation_timestamp: datetime,
+):
+    """Add Kubernetes event to the dict with this format:
+    ```
+    {"<Object Kind> <Object Name>": "<Event Timestamp> <Event Message>"}
+    ```
+    """
+    if (
+        event.involved_object.kind == object_kind
+        and event.involved_object.name == object_name
+        and event.metadata.creation_timestamp >= object_creation_timestamp
+    ):
+        event_time = event.metadata.creation_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        event_msg = f"{event_time} {event.message}"
+        if object_name not in events_dict:
+            events_dict[f"{object_kind} {object_name}"] = [event_msg]
+        else:
+            events_dict[f"{object_kind} {object_name}"] += [event_msg]
+    return events_dict

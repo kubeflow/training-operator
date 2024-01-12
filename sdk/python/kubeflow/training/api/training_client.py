@@ -15,7 +15,8 @@
 import multiprocessing
 import logging
 import time
-from typing import Optional, Callable, List, Dict, Any, Set
+import json
+from typing import Optional, Callable, Tuple, List, Dict, Any, Set, Union
 import queue
 from kubernetes import client, config, watch
 
@@ -23,6 +24,11 @@ from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
+from kubeflow.storage_initializer.constants import (
+    INIT_CONTAINER_MOUNT_PATH,
+    VOLUME_PATH_DATASET,
+    VOLUME_PATH_MODEL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +47,13 @@ class TrainingClient(object):
         namespace: str = utils.get_default_target_namespace(),
         job_kind: str = constants.PYTORCHJOB_KIND,
     ):
-        """TrainingClient constructor.
+        """TrainingClient constructor. Configure logging in your application
+            as follows to see detailed information from the TrainingClient APIs:
+            .. code-block:: python
+                import logging
+                logging.basicConfig()
+                log = logging.getLogger("kubeflow.training.api.training_client")
+                log.setLevel(logging.DEBUG)
 
         Args:
             config_file: Path to the kube-config file. Defaults to ~/.kube/config.
@@ -80,6 +92,193 @@ class TrainingClient(object):
                 f"Job kind must be one of these: {list(constants.JOB_PARAMETERS.keys())}"
             )
         self.job_kind = job_kind
+
+    def train(
+        self,
+        name: str = None,
+        namespace: str = None,
+        num_workers: int = 1,
+        num_procs_per_worker: int = 1,
+        storage_config: Dict[str, str] = {"size": "10Gi", "storage_class": None},
+        model_provider_parameters=None,
+        dataset_provider_parameters=None,
+        train_parameters=None,
+        resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = None,
+        # Dict[Literal["gpu", "cpu", "memory"], any] = None,
+    ):
+        """
+        Higher level train api
+        model_provider_parameters: It can be of type HuggingFaceModelParams
+        dataset_provider_parameters: It can be of type HfDatasetParams or S3DatasetParams
+        train_parameters: It can be of type HuggingFaceTrainParams
+        """
+        try:
+            import peft
+            import transformers
+        except ImportError:
+            print(
+                "train api dependencies not installed. Run pip install -U 'kubeflow-training[huggingface]' "
+            )
+        from kubeflow.storage_initializer.s3 import S3DatasetParams
+        from kubeflow.storage_initializer.hugging_face import (
+            HuggingFaceModelParams,
+            HuggingFaceTrainParams,
+            HfDatasetParams,
+        )
+
+        if (
+            not name
+            or not model_provider_parameters
+            or not dataset_provider_parameters
+            or not train_parameters
+        ):
+            raise ValueError("One of the required parameters is None")
+
+        namespace = namespace or self.namespace
+
+        if isinstance(resources_per_worker, dict):
+            if "gpu" in resources_per_worker:
+                if resources_per_worker["gpu"] is not None and (
+                    num_procs_per_worker > resources_per_worker["gpu"]
+                ):
+                    raise ValueError(
+                        "Insufficient gpu resources allocated to the container."
+                    )
+                if resources_per_worker["gpu"] is not None:
+                    resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop(
+                        "gpu"
+                    )
+
+            if (
+                "cpu" not in resources_per_worker
+                or "memory" not in resources_per_worker
+            ):
+                raise ValueError("cpu and memory resources not specified")
+
+            resources_per_worker = client.V1ResourceRequirements(
+                requests=resources_per_worker,
+                limits=resources_per_worker,
+            )
+
+        try:
+            self.core_api.create_namespaced_persistent_volume_claim(
+                namespace=namespace,
+                body=utils.get_pvc_spec(
+                    pvc_name=constants.TRAINER_PVC_NAME,
+                    namespace=namespace,
+                    storage_size=storage_config["size"],
+                    storage_class=storage_config["storage_class"],
+                ),
+            )
+        except Exception as e:
+            pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
+            # Check if the PVC with the specified name exists
+            for pvc in pvc_list.items:
+                if pvc.metadata.name == constants.TRAINER_PVC_NAME:
+                    print(
+                        f"PVC '{constants.TRAINER_PVC_NAME}' already exists in namespace '{namespace}'."
+                    )
+                    break
+            else:
+                raise RuntimeError("failed to create pvc")
+
+        if isinstance(model_provider_parameters, HuggingFaceModelParams):
+            mp = "hf"
+
+        if isinstance(dataset_provider_parameters, S3DatasetParams):
+            dp = "s3"
+        elif isinstance(dataset_provider_parameters, HfDatasetParams):
+            dp = "hf"
+
+        # create init container spec
+        init_container_spec = utils.get_container_spec(
+            name=constants.STORAGE_CONTAINER,
+            image=constants.STORAGE_CONTAINER_IMAGE,
+            args=[
+                "--model_provider",
+                mp,
+                "--model_provider_parameters",
+                json.dumps(model_provider_parameters.__dict__, cls=utils.SetEncoder),
+                "--dataset_provider",
+                dp,
+                "--dataset_provider_parameters",
+                json.dumps(dataset_provider_parameters.__dict__),
+            ],
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
+                )
+            ],
+        )
+
+        # create app container spec
+        container_spec = utils.get_container_spec(
+            name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
+            image=constants.TRAINER_TRANSFORMER_IMAGE,
+            args=[
+                "--model_uri",
+                model_provider_parameters.model_uri,
+                "--transformer_type",
+                model_provider_parameters.transformer_type.__name__,
+                "--model_dir",
+                VOLUME_PATH_MODEL,
+                "--dataset_dir",
+                VOLUME_PATH_DATASET,
+                "--dataset_name",
+                dataset_provider_parameters.repo_id,
+                "--lora_config",
+                json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
+                "--training_parameters",
+                json.dumps(train_parameters.training_parameters.to_dict()),
+            ],
+            volume_mounts=[
+                models.V1VolumeMount(
+                    name=constants.TRAINER_PV,
+                    mount_path=INIT_CONTAINER_MOUNT_PATH,
+                )
+            ],
+            resources=resources_per_worker,
+        )
+
+        # create worker pod spec
+        worker_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[container_spec],
+            volumes_spec=[
+                models.V1Volume(
+                    name=constants.TRAINER_PV,
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=constants.TRAINER_PVC_NAME
+                    ),
+                )
+            ],
+        )
+
+        # create master pod spec
+        master_pod_template_spec = utils.get_pod_template_spec(
+            job_kind=constants.PYTORCHJOB_KIND,
+            containers_spec=[init_container_spec, container_spec],
+            volumes_spec=[
+                models.V1Volume(
+                    name=constants.TRAINER_PV,
+                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=constants.TRAINER_PVC_NAME
+                    ),
+                )
+            ],
+        )
+
+        job = utils.get_pytorchjob_template(
+            name=name,
+            namespace=namespace,
+            master_pod_template_spec=master_pod_template_spec,
+            worker_pod_template_spec=worker_pod_template_spec,
+            num_worker_replicas=num_workers - 1,
+            num_procs_per_worker=num_procs_per_worker,
+        )
+
+        self.create_job(job, namespace=namespace)
 
     def create_job(
         self,
@@ -191,7 +390,7 @@ class TrainingClient(object):
                 job = utils.get_pytorchjob_template(
                     name=name,
                     namespace=namespace,
-                    pod_template_spec=pod_template_spec,
+                    worker_pod_template_spec=pod_template_spec,
                     num_worker_replicas=num_worker_replicas,
                 )
             else:
@@ -664,6 +863,97 @@ class TrainingClient(object):
                 {expected_conditions}"
         )
 
+    def get_job_pods(
+        self,
+        name: str,
+        namespace: Optional[str] = None,
+        is_master: bool = False,
+        replica_type: Optional[str] = None,
+        replica_index: Optional[int] = None,
+        timeout: int = constants.DEFAULT_TIMEOUT,
+    ) -> List[models.V1Pod]:
+        """Get pods for the Training Job.
+
+        Args:
+            name: Name for the Job.
+            namespace: Namespace for the Job. By default namespace is taken from
+                `TrainingClient` object.
+            is_master: Whether to get pods only with the label
+                `training.kubeflow.org/job-role: master`.
+            replica_type: Type of the Job replica.
+                For TFJob one of `Chief`, `PS`, or `worker`.
+
+                For PyTorchJob one of `master` or `worker`.
+
+                For MXJob one of `scheduler`, `server`, or `worker`.
+
+                For XGBoostJob one of `master` or `worker`.
+
+                For MPIJob one of `launcher` or `worker`.
+
+                For PaddleJob one of `master` or `worker`.
+
+            replica_index: Index for the Job replica.
+            timeout: Kubernetes API server timeout in seconds to execute the request.
+
+        Returns:
+            list[V1Pod]: List of the Job pods.
+
+        Raises:
+            ValueError: Job replica type is invalid.
+            TimeoutError: Timeout to get Job pods.
+            RuntimeError: Failed to get Job pods.
+        """
+
+        namespace = namespace or self.namespace
+
+        if (
+            replica_type is not None
+            and replica_type not in constants.TFJOB_REPLICA_TYPES
+            and replica_type not in constants.PYTORCHJOB_REPLICA_TYPES
+            and replica_type not in constants.MXJOB_REPLICA_TYPES
+            and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
+            and replica_type not in constants.MPIJOB_REPLICA_TYPES
+            and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
+        ):
+            raise ValueError(
+                f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
+                f"PyTorchJob replica type must be one of {constants.PYTORCHJOB_REPLICA_TYPES}\n"
+                f"MXJob replica type must be one of {constants.MXJOB_REPLICA_TYPES}\n"
+                f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
+                f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
+                f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
+            )
+
+        label_selector = f"{constants.JOB_NAME_LABEL}={name}"
+
+        # Add Job role label if that is required.
+        if is_master:
+            label_selector += f",{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER}"
+
+        # Add Replica type label if that is required.
+        if replica_type:
+            label_selector += (
+                f",{constants.REPLICA_TYPE_LABEL}={str.lower(replica_type)}"
+            )
+
+        # Add Replica index label if that is required.
+        if replica_index is not None:
+            label_selector += f",{constants.REPLICA_INDEX_LABEL}={replica_index}"
+
+        # Return list of Training Job pods.
+        try:
+            thread = self.core_api.list_namespaced_pod(
+                namespace,
+                label_selector=label_selector,
+                async_req=True,
+            )
+            return thread.get(timeout).items
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(f"Timeout to list pods for Job: {namespace}/{name}")
+        except Exception:
+            raise RuntimeError(f"Failed to list pods for Job: {namespace}/{name}")
+
     def get_job_pod_names(
         self,
         name: str,
@@ -708,57 +998,18 @@ class TrainingClient(object):
 
         namespace = namespace or self.namespace
 
-        if (
-            replica_type is not None
-            and replica_type not in constants.TFJOB_REPLICA_TYPES
-            and replica_type not in constants.PYTORCHJOB_REPLICA_TYPES
-            and replica_type not in constants.MXJOB_REPLICA_TYPES
-            and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
-            and replica_type not in constants.MPIJOB_REPLICA_TYPES
-            and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
-        ):
-            raise ValueError(
-                f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
-                f"PyTorchJob replica type must be one of {constants.PYTORCHJOB_REPLICA_TYPES}\n"
-                f"MXJob replica type must be one of {constants.MXJOB_REPLICA_TYPES}\n"
-                f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
-                f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
-                f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
-            )
-
-        label_selector = f"{constants.JOB_NAME_LABEL}={name}"
-
-        # Add Job role label if that is required.
-        if is_master:
-            label_selector += f",{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER}"
-
-        # Add Replica type label if that is required.
-        if replica_type:
-            label_selector += (
-                f",{constants.REPLICA_TYPE_LABEL}={str.lower(replica_type)}"
-            )
-
-        # Add Replica index label if that is required.
-        if replica_index is not None:
-            label_selector += f",{constants.REPLICA_INDEX_LABEL}={replica_index}"
-
-        # List Training Job pods.
-        pods = []
-        try:
-            thread = self.core_api.list_namespaced_pod(
-                namespace,
-                label_selector=label_selector,
-                async_req=True,
-            )
-            response = thread.get(timeout)
-        except multiprocessing.TimeoutError:
-            raise TimeoutError(f"Timeout to list pods for Job: {namespace}/{name}")
-        except Exception:
-            raise RuntimeError(f"Failed to list pods for Job: {namespace}/{name}")
-
-        for pod in response.items:
-            pods.append(pod.metadata.name)
-        return pods
+        pods = self.get_job_pods(
+            name=name,
+            namespace=namespace,
+            is_master=is_master,
+            replica_type=replica_type,
+            replica_index=replica_index,
+            timeout=timeout,
+        )
+        pod_names = []
+        for pod in pods:
+            pod_names.append(pod.metadata.name)
+        return pod_names
 
     def get_job_logs(
         self,
@@ -770,9 +1021,10 @@ class TrainingClient(object):
         replica_index: Optional[int] = None,
         follow: bool = False,
         timeout: int = constants.DEFAULT_TIMEOUT,
-    ) -> Dict[str, str]:
-        """Print the training logs for the Job. By default it returns logs from
-        the `master` pod.
+        verbose: bool = False,
+    ) -> Tuple[Dict[str, str], Dict[str, List[str]]]:
+        """Get the logs for every Training Job pod. By default it returns logs from
+        the `master` pod. Logs are returned in this format: { "pod-name": "Log data" }.
 
         Args:
             name: Name for the Job.
@@ -796,24 +1048,38 @@ class TrainingClient(object):
                 For PaddleJob one of `master` or `worker`.
             replica_index: Optional, index for the Job replica.
             container: Pod container to get the logs.
-            follow: Whether to follow the log stream of the pod.
+            follow: Whether to follow the log stream of the pod and print logs to StdOut.
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
+            verbose: Whether to get Kubernetes events for Job and corresponding pods.
 
         Returns:
             Dict[str, str]: A dictionary in which the keys are pod names and the
             values are the corresponding logs.
+            Dict[str, str]: A dictionary in which the keys are object kind and name, and the
+            values are list of the corresponding Kubernetes events with their timestamps. This
+            value is returned only if `verbose = True`. For example:
+            ```json
+            {
+              "PyTorchJob train-mnist": [
+                "2024-01-05 22:58:20 Created pod: train-mnist-worker-0"
+              ],
+              "Pod train-mnist-worker-0": [
+                "2024-01-05 22:58:20 Created container init-pytorch"
+              ]
+            }
+            ```
 
         Raises:
             ValueError: Job replica type is invalid.
-            TimeoutError: Timeout to get Job pods.
-            RuntimeError: Failed to get Job pods.
+            TimeoutError: Timeout to get Job or Job's pods
+            RuntimeError: Failed to get Job or Job's pods.
         """
 
         namespace = namespace or self.namespace
         job_kind = job_kind or self.job_kind
 
-        pods = self.get_job_pod_names(
+        pods = self.get_job_pods(
             name=name,
             namespace=namespace,
             is_master=is_master,
@@ -823,17 +1089,22 @@ class TrainingClient(object):
         )
 
         logs_dict = {}
+        events_dict = {}
         if pods and follow:
             log_streams = []
             for pod in pods:
-                log_streams.append(
-                    watch.Watch().stream(
-                        self.core_api.read_namespaced_pod_log,
-                        name=pod,
-                        namespace=namespace,
-                        container=constants.JOB_PARAMETERS[job_kind]["container"],
+                if (
+                    pod.status is not None
+                    and pod.status.phase != constants.POD_PHASE_PENDING
+                ):
+                    log_streams.append(
+                        watch.Watch().stream(
+                            self.core_api.read_namespaced_pod_log,
+                            name=pod.metadata.name,
+                            namespace=namespace,
+                            container=constants.JOB_PARAMETERS[job_kind]["container"],
+                        )
                     )
-                )
             finished = [False for _ in log_streams]
 
             # Create thread and queue per stream, for non-blocking iteration
@@ -843,7 +1114,7 @@ class TrainingClient(object):
             while True:
                 for index, log_queue in enumerate(log_queue_pool):
                     if all(finished):
-                        return
+                        break
                     if finished[index]:
                         continue
                     # grouping the every 50 log lines of the same pod
@@ -853,22 +1124,60 @@ class TrainingClient(object):
                             if logline is None:
                                 finished[index] = True
                                 break
-                            print(f"[Pod {pods[index]}]: {logline}")
+
+                            # Print logs to the StdOut
+                            print(f"[Pod {pods[index].metadata.name}]: {logline}")
+                            # Add logs to the results dict.
+                            if pods[index].metadata.name not in logs_dict:
+                                logs_dict[pods[index].metadata.name] = logline
+                            else:
+                                logs_dict[pods[index].metadata.name] += logline
                         except queue.Empty:
                             break
+                if all(finished):
+                    break
         elif pods:
             for pod in pods:
-                try:
-                    pod_logs = self.core_api.read_namespaced_pod_log(
-                        pod,
-                        namespace,
-                        container=constants.JOB_PARAMETERS[job_kind]["container"],
-                    )
-                    logs_dict[pod] = pod_logs
-                except Exception:
-                    raise RuntimeError(f"Failed to read logs for pod {namespace}/{pod}")
+                if (
+                    pod.status is not None
+                    and pod.status.phase != constants.POD_PHASE_PENDING
+                ):
+                    try:
+                        pod_logs = self.core_api.read_namespaced_pod_log(
+                            name=pod.metadata.name,
+                            namespace=namespace,
+                            container=constants.JOB_PARAMETERS[job_kind]["container"],
+                        )
+                        logs_dict[pod.metadata.name] = pod_logs
+                    except Exception:
+                        raise RuntimeError(
+                            f"Failed to read logs for pod {namespace}/{pod.metadata.name}"
+                        )
+        # If verbose is set, return Kubernetes events for Job and pods.
+        if verbose:
+            job = self.get_job(name=name, namespace=namespace)
+            events = self.core_api.list_namespaced_event(namespace=namespace)
 
-        return logs_dict
+            # Get events for the Job and Job's pods.
+            for event in events.items:
+                utils.add_event_to_dict(
+                    events_dict=events_dict,
+                    event=event,
+                    object_kind=job_kind,
+                    object_name=name,
+                    object_creation_timestamp=job.metadata.creation_timestamp,
+                )
+                if pods:
+                    for pod in pods:
+                        utils.add_event_to_dict(
+                            events_dict=events_dict,
+                            event=event,
+                            object_kind=constants.POD_KIND,
+                            object_name=pod.metadata.name,
+                            object_creation_timestamp=pod.metadata.creation_timestamp,
+                        )
+
+        return logs_dict, events_dict
 
     def update_job(
         self,

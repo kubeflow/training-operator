@@ -48,8 +48,6 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -64,5 +62,8 @@ setuptools.setup(
     ],
     install_requires=REQUIRES,
     tests_require=TESTS_REQUIRES,
-    extras_require={"test": TESTS_REQUIRES},
+    extras_require={
+        "test": TESTS_REQUIRES,
+        "huggingface": ["transformers>=4.20.0", "peft>=0.3.0"],
+    },
 )

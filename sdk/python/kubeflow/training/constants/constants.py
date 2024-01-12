@@ -29,6 +29,13 @@ GROUP = "kubeflow.org"
 VERSION = "v1"
 API_VERSION = f"{GROUP}/{VERSION}"
 
+# Kind for pod.
+POD_KIND = "Pod"
+
+# Pending status for pod phase.
+POD_PHASE_PENDING = "Pending"
+
+
 # Training Job conditions.
 JOB_CONDITION_CREATED = "Created"
 JOB_CONDITION_RUNNING = "Running"
@@ -79,8 +86,12 @@ PYTORCHJOB_KIND = "PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
-
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
+STORAGE_CONTAINER = "storage-initializer"
+STORAGE_CONTAINER_IMAGE = "docker.io/kubeflow/storage-initializer"
+TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
+TRAINER_PVC_NAME = "storage-initializer"
+TRAINER_PV = "storage-pv"
 
 # MXJob constants
 MXJOB_KIND = "MXJob"
