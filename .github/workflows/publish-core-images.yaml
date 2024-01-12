@@ -34,4 +34,4 @@ jobs:
           - component-name: trainer-huggingface
             dockerfile: sdk/python/kubeflow/trainer/Dockerfile
             context: sdk/python/kubeflow/trainer
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/amd64
