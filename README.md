@@ -12,7 +12,7 @@ such as PyTorch, Tensorflow, XGBoost, MPI, Paddle and others.
 
 Training Operator allows you to use Kubernetes workloads to effectively train your large models
 via [Kubernetes Custom Resources APIs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
-or using Training Operator Python SDK
+or using Training Operator Python SDK.
 
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
