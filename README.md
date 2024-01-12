@@ -6,8 +6,13 @@
 
 ## Overview
 
-Starting from v1.3, this training operator provides Kubernetes custom resources that makes it easy to
-run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost/MPI jobs on Kubernetes.
+Kubeflow Training Operator is a Kubernetes-native project for fine-tuning and
+scalable distributed training of machine learning (ML) models created with various ML frameworks
+such as PyTorch, Tensorflow, XGBoost, MPI, Paddle and others.
+
+Training Operator allows you to use Kubernetes workloads to effectively train your large models
+via [Kubernetes Custom Resources APIs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+or using Training Operator Python SDK.
 
 > Note: Before v1.2 release, Kubeflow Training Operator only supports TFJob on Kubernetes.
 
@@ -23,7 +28,7 @@ run distributed or non-distributed TensorFlow/PyTorch/Apache MXNet/XGBoost/MPI j
 
 ## Prerequisites
 
-- Version >= 1.23 of Kubernetes cluster and `kubectl`
+- Version >= 1.25 of Kubernetes cluster and `kubectl`
 
 ## Installation
 
@@ -36,7 +41,7 @@ kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/stand
 ### Stable Release
 
 ```bash
-kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.5.0"
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone?ref=v1.7.0"
 ```
 
 ### TensorFlow Release Only
@@ -49,7 +54,8 @@ kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/stand
 
 ### Python SDK for Kubeflow Training Operator
 
-Training Operator provides Python SDK for the custom resources. More docs are available in [sdk/python](sdk/python) folder.
+Training Operator provides Python SDK for the custom resources. To learn more about available
+SDK APIs check [the `TrainingClient`](sdk/python/kubeflow/training/api/training_client.py).
 
 Use `pip install` command to install the latest release of the SDK:
 
@@ -57,9 +63,15 @@ Use `pip install` command to install the latest release of the SDK:
 pip install kubeflow-training
 ```
 
-## Quick Start
+Training Operator controller and Python SDK have the same release versions.
 
-Please refer to the [quick-start-v1.md](docs/quick-start-v1.md) and [Kubeflow Training User Guide](https://www.kubeflow.org/docs/guides/components/tftraining/) for more information.
+## Quickstart
+
+Please refer to the [getting started guide](https://www.kubeflow.org/docs/components/training/overview/#getting-started)
+to quickly create your first Training Operator Job using Python SDK.
+
+If you want to work directly with Kubernetes Custom Resources provided by Training Operator,
+follow [the PyTorchJob MNIST guide](https://www.kubeflow.org/docs/components/training/pytorch/#creating-a-pytorch-training-job).
 
 ## API Documentation
 
@@ -97,7 +109,9 @@ The following table lists the most recent few versions of the operator.
 | `v1.3.x`               | `v1`        | 1.18+              |
 | `v1.4.x`               | `v1`        | 1.23+              |
 | `v1.5.x`               | `v1`        | 1.23+              |
-| `latest` (master HEAD) | `v1`        | 1.23+              |
+| `v1.6.x`               | `v1`        | 1.23+              |
+| `v1.7.x`               | `v1`        | 1.25+              |
+| `latest` (master HEAD) | `v1`        | 1.25+              |
 
 ## Acknowledgement
 
