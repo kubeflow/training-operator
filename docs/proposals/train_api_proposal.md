@@ -2,18 +2,20 @@
 
 **<h3>Authors:</h3>**
 
-* Deepanker Gupta (**[@deepanker13](https://github.com/deepanker13)**), Nutanix
-* Johnu George (**[@johnugeorge](https://github.com/johnugeorge)**), Nutanix
+- Deepanker Gupta (**[@deepanker13](https://github.com/deepanker13)**), Nutanix
+- Johnu George (**[@johnugeorge](https://github.com/johnugeorge)**), Nutanix
 
 **<h3>Status</h3>**
 
-* 10 Nov 2023 (v1)
-* 30 Nov 2023 (v2)
+- 10 Nov 2023 (v1)
+- 30 Nov 2023 (v2)
 
 **<h3>Goals</h3>**
+
 1. To add a higher level train api for fine-tuning/training LLMs.
 
 **<h3>Non Goals / Limitations</h3>**
+
 1. The dataset is assumed to be preprocessed by the user.
 
 2. Currently only pytorch framework will be supported for running distributed training.
@@ -30,7 +32,7 @@ LLMs are being widely used for generative AI tasks and as their adoption is incr
 
 **<h3>Background</h3>**
 
-Currently, there are two flows for data scientists to start using Training operator for their distributed training needs. 
+Currently, there are two flows for data scientists to start using Training operator for their distributed training needs.
 
 **<h4>Traditional method</h4>**
 
@@ -48,7 +50,7 @@ To provide a better user experience, a new higher level SDK was added in[ https:
 training_client.create_job(
    name=pytorchjob_name,
    train_func=train_function,
-   num_worker_replicas=3, # How many PyTorch Workers will be created.
+   num_workers=3, # How many PyTorch Workers will be created.
 )
 ```
 
@@ -67,16 +69,16 @@ dataset_args = datasetProviderClass()
 # Arguments related to the trainer code
 parameters = {key:value pairs}
 trainingClient.train(
-   num_workers=1, 
+   num_workers=1,
    num_procs_per_worker = 1,
-   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
-   model_args, 
-   dataset_args, 
+   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"},
+   model_args,
+   dataset_args,
    parameters
 )
 ```
 
-Example: 
+Example:
 
 ```python
 @dataclass
@@ -98,16 +100,16 @@ class HuggingFaceTrainParams:
     transformerClass = field()
 
 trainingClient.train(
-   num_workers=1, 
+   num_workers=1,
    num_procs_per_worker = 1,
-   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"}, 
+   resources_per_worker={"gpu": "2", "cpu":8, "memory": "16Gi"},
    HuggingFaceModelParams(model='hf://openchat/openchat_3.5', access_token = "hf_..." ),
-   S3DatasetParams(dataset= 's3://doc-example-bucket1/train_dataset', eval_dataset = "s3://doc-example-bucket1/eval_dataset", access_token = "s3 access token", region="us-west-2"), 
+   S3DatasetParams(dataset= 's3://doc-example-bucket1/train_dataset', eval_dataset = "s3://doc-example-bucket1/eval_dataset", access_token = "s3 access token", region="us-west-2"),
    HuggingFaceTrainParams(learning_rate=0.1, transformerClass="Trainer", peft_config = {})
 )
 ```
 
-The new proposed API takes following arguments 
+The new proposed API takes following arguments
 
 1. System parameters - Number of workers, number of resources per workers(GPUs per worker).
 2. Model parameters - Model provider and repository details.
@@ -116,7 +118,7 @@ The new proposed API takes following arguments
 
 **<h3>Implementation</h3>**
 
-1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.<br /> <br /> This way to download models allows using ReadWriteOnce and ReadOnlyMany PVCs. If we adopt the way of creating batch/v1 Job to download models to PVC, we need to force users to prepare ReadWriteOnce and  ReadOnlyMany PVCs.<br /> <br /> A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images. <br /> These parameters will be passed as container args or environment variables.
+1. Setup **init** **containers** that download the model and dataset to a PVC. Based on the specified model provider, corresponding training utility functions will be used. Eg: For Huggingface provider, Huggingface trainer can be used. For this **get_pytorchjob_template** function in the sdk needs to be changed to add init containers spec.. Inorder to download models and data sets, we need to support different providers like kaggle, hugging face, s3 or git lfs. The data can be stored in a shared volume between the init container and the main container.<br /> <br /> This way to download models allows using ReadWriteOnce and ReadOnlyMany PVCs. If we adopt the way of creating batch/v1 Job to download models to PVC, we need to force users to prepare ReadWriteOnce and ReadOnlyMany PVCs.<br /> <br /> A new folder containing the code for downloading model and dataset can be added to generate the images for init_containers. Abstract classes will be used as base to create when dataset download, model download and training loop is written for base images. <br /> These parameters will be passed as container args or environment variables.
 
 ```
 sdk/python
@@ -129,12 +131,13 @@ sdk/python
                 -> storage.py #this is the file which will be invoked from the dockerfile
                 -> Dockerfile
 ```
+
 ```python
 # code present in abstract_model_provider.py
 class modelProvider():
     @abstractmethod
     def load_config(self):
-        pass 
+        pass
 
     @abstractmethod
     def download_model(self):
@@ -154,9 +157,9 @@ class HuggingFace(modelProvider):
 training_client.create_job(name="pytorchjob_name",train_func=custom_training_function, num_of_nodes=1, gpus_per_node = 4)
 ```
 
-3. We can provide the training function as a **custom_training_function** argument or inside the **base_image** argument of the **create_job** API directly. In case of Hugging Face models, we can use Hugging Face Transformer library’s Trainer class as the training function. 
+3. We can provide the training function as a **custom_training_function** argument or inside the **base_image** argument of the **create_job** API directly. In case of Hugging Face models, we can use Hugging Face Transformer library’s Trainer class as the training function.
 
-4. The launch command of the training job needs to be changed to torchrun to take **nnodes** and **nproc_per_node**  into effect inside **get_pod_template_spec** function in the training operator SDK.      
+4. The launch command of the training job needs to be changed to torchrun to take **nnodes** and **nproc_per_node** into effect inside **get_pod_template_spec** function in the training operator SDK.
 
 ```python
 exec_script = textwrap.dedent(

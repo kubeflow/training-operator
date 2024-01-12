@@ -251,18 +251,14 @@ def get_tfjob_template(
     name: str,
     namespace: str,
     pod_template_spec: models.V1PodTemplateSpec,
-    num_worker_replicas: Optional[int] = None,
+    num_workers: Optional[int] = None,
     num_chief_replicas: Optional[int] = None,
     num_ps_replicas: Optional[int] = None,
 ):
     # Check if at least one replica is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if (
-        num_worker_replicas is None
-        and num_chief_replicas is None
-        and num_ps_replicas is None
-    ):
+    if num_workers is None and num_chief_replicas is None and num_ps_replicas is None:
         raise ValueError("At least one replica for TFJob must be set")
 
     # Create TFJob template.
@@ -293,11 +289,11 @@ def get_tfjob_template(
             template=pod_template_spec,
         )
 
-    if num_worker_replicas is not None:
+    if num_workers is not None:
         tfjob.spec.tf_replica_specs[
             constants.REPLICA_TYPE_WORKER
         ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_worker_replicas,
+            replicas=num_workers,
             template=pod_template_spec,
         )
 
@@ -307,17 +303,17 @@ def get_tfjob_template(
 def get_pytorchjob_template(
     name: str,
     namespace: str,
-    master_pod_template_spec: models.V1PodTemplateSpec = None,
-    worker_pod_template_spec: models.V1PodTemplateSpec = None,
-    num_worker_replicas: Optional[int] = None,
-    num_procs_per_worker: Optional[int] = 0,
+    num_workers: int,
+    worker_pod_template_spec: Optional[models.V1PodTemplateSpec],
+    master_pod_template_spec: Optional[models.V1PodTemplateSpec] = None,
+    num_procs_per_worker: Optional[int] = None,
     elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
 ):
-    # Check if at least one replica is set.
+    # Check if at least one Worker is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_worker_replicas is None and master_pod_template_spec is None:
-        raise ValueError("At least one replica for PyTorchJob must be set")
+    if num_workers is None or num_workers < 0:
+        raise ValueError("At least one Worker for PyTorchJob must be set")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -330,11 +326,12 @@ def get_pytorchjob_template(
         ),
     )
 
-    if num_procs_per_worker > 0:
+    if num_procs_per_worker:
         pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
     if elastic_policy:
         pytorchjob.spec.elastic_policy = elastic_policy
 
+    # Create Master replica if that is set.
     if master_pod_template_spec:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_MASTER
@@ -342,12 +339,24 @@ def get_pytorchjob_template(
             replicas=1,
             template=master_pod_template_spec,
         )
+    # If we don't define Master template, use the Worker template.
+    else:
+        pytorchjob.spec.pytorch_replica_specs[
+            constants.REPLICA_TYPE_MASTER
+        ] = models.KubeflowOrgV1ReplicaSpec(
+            replicas=1,
+            template=worker_pod_template_spec,
+        )
 
-    if num_worker_replicas:
+    # Create Worker with num_workers - 1 replicas.
+    # TODO (andreyvelich): Investigate if we can run PyTorchJob without the Master
+    # Currently, if Master is not set, Training Operator controller
+    # doesn't set RANK and WORLD_SIZE for PyTorchJob
+    if num_workers > 1:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
         ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_worker_replicas,
+            replicas=num_workers - 1,
             template=worker_pod_template_spec,
         )
 
@@ -355,7 +364,7 @@ def get_pytorchjob_template(
 
 
 def get_pvc_spec(
-    pvc_name: str, namespace: str, storage_size: str, storage_class: str = None
+    pvc_name: str, namespace: str, storage_size: str, storage_class: Optional[str]
 ):
     if pvc_name is None or namespace is None or storage_size is None:
         raise ValueError("One of the arguments is None")
