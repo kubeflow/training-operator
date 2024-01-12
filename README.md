@@ -71,7 +71,7 @@ Please refer to the [getting started guide](https://www.kubeflow.org/docs/compon
 to quickly create your first Training Operator Job using Python SDK.
 
 If you want to work directly with Kubernetes Custom Resources provided by Training Operator,
-follow [the PyTorchJob MNIST guide](https://www.kubeflow.org/docs/components/training/pytorch/#creating-a-pytorch-training-job)
+follow [the PyTorchJob MNIST guide](https://www.kubeflow.org/docs/components/training/pytorch/#creating-a-pytorch-training-job).
 
 ## API Documentation
 
