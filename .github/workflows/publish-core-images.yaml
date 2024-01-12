@@ -32,6 +32,6 @@ jobs:
             context: sdk/python/kubeflow/storage_initializer
             platforms: linux/amd64,linux/arm64
           - component-name: trainer-huggingface
-            dockerfile: sdk/python/kubeflow/trainer/hf_dockerfile
+            dockerfile: sdk/python/kubeflow/trainer/Dockerfile
             context: sdk/python/kubeflow/trainer
             platforms: linux/amd64,linux/arm64
