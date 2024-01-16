@@ -47,7 +47,8 @@ def verify_job_e2e(
 
     # Job should have Created, Running, and Succeeded conditions.
     conditions = client.get_job_conditions(job=job)
-    if len(conditions) != 3:
+    # If Job is complete fast, it has 2 conditions: Created and Succeeded.
+    if len(conditions) != 3 and len(conditions) != 2:
         raise Exception(f"{client.job_kind} conditions are invalid: {conditions}")
 
     # Job should have correct conditions.
