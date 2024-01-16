@@ -26,6 +26,6 @@ jobs:
         run: |
           pip install pytest python-dateutil urllib3 kubernetes
           pip install -U './sdk/python[huggingface]'
-          
+
       - name: Run unit test for training sdk
         run: pytest ./sdk/python/kubeflow/training/api/training_client_test.py

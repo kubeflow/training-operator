@@ -181,13 +181,13 @@ def test_sdk_e2e_create_from_func(job_namespace):
             print(f"Start training for Epoch {i}")
             time.sleep(1)
 
-    num_workers = 1
+    num_workers = 3
 
     TRAINING_CLIENT.create_job(
         name=JOB_NAME,
         namespace=job_namespace,
         train_func=train_func,
-        num_worker_replicas=num_workers,
+        num_workers=num_workers,
     )
 
     logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")

@@ -95,16 +95,18 @@ class TrainingClient(object):
 
     def train(
         self,
-        name: str = None,
-        namespace: str = None,
+        name: str,
+        namespace: Optional[str] = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        storage_config: Dict[str, str] = {"size": "10Gi", "storage_class": None},
+        storage_config: Dict[str, Optional[str]] = {
+            "size": "10Gi",
+            "storage_class": None,
+        },
         model_provider_parameters=None,
         dataset_provider_parameters=None,
         train_parameters=None,
         resources_per_worker: Union[dict, client.V1ResourceRequirements, None] = None,
-        # Dict[Literal["gpu", "cpu", "memory"], any] = None,
     ):
         """
         Higher level train api
@@ -116,8 +118,9 @@ class TrainingClient(object):
             import peft
             import transformers
         except ImportError:
-            print(
-                "train api dependencies not installed. Run pip install -U 'kubeflow-training[huggingface]' "
+            raise ImportError(
+                "Train API dependencies not installed. "
+                + "Run: pip install -U 'kubeflow-training[huggingface]' "
             )
         from kubeflow.storage_initializer.s3 import S3DatasetParams
         from kubeflow.storage_initializer.hugging_face import (
@@ -274,7 +277,7 @@ class TrainingClient(object):
             namespace=namespace,
             master_pod_template_spec=master_pod_template_spec,
             worker_pod_template_spec=worker_pod_template_spec,
-            num_worker_replicas=num_workers - 1,
+            num_workers=num_workers,
             num_procs_per_worker=num_procs_per_worker,
         )
 
@@ -289,7 +292,7 @@ class TrainingClient(object):
         base_image: Optional[str] = None,
         train_func: Optional[Callable] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        num_worker_replicas: Optional[int] = None,
+        num_workers: Optional[int] = None,
         num_chief_replicas: Optional[int] = None,
         num_ps_replicas: Optional[int] = None,
         packages_to_install: Optional[List[str]] = None,
@@ -320,7 +323,7 @@ class TrainingClient(object):
                 argument to define input parameters for the function. If `train_func` is
                 set, Base Image must support `bash` CLI to execute the training script.
             parameters: Dict of input parameters that training function might receive.
-            num_worker_replicas: Number of Worker replicas for the Job.
+            num_workers: Number of Worker replicas for the Job.
             num_chief_replicas: Number of Chief replicas for the TFJob. Number
                 of Chief replicas can't be more than 1.
             num_ps_replicas: Number of Parameter Server replicas for the TFJob.
@@ -382,20 +385,21 @@ class TrainingClient(object):
                     name=name,
                     namespace=namespace,
                     pod_template_spec=pod_template_spec,
-                    num_worker_replicas=num_worker_replicas,
+                    num_workers=num_workers,
                     num_chief_replicas=num_chief_replicas,
                     num_ps_replicas=num_ps_replicas,
                 )
-            elif job_kind == constants.PYTORCHJOB_KIND:
+            elif job_kind == constants.PYTORCHJOB_KIND and num_workers:
                 job = utils.get_pytorchjob_template(
                     name=name,
                     namespace=namespace,
                     worker_pod_template_spec=pod_template_spec,
-                    num_worker_replicas=num_worker_replicas,
+                    num_workers=num_workers,
                 )
             else:
                 raise ValueError(
-                    f"Job kind {job_kind} can't be created using function or image"
+                    f"Job kind {job_kind} can't be created using function or image. "
+                    + "Number of Workers must be set."
                 )
 
         # Verify Job object type.
@@ -1052,6 +1056,7 @@ class TrainingClient(object):
             timeout: Optional, Kubernetes API server timeout in seconds
                 to execute the request.
             verbose: Whether to get Kubernetes events for Job and corresponding pods.
+                If you need to get events from all PyTorchJob's Pods, set `isMaster = False`.
 
         Returns:
             Dict[str, str]: A dictionary in which the keys are pod names and the
