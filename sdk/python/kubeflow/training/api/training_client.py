@@ -139,6 +139,8 @@ class TrainingClient(object):
 
         namespace = namespace or self.namespace
 
+        # TODO (andreyvelich): PVC Creation should be part of Training Operator Controller.
+        # Ref issue: https://github.com/kubeflow/training-operator/issues/1971
         try:
             self.core_api.create_namespaced_persistent_volume_claim(
                 namespace=namespace,

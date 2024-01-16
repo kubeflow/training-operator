@@ -322,7 +322,7 @@ def get_pytorchjob_template(
     # Check if at least one Worker is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_workers is None or num_workers < 0:
+    if num_workers is None or num_workers < 1:
         raise ValueError("At least one Worker for PyTorchJob must be set")
 
     # Create PyTorchJob template.
@@ -333,13 +333,13 @@ def get_pytorchjob_template(
         spec=models.KubeflowOrgV1PyTorchJobSpec(
             run_policy=models.KubeflowOrgV1RunPolicy(clean_pod_policy=None),
             pytorch_replica_specs={},
+            elastic_policy=elastic_policy,
         ),
     )
 
+    # TODO (andreyvelich): Should we make spec.nproc_per_node int ?
     if num_procs_per_worker:
         pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
-    if elastic_policy:
-        pytorchjob.spec.elastic_policy = elastic_policy
 
     # Create Master replica if that is set.
     if master_pod_template_spec:
@@ -361,7 +361,8 @@ def get_pytorchjob_template(
     # Create Worker with num_workers - 1 replicas.
     # TODO (andreyvelich): Investigate if we can run PyTorchJob without the Master
     # Currently, if Master is not set, Training Operator controller
-    # doesn't set RANK and WORLD_SIZE for PyTorchJob
+    # doesn't set RANK and WORLD_SIZE for PyTorchJob.
+    # Ref issue: https://github.com/kubeflow/training-operator/issues/1991
     if num_workers > 1:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
