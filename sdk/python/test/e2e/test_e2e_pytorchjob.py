@@ -212,6 +212,34 @@ def test_sdk_e2e_create_from_func(job_namespace):
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
 
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
+)
+def test_sdk_e2e_create_from_image(job_namespace):
+    JOB_NAME = "pytorchjob-from-image"
+
+    TRAINING_CLIENT.create_job(
+        name=JOB_NAME,
+        namespace=job_namespace,
+        base_image="docker.io/hello-world",
+        num_workers=1,
+    )
+
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
+    logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
+
+    try:
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob create from function E2E fails. Exception: {e}")
+
+    utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+
+
 def generate_pytorchjob(
     job_namespace: str,
     job_name: str,
