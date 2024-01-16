@@ -163,11 +163,19 @@ class TrainingClient(object):
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
+        else:
+            raise ValueError(
+                f"Invalid model provider parameters {model_provider_parameters}"
+            )
 
         if isinstance(dataset_provider_parameters, S3DatasetParams):
             dp = "s3"
         elif isinstance(dataset_provider_parameters, HfDatasetParams):
             dp = "hf"
+        else:
+            raise ValueError(
+                f"Invalid dataset provider parameters {dataset_provider_parameters}"
+            )
 
         # create init container spec
         init_container_spec = utils.get_container_spec(
