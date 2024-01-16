@@ -134,7 +134,7 @@ def get_command_using_train_func(
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
 ) -> Tuple[List[str], List[str]]:
     """
-    Get container args and command using the given training function and parameters.
+    Get container args and command from the given training function and parameters.
     """
     # Check if function is callable.
     if not callable(train_func):
@@ -179,7 +179,7 @@ def get_command_using_train_func(
             + exec_script
         )
 
-    # Return container command and args execution script to the container arguments.
+    # Return container command and args to execute training function.
     return ["bash", "-c"], [exec_script]
 
 
@@ -202,9 +202,11 @@ def get_container_spec(
         raise ValueError("Container name or base image cannot be none")
 
     # Create initial container spec.
-    container_spec = models.V1Container(name=name, image=base_image)
+    container_spec = models.V1Container(
+        name=name, image=base_image, args=args, volume_mounts=volume_mounts
+    )
 
-    # If Training function is set, convert training function to the container args and command.
+    # If training function is set, override container command and args to execute the function.
     if train_func is not None:
         container_spec.command, container_spec.args = get_command_using_train_func(
             train_func=train_func,
@@ -212,9 +214,6 @@ def get_container_spec(
             packages_to_install=packages_to_install,
             pip_index_url=pip_index_url,
         )
-    # Otherwise, get container args from the input.
-    else:
-        container_spec.args = args
 
     # Convert dict to the Kubernetes container resources if that is required.
     if isinstance(resources, dict):
@@ -228,9 +227,8 @@ def get_container_spec(
             limits=resources,
         )
 
-    # Assign the rest container spec. If the value is None, container doesn't have that spec.
+    # Add resources to the container spec.
     container_spec.resources = resources
-    container_spec.volume_mounts = volume_mounts
 
     return container_spec
 
@@ -238,23 +236,23 @@ def get_container_spec(
 def get_pod_template_spec(
     containers: List[models.V1Container],
     init_containers: Optional[List[models.V1Container]] = None,
-    volumes_spec: Optional[List[models.V1Volume]] = None,
+    volumes: Optional[List[models.V1Volume]] = None,
 ) -> models.V1PodTemplateSpec:
     """
     Get Pod template spec for the given parameters.
     """
 
-    # Create initial Pod template spec.
+    # Create Pod template spec. If the value is None, Pod doesn't have that parameter
     pod_template_spec = models.V1PodTemplateSpec(
         metadata=models.V1ObjectMeta(
             annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
         ),
-        spec=models.V1PodSpec(containers=[containers]),
+        spec=models.V1PodSpec(
+            init_containers=init_containers,
+            containers=containers,
+            volumes=volumes,
+        ),
     )
-
-    # Assign the rest Pod spec. If the value is None, container doesn't have that spec.
-    pod_template_spec.spec.init_containers = init_containers
-    pod_template_spec.spec.volumes = volumes_spec
 
     return pod_template_spec
 

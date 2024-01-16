@@ -222,14 +222,14 @@ class TrainingClient(object):
         worker_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
             init_containers=[init_container_spec],
-            volumes_spec=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 
         # create master pod spec
         master_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
             init_containers=[init_container_spec],
-            volumes_spec=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 
         job = utils.get_pytorchjob_template(
@@ -364,7 +364,8 @@ class TrainingClient(object):
                 pip_index_url=pip_index_url,
                 resources=resources_per_worker,
             )
-            # Get Pod template spec from function or image.
+
+            # Get Pod template spec using the above container.
             pod_template_spec = utils.get_pod_template_spec(
                 containers=[container_spec],
             )
