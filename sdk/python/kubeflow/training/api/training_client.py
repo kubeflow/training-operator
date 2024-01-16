@@ -25,10 +25,10 @@ from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
 from kubeflow.storage_initializer.constants import (
-    INIT_CONTAINER_MOUNT_PATH,
     VOLUME_PATH_DATASET,
     VOLUME_PATH_MODEL,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -139,47 +139,23 @@ class TrainingClient(object):
 
         namespace = namespace or self.namespace
 
-        if isinstance(resources_per_worker, dict):
-            if "gpu" in resources_per_worker:
-                if resources_per_worker["gpu"] is not None and (
-                    num_procs_per_worker > resources_per_worker["gpu"]
-                ):
-                    raise ValueError(
-                        "Insufficient gpu resources allocated to the container."
-                    )
-                if resources_per_worker["gpu"] is not None:
-                    resources_per_worker["nvidia.com/gpu"] = resources_per_worker.pop(
-                        "gpu"
-                    )
-
-            if (
-                "cpu" not in resources_per_worker
-                or "memory" not in resources_per_worker
-            ):
-                raise ValueError("cpu and memory resources not specified")
-
-            resources_per_worker = client.V1ResourceRequirements(
-                requests=resources_per_worker,
-                limits=resources_per_worker,
-            )
-
         try:
             self.core_api.create_namespaced_persistent_volume_claim(
                 namespace=namespace,
                 body=utils.get_pvc_spec(
-                    pvc_name=constants.TRAINER_PVC_NAME,
+                    pvc_name=constants.STORAGE_INITIALIZER,
                     namespace=namespace,
-                    storage_size=storage_config["size"],
-                    storage_class=storage_config["storage_class"],
+                    storage_config=storage_config,
                 ),
             )
         except Exception as e:
             pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
             # Check if the PVC with the specified name exists
             for pvc in pvc_list.items:
-                if pvc.metadata.name == constants.TRAINER_PVC_NAME:
+                if pvc.metadata.name == constants.STORAGE_INITIALIZER:
                     print(
-                        f"PVC '{constants.TRAINER_PVC_NAME}' already exists in namespace '{namespace}'."
+                        f"PVC '{constants.STORAGE_INITIALIZER}' already exists in namespace "
+                        f"{namespace}."
                     )
                     break
             else:
@@ -195,8 +171,8 @@ class TrainingClient(object):
 
         # create init container spec
         init_container_spec = utils.get_container_spec(
-            name=constants.STORAGE_CONTAINER,
-            image=constants.STORAGE_CONTAINER_IMAGE,
+            name=constants.STORAGE_INITIALIZER,
+            base_image=constants.STORAGE_INITIALIZER_IMAGE,
             args=[
                 "--model_provider",
                 mp,
@@ -207,18 +183,13 @@ class TrainingClient(object):
                 "--dataset_provider_parameters",
                 json.dumps(dataset_provider_parameters.__dict__),
             ],
-            volume_mounts=[
-                models.V1VolumeMount(
-                    name=constants.TRAINER_PV,
-                    mount_path=INIT_CONTAINER_MOUNT_PATH,
-                )
-            ],
+            volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
         )
 
         # create app container spec
         container_spec = utils.get_container_spec(
             name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
-            image=constants.TRAINER_TRANSFORMER_IMAGE,
+            base_image=constants.TRAINER_TRANSFORMER_IMAGE,
             args=[
                 "--model_uri",
                 model_provider_parameters.model_uri,
@@ -235,41 +206,22 @@ class TrainingClient(object):
                 "--training_parameters",
                 json.dumps(train_parameters.training_parameters.to_dict()),
             ],
-            volume_mounts=[
-                models.V1VolumeMount(
-                    name=constants.TRAINER_PV,
-                    mount_path=INIT_CONTAINER_MOUNT_PATH,
-                )
-            ],
+            volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
             resources=resources_per_worker,
         )
 
         # create worker pod spec
         worker_pod_template_spec = utils.get_pod_template_spec(
-            job_kind=constants.PYTORCHJOB_KIND,
-            containers_spec=[container_spec],
-            volumes_spec=[
-                models.V1Volume(
-                    name=constants.TRAINER_PV,
-                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=constants.TRAINER_PVC_NAME
-                    ),
-                )
-            ],
+            containers=[container_spec],
+            init_containers=[init_container_spec],
+            volumes_spec=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 
         # create master pod spec
         master_pod_template_spec = utils.get_pod_template_spec(
-            job_kind=constants.PYTORCHJOB_KIND,
-            containers_spec=[init_container_spec, container_spec],
-            volumes_spec=[
-                models.V1Volume(
-                    name=constants.TRAINER_PV,
-                    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=constants.TRAINER_PVC_NAME
-                    ),
-                )
-            ],
+            containers=[container_spec],
+            init_containers=[init_container_spec],
+            volumes_spec=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 
         job = utils.get_pytorchjob_template(
@@ -293,6 +245,7 @@ class TrainingClient(object):
         train_func: Optional[Callable] = None,
         parameters: Optional[Dict[str, Any]] = None,
         num_workers: Optional[int] = None,
+        resources_per_worker: Union[dict, models.V1ResourceRequirements, None] = None,
         num_chief_replicas: Optional[int] = None,
         num_ps_replicas: Optional[int] = None,
         packages_to_install: Optional[List[str]] = None,
@@ -324,6 +277,26 @@ class TrainingClient(object):
                 set, Base Image must support `bash` CLI to execute the training script.
             parameters: Dict of input parameters that training function might receive.
             num_workers: Number of Worker replicas for the Job.
+            resources_per_worker: A parameter that lets you specify how much
+                resources each Worker container should have. You can either specify a
+                kubernetes.client.V1ResourceRequirements object (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md)
+                or a dictionary that includes one or more of the following keys:
+                `cpu`, `memory`, or `gpu` (other keys will be ignored). Appropriate
+                values for these keys are documented here:
+                https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/.
+                For example:
+                ```
+                {
+                    "cpu": "1",
+                    "memory": "2Gi",
+                    "gpu": "1",
+                }
+                ```
+                Please note, `gpu` specifies a resource request with a key of
+                `nvidia.com/gpu`, i.e. an NVIDIA GPU. If you need a different type
+                of GPU, pass in a V1ResourceRequirement instance instead, since it's
+                more flexible. This parameter is optional and defaults to None.
             num_chief_replicas: Number of Chief replicas for the TFJob. Number
                 of Chief replicas can't be more than 1.
             num_ps_replicas: Number of Parameter Server replicas for the TFJob.
@@ -353,7 +326,7 @@ class TrainingClient(object):
         namespace = namespace or self.namespace
         job_kind = job_kind or self.job_kind
         if job is not None:
-            job_kind = job.kind
+            job_kind = str(job.kind)
 
         if job_kind not in constants.JOB_PARAMETERS:
             raise ValueError(
@@ -361,21 +334,31 @@ class TrainingClient(object):
             )
 
         # If Training function or base image is set, configure Job template.
-        if train_func is not None or base_image is not None:
+        if job is None and (train_func is not None or base_image is not None):
             # Job name must be set to configure Job template.
             if name is None:
                 raise ValueError(
                     "Job name must be set to configure Job from function or image"
                 )
 
-            # Get Pod template spec from function or image.
-            pod_template_spec = utils.get_pod_template_spec(
-                job_kind=job_kind,
+            # Assign the default base image.
+            # TODO (andreyvelich): Add base image for other Job kinds.
+            if base_image is None:
+                base_image = constants.JOB_PARAMETERS[job_kind]["base_image"]
+
+            # Get Training Container template.
+            container_spec = utils.get_container_spec(
+                name=constants.JOB_PARAMETERS[job_kind]["container"],
                 base_image=base_image,
                 train_func=train_func,
-                parameters=parameters,
+                train_func_parameters=parameters,
                 packages_to_install=packages_to_install,
                 pip_index_url=pip_index_url,
+                resources=resources_per_worker,
+            )
+            # Get Pod template spec from function or image.
+            pod_template_spec = utils.get_pod_template_spec(
+                containers=[container_spec],
             )
 
             # Configure template for different Jobs.
@@ -403,8 +386,13 @@ class TrainingClient(object):
                 )
 
         # Verify Job object type.
-        if not isinstance(job, constants.JOB_MODELS):
-            raise ValueError(f"Job must be one of these types: {constants.JOB_MODELS}")
+        if not isinstance(
+            job,
+            getattr(models, constants.JOB_PARAMETERS[job_kind]["model"]),
+        ):
+            raise ValueError(
+                f"Job must be one of these types: {constants.JOB_MODELS}, but Job is: {type(job)}"
+            )
 
         # Create the Training Job.
         try:
@@ -412,7 +400,7 @@ class TrainingClient(object):
                 constants.GROUP,
                 constants.VERSION,
                 namespace,
-                constants.JOB_PARAMETERS[job.kind]["plural"],
+                constants.JOB_PARAMETERS[job_kind]["plural"],
                 job,
             )
         except multiprocessing.TimeoutError:
@@ -580,7 +568,9 @@ class TrainingClient(object):
                 f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
             )
 
-        if job is not None and not isinstance(job, constants.JOB_MODELS):
+        if job is not None and not isinstance(
+            job, getattr(models, constants.JOB_PARAMETERS[job_kind]["model"])
+        ):
             raise ValueError(f"Job must be one of these types: {constants.JOB_MODELS}")
 
         # If Job is not set, get the Training Job.
@@ -1235,7 +1225,7 @@ class TrainingClient(object):
         name: str,
         namespace: Optional[str] = None,
         job_kind: Optional[str] = None,
-        delete_options: Optional[client.V1DeleteOptions] = None,
+        delete_options: Optional[models.V1DeleteOptions] = None,
     ):
         """Delete the Training Job
 

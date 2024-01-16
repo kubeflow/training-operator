@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from kubeflow.training import models
-from typing import Union
+from typing import Union, Dict
+from kubeflow.storage_initializer.constants import INIT_CONTAINER_MOUNT_PATH
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
@@ -68,8 +69,25 @@ REPLICA_TYPE_SCHEDULER = "Scheduler"
 REPLICA_TYPE_SERVER = "Server"
 REPLICA_TYPE_LAUNCHER = "Launcher"
 
+# Constants for Train API.
+STORAGE_INITIALIZER = "storage-initializer"
+STORAGE_INITIALIZER_IMAGE = "docker.io/kubeflow/storage-initializer"
+
+STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
+    name=STORAGE_INITIALIZER,
+    mount_path=INIT_CONTAINER_MOUNT_PATH,
+)
+STORAGE_INITIALIZER_VOLUME = models.V1Volume(
+    name=STORAGE_INITIALIZER,
+    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+        claim_name=STORAGE_INITIALIZER
+    ),
+)
+TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
+
 # TFJob constants.
 TFJOB_KIND = "TFJob"
+TFJOB_MODEL = "KubeflowOrgV1TFJob"
 TFJOB_PLURAL = "tfjobs"
 TFJOB_CONTAINER = "tensorflow"
 TFJOB_REPLICA_TYPES = (
@@ -83,18 +101,15 @@ TFJOB_BASE_IMAGE_GPU = "docker.io/tensorflow/tensorflow:2.9.1-gpu"
 
 # PyTorchJob constants
 PYTORCHJOB_KIND = "PyTorchJob"
+PYTORCHJOB_MODEL = "KubeflowOrgV1PyTorchJob"
 PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
-PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime"
-STORAGE_CONTAINER = "storage-initializer"
-STORAGE_CONTAINER_IMAGE = "docker.io/kubeflow/storage-initializer"
-TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
-TRAINER_PVC_NAME = "storage-initializer"
-TRAINER_PV = "storage-pv"
+PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime"
 
 # MXJob constants
 MXJOB_KIND = "MXJob"
+MXJOB_MODEL = "KubeflowOrgV1MXJob"
 MXJOB_PLURAL = "mxjobs"
 MXJOB_CONTAINER = "mxnet"
 MXJOB_REPLICA_TYPES = (
@@ -105,18 +120,21 @@ MXJOB_REPLICA_TYPES = (
 
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"
+XGBOOSTJOB_MODEL = "KubeflowOrgV1XGBoostJob"
 XGBOOSTJOB_PLURAL = "xgboostjobs"
 XGBOOSTJOB_CONTAINER = "xgboost"
 XGBOOSTJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 
 # MPIJob constants
 MPIJOB_KIND = "MPIJob"
+MPIJOB_MODEL = "KubeflowOrgV1MPIJob"
 MPIJOB_PLURAL = "mpijobs"
 MPIJOB_CONTAINER = "mpi"
 MPIJOB_REPLICA_TYPES = (REPLICA_TYPE_LAUNCHER.lower(), REPLICA_TYPE_WORKER.lower())
 
 # PaddleJob constants
 PADDLEJOB_KIND = "PaddleJob"
+PADDLEJOB_MODEL = "KubeflowOrgV1PaddleJob"
 PADDLEJOB_PLURAL = "paddlejobs"
 PADDLEJOB_CONTAINER = "paddle"
 PADDLEJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
@@ -129,34 +147,37 @@ PADDLEJOB_BASE_IMAGE = (
 # Dictionary to get plural, model, and container for each Job kind.
 JOB_PARAMETERS = {
     TFJOB_KIND: {
-        "model": models.KubeflowOrgV1TFJob,
+        "model": TFJOB_MODEL,
         "plural": TFJOB_PLURAL,
         "container": TFJOB_CONTAINER,
         "base_image": TFJOB_BASE_IMAGE,
     },
     PYTORCHJOB_KIND: {
-        "model": models.KubeflowOrgV1PyTorchJob,
+        "model": PYTORCHJOB_MODEL,
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
     },
     MXJOB_KIND: {
-        "model": models.KubeflowOrgV1MXJob,
+        "model": MXJOB_MODEL,
         "plural": MXJOB_PLURAL,
         "container": MXJOB_CONTAINER,
+        "base_image": "TODO",
     },
     XGBOOSTJOB_KIND: {
-        "model": models.KubeflowOrgV1XGBoostJob,
+        "model": XGBOOSTJOB_MODEL,
         "plural": XGBOOSTJOB_PLURAL,
         "container": XGBOOSTJOB_CONTAINER,
+        "base_image": "TODO",
     },
     MPIJOB_KIND: {
-        "model": models.KubeflowOrgV1MPIJob,
+        "model": MPIJOB_MODEL,
         "plural": MPIJOB_PLURAL,
         "container": MPIJOB_CONTAINER,
+        "base_image": "TODO",
     },
     PADDLEJOB_KIND: {
-        "model": models.KubeflowOrgV1PaddleJob,
+        "model": PADDLEJOB_MODEL,
         "plural": PADDLEJOB_PLURAL,
         "container": PADDLEJOB_CONTAINER,
         "base_image": PADDLEJOB_BASE_IMAGE,
