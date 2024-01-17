@@ -379,7 +379,7 @@ def get_pvc_spec(
     namespace: str,
     storage_config: Dict[str, Optional[str]],
 ):
-    if pvc_name is None or namespace is None or "size" not in storage_config is None:
+    if pvc_name is None or namespace is None or "size" not in storage_config:
         raise ValueError("One of the arguments is None")
 
     pvc_spec = models.V1PersistentVolumeClaim(
