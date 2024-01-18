@@ -17,7 +17,7 @@ import os
 import logging
 import textwrap
 import inspect
-from typing import Optional, Callable, List, Dict, Any
+from typing import Optional, Callable, List, Dict, Any, Tuple, Union
 import json
 import threading
 import queue
@@ -127,122 +127,132 @@ def get_script_for_python_packages(
     return script_for_python_packages
 
 
-def get_container_spec(
-    name: str,
-    image: str,
-    args: Optional[List[str]] = None,
-    resources: Optional[models.V1ResourceRequirements] = None,
-    volume_mounts: Optional[List[models.V1VolumeMount]] = None,
-) -> models.V1Container:
-    """
-    get container spec for given name and image.
-    """
-    if name is None or image is None:
-        raise ValueError("container name or image cannot be none")
-
-    container_spec = models.V1Container(name=name, image=image)
-    if args:
-        container_spec.args = args
-
-    if resources:
-        container_spec.resources = resources
-
-    if volume_mounts:
-        container_spec.volume_mounts = volume_mounts
-
-    return container_spec
-
-
-def get_pod_template_spec(
-    job_kind: str,
-    base_image: Optional[str] = None,
-    train_func: Optional[Callable] = None,
-    parameters: Optional[Dict[str, Any]] = None,
+def get_command_using_train_func(
+    train_func: Optional[Callable],
+    train_func_parameters: Optional[Dict[str, Any]] = None,
     packages_to_install: Optional[List[str]] = None,
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
-    init_containers_spec: Optional[List[models.V1Container]] = None,
-    containers_spec: Optional[List[models.V1Container]] = None,
-    volumes_spec: Optional[List[models.V1Volume]] = None,
-):
+) -> Tuple[List[str], List[str]]:
     """
-    Get Pod template spec for the given function and base image.
+    Get container args and command from the given training function and parameters.
     """
+    # Check if function is callable.
+    if not callable(train_func):
+        raise ValueError(
+            f"Training function must be callable, got function type: {type(train_func)}"
+        )
 
-    # Assign the default base image.
-    # TODO (andreyvelich): Add base image for other Job kinds.
-    if base_image is None:
-        base_image = constants.JOB_PARAMETERS[job_kind]["base_image"]
+    # Extract function implementation.
+    func_code = inspect.getsource(train_func)
 
-    # Create Pod template spec.
-    pod_template_spec = models.V1PodTemplateSpec(
-        metadata=models.V1ObjectMeta(
-            annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
-        ),
-        spec=models.V1PodSpec(
-            containers=[
-                get_container_spec(
-                    name=constants.JOB_PARAMETERS[job_kind]["container"],
-                    image=base_image,
-                )
-            ]
-        ),
-    )
+    # Function might be defined in some indented scope (e.g. in another function).
+    # We need to dedent the function code.
+    func_code = textwrap.dedent(func_code)
 
-    if containers_spec:
-        pod_template_spec.spec.containers = containers_spec
-    if init_containers_spec:
-        pod_template_spec.spec.init_containers = init_containers_spec
-    if volumes_spec:
-        pod_template_spec.spec.volumes = volumes_spec
+    # Wrap function code to execute it from the file. For example:
+    # def train(parameters):
+    #     print('Start Training...')
+    # train({'lr': 0.01})
+    if train_func_parameters is None:
+        func_code = f"{func_code}\n{train_func.__name__}()\n"
+    else:
+        func_code = f"{func_code}\n{train_func.__name__}({train_func_parameters})\n"
 
-    # If Training function is set, convert function to container execution script.
-    if train_func is not None:
-        # Check if function is callable.
-        if not callable(train_func):
-            raise ValueError(
-                f"Training function must be callable, got function type: {type(train_func)}"
-            )
-
-        # Extract function implementation.
-        func_code = inspect.getsource(train_func)
-
-        # Function might be defined in some indented scope (e.g. in another function).
-        # We need to dedent the function code.
-        func_code = textwrap.dedent(func_code)
-
-        # Wrap function code to execute it from the file. For example:
-        # def train(parameters):
-        #     print('Start Training...')
-        # train({'lr': 0.01})
-        if parameters is None:
-            func_code = f"{func_code}\n{train_func.__name__}()\n"
-        else:
-            func_code = f"{func_code}\n{train_func.__name__}({parameters})\n"
-
-        # Prepare execute script template.
-        exec_script = textwrap.dedent(
-            """
+    # Prepare execute script template.
+    exec_script = textwrap.dedent(
+        """
                 program_path=$(mktemp -d)
                 read -r -d '' SCRIPT << EOM\n
                 {func_code}
                 EOM
                 printf "%s" \"$SCRIPT\" > \"$program_path/ephemeral_script.py\"
                 python3 -u \"$program_path/ephemeral_script.py\""""
+    )
+
+    # Add function code to the execute script.
+    exec_script = exec_script.format(func_code=func_code)
+
+    # Install Python packages if that is required.
+    if packages_to_install is not None:
+        exec_script = (
+            get_script_for_python_packages(packages_to_install, pip_index_url)
+            + exec_script
         )
 
-        # Add function code to the execute script.
-        exec_script = exec_script.format(func_code=func_code)
+    # Return container command and args to execute training function.
+    return ["bash", "-c"], [exec_script]
 
-        # Install Python packages if that is required.
-        if packages_to_install is not None:
-            exec_script = (
-                get_script_for_python_packages(packages_to_install, pip_index_url)
-                + exec_script
-            )
 
-        # Add execution script to container arguments.
-        pod_template_spec.spec.containers[0].command = ["bash", "-c"]
-        pod_template_spec.spec.containers[0].args = [exec_script]
+def get_container_spec(
+    name: str,
+    base_image: str,
+    train_func: Optional[Callable] = None,
+    train_func_parameters: Optional[Dict[str, Any]] = None,
+    packages_to_install: Optional[List[str]] = None,
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+    args: Optional[List[str]] = None,
+    resources: Union[dict, models.V1ResourceRequirements, None] = None,
+    volume_mounts: Optional[List[models.V1VolumeMount]] = None,
+) -> models.V1Container:
+    """
+    Get container spec for the given parameters.
+    """
+
+    if name is None or base_image is None:
+        raise ValueError("Container name or base image cannot be none")
+
+    # Create initial container spec.
+    container_spec = models.V1Container(
+        name=name, image=base_image, args=args, volume_mounts=volume_mounts
+    )
+
+    # If training function is set, override container command and args to execute the function.
+    if train_func is not None:
+        container_spec.command, container_spec.args = get_command_using_train_func(
+            train_func=train_func,
+            train_func_parameters=train_func_parameters,
+            packages_to_install=packages_to_install,
+            pip_index_url=pip_index_url,
+        )
+
+    # Convert dict to the Kubernetes container resources if that is required.
+    if isinstance(resources, dict):
+        # Convert all keys in resources to lowercase.
+        resources = {k.lower(): v for k, v in resources.items()}
+        if "gpu" in resources:
+            resources["nvidia.com/gpu"] = resources.pop("gpu")
+
+        resources = models.V1ResourceRequirements(
+            requests=resources,
+            limits=resources,
+        )
+
+    # Add resources to the container spec.
+    container_spec.resources = resources
+
+    return container_spec
+
+
+def get_pod_template_spec(
+    containers: List[models.V1Container],
+    init_containers: Optional[List[models.V1Container]] = None,
+    volumes: Optional[List[models.V1Volume]] = None,
+) -> models.V1PodTemplateSpec:
+    """
+    Get Pod template spec for the given parameters.
+    """
+
+    # Create Pod template spec. If the value is None, Pod doesn't have that parameter
+    pod_template_spec = models.V1PodTemplateSpec(
+        metadata=models.V1ObjectMeta(
+            annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+        ),
+        spec=models.V1PodSpec(
+            init_containers=init_containers,
+            containers=containers,
+            volumes=volumes,
+        ),
+    )
 
     return pod_template_spec
 
@@ -312,7 +322,7 @@ def get_pytorchjob_template(
     # Check if at least one Worker is set.
     # TODO (andreyvelich): Remove this check once we have CEL validation.
     # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_workers is None or num_workers < 0:
+    if num_workers is None or num_workers < 1:
         raise ValueError("At least one Worker for PyTorchJob must be set")
 
     # Create PyTorchJob template.
@@ -323,13 +333,13 @@ def get_pytorchjob_template(
         spec=models.KubeflowOrgV1PyTorchJobSpec(
             run_policy=models.KubeflowOrgV1RunPolicy(clean_pod_policy=None),
             pytorch_replica_specs={},
+            elastic_policy=elastic_policy,
         ),
     )
 
+    # TODO (andreyvelich): Should we make spec.nproc_per_node int ?
     if num_procs_per_worker:
         pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
-    if elastic_policy:
-        pytorchjob.spec.elastic_policy = elastic_policy
 
     # Create Master replica if that is set.
     if master_pod_template_spec:
@@ -351,7 +361,8 @@ def get_pytorchjob_template(
     # Create Worker with num_workers - 1 replicas.
     # TODO (andreyvelich): Investigate if we can run PyTorchJob without the Master
     # Currently, if Master is not set, Training Operator controller
-    # doesn't set RANK and WORLD_SIZE for PyTorchJob
+    # doesn't set RANK and WORLD_SIZE for PyTorchJob.
+    # Ref issue: https://github.com/kubeflow/training-operator/issues/1991
     if num_workers > 1:
         pytorchjob.spec.pytorch_replica_specs[
             constants.REPLICA_TYPE_WORKER
@@ -364,9 +375,11 @@ def get_pytorchjob_template(
 
 
 def get_pvc_spec(
-    pvc_name: str, namespace: str, storage_size: str, storage_class: Optional[str]
+    pvc_name: str,
+    namespace: str,
+    storage_config: Dict[str, Optional[str]],
 ):
-    if pvc_name is None or namespace is None or storage_size is None:
+    if pvc_name is None or namespace is None or "size" not in storage_config:
         raise ValueError("One of the arguments is None")
 
     pvc_spec = models.V1PersistentVolumeClaim(
@@ -375,12 +388,14 @@ def get_pvc_spec(
         metadata={"name": pvc_name, "namepsace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
             access_modes=["ReadWriteOnce", "ReadOnlyMany"],
-            resources=models.V1ResourceRequirements(requests={"storage": storage_size}),
+            resources=models.V1ResourceRequirements(
+                requests={"storage": storage_config["size"]}
+            ),
         ),
     )
 
-    if storage_class is not None:
-        pvc_spec.spec.storage_class_name = storage_class
+    if "storage_class" in storage_config:
+        pvc_spec.spec.storage_class_name = storage_config["storage_class"]
 
     return pvc_spec
 
