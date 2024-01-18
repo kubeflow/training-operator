@@ -124,15 +124,6 @@ test_data = [
         ValueError,
     ),
     (
-        "invalid pod template spec parameters",
-        {
-            "name": "test job",
-            "train_func": lambda: "test train function",
-            "job_kind": constants.MXJOB_KIND,
-        },
-        KeyError,
-    ),
-    (
         "paddle job can't be created using function",
         {
             "name": "test job",
@@ -171,6 +162,16 @@ test_data = [
             "num_workers": 3,
             "packages_to_install": ["boto3==1.34.14"],
             "pip_index_url": "https://pypi.custom.com/simple",
+        },
+        "success",
+    ),
+    (
+        "valid flow to create job using image",
+        {
+            "name": "test-job",
+            "namespace": "test",
+            "base_image": "docker.io/test-training",
+            "num_workers": 2,
         },
         "success",
     ),
