@@ -20,7 +20,7 @@ ln -sf ${GIT_TRAINING} $(go env GOPATH)/src/github.com/kubeflow/training-operato
 Install dependencies
 
 ```sh
-go mod vendor
+go mod tidy
 ```
 
 Build it
@@ -75,7 +75,7 @@ make run
 To verify local operator is working, create an example job and you should see jobs created by it.
 
 ```sh
-cd ./examples/v1/dist-mnist
+cd ./examples/tensorflow/dist-mnist
 docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
 kubectl create -f ./tf_job_mnist.yaml
 ```
