@@ -172,8 +172,10 @@ class TrainingClient(object):
 
         if isinstance(dataset_provider_parameters, S3DatasetParams):
             dp = "s3"
+            dataset_name = dataset_provider_parameters.file_key.replace("_" * 3, "/")
         elif isinstance(dataset_provider_parameters, HfDatasetParams):
             dp = "hf"
+            dataset_name = dataset_provider_parameters.repo_id
         else:
             raise ValueError(
                 f"Invalid dataset provider parameters {dataset_provider_parameters}"
@@ -210,7 +212,7 @@ class TrainingClient(object):
                 "--dataset_dir",
                 VOLUME_PATH_DATASET,
                 "--dataset_name",
-                dataset_provider_parameters.repo_id,
+                dataset_name,
                 "--lora_config",
                 json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
                 "--training_parameters",

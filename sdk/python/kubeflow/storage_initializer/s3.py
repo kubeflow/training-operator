@@ -48,10 +48,22 @@ class S3(datasetProvider):
             region_name=self.config.region_name,
         )
 
-        # Download the file
-        s3_client.download_file(
-            self.config.bucket_name,
-            self.config.file_key,
-            os.path.join(VOLUME_PATH_DATASET, self.config.file_key),
+        response = s3_client.list_objects_v2(
+            Bucket=self.config.bucket_name, Prefix=self.config.file_key
         )
-        print(f"File downloaded to: {VOLUME_PATH_DATASET}")
+        # Download the file
+        for obj in response.get("Contents", []):
+            # Extract the object key (filename)
+            obj_key = obj["Key"]
+            os.makedirs(
+                os.path.join(VOLUME_PATH_DATASET, self.config.file_key), exist_ok=True
+            )
+            s3_client.download_file(
+                self.config.bucket_name,
+                obj_key,
+                os.path.join(
+                    os.path.join(VOLUME_PATH_DATASET, self.config.file_key),
+                    os.path.basename(obj_key),
+                ),
+            )
+        print(f"Files downloaded")
