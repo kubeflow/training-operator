@@ -13,7 +13,6 @@ spec:
           containers:
             - name: pytorch
               image: pytorch-cpu:py3.8
-              imagePullPolicy: Always
               command:
                 - "torchrun"
                 - "demo.py"
@@ -25,7 +24,6 @@ spec:
           containers:
             - name: pytorch
               image: pytorch-cpu:py3.8
-              imagePullPolicy: Always
               command:
                 - "torchrun"
                 - "demo.py"
