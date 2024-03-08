@@ -38,6 +38,8 @@ jobs:
             dockerfile: examples/pytorch/elastic/imagenet/Dockerfile
           - component-name: pytorch-elastic-example-echo
             dockerfile: examples/pytorch/elastic/echo/Dockerfile
+          - component-name: pytorch-cpu-demo-torchrun-cpu
+            dockerfile: examples/pytorch/cpu-demo/Dockerfile
           - component-name: xgboost-dist-iris
             dockerfile: examples/xgboost/xgboost-dist/Dockerfile
             context: examples/xgboost/xgboost-dist
