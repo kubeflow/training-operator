@@ -252,6 +252,7 @@ def initialize_model(
     # should always set the single device scope, otherwise,
     # DistributedDataParallel will use all available devices.
     model.to(device)
+    model = torch.compile(model)
     model = nn.parallel.DistributedDataParallel(model)
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss()

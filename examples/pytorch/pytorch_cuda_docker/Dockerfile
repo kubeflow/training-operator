@@ -41,8 +41,8 @@ RUN /var/miniconda/bin/conda install conda-build=3.18.9=py36_3 \
 # CUDA 9.2-specific steps
 RUN conda install -y -c pytorch \
     cudatoolkit=9.2 \
-    "pytorch=1.2.0=py3.6_cuda9.2.148_cudnn7.6.2_0" \
-    "torchvision=0.4.0=py36_cu92" \
+    "pytorch=2.2.1=py3.12_cuda12.1_cudnn8.9.2_0" \
+    "torchvision=0.17.1=py312_cu121" \
  && conda clean -ya
 
 # Install HDF5 Python bindings

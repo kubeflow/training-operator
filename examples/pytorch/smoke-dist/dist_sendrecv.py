@@ -1,16 +1,9 @@
 import logging
 import os
-import json
+
 import torch
 import torch.distributed as dist
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
-from math import ceil
-from random import Random
-from torch.autograd import Variable
-from torchvision import datasets, transforms
 
 def run():
     """ Simple Send/Recv for testing Master <--> Workers communication """
