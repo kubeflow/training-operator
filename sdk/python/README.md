@@ -29,7 +29,8 @@ python setup.py install --user
 
 ## Getting Started
 
-Please follow the [sample](examples/kubeflow-tfjob-sdk.ipynb) to create, update and delete TFJob.
+Please follow the [Getting Started guide](https://www.kubeflow.org/docs/components/training/overview/#getting-started)
+or check Training Operator [examples](../../examples).
 
 ## Documentation for API Endpoints
 
