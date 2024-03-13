@@ -42,6 +42,13 @@ runs:
         echo "Disk usage after cleanup:"
         df -hT
 
+    - name: Prune docker images
+      shell: bash
+      run: |
+        docker image prune -a -f
+        docker system df
+        df -hT
+
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v2
       with:
