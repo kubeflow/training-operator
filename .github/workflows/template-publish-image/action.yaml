@@ -28,16 +28,19 @@ runs:
     - name: Remove unnecessary files
       shell: bash
       run: |
+        echo "Disk usage before cleanup:"
+        df -hT
+
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf /usr/local/share/boost
         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /usr/local/share/powershell
         sudo rm -rf /usr/share/swift
-        
+
         echo "Disk usage after cleanup:"
-        df -h
+        df -hT
 
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v2
