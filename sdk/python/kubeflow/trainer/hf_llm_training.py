@@ -2,8 +2,10 @@ import argparse
 import logging
 from urllib.parse import urlparse
 import json
+import os
 
-from datasets import load_from_disk
+from datasets import load_from_disk, Dataset
+from datasets.distributed import split_dataset_by_node
 from peft import LoraConfig, get_peft_model
 import transformers
 from transformers import (
@@ -82,6 +84,25 @@ def load_and_preprocess_data(dataset_dir, transformer_type, tokenizer):
     except Exception:
         eval_data = None
         logger.info("Evaluation dataset is not found")
+
+    # Distribute dataset across PyTorchJob workers.
+    RANK = int(os.environ["RANK"])
+    WORLD_SIZE = int(os.environ["WORLD_SIZE"])
+    logger.info(
+        f"Distributed dataset across PyTorchJob workers. WORLD_SIZE: {WORLD_SIZE}, RANK: {RANK}"
+    )
+    if isinstance(train_data, Dataset):
+        train_data = split_dataset_by_node(
+            train_data,
+            rank=RANK,
+            world_size=WORLD_SIZE,
+        )
+    if isinstance(eval_data, Dataset):
+        eval_data = split_dataset_by_node(
+            eval_data,
+            rank=RANK,
+            world_size=WORLD_SIZE,
+        )
 
     return train_data, eval_data
 

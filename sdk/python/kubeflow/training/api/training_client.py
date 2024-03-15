@@ -100,9 +100,9 @@ class TrainingClient(object):
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
         storage_config: Dict[str, Optional[Union[str, List[str]]]] = {
-            "size": constants.STORAGE_INITIALIZER_DEFAULT_SIZE,
+            "size": constants.PVC_DEFAULT_SIZE,
             "storage_class": None,
-            "access_modes": ["ReadWriteOnce", "ReadOnlyMany"],
+            "access_modes": constants.PVC_DEFAULT_ACCESS_MODES,
         },
         model_provider_parameters=None,
         dataset_provider_parameters=None,
@@ -221,7 +221,6 @@ class TrainingClient(object):
         # create worker pod spec
         worker_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
-            init_containers=[init_container_spec],
             volumes=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 

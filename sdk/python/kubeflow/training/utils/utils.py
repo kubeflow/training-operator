@@ -383,14 +383,17 @@ def get_pvc_spec(
         raise ValueError("One of the required storage config argument is None")
 
     if "size" not in storage_config:
-        storage_config["size"] = constants.STORAGE_INITIALIZER_DEFAULT_SIZE
+        storage_config["size"] = constants.PVC_DEFAULT_SIZE
+
+    if "access_modes" not in storage_config:
+        storage_config["access_modes"] = constants.PVC_DEFAULT_ACCESS_MODES
 
     pvc_spec = models.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata={"name": pvc_name, "namepsace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
-            access_modes=storage_config,
+            access_modes=storage_config["access_modes"],
             resources=models.V1ResourceRequirements(
                 requests={"storage": storage_config["size"]}
             ),
