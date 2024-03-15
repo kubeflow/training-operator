@@ -99,9 +99,10 @@ class TrainingClient(object):
         namespace: Optional[str] = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        storage_config: Dict[str, Optional[str]] = {
-            "size": "10Gi",
+        storage_config: Dict[str, Optional[Union[str, List[str]]]] = {
+            "size": constants.STORAGE_INITIALIZER_DEFAULT_SIZE,
             "storage_class": None,
+            "access_modes": ["ReadWriteOnce", "ReadOnlyMany"],
         },
         model_provider_parameters=None,
         dataset_provider_parameters=None,
@@ -147,7 +148,6 @@ class TrainingClient(object):
                     pvc_name=constants.STORAGE_INITIALIZER,
                     namespace=namespace,
                     storage_config=storage_config,
-                    num_workers=num_workers,
                 ),
             )
         except Exception as e:
@@ -161,7 +161,7 @@ class TrainingClient(object):
                     )
                     break
             else:
-                raise RuntimeError("failed to create pvc")
+                raise RuntimeError(f"failed to create PVC. Error: {e}")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"

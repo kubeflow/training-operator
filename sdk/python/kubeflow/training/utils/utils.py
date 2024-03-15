@@ -377,27 +377,25 @@ def get_pytorchjob_template(
 def get_pvc_spec(
     pvc_name: str,
     namespace: str,
-    storage_config: Dict[str, Optional[str]],
-    num_workers: int,
+    storage_config: Dict[str, Optional[Union[str, List[str]]]],
 ):
-    if pvc_name is None or namespace is None or "size" not in storage_config:
-        raise ValueError("One of the arguments is None")
+    if pvc_name is None or namespace is None:
+        raise ValueError("One of the required storage config argument is None")
+
+    if "size" not in storage_config:
+        storage_config["size"] = constants.STORAGE_INITIALIZER_DEFAULT_SIZE
 
     pvc_spec = models.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata={"name": pvc_name, "namepsace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
-            access_modes=["ReadWriteOnce", "ReadOnlyMany"],
+            access_modes=storage_config,
             resources=models.V1ResourceRequirements(
                 requests={"storage": storage_config["size"]}
             ),
         ),
     )
-
-    # If PyTorchJob has 1 worker, ReadWriteOnce access mode is sufficient for PVC.
-    if num_workers == 1:
-        pvc_spec.spec.access_modes = ["ReadWriteOnce"]
 
     if "storage_class" in storage_config:
         pvc_spec.spec.storage_class_name = storage_config["storage_class"]
