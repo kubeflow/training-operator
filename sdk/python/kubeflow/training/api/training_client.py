@@ -99,9 +99,10 @@ class TrainingClient(object):
         namespace: Optional[str] = None,
         num_workers: int = 1,
         num_procs_per_worker: int = 1,
-        storage_config: Dict[str, Optional[str]] = {
-            "size": "10Gi",
+        storage_config: Dict[str, Optional[Union[str, List[str]]]] = {
+            "size": constants.PVC_DEFAULT_SIZE,
             "storage_class": None,
+            "access_modes": constants.PVC_DEFAULT_ACCESS_MODES,
         },
         model_provider_parameters=None,
         dataset_provider_parameters=None,
@@ -125,7 +126,6 @@ class TrainingClient(object):
         from kubeflow.storage_initializer.s3 import S3DatasetParams
         from kubeflow.storage_initializer.hugging_face import (
             HuggingFaceModelParams,
-            HuggingFaceTrainParams,
             HfDatasetParams,
         )
 
@@ -161,7 +161,7 @@ class TrainingClient(object):
                     )
                     break
             else:
-                raise RuntimeError("failed to create pvc")
+                raise RuntimeError(f"failed to create PVC. Error: {e}")
 
         if isinstance(model_provider_parameters, HuggingFaceModelParams):
             mp = "hf"
@@ -209,8 +209,6 @@ class TrainingClient(object):
                 VOLUME_PATH_MODEL,
                 "--dataset_dir",
                 VOLUME_PATH_DATASET,
-                "--dataset_name",
-                dataset_provider_parameters.repo_id,
                 "--lora_config",
                 json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
                 "--training_parameters",
@@ -223,7 +221,6 @@ class TrainingClient(object):
         # create worker pod spec
         worker_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
-            init_containers=[init_container_spec],
             volumes=[constants.STORAGE_INITIALIZER_VOLUME],
         )
 
