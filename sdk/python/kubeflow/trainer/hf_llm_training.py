@@ -95,7 +95,6 @@ def setup_peft_model(model, lora_config):
 
 
 def train_model(model, transformer_type, train_data, eval_data, tokenizer, train_args):
-
     # Setup the Trainer.
     trainer = Trainer(
         model=model,
