@@ -102,11 +102,6 @@ class HuggingFaceDataset(datasetProvider):
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)
 
-        load_dataset(self.config.repo_id, cache_dir=VOLUME_PATH_DATASET)
-
         # Load dataset and save to disk.
-        dataset = load_dataset(
-            self.config.repo_id,
-            split=self.config.split,
-        )
+        dataset = load_dataset(self.config.repo_id, split=self.config.split)
         dataset.save_to_disk(VOLUME_PATH_DATASET)
