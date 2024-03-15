@@ -71,6 +71,13 @@ REPLICA_TYPE_LAUNCHER = "Launcher"
 
 # Constants for Train API.
 STORAGE_INITIALIZER = "storage-initializer"
+# The default value for dataset and model storage PVC.
+PVC_DEFAULT_SIZE = "10Gi"
+# The default value for PVC access modes.
+PVC_DEFAULT_ACCESS_MODES = ["ReadWriteOnce", "ReadOnlyMany"]
+
+
+# TODO (andreyvelich): We should add image tag for Storage Initializer and Trainer.
 STORAGE_INITIALIZER_IMAGE = "docker.io/kubeflow/storage-initializer"
 
 STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(

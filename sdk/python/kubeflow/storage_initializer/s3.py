@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-import json, os
-import boto3
+import json
+import os
 from urllib.parse import urlparse
 from .abstract_dataset_provider import datasetProvider
 from .constants import VOLUME_PATH_DATASET
@@ -39,6 +39,8 @@ class S3(datasetProvider):
         self.config = S3DatasetParams(**json.loads(serialised_args))
 
     def download_dataset(self):
+        import boto3
+
         # Create an S3 client for Nutanix Object Store/S3
         s3_client = boto3.client(
             "s3",

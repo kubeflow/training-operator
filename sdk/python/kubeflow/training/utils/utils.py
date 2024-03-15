@@ -284,27 +284,27 @@ def get_tfjob_template(
 
     # Add Chief, PS, and Worker replicas to the TFJob.
     if num_chief_replicas is not None:
-        tfjob.spec.tf_replica_specs[
-            constants.REPLICA_TYPE_CHIEF
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_chief_replicas,
-            template=pod_template_spec,
+        tfjob.spec.tf_replica_specs[constants.REPLICA_TYPE_CHIEF] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=num_chief_replicas,
+                template=pod_template_spec,
+            )
         )
 
     if num_ps_replicas is not None:
-        tfjob.spec.tf_replica_specs[
-            constants.REPLICA_TYPE_PS
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_ps_replicas,
-            template=pod_template_spec,
+        tfjob.spec.tf_replica_specs[constants.REPLICA_TYPE_PS] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=num_ps_replicas,
+                template=pod_template_spec,
+            )
         )
 
     if num_workers is not None:
-        tfjob.spec.tf_replica_specs[
-            constants.REPLICA_TYPE_WORKER
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_workers,
-            template=pod_template_spec,
+        tfjob.spec.tf_replica_specs[constants.REPLICA_TYPE_WORKER] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=num_workers,
+                template=pod_template_spec,
+            )
         )
 
     return tfjob
@@ -343,19 +343,19 @@ def get_pytorchjob_template(
 
     # Create Master replica if that is set.
     if master_pod_template_spec:
-        pytorchjob.spec.pytorch_replica_specs[
-            constants.REPLICA_TYPE_MASTER
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=1,
-            template=master_pod_template_spec,
+        pytorchjob.spec.pytorch_replica_specs[constants.REPLICA_TYPE_MASTER] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=1,
+                template=master_pod_template_spec,
+            )
         )
     # If we don't define Master template, use the Worker template.
     else:
-        pytorchjob.spec.pytorch_replica_specs[
-            constants.REPLICA_TYPE_MASTER
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=1,
-            template=worker_pod_template_spec,
+        pytorchjob.spec.pytorch_replica_specs[constants.REPLICA_TYPE_MASTER] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=1,
+                template=worker_pod_template_spec,
+            )
         )
 
     # Create Worker with num_workers - 1 replicas.
@@ -364,11 +364,11 @@ def get_pytorchjob_template(
     # doesn't set RANK and WORLD_SIZE for PyTorchJob.
     # Ref issue: https://github.com/kubeflow/training-operator/issues/1991
     if num_workers > 1:
-        pytorchjob.spec.pytorch_replica_specs[
-            constants.REPLICA_TYPE_WORKER
-        ] = models.KubeflowOrgV1ReplicaSpec(
-            replicas=num_workers - 1,
-            template=worker_pod_template_spec,
+        pytorchjob.spec.pytorch_replica_specs[constants.REPLICA_TYPE_WORKER] = (
+            models.KubeflowOrgV1ReplicaSpec(
+                replicas=num_workers - 1,
+                template=worker_pod_template_spec,
+            )
         )
 
     return pytorchjob
@@ -377,17 +377,23 @@ def get_pytorchjob_template(
 def get_pvc_spec(
     pvc_name: str,
     namespace: str,
-    storage_config: Dict[str, Optional[str]],
+    storage_config: Dict[str, Optional[Union[str, List[str]]]],
 ):
-    if pvc_name is None or namespace is None or "size" not in storage_config:
-        raise ValueError("One of the arguments is None")
+    if pvc_name is None or namespace is None:
+        raise ValueError("One of the required storage config argument is None")
+
+    if "size" not in storage_config:
+        storage_config["size"] = constants.PVC_DEFAULT_SIZE
+
+    if "access_modes" not in storage_config:
+        storage_config["access_modes"] = constants.PVC_DEFAULT_ACCESS_MODES
 
     pvc_spec = models.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
         metadata={"name": pvc_name, "namepsace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
-            access_modes=["ReadWriteOnce", "ReadOnlyMany"],
+            access_modes=storage_config["access_modes"],
             resources=models.V1ResourceRequirements(
                 requests={"storage": storage_config["size"]}
             ),

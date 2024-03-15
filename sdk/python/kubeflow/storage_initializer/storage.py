@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_provider_parameters",
         type=str,
-        help="dataset provider serialised arguments",
+        help="dataset provider serialized arguments",
     )
     args = parser.parse_args()
 

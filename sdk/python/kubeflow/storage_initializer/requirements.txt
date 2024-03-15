@@ -1,8 +1,5 @@
-einops>=0.6.1
-transformers_stream_generator==0.0.4
+peft==0.3.0
+datasets==2.15.0
+transformers==4.37.2
 boto3==1.33.9
-transformers>=4.20.0
-peft>=0.3.0
-huggingface_hub==0.16.4
-datasets>=2.13.2
-
+huggingface_hub==0.19.3
