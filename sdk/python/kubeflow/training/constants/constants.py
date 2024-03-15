@@ -71,6 +71,7 @@ REPLICA_TYPE_LAUNCHER = "Launcher"
 
 # Constants for Train API.
 STORAGE_INITIALIZER = "storage-initializer"
+# TODO (andreyvelich): We should add image tag for Storage Initializer and Trainer.
 STORAGE_INITIALIZER_IMAGE = "docker.io/kubeflow/storage-initializer"
 
 STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(

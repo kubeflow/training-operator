@@ -125,7 +125,6 @@ class TrainingClient(object):
         from kubeflow.storage_initializer.s3 import S3DatasetParams
         from kubeflow.storage_initializer.hugging_face import (
             HuggingFaceModelParams,
-            HuggingFaceTrainParams,
             HfDatasetParams,
         )
 
@@ -148,6 +147,7 @@ class TrainingClient(object):
                     pvc_name=constants.STORAGE_INITIALIZER,
                     namespace=namespace,
                     storage_config=storage_config,
+                    num_workers=num_workers,
                 ),
             )
         except Exception as e:
@@ -209,8 +209,6 @@ class TrainingClient(object):
                 VOLUME_PATH_MODEL,
                 "--dataset_dir",
                 VOLUME_PATH_DATASET,
-                "--dataset_name",
-                dataset_provider_parameters.repo_id,
                 "--lora_config",
                 json.dumps(train_parameters.lora_config.__dict__, cls=utils.SetEncoder),
                 "--training_parameters",
