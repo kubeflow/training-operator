@@ -185,7 +185,6 @@ def main():
     print(f"World Size: {os.environ['WORLD_SIZE']}. Rank: {os.environ['RANK']}")
 
     dist.init_process_group(backend=args.backend)
-    model = torch.compile(model)
     model = nn.parallel.DistributedDataParallel(model)
 
     # Get FashionMNIST train and test dataset.

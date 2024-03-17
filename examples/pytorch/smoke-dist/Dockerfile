@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime
+FROM nvcr.io/nvidia/pytorch:24.01-py3
 
 RUN mkdir -p /opt/mlkube
 COPY examples/pytorch/smoke-dist/dist_sendrecv.py /opt/mlkube/

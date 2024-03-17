@@ -1,7 +1,4 @@
-FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime
-
-RUN apt update \
-    && apt install --no-install-recommends -y g++
+FROM nvcr.io/nvidia/pytorch:24.01-py3
 
 RUN pip install tensorboardX==2.6.2
 RUN mkdir -p /opt/mnist
