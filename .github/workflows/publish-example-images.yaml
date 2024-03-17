@@ -55,8 +55,7 @@ jobs:
           - component-name: mxnet-auto-tuning
             dockerfile: examples/mxnet/tune/Dockerfile
             context: examples/mxnet/tune
-# TODO (tenzen-y): Fix the below broken Dockerfiles
-#          - component-name: pytorch-dist-mnist-mpi
-#            dockerfile: examples/pytorch/mnist/Dockerfile-mpi
-#          - component-name: pytorch-dist-mnist
-#            dockerfile: examples/pytorch/mnist/Dockerfile
+          - component-name: pytorch-dist-mnist
+            dockerfile: examples/pytorch/mnist/Dockerfile
+          - component-name: pytorch-dist-mnist-mpi
+            dockerfile: examples/pytorch/mnist/Dockerfile-mpi
