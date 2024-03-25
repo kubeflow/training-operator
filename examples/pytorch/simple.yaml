@@ -16,7 +16,7 @@ spec:
               imagePullPolicy: Always
               command:
                 - "python3"
-                - "/opt/pytorch-mnist/mnist.py"
+                - "/opt/mnist/src/mnist.py"
                 - "--epochs=1"
     Worker:
       replicas: 1
@@ -29,5 +29,5 @@ spec:
               imagePullPolicy: Always
               command:
                 - "python3"
-                - "/opt/pytorch-mnist/mnist.py"
+                - "/opt/mnist/src/mnist.py"
                 - "--epochs=1"

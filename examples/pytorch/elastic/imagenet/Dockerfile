@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:24.01-py3
 FROM $BASE_IMAGE
 
 WORKDIR /workspace
