@@ -7,3 +7,9 @@ resources:
 images:
   - name: kubeflow/training-operator
     newTag: "v1-855e096"
+# TODO (tenzen-y): Once we support cert-manager, we need to remove this secret generation.
+# REF: https://github.com/kubeflow/training-operator/issues/2049
+secretGenerator:
+  - name: training-operator-webhook-cert
+    options:
+      disableNameSuffixHash: true

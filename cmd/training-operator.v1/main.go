@@ -19,6 +19,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"net/http"
 	"os"
 	"strings"
 
@@ -40,9 +41,11 @@ import (
 	volcanoclient "volcano.sh/apis/pkg/client/clientset/versioned"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/cert"
 	"github.com/kubeflow/training-operator/pkg/config"
 	controllerv1 "github.com/kubeflow/training-operator/pkg/controller.v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/webhooks"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -72,8 +75,11 @@ func main() {
 	var enabledSchemes controllerv1.EnabledSchemes
 	var gangSchedulerName string
 	var namespace string
-	var webhookServerPort int
 	var controllerThreads int
+	var webhookServerPort int
+	var webhookServiceName string
+	var webhookSecretName string
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -86,7 +92,6 @@ func main() {
 		" Note: If you set another scheduler name, the training-operator assumes it's the scheduler-plugins.")
 	flag.StringVar(&namespace, "namespace", os.Getenv(EnvKubeflowNamespace), "The namespace to monitor kubeflow jobs. If unset, it monitors all namespaces cluster-wide."+
 		"If set, it only monitors kubeflow jobs in the given namespace.")
-	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
 	flag.IntVar(&controllerThreads, "controller-threads", 1, "Number of worker threads used by the controller.")
 
 	// PyTorch related flags
@@ -100,6 +105,11 @@ func main() {
 	// MPI related flags
 	flag.StringVar(&config.Config.MPIKubectlDeliveryImage, "mpi-kubectl-delivery-image",
 		config.MPIKubectlDeliveryImageDefault, "The image for mpi launcher init container")
+
+	// Cert generation flags
+	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
+	flag.StringVar(&webhookServiceName, "webhook-service-name", "training-operator", "Name of the Service used as part of the DNSName")
+	flag.StringVar(&webhookSecretName, "webhook-secret-name", "training-operator-webhook-cert", "Name of the Secret to store CA  and server certs")
 
 	opts := zap.Options{
 		Development:     true,
@@ -124,9 +134,9 @@ func main() {
 		Metrics: metricsserver.Options{
 			BindAddress: metricsAddr,
 		},
-		WebhookServer: &webhook.DefaultServer{Options: webhook.Options{
+		WebhookServer: webhook.NewServer(webhook.Options{
 			Port: webhookServerPort,
-		}},
+		}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       leaderElectionID,
@@ -137,19 +147,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	certsReady := make(chan struct{})
+	defer close(certsReady)
+	certGenerationConfig := cert.Config{
+		WebhookSecretName:  webhookSecretName,
+		WebhookServiceName: webhookServiceName,
+	}
+	if err = cert.ManageCerts(mgr, certGenerationConfig, certsReady); err != nil {
+		setupLog.Error(err, "Unable to set up cert rotation")
+		os.Exit(1)
+	}
+
+	setupProbeEndpoints(mgr, certsReady)
 	// Set up controllers using goroutines to start the manager quickly.
-	go setupControllers(mgr, enabledSchemes, gangSchedulerName, controllerThreads)
+	go setupControllers(mgr, enabledSchemes, gangSchedulerName, controllerThreads, certsReady)
 
 	//+kubebuilder:scaffold:builder
-
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
@@ -158,9 +171,12 @@ func main() {
 	}
 }
 
-func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchemes, gangSchedulerName string, controllerThreads int) {
-	setupLog.Info("registering controllers...")
+func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchemes, gangSchedulerName string, controllerThreads int, certsReady <-chan struct{}) {
+	setupLog.Info("Waiting for certificate generation to complete")
+	<-certsReady
+	setupLog.Info("Certs ready")
 
+	setupLog.Info("registering controllers...")
 	// Prepare GangSchedulingSetupFunc
 	gangSchedulingSetupFunc := common.GenNonGangSchedulerSetupFunc()
 	if strings.EqualFold(gangSchedulerName, string(common.GangSchedulerVolcano)) {
@@ -182,15 +198,52 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 	}
 	errMsg := "failed to set up controllers"
 	for _, s := range enabledSchemes {
-		setupFunc, supported := controllerv1.SupportedSchemeReconciler[s]
-		if !supported {
+		setupReconcilerFunc, supportedReconciler := controllerv1.SupportedSchemeReconciler[s]
+		if !supportedReconciler {
 			setupLog.Error(errors.New(errMsg), "scheme is not supported", "scheme", s)
 			os.Exit(1)
 		}
-		if err := setupFunc(mgr, gangSchedulingSetupFunc, controllerThreads); err != nil {
+		if err := setupReconcilerFunc(mgr, gangSchedulingSetupFunc, controllerThreads); err != nil {
 			setupLog.Error(errors.New(errMsg), "unable to create controller", "scheme", s)
 			os.Exit(1)
 		}
+		setupWebhookFunc, supportedWebhook := webhooks.SupportedSchemeWebhook[s]
+		if !supportedWebhook {
+			setupLog.Error(errors.New(errMsg), "scheme is not supported", "scheme", s)
+			os.Exit(1)
+		}
+		if err := setupWebhookFunc(mgr); err != nil {
+			setupLog.Error(errors.New(errMsg), "unable to start webhook server", "scheme", s)
+			os.Exit(1)
+		}
+	}
+}
+
+func setupProbeEndpoints(mgr ctrl.Manager, certsReady <-chan struct{}) {
+	defer setupLog.Info("Probe endpoints are configured on healthz and readyz")
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+
+	// Wait for the webhook server to be listening before advertising the
+	// training-operator replica as ready. This allows users to wait with sending the first
+	// requests, requiring webhooks, until the training-operator deployment is available, so
+	// that the early requests are not rejected during the traininig-operator's startup.
+	// We wrap the call to GetWebhookServer in a closure to delay calling
+	// the function, otherwise a not fully-initialized webhook server (without
+	// ready certs) fails the start of the manager.
+	if err := mgr.AddReadyzCheck("readyz", func(req *http.Request) error {
+		select {
+		case <-certsReady:
+			return mgr.GetWebhookServer().StartedChecker()(req)
+		default:
+			return errors.New("certificates are not ready")
+		}
+	}); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
 	}
 }
 
