@@ -5,5 +5,7 @@ resources:
   - ./rbac/cluster-role-binding.yaml
   - ./rbac/role.yaml
   - ./rbac/service-account.yaml
+  - ./internalcert
+  - ./webhook
   - service.yaml
   - deployment.yaml
