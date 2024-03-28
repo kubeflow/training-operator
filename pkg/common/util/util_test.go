@@ -20,7 +20,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
@@ -45,7 +45,7 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		{
 			name: "succeeded job with remaining time 1s",
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(5),
+				TTLSecondsAfterFinished: ptr.To[int32](5),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
@@ -57,7 +57,7 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		{
 			name: "failed job with remaining time 1s",
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(5),
+				TTLSecondsAfterFinished: ptr.To[int32](5),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobFailed)},
@@ -79,7 +79,7 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		{
 			name: "succeeded job without remaining time",
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(5),
+				TTLSecondsAfterFinished: ptr.To[int32](5),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				Conditions:     []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},
@@ -91,7 +91,7 @@ func TestDurationUntilExpireTime(t *testing.T) {
 		{
 			name: "succeeded job with nil completion time error",
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(5),
+				TTLSecondsAfterFinished: ptr.To[int32](5),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				Conditions: []kubeflowv1.JobCondition{newJobCondition(kubeflowv1.JobSucceeded)},

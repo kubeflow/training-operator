@@ -19,13 +19,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestValidateV1MXJob(t *testing.T) {
 	validMXReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		MXJobReplicaTypeScheduler: {
-			Replicas:      pointer.Int32(1),
+			Replicas:      ptr.To[int32](1),
 			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -37,7 +37,7 @@ func TestValidateV1MXJob(t *testing.T) {
 			},
 		},
 		MXJobReplicaTypeServer: {
-			Replicas:      pointer.Int32(1),
+			Replicas:      ptr.To[int32](1),
 			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -49,7 +49,7 @@ func TestValidateV1MXJob(t *testing.T) {
 			},
 		},
 		MXJobReplicaTypeWorker: {
-			Replicas:      pointer.Int32(1),
+			Replicas:      ptr.To[int32](1),
 			RestartPolicy: RestartPolicyNever,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{

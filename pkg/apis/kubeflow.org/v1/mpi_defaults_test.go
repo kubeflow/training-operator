@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func expectedMPIJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy) *MPIJob {
@@ -17,7 +17,7 @@ func expectedMPIJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy) 
 			},
 			MPIReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 				MPIJobReplicaTypeLauncher: {
-					Replicas:      pointer.Int32(1),
+					Replicas:      ptr.To[int32](1),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
@@ -31,7 +31,7 @@ func expectedMPIJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy) 
 					},
 				},
 				MPIJobReplicaTypeWorker: {
-					Replicas:      pointer.Int32(0),
+					Replicas:      ptr.To[int32](0),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{

@@ -21,7 +21,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/config"
@@ -47,7 +47,7 @@ func TestInitContainer(t *testing.T) {
 				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
-							Replicas: pointer.Int32(1),
+							Replicas: ptr.To[int32](1),
 						},
 					},
 				},
@@ -62,10 +62,10 @@ func TestInitContainer(t *testing.T) {
 				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
-							Replicas: pointer.Int32(1),
+							Replicas: ptr.To[int32](1),
 						},
 						kubeflowv1.PyTorchJobReplicaTypeMaster: {
-							Replicas: pointer.Int32(1),
+							Replicas: ptr.To[int32](1),
 						},
 					},
 				},
@@ -80,10 +80,10 @@ func TestInitContainer(t *testing.T) {
 				Spec: kubeflowv1.PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 						kubeflowv1.PyTorchJobReplicaTypeWorker: {
-							Replicas: pointer.Int32(1),
+							Replicas: ptr.To[int32](1),
 						},
 						kubeflowv1.PyTorchJobReplicaTypeMaster: {
-							Replicas: pointer.Int32(1),
+							Replicas: ptr.To[int32](1),
 						},
 					},
 				},

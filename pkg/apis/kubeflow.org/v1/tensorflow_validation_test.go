@@ -19,13 +19,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestValidateV1TFJob(t *testing.T) {
 	validTFReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		TFJobReplicaTypeWorker: {
-			Replicas:      pointer.Int32(2),
+			Replicas:      ptr.To[int32](2),
 			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
