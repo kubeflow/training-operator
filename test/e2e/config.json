@@ -1,0 +1,23 @@
+{
+    "model_name_or_path": "bigscience/bloom-560m",
+    "training_data_path": "/etc/config/twitter_complaints_small.json",
+    "output_dir": "/tmp/out",
+    "num_train_epochs": 1.0,
+    "per_device_train_batch_size": 4,
+    "per_device_eval_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "evaluation_strategy": "no",
+    "save_strategy": "epoch",
+    "learning_rate": 1e-5,
+    "weight_decay": 0.0,
+    "lr_scheduler_type": "cosine",
+    "logging_steps": 1.0,
+    "packing": false,
+    "include_tokens_per_second": true,
+    "response_template": "\n### Label:",
+    "dataset_text_field": "output",
+    "use_flash_attn": false,
+    "torch_dtype": "float32",
+    "peft_method": "pt",
+    "tokenizer_name_or_path": "bigscience/bloom"
+}
