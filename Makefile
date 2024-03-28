@@ -62,7 +62,7 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	golangci-lint run --timeout 5m --go 1.20 ./...
 
-ENVTEST_K8S_VERSION ?= 1.27
+ENVTEST_K8S_VERSION ?= 1.28
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
