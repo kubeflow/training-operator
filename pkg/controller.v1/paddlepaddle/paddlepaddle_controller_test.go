@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -67,7 +67,7 @@ var _ = Describe("PaddleJob controller", func() {
 			}
 			job.Spec.PaddleReplicaSpecs = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 				kubeflowv1.PaddleJobReplicaTypeMaster: {
-					Replicas: pointer.Int32(1),
+					Replicas: ptr.To[int32](1),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -87,7 +87,7 @@ var _ = Describe("PaddleJob controller", func() {
 					},
 				},
 				kubeflowv1.PaddleJobReplicaTypeWorker: {
-					Replicas: pointer.Int32(2),
+					Replicas: ptr.To[int32](2),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -185,8 +185,8 @@ var _ = Describe("PaddleJob controller", func() {
 		})
 		It("Shouldn't create resources if PaddleJob is suspended", func() {
 			By("By creating a new PaddleJob with suspend=true")
-			job.Spec.RunPolicy.Suspend = pointer.Bool(true)
-			job.Spec.PaddleReplicaSpecs[kubeflowv1.PaddleJobReplicaTypeWorker].Replicas = pointer.Int32(1)
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
+			job.Spec.PaddleReplicaSpecs[kubeflowv1.PaddleJobReplicaTypeWorker].Replicas = ptr.To[int32](1)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.PaddleJob{}
@@ -238,7 +238,7 @@ var _ = Describe("PaddleJob controller", func() {
 
 		It("Should delete resources after PaddleJob is suspended; Should resume PaddleJob after PaddleJob is unsuspended", func() {
 			By("By creating a new PaddleJob")
-			job.Spec.PaddleReplicaSpecs[kubeflowv1.PaddleJobReplicaTypeWorker].Replicas = pointer.Int32(1)
+			job.Spec.PaddleReplicaSpecs[kubeflowv1.PaddleJobReplicaTypeWorker].Replicas = ptr.To[int32](1)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.PaddleJob{}
@@ -307,7 +307,7 @@ var _ = Describe("PaddleJob controller", func() {
 			By("Updating the PaddleJob with suspend=true")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(true)
+				created.Spec.RunPolicy.Suspend = ptr.To(true)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
@@ -368,7 +368,7 @@ var _ = Describe("PaddleJob controller", func() {
 			By("Unsuspending the PaddleJob")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(false)
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 			Eventually(func() *metav1.Time {

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func expectedMXNetJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, replicas int32, portName string, port int32) *MXJob {
@@ -51,13 +51,13 @@ func expectedMXNetJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy
 				CleanPodPolicy: &cleanPodPolicy,
 			},
 			MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-				MXJobReplicaTypeWorker: &ReplicaSpec{
-					Replicas:      pointer.Int32(replicas),
+				MXJobReplicaTypeWorker: {
+					Replicas:      ptr.To[int32](replicas),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
-								corev1.Container{
+								{
 									Name:  MXJobDefaultContainerName,
 									Image: testImage,
 									Ports: ports,
@@ -80,11 +80,11 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
+						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -101,12 +101,12 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
+						MXJobReplicaTypeWorker: {
 							RestartPolicy: RestartPolicyOnFailure,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -123,12 +123,12 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
-							Replicas: pointer.Int32(3),
+						MXJobReplicaTypeWorker: {
+							Replicas: ptr.To[int32](3),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -146,15 +146,15 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
+						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          MXJobDefaultPortName,
 													ContainerPort: MXJobDefaultPort,
 												},
@@ -174,15 +174,15 @@ func TestSetDefaults_MXJob(t *testing.T) {
 			original: &MXJob{
 				Spec: MXJobSpec{
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
+						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          MXJobDefaultPortName,
 													ContainerPort: 9999,
 												},
@@ -205,11 +205,11 @@ func TestSetDefaults_MXJob(t *testing.T) {
 						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					MXReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						MXJobReplicaTypeWorker: &ReplicaSpec{
+						MXJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  MXJobDefaultContainerName,
 											Image: testImage,
 										},
