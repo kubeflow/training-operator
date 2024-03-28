@@ -1,0 +1,28 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: "cpu-flavor"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: "cq-small"
+spec:
+  namespaceSelector: {} # match all.
+  resourceGroups:
+  - coveredResources: ["cpu", "memory"]
+    flavors:
+    - name: "cpu-flavor"
+      resources:
+      - name: "cpu"
+        nominalQuota: 5
+      - name: "memory"
+        nominalQuota: 20Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: lq-trainer
+  namespace: default
+spec:
+  clusterQueue: cq-small
