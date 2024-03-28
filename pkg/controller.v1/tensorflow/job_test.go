@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -531,12 +531,12 @@ var _ = Describe("TFJob controller", func() {
 			testCases := []testCase{
 				{
 					description: "succeeded job with TTL 3s",
-					tfJob:       tftestutil.NewTFJobWithCleanupJobDelay(0, 1, 0, pointer.Int32(3)),
+					tfJob:       tftestutil.NewTFJobWithCleanupJobDelay(0, 1, 0, ptr.To[int32](3)),
 					phase:       corev1.PodSucceeded,
 				},
 				{
 					description: "failed job with TTL 3s",
-					tfJob:       tftestutil.NewTFJobWithCleanupJobDelay(0, 1, 0, pointer.Int32(3)),
+					tfJob:       tftestutil.NewTFJobWithCleanupJobDelay(0, 1, 0, ptr.To[int32](3)),
 					phase:       corev1.PodFailed,
 				},
 			}
@@ -664,9 +664,9 @@ var _ = Describe("Test for controller.v1/common", func() {
 			wantErr:            false,
 		}),
 		Entry("Error is occurred since completionTime is nil", &cleanUpCases{
-			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(10)),
+			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, ptr.To[int32](10)),
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(10),
+				TTLSecondsAfterFinished: ptr.To[int32](10),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				CompletionTime: nil,
@@ -675,9 +675,9 @@ var _ = Describe("Test for controller.v1/common", func() {
 			wantErr:            true,
 		}),
 		Entry("TFJob is removed since exceeded TTL (TTL is 180s)", &cleanUpCases{
-			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(180)),
+			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, ptr.To[int32](180)),
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(180),
+				TTLSecondsAfterFinished: ptr.To[int32](180),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				CompletionTime: &metav1.Time{
@@ -688,9 +688,9 @@ var _ = Describe("Test for controller.v1/common", func() {
 			wantErr:            false,
 		}),
 		Entry("TFJob is removed since (TTL is 0s)", &cleanUpCases{
-			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, pointer.Int32(0)),
+			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, ptr.To[int32](0)),
 			runPolicy: &kubeflowv1.RunPolicy{
-				TTLSecondsAfterFinished: pointer.Int32(0),
+				TTLSecondsAfterFinished: ptr.To[int32](0),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				CompletionTime: &now,

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func expectedXGBoostJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, replicas int32, portName string, port int32) *XGBoostJob {
@@ -51,13 +51,13 @@ func expectedXGBoostJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPoli
 				CleanPodPolicy: &cleanPodPolicy,
 			},
 			XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-				XGBoostJobReplicaTypeWorker: &ReplicaSpec{
-					Replicas:      pointer.Int32(replicas),
+				XGBoostJobReplicaTypeWorker: {
+					Replicas:      ptr.To[int32](replicas),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
-								corev1.Container{
+								{
 									Name:  XGBoostJobDefaultContainerName,
 									Image: testImage,
 									Ports: ports,
@@ -80,11 +80,11 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -101,12 +101,12 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: {
 							RestartPolicy: RestartPolicyOnFailure,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -123,12 +123,12 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
-							Replicas: pointer.Int32(3),
+						XGBoostJobReplicaTypeWorker: {
+							Replicas: ptr.To[int32](3),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -146,15 +146,15 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          XGBoostJobDefaultPortName,
 													ContainerPort: XGBoostJobDefaultPort,
 												},
@@ -174,15 +174,15 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 			original: &XGBoostJob{
 				Spec: XGBoostJobSpec{
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          XGBoostJobDefaultPortName,
 													ContainerPort: 9999,
 												},
@@ -204,11 +204,11 @@ func TestSetDefaults_XGBoostJob(t *testing.T) {
 						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					XGBReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						XGBoostJobReplicaTypeWorker: &ReplicaSpec{
+						XGBoostJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  XGBoostJobDefaultContainerName,
 											Image: testImage,
 										},

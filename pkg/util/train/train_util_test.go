@@ -17,7 +17,7 @@ package train
 import (
 	"testing"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
@@ -74,13 +74,13 @@ func TestIsJobSuspended(t *testing.T) {
 		},
 		"suspend is false": {
 			runPolicy: &kubeflowv1.RunPolicy{
-				Suspend: pointer.Bool(false),
+				Suspend: ptr.To(false),
 			},
 			want: false,
 		},
 		"suspend is true": {
 			runPolicy: &kubeflowv1.RunPolicy{
-				Suspend: pointer.Bool(true),
+				Suspend: ptr.To(true),
 			},
 			want: true,
 		},

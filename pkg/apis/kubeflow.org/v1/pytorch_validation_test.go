@@ -19,13 +19,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestValidateV1PyTorchJob(t *testing.T) {
 	validPyTorchReplicaSpecs := map[ReplicaType]*ReplicaSpec{
 		PyTorchJobReplicaTypeMaster: {
-			Replicas:      pointer.Int32(1),
+			Replicas:      ptr.To[int32](1),
 			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -43,7 +43,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			},
 		},
 		PyTorchJobReplicaTypeWorker: {
-			Replicas:      pointer.Int32(1),
+			Replicas:      ptr.To[int32](1),
 			RestartPolicy: RestartPolicyOnFailure,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -163,7 +163,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 				Spec: PyTorchJobSpec{
 					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeMaster: {
-							Replicas: pointer.Int32(2),
+							Replicas: ptr.To[int32](2),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
@@ -186,13 +186,13 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: PyTorchJobSpec{
-					NprocPerNode: pointer.String("1"),
+					NprocPerNode: ptr.To("1"),
 					ElasticPolicy: &ElasticPolicy{
-						NProcPerNode: pointer.Int32(1),
+						NProcPerNode: ptr.To[int32](1),
 					},
 					PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 						PyTorchJobReplicaTypeMaster: {
-							Replicas: pointer.Int32(2),
+							Replicas: ptr.To[int32](2),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{

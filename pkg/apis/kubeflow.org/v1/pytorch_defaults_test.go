@@ -5,7 +5,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestSetElasticPolicy(t *testing.T) {
@@ -31,15 +31,15 @@ func TestSetElasticPolicy(t *testing.T) {
 						ElasticPolicy: &ElasticPolicy{},
 						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
-								Replicas: pointer.Int32(1),
+								Replicas: ptr.To[int32](1),
 							},
 						},
 					},
 				},
 			},
 			result: result{
-				expectedMinReplicas: pointer.Int32(1),
-				expectedMaxReplicas: pointer.Int32(1),
+				expectedMinReplicas: ptr.To[int32](1),
+				expectedMaxReplicas: ptr.To[int32](1),
 			},
 		},
 		{
@@ -48,20 +48,20 @@ func TestSetElasticPolicy(t *testing.T) {
 				job: &PyTorchJob{
 					Spec: PyTorchJobSpec{
 						ElasticPolicy: &ElasticPolicy{
-							MaxReplicas: pointer.Int32(1),
-							MinReplicas: pointer.Int32(1),
+							MaxReplicas: ptr.To[int32](1),
+							MinReplicas: ptr.To[int32](1),
 						},
 						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
-								Replicas: pointer.Int32(1),
+								Replicas: ptr.To[int32](1),
 							},
 						},
 					},
 				},
 			},
 			result: result{
-				expectedMinReplicas: pointer.Int32(1),
-				expectedMaxReplicas: pointer.Int32(1),
+				expectedMinReplicas: ptr.To[int32](1),
+				expectedMaxReplicas: ptr.To[int32](1),
 			},
 		},
 		{
@@ -70,20 +70,20 @@ func TestSetElasticPolicy(t *testing.T) {
 				job: &PyTorchJob{
 					Spec: PyTorchJobSpec{
 						ElasticPolicy: &ElasticPolicy{
-							MaxReplicas: pointer.Int32(1),
-							MinReplicas: pointer.Int32(1),
+							MaxReplicas: ptr.To[int32](1),
+							MinReplicas: ptr.To[int32](1),
 						},
 						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
-								Replicas: pointer.Int32(1),
+								Replicas: ptr.To[int32](1),
 							},
 						},
 					},
 				},
 			},
 			result: result{
-				expectedMinReplicas: pointer.Int32(1),
-				expectedMaxReplicas: pointer.Int32(1),
+				expectedMinReplicas: ptr.To[int32](1),
+				expectedMaxReplicas: ptr.To[int32](1),
 			},
 		},
 		{
@@ -92,20 +92,20 @@ func TestSetElasticPolicy(t *testing.T) {
 				job: &PyTorchJob{
 					Spec: PyTorchJobSpec{
 						ElasticPolicy: &ElasticPolicy{
-							MaxReplicas: pointer.Int32(1),
+							MaxReplicas: ptr.To[int32](1),
 							MinReplicas: nil,
 						},
 						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
-								Replicas: pointer.Int32(1),
+								Replicas: ptr.To[int32](1),
 							},
 						},
 					},
 				},
 			},
 			result: result{
-				expectedMinReplicas: pointer.Int32(1),
-				expectedMaxReplicas: pointer.Int32(1),
+				expectedMinReplicas: ptr.To[int32](1),
+				expectedMaxReplicas: ptr.To[int32](1),
 			},
 		},
 		{
@@ -115,19 +115,19 @@ func TestSetElasticPolicy(t *testing.T) {
 					Spec: PyTorchJobSpec{
 						ElasticPolicy: &ElasticPolicy{
 							MaxReplicas: nil,
-							MinReplicas: pointer.Int32(1),
+							MinReplicas: ptr.To[int32](1),
 						},
 						PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 							PyTorchJobReplicaTypeWorker: {
-								Replicas: pointer.Int32(1),
+								Replicas: ptr.To[int32](1),
 							},
 						},
 					},
 				},
 			},
 			result: result{
-				expectedMinReplicas: pointer.Int32(1),
-				expectedMaxReplicas: pointer.Int32(1),
+				expectedMinReplicas: ptr.To[int32](1),
+				expectedMaxReplicas: ptr.To[int32](1),
 			},
 		},
 	}
@@ -163,7 +163,7 @@ func TestSetDefaultNprocPerNode(t *testing.T) {
 				},
 				PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 					PyTorchJobReplicaTypeWorker: {
-						Replicas: pointer.Int32(1),
+						Replicas: ptr.To[int32](1),
 					},
 				},
 			},
@@ -179,7 +179,7 @@ func TestSetDefaultNprocPerNode(t *testing.T) {
 				ElasticPolicy: nil,
 				PyTorchReplicaSpecs: map[ReplicaType]*ReplicaSpec{
 					PyTorchJobReplicaTypeWorker: {
-						Replicas: pointer.Int32(1),
+						Replicas: ptr.To[int32](1),
 					},
 				},
 			},

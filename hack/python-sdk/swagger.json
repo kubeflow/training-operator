@@ -74,12 +74,10 @@
       "properties": {
         "lastTransitionTime": {
           "description": "Last time the condition transitioned from one status to another.",
-          "default": {},
           "$ref": "#/definitions/v1.Time"
         },
         "lastUpdateTime": {
           "description": "The last time this condition was updated.",
-          "default": {},
           "$ref": "#/definitions/v1.Time"
         },
         "message": {
@@ -609,7 +607,6 @@
         "minResources": {
           "type": "object",
           "additionalProperties": {
-            "default": {},
             "$ref": "#/definitions/.Quantity"
           }
         },

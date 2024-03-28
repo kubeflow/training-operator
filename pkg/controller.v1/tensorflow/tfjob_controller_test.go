@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -363,7 +363,7 @@ var _ = Describe("TFJob controller", func() {
 
 		It("Shouldn't create resources if TFJob is suspended", func() {
 			By("By creating a new TFJob with suspend=true")
-			job.Spec.RunPolicy.Suspend = pointer.Bool(true)
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.TFJob{}
@@ -483,7 +483,7 @@ var _ = Describe("TFJob controller", func() {
 			By("Updating the TFJob with suspend=true")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(true)
+				created.Spec.RunPolicy.Suspend = ptr.To(true)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
@@ -544,7 +544,7 @@ var _ = Describe("TFJob controller", func() {
 			By("Unsuspending the TFJob")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(false)
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 			Eventually(func() *metav1.Time {

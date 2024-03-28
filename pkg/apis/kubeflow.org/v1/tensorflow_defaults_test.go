@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func expectedTFJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, portName string, port int32) *TFJob {
@@ -54,13 +54,13 @@ func expectedTFJob(cleanPodPolicy CleanPodPolicy, restartPolicy RestartPolicy, p
 				CleanPodPolicy: &cleanPodPolicy,
 			},
 			TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-				TFJobReplicaTypeWorker: &ReplicaSpec{
-					Replicas:      pointer.Int32(1),
+				TFJobReplicaTypeWorker: {
+					Replicas:      ptr.To[int32](1),
 					RestartPolicy: restartPolicy,
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
-								corev1.Container{
+								{
 									Name:  TFJobDefaultContainerName,
 									Image: testImage,
 									Ports: ports,
@@ -80,11 +80,11 @@ func TestSetTypeNames(t *testing.T) {
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
-					corev1.Container{
+					{
 						Name:  TFJobDefaultContainerName,
 						Image: testImage,
 						Ports: []corev1.ContainerPort{
-							corev1.ContainerPort{
+							{
 								Name:          TFJobDefaultPortName,
 								ContainerPort: TFJobDefaultPort,
 							},
@@ -126,12 +126,12 @@ func TestSetDefaultTFJob(t *testing.T) {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						TFJobReplicaTypeWorker: &ReplicaSpec{
+						TFJobReplicaTypeWorker: {
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  TFJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
@@ -154,15 +154,15 @@ func TestSetDefaultTFJob(t *testing.T) {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						TFJobReplicaTypeWorker: &ReplicaSpec{
+						TFJobReplicaTypeWorker: {
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  TFJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          TFJobDefaultPortName,
 													ContainerPort: TFJobDefaultPort,
 												},
@@ -181,13 +181,13 @@ func TestSetDefaultTFJob(t *testing.T) {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						TFJobReplicaTypeWorker: &ReplicaSpec{
-							Replicas:      pointer.Int32(1),
+						TFJobReplicaTypeWorker: {
+							Replicas:      ptr.To[int32](1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  TFJobDefaultContainerName,
 											Image: testImage,
 										},
@@ -204,17 +204,17 @@ func TestSetDefaultTFJob(t *testing.T) {
 			original: &TFJob{
 				Spec: TFJobSpec{
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						TFJobReplicaTypeWorker: &ReplicaSpec{
-							Replicas:      pointer.Int32(1),
+						TFJobReplicaTypeWorker: {
+							Replicas:      ptr.To[int32](1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  TFJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          customPortName,
 													ContainerPort: customPort,
 												},
@@ -236,17 +236,17 @@ func TestSetDefaultTFJob(t *testing.T) {
 						CleanPodPolicy: CleanPodPolicyPointer(CleanPodPolicyAll),
 					},
 					TFReplicaSpecs: map[ReplicaType]*ReplicaSpec{
-						TFJobReplicaTypeWorker: &ReplicaSpec{
-							Replicas:      pointer.Int32(1),
+						TFJobReplicaTypeWorker: {
+							Replicas:      ptr.To[int32](1),
 							RestartPolicy: customRestartPolicy,
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
 									Containers: []corev1.Container{
-										corev1.Container{
+										{
 											Name:  TFJobDefaultContainerName,
 											Image: testImage,
 											Ports: []corev1.ContainerPort{
-												corev1.ContainerPort{
+												{
 													Name:          customPortName,
 													ContainerPort: customPort,
 												},

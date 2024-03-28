@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -115,7 +115,7 @@ var newMPIJob = newMPIJobWithLauncher
 func newMPIJobWithLauncher(name string, replicas *int32, pusPerReplica int64, resourceName string, startTime, completionTime *metav1.Time) *kubeflowv1.MPIJob {
 	mpiJob := newMPIJobOld(name, replicas, pusPerReplica, resourceName, startTime, completionTime)
 
-	mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Replicas = pointer.Int32(1)
+	mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Replicas = ptr.To[int32](1)
 
 	launcherContainers := mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.Containers
 	for i := range launcherContainers {
@@ -158,7 +158,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			for testName, testCase := range testCases {
 				mpiJob := newMPIJobWithLauncher("test-"+strings.ToLower(testName),
-					pointer.Int32(64), 1, testCase.gpu, &startTime, &completionTime)
+					ptr.To[int32](64), 1, testCase.gpu, &startTime, &completionTime)
 				Expect(isGPULauncher(mpiJob) == testCase.expected).To(BeTrue())
 			}
 		})
@@ -173,7 +173,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-succeeded"
 
-			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -217,7 +217,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-failed"
 
-			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -259,7 +259,7 @@ var _ = Describe("MPIJob controller", func() {
 
 			jobName := "test-launcher-succeeded2"
 
-			mpiJob := newMPIJobWithLauncher(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJobWithLauncher(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 			Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
@@ -532,7 +532,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 			mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template.Spec.ServiceAccountName = launcherSaName
 			sa := newLauncherServiceAccount(mpiJob)
 			sa.OwnerReferences = nil
@@ -583,7 +583,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 
 			launcher := reconciler.newLauncher(mpiJob, "kubectl-delivery", isGPULauncher(mpiJob))
 			launcher.OwnerReferences = nil
@@ -613,7 +613,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(1), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](1), 1, gpuResourceName, &startTime, &completionTime)
 
 			for i := 0; i < 1; i++ {
 				name := fmt.Sprintf("%s-%d", mpiJob.Name+workerSuffix, i)
@@ -646,7 +646,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 
 			cm := newConfigMap(mpiJob, 64, isGPULauncher(mpiJob))
 			cm.OwnerReferences = nil
@@ -676,7 +676,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 
 			role := newLauncherRole(mpiJob, 64)
 			role.OwnerReferences = nil
@@ -706,7 +706,7 @@ var _ = Describe("MPIJob controller", func() {
 			startTime := metav1.Now()
 			completionTime := metav1.Now()
 
-			mpiJob := newMPIJob(jobName, pointer.Int32(64), 1, gpuResourceName, &startTime, &completionTime)
+			mpiJob := newMPIJob(jobName, ptr.To[int32](64), 1, gpuResourceName, &startTime, &completionTime)
 
 			rb := newLauncherRoleBinding(mpiJob)
 			rb.OwnerReferences = nil
@@ -780,7 +780,7 @@ var _ = Describe("MPIJob controller", func() {
 
 				jobName := "test-launcher-creation-" + strings.ToLower(testName)
 
-				mpiJob := newMPIJob(jobName, pointer.Int32(1), 1, gpuResourceName, &startTime, &completionTime)
+				mpiJob := newMPIJob(jobName, ptr.To[int32](1), 1, gpuResourceName, &startTime, &completionTime)
 				Expect(testK8sClient.Create(ctx, mpiJob)).Should(Succeed())
 
 				template := &mpiJob.Spec.MPIReplicaSpecs[kubeflowv1.MPIJobReplicaTypeLauncher].Template
@@ -831,7 +831,7 @@ var _ = Describe("MPIJob controller", func() {
 			Expect(testK8sClient.Create(ctx, ns)).Should(Succeed())
 
 			now := metav1.Now()
-			job = newMPIJob(name, pointer.Int32(1), 1, gpuResourceName, &now, &now)
+			job = newMPIJob(name, ptr.To[int32](1), 1, gpuResourceName, &now, &now)
 			job.Namespace = ns.Name
 			jobKey = client.ObjectKeyFromObject(job)
 			launcherKey = types.NamespacedName{
@@ -849,7 +849,7 @@ var _ = Describe("MPIJob controller", func() {
 		})
 		It("Shouldn't create resources if MPIJob is suspended", func() {
 			By("By creating a new MPIJob with suspend=true")
-			job.Spec.RunPolicy.Suspend = pointer.Bool(true)
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.MPIJob{}
@@ -957,7 +957,7 @@ var _ = Describe("MPIJob controller", func() {
 			By("Updating the MPIJob with suspend=true")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(true)
+				created.Spec.RunPolicy.Suspend = ptr.To(true)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
@@ -1010,7 +1010,7 @@ var _ = Describe("MPIJob controller", func() {
 			By("Unsuspending the MPIJob")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(false)
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 			Eventually(func() *metav1.Time {

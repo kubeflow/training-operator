@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
@@ -72,7 +72,7 @@ var _ = Describe("MXJob controller", func() {
 			}
 			job.Spec.MXReplicaSpecs = map[kubeflowv1.ReplicaType]*kubeflowv1.ReplicaSpec{
 				kubeflowv1.MXJobReplicaTypeServer: {
-					Replicas: pointer.Int32(1),
+					Replicas: ptr.To[int32](1),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -92,7 +92,7 @@ var _ = Describe("MXJob controller", func() {
 					},
 				},
 				kubeflowv1.MXJobReplicaTypeScheduler: {
-					Replicas: pointer.Int32(1),
+					Replicas: ptr.To[int32](1),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -112,7 +112,7 @@ var _ = Describe("MXJob controller", func() {
 					},
 				},
 				kubeflowv1.MXJobReplicaTypeWorker: {
-					Replicas: pointer.Int32(2),
+					Replicas: ptr.To[int32](2),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -139,8 +139,8 @@ var _ = Describe("MXJob controller", func() {
 		})
 		It("Shouldn't create resources when MXJob is suspended; Should create resources once MXJob is unsuspended", func() {
 			By("By creating a new MXJob with suspend=true")
-			job.Spec.RunPolicy.Suspend = pointer.Bool(true)
-			job.Spec.MXReplicaSpecs[kubeflowv1.MXJobReplicaTypeWorker].Replicas = pointer.Int32(1)
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
+			job.Spec.MXReplicaSpecs[kubeflowv1.MXJobReplicaTypeWorker].Replicas = ptr.To[int32](1)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.MXJob{}
@@ -196,7 +196,7 @@ var _ = Describe("MXJob controller", func() {
 
 		It("Should delete resources after MXJob is suspended; Should resume MXJob after MXJob is unsuspended", func() {
 			By("By creating a new MXJob")
-			job.Spec.MXReplicaSpecs[kubeflowv1.MXJobReplicaTypeWorker].Replicas = pointer.Int32(1)
+			job.Spec.MXReplicaSpecs[kubeflowv1.MXJobReplicaTypeWorker].Replicas = ptr.To[int32](1)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			created := &kubeflowv1.MXJob{}
@@ -272,7 +272,7 @@ var _ = Describe("MXJob controller", func() {
 			By("Updating the MXJob with suspend=true")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(true)
+				created.Spec.RunPolicy.Suspend = ptr.To(true)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
@@ -339,7 +339,7 @@ var _ = Describe("MXJob controller", func() {
 			By("Unsuspending the MXJob")
 			Eventually(func() error {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
-				created.Spec.RunPolicy.Suspend = pointer.Bool(false)
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
 				return testK8sClient.Update(ctx, created)
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 			Eventually(func() *metav1.Time {

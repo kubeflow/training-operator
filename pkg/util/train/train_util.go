@@ -16,7 +16,7 @@
 package train
 
 import (
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
@@ -26,5 +26,5 @@ func IsRetryableExitCode(exitCode int32) bool {
 }
 
 func IsJobSuspended(runPolicy *kubeflowv1.RunPolicy) bool {
-	return runPolicy != nil && pointer.BoolDeref(runPolicy.Suspend, false)
+	return runPolicy != nil && ptr.Deref(runPolicy.Suspend, false)
 }
