@@ -57,5 +57,7 @@ jobs:
             context: examples/mxnet/tune
           - component-name: pytorch-dist-mnist
             dockerfile: examples/pytorch/mnist/Dockerfile
+            context: examples/pytorch/mnist
           - component-name: pytorch-dist-mnist-mpi
             dockerfile: examples/pytorch/mnist/Dockerfile-mpi
+            context: examples/pytorch/mnist
