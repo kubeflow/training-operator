@@ -3,14 +3,14 @@ from __future__ import print_function
 import argparse
 import os
 
-from tensorboardX import SummaryWriter
-from torchvision import datasets, transforms
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tensorboardX import SummaryWriter
 from torch.utils.data import DistributedSampler
+from torchvision import datasets, transforms
 
 
 class Net(nn.Module):
@@ -185,8 +185,7 @@ def main():
     print(f"World Size: {os.environ['WORLD_SIZE']}. Rank: {os.environ['RANK']}")
 
     dist.init_process_group(backend=args.backend)
-    Distributor = nn.parallel.DistributedDataParallel
-    model = Distributor(model)
+    model = nn.parallel.DistributedDataParallel(model)
 
     # Get FashionMNIST train and test dataset.
     train_ds = datasets.FashionMNIST(
