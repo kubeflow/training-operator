@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training-operator
+spec:
+  template:
+    spec:
+      containers:
+      - name: training-operator
+        ports:
+        - containerPort: 8080
+          name: metrics
