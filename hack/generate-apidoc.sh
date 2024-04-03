@@ -25,7 +25,7 @@ SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
 
 cd ${SCRIPT_ROOT}
 
-CRD_REF_GEN_VERSION=v0.0.8
+CRD_REF_GEN_VERSION=v0.0.11
 go install github.com/elastic/crd-ref-docs@${CRD_REF_GEN_VERSION}
 
 crd-ref-docs --log-level DEBUG\
