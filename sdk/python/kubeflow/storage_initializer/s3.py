@@ -47,10 +47,10 @@ class S3(datasetProvider):
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region_name,
         )
-        s3_resource = s3_client.resource('s3', endpoint_url=self.config.endpoint_url)
+        s3_resource = s3_client.resource("s3", endpoint_url=self.config.endpoint_url)
         # Get the bucket object
         bucket = s3_resource.Bucket(self.config.bucket_name)
-        
+
         # Filter objects with the specified prefix
         objects = bucket.objects.filter(Prefix=self.config.file_key)
         # Iterate over filtered objects
@@ -62,13 +62,11 @@ class S3(datasetProvider):
 
             # Create directories if they don't exist
             os.makedirs(
-                os.path.join(VOLUME_PATH_DATASET, path_excluded_first_last_parts), exist_ok=True
+                os.path.join(VOLUME_PATH_DATASET, path_excluded_first_last_parts),
+                exist_ok=True,
             )
 
             # Download the file
             file_path = os.path.sep.join(path_components[1:])
-            bucket.download_file(
-                obj_key,
-                os.path.join(VOLUME_PATH_DATASET, file_path)
-            )
+            bucket.download_file(obj_key, os.path.join(VOLUME_PATH_DATASET, file_path))
         print(f"Files downloaded")
