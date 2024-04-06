@@ -32,6 +32,19 @@ Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 === Definitions
 
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-cleanpodpolicy"]
+==== CleanPodPolicy (string) 
+
+CleanPodPolicy describes how to deal with pods when the job is finished.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijobspec[$$MPIJobSpec$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]
+****
+
+
+
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-elasticpolicy"]
 ==== ElasticPolicy 
 
@@ -45,17 +58,30 @@ Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`minReplicas`* __integer__ | minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.
+| *`minReplicas`* __integer__ | minReplicas is the lower limit for the number of replicas to which the training job
+can scale down.  It defaults to null.
 | *`maxReplicas`* __integer__ | upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.
 | *`rdzvBackend`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-rdzvbackend[$$RDZVBackend$$]__ | 
 | *`rdzvPort`* __integer__ | 
 | *`rdzvHost`* __string__ | 
 | *`rdzvId`* __string__ | 
 | *`rdzvConf`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-rdzvconf[$$RDZVConf$$] array__ | RDZVConf contains additional rendezvous configuration (<key1>=<value1>,<key2>=<value2>,...).
-| *`standalone`* __boolean__ | Start a local standalone rendezvous backend that is represented by a C10d TCP store on port 29400. Useful when launching single-node, multi-worker job. If specified --rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values are ignored.
-| *`nProcPerNode`* __integer__ | Number of workers per node; supported values: [auto, cpu, gpu, int]. Deprecated: This API is deprecated in v1.7+ Use .spec.nprocPerNode instead.
+| *`standalone`* __boolean__ | Start a local standalone rendezvous backend that is represented by a C10d TCP store
+on port 29400. Useful when launching single-node, multi-worker job. If specified
+--rdzv_backend, --rdzv_endpoint, --rdzv_id are auto-assigned; any explicitly set values
+are ignored.
+| *`nProcPerNode`* __integer__ | Number of workers per node; supported values: [auto, cpu, gpu, int].
+Deprecated: This API is deprecated in v1.7+
+Use .spec.nprocPerNode instead.
 | *`maxRestarts`* __integer__ | 
-| *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.
+| *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the
+desired replica count (the maximum replica count across all metrics will
+be used).  The desired replica count is calculated with multiplying the
+ratio between the target value and the current value by the current
+number of pods. Ergo, metrics used must decrease as the pod count is
+increased, and vice-versa.  See the individual metric source types for
+more information about how each type of metric must respond.
+If not set, the HPA will not be created.
 |===
 
 
@@ -124,10 +150,17 @@ JobStatus represents the current observed state of the training Job.
 |===
 | Field | Description
 | *`conditions`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobcondition[$$JobCondition$$] array__ | Conditions is an array of current observed job conditions.
-| *`replicaStatuses`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicastatus[$$ReplicaStatus$$])__ | ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.
-| *`startTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
-| *`completionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
-| *`lastReconcileTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
+| *`replicaStatuses`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicastatus[$$ReplicaStatus$$])__ | ReplicaStatuses is map of ReplicaType and ReplicaStatus,
+specifies the status of each replica.
+| *`startTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was acknowledged by the job controller.
+It is not guaranteed to be set in happens-before order across separate operations.
+It is represented in RFC3339 form and is in UTC.
+| *`completionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was completed. It is not guaranteed to
+be set in happens-before order across separate operations.
+It is represented in RFC3339 form and is in UTC.
+| *`lastReconcileTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents last time when the job was reconciled. It is not guaranteed to
+be set in happens-before order across separate operations.
+It is represented in RFC3339 form and is in UTC.
 |===
 
 
@@ -146,7 +179,15 @@ JobStatus represents the current observed state of the training Job.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `MPIJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijobspec[$$MPIJobSpec$$]__ | 
@@ -166,7 +207,15 @@ JobStatus represents the current observed state of the training Job.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `MPIJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijob[$$MPIJob$$] array__ | 
@@ -186,11 +235,17 @@ JobStatus represents the current observed state of the training Job.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`slotsPerWorker`* __integer__ | Specifies the number of slots per worker used in hostfile. Defaults to 1.
-| *`cleanPodPolicy`* __CleanPodPolicy__ | CleanPodPolicy defines the policy that whether to kill pods after the job completes. Defaults to None.
-| *`mpiReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that specify the MPI replicas to run.
-| *`mainContainer`* __string__ | MainContainer specifies name of the main container which executes the MPI code.
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | `RunPolicy` encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`slotsPerWorker`* __integer__ | Specifies the number of slots per worker used in hostfile.
+Defaults to 1.
+| *`cleanPodPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-cleanpodpolicy[$$CleanPodPolicy$$]__ | CleanPodPolicy defines the policy that whether to kill pods after the job completes.
+Defaults to None.
+| *`mpiReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that
+specify the MPI replicas to run.
+| *`mainContainer`* __string__ | MainContainer specifies name of the main container which
+executes the MPI code.
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | `RunPolicy` encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
 |===
 
 
@@ -209,7 +264,15 @@ MXJob is the Schema for the mxjobs API
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `MXJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjobspec[$$MXJobSpec$$]__ | 
@@ -229,7 +292,15 @@ MXJobList contains a list of MXJob
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `MXJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjob[$$MXJob$$] array__ | 
@@ -249,9 +320,19 @@ MXJobSpec defines the desired state of MXJob
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
-| *`jobMode`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobmodetype[$$JobModeType$$]__ | JobMode specify the kind of MXjob to do. Different mode may have different MXReplicaSpecs request
-| *`mxReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | MXReplicaSpecs is map of ReplicaType and ReplicaSpec specifies the MX replicas to run. For example,   {     "Scheduler": ReplicaSpec,     "Server": ReplicaSpec,     "Worker": ReplicaSpec,   }
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
+| *`jobMode`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobmodetype[$$JobModeType$$]__ | JobMode specify the kind of MXjob to do. Different mode may have
+different MXReplicaSpecs request
+| *`mxReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | MXReplicaSpecs is map of ReplicaType and ReplicaSpec
+specifies the MX replicas to run.
+For example,
+  {
+    "Scheduler": ReplicaSpec,
+    "Server": ReplicaSpec,
+    "Worker": ReplicaSpec,
+  }
 |===
 
 
@@ -270,10 +351,18 @@ MXJobSpec defines the desired state of MXJob
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`minReplicas`* __integer__ | minReplicas is the lower limit for the number of replicas to which the training job can scale down.  It defaults to null.
+| *`minReplicas`* __integer__ | minReplicas is the lower limit for the number of replicas to which the training job
+can scale down.  It defaults to null.
 | *`maxReplicas`* __integer__ | upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas, defaults to null.
 | *`maxRestarts`* __integer__ | MaxRestarts is the limit for restart times of pods in elastic mode.
-| *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the desired replica count (the maximum replica count across all metrics will be used).  The desired replica count is calculated with multiplying the ratio between the target value and the current value by the current number of pods. Ergo, metrics used must decrease as the pod count is increased, and vice-versa.  See the individual metric source types for more information about how each type of metric must respond. If not set, the HPA will not be created.
+| *`metrics`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#metricspec-v2-autoscaling[$$MetricSpec$$] array__ | Metrics contains the specifications which are used to calculate the
+desired replica count (the maximum replica count across all metrics will
+be used).  The desired replica count is calculated with multiplying the
+ratio between the target value and the current value by the current
+number of pods. Ergo, metrics used must decrease as the pod count is
+increased, and vice-versa.  See the individual metric source types for
+more information about how each type of metric must respond.
+If not set, the HPA will not be created.
 |===
 
 
@@ -292,11 +381,20 @@ PaddleJob Represents a PaddleJob resource.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `PaddleJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec[$$PaddleJobSpec$$]__ | Specification of the desired state of the PaddleJob.
-| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PaddleJob. Read-only (modified by the system).
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PaddleJob.
+Read-only (modified by the system).
 |===
 
 
@@ -312,7 +410,15 @@ PaddleJobList is a list of PaddleJobs.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `PaddleJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob[$$PaddleJob$$] array__ | List of PaddleJobs.
@@ -332,9 +438,16 @@ PaddleJobSpec is a desired state description of the PaddleJob.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
 | *`elasticPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddleelasticpolicy[$$PaddleElasticPolicy$$]__ | ElasticPolicy holds the elastic policy for paddle job.
-| *`paddleReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration. For example,   {     "Master": PaddleReplicaSpec,     "Worker": PaddleReplicaSpec,   }
+| *`paddleReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of PaddleReplicaType (type) to ReplicaSpec (value). Specifies the Paddle cluster configuration.
+For example,
+  {
+    "Master": PaddleReplicaSpec,
+    "Worker": PaddleReplicaSpec,
+  }
 |===
 
 
@@ -353,11 +466,20 @@ PyTorchJob Represents a PyTorchJob resource.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `PyTorchJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjobspec[$$PyTorchJobSpec$$]__ | Specification of the desired state of the PyTorchJob.
-| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PyTorchJob. Read-only (modified by the system).
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the PyTorchJob.
+Read-only (modified by the system).
 |===
 
 
@@ -373,7 +495,15 @@ PyTorchJobList is a list of PyTorchJobs.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `PyTorchJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-pytorchjob[$$PyTorchJob$$] array__ | List of PyTorchJobs.
@@ -393,10 +523,19 @@ PyTorchJobSpec is a desired state description of the PyTorchJob.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
 | *`elasticPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-elasticpolicy[$$ElasticPolicy$$]__ | 
-| *`pytorchReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration. For example,   {     "Master": PyTorchReplicaSpec,     "Worker": PyTorchReplicaSpec,   }
-| *`nprocPerNode`* __string__ | Number of workers per node; supported values: [auto, cpu, gpu, int]. For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658. Defaults to auto.
+| *`pytorchReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of PyTorchReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.
+For example,
+  {
+    "Master": PyTorchReplicaSpec,
+    "Worker": PyTorchReplicaSpec,
+  }
+| *`nprocPerNode`* __string__ | Number of workers per node; supported values: [auto, cpu, gpu, int].
+For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658.
+Defaults to auto.
 |===
 
 
@@ -448,9 +587,14 @@ ReplicaSpec is a description of the replica
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`replicas`* __integer__ | Replicas is the desired number of replicas of the given template. If unspecified, defaults to 1.
-| *`template`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podtemplatespec-v1-core[$$PodTemplateSpec$$]__ | Template is the object that describes the pod that will be created for this replica. RestartPolicy in PodTemplateSpec will be overide by RestartPolicy in ReplicaSpec
-| *`restartPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-restartpolicy[$$RestartPolicy$$]__ | Restart policy for all replicas within the job. One of Always, OnFailure, Never and ExitCode. Default to Never.
+| *`replicas`* __integer__ | Replicas is the desired number of replicas of the given template.
+If unspecified, defaults to 1.
+| *`template`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podtemplatespec-v1-core[$$PodTemplateSpec$$]__ | Template is the object that describes the pod that
+will be created for this replica. RestartPolicy in PodTemplateSpec
+will be overide by RestartPolicy in ReplicaSpec
+| *`restartPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-restartpolicy[$$RestartPolicy$$]__ | Restart policy for all replicas within the job.
+One of Always, OnFailure, Never and ExitCode.
+Default to Never.
 |===
 
 
@@ -471,14 +615,17 @@ ReplicaStatus represents the current observed state of the replica.
 | *`succeeded`* __integer__ | The number of pods which reached phase Succeeded.
 | *`failed`* __integer__ | The number of pods which reached phase Failed.
 | *`labelSelector`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#labelselector-v1-meta[$$LabelSelector$$]__ | Deprecated: Use Selector instead
-| *`selector`* __string__ | A Selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty Selector matches all objects. A null Selector matches no objects.
+| *`selector`* __string__ | A Selector is a label query over a set of resources. The result of matchLabels and
+matchExpressions are ANDed. An empty Selector matches all objects. A null
+Selector matches no objects.
 |===
 
 
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype"]
 ==== ReplicaType (string) 
 
-ReplicaType represents the type of the replica. Each operator needs to define its own set of ReplicaTypes.
+ReplicaType represents the type of the replica. Each operator needs to define its
+own set of ReplicaTypes.
 
 .Appears In:
 ****
@@ -496,7 +643,10 @@ ReplicaType represents the type of the replica. Each operator needs to define it
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-restartpolicy"]
 ==== RestartPolicy (string) 
 
-RestartPolicy describes how the replicas should be restarted. Only one of the following restart policies may be specified. If none of the following policies is specified, the default one is RestartPolicyAlways.
+RestartPolicy describes how the replicas should be restarted.
+Only one of the following restart policies may be specified.
+If none of the following policies is specified, the default one
+is RestartPolicyAlways.
 
 .Appears In:
 ****
@@ -508,7 +658,9 @@ RestartPolicy describes how the replicas should be restarted. Only one of the fo
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy"]
 ==== RunPolicy 
 
-RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
+RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
 
 .Appears In:
 ****
@@ -523,20 +675,34 @@ RunPolicy encapsulates various runtime policies of the distributed training job,
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`cleanPodPolicy`* __CleanPodPolicy__ | CleanPodPolicy defines the policy to kill pods after the job completes. Default to None.
-| *`ttlSecondsAfterFinished`* __integer__ | TTLSecondsAfterFinished is the TTL to clean up jobs. It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.
-| *`activeDeadlineSeconds`* __integer__ | Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer.
+| *`cleanPodPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-cleanpodpolicy[$$CleanPodPolicy$$]__ | CleanPodPolicy defines the policy to kill pods after the job completes.
+Default to None.
+| *`ttlSecondsAfterFinished`* __integer__ | TTLSecondsAfterFinished is the TTL to clean up jobs.
+It may take extra ReconcilePeriod seconds for the cleanup, since
+reconcile gets called periodically.
+Default to infinite.
+| *`activeDeadlineSeconds`* __integer__ | Specifies the duration in seconds relative to the startTime that the job may be active
+before the system tries to terminate it; value must be positive integer.
 | *`backoffLimit`* __integer__ | Optional number of retries before marking this job failed.
 | *`schedulingPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-schedulingpolicy[$$SchedulingPolicy$$]__ | SchedulingPolicy defines the policy related to scheduling, e.g. gang-scheduling
-| *`suspend`* __boolean__ | suspend specifies whether the Job controller should create Pods or not. If a Job is created with suspend set to true, no Pods are created by the Job controller. If a Job is suspended after creation (i.e. the flag goes from false to true), the Job controller will delete all active Pods and PodGroups associated with this Job. Users must design their workload to gracefully handle this. Suspending a Job will reset the StartTime field of the Job. 
- Defaults to false.
+| *`suspend`* __boolean__ | suspend specifies whether the Job controller should create Pods or not.
+If a Job is created with suspend set to true, no Pods are created by
+the Job controller. If a Job is suspended after creation (i.e. the
+flag goes from false to true), the Job controller will delete all
+active Pods and PodGroups associated with this Job.
+Users must design their workload to gracefully handle this.
+Suspending a Job will reset the StartTime field of the Job.
+
+
+Defaults to false.
 |===
 
 
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-schedulingpolicy"]
 ==== SchedulingPolicy 
 
-SchedulingPolicy encapsulates various scheduling policies of the distributed training job, for example `minAvailable` for gang-scheduling.
+SchedulingPolicy encapsulates various scheduling policies of the distributed training
+job, for example `minAvailable` for gang-scheduling.
 
 .Appears In:
 ****
@@ -548,7 +714,7 @@ SchedulingPolicy encapsulates various scheduling policies of the distributed tra
 | Field | Description
 | *`minAvailable`* __integer__ | 
 | *`queue`* __string__ | 
-| *`minResources`* __Quantity__ | 
+| *`minResources`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-api-resource-quantity[$$Quantity$$]__ | 
 | *`priorityClass`* __string__ | 
 | *`scheduleTimeoutSeconds`* __integer__ | 
 |===
@@ -581,11 +747,21 @@ TFJob represents a TFJob resource.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `TFJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard Kubernetes type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-tfjobspec[$$TFJobSpec$$]__ | Specification of the desired state of the TFJob.
-| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the TFJob. Populated by the system. Read-only.
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the TFJob.
+Populated by the system.
+Read-only.
 |===
 
 
@@ -601,7 +777,15 @@ TFJobList is a list of TFJobs.
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `TFJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | Standard type metadata.
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-tfjob[$$TFJob$$] array__ | List of TFJobs.
@@ -621,9 +805,17 @@ TFJobSpec is a desired state description of the TFJob.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.
-| *`successPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-successpolicy[$$SuccessPolicy$$]__ | SuccessPolicy defines the policy to mark the TFJob as succeeded. Default to "", using the default rules.
-| *`tfReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration. For example,   {     "PS": ReplicaSpec,     "Worker": ReplicaSpec,   }
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
+| *`successPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-successpolicy[$$SuccessPolicy$$]__ | SuccessPolicy defines the policy to mark the TFJob as succeeded.
+Default to "", using the default rules.
+| *`tfReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of TFReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
+For example,
+  {
+    "PS": ReplicaSpec,
+    "Worker": ReplicaSpec,
+  }
 | *`enableDynamicWorker`* __boolean__ | A switch to enable dynamic worker
 |===
 
@@ -643,7 +835,15 @@ XGBoostJob is the Schema for the xgboostjobs API
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `XGBoostJob`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-xgboostjobspec[$$XGBoostJobSpec$$]__ | 
@@ -663,7 +863,15 @@ XGBoostJobList contains a list of XGBoostJob
 | Field | Description
 | *`apiVersion`* __string__ | `kubeflow.org/v1`
 | *`kind`* __string__ | `XGBoostJobList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-xgboostjob[$$XGBoostJob$$] array__ | 
@@ -683,7 +891,8 @@ XGBoostJobSpec defines the desired state of XGBoostJob
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run "make" to regenerate code after modifying this file
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+Important: Run "make" to regenerate code after modifying this file
 | *`xgbReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | 
 |===
 
