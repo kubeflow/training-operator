@@ -1,0 +1,7 @@
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9
+ARG TARGETARCH
+WORKDIR /
+COPY ./manager-${TARGETARCH} ./manager
+USER 65532:65532
+
+ENTRYPOINT ["/manager"]
