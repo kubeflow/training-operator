@@ -1,3 +1,5 @@
+//go:build ignore
+
 /*
 Copyright 2023.
 
