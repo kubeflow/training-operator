@@ -21,6 +21,7 @@ import (
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/webhooks/pytorch"
+	"github.com/kubeflow/training-operator/pkg/webhooks/tensorflow"
 )
 
 type WebhookSetupFunc func(manager manager.Manager) error
@@ -28,7 +29,7 @@ type WebhookSetupFunc func(manager manager.Manager) error
 var (
 	SupportedSchemeWebhook = map[string]WebhookSetupFunc{
 		trainingoperator.PyTorchJobKind: pytorch.SetupWebhook,
-		trainingoperator.TFJobKind:      scaffold,
+		trainingoperator.TFJobKind:      tensorflow.SetupWebhook,
 		trainingoperator.MXJobKind:      scaffold,
 		trainingoperator.XGBoostJobKind: scaffold,
 		trainingoperator.MPIJobKind:     scaffold,
