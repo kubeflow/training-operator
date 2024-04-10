@@ -127,13 +127,6 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = kubeflowv1.ValidateV1TFJob(tfjob); err != nil {
-		logger.Error(err, "TFJob failed validation")
-		r.Recorder.Eventf(tfjob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobFailedValidationReason),
-			"TFJob failed validation because %s", err)
-		return ctrl.Result{}, err
-	}
-
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(tfjob)
 	if err != nil {
@@ -450,7 +443,7 @@ func (r *TFJobReconciler) UpdateJobStatus(job interface{}, replicas map[kubeflow
 		// If the TFJob contains Chief or Master spec, then we will update the status
 		// according to the Chief/Master spec.
 		if ContainsChiefOrMasterSpec(tfJob.Spec.TFReplicaSpecs) {
-			if kubeflowv1.IsChieforMaster(rtype) {
+			if kubeflowv1.IsChiefOrMaster(rtype) {
 				if running > 0 {
 					msg := fmt.Sprintf("TFJob %s/%s is running.", tfJob.Namespace, tfJob.Name)
 					commonutil.UpdateJobConditions(jobStatus, kubeflowv1.JobRunning, corev1.ConditionTrue, commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobRunningReason), msg)
