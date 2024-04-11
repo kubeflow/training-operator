@@ -22,6 +22,7 @@ import (
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/webhooks/pytorch"
 	"github.com/kubeflow/training-operator/pkg/webhooks/tensorflow"
+	"github.com/kubeflow/training-operator/pkg/webhooks/xgboost"
 )
 
 type WebhookSetupFunc func(manager manager.Manager) error
@@ -31,7 +32,7 @@ var (
 		trainingoperator.PyTorchJobKind: pytorch.SetupWebhook,
 		trainingoperator.TFJobKind:      tensorflow.SetupWebhook,
 		trainingoperator.MXJobKind:      scaffold,
-		trainingoperator.XGBoostJobKind: scaffold,
+		trainingoperator.XGBoostJobKind: xgboost.SetupWebhook,
 		trainingoperator.MPIJobKind:     scaffold,
 		trainingoperator.PaddleJobKind:  scaffold,
 	}
