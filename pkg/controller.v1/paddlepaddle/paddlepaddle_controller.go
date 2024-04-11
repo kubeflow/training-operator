@@ -131,13 +131,6 @@ func (r *PaddleJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if err = kubeflowv1.ValidateV1PaddleJob(paddlejob); err != nil {
-		logger.Error(err, "PaddleJob failed validation")
-		r.Recorder.Eventf(paddlejob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.PaddleJobKind, commonutil.JobFailedValidationReason),
-			"PaddleJob failed validation because %s", err)
-		return ctrl.Result{}, err
-	}
-
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(paddlejob)
 	if err != nil {
