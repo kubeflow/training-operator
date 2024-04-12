@@ -16,11 +16,16 @@ package mxnet
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
+	"net"
 	"path/filepath"
 	"testing"
+	"time"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	mxnetwebhook "github.com/kubeflow/training-operator/pkg/webhooks/mxnet"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,6 +36,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
@@ -60,6 +66,9 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "manifests", "base", "crds")},
 		ErrorIfCRDPathMissing: true,
+		WebhookInstallOptions: envtest.WebhookInstallOptions{
+			Paths: []string{filepath.Join("..", "..", "..", "manifests", "base", "webhook", "manifests.yaml")},
+		},
 	}
 
 	cfg, err := testEnv.Start()
@@ -81,6 +90,12 @@ var _ = BeforeSuite(func() {
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
 		},
+		WebhookServer: webhook.NewServer(
+			webhook.Options{
+				Host:    testEnv.WebhookInstallOptions.LocalServingHost,
+				Port:    testEnv.WebhookInstallOptions.LocalServingPort,
+				CertDir: testEnv.WebhookInstallOptions.LocalServingCertDir,
+			}),
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -88,12 +103,21 @@ var _ = BeforeSuite(func() {
 	r := NewReconciler(mgr, gangSchedulingSetupFunc)
 
 	Expect(r.SetupWithManager(mgr, 1)).NotTo(HaveOccurred())
+	Expect(mxnetwebhook.SetupWebhook(mgr)).NotTo(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(testCtx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
+
+	dialer := &net.Dialer{Timeout: time.Second}
+	addrPort := fmt.Sprintf("%s:%d", testEnv.WebhookInstallOptions.LocalServingHost, testEnv.WebhookInstallOptions.LocalServingPort)
+	Eventually(func(g Gomega) {
+		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{InsecureSkipVerify: true})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(conn.Close()).NotTo(HaveOccurred())
+	}).Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
