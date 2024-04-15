@@ -88,11 +88,13 @@ func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, fie
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	if spec.NprocPerNode != nil && spec.ElasticPolicy != nil && spec.ElasticPolicy.NProcPerNode != nil {
+	if spec.ElasticPolicy != nil && spec.ElasticPolicy.NProcPerNode != nil {
 		elasticNProcPerNodePath := specPath.Child("elasticPolicy").Child("nProcPerNode")
 		nprocPerNodePath := specPath.Child("nprocPerNode")
-		allErrs = append(allErrs, field.Forbidden(elasticNProcPerNodePath, fmt.Sprintf("must not be used with %s", nprocPerNodePath)))
 		warnings = append(warnings, fmt.Sprintf("%s is deprecated, use %s instead", elasticNProcPerNodePath.String(), nprocPerNodePath.String()))
+		if spec.NprocPerNode != nil {
+			allErrs = append(allErrs, field.Forbidden(elasticNProcPerNodePath, fmt.Sprintf("must not be used with %s", nprocPerNodePath)))
+		}
 	}
 	allErrs = append(allErrs, validatePyTorchReplicaSpecs(spec.PyTorchReplicaSpecs)...)
 	return warnings, allErrs
