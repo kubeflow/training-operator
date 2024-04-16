@@ -40,8 +40,6 @@ First, you need to run a Kubernetes cluster locally. There are lots of choices:
 - [kind](https://kind.sigs.k8s.io)
 
 
-Notice: If you use `local-up-cluster.sh`, please make sure that the kube-dns is up, see [kubernetes/kubernetes#47739](https://github.com/kubernetes/kubernetes/issues/47739) for more details.
-
 ### Configure KUBECONFIG and KUBEFLOW_NAMESPACE
 
 We can configure the operator to run locally using the configuration available in your kubeconfig to communicate with
