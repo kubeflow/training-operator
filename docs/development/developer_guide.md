@@ -37,12 +37,8 @@ Running the operator locally (as opposed to deploying it on a K8s cluster) is co
 
 First, you need to run a Kubernetes cluster locally. There are lots of choices:
 
-- [local-up-cluster.sh in Kubernetes](https://github.com/kubernetes/kubernetes/blob/master/hack/local-up-cluster.sh)
-- [minikube](https://github.com/kubernetes/minikube)
+- [kind](https://kind.sigs.k8s.io)
 
-`local-up-cluster.sh` runs a single-node Kubernetes cluster locally, but Minikube runs a single-node Kubernetes cluster inside a VM. It is all compilable with the controller, but the Kubernetes version should be `1.8` or above.
-
-Notice: If you use `local-up-cluster.sh`, please make sure that the kube-dns is up, see [kubernetes/kubernetes#47739](https://github.com/kubernetes/kubernetes/issues/47739) for more details.
 
 ### Configure KUBECONFIG and KUBEFLOW_NAMESPACE
 
