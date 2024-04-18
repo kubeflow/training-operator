@@ -48,15 +48,6 @@ var (
 	// key function but it should be just fine for non delete events.
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
-	// Prometheus metrics
-	createdPDBCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "created_pod_disruption_policies_total",
-		Help: "The total number of created pod disruption policies",
-	})
-	deletedPDBCount = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "deleted_pod_disruption_policies_total",
-		Help: "The total number of deleted pod disruption policies",
-	})
 	createdPodGroupsCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "created_pod_groups_total",
 		Help: "The total number of created pod groups",
