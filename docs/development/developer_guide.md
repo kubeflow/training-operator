@@ -35,7 +35,7 @@ Running the operator locally (as opposed to deploying it on a K8s cluster) is co
 
 ### Run a Kubernetes cluster
 
-First, you need to run a Kubernetes cluster locally. There are lots of choices:
+First, you need to run a Kubernetes cluster locally. We recommend `kind`.
 
 - [kind](https://kind.sigs.k8s.io)
 
@@ -47,10 +47,15 @@ a K8s cluster. Set your environment:
 
 ```sh
 export KUBECONFIG=$(echo ~/.kube/config)
-export KUBEFLOW_NAMESPACE=$(your_namespace)
+export KUBEFLOW_NAMESPACE=trainingoperator
 ```
 
 - KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
+
+You can create a `kind` cluster by running
+```sh
+kind create cluster --name $KUBEFLOW_NAMESPACE
+```
 
 ### Create the TFJob CRD
 
@@ -60,6 +65,47 @@ After the cluster is up, the TFJob CRD should be created on the cluster.
 make install
 ```
 
+### Build Operator Image
+```sh
+make docker-build IMG=my-username/training-operator:my-pr-01
+```
+You can swap `my-username/training-operator:my-pr-01` with whatever you would like.
+
+## Load docker image 
+```sh
+ kind load docker-image my-username/training-operator:my-pr-01
+``` 
+
+## Modify operator image with new one
+Update the `newTag` key in `./manifests/overlayes/standalone/kustimization.yaml` with the new image.
+
+Deploy the operator with: 
+```sh 
+kubectl apply -f ./manifests/overlayes/standalone
+```
+And now we can submit jobs to the operator.
+
+You should be able to see a pod for your training operator running in your namespace using
+```commandline
+kubectl get namespace
+kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
+kubectl logs -n YOUR_NAMESPACE_FROM_ABOVE YOUR_PODNAME_FROM_ABOVE
+```
+Please make sure to replace `YOUR_NAMESPACE_FROM_ABOVE` with the namespace you are using and `YOUR_PODNAME_FROM_ABOVE` with the pod name you see from the `kubectl get pods` command.
+
+### Test running an operator locally 
+```sh 
+cd ./examples/pytorch/mnist2/
+docker build -f Dockerfile.cpu .
+kubectl create -f ./sample_pytorchjob.yaml
+kubectl describe PyTorchJob
+kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
+kubectl events
+```
+
+https://github.com/kubeflow/katib/tree/21320b6d5774e4a7828a2c49e4bff75cd55e6b35/examples/v1beta1/trial-images/pytorch-mnist
+https://github.com/kubernetes-sigs/kueue/blob/472ce6d2c6bbfab2903db065dbb8f117415bc8d5/site/static/examples/jobs/sample-pytorchjob.yaml
+
 ### Run Operator
 
 Now we are ready to run operator locally:
@@ -67,15 +113,6 @@ Now we are ready to run operator locally:
 ```sh
 make run
 ```
-
-To verify local operator is working, create an example job and you should see jobs created by it.
-
-```sh
-cd ./examples/tensorflow/dist-mnist
-docker build -f Dockerfile -t kubeflow/tf-dist-mnist-test:1.0 .
-kubectl create -f ./tf_job_mnist.yaml
-```
-
 ## Go version
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
