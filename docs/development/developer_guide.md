@@ -55,11 +55,16 @@ You can swap `my-username/training-operator:my-pr-01` with whatever you would li
 ``` 
 
 ## Modify operator image with new one
+
+```sh
+cd ./manifests/overlays/standalone
+kustomize edit set image my-username/training-operator=my-username/training-operator:my-pr-01
+```
 Update the `newTag` key in `./manifests/overlayes/standalone/kustimization.yaml` with the new image.
 
 Deploy the operator with: 
 ```sh 
-kubectl apply -k ./manifests/overlayes/standalone
+kubectl apply -k ./manifests/overlays/standalone
 ```
 And now we can submit jobs to the operator.
 
@@ -79,13 +84,6 @@ kubectl create -f ./sample_pytorchjob.yaml
 kubectl describe PyTorchJob
 kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
 kubectl events
-```
-### Run Operator
-
-Now we are ready to run operator locally:
-
-```sh
-make run
 ```
 ## Go version
 
