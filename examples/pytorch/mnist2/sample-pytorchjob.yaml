@@ -22,7 +22,7 @@ spec:
                 - "--epochs=1"
               resources:
                 requests:
-                  cpu: 1
+                  cpu: 3
                   memory: "200Mi"
     Worker:
       replicas: 1
@@ -39,5 +39,5 @@ spec:
                 - "--epochs=1"
               resources:
                 requests:
-                  cpu: 1
+                  cpu: 3
                   memory: "200Mi"
