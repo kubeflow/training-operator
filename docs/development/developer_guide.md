@@ -35,35 +35,13 @@ Running the operator locally (as opposed to deploying it on a K8s cluster) is co
 
 ### Run a Kubernetes cluster
 
-First, you need to run a Kubernetes cluster locally. We recommend `kind`.
-
-- [kind](https://kind.sigs.k8s.io)
-
-
-### Configure KUBECONFIG and KUBEFLOW_NAMESPACE
-
-We can configure the operator to run locally using the configuration available in your kubeconfig to communicate with
-a K8s cluster. Set your environment:
-
-```sh
-export KUBECONFIG=$(echo ~/.kube/config)
-export KUBEFLOW_NAMESPACE=trainingoperator
-```
-
-- KUBEFLOW_NAMESPACE is used when deployed on Kubernetes, we use this variable to create other resources (e.g. the resource lock) internal in the same namespace. It is optional, use `default` namespace if not set.
+First, you need to run a Kubernetes cluster locally. We recommend [kind](https://kind.sigs.k8s.io).
 
 You can create a `kind` cluster by running
 ```sh
-kind create cluster --name $KUBEFLOW_NAMESPACE
+kind create cluster 
 ```
-
-### Create the TFJob CRD
-
-After the cluster is up, the TFJob CRD should be created on the cluster.
-
-```bash
-make install
-```
+This will load your kubernetes config file with the new cluster. Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespace.
 
 ### Build Operator Image
 ```sh
