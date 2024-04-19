@@ -102,10 +102,6 @@ kubectl describe PyTorchJob
 kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
 kubectl events
 ```
-
-https://github.com/kubeflow/katib/tree/21320b6d5774e4a7828a2c49e4bff75cd55e6b35/examples/v1beta1/trial-images/pytorch-mnist
-https://github.com/kubernetes-sigs/kueue/blob/472ce6d2c6bbfab2903db065dbb8f117415bc8d5/site/static/examples/jobs/sample-pytorchjob.yaml
-
 ### Run Operator
 
 Now we are ready to run operator locally:
