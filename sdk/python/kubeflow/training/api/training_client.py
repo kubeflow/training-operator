@@ -116,8 +116,9 @@ class TrainingClient(object):
         Trainer to fine-tune LLM. Your cluster should support PVC with ReadOnlyMany access mode
         to distribute data across PyTorchJob workers.
 
-        It uses `torchrun` CLI to fine-tune model in distributed mode across multiple PyTorchJob
-        workers. Follow this guide to know more about `torchrun`: https://pytorch.org/docs/stable/elastic/run.html
+        It uses `torchrun` CLI to fine-tune model in distributed mode with multiple PyTorchJob
+        workers. Follow this guide to know more about `torchrun` CLI:
+        https://pytorch.org/docs/stable/elastic/run.html
 
         This feature is in alpha stage and Kubeflow community is looking for your feedback.
         Please use #kubeflow-training-operator Slack channel or Kubeflow Training Operator GitHub
@@ -125,13 +126,13 @@ class TrainingClient(object):
 
         Args:
             name: Name of the PyTorchJob.
-            namespace: Namespace for the Job. By default namespace is taken from
+            namespace: Namespace for the PyTorchJob. By default namespace is taken from
                 `TrainingClient` object.
-            num_workers: Number of PyTorchJob worker replicas for the Job.
+            num_workers: Number of PyTorchJob workers.
             num_procs_per_worker: Number of processes per PyTorchJob worker for `torchrun` CLI.
-                You can use this parameter if you use more than 1 GPU per PyTorchJob worker.
+                You can use this parameter if you want to use more than 1 GPU per PyTorchJob worker.
             resources_per_worker: A parameter that lets you specify how much
-                resources each Worker container should have. You can either specify a
+                resources each PyTorchJob worker container should have. You can either specify a
                 kubernetes.client.V1ResourceRequirements object (documented here:
                 https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ResourceRequirements.md)
                 or a dictionary that includes one or more of the following keys:
@@ -151,21 +152,21 @@ class TrainingClient(object):
                 of GPU, pass in a V1ResourceRequirement instance instead, since it's
                 more flexible. This parameter is optional and defaults to None.
             model_provider_parameters: Parameters for the model provider in the Storage Initializer.
-                For example, HuggingFace model name and Transformer with this type:
-                AutoModelForSequenceClassification. This parameter must be the type of
+                For example, HuggingFace model name and Transformer type for that model, like:
+                AutoModelForSequenceClassification. This argument must be the type of
                 `kubeflow.storage_initializer.hugging_face.HuggingFaceModelParams`
             dataset_provider_parameters: Parameters for the dataset provider in the
                 Storage Initializer. For example, name of the HuggingFace dataset or
-                AWS S3 configuration. These parameters must be the type of
+                AWS S3 configuration. This argument must be the type of
                 `kubeflow.storage_initializer.hugging_face.HuggingFaceDatasetParams` or
                 `kubeflow.storage_initializer.s3.S3DatasetParams`
             trainer_parameters: Parameters for LLM Trainer that will fine-tune pre-trained model
                 with the given dataset. For example, LoRA config for parameter-efficient fine-tuning
                 and HuggingFace training arguments like optimizer or number of training epochs.
-                These parameters must be the type of
+                This argument must be the type of
                 `kubeflow.storage_initializer.HuggingFaceTrainerParams`
             storage_config: Configuration for Storage Initializer PVC to download pre-trained model
-                and dataset.
+                and dataset. You can configure PVC size and storage class name in this argument.
         """
         try:
             import peft
