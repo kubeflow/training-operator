@@ -23,7 +23,7 @@ Install dependencies
 go mod tidy
 ```
 
-Build it
+Build the library
 
 ```sh
 go install github.com/kubeflow/training-operator/cmd/training-operator.v1
@@ -35,13 +35,71 @@ Running the operator locally (as opposed to deploying it on a K8s cluster) is co
 
 ### Run a Kubernetes cluster
 
-First, you need to run a Kubernetes cluster locally. We recommend [kind](https://kind.sigs.k8s.io).
+First, you need to run a Kubernetes cluster locally. We recommend [Kind](https://kind.sigs.k8s.io).
 
 You can create a `kind` cluster by running
 ```sh
 kind create cluster 
 ```
-This will load your kubernetes config file with the new cluster. Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespace.
+This will load your kubernetes config file with the new cluster. 
+
+After creating the cluster, you can check the nodes with the code below which should show you the kind-control-plane. 
+```sh 
+kubectl get nodes
+```
+The output should look something like below:
+```
+$ kubectl get nodes
+NAME                 STATUS   ROLES           AGE   VERSION
+kind-control-plane   Ready    control-plane   32s   v1.27.3
+```
+
+From here we can apply the manifests to the cluster.
+```sh
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
+```
+
+Then we can patch it with the latest operator image.
+```sh
+kubectl patch -n kubeflow deployments training-operator --type json -p '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "kubeflow/training-operator:latest"}]'
+```
+Then we can run the job with the following command. 
+
+```sh 
+kubectl apply -f https://raw.githubusercontent.com/kubeflow/training-operator/master/examples/pytorch/simple.yaml
+```
+And we can see the output of the job from the logs, which may take some time to produce but should look something like below.
+```
+$ kubectl logs -n kubeflow -l training.kubeflow.org/job-name=pytorch-simple --follow
+Defaulted container "pytorch" out of: pytorch, init-pytorch (init)
+2024-04-19T19:00:29Z INFO     Train Epoch: 1 [4480/60000 (7%)]	loss=2.2295
+2024-04-19T19:00:32Z INFO     Train Epoch: 1 [5120/60000 (9%)]	loss=2.1790
+2024-04-19T19:00:35Z INFO     Train Epoch: 1 [5760/60000 (10%)]	loss=2.1150
+2024-04-19T19:00:38Z INFO     Train Epoch: 1 [6400/60000 (11%)]	loss=2.0294
+2024-04-19T19:00:41Z INFO     Train Epoch: 1 [7040/60000 (12%)]	loss=1.9156
+2024-04-19T19:00:44Z INFO     Train Epoch: 1 [7680/60000 (13%)]	loss=1.7949
+2024-04-19T19:00:47Z INFO     Train Epoch: 1 [8320/60000 (14%)]	loss=1.5567
+2024-04-19T19:00:50Z INFO     Train Epoch: 1 [8960/60000 (15%)]	loss=1.3715
+2024-04-19T19:00:54Z INFO     Train Epoch: 1 [9600/60000 (16%)]	loss=1.3385
+2024-04-19T19:00:57Z INFO     Train Epoch: 1 [10240/60000 (17%)]	loss=1.1650
+2024-04-19T19:00:29Z INFO     Train Epoch: 1 [4480/60000 (7%)]	loss=2.2295
+2024-04-19T19:00:32Z INFO     Train Epoch: 1 [5120/60000 (9%)]	loss=2.1790
+2024-04-19T19:00:35Z INFO     Train Epoch: 1 [5760/60000 (10%)]	loss=2.1150
+2024-04-19T19:00:38Z INFO     Train Epoch: 1 [6400/60000 (11%)]	loss=2.0294
+2024-04-19T19:00:41Z INFO     Train Epoch: 1 [7040/60000 (12%)]	loss=1.9156
+2024-04-19T19:00:44Z INFO     Train Epoch: 1 [7680/60000 (13%)]	loss=1.7949
+2024-04-19T19:00:47Z INFO     Train Epoch: 1 [8320/60000 (14%)]	loss=1.5567
+2024-04-19T19:00:50Z INFO     Train Epoch: 1 [8960/60000 (15%)]	loss=1.3715
+2024-04-19T19:00:53Z INFO     Train Epoch: 1 [9600/60000 (16%)]	loss=1.3385
+2024-04-19T19:00:57Z INFO     Train Epoch: 1 [10240/60000 (17%)]	loss=1.1650
+```
+
+## Testing changes locally
+
+Now that you confirmed you can spin up an operator locally, you can try to test your local changes to the operator.
+You do this by building a new operator image and loading it into your kind cluster.
+
+Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespace.
 
 ### Build Operator Image
 ```sh
@@ -51,7 +109,7 @@ You can swap `my-username/training-operator:my-pr-01` with whatever you would li
 
 ## Load docker image 
 ```sh
- kind load docker-image my-username/training-operator:my-pr-01
+kind load docker-image my-username/training-operator:my-pr-01
 ``` 
 
 ## Modify operator image with new one
@@ -67,23 +125,13 @@ Deploy the operator with:
 kubectl apply -k ./manifests/overlays/standalone
 ```
 And now we can submit jobs to the operator.
-
-You should be able to see a pod for your training operator running in your namespace using
-```commandline
-kubectl get namespace
-kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
-kubectl logs -n YOUR_NAMESPACE_FROM_ABOVE YOUR_PODNAME_FROM_ABOVE
+```sh
+kubectl patch -n kubeflow deployments training-operator --type json -p '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "my-username/training-operator:my-pr-01"}]'
+kubectl apply -f https://raw.githubusercontent.com/kubeflow/training-operator/master/examples/pytorch/simple.yaml
 ```
-Please make sure to replace `YOUR_NAMESPACE_FROM_ABOVE` with the namespace you are using and `YOUR_PODNAME_FROM_ABOVE` with the pod name you see from the `kubectl get pods` command.
-
-### Test running an operator locally 
-```sh 
-cd ./examples/pytorch/mnist2/
-docker build -f Dockerfile.cpu .
-kubectl create -f ./sample_pytorchjob.yaml
-kubectl describe PyTorchJob
-kubectl get pods -n YOUR_NAMESPACE_FROM_ABOVE
-kubectl events
+You should be able to see a pod for your training operator running in your namespace using
+```
+kubectl logs -n kubeflow -l training.kubeflow.org/job-name=pytorch-simple 
 ```
 ## Go version
 
