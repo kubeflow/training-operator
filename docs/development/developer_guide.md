@@ -81,7 +81,7 @@ Update the `newTag` key in `./manifests/overlayes/standalone/kustimization.yaml`
 
 Deploy the operator with: 
 ```sh 
-kubectl apply -f ./manifests/overlayes/standalone
+kubectl apply -k ./manifests/overlayes/standalone
 ```
 And now we can submit jobs to the operator.
 
