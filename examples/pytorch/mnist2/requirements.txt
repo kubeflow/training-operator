@@ -1,2 +1,0 @@
-cloudml-hypertune==0.1.0.dev6
-Pillow>=9.1.1
