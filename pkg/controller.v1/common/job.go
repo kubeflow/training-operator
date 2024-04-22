@@ -279,10 +279,11 @@ func (jc *JobController) ReconcileJobs(
 			var pgSpecFill FillPodGroupSpecFunc
 			switch jc.Config.GangScheduling {
 			case GangSchedulerVolcano:
-				pgSpecFill = func(pg metav1.Object) error {
+				pgSpecFill = func(pg metav1.Object) (metav1.Object, error) {
 					volcanoPodGroup, match := pg.(*volcanov1beta1.PodGroup)
+					volcanoPodGroup = volcanoPodGroup.DeepCopy()
 					if !match {
-						return fmt.Errorf("unable to recognize PodGroup: %v", klog.KObj(pg))
+						return nil, fmt.Errorf("unable to recognize PodGroup: %v", klog.KObj(pg))
 					}
 					volcanoPodGroup.Spec = volcanov1beta1.PodGroupSpec{
 						MinMember:         minMember,
@@ -290,20 +291,21 @@ func (jc *JobController) ReconcileJobs(
 						PriorityClassName: priorityClass,
 						MinResources:      minResources,
 					}
-					return nil
+					return volcanoPodGroup, nil
 				}
 			default:
-				pgSpecFill = func(pg metav1.Object) error {
+				pgSpecFill = func(pg metav1.Object) (metav1.Object, error) {
 					schedulerPluginsPodGroup, match := pg.(*schedulerpluginsv1alpha1.PodGroup)
+					schedulerPluginsPodGroup = schedulerPluginsPodGroup.DeepCopy()
 					if !match {
-						return fmt.Errorf("unable to recognize PodGroup: %v", klog.KObj(pg))
+						return nil, fmt.Errorf("unable to recognize PodGroup: %v", klog.KObj(pg))
 					}
 					schedulerPluginsPodGroup.Spec = schedulerpluginsv1alpha1.PodGroupSpec{
 						MinMember:              minMember,
 						MinResources:           *minResources,
 						ScheduleTimeoutSeconds: schedulerTimeout,
 					}
-					return nil
+					return schedulerPluginsPodGroup, nil
 				}
 			}
 
