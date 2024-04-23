@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -365,8 +366,8 @@ func (jc *JobController) ReconcilePods(
 				trainingoperatorcommon.RestartedJobsCounterInc(metaObject.GetNamespace(), jc.Controller.GetFrameworkName())
 			} else if pod.Status.Phase == v1.PodFailed &&
 				(spec.RestartPolicy == apiv1.RestartPolicyExitCode && !trainutil.IsRetryableExitCode(exitCode)) {
-				logger.Infof("Pod has a non-retryable exit code. Failing job. %v %v", pod.Namespace, pod.Name)
-				msg := fmt.Sprintf("job %s is failing because %s replica(s) failed.",
+				logger.Infof("Pod %q has a non-retryable exit code. Failing job.", klog.KObj(pod))
+				msg := fmt.Sprintf("job %q is failing because %q replica(s) failed.",
 					metaObject.GetName(), rType)
 				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, commonutil.NewReason(jobKind, commonutil.JobFailedReason), msg)
 				commonutil.UpdateJobConditions(jobStatus, apiv1.JobFailed, v1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobFailedReason), msg)

@@ -274,6 +274,76 @@ var _ = Describe("TFJob controller", func() {
 		})
 	})
 
+	Context("Test Unretryable Exit Code", func() {
+		It("should set the job status to Failed", func() {
+			By("Creating TFJob \"test-noretry-exit-code\" with 1 worker only")
+			ctx := context.Background()
+
+			tfJob := tftestutil.NewTFJob(1, 0)
+			tfJob.SetName("test-noretry-exit-code")
+			tfJob.SetUID(uuid.NewUUID())
+			tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = kubeflowv1.RestartPolicyExitCode
+			Expect(testK8sClient.Create(ctx, tfJob)).Should(Succeed())
+
+			refs := []metav1.OwnerReference{
+				*reconciler.GenOwnerReference(tfJob),
+			}
+			By("creating worker Pod")
+			pod := tftestutil.NewPod(tfJob, kubeflowv1.TFJobReplicaTypeWorker, 0, refs)
+			basicLabels := reconciler.GenLabels(tfJob.GetName())
+			for k, v := range basicLabels {
+				pod.Labels[k] = v
+			}
+			pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
+				Name:  kubeflowv1.TFJobDefaultContainerName,
+				Image: tftestutil.DummyContainerImage,
+			})
+			Expect(testK8sClient.Create(ctx, pod)).Should(Succeed())
+
+			created := &corev1.Pod{}
+			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: pod.GetName()}
+			Expect(testK8sClient.Get(ctx, key, created)).Should(Succeed())
+			created.Status.Phase = corev1.PodFailed
+			created.Status.ContainerStatuses = append(created.Status.ContainerStatuses, corev1.ContainerStatus{
+				Name: kubeflowv1.TFJobDefaultContainerName,
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						ExitCode: 1,
+					},
+				},
+			})
+			Expect(testK8sClient.Status().Update(ctx, created))
+
+			// Make sure the version of pod created is updated with desired status
+			Eventually(func() error {
+				updated := &corev1.Pod{}
+				if err := testK8sClient.Get(ctx, key, updated); err != nil {
+					return err
+				}
+				if updated.Status.Phase != corev1.PodFailed {
+					return fmt.Errorf("pod status is not Failed")
+				}
+				return nil
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
+
+			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+
+			Eventually(func() bool {
+				updatedJob := &kubeflowv1.TFJob{}
+				err := testK8sClient.Get(ctx, types.NamespacedName{Name: tfJob.GetName(), Namespace: metav1.NamespaceDefault}, updatedJob)
+				if err != nil {
+					return false
+				}
+				for _, condition := range updatedJob.Status.Conditions {
+					if condition.Type == kubeflowv1.JobFailed && condition.Status == corev1.ConditionTrue {
+						return true
+					}
+				}
+				return false
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue(), "TFJob should be in Failed state")
+		})
+	})
+
 	Describe("Test Scale Down", func() {
 		It("should delete redundant Pods", func() {
 			ctx := context.Background()
