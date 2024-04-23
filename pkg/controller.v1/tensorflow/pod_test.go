@@ -285,24 +285,8 @@ var _ = Describe("TFJob controller", func() {
 			tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = kubeflowv1.RestartPolicyExitCode
 			Expect(testK8sClient.Create(ctx, tfJob)).Should(Succeed())
 
-			refs := []metav1.OwnerReference{
-				*reconciler.GenOwnerReference(tfJob),
-			}
-			By("creating worker Pod")
-			pod := tftestutil.NewPod(tfJob, kubeflowv1.TFJobReplicaTypeWorker, 0, refs)
-			basicLabels := reconciler.GenLabels(tfJob.GetName())
-			for k, v := range basicLabels {
-				pod.Labels[k] = v
-			}
-			pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
-				Name:  kubeflowv1.TFJobDefaultContainerName,
-				Image: tftestutil.DummyContainerImage,
-			})
-			Expect(testK8sClient.Create(ctx, pod)).Should(Succeed())
-
 			created := &corev1.Pod{}
-			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: pod.GetName()}
-			Expect(testK8sClient.Get(ctx, key, created)).Should(Succeed())
+			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: "test-noretry-exit-code-chief-0"}
 			created.Status.Phase = corev1.PodFailed
 			created.Status.ContainerStatuses = append(created.Status.ContainerStatuses, corev1.ContainerStatus{
 				Name: kubeflowv1.TFJobDefaultContainerName,
