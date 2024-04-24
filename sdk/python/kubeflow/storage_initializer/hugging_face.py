@@ -46,7 +46,7 @@ class HuggingFaceModelParams:
 
 
 @dataclass
-class HuggingFaceTrainParams:
+class HuggingFaceTrainerParams:
     training_parameters: transformers.TrainingArguments = field(
         default_factory=transformers.TrainingArguments
     )
@@ -77,7 +77,7 @@ class HuggingFace(modelProvider):
 
 
 @dataclass
-class HfDatasetParams:
+class HuggingFaceDatasetParams:
     repo_id: str
     access_token: Optional[str] = None
     # TODO (andreyvelich): Discuss where we should specify dataset preprocess parameters.
@@ -91,7 +91,7 @@ class HfDatasetParams:
 
 class HuggingFaceDataset(datasetProvider):
     def load_config(self, serialised_args):
-        self.config = HfDatasetParams(**json.loads(serialised_args))
+        self.config = HuggingFaceDatasetParams(**json.loads(serialised_args))
 
     def download_dataset(self):
         logger.info("Downloading dataset")
