@@ -6,13 +6,13 @@ Kubeflow Training Operator is currently at v1.
 
 - [Go](https://golang.org/) (1.22 or later)
 - [Docker](https://docs.docker.com/) 
-- [Docker Buildx](https://docs.docker.com/build/buildx/) 
-- [Java](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) (8 or later)
-- [Python](https://www.python.org/) 
-- [kustomize](https://kustomize.io/) 
-- [Kind](https://kind.sigs.k8s.io/) 
-- [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop)
-  - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS)
+- [Docker](https://docs.docker.com/) (20.10 or later)
+- [Docker Buildx](https://docs.docker.com/build/buildx/) (0.8.0 or later)
+- [Python](https://www.python.org/) (3.11 or later)
+- [kustomize](https://kustomize.io/) (4.0.5 or later)
+- [Kind](https://kind.sigs.k8s.io/) (0.22.0 or later)
+- [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop) (0.21.0 or later)
+  - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS) (0.6.8 or later)
 
 Note for Lima the link is to the Adopters, which supports several different container environments.
 
@@ -63,6 +63,7 @@ $ kubectl get nodes
 NAME                 STATUS   ROLES           AGE   VERSION
 kind-control-plane   Ready    control-plane   32s   v1.27.3
 ```
+Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespace.
 
 From here we can apply the manifests to the cluster.
 ```sh
@@ -108,8 +109,6 @@ Defaulted container "pytorch" out of: pytorch, init-pytorch (init)
 
 Now that you confirmed you can spin up an operator locally, you can try to test your local changes to the operator.
 You do this by building a new operator image and loading it into your kind cluster.
-
-Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespace.
 
 ### Build Operator Image
 ```sh
