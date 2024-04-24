@@ -5,6 +5,13 @@ Kubeflow Training Operator is currently at v1.
 ## Requirements
 
 - [Go](https://golang.org/) (1.22 or later)
+- [Docker](https://docs.docker.com/) 
+- [Docker Buildx](https://docs.docker.com/build/buildx/) 
+- [Java](https://docs.oracle.com/javase/8/docs/technotes/guides/install/install_overview.html) (8 or later)
+- [Python](https://www.python.org/) 
+- [kustomize](https://kustomize.io/) 
+- [Kind](https://kind.sigs.k8s.io/) 
+- [Colima](https://github.com/abiosoft/colima) (optional for MacOS users)
 
 ## Building the operator
 
