@@ -11,7 +11,10 @@ Kubeflow Training Operator is currently at v1.
 - [Python](https://www.python.org/) 
 - [kustomize](https://kustomize.io/) 
 - [Kind](https://kind.sigs.k8s.io/) 
-- [Colima](https://github.com/abiosoft/colima) (optional for MacOS users)
+- [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop)
+  - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS)
+
+Note for Lima the link is to the Adopters, which supports several different container environments.
 
 ## Building the operator
 
