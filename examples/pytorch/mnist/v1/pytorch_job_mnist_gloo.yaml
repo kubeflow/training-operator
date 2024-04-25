@@ -11,10 +11,10 @@ spec:
         spec:
           containers:
             - name: pytorch
-              image: gcr.io/<your_project>/pytorch_dist_mnist:latest
+              image: kubeflow/pytorch-dist-mnist:latest
               args: ["--backend", "gloo"]
               # Comment out the below resources to use the CPU.
-              resources: 
+              resources:
                 limits:
                   nvidia.com/gpu: 1
     Worker:
@@ -24,9 +24,9 @@ spec:
         spec:
           containers: 
             - name: pytorch
-              image: gcr.io/<your_project>/pytorch_dist_mnist:latest
+              image: kubeflow/pytorch-dist-mnist:latest
               args: ["--backend", "gloo"]
               # Comment out the below resources to use the CPU.
-              resources: 
+              resources:
                 limits:
                   nvidia.com/gpu: 1

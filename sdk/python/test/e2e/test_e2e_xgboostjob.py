@@ -190,5 +190,5 @@ def generate_container() -> V1Container:
             "--model_path=/tmp/xgboost-model",
             "--model_storage_type=local",
         ],
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
+        resources=V1ResourceRequirements(limits={"memory": "2Gi", "cpu": "0.8"}),
     )
