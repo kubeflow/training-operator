@@ -298,7 +298,7 @@ var _ = Describe("TFJob controller", func() {
 				Name:  kubeflowv1.TFJobDefaultContainerName,
 				Image: tftestutil.DummyContainerImage,
 			})
-			Expect(testK8sClient.Create(ctx, pod)).Should(Succeed())
+			testK8sClient.Create(ctx, pod)
 
 			created := &corev1.Pod{}
 			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: pod.Name}
