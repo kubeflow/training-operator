@@ -39,7 +39,7 @@ logging.basicConfig(format="%(message)s")
 logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.MPIJOB_KIND)
-JOB_NAME = "mpijob-mxnet-ci-test"
+JOB_NAME = "mpijob-pytorch-ci-test"
 CONTAINER_NAME = "mpi"
 GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
@@ -182,7 +182,7 @@ def generate_mpijob(
 def generate_containers() -> Tuple[V1Container, V1Container]:
     launcher_container = V1Container(
         name=CONTAINER_NAME,
-        image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
+        image="horovod/horovod:0.28.1",
         command=["mpirun"],
         args=[
             "-np",
@@ -202,9 +202,8 @@ def generate_containers() -> Tuple[V1Container, V1Container]:
             "-mca",
             "btl",
             "^openib",
-            # "python", "/examples/tensorflow2_mnist.py"]
             "python",
-            "/examples/pytorch_mnist.py",
+            "/horovod/examples/pytorch/pytorch_mnist.py",
             "--epochs",
             "1",
         ],
@@ -212,9 +211,9 @@ def generate_containers() -> Tuple[V1Container, V1Container]:
     )
 
     worker_container = V1Container(
-        name="mpi",
-        image="horovod/horovod:0.20.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu",
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
+        name=CONTAINER_NAME,
+        image="horovod/horovod:0.28.1",
+        resources=V1ResourceRequirements(limits={"memory": "3Gi", "cpu": "1.2"}),
     )
 
     return launcher_container, worker_container
