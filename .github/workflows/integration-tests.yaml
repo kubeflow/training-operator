@@ -55,24 +55,11 @@ jobs:
             python-version: "3.10"
 
     steps:
-      # This step is a Workaround to avoid the "No space left on device" error.
-      # ref: https://github.com/actions/runner-images/issues/2840
-      - name: Remove unnecessary files
-        shell: bash
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/local/share/powershell
-          sudo rm -rf /usr/share/swift
-
-          echo "Disk usage after cleanup:"
-          df -h
-
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Free-Up Disk Space
+        uses: ./.github/workflows/free-up-disk-space
 
       - name: Setup Python
         uses: actions/setup-python@v4
