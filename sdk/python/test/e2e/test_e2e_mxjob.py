@@ -233,21 +233,21 @@ def generate_containers() -> Tuple[V1Container, V1Container, V1Container]:
             "dist_sync",
         ],
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
+        resources=V1ResourceRequirements(limits={"memory": "2Gi", "cpu": "0.8"}),
     )
 
     server_container = V1Container(
         name=CONTAINER_NAME,
         image="docker.io/kubeflow/mxnet-gpu:latest",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     scheduler_container = V1Container(
         name=CONTAINER_NAME,
         image="docker.io/kubeflow/mxnet-gpu:latest",
         ports=[V1ContainerPort(container_port=9991, name="mxjob-port")],
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.25"}),
+        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
     )
 
     return worker_container, server_container, scheduler_container
