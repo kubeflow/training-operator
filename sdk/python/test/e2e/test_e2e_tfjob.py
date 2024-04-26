@@ -164,5 +164,5 @@ def generate_container() -> V1Container:
             "--learning_rate=0.01",
             "--batch_size=150",
         ],
-        resources=V1ResourceRequirements(limits={"memory": "2Gi", "cpu": "0.75"}),
+        resources=V1ResourceRequirements(limits={"memory": "4Gi", "cpu": "1.6"}),
     )
