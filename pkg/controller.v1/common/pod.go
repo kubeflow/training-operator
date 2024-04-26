@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -346,23 +347,30 @@ func (jc *JobController) ReconcilePods(
 				}
 			}
 			// Check if the pod is retryable.
-			if pod.Status.Phase == v1.PodFailed &&
-				(spec.RestartPolicy == apiv1.RestartPolicyExitCode && trainutil.IsRetryableExitCode(exitCode) ||
-					spec.RestartPolicy == apiv1.RestartPolicyOnFailure ||
-					spec.RestartPolicy == apiv1.RestartPolicyAlways) {
+			if pod.Status.Phase == v1.PodFailed {
 				failedPodsCount.Inc()
-				logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
-				if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, runtimeObject); err != nil {
-					return err
-				}
-				// Deletion is expected
-				jc.Expectations.RaiseExpectations(expectationPodsKey, 0, 1)
+				if spec.RestartPolicy == apiv1.RestartPolicyExitCode && trainutil.IsRetryableExitCode(exitCode) ||
+					spec.RestartPolicy == apiv1.RestartPolicyOnFailure ||
+					spec.RestartPolicy == apiv1.RestartPolicyAlways {
+					logger.Infof("Need to restart the pod: %v.%v", pod.Namespace, pod.Name)
+					if err := jc.PodControl.DeletePod(pod.Namespace, pod.Name, runtimeObject); err != nil {
+						return err
+					}
+					// Deletion is expected
+					jc.Expectations.RaiseExpectations(expectationPodsKey, 0, 1)
 
-				msg := fmt.Sprintf("job %s is restarting because %s replica(s) failed.",
-					metaObject.GetName(), rType)
-				jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
-				commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting, v1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
-				trainingoperatorcommon.RestartedJobsCounterInc(metaObject.GetNamespace(), jc.Controller.GetFrameworkName())
+					msg := fmt.Sprintf("job %s is restarting because %s replica(s) failed.",
+						metaObject.GetName(), rType)
+					jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, apiv1.JobRestarting, v1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobRestartingReason), msg)
+					trainingoperatorcommon.RestartedJobsCounterInc(metaObject.GetNamespace(), jc.Controller.GetFrameworkName())
+				} else if spec.RestartPolicy == apiv1.RestartPolicyExitCode && !trainutil.IsRetryableExitCode(exitCode) {
+					logger.Infof("Pod %q has a non-retryable exit code. Failing job.", klog.KObj(pod))
+					msg := fmt.Sprintf("job %q is failing because %q replica(s) failed.",
+						metaObject.GetName(), rType)
+					jc.Recorder.Event(runtimeObject, v1.EventTypeWarning, commonutil.NewReason(jobKind, commonutil.JobFailedReason), msg)
+					commonutil.UpdateJobConditions(jobStatus, apiv1.JobFailed, v1.ConditionTrue, commonutil.NewReason(jobKind, commonutil.JobFailedReason), msg)
+				}
 			}
 
 			updateJobReplicaStatuses(jobStatus, rType, pod)

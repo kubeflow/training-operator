@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -271,6 +272,51 @@ var _ = Describe("TFJob controller", func() {
 				}
 				return errors.IsNotFound(err)
 			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
+		})
+	})
+
+	Context("Test Unretryable Exit Code", func() {
+		It("should set the job status to Failed", func() {
+			By("Creating TFJob \"test-noretry-exit-code\" with 1 worker only")
+			ctx := context.Background()
+
+			tfJob := tftestutil.NewTFJob(1, 0)
+			tfJob.SetName("test-noretry-exit-code")
+			tfJob.SetUID(uuid.NewUUID())
+			tfJob.Spec.TFReplicaSpecs[kubeflowv1.TFJobReplicaTypeWorker].RestartPolicy = kubeflowv1.RestartPolicyExitCode
+			Expect(testK8sClient.Create(ctx, tfJob)).Should(Succeed())
+
+			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+
+			created := &corev1.Pod{}
+			key := types.NamespacedName{Namespace: metav1.NamespaceDefault, Name: "test-noretry-exit-code-worker-0"}
+			Expect(testK8sClient.Get(ctx, key, created)).Should(Succeed())
+			created.Status.Phase = corev1.PodFailed
+			created.Status.ContainerStatuses = append(created.Status.ContainerStatuses, corev1.ContainerStatus{
+				Name: kubeflowv1.TFJobDefaultContainerName,
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						ExitCode: 1,
+					},
+				},
+			})
+			Expect(testK8sClient.Status().Update(ctx, created)).Should(Succeed())
+
+			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
+
+			Eventually(func(g Gomega) {
+				updatedJob := &kubeflowv1.TFJob{}
+				g.Expect(testK8sClient.Get(ctx, types.NamespacedName{Name: tfJob.GetName(), Namespace: metav1.NamespaceDefault}, updatedJob)).Should(Succeed())
+				expectedCondition := kubeflowv1.JobCondition{ // Make sure this type is correct
+					Type:   "Failed",
+					Status: "True",
+				}
+				g.Expect(updatedJob.Status.Conditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(expectedCondition.Type),
+					"Status": Equal(expectedCondition.Status),
+				})), "TFJob should be in Failed state")
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
 		})
 	})
 
