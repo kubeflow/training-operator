@@ -17,18 +17,12 @@ limitations under the License.
 package common
 
 import (
-	"context"
-	"errors"
 	"fmt"
-
-	apiv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 
 	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
-	policyapi "k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -78,43 +72,6 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, specFunc FillPodGroupSp
 	return createdPodGroup, nil
 }
 
-// SyncPdb will create a PDB for gang scheduling.
-func (jc *JobController) SyncPdb(job metav1.Object, minAvailableReplicas int32) (*policyapi.PodDisruptionBudget, error) {
-	// Check the pdb exist or not
-	pdb, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(context.TODO(), job.GetName(), metav1.GetOptions{})
-	if err == nil || !k8serrors.IsNotFound(err) {
-		if err == nil {
-			err = errors.New(string(metav1.StatusReasonAlreadyExists))
-		}
-		return pdb, err
-	}
-
-	// Create pdb for gang scheduling
-	minAvailable := intstr.FromInt(int(minAvailableReplicas))
-	createPdb := &policyapi.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: job.GetName(),
-			OwnerReferences: []metav1.OwnerReference{
-				*jc.GenOwnerReference(job),
-			},
-		},
-		Spec: policyapi.PodDisruptionBudgetSpec{
-			MinAvailable: &minAvailable,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					apiv1.JobNameLabel: job.GetName(),
-				},
-			},
-		},
-	}
-	createdPdb, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Create(context.TODO(), createPdb, metav1.CreateOptions{})
-	if err != nil {
-		return createdPdb, fmt.Errorf("unable to create pdb: %v", err)
-	}
-	createdPDBCount.Inc()
-	return createdPdb, nil
-}
-
 func (jc *JobController) DeletePodGroup(job metav1.Object) error {
 	pgctl := jc.PodGroupControl
 
@@ -132,22 +89,5 @@ func (jc *JobController) DeletePodGroup(job metav1.Object) error {
 		return fmt.Errorf("unable to delete PodGroup: %v", err)
 	}
 	deletedPodGroupsCount.Inc()
-	return nil
-}
-
-func (jc *JobController) DeletePdb(job metav1.Object) error {
-	// Check whether pdb exists or not
-	_, err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Get(context.TODO(), job.GetName(), metav1.GetOptions{})
-	if err != nil && k8serrors.IsNotFound(err) {
-		return nil
-	}
-
-	msg := fmt.Sprintf("Deleting pdb %s", job.GetName())
-	log.Info(msg)
-
-	if err := jc.KubeClientSet.PolicyV1beta1().PodDisruptionBudgets(job.GetNamespace()).Delete(context.TODO(), job.GetName(), metav1.DeleteOptions{}); err != nil {
-		return fmt.Errorf("unable to delete pdb: %v", err)
-	}
-	deletedPDBCount.Inc()
 	return nil
 }
