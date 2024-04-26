@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -299,23 +300,23 @@ var _ = Describe("TFJob controller", func() {
 					},
 				},
 			})
-			Expect(testK8sClient.Status().Update(ctx, created))
+			Expect(testK8sClient.Status().Update(ctx, created)).Should(Succeed())
 
 			_ = reconciler.ReconcileJobs(tfJob, tfJob.Spec.TFReplicaSpecs, tfJob.Status, &tfJob.Spec.RunPolicy)
 
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
 				updatedJob := &kubeflowv1.TFJob{}
-				err := testK8sClient.Get(ctx, types.NamespacedName{Name: tfJob.GetName(), Namespace: metav1.NamespaceDefault}, updatedJob)
-				if err != nil {
-					return false
+				g.Expect(testK8sClient.Get(ctx, types.NamespacedName{Name: tfJob.GetName(), Namespace: metav1.NamespaceDefault}, updatedJob)).Should(Succeed())
+				expectedCondition := kubeflowv1.JobCondition{ // Make sure this type is correct
+					Type:   "Failed",
+					Status: "True",
 				}
-				for _, condition := range updatedJob.Status.Conditions {
-					if condition.Type == kubeflowv1.JobFailed && condition.Status == corev1.ConditionTrue {
-						return true
-					}
-				}
-				return false
-			}, testutil.Timeout, testutil.Interval).Should(BeTrue(), "TFJob should be in Failed state")
+				g.Expect(updatedJob.Status.Conditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(expectedCondition.Type),
+					"Status": Equal(expectedCondition.Status),
+				})), "TFJob should be in Failed state")
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
 		})
 	})
 
