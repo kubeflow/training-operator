@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +32,7 @@ import (
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
 	"github.com/kubeflow/training-operator/pkg/core"
+	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
@@ -307,14 +308,12 @@ var _ = Describe("TFJob controller", func() {
 			Eventually(func(g Gomega) {
 				updatedJob := &kubeflowv1.TFJob{}
 				g.Expect(testK8sClient.Get(ctx, types.NamespacedName{Name: tfJob.GetName(), Namespace: metav1.NamespaceDefault}, updatedJob)).Should(Succeed())
-				expectedCondition := kubeflowv1.JobCondition{ // Make sure this type is correct
-					Type:   "Failed",
-					Status: "True",
-				}
-				g.Expect(updatedJob.Status.Conditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(expectedCondition.Type),
-					"Status": Equal(expectedCondition.Status),
-				})), "TFJob should be in Failed state")
+				g.Expect(updatedJob.Status.Conditions).Should(ContainElements(BeComparableTo(kubeflowv1.JobCondition{
+					Type:    kubeflowv1.JobFailed,
+					Status:  corev1.ConditionTrue,
+					Reason:  commonutil.NewReason(kubeflowv1.TFJobKind, commonutil.JobFailedReason),
+					Message: fmt.Sprintf("job %q is failing because %q replica(s) failed.", updatedJob.Name, kubeflowv1.TFJobReplicaTypeWorker),
+				}, cmpopts.IgnoreFields(kubeflowv1.JobCondition{}, "LastUpdateTime", "LastTransitionTime"))), "TFJob should be in Failed state")
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
 		})
