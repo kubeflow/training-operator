@@ -10,14 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import logging
 import argparse
+import logging
+import os
 
 from train import train
-
 from utils import generate_machine_list_file, generate_train_conf_file
-
 
 logger = logging.getLogger(__name__)
 

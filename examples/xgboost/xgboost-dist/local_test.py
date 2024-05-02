@@ -14,11 +14,13 @@
 this file contains tests for xgboost local train and predict in single machine.
 Note: this is not for distributed train and predict test
 """
-from utils import dump_model, read_model, read_train_data, read_predict_data
-import xgboost as xgb
 import logging
+
 import numpy as np
 from sklearn.metrics import precision_score
+from utils import dump_model, read_model, read_predict_data, read_train_data
+
+import xgboost as xgb
 
 logger = logging.getLogger(__name__)
 

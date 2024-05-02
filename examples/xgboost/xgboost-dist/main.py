@@ -13,8 +13,8 @@
 import argparse
 import logging
 
-from train import train
 from predict import predict
+from train import train
 from utils import dump_model
 
 

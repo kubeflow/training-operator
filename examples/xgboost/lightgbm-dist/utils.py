@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import re
 import socket
-import logging
 import tempfile
 from time import sleep
 from typing import List, Union
