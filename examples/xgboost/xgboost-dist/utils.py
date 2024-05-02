@@ -10,16 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
-import joblib
-import xgboost as xgb
 import os
 import tempfile
-import oss2
-import json
-import pandas as pd
 
+import joblib
+import oss2
+import pandas as pd
 from sklearn import datasets
+
+import xgboost as xgb
 
 logger = logging.getLogger(__name__)
 

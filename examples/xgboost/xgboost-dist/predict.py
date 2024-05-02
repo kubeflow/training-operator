@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sklearn.metrics import precision_score
-
 import logging
-import numpy as np
 
-from utils import extract_xgbooost_cluster_env, read_predict_data, read_model
+import numpy as np
+from sklearn.metrics import precision_score
+from utils import extract_xgbooost_cluster_env, read_model, read_predict_data
 
 
 def predict(args):
