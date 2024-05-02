@@ -12,23 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import multiprocessing
-import logging
-import time
 import json
-from typing import Optional, Callable, Tuple, List, Dict, Any, Set, Union
+import logging
+import multiprocessing
 import queue
-from kubernetes import client, config, watch
+import time
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from kubeflow.storage_initializer.constants import (VOLUME_PATH_DATASET,
+                                                    VOLUME_PATH_MODEL)
 from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
-from kubeflow.storage_initializer.constants import (
-    VOLUME_PATH_DATASET,
-    VOLUME_PATH_MODEL,
-)
-
+from kubernetes import client, config, watch
 
 logger = logging.getLogger(__name__)
 
@@ -176,11 +173,9 @@ class TrainingClient(object):
                 "Train API dependencies not installed. "
                 + "Run: pip install -U 'kubeflow-training[huggingface]' "
             )
-        from kubeflow.storage_initializer.s3 import S3DatasetParams
         from kubeflow.storage_initializer.hugging_face import (
-            HuggingFaceModelParams,
-            HuggingFaceDatasetParams,
-        )
+            HuggingFaceDatasetParams, HuggingFaceModelParams)
+        from kubeflow.storage_initializer.s3 import S3DatasetParams
 
         print(
             "Thank you for using `train` API for LLMs fine-tuning. This feature is in alpha stage "
