@@ -4,27 +4,25 @@ from .s3 import S3
 
 
 def model_factory(model_provider, model_provider_parameters):
-    match model_provider:
-        case "hf":
-            hf = HuggingFace()
-            hf.load_config(model_provider_parameters)
-            hf.download_model_and_tokenizer()
-        case _:
-            return "This is the default case"
+    if model_provider == "hf":
+        hf = HuggingFace()
+        hf.load_config(model_provider_parameters)
+        hf.download_model_and_tokenizer()
+    else:
+        return "This is the default case"
 
 
 def dataset_factory(dataset_provider, dataset_provider_parameters):
-    match dataset_provider:
-        case "s3":
-            s3 = S3()
-            s3.load_config(dataset_provider_parameters)
-            s3.download_dataset()
-        case "hf":
-            hf = HuggingFaceDataset()
-            hf.load_config(dataset_provider_parameters)
-            hf.download_dataset()
-        case _:
-            return "This is the default case"
+    if dataset_provider == "s3":
+        s3 = S3()
+        s3.load_config(dataset_provider_parameters)
+        s3.download_dataset()
+    elif dataset_provider == "hf":
+        hf = HuggingFaceDataset()
+        hf.load_config(dataset_provider_parameters)
+        hf.download_dataset()
+    else:
+        return "This is the default case"
 
 
 if __name__ == "__main__":
