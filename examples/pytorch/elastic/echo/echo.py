@@ -7,7 +7,6 @@ import time
 
 import torch.distributed as dist
 
-
 if __name__ == "__main__":
 
     env_dict = {

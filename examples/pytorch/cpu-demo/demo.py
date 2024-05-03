@@ -1,4 +1,5 @@
 import torch
+
 torch.distributed.init_process_group(init_method="env://")
 rank = torch.distributed.get_rank()
 world_size = torch.distributed.get_world_size()
