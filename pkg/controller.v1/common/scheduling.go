@@ -19,8 +19,7 @@ package common
 import (
 	"fmt"
 
-	volcanov1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
-
+	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type FillPodGroupSpecFunc func(object metav1.Object) (metav1.Object, error)
+type FillPodGroupSpecFunc func(object metav1.Object) error
 
 func (jc *JobController) SyncPodGroup(job metav1.Object, specFunc FillPodGroupSpecFunc) (metav1.Object, error) {
 	pgctl := jc.PodGroupControl
@@ -37,20 +36,14 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, specFunc FillPodGroupSp
 	podGroup, err := pgctl.GetPodGroup(job.GetNamespace(), job.GetName())
 	if err == nil {
 		// update podGroup for gang scheduling
-		updatedSpecPodGroup, err := specFunc(podGroup)
-		if err != nil {
+		oldPodGroup := &podGroup
+		if err = specFunc(podGroup); err != nil {
 			return nil, fmt.Errorf("unable to fill the spec of PodGroup, '%v': %v", klog.KObj(podGroup), err)
 		}
-
-		existVolcanoPodGroup := podGroup.(*volcanov1beta1.PodGroup)
-		updatedSpecVolcanoPodGroup := updatedSpecPodGroup.(*volcanov1beta1.PodGroup)
-		// The hpa-controller may update the num of replicas
-		// https://github.com/kubeflow/common/pull/207
-		if existVolcanoPodGroup.Spec.MinMember != updatedSpecVolcanoPodGroup.Spec.MinMember {
-			// The queue name should not be changed after the pg is created
-			updatedSpecVolcanoPodGroup.Spec.Queue = existVolcanoPodGroup.Spec.Queue
-			return updatedSpecPodGroup, pgctl.UpdatePodGroup(updatedSpecPodGroup.(client.Object))
+		if diff := cmp.Diff(oldPodGroup, podGroup); len(diff) != 0 {
+			return podGroup, pgctl.UpdatePodGroup(podGroup.(client.Object))
 		}
+		return podGroup, nil
 	} else if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("unable to get a PodGroup: %v", err)
 	} else {
@@ -60,14 +53,13 @@ func (jc *JobController) SyncPodGroup(job metav1.Object, specFunc FillPodGroupSp
 		newPodGroup.SetNamespace(job.GetNamespace())
 		newPodGroup.SetAnnotations(job.GetAnnotations())
 		newPodGroup.SetOwnerReferences([]metav1.OwnerReference{*jc.GenOwnerReference(job)})
-		updatedSpecPodGroup, err := specFunc(newPodGroup)
-		if err != nil {
+		if err = specFunc(newPodGroup); err != nil {
 			return nil, fmt.Errorf("unable to fill the spec of PodGroup, '%v': %v", klog.KObj(newPodGroup), err)
 		}
 
-		err = pgctl.CreatePodGroup(updatedSpecPodGroup.(client.Object))
+		err = pgctl.CreatePodGroup(newPodGroup)
 		if err != nil {
-			return updatedSpecPodGroup, fmt.Errorf("unable to create PodGroup: %v", err)
+			return podGroup, fmt.Errorf("unable to create PodGroup: %v", err)
 		}
 		createdPodGroupsCount.Inc()
 	}
