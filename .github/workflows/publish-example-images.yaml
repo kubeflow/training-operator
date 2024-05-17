@@ -10,8 +10,7 @@ jobs:
     uses: ./.github/workflows/build-and-publish-images.yaml
     with:
       component-name: ${{ matrix.component-name }}
-      # TODO (tenzen-y): Support linux/arm64 platform
-      platforms: linux/amd64
+      platforms: ${{matrix.platforms}}
       dockerfile: ${{ matrix.dockerfile }}
       context: ${{ matrix.context }}
     secrets:
@@ -33,12 +32,16 @@ jobs:
           - component-name: tf-smoke
             dockerfile: examples/tensorflow/tf_sample/Dockerfile
           - component-name: pytorch-dist-sendrecv-test
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/smoke-dist/Dockerfile
           - component-name: pytorch-elastic-example-imagenet
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/elastic/imagenet/Dockerfile
           - component-name: pytorch-elastic-example-echo
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/elastic/echo/Dockerfile
           - component-name: pytorch-torchrun-cpu
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/cpu-demo/Dockerfile
             context: examples/pytorch/cpu-demo
           - component-name: xgboost-dist-iris
@@ -56,8 +59,10 @@ jobs:
             dockerfile: examples/mxnet/tune/Dockerfile
             context: examples/mxnet/tune
           - component-name: pytorch-dist-mnist
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/mnist/Dockerfile
             context: examples/pytorch/mnist
           - component-name: pytorch-dist-mnist-mpi
+            platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/mnist/Dockerfile-mpi
             context: examples/pytorch/mnist
