@@ -1,5 +1,7 @@
 FROM python:3.9
 
+RUN apt-get update && apt-get install -y libhdf5-dev
+
 RUN pip install tensorflow==2.11.0 tensorflow_datasets==4.7.0
 
 COPY examples/tensorflow/distribution_strategy/keras-API/multi_worker_strategy-with-keras.py /
