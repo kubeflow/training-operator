@@ -22,12 +22,12 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
 
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator/go.mod
 
