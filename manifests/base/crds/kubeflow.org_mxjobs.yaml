@@ -7333,6 +7333,9 @@ spec:
                         type: string
                       queue:
                         type: string
+                        x-kubernetes-validations:
+                        - message: spec.runPolicy.schedulingPolicy.queue is immutable
+                          rule: self == oldSelf
                       scheduleTimeoutSeconds:
                         format: int32
                         type: integer
