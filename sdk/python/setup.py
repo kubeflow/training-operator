@@ -19,7 +19,7 @@ TESTS_REQUIRES = [
     "pytest-tornasync",
     "mypy",
     "black==24.3.0",
-    "flake==4.0.1",
+    "flake8==4.0.1",
 ]
 
 REQUIRES = [
@@ -48,10 +48,10 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Topic :: Scientific/Engineering",

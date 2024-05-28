@@ -24,16 +24,16 @@ runs:
   using: composite
   steps:
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       with:
         platforms: amd64,ppc64le,arm64
 
     - name: Set Up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Add Docker Tags
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: ${{ inputs.image }}
         tags: |
@@ -41,7 +41,7 @@ runs:
           type=sha,prefix=v1-
 
     - name: Build and Push
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         platforms: ${{ inputs.platforms }}
         context: ${{ inputs.context }}

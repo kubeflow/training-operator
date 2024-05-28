@@ -12,11 +12,12 @@
 
 
 import logging
-import xgboost as xgb
 import traceback
 
 from tracker import RabitTracker
-from utils import read_train_data, extract_xgbooost_cluster_env
+from utils import extract_xgbooost_cluster_env, read_train_data
+
+import xgboost as xgb
 
 logger = logging.getLogger(__name__)
 
