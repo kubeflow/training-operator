@@ -203,14 +203,19 @@ var _ = Describe("PyTorchJob controller", func() {
 
 			By("Attempting to update the PyTorchJob with a different queue value")
 			updatedJob := &kubeflowv1.PyTorchJob{}
-			Expect(testK8sClient.Get(ctx, client.ObjectKeyFromObject(job), updatedJob)).Should(Succeed(), "Failed to get PyTorchJob")
+			Eventually(func() bool {
+				err := testK8sClient.Get(ctx, jobKey, updatedJob)
+				return err == nil
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue(), "Failed to get PyTorchJob")
 
-			updatedJob.Spec.RunPolicy.SchedulingPolicy.Queue = "test"
-			err := testK8sClient.Update(ctx, updatedJob)
-
-			By("Checking that the queue update fails")
-			Expect(err).To(HaveOccurred(), "Expected an error when updating the queue, but update succeeded")
-			Expect(err.Error()).To(ContainSubstring("spec.runPolicy.schedulingPolicy.queue is immutable"), "The error message did not contain the expected message")
+			Eventually(func() bool {
+				updatedJob.Spec.RunPolicy.SchedulingPolicy.Queue = "test"
+				err := testK8sClient.Update(ctx, updatedJob)
+				By("Checking that the queue update fails")
+				Expect(err).To(HaveOccurred(), "Expected an error when updating the queue, but update succeeded")
+				Expect(err).To(MatchError(ContainSubstring("spec.runPolicy.schedulingPolicy.queue is immutable"), "The error message did not contain the expected message"))
+				return err != nil
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
 
 			By("Validating the queue was not updated")
 			freshJob := &kubeflowv1.PyTorchJob{}
