@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Training Operator Documentation
+    url: https://www.kubeflow.org/docs/components/training/
+    about: Much help can be found in the docs
+  - name: Kubeflow Training Slack Channel
+    url: https://cloud-native.slack.com/archives/C0742LDFZ4K
+    about: Ask the Training Operator community on Slack

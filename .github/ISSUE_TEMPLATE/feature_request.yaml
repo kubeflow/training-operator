@@ -1,0 +1,28 @@
+name: Feature Request
+description: Suggest an idea for Training Operator
+labels: ["kind/feature", "lifecycle/needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this Training Operator feature request!
+  - type: textarea
+    id: feature
+    attributes:
+      label: What you would like to be added?
+      description: |
+        A clear and concise description of what you want to add to Training Operator.
+        Please consider to write Training Operator enhancement proposal if it is a large feature request.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why is this needed?
+    validations:
+      required: true
+  - type: input
+    id: votes
+    attributes:
+      label: Love this feature?
+      value: Give it a 👍 We prioritize the features with most 👍
