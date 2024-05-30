@@ -202,26 +202,21 @@ var _ = Describe("PyTorchJob controller", func() {
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
 
 			By("Attempting to update the PyTorchJob with a different queue value")
-			updatedJob := &kubeflowv1.PyTorchJob{}
-			Eventually(func() bool {
-				err := testK8sClient.Get(ctx, jobKey, updatedJob)
-				return err == nil
-			}, testutil.Timeout, testutil.Interval).Should(BeTrue(), "Failed to get PyTorchJob")
-
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
+				updatedJob := &kubeflowv1.PyTorchJob{}
+				g.Expect(testK8sClient.Get(ctx, jobKey, updatedJob)).Should(Succeed(), "Failed to get PyTorchJob")
 				updatedJob.Spec.RunPolicy.SchedulingPolicy.Queue = "test"
 				err := testK8sClient.Update(ctx, updatedJob)
+				g.Expect(err).To(HaveOccurred(), "Expected an error when updating the queue, but update succeeded")
 				By("Checking that the queue update fails")
-				Expect(err).To(HaveOccurred(), "Expected an error when updating the queue, but update succeeded")
 				Expect(err).To(MatchError(ContainSubstring("spec.runPolicy.schedulingPolicy.queue is immutable"), "The error message did not contain the expected message"))
-				return err != nil
-			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
+
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
 			By("Validating the queue was not updated")
 			freshJob := &kubeflowv1.PyTorchJob{}
 			Expect(testK8sClient.Get(ctx, client.ObjectKeyFromObject(job), freshJob)).Should(Succeed(), "Failed to get PyTorchJob after update attempt")
 			Expect(freshJob.Spec.RunPolicy.SchedulingPolicy.Queue).To(Equal("initial-queue"), "The queue should remain as the initial value since it should be immutable")
-
 		})
 
 		It("Shouldn't create resources if PyTorchJob is suspended", func() {
