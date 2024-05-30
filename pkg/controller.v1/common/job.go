@@ -284,6 +284,11 @@ func (jc *JobController) ReconcileJobs(
 					if !match {
 						return fmt.Errorf("unable to recognize PodGroup: %v", klog.KObj(pg))
 					}
+
+					if q := volcanoPodGroup.Spec.Queue; len(q) > 0 {
+						queue = q
+					}
+
 					volcanoPodGroup.Spec = volcanov1beta1.PodGroupSpec{
 						MinMember:         minMember,
 						Queue:             queue,
