@@ -121,7 +121,7 @@ class TrainingClient(object):
         https://pytorch.org/docs/stable/elastic/run.html
 
         This feature is in alpha stage and Kubeflow community is looking for your feedback.
-        Please use #kubeflow-training-operator Slack channel or Kubeflow Training Operator GitHub
+        Please use #kubeflow-training Slack channel or Kubeflow Training Operator GitHub
         for your questions or suggestions.
 
         Args:
@@ -185,7 +185,7 @@ class TrainingClient(object):
         print(
             "Thank you for using `train` API for LLMs fine-tuning. This feature is in alpha stage "
             "Kubeflow community is looking for your feedback. Please share your experience "
-            "via #kubeflow-training-operator Slack channel or Kubeflow Training Operator GitHub."
+            "via #kubeflow-training Slack channel or Kubeflow Training Operator GitHub."
         )
 
         if (
