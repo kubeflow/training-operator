@@ -1,11 +1,16 @@
 # Kubeflow Training SDK
+
 Python SDK for Training Operator
 
 ## Requirements.
 
-Python 2.7 and 3.5+
+Python >= 3.8
+
+Training Python SDK follows [Python release cycle](https://devguide.python.org/versions/#python-release-cycle)
+for supported Python versions.
 
 ## Installation & Usage
+
 ### pip install
 
 ```sh
@@ -13,8 +18,9 @@ pip install kubeflow-training
 ```
 
 Then import the package:
+
 ```python
-from kubeflow import training 
+from kubeflow import training
 ```
 
 ### Setuptools
@@ -24,8 +30,8 @@ Install via [Setuptools](http://pypi.python.org/pypi/setuptools).
 ```sh
 python setup.py install --user
 ```
-(or `sudo python setup.py install` to install the package for all users)
 
+(or `sudo python setup.py install` to install the package for all users)
 
 ## Getting Started
 
@@ -64,29 +70,29 @@ Class | Method | Description
 
 ## Documentation For Models
 
- - [V1JobCondition](docs/V1JobCondition.md)
- - [V1JobStatus](docs/V1JobStatus.md)
- - [V1MXJob](docs/KubeflowOrgV1MXJob.md)
- - [V1MXJobList](docs/KubeflowOrgV1MXJobList.md)
- - [V1MXJobSpec](docs/KubeflowOrgV1MXJobSpec.md)
- - [V1PyTorchJob](docs/KubeflowOrgV1PyTorchJob.md)
- - [V1PyTorchJobList](docs/KubeflowOrgV1PyTorchJobList.md)
- - [V1PyTorchJobSpec](docs/KubeflowOrgV1PyTorchJobSpec.md)
- - [V1ReplicaSpec](docs/V1ReplicaSpec.md)
- - [V1ReplicaStatus](docs/V1ReplicaStatus.md)
- - [V1RunPolicy](docs/V1RunPolicy.md)
- - [V1SchedulingPolicy](docs/V1SchedulingPolicy.md)
- - [V1TFJob](docs/KubeflowOrgV1TFJob.md)
- - [V1TFJobList](docs/KubeflowOrgV1TFJobList.md)
- - [V1TFJobSpec](docs/KubeflowOrgV1TFJobSpec.md)
- - [V1XGBoostJob](docs/KubeflowOrgV1XGBoostJob.md)
- - [V1XGBoostJobList](docs/KubeflowOrgV1XGBoostJobList.md)
- - [V1XGBoostJobSpec](docs/KubeflowOrgV1XGBoostJobSpec.md)
-
+- [V1JobCondition](docs/V1JobCondition.md)
+- [V1JobStatus](docs/V1JobStatus.md)
+- [V1MXJob](docs/KubeflowOrgV1MXJob.md)
+- [V1MXJobList](docs/KubeflowOrgV1MXJobList.md)
+- [V1MXJobSpec](docs/KubeflowOrgV1MXJobSpec.md)
+- [V1PyTorchJob](docs/KubeflowOrgV1PyTorchJob.md)
+- [V1PyTorchJobList](docs/KubeflowOrgV1PyTorchJobList.md)
+- [V1PyTorchJobSpec](docs/KubeflowOrgV1PyTorchJobSpec.md)
+- [V1ReplicaSpec](docs/V1ReplicaSpec.md)
+- [V1ReplicaStatus](docs/V1ReplicaStatus.md)
+- [V1RunPolicy](docs/V1RunPolicy.md)
+- [V1SchedulingPolicy](docs/V1SchedulingPolicy.md)
+- [V1TFJob](docs/KubeflowOrgV1TFJob.md)
+- [V1TFJobList](docs/KubeflowOrgV1TFJobList.md)
+- [V1TFJobSpec](docs/KubeflowOrgV1TFJobSpec.md)
+- [V1XGBoostJob](docs/KubeflowOrgV1XGBoostJob.md)
+- [V1XGBoostJobList](docs/KubeflowOrgV1XGBoostJobList.md)
+- [V1XGBoostJobSpec](docs/KubeflowOrgV1XGBoostJobSpec.md)
 
 ## Building conformance tests
 
 Run
+
 ```
 docker build . -f Dockerfile.conformance -t <tag>
 ```
