@@ -1,4 +1,4 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2019 The Kubeflow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:2.16.1
+FROM ibmcom/tensorflow-ppc64le:1.13.1
 
-ADD examples/tensorflow/dist-mnist/ /var/tf_dist_mnist
+ADD . /var/tf_dist_mnist
 ENTRYPOINT ["python", "/var/tf_dist_mnist/dist_mnist.py"]
