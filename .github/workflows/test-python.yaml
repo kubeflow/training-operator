@@ -37,8 +37,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest python-dateutil urllib3 kubernetes
+          pip install flake8 pytest python-dateutil urllib3 kubernetes
           pip install -U './sdk/python[huggingface]'
 
       - name: Run unit test for training sdk
         run: pytest ./sdk/python/kubeflow/training/api/training_client_test.py
+
+      - name: Lint with flake8
+        run: |
+          flake8 sdk/ --count --select=E9,F63,F7,F82 --extend-ignore=W503 --exclude=/*kubeflow_org_v1*,__init__.py,api_client.py,configuration.py,exceptions.py,rest.py --show-source --statistics
+          flake8 sdk/ --count --extend-ignore=W503 --exclude=/*kubeflow_org_v1*,__init__.py,api_client.py,configuration.py,exceptions.py,rest.py --max-complexity=10 --max-line-length=100 --statistics
