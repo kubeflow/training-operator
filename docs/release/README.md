@@ -74,26 +74,33 @@ cherry pick your changes from the `master` branch and submit a PR.
 
    ```
    git checkout vX.Y-branch
+   git rebase upstream/vX.Y-branch
    ```
 
 ### Release Training SDK
 
-1. Update the [VERSION in `gen-sdk.sh` script](../../hack/python-sdk/gen-sdk.sh#L27) with this
-   semantic: `X.Y.ZRC.N` for the RC or `X.Y.Z` for the public release.
+1. Update the [the VERSION in the `gen-sdk.sh` script](../../hack/python-sdk/gen-sdk.sh#L27),
+   [`packageVersion` in the `swagger_config.json` file](../../hack/python-sdk/swagger_config.json#L4),
+   and [the version in the `setup.py` file](../../sdk/python/setup.py#L36) with this semantic:
+   `X.Y.ZRC.N` for the RC or `X.Y.Z` for the public release.
 
    For example:
 
    ```
    VERSION=1.8.0rc1
+
+   packageVersion: 1.8.0rc1
+
+   version=1.8.0rc1
    ```
 
-1. Generate Training SDK:
+1. Generate the Training SDK:
 
    ```
    make generate
    ```
 
-1. Publish Training SDK to twine:
+1. Publish the Training SDK to PyPI:
 
    ```
    cd sdk/python
@@ -101,29 +108,53 @@ cherry pick your changes from the `master` branch and submit a PR.
    twine upload dist/*
    ```
 
-#### Release Training Operator Image
+1. Submit a PR to update SDK version on release branch similar to [this one](https://github.com/kubeflow/training-operator/pull/2151).
 
-1. Make sure the last commit you want to release past `kubeflow-training-operator-postsubmit` testing.
+   ```
+   git push origin vX.Y-branch
+   ```
 
-1. Check out that commit (in this example, we'll use `6214e560`).
+### Release Training Operator Image
+
+1. Wait until [the above PR](https://github.com/kubeflow/training-operator/commit/4485b0aa3fa23a8b762af92bc36d46bfb063d6f5)
+   will be merged and Docker image will be published for the Training Operator.
+   For example, Docker image: `kubeflow/training-operator:v1-4485b0a` after the above example.
 
 1. Create a new PR against the release branch to change container image in manifest to point to that commit hash.
 
-   ```
+   ```yaml
    images:
-   - name: kubeflow/training-operator
-     newName: kubeflow/training-operator
-     newTag: ${commit_hash}
+     - name: kubeflow/training-operator
+       newName: kubeflow/training-operator
+       newTag: v1-4485b0a
    ```
 
-   > note: post submit job will always build a new image using the `PULL_BASE_HASH` as image tag.
+1. Submit a PR to update image version on release branch similar to [this one](TODO).
 
-1. Create a tag and push tag to upstream.
+### Create GitHub Tag
+
+1. After the above PR is merged, rebase your branch and push new tag to upstream
+
+   ```bash
+   git checkout vX.Y-branch
+   git rebase upstream/vX.Y-branch
+   ```
+
+   - For the RC tag as follows:
 
    ```
-   git tag v1.2.0
-   git push upstream v1.2.0
+   git tag vX.Y.Z-RC.N
+   git push upstream
    ```
+
+   - For the official release tag as follows:
+
+   ```
+   git tag vX.Y.Z-RC.N
+   git push upstream
+   ```
+
+## Update Changelog
 
 1. Update the Changelog by running:
 
