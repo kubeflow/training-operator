@@ -152,14 +152,14 @@ cherry pick your changes from the `master` branch and submit a PR.
 
      ```
      git tag vX.Y.Z-rc.N
-     git push upstream
+     git push upstream vX.Y.Z-rc.N
      ```
 
    - For the official release tag as follows:
 
      ```
      git tag vX.Y.Z
-     git push upstream
+     git push upstream vX.Y.Z
      ```
 
 ## Update Changelog
