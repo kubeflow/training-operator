@@ -1,5 +1,24 @@
 # Changelog
 
+# [v1.8.0-rc.1](https://github.com/kubeflow/training-operator/tree/v1.8.0-rc.1) (2024-06-25)
+
+## Breaking Changes
+
+- [SDK] Support Python 3.11 and Drop Python 3.7 ([#2105](https://github.com/kubeflow/training-operator/pull/2105) by [@tenzen-y](https://github.com/tenzen-y))
+
+## Bug Fixes
+
+- [SDK] Sync Transformers version for train API ([#2147](https://github.com/kubeflow/training-operator/pull/2147) by [@andreyvelich](https://github.com/andreyvelich))
+- [SDK] Changed package name to flake8 to fix pip install ([#2140](https://github.com/kubeflow/training-operator/pull/2140) by [@tenzen-y](https://github.com/tenzen-y))
+- [SDK] Fix Incorrect Events in get_job_logs API ([#2138](https://github.com/kubeflow/training-operator/pull/2138) by [@tenzen-y](https://github.com/tenzen-y))
+- Fix volcano podgroup update issue ([#2079](https://github.com/kubeflow/training-operator/pull/2079) by [@ckyuto](https://github.com/ckyuto))
+
+## Misc
+
+- Refine the integration tests for the immutable PyTorchJob ([#2130](https://github.com/kubeflow/training-operator/pull/2130) by [@tenzen-y](https://github.com/tenzen-y))
+
+[Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.8.0-rc.0...v1.8.0-rc.1)
+
 # [v1.8.0-rc.0](https://github.com/kubeflow/training-operator/tree/v1.8.0-rc.0) (2024-04-28)
 
 ## Breaking Changes
