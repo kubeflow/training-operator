@@ -79,9 +79,9 @@ cherry pick your changes from the `master` branch and submit a PR.
 
 ### Release Training SDK
 
-1. Update the the VERSION in the [`gen-sdk.sh` script](../../hack/python-sdk/gen-sdk.sh#L27),
-   `packageVersion` in the [`swagger_config.json` file](../../hack/python-sdk/swagger_config.json#L4),
-   and the version in the [`setup.py` file](../../sdk/python/setup.py#L36).
+1. Update the the VERSION in the [gen-sdk.sh script](../../hack/python-sdk/gen-sdk.sh#L27),
+   packageVersion in the [swagger_config.json file](../../hack/python-sdk/swagger_config.json#L4),
+   and the version in the [setup.py file](../../sdk/python/setup.py#L36).
 
    You need to follow this semantic `X.Y.Zrc.N` for the RC or `X.Y.Z` for the public release.
 
@@ -120,7 +120,7 @@ cherry pick your changes from the `master` branch and submit a PR.
 1. Wait until the above PR will be merged on release branch and check the commit SHA.
    For example, [`4485b0a`](https://github.com/kubeflow/training-operator/commit/4485b0aa3fa23a8b762af92bc36d46bfb063d6f5)
 
-1. Rebase your local branch:
+1. Rebase your local release branch:
 
    ```
    git fetch upstream
@@ -141,7 +141,7 @@ cherry pick your changes from the `master` branch and submit a PR.
 
 ### Create GitHub Tag
 
-1. After the above PR is merged, rebase your branch and push new tag to upstream
+1. After the above PR is merged, rebase your release branch and push new tag to upstream
 
    ```bash
    git fetch upstream
@@ -150,17 +150,17 @@ cherry pick your changes from the `master` branch and submit a PR.
 
    - For the RC tag as follows:
 
-   ```
-   git tag vX.Y.Z-rc.N
-   git push upstream
-   ```
+     ```
+     git tag vX.Y.Z-rc.N
+     git push upstream
+     ```
 
    - For the official release tag as follows:
 
-   ```
-   git tag vX.Y.Z
-   git push upstream
-   ```
+     ```
+     git tag vX.Y.Z
+     git push upstream
+     ```
 
 ## Update Changelog
 
