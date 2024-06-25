@@ -93,7 +93,13 @@ cherry pick your changes from the `master` branch and submit a PR.
    make generate
    ```
 
-1. Submit PR
+1. Publish Training SDK to twine:
+
+   ```
+   cd sdk/python
+   python3 setup.py sdist bdist_wheel
+   twine upload dist/*
+   ```
 
 #### Release Training Operator Image
 
