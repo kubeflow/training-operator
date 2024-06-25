@@ -79,10 +79,11 @@ cherry pick your changes from the `master` branch and submit a PR.
 
 ### Release Training SDK
 
-1. Update the [the VERSION in the `gen-sdk.sh` script](../../hack/python-sdk/gen-sdk.sh#L27),
-   [`packageVersion` in the `swagger_config.json` file](../../hack/python-sdk/swagger_config.json#L4),
-   and [the version in the `setup.py` file](../../sdk/python/setup.py#L36) with this semantic:
-   `X.Y.ZRC.N` for the RC or `X.Y.Z` for the public release.
+1. Update the the VERSION in the [`gen-sdk.sh` script](../../hack/python-sdk/gen-sdk.sh#L27),
+   `packageVersion` in the [`swagger_config.json` file](../../hack/python-sdk/swagger_config.json#L4),
+   and the version in the [`setup.py` file](../../sdk/python/setup.py#L36).
+
+   You need to follow this semantic `X.Y.Zrc.N` for the RC or `X.Y.Z` for the public release.
 
    For example:
 
@@ -116,41 +117,48 @@ cherry pick your changes from the `master` branch and submit a PR.
 
 ### Release Training Operator Image
 
-1. Wait until [the above PR](https://github.com/kubeflow/training-operator/commit/4485b0aa3fa23a8b762af92bc36d46bfb063d6f5)
-   will be merged and Docker image will be published for the Training Operator.
-   For example, Docker image: `kubeflow/training-operator:v1-4485b0a` after the above example.
+1. Wait until the above PR will be merged on release branch and check the commit SHA.
+   For example, [`4485b0a`](https://github.com/kubeflow/training-operator/commit/4485b0aa3fa23a8b762af92bc36d46bfb063d6f5)
 
-1. Create a new PR against the release branch to change container image in manifest to point to that commit hash.
+1. Rebase your local branch:
 
-   ```yaml
-   images:
-     - name: kubeflow/training-operator
-       newName: kubeflow/training-operator
-       newTag: v1-4485b0a
+   ```
+   git fetch upstream
+   git rebase upstream/vX.Y-branch
    ```
 
-1. Submit a PR to update image version on release branch similar to [this one](TODO).
+1. Update the Docker image tag for [standalone](../../manifests/overlays/standalone/kustomization.yaml#L9)
+   and [Kubeflow](../../manifests/overlays/kubeflow/kustomization.yaml#L9) overlays.
+
+   For example:
+
+   ```yaml
+   newTag: "v1-4485b0a"
+   ```
+
+1. Submit a PR to update image version on release branch similar to
+   [this one](https://github.com/kubeflow/training-operator/pull/2152).
 
 ### Create GitHub Tag
 
 1. After the above PR is merged, rebase your branch and push new tag to upstream
 
    ```bash
-   git checkout vX.Y-branch
+   git fetch upstream
    git rebase upstream/vX.Y-branch
    ```
 
    - For the RC tag as follows:
 
    ```
-   git tag vX.Y.Z-RC.N
+   git tag vX.Y.Z-rc.N
    git push upstream
    ```
 
    - For the official release tag as follows:
 
    ```
-   git tag vX.Y.Z-RC.N
+   git tag vX.Y.Z
    git push upstream
    ```
 
