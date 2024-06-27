@@ -72,9 +72,6 @@ Class | Method | Description
 
 - [V1JobCondition](docs/V1JobCondition.md)
 - [V1JobStatus](docs/V1JobStatus.md)
-- [V1MXJob](docs/KubeflowOrgV1MXJob.md)
-- [V1MXJobList](docs/KubeflowOrgV1MXJobList.md)
-- [V1MXJobSpec](docs/KubeflowOrgV1MXJobSpec.md)
 - [V1PyTorchJob](docs/KubeflowOrgV1PyTorchJob.md)
 - [V1PyTorchJobList](docs/KubeflowOrgV1PyTorchJobList.md)
 - [V1PyTorchJobSpec](docs/KubeflowOrgV1PyTorchJobSpec.md)

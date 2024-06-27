@@ -61,11 +61,6 @@ jobs:
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/xgboost/smoke-dist/Dockerfile
             context: examples/xgboost/smoke-dist
-          - component-name: mxnet-gpu
-            dockerfile: examples/mxnet/train/Dockerfile
-          - component-name: mxnet-auto-tuning
-            dockerfile: examples/mxnet/tune/Dockerfile
-            context: examples/mxnet/tune
           - component-name: pytorch-dist-mnist
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/pytorch/mnist/Dockerfile

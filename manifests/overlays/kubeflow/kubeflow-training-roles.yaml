@@ -25,7 +25,6 @@ rules:
       - mpijobs
       - tfjobs
       - pytorchjobs
-      - mxjobs
       - xgboostjobs
       - paddlejobs
     verbs:
@@ -42,7 +41,6 @@ rules:
       - mpijobs/status
       - tfjobs/status
       - pytorchjobs/status
-      - mxjobs/status
       - xgboostjobs/status
       - paddlejobs/status
     verbs:
@@ -80,7 +78,6 @@ rules:
       - mpijobs
       - tfjobs
       - pytorchjobs
-      - mxjobs
       - xgboostjobs
       - paddlejobs
     verbs:
@@ -93,7 +90,6 @@ rules:
       - mpijobs/status
       - tfjobs/status
       - pytorchjobs/status
-      - mxjobs/status
       - xgboostjobs/status
       - paddlejobs/status
     verbs:

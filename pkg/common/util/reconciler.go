@@ -28,7 +28,7 @@ import (
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 )
 
-// SatisfiedExpectations returns true if the required adds/dels for the given mxjob have been observed.
+// SatisfiedExpectations returns true if the required adds/dels for the given job have been observed.
 // Add/del counts are established by the controller at sync time, and updated as controllees are observed by the controller
 // manager.
 func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobKey string, replicaTypes []kubeflowv1.ReplicaType) bool {

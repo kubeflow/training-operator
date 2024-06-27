@@ -21,7 +21,6 @@ import (
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	mpicontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mpi"
-	mxnetcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/mxnet"
 	paddlecontroller "github.com/kubeflow/training-operator/pkg/controller.v1/paddlepaddle"
 	pytorchcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/pytorch"
 	tensorflowcontroller "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow"
@@ -40,9 +39,6 @@ var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
 	},
 	kubeflowv1.PyTorchJobKind: func(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc, controllerThreads int) error {
 		return pytorchcontroller.NewReconciler(mgr, gangSchedulingSetupFunc).SetupWithManager(mgr, controllerThreads)
-	},
-	kubeflowv1.MXJobKind: func(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc, controllerThreads int) error {
-		return mxnetcontroller.NewReconciler(mgr, gangSchedulingSetupFunc).SetupWithManager(mgr, controllerThreads)
 	},
 	kubeflowv1.XGBoostJobKind: func(mgr manager.Manager, gangSchedulingSetupFunc common.GangSchedulingSetupFunc, controllerThreads int) error {
 		return xgboostcontroller.NewReconciler(mgr, gangSchedulingSetupFunc).SetupWithManager(mgr, controllerThreads)

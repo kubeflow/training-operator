@@ -328,7 +328,7 @@ class TrainingClient(object):
 
         Args:
             job: Job object. Object must be one of these types: KubeflowOrgV1TFJob,
-                KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                KubeflowOrgV1PyTorchJob, etc.
             name: Name for the Job. It must be set if `job` parameter is omitted.
             namespace: Namespace for the Job. By default namespace is taken from
                 `TrainingClient` object.
@@ -613,7 +613,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -677,7 +677,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -712,7 +712,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -747,7 +747,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -782,7 +782,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -817,7 +817,7 @@ class TrainingClient(object):
             job_kind: Kind for the Job (e.g. `TFJob` or `PyTorchJob`). By default Job kind
                 is taken from `TrainingClient` object.
             job: Job object can be set to get the conditions. Object must be one of
-                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, KubeflowOrgV1MXJob, etc.
+                these types: KubeflowOrgV1TFJob, KubeflowOrgV1PyTorchJob, etc.
                 If this parameter is omitted, it gets Job with the given name and kind.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -948,8 +948,6 @@ class TrainingClient(object):
 
                 For PyTorchJob one of `master` or `worker`.
 
-                For MXJob one of `scheduler`, `server`, or `worker`.
-
                 For XGBoostJob one of `master` or `worker`.
 
                 For MPIJob one of `launcher` or `worker`.
@@ -974,7 +972,6 @@ class TrainingClient(object):
             replica_type is not None
             and replica_type not in constants.TFJOB_REPLICA_TYPES
             and replica_type not in constants.PYTORCHJOB_REPLICA_TYPES
-            and replica_type not in constants.MXJOB_REPLICA_TYPES
             and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
             and replica_type not in constants.MPIJOB_REPLICA_TYPES
             and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
@@ -982,7 +979,6 @@ class TrainingClient(object):
             raise ValueError(
                 f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
                 f"PyTorchJob replica type must be one of {constants.PYTORCHJOB_REPLICA_TYPES}\n"
-                f"MXJob replica type must be one of {constants.MXJOB_REPLICA_TYPES}\n"
                 f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
                 f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
                 f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
@@ -1038,8 +1034,6 @@ class TrainingClient(object):
                 For TFJob one of `Chief`, `PS`, or `worker`.
 
                 For PyTorchJob one of `master` or `worker`.
-
-                For MXJob one of `scheduler`, `server`, or `worker`.
 
                 For XGBoostJob one of `master` or `worker`.
 
@@ -1101,8 +1095,6 @@ class TrainingClient(object):
                 For TFJob one of `chief`, `ps`, or `worker`.
 
                 For PyTorchJob one of `master` or `worker`.
-
-                For MXJob one of `scheduler`, `server`, or `worker`.
 
                 For XGBoostJob one of `master` or `worker`.
 
