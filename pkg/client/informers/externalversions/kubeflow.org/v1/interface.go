@@ -22,6 +22,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// JAXJobs returns a JAXJobInformer.
+	JAXJobs() JAXJobInformer
 	// MPIJobs returns a MPIJobInformer.
 	MPIJobs() MPIJobInformer
 	// MXJobs returns a MXJobInformer.
@@ -45,6 +47,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// JAXJobs returns a JAXJobInformer.
+func (v *version) JAXJobs() JAXJobInformer {
+	return &jAXJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // MPIJobs returns a MPIJobInformer.

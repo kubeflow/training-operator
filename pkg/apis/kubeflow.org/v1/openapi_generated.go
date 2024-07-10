@@ -29,6 +29,9 @@ import (
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.ElasticPolicy":       schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJob":              schema_pkg_apis_kubefloworg_v1_JAXJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJobList":          schema_pkg_apis_kubefloworg_v1_JAXJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJobSpec":          schema_pkg_apis_kubefloworg_v1_JAXJobSpec(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JobCondition":        schema_pkg_apis_kubefloworg_v1_JobCondition(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JobStatus":           schema_pkg_apis_kubefloworg_v1_JobStatus(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.MPIJob":              schema_pkg_apis_kubefloworg_v1_MPIJob(ref),
@@ -156,6 +159,143 @@ func schema_pkg_apis_kubefloworg_v1_ElasticPolicy(ref common.ReferenceCallback) 
 		},
 		Dependencies: []string{
 			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RDZVConf", "k8s.io/api/autoscaling/v2.MetricSpec"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_JAXJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JAXJob Represents a JAXJob resource.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specification of the desired state of the JAXJob.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJobSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Most recently observed status of the JAXJob. Read-only (modified by the system).",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JobStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJobSpec", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_JAXJobList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JAXJobList is a list of JAXJobs.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Standard list metadata.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Description: "List of JAXJobs.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJob"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.JAXJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v1_JAXJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JAXJobSpec is a desired state description of the JAXJob.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"runPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RunPolicy"),
+						},
+					},
+					"jaxReplicaSpecs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A map of JAXReplicaType (type) to ReplicaSpec (value). Specifies the JAX cluster configuration. For example,\n  {\n    \"Worker\": JAXReplicaSpec,\n  }",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.ReplicaSpec"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"runPolicy", "jaxReplicaSpecs"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.ReplicaSpec", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1.RunPolicy"},
 	}
 }
 

@@ -16,6 +16,8 @@ Package v1 is the v1 version of the API.
 Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 .Resource Types
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjob[$$JAXJob$$]
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjoblist[$$JAXJobList$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijob[$$MPIJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijoblist[$$MPIJobList$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjob[$$MXJob$$]
@@ -85,6 +87,89 @@ If not set, the HPA will not be created.
 |===
 
 
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjob"]
+==== JAXJob 
+
+JAXJob Represents a JAXJob resource.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjoblist[$$JAXJobList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `JAXJob`
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjobspec[$$JAXJobSpec$$]__ | Specification of the desired state of the JAXJob.
+| *`status`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]__ | Most recently observed status of the JAXJob.
+Read-only (modified by the system).
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjoblist"]
+==== JAXJobList 
+
+JAXJobList is a list of JAXJobs.
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubeflow.org/v1`
+| *`kind`* __string__ | `JAXJobList`
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjob[$$JAXJob$$] array__ | List of JAXJobs.
+|===
+
+
+[id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjobspec"]
+==== JAXJobSpec 
+
+JAXJobSpec is a desired state description of the JAXJob.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjob[$$JAXJob$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`runPolicy`* __xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-runpolicy[$$RunPolicy$$]__ | RunPolicy encapsulates various runtime policies of the distributed training
+job, for example how to clean up resources and how long the job can stay
+active.
+| *`jaxReplicaSpecs`* __object (keys:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicatype[$$ReplicaType$$], values:xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-replicaspec[$$ReplicaSpec$$])__ | A map of JAXReplicaType (type) to ReplicaSpec (value). Specifies the JAX cluster configuration.
+For example,
+  {
+    "Worker": JAXReplicaSpec,
+  }
+|===
+
+
 [id="{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobcondition"]
 ==== JobCondition 
 
@@ -138,6 +223,7 @@ JobStatus represents the current observed state of the training Job.
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjob[$$JAXJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijob[$$MPIJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjob[$$MXJob$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejob[$$PaddleJob$$]
@@ -576,6 +662,7 @@ ReplicaSpec is a description of the replica
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjobspec[$$JAXJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijobspec[$$MPIJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjobspec[$$MXJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec[$$PaddleJobSpec$$]
@@ -629,6 +716,7 @@ own set of ReplicaTypes.
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjobspec[$$JAXJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jobstatus[$$JobStatus$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijobspec[$$MPIJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjobspec[$$MXJobSpec$$]
@@ -664,6 +752,7 @@ active.
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-jaxjobspec[$$JAXJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mpijobspec[$$MPIJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-mxjobspec[$$MXJobSpec$$]
 - xref:{anchor_prefix}-github-com-kubeflow-training-operator-pkg-apis-kubeflow-org-v1-paddlejobspec[$$PaddleJobSpec$$]

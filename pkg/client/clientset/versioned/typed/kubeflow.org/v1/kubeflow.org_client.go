@@ -26,6 +26,7 @@ import (
 
 type KubeflowV1Interface interface {
 	RESTClient() rest.Interface
+	JAXJobsGetter
 	MPIJobsGetter
 	MXJobsGetter
 	PaddleJobsGetter
@@ -37,6 +38,10 @@ type KubeflowV1Interface interface {
 // KubeflowV1Client is used to interact with features provided by the kubeflow.org group.
 type KubeflowV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *KubeflowV1Client) JAXJobs(namespace string) JAXJobInterface {
+	return newJAXJobs(c, namespace)
 }
 
 func (c *KubeflowV1Client) MPIJobs(namespace string) MPIJobInterface {
