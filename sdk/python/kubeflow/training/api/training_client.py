@@ -871,7 +871,8 @@ class TrainingClient(object):
         Raises:
             ValueError: Invalid input parameters.
             TimeoutError: Timeout to get Job.
-            RuntimeError: Failed to get Job or Job reaches unexpected Failed condition.
+            RuntimeError: Failed to get Job, or Job reaches Failed condition and
+                Failed is not in `expected_conditions` set.
         """
 
         namespace = namespace or self.namespace
@@ -904,9 +905,9 @@ class TrainingClient(object):
             if callback:
                 callback(job)
 
-            # Raise an exception if Job is Failed and Failed is not expected condition.
+            # Raise an exception if Job is Failed and Failed is not the expected condition.
             if (
-                constants.JOB_CONDITION_FAILED not in conditions
+                constants.JOB_CONDITION_FAILED not in expected_conditions
                 and utils.has_condition(conditions, constants.JOB_CONDITION_FAILED)
             ):
                 raise RuntimeError(
