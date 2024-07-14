@@ -3,8 +3,7 @@ import pytest
 from unittest.mock import patch, Mock
 
 from typing import Optional
-#Todo: For test only - DBS !!
-from .training_client import TrainingClient
+from kubeflow.training import TrainingClient
 from kubeflow.training import KubeflowOrgV1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1PyTorchJob
 from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
