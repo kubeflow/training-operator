@@ -1,5 +1,124 @@
 # Changelog
 
+# [v1.8.0](https://github.com/kubeflow/training-operator/tree/v1.8.0) (2024-07-15)
+
+## Breaking Changes
+
+- [SDK] Support Python 3.11 and Drop Python 3.7 ([#2105](https://github.com/kubeflow/training-operator/pull/2105) by [@tenzen-y](https://github.com/tenzen-y))
+- Support K8s v1.29 and Drop K8s v1.26 ([#2039](https://github.com/kubeflow/training-operator/pull/2039) by [@tenzen-y](https://github.com/tenzen-y))
+- Support K8s v1.28 and Drop K8s v1.25 ([#2038](https://github.com/kubeflow/training-operator/pull/2038) by [@tenzen-y](https://github.com/tenzen-y))
+- Deprecation Notice for MXJob ([#2058](https://github.com/kubeflow/training-operator/pull/2058) by [@tenzen-y](https://github.com/tenzen-y))
+- ⚠️ Breaking Changes: Rename `monitoring-port` flag to `webook-server-port` ([#1925](https://github.com/kubeflow/training-operator/pull/1925) by [@afritzler](https://github.com/afritzler))
+
+## New Features
+
+### LLM Fine-Tuning API
+
+- Train/Fine-tune API Proposal for LLMs ([#1945](https://github.com/kubeflow/training-operator/pull/1945) by [@deepanker13](https://github.com/deepanker13))
+- [SDK] Train API for LLM Fine-Tuning ([#1962](https://github.com/kubeflow/training-operator/pull/1962) by [@deepanker13](https://github.com/deepanker13))
+- Modify LLM Trainer to support BERT and Tiny LLaMA ([#2031](https://github.com/kubeflow/training-operator/pull/2031) by [@andreyvelich](https://github.com/andreyvelich))
+- Support arm64 for Hugging Face trainer ([#2028](https://github.com/kubeflow/training-operator/pull/2028) by [@tariq-hasan](https://github.com/tariq-hasan))
+- Add Fine-Tune BERT LLM Example ([#2021](https://github.com/kubeflow/training-operator/pull/2021) by [@andreyvelich](https://github.com/andreyvelich))
+- Train api dataset download changes ([#1959](https://github.com/kubeflow/training-operator/pull/1959) by [@deepanker13](https://github.com/deepanker13))
+- Train api init container creation ([#1958](https://github.com/kubeflow/training-operator/pull/1958) by [@deepanker13](https://github.com/deepanker13))
+- [SDK] Add docstring for Train API ([#2075](https://github.com/kubeflow/training-operator/pull/2075) by [@andreyvelich](https://github.com/andreyvelich))
+
+### Control Plane Updates
+
+- Upgrade scheduler-plugins to v0.28.9 ([#2065](https://github.com/kubeflow/training-operator/pull/2065) by [@tenzen-y](https://github.com/tenzen-y))
+- Implement webhook validations for the PaddleJob ([#2057](https://github.com/kubeflow/training-operator/pull/2057) by [@tenzen-y](https://github.com/tenzen-y))
+- Implement webhook validations for the XGBoostJob ([#2052](https://github.com/kubeflow/training-operator/pull/2052) by [@tenzen-y](https://github.com/tenzen-y))
+- Implement webhook validation for the TFJob ([#2051](https://github.com/kubeflow/training-operator/pull/2051) by [@tenzen-y](https://github.com/tenzen-y))
+- Implement webhook validations for the PyTorchJob ([#2035](https://github.com/kubeflow/training-operator/pull/2035) by [@tenzen-y](https://github.com/tenzen-y))
+- Upgrade PyTorchJob examples to PyTorch v2 ([#2024](https://github.com/kubeflow/training-operator/pull/2024) by [@champon1020](https://github.com/champon1020))
+- Upgrade Go version to v1.22 ([#2046](https://github.com/kubeflow/training-operator/pull/2046) by [@tenzen-y](https://github.com/tenzen-y))
+
+### SDK Improvements
+
+- [SDK] Add resources per worker for Create Job API ([#1990](https://github.com/kubeflow/training-operator/pull/1990) by [@andreyvelich](https://github.com/andreyvelich))
+- [SDK] Fix Worker and Master templates for PyTorchJob ([#1988](https://github.com/kubeflow/training-operator/pull/1988) by [@andreyvelich](https://github.com/andreyvelich))
+- [SDK] Get Kubernetes Events for Job ([#1975](https://github.com/kubeflow/training-operator/pull/1975) by [@andreyvelich](https://github.com/andreyvelich))
+- SDK: Upgrade the minimum required Kubernetes version to v1.27.2 ([#2066](https://github.com/kubeflow/training-operator/pull/2066) by [@tenzen-y](https://github.com/tenzen-y))
+- [SDK] Add information about TrainingClient logging ([#1973](https://github.com/kubeflow/training-operator/pull/1973) by [@andreyvelich](https://github.com/andreyvelich))
+- Training operator SDK unit test ([#1938](https://github.com/kubeflow/training-operator/pull/1938) by [@deepanker13](https://github.com/deepanker13))
+- [SDK] Consolidate Naming for CRUD APIs ([#1907](https://github.com/kubeflow/training-operator/pull/1907) by [@andreyvelich](https://github.com/andreyvelich))
+
+## Bug Fixes
+
+- [SDK] Fix Failed condition in wait Job API ([#2160](https://github.com/kubeflow/training-operator/pull/2160) by [@andreyvelich](https://github.com/andreyvelich))
+- [SDK] Sync Transformers version for train API ([#2147](https://github.com/kubeflow/training-operator/pull/2147) by [@andreyvelich](https://github.com/andreyvelich))
+- [SDK] Changed package name to flake8 to fix pip install ([#2140](https://github.com/kubeflow/training-operator/pull/2140) by [@tenzen-y](https://github.com/tenzen-y))
+- [SDK] Fix Incorrect Events in get_job_logs API ([#2138](https://github.com/kubeflow/training-operator/pull/2138) by [@tenzen-y](https://github.com/tenzen-y))
+- Fix volcano podgroup update issue ([#2079](https://github.com/kubeflow/training-operator/pull/2079) by [@ckyuto](https://github.com/ckyuto))
+- Fix import for HuggingFace Dataset Provider ([#2085](https://github.com/kubeflow/training-operator/pull/2085) by [@andreyvelich](https://github.com/andreyvelich))
+- Updated examples for train API ([#2077](https://github.com/kubeflow/training-operator/pull/2077) by [@shruti2522](https://github.com/shruti2522))
+- Fail job for non-retryable exit codes ([#2071](https://github.com/kubeflow/training-operator/pull/2071) by [@kellyaa](https://github.com/kellyaa))
+- E2E: Replace outdated images with latest ones ([#2083](https://github.com/kubeflow/training-operator/pull/2083) by [@tenzen-y](https://github.com/tenzen-y))
+- fix wrong filepath in the simple example command ([#2062](https://github.com/kubeflow/training-operator/pull/2062) by [@qzoscar](https://github.com/qzoscar))
+- fix(example): add installation of python-etcd in Pytorch example ([#2064](https://github.com/kubeflow/training-operator/pull/2064) by [@champon1020](https://github.com/champon1020))
+- fix: Upgrade controller-gen to v0.14.0 ([#2026](https://github.com/kubeflow/training-operator/pull/2026) by [@champon1020](https://github.com/champon1020))
+- Fix build workflow config for pytorch-torchrun-example ([#2020](https://github.com/kubeflow/training-operator/pull/2020) by [@PeterWrighten](https://github.com/PeterWrighten))
+- Fix Distributed Data Samplers in PyTorch Examples ([#2012](https://github.com/kubeflow/training-operator/pull/2012) by [@andreyvelich](https://github.com/andreyvelich))
+- Fix URL in python SDK setup.py ([#2011](https://github.com/kubeflow/training-operator/pull/2011) by [@garymm](https://github.com/garymm))
+- Fix for Github CI to publish HF trainer image ([#1987](https://github.com/kubeflow/training-operator/pull/1987) by [@johnugeorge](https://github.com/johnugeorge))
+- train api jupyternotebook fix ([#1984](https://github.com/kubeflow/training-operator/pull/1984) by [@deepanker13](https://github.com/deepanker13))
+- fix: volcano podgroup should has a non-empty queue name ([#1977](https://github.com/kubeflow/training-operator/pull/1977) by [@lowang-bh](https://github.com/lowang-bh))
+- Fix Master Label for PyTorchJob ([#1974](https://github.com/kubeflow/training-operator/pull/1974) by [@andreyvelich](https://github.com/andreyvelich))
+- IsMasterRole fix in pytorchjob controller ([#1969](https://github.com/kubeflow/training-operator/pull/1969) by [@deepanker13](https://github.com/deepanker13))
+- [fix] replace ${go env GOPATH} with $(go env GOPATH) to get the prope… ([#1952](https://github.com/kubeflow/training-operator/pull/1952) by [@double12gzh](https://github.com/double12gzh))
+- Fixing issues with providing existing service account ([#1918](https://github.com/kubeflow/training-operator/pull/1918) by [@rpemsel](https://github.com/rpemsel))
+
+## Misc
+
+- Refine the integration tests for the immutable PyTorchJob ([#2130](https://github.com/kubeflow/training-operator/pull/2130) by [@tenzen-y](https://github.com/tenzen-y))
+- Update training operator image to latest ([#2089](https://github.com/kubeflow/training-operator/pull/2089) by [@johnugeorge](https://github.com/johnugeorge))
+- Update sdk to v1.8.0rc0 ([#2087](https://github.com/kubeflow/training-operator/pull/2087) by [@johnugeorge](https://github.com/johnugeorge))
+- Test: Simplify and Identify pod-controller envtest ([#2084](https://github.com/kubeflow/training-operator/pull/2084) by [@tenzen-y](https://github.com/tenzen-y))
+- Remove deadcode related to PodDisruptionBudget ([#2073](https://github.com/kubeflow/training-operator/pull/2073) by [@tenzen-y](https://github.com/tenzen-y))
+- docs: updating docs for local development ([#2074](https://github.com/kubeflow/training-operator/pull/2074) by [@franciscojavierarceo](https://github.com/franciscojavierarceo))
+- PyTorchJob: Always show warnings when using elasticPolicy.nProcPerNode ([#2067](https://github.com/kubeflow/training-operator/pull/2067) by [@tenzen-y](https://github.com/tenzen-y))
+- Updated developer docs to include Kind ([#2061](https://github.com/kubeflow/training-operator/pull/2061) by [@franciscojavierarceo](https://github.com/franciscojavierarceo))
+- adding fine tune example with s3 as the dataset store ([#2006](https://github.com/kubeflow/training-operator/pull/2006) by [@deepanker13](https://github.com/deepanker13))
+- CI: Use a mode=min in the builder cache ([#2053](https://github.com/kubeflow/training-operator/pull/2053) by [@tenzen-y](https://github.com/tenzen-y))
+- Fix: upgrade version of crd-ref-docs, which caused panic with go v1.22 ([#2043](https://github.com/kubeflow/training-operator/pull/2043) by [@jdcfd](https://github.com/jdcfd))
+- Remove Dockerfile.ppc64le of pytorch example ([#2042](https://github.com/kubeflow/training-operator/pull/2042) by [@champon1020](https://github.com/champon1020))
+- publish torchrun example via Dockerfile ([#2018](https://github.com/kubeflow/training-operator/pull/2018) by [@PeterWrighten](https://github.com/PeterWrighten))
+- Updated examples/pytorch to disable istio sidecar injection ([#2004](https://github.com/kubeflow/training-operator/pull/2004) by [@jdcfd](https://github.com/jdcfd))
+- [docs] development guide update ([#1995](https://github.com/kubeflow/training-operator/pull/1995) by [@shashank-iitbhu](https://github.com/shashank-iitbhu))
+- Add Kubeflow Website links to README ([#1983](https://github.com/kubeflow/training-operator/pull/1983) by [@andreyvelich](https://github.com/andreyvelich))
+- publish trainer hugging face image ([#1985](https://github.com/kubeflow/training-operator/pull/1985) by [@deepanker13](https://github.com/deepanker13))
+- Adding Training image needed for train api ([#1963](https://github.com/kubeflow/training-operator/pull/1963) by [@deepanker13](https://github.com/deepanker13))
+- Add test to create PyTorchJob from func ([#1979](https://github.com/kubeflow/training-operator/pull/1979) by [@andreyvelich](https://github.com/andreyvelich))
+- Corrected Some Spelling And Grammatical Errors ([#1980](https://github.com/kubeflow/training-operator/pull/1980) by [@daniel-hutao](https://github.com/daniel-hutao))
+- torchrun example with cpu version pytorch ([#1965](https://github.com/kubeflow/training-operator/pull/1965) by [@kuizhiqing](https://github.com/kuizhiqing))
+- utils changes needed to add train api ([#1954](https://github.com/kubeflow/training-operator/pull/1954) by [@deepanker13](https://github.com/deepanker13))
+- Adding parallel support for coveralls ([#1956](https://github.com/kubeflow/training-operator/pull/1956) by [@johnugeorge](https://github.com/johnugeorge))
+- chore: pkg import only once ([#1950](https://github.com/kubeflow/training-operator/pull/1950) by [@testwill](https://github.com/testwill))
+- fix nproc env in elastic mode for pytorchjob ([#1948](https://github.com/kubeflow/training-operator/pull/1948) by [@kuizhiqing](https://github.com/kuizhiqing))
+- Avoid modifying log level globally ([#1944](https://github.com/kubeflow/training-operator/pull/1944) by [@droctothorpe](https://github.com/droctothorpe))
+- Add @andreyvelich to Approvers ([#1941](https://github.com/kubeflow/training-operator/pull/1941) by [@andreyvelich](https://github.com/andreyvelich))
+- Merge v1.7 branch changes to Main ([#1940](https://github.com/kubeflow/training-operator/pull/1940) by [@johnugeorge](https://github.com/johnugeorge))
+- Increase the root volume size on the github runner when building container images ([#1931](https://github.com/kubeflow/training-operator/pull/1931) by [@tenzen-y](https://github.com/tenzen-y))
+- Check podGroup CRD for the volcano and the scheudler-plugins as default. ([#1929](https://github.com/kubeflow/training-operator/pull/1929) by [@Syulin7](https://github.com/Syulin7))
+- Use a community hosted image in MXJob E2E ([#1928](https://github.com/kubeflow/training-operator/pull/1928) by [@tenzen-y](https://github.com/tenzen-y))
+- Build MXJob examples in CI ([#1927](https://github.com/kubeflow/training-operator/pull/1927) by [@tenzen-y](https://github.com/tenzen-y))
+- Bump `k8s.io/*` deps to 1.28 ([#1920](https://github.com/kubeflow/training-operator/pull/1920) by [@afritzler](https://github.com/afritzler))
+- Replace XGBoost image for E2E with community hosted ([#1922](https://github.com/kubeflow/training-operator/pull/1922) by [@tenzen-y](https://github.com/tenzen-y))
+- Creating service account where approriate for MPI Job ([#1917](https://github.com/kubeflow/training-operator/pull/1917) by [@rpemsel](https://github.com/rpemsel))
+- Build XGBoostJob example images in CI ([#1913](https://github.com/kubeflow/training-operator/pull/1913) by [@tenzen-y](https://github.com/tenzen-y))
+- Manage kube-delivery image from training-operator and update it ([#1909](https://github.com/kubeflow/training-operator/pull/1909) by [@rpemsel](https://github.com/rpemsel))
+- Adding Yuki to Approvers ([#1901](https://github.com/kubeflow/training-operator/pull/1901) by [@johnugeorge](https://github.com/johnugeorge))
+- docs: Remove reference to tf-operator specific design doc ([#1903](https://github.com/kubeflow/training-operator/pull/1903) by [@terrytangyuan](https://github.com/terrytangyuan))
+- Add Training WG Community Call ([#1900](https://github.com/kubeflow/training-operator/pull/1900) by [@andreyvelich](https://github.com/andreyvelich))
+- update full change list in changelog ([#1895](https://github.com/kubeflow/training-operator/pull/1895) by [@lowang-bh](https://github.com/lowang-bh))
+- update volcano scheduler to 1.8.0 ([#1894](https://github.com/kubeflow/training-operator/pull/1894) by [@lowang-bh](https://github.com/lowang-bh))
+- Changelog updated for 1.7.0 rc0 release ([#1892](https://github.com/kubeflow/training-operator/pull/1892) by [@johnugeorge](https://github.com/johnugeorge))
+- Add Stale GitHub Action ([#1893](https://github.com/kubeflow/training-operator/pull/1893) by [@andreyvelich](https://github.com/andreyvelich))
+- Refactor core/pod tests ([#1890](https://github.com/kubeflow/training-operator/pull/1890) by [@tenzen-y](https://github.com/tenzen-y))
+- Remove klog v1 ([#1886](https://github.com/kubeflow/training-operator/pull/1886) by [@tenzen-y](https://github.com/tenzen-y))
+
+[Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.7.0...v1.8.0)
+
 # [v1.8.0-rc.1](https://github.com/kubeflow/training-operator/tree/v1.8.0-rc.1) (2024-06-25)
 
 ## Breaking Changes
