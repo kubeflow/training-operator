@@ -1012,12 +1012,10 @@ class TrainingClient(object):
                 label_selector=label_selector,
                 async_req=True,
             )
-            print(f"\n\t Here {namespace=}, {label_selector=}\n {thread=}\n")
             return thread.get(timeout).items
         except multiprocessing.TimeoutError:
             raise TimeoutError(f"Timeout to list pods for Job: {namespace}/{name}")
-        except Exception as e:
-            print(e)
+        except Exception:
             raise RuntimeError(f"Failed to list pods for Job: {namespace}/{name}")
 
     def get_job_pod_names(
