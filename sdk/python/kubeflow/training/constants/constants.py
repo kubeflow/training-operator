@@ -22,6 +22,9 @@ DEFAULT_TIMEOUT = 120
 # The default PIP index URL to download Python packages.
 DEFAULT_PIP_INDEX_URL = "https://pypi.org/simple"
 
+# The default namespace in case namespace not define explicitly
+DEFAULT_NAMESPACE = "default"
+
 # Annotation to disable Istio sidecar.
 ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
 
