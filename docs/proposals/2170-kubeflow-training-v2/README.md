@@ -102,9 +102,10 @@ We propose these APIs:
   to configure infrastructure parameters that are required for the **TrainJob**.
   For example, failure policy or gang-scheduling.
 
-The below diagram shows which resources will be created for LLM fine-tuning with PyTorch.
+The below diagram shows that platform engineers manage `TrainingRuntime` and data scientists create
+`TrainJob`:
 
-![trainjob-diagram](./trainjob-diagram.jpg)
+![user-roles](./user-roles.drawio.svg)
 
 ### Worker and Node Definition
 
@@ -408,6 +409,10 @@ spec:
       bucket: datasets
       path: custom-datasets/yelp-review
 ```
+
+The below diagram shows which resources will be created for LLM fine-tuning with PyTorch:
+
+![trainjob-diagram](./trainjob-diagram.drawio.svg)
 
 ### The Trainer Config API
 
