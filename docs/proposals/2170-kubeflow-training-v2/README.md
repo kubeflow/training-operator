@@ -164,7 +164,7 @@ the following table explains naming that each framework or technology uses:
    </td>
   </tr>
   <tr>
-   <td>MPI
+   <td>MPI (OpenMPI)
    </td>
    <td>Slot
 <p>
@@ -246,6 +246,9 @@ the following table explains naming that each framework or technology uses:
    </td>
   </tr>
 </table>
+
+Additionally, check [this document for the `mpirun` command](https://gist.github.com/vsoch/9ac7c4448dffe656d946edceaa58bd9e)
+for other MPI implementations: Intel MPI, MPICH, Spectrum MPI.
 
 ## The TrainJob API
 
