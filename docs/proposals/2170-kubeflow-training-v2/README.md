@@ -18,7 +18,8 @@ When we built the
 Kubernetes lacked better features to support distributed machine learning (ML) training, such as
 SuccessPolicy and RestartPolicy (FailurePolicy). Recently, the Kubernetes community launched the
 working group Batch, and then the working group actively worked on evolving the batch/v1 `Job` API
-and built [a new `JobSet`](https://github.com/kubernetes-sigs/jobset) API to manage groups of `Jobs`.
+and built [a new Kubernetes SIGs project: `JobSet`](https://github.com/kubernetes-sigs/jobset) to
+manage groups of `Jobs`.
 
 This document consolidates efforts for the Cloud Native ML Training between Kubeflow and Kubernetes
 communities.
@@ -27,11 +28,11 @@ communities.
 
 We often implement features similar to batch/v1 `Job`, such as “suspend”, on the Training Operator
 side since the Training Operator creates blocks of plain Pod and Service for each rank once
-Kubeflow Jobs are created. However, if we continue taking the same approach (re-inventing the wheel),
-the maintenance costs will continue to increase.
+Kubeflow Jobs are created. However, if we continue taking the same approach to use lowest level
+abstractions that introduce redundancy, the maintenance costs will continue to increase.
 
-It would be better to replace infrastructure layers with `JobSet` to avoid re-inventing the wheel
-and improve the Training Operator
+Replacing repetitive infrastructure layers with `JobSet` would help to avoid redundancy and reduce
+developer toil.
 
 Additionally, introducing `JobSet` as an infrastructure layer would allow us to introduce batch
 workload features such as
@@ -69,7 +70,7 @@ Based on the above personas, we should build an API that everyone will benefit f
 
 - Introduce the `TrainingRuntime` and `ClusterTrainingRuntime` APIs that will store blueprints
   for model training and LLM fine-tuning using various ML frameworks. These runtimes will be built
-  on top of **JobSet** APIs with additional functionality for special use-cases.
+  on top of `JobSet` APIs with additional functionality for special use-cases.
   For example, training using MPI orchestration.
 - Introduce Kubeflow `TrainJob` API that allows to reuse these runtimes and quickly start a new
   training job without understanding complex Kubernetes APIs.
@@ -77,7 +78,8 @@ Based on the above personas, we should build an API that everyone will benefit f
 - Create community-supported `ClusterTrainingRuntime` for distributed training with PyTorch and MPI.
 - Create community-supported `ClusterTrainingRuntime` for LLM fine-tuning for various foundational
   models (e.g. Mistral, LLama-70b, Gemma-7b).
-- Work on the following JobSet improvements: https://github.com/kubernetes-sigs/jobset/issues/463 and https://github.com/kubernetes-sigs/jobset/issues/572
+- Work on the following `JobSet` improvements: https://github.com/kubernetes-sigs/jobset/issues/463
+  and https://github.com/kubernetes-sigs/jobset/issues/572
 
 ### Non-Goals
 
@@ -431,7 +433,7 @@ type TrainerConfig struct {
   NumNodes *int32 `json:"numNodes,omitempty"`
 
   // Resource for each node.
-  ResourcesPerNode []corev1.resoruces `json:"resourcesPerNode,omitempty"`
+  ResourcesPerNode []corev1.resources `json:"resourcesPerNode,omitempty"`
 
   // Number of processes in a single node.
   // By default this value == number of GPUs in resources limits.
@@ -532,7 +534,7 @@ type S3DatasetProvider struct {
 }
 ```
 
-The following table explains how `TrainingRuntime` parameters will be overridden with the
+The following tables explains how `TrainingRuntime` parameters will be overridden with the
 `DatasetConfig`.
 
 All parameters will be set for this container:
@@ -724,7 +726,6 @@ metadata:
 spec:
   trainingRuntimeRef:
     name: pytorch-distributed-gpu
-    kind: ClusterTrainingRuntime
   trainerConfig:
     image: docker.io/custom-training
   podSpecOverrides:
@@ -753,7 +754,7 @@ BERT LLM Fine-Tuning.
 These blueprints can be deployed within the Training Operator control plane and stored in a Kubeflow
 public repository that users can apply to their clusters.
 
-Platform or ML engineers can tweak existing blueprint, based on their requirements. For example,
+Platform or ML engineers can tweak existing blueprints, based on their requirements. For example,
 using custom configurations.
 
 The Kubeflow Training Operator can maintain more Training Runtimes when the community is ready to
@@ -762,7 +763,7 @@ support them. For example, runtimes for [Jax](https://jax.readthedocs.io/en/late
 MPI, TensorFlow, XGBoost, and PaddlePaddle.
 
 The `TrainingRuntime` is immutable, and so to make a change, a new version of the `TrainingRuntime`
-must be created and then changing the `TranJob` to point to the new version.
+must be created and then changing the `TrainJob` to point to the new version.
 This provides control as to how changes to runtimes propagate to existing training jobs.
 For example, when training is running for a long time (e.g. 1-2 months).
 
@@ -951,11 +952,11 @@ Example of usage:
 apiVersion: kubeflow.org/v2alpha1
 kind: TrainJob
 metadata:
-  name: torch-distributed-multi-node
+  name: torch-test
   namespace: tenant-alpha
 spec:
   trainingRuntimeRef:
-    name: pytorch-distributed
+    name: torch-distributed-multi-node
   trainerConfig:
     resourcesPerNode:
       requests:
