@@ -166,7 +166,9 @@ if __name__ == "__main__":
     logger.info("Starting HuggingFace LLM Trainer")
     args = parse_arguments()
     train_args = TrainingArguments(**json.loads(args.training_parameters))
-    reference_train_args = transformers.TrainingArguments(output_dir=train_args.output_dir)
+    reference_train_args = transformers.TrainingArguments(
+        output_dir=train_args.output_dir
+    )
     for key, val in train_args.to_dict().items():
         old_attr = getattr(reference_train_args, key, None)
         if old_attr is not None:
