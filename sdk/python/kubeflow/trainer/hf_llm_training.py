@@ -109,7 +109,7 @@ def load_and_preprocess_data(dataset_dir, transformer_type, tokenizer):
 
 def setup_peft_model(model, lora_config):
     # Set up the PEFT model
-    lora_config = LoraConfig(**json.loads(args.lora_config))
+    lora_config = LoraConfig(**json.loads(lora_config))
     reference_lora_config = LoraConfig()
     for key, val in lora_config.__dict__.items():
         old_attr = getattr(reference_lora_config, key, None)
