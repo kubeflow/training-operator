@@ -271,7 +271,7 @@ type TrainJobSpec struct {
 	TrainingRuntimeRef *TrainingRuntimeRef `json:"trainingRuntimeRef"`
 
 	// Parameters that data scientists can override
-	TrainerConfig *TrainerConfig `json:"trainerConfig,omitempty"`
+	Trainer *Trainer `json:"trainer,omitempty"`
 
 	// Configuration for training dataset
 	DatasetConfig *DatasetConfig `json:"datasetConfig,omitempty"`
@@ -315,7 +315,7 @@ This table explain rationale for each `TrainJob` parameter:
    </td>
   </tr>
   <tr>
-   <td><code>TrainerConfig</code>
+   <td><code>Trainer</code>
    </td>
    <td>Configuration for the Trainer such as image, number of nodes, accelerators.
    </td>
@@ -360,7 +360,7 @@ metadata:
 spec:
   trainingRuntimeRef:
     name: torch-distributed-multi-node
-  trainerConfig:
+  trainer:
     image: docker.io/custom-training
     command:
       - torchrun train.py
@@ -418,17 +418,22 @@ spec:
   trainingRuntimeRef:
     name: torch-tune-llama-7b
   datasetConfig:
-    s3:
-      bucket: datasets
-      path: custom-datasets/yelp-review
+    storageUri: s3://dataset/custom-dataset/yelp-review
+    parameters:
+      split: train[:5000]
+  modelConfig:
+    input:
+      storageUri: hf://yelp-review-full
+    output:
+      storageUri: s3://trained-model
 ```
 
-### The Trainer Config API
+### The Trainer API
 
-The `TrainerConfig` represents the APIs that data scientists can use to configure trainer settings:
+The `Trainer` represents the APIs that data scientists can use to configure trainer settings:
 
 ```golang
-type TrainerConfig struct {
+type Trainer struct {
 
   // Docker image for the Trainer.
   Image string `json:"image,omitempty"`
@@ -455,11 +460,11 @@ type TrainerConfig struct {
 }
 ```
 
-The following table explains how `TrainingRuntime` parameters will be overridden with `TrainerConfig`.
+The following table explains how `TrainingRuntime` parameters will be overridden with `Trainer`.
 
 <table>
   <tr>
-   <td><strong><code>TrainerConfig</code> Parameter</strong>
+   <td><strong><code>Trainer</code> Parameter</strong>
    </td>
    <td><strong> <code>TrainingRuntime</code> Parameter</strong>
    </td>
@@ -509,109 +514,52 @@ The `DatasetConfig` represents the APIs that data scientists can use to configur
 ```golang
 type DatasetConfig struct {
 
-    // One of the following can be set.
-    HFDatasetProvider *kubeflowv1.HFDatasetProvider `json:"huggingface,omitempty"`
+	// Storage uri for the dataset provider.
+	StorageUri string `json:"storageUri"`
 
-    S3DatasetProvider *kubeflowv1.S3DatasetProvider `json:"s3,omitempty"`
+	// Custom parameters for the dataset initializer.
+	Parameters *[string]string `json:"parameters,omitempty"`
 
-    // (Optional). We can support the Iceberg dataset using PyIceberg.
-    IcebergDatasetProvider *kubeflowv1.IcebergDatasetProvider `json:"iceberg,omitempty"`
-}
-
-type HFDatasetProvider struct {
-  // Path to the HF dataset. For example: yelp-review-full
-  RepoId string `json:"repoId"`
-
-  // Whether the dataset needs to be splitted: train/val. E.g. split=train[:50000]
-  Split string `json:"split,omitempty"`
-
-  // Secret must contain HF_TOKEN secret.
-  // If the secret object contains more than one secret, all secrets are passed.
-  AccessTokenSecretRef corev1.SecretReference `json:"accessToken,omitempty"`
-}
-
-
-type S3DatasetProvider struct {
-  // S3 endpoint.
-  EndpointUrl string `json:"endpointUrl,omitempty"`
-
-  // Name of the S3 bucket.
-  BucketName string `json:bucketName`
-
-   // Path to the dataset. All files will be downloaded in that path.
-  Path string `json:path`
-
-  // Secret must contain AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secret.
-  // If the secret object contains more than one secret, all secrets are passed.
-  // Otherwise, IRSA can be used to access S3.
-  AccessTokenSecretRef corev1.SecretReference `json:"accessToken,omitempty"`
+  // Reference to the secrets to access dataset.
+  SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
 }
 ```
 
-The following tables explains how `TrainingRuntime` parameters will be overridden with the
-`DatasetConfig`.
+Initially we will support the following dataset providers:
 
-All parameters will be set for this container:
+- **S3:** `storageUri: s3://bucket-name/path/dataset`
+- **HuggingFace:** `storageUri: hf://repo-id`
+
+Parameters will be converted to the environment variables for the `dataset-initializer` container
+in the `Initializer` Job.
+
+For example:
 
 ```yaml
-.spec.replicatedJobs[name='Initializer'].template.spec.template.spec.containers[name=dataset-initializer]
+datasetConfig:
+  storageUri: s3://datasets/yelp-review
+  parameters:
+    endpointUrl: s3.custom.com
 ```
 
-#### The HuggingFace Provider
+Will be converted to:
 
-For the HuggingFace provider environment variable `PROVIDER=hf`.
-
-<table>
-  <tr>
-   <td><strong><code>DatasetConfig</code> Parameter</strong>
-   </td>
-   <td><strong><code>TrainingRuntime</code> Parameter</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.huggingface.repoId</code>
-   </td>
-   <td><code>.env[REPO_ID]</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.huggingface.split</code>
-   </td>
-   <td><code>.env[SPLIT]</code>
-   </td>
-  </tr>
-</table>
-
-#### The S3 Provider
-
-For the S3 provider environment variable `PROVIDER=s3`.
-
-<table>
-  <tr>
-   <td><strong><code>DatasetConfig</code> Parameter</strong>
-   </td>
-   <td><strong><code>TrainingRuntime</code> Parameter</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.s3.endpointUrl</code>
-   </td>
-   <td><code>.env[ENDPOINT_URL]</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.s3.bucketName</code>
-   </td>
-   <td><code>.env[BUCKET_NAME]</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.s3.path</code>
-   </td>
-   <td><code>.env[PATH]</code>
-   </td>
-  </tr>
-</table>
+```yaml
+replicatedJobs:
+  - name: Initializer
+    template:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: dataset-initializer
+                image: docker.io/kubeflow/dataset-initializer
+                env:
+                  - name: STORAGE_URI
+                    value: s3://dataset/yelp-review
+                  - name: ENDPOINT_URL
+                    value: s3.custom.com
+```
 
 ### The Model Config API
 
@@ -620,59 +568,171 @@ input and output location.
 
 ```golang
 type ModelConfig struct {
-    // One of the following can be set.
-    HFModelProvider *kubeflowv1.HFModelProvider `json:"huggingface,omitempty"`
+	// Configuration for pre-trained model.
+	Input *InputModel `json:"input,omitempty"`
 
-    // Potential output location for fine-tuned/trained model.
-    OutputArtifact string
+	// Configuration for trained model.
+	Output *OutputModel `json:"output,omitempty"`
 }
 
+type InputModel struct {
+	// Storage uri for the model provider.
+	StorageUri string `json:"storageUri"`
 
-type HFModelProvider struct {
-    // Path to the pre-trained model. google-bert/bert-base-uncased
-    RepoID string `json:"repoID"`
+	// Custom parameters for the model initializer.
+	Parameters *[string]string `json:"parameters,omitempty"`
 
-    // TODO (andreyvelich): Do we want to support any Transformer ?
-    TransformerType string `json:"transformerType,omitempty"`
+	// Reference to the secrets to access model.
+	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+}
 
-    // Secret must contain HF_TOKEN secret.
-    // If the secret object contains more than one secret, all secrets are passed.
-    AccessTokenSecretRef corev1.SecretReference `json:"accessToken,omitempty"`
+type OutputModel struct {
+	// Storage uri for the model exported.
+	StorageUri string `json:"storageUri"`
+
+	// Custom parameters for the model exporter.
+	Parameters *[string]string `json:"parameters,omitempty"`
+
+	// Reference to the secrets to export model.
+	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
 }
 ```
 
-The following table explains how `TrainingRuntime` parameters will be overridden with `ModelConfig`.
+#### The Input Model API
 
-All parameters will be set for this container:
+Initially we will support the following model providers:
+
+- **HuggingFace:** `storageUri: hf://model-name`
+
+Parameters will be converted to the environment variables for the `model-initializer` container
+in the `Initializer` Job.
+
+For example:
 
 ```yaml
-.spec.replicatedJobs[name='Initializer'].template.spec.template.spec.containers[name=model-initializer]
+modelConfig:
+  storageUri: hf://bert-based-cased
+  parameters:
+    transformerType: AutoModelForCausalLM
 ```
 
-#### The HuggingFace Provider
+Will be converted to:
 
-For the HuggingFace provider environment variable `PROVIDER=hf`.
+```yaml
+replicatedJobs:
+  - name: Initializer
+    template:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: model-initializer
+                image: docker.io/kubeflow/model-initializer
+                env:
+                  - name: STORAGE_URI
+                    value: hf://bert-based-cased
+                  - name: TRANSFORMER_TYPE
+                    value: AutoModelForCausalLM
+```
 
-<table>
-  <tr>
-   <td><strong><code>DatasetConfig</code> Parameter</strong>
-   </td>
-   <td><strong><code>TrainingRuntime</code> Parameter</strong>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.huggingface.repoId</code>
-   </td>
-   <td><code>.env[REPO_ID]</code>
-   </td>
-  </tr>
-  <tr>
-   <td><code>.huggingface.split</code>
-   </td>
-   <td><code>.env[SPLIT]</code>
-   </td>
-  </tr>
-</table>
+#### The Output Model API
+
+After initial implementation of `TrainJob` and `TrainingRuntime`, we will support ability to export
+the trained model. The following runtime can be implemented:
+
+```yaml
+apiVersion: kubeflow.org/v2alpha1
+kind: ClusterTrainingRuntime
+metadata:
+  name: torch-tune-llama-7b-export
+spec:
+  numNodes: 1
+  startupPolicy:
+    startupPolicyOrder: InOrder
+  replicatedJobs:
+    - name: Initializer
+      template:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: dataset-initializer
+                  image: docker.io/kubeflow/dataset-initializer
+                  env:
+                    - name: STORAGE_URI
+                      value: hf://tatsu-lab/alpaca
+                  volumeMounts:
+                    - mountPath: /workspace/dataset
+                      name: dataset-initializer
+                - name: model-initializer
+                  image: docker.io/kubeflow/model-initializer
+                  env:
+                    - name: STORAGE_URI
+                      value: hf://meta-llama/Llama-2-7b
+                  volumeMounts:
+                    - mountPath: /workspace/model
+                      name: model-initializer
+              volumes:
+                - name: dataset-initializer
+                  persistentVolumeClaim:
+                    claimName: dataset-initializer
+                - name: model-initializer
+                  persistentVolumeClaim:
+                    claimName: model-initializer
+    - name: Node
+      template:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: trainer
+                  image: docker.io/kubeflow/llm-trainer
+                  env:
+                    - name: MASTER_ADDR
+                      value: "pytorch-node-0-0.pytorch"
+                    - name: MASTER_PORT
+                      value: 29400
+                    - name: LORA_CONFIG
+                      value: |
+                        {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
+                  command:
+                    - torchrun hf_llm_training.py
+                  resources:
+                    limits:
+                      nvidia.com/gpu: 2
+                  volumeMounts:
+                    - mountPath: /workspace/dataset
+                      name: dataset-initializer
+                    - mountPath: /workspace/pre-trained-model
+                      name: model-initializer
+                    - mountPath: /workspace/adapters
+                      name: model-exporter
+              volumes:
+                - name: dataset-initializer
+                  persistentVolumeClaim:
+                    claimName: dataset-initializer
+                - name: model-initializer
+                  persistentVolumeClaim:
+                    claimName: model-initializer
+                - name: model-exporter
+                  persistentVolumeClaim:
+                    claimName: model-exporter
+    - name: Exporter
+      template:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: model-exporter
+                  image: docker.io/kubeflow/model-exporter
+                  volumeMounts:
+                    - mountPath: /workspace/adapters
+                      name: model-exporter
+              volumes:
+                - name: model-exporter
+                  persistentVolumeClaim:
+                    claimName: model-exporter
+```
 
 ### The Pod Spec Overrides APIs
 
@@ -703,7 +763,7 @@ type PodSpecOverride struct {
 }
 
 // Override for each container.
-// Parameters from TrainerConfig, DatasetConfig, and ModelConfig will take precedence.
+// Parameters from Trainer, DatasetConfig, and ModelConfig will take precedence.
 type Container struct {
 
     // Name for the container.
@@ -740,7 +800,7 @@ metadata:
 spec:
   trainingRuntimeRef:
     name: pytorch-distributed-gpu
-  trainerConfig:
+  trainer:
     image: docker.io/custom-training
   podSpecOverrides:
     - targetReplicatedJobs:
@@ -805,7 +865,7 @@ type TrainingRuntime struct {
     JobSetSpec *batchv1.JobSetSpec `json:",inline"`
 
     // For gang-scheduling using volcano or scheduler plugins, supported for all frameworks.
-    GangScheduler *kubeflowv1.GangScheduler `json:"gangScheduler,omitempty"`
+    GangScheduler *GangScheduler `json:"gangScheduler,omitempty"`
 }
 
 // One of the specs can be selected.
@@ -836,7 +896,7 @@ type GangSchedulerPlugin string
 
 const (
     GangSchedulerPluginVolcano GangSchedulerPlugin = "volcano"
-    GangSchedulerPluginSP      GangSchedulerPlugin = "scheduler-plugins"
+    GangSchedulerPlugins       GangSchedulerPlugin = "scheduler-plugins"
 )
 ```
 
@@ -971,7 +1031,7 @@ metadata:
 spec:
   trainingRuntimeRef:
     name: torch-distributed-multi-node
-  trainerConfig:
+  trainer:
     resourcesPerNode:
       requests:
         nvidia.com/gpu: 1
@@ -1102,20 +1162,16 @@ spec:
                 - name: dataset-initializer
                   image: docker.io/kubeflow/dataset-initializer
                   env:
-                    - name: DATASET_PROVIDER
-                      value: hf
-                    - name: REPO_ID
-                      value: tatsu-lab/alpaca
+                    - name: STORAGE_URI
+                      value: hf://tatsu-lab/alpaca
                   volumeMounts:
                     - mountPath: /workspace/dataset
                       name: dataset-initializer
                 - name: model-initializer
                   image: docker.io/kubeflow/model-initializer
                   env:
-                    - name: MODEL_PROVIDER
-                      value: hf
-                    - name: REPO_ID
-                      value: meta-llama/Llama-2-7b
+                    - name: STORAGE_URI
+                      value: hf://meta-llama/Llama-2-7b
                     - name: TRANSFORMER_TYPE
                       value: AutoModelForCausalLM
                   volumeMounts:
@@ -1188,20 +1244,16 @@ spec:
                 - name: dataset-initializer
                   image: docker.io/kubeflow/dataset-initializer
                   env:
-                    - name: DATASET_PROVIDER
-                      value: hf
-                    - name: REPO_ID
-                      value: tatsu-lab/alpaca
+                    - name: STORAGE_URI
+                      value: hf://tatsu-lab/alpaca
                   volumeMounts:
                     - mountPath: /workspace/dataset
                       name: dataset-initializer
                 - name: model-initializer
                   image: docker.io/kubeflow/model-initializer
                   env:
-                    - name: MODEL_PROVIDER
-                      value: hf
-                    - name: REPO_ID
-                      value: google/gemma-7b
+                    - name: STORAGE_URI
+                      value: hf://google/gemma-7b
                     - name: TRANSFORMER_TYPE
                       value: AutoModelForCausalLM
                   volumeMounts:
@@ -1277,6 +1329,8 @@ spec:
               containers:
                 - name: mpi-launcher
                   image: docker.io/mpi-launch
+                  command:
+                    - mpirun -np 5 --host mpi-simple.default.svc
     - name: Node
       template:
         spec:
