@@ -833,8 +833,9 @@ using custom configurations.
 
 The Kubeflow Training Operator can maintain more Training Runtimes when the community is ready to
 support them. For example, runtimes for [Jax](https://jax.readthedocs.io/en/latest/index.html) or
-[MLX](https://ml-explore.github.io/mlx/build/html/index.html). Initially, we will support: PyTorch,
-MPI, TensorFlow, XGBoost, and PaddlePaddle.
+[MLX](https://ml-explore.github.io/mlx/build/html/index.html). We will support PyTorch and MPI runtimes.
+After initial implementation, we will support TensorFlow, XGboost, and PaddlePaddle runtimes, but
+it is out of scope of this KEP.
 
 The `TrainingRuntime` is immutable, and so to make a change, a new version of the `TrainingRuntime`
 must be created and then changing the `TrainJob` to point to the new version.
