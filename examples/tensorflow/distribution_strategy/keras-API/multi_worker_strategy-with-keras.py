@@ -14,15 +14,18 @@
 # ==============================================================================
 """An example of multi-worker training with Keras model using Strategy API."""
 
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import argparse
 import json
 import os
 
-import tensorflow_datasets as tfds
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers
+from tensorflow.keras import models
+import tensorflow_datasets as tfds
 
 
 def make_datasets_unbatched():

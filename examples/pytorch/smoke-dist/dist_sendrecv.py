@@ -33,19 +33,19 @@ def init_processes(fn, backend='gloo'):
 
 def main():
     logging.info("Torch version: %s", torch.__version__)
-    
+
     port = os.environ.get("MASTER_PORT", "{}")
     logging.info("MASTER_PORT: %s", port)
-    
+
     addr = os.environ.get("MASTER_ADDR", "{}")
     logging.info("MASTER_ADDR: %s", addr)
 
     world_size = os.environ.get("WORLD_SIZE", "{}")
     logging.info("WORLD_SIZE: %s", world_size)
-    
+
     rank = os.environ.get("RANK", "{}")
     logging.info("RANK: %s", rank)
-    
+
     init_processes(run)
 
 

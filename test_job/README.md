@@ -1,9 +1,9 @@
 ## Test Job Controller
 
-This is a Test Job Controller example. As you can see, we have job crd definition under `apis/test_job/v1`. 
+This is a Test Job Controller example. As you can see, we have job crd definition under `apis/test_job/v1`.
 [code-generator](https://github.com/kubernetes/code-generator) generate deepcopy, clientset and other libraries.
 
-`controler.v1/test_job/test_job_controller` defines a struct `TestJobController` which implements [commonv1.ControllerInterface](../pkg/apis/common/v1/interface.go) 
+`controler.v1/test_job/test_job_controller` defines a struct `TestJobController` which implements [commonv1.ControllerInterface](../pkg/apis/common/v1/interface.go)
 
 ```yaml
 ├── README.md

@@ -11,8 +11,8 @@ import argparse
 import json
 import logging
 import os
-import retrying
 
+import retrying
 import tensorflow as tf
 
 

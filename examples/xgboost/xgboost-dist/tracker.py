@@ -24,8 +24,8 @@ import socket
 import struct
 import subprocess
 import sys
-import time
 from threading import Thread
+import time
 
 
 class ExSocket(object):

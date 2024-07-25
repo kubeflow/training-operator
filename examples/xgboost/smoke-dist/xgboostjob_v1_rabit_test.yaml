@@ -28,4 +28,3 @@ spec:
             - containerPort: 9991
               name: xgboostjob-port
             imagePullPolicy: Always
-

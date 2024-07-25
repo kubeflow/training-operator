@@ -19,7 +19,6 @@ import joblib
 import oss2
 import pandas as pd
 from sklearn import datasets
-
 import xgboost as xgb
 
 logger = logging.getLogger(__name__)
@@ -142,7 +141,7 @@ def dump_model(model, type, model_path, args):
             if oss_param is None:
                 raise Exception("Please config oss parameter to store model")
 
-            oss_param['path'] = args.model_path            
+            oss_param['path'] = args.model_path
             dump_model_to_oss(oss_param, model)
             logging.info("Dump model into oss place %s", args.model_path)
 
@@ -168,7 +167,7 @@ def read_model(type, model_path, args):
             raise Exception("Please config oss to read model")
             return False
 
-        oss_param['path'] = args.model_path        
+        oss_param['path'] = args.model_path
 
         model = read_model_from_oss(oss_param)
         logging.info("read model from oss place %s", model_path)
@@ -283,10 +282,9 @@ def parse_parameters(input, splitter_between, splitter_in):
         conf = kv.split(splitter_in)
         key = conf[0].strip(" ")
         if key == "objective" or key == "endpoint":
-            value = conf[1].strip("'") + ":" + conf[2].strip("'")       
+            value = conf[1].strip("'") + ":" + conf[2].strip("'")
         else:
             value = conf[1]
 
         confs[key] = value
     return confs
-

@@ -18,7 +18,6 @@ import os
 import traceback
 
 from tracker import RabitTracker
-
 import xgboost as xgb
 
 logger = logging.getLogger(__name__)

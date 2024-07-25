@@ -40,5 +40,3 @@ spec:
               - --xgboost_parameter="objective:multi:softprob,num_class:3"
               - --n_estimators=10
               - --learning_rate=0.1
-
-
