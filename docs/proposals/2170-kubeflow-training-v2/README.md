@@ -60,7 +60,7 @@ We can identify the following personas of Training Operator:
 1. **MLOps Engineer**. They are familiar with ML frameworks and they know how to configure
    distributed PyTorch settings such as rendezvous backends or MPI configuration. Usually, they are
    not experts in Kubernetes and ML algorithms.
-1. **Data Scientists**. They create model architectures and advanced ML algorithms to train models.
+1. **Data Scientists/ML Engineers**. They create model architectures and advanced ML algorithms to train models.
    They prefer to use Python for their work. They are aware of `torch.nn` APIs, but not with
    `torch.distributed` and Kubernetes concepts to scale model training.
 
@@ -119,8 +119,8 @@ The below diagram shows which resources will be created for LLM fine-tuning with
 
 ### Worker and Node Definition
 
-To better understand what does Nodes and Worker mean in the diagram above,
-the following table explains naming that each framework or technology uses:
+To better understand what "Nodes" and "Worker" mean in the diagram above,
+the following table explains the naming that each framework or technology uses:
 
 <table>
   <tr>
@@ -252,7 +252,8 @@ for other MPI implementations: Intel MPI, MPICH, Spectrum MPI.
 
 ## The TrainJob API
 
-The `TrainJob` exposes APIs that data scientist can override in `TrainingRuntime` to create training job:
+The `TrainJob` exposes APIs that data scientist can override in `TrainingRuntime` to create
+a training job:
 
 ```golang
 type TrainJob struct {
@@ -299,7 +300,7 @@ type TrainJobStatus struct {
 
 ```
 
-This table explain rationale for each `TrainJob` parameter:
+This table explains the rationale for each `TrainJob` parameter:
 
 <table>
   <tr>
@@ -311,19 +312,19 @@ This table explain rationale for each `TrainJob` parameter:
   <tr>
    <td><code>TrainingRuntimeRef</code>
    </td>
-   <td>Reference to the existing <code>TrainingRuntime</code> that pre-deployed by platform engineers
+   <td>Reference to the existing <code>TrainingRuntime</code> that is pre-deployed by platform engineers
    </td>
   </tr>
   <tr>
    <td><code>Trainer</code>
    </td>
-   <td>Configuration for the Trainer such as image, number of nodes, accelerators.
+   <td>Configuration for the <code>Trainer</code> such as image, number of nodes, accelerators.
    </td>
   </tr>
   <tr>
    <td><code>ModelConfig</code>
    </td>
-   <td>Configuration for the pre-trained model and location for model output
+   <td>Configuration of the pre-trained model and the location of the model output
    </td>
   </tr>
   <tr>
@@ -335,7 +336,7 @@ This table explain rationale for each `TrainJob` parameter:
   <tr>
    <td>Labels and Annotations
    </td>
-   <td>Custom metadata that needs to be applied to the <code>TrainJob</code> resources: JobSet, Job, Pods.
+   <td>Custom metadata that needs to be applied to the <code>TrainJob</code> resources: JobSet, Job, and Pods.
    </td>
   </tr>
   <tr>
@@ -343,8 +344,8 @@ This table explain rationale for each `TrainJob` parameter:
    </td>
    <td>Custom overrides that are specific to the <code>TrainJob</code> and need to be applied to the
     <code>TrainJob</code> resources. For example, the user identity. Usually, it is managed by
-    custom admission webhooks that inject data to the <code>TrainJob</code> after user creates it
-    via Python SDK or <code>kubectl</code>
+    custom admission webhooks that inject data to the <code>TrainJob</code> after the user creates it
+    via the Python SDK or <code>kubectl</code>
    </td>
   </tr>
 </table>
@@ -370,13 +371,13 @@ spec:
         nvidia.com/gpu: 2
 ```
 
-The above command will be converted as follows:
+The above command will be converted to:
 
 ```bash
 torchrun --nnodes=5 --nproc-per-node=2 train.py
 ```
 
-Additionally, the Kubeflow Training SDK allows to create the above `TrainJob` using the Python API:
+Additionally, the Kubeflow Training SDK allows the user to create the above `TrainJob` using the Python API:
 
 ```python
 def train_func():
@@ -430,7 +431,7 @@ spec:
 
 ### The Trainer API
 
-The `Trainer` represents the APIs that data scientists can use to configure trainer settings:
+The `Trainer` represents the APIs that data scientists can use to configure the trainer settings:
 
 ```golang
 type Trainer struct {
@@ -509,7 +510,7 @@ The following table explains how `TrainingRuntime` parameters will be overridden
 
 ### The Dataset Config API
 
-The `DatasetConfig` represents the APIs that data scientists can use to configure dataset location.
+The `DatasetConfig` represents the APIs that data scientists can use to configure the dataset location.
 
 ```golang
 type DatasetConfig struct {
@@ -563,7 +564,7 @@ replicatedJobs:
 
 ### The Model Config API
 
-The `ModelConfig` represents the APIs that data scientists can use to configure pre-trained model
+The `ModelConfig` represents the APIs that data scientists can use to configure the pre-trained model
 input and output location.
 
 ```golang
@@ -637,8 +638,8 @@ replicatedJobs:
 
 #### The Output Model API
 
-After initial implementation of `TrainJob` and `TrainingRuntime`, we will support ability to export
-the trained model. The following runtime can be implemented:
+After initial implementation of `TrainJob` and `TrainingRuntime`, we will support the ability to
+export the trained model. The following runtime can be implemented:
 
 ```yaml
 apiVersion: kubeflow.org/v2alpha1
@@ -788,7 +789,7 @@ type Container struct {
 
 #### Example of TrainJob with Overrides
 
-This example shows how to override user-identity for sidecar container and add volume to the
+This example shows how to override the user-identity for the sidecar container and add volume to the
 trainer container.
 
 ```yaml
@@ -835,10 +836,10 @@ The Kubeflow Training Operator can maintain more Training Runtimes when the comm
 support them. For example, runtimes for [Jax](https://jax.readthedocs.io/en/latest/index.html) or
 [MLX](https://ml-explore.github.io/mlx/build/html/index.html). We will support PyTorch and MPI runtimes.
 After initial implementation, we will support TensorFlow, XGboost, and PaddlePaddle runtimes, but
-it is out of scope of this KEP.
+it is out of scope for this KEP.
 
 The `TrainingRuntime` is immutable, and so to make a change, a new version of the `TrainingRuntime`
-must be created and then changing the `TrainJob` to point to the new version.
+must be created and then the user must change the `TrainJob` to point to the new version.
 This provides control as to how changes to runtimes propagate to existing training jobs.
 For example, when training is running for a long time (e.g. 1-2 months).
 
@@ -882,7 +883,7 @@ type MLSpec struct {
 
 ### The Gang Scheduler API
 
-Gang scheduler plugin is used to create appropriate `PodGroup` for Volcano or scheduler plugins.
+Gang scheduler plugin is used to create the appropriate `PodGroup` for Volcano or scheduler plugins.
 
 ```golang
 type GangScheduler struct {
@@ -1137,12 +1138,12 @@ spec:
 
 #### LLM Fine-Tuning Runtimes
 
-In the future, we can consider to use [the `torchtune` CLI](https://github.com/pytorch/torchtune/tree/main)
+In the future, we can consider using [the `torchtune` CLI](https://github.com/pytorch/torchtune/tree/main)
 for Fine-Tuning with PyTorch.
 
 ##### Llama 7b
 
-The following runtime can be used for Llama 7b model.
+The following runtime can be used for the Llama 7b model.
 
 ```yaml
 apiVersion: kubeflow.org/v2alpha1
@@ -1306,7 +1307,7 @@ spec:
 
 #### MPI Runtime
 
-For MPI, we can add support the `DeepSpeed` runtimes.
+For MPI, we can add support for the `DeepSpeed` runtimes.
 
 Example of simple OpenMPI runtime:
 
@@ -1363,8 +1364,8 @@ _Will be added after initial implementation for PyTorch._
 ## Migration from Kubeflow Training V1
 
 These API changes will not be compatible with Training Operator V1 APIs. Thus, existing users have
-to migrate to the newer APIs. Kubeflow community will provide instructions on how to migrate existing
-training jobs to the new APIs.
+to migrate to the newer APIs. The Kubeflow community will provide instructions on how to migrate
+existing training jobs to the new APIs.
 
 ### PyTorchJob Migration
 
