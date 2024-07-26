@@ -431,7 +431,8 @@ spec:
 
 ### The Trainer API
 
-The `Trainer` represents the APIs that data scientists can use to configure the trainer settings:
+The `Trainer` represents the APIs that data scientists can use to configure the trainer settings.
+This trainer is executed on every distributed training Node.
 
 ```golang
 type Trainer struct {
