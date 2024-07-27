@@ -19,7 +19,6 @@ or using Training Operator Python SDK.
 - For a complete reference of the custom resource definitions, please refer to the API Definition.
   - [TensorFlow API Definition](pkg/apis/kubeflow.org/v1/tensorflow_types.go)
   - [PyTorch API Definition](pkg/apis/kubeflow.org/v1/pytorch_types.go)
-  - [Apache MXNet API Definition](pkg/apis/kubeflow.org/v1/mxnet_types.go)
   - [XGBoost API Definition](pkg/apis/kubeflow.org/v1/xgboost_types.go)
   - [MPI API Definition](pkg/apis/kubeflow.org/v1/mpi_types.go)
   - [PaddlePaddle API Definition](pkg/apis/kubeflow.org/v1/paddlepaddle_types.go)
@@ -120,5 +119,4 @@ This project was originally started as a distributed training operator for Tenso
 - PyTorch Operator: [list of contributors](https://github.com/kubeflow/pytorch-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/pytorch-operator/blob/master/OWNERS).
 - MPI Operator: [list of contributors](https://github.com/kubeflow/mpi-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mpi-operator/blob/master/OWNERS).
 - XGBoost Operator: [list of contributors](https://github.com/kubeflow/xgboost-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/xgboost-operator/blob/master/OWNERS).
-- MXNet Operator: [list of contributors](https://github.com/kubeflow/mxnet-operator/graphs/contributors) and [maintainers](https://github.com/kubeflow/mxnet-operator/blob/master/OWNERS).
 - Common library: [list of contributors](https://github.com/kubeflow/common/graphs/contributors) and [maintainers](https://github.com/kubeflow/common/blob/master/OWNERS).

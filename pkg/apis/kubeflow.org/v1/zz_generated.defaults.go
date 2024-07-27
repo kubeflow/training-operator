@@ -29,8 +29,6 @@ import (
 func RegisterDefaults(scheme *runtime.Scheme) error {
 	scheme.AddTypeDefaultingFunc(&MPIJob{}, func(obj interface{}) { SetObjectDefaults_MPIJob(obj.(*MPIJob)) })
 	scheme.AddTypeDefaultingFunc(&MPIJobList{}, func(obj interface{}) { SetObjectDefaults_MPIJobList(obj.(*MPIJobList)) })
-	scheme.AddTypeDefaultingFunc(&MXJob{}, func(obj interface{}) { SetObjectDefaults_MXJob(obj.(*MXJob)) })
-	scheme.AddTypeDefaultingFunc(&MXJobList{}, func(obj interface{}) { SetObjectDefaults_MXJobList(obj.(*MXJobList)) })
 	scheme.AddTypeDefaultingFunc(&PaddleJob{}, func(obj interface{}) { SetObjectDefaults_PaddleJob(obj.(*PaddleJob)) })
 	scheme.AddTypeDefaultingFunc(&PaddleJobList{}, func(obj interface{}) { SetObjectDefaults_PaddleJobList(obj.(*PaddleJobList)) })
 	scheme.AddTypeDefaultingFunc(&PyTorchJob{}, func(obj interface{}) { SetObjectDefaults_PyTorchJob(obj.(*PyTorchJob)) })
@@ -50,17 +48,6 @@ func SetObjectDefaults_MPIJobList(in *MPIJobList) {
 	for i := range in.Items {
 		a := &in.Items[i]
 		SetObjectDefaults_MPIJob(a)
-	}
-}
-
-func SetObjectDefaults_MXJob(in *MXJob) {
-	SetDefaults_MXJob(in)
-}
-
-func SetObjectDefaults_MXJobList(in *MXJobList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_MXJob(a)
 	}
 }
 

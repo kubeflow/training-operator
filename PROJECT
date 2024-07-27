@@ -27,12 +27,4 @@ resources:
   kind: TFJob
   path: github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1
   version: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  group: kubeflow.org
-  kind: MXJob
-  path: github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1
-  version: v1
 version: "3"
