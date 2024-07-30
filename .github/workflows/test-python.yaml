@@ -26,15 +26,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-        # TODO (andreyvelich): We need to replace this action with script to do
-        # linting and formatting for Training Operator SDK.
-      - name: Check Python code with Black
-        uses: psf/black@stable
-        with:
-          version: 24.2.0
-          options: --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py'
-          src: sdk/
-
+      - name: Check Python code with Black and Flake8
+        run: |
+          pip install black Flake8
+          make fmt-python
       - name: Install dependencies
         run: |
           pip install pytest python-dateutil urllib3 kubernetes
