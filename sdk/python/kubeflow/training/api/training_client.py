@@ -204,7 +204,7 @@ class TrainingClient(object):
             self.core_api.create_namespaced_persistent_volume_claim(
                 namespace=namespace,
                 body=utils.get_pvc_spec(
-                    pvc_name=constants.STORAGE_INITIALIZER,
+                    pvc_name=name,
                     namespace=namespace,
                     storage_config=storage_config,
                 ),
@@ -213,9 +213,9 @@ class TrainingClient(object):
             pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
             # Check if the PVC with the specified name exists
             for pvc in pvc_list.items:
-                if pvc.metadata.name == constants.STORAGE_INITIALIZER:
+                if pvc.metadata.name == name:
                     print(
-                        f"PVC '{constants.STORAGE_INITIALIZER}' already exists in namespace "
+                        f"PVC '{name}' already exists in namespace "
                         f"{namespace}."
                     )
                     break
