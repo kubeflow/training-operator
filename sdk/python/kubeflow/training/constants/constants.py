@@ -84,12 +84,7 @@ STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
     name=STORAGE_INITIALIZER,
     mount_path=INIT_CONTAINER_MOUNT_PATH,
 )
-STORAGE_INITIALIZER_VOLUME = models.V1Volume(
-    name=STORAGE_INITIALIZER,
-    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-        claim_name=STORAGE_INITIALIZER
-    ),
-)
+
 TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
 
 # TFJob constants.
