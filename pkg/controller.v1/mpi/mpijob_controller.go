@@ -644,7 +644,7 @@ func (jc *MPIJobReconciler) UpdateJobStatus(job interface{}, replicas map[common
 
 func (jc *MPIJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
 	}
 
 	mpiJob, ok := job.(*kubeflowv1.MPIJob)
