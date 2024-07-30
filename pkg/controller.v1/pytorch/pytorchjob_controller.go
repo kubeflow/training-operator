@@ -468,7 +468,7 @@ func ContainsMasterSpec(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec)
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *PyTorchJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
 	}
 
 	pytorchjob, ok := job.(*kubeflowv1.PyTorchJob)

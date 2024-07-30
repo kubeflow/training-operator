@@ -431,7 +431,7 @@ func (r *XGBoostJobReconciler) UpdateJobStatus(job interface{}, replicas map[com
 // UpdateJobStatusInApiServer updates the job status in to cluster.
 func (r *XGBoostJobReconciler) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
 	if jobStatus.ReplicaStatuses == nil {
-		jobStatus.ReplicaStatuses = map[commonv1.ReplicaType]*commonv1.ReplicaStatus{}
+		jobStatus.ReplicaStatuses = make(map[commonv1.ReplicaType]*commonv1.ReplicaStatus)
 	}
 
 	xgboostjob, ok := job.(*kubeflowv1.XGBoostJob)
