@@ -214,10 +214,7 @@ class TrainingClient(object):
             # Check if the PVC with the specified name exists
             for pvc in pvc_list.items:
                 if pvc.metadata.name == name:
-                    print(
-                        f"PVC '{name}' already exists in namespace "
-                        f"{namespace}."
-                    )
+                    print(f"PVC '{name}' already exists in namespace " f"{namespace}.")
                     break
             else:
                 raise RuntimeError(f"failed to create PVC. Error: {e}")
