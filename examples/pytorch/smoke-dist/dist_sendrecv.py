@@ -6,11 +6,11 @@ import torch.distributed as dist
 
 
 def run():
-    """ Simple Send/Recv for testing Master <--> Workers communication """
+    """Simple Send/Recv for testing Master <--> Workers communication"""
     rank = dist.get_rank()
     size = dist.get_world_size()
-    inp = torch.randn(2,2)
-    result = torch.zeros(2,2)
+    inp = torch.randn(2, 2)
+    result = torch.zeros(2, 2)
     if rank == 0:
         # Send the input tensor to all workers
         for i in range(1, size):
@@ -22,14 +22,16 @@ def run():
         # Receive input tensor from master
         dist.recv(tensor=inp, src=0)
         # Elementwise tensor multiplication
-        result = torch.mul(inp,inp)
+        result = torch.mul(inp, inp)
         # Send the result tensor back to master
         dist.send(tensor=result, dst=0)
 
-def init_processes(fn, backend='gloo'):
-    """ Initialize the distributed environment. """
+
+def init_processes(fn, backend="gloo"):
+    """Initialize the distributed environment."""
     dist.init_process_group(backend)
     fn()
+
 
 def main():
     logging.info("Torch version: %s", torch.__version__)

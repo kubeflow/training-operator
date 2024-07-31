@@ -1,4 +1,3 @@
-
 # Copyright 2018 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +21,7 @@ import xgboost as xgb
 
 logger = logging.getLogger(__name__)
 
+
 def extract_xgbooost_cluster_env():
 
     logger.info("start to extract system env")
@@ -31,10 +31,16 @@ def extract_xgbooost_cluster_env():
     rank = int(os.environ.get("RANK", "{}"))
     world_size = int(os.environ.get("WORLD_SIZE", "{}"))
 
-    logger.info("extract the rabit env from cluster : %s, port: %d, rank: %d, word_size: %d ",
-                master_addr, master_port, rank, world_size)
+    logger.info(
+        "extract the rabit env from cluster : %s, port: %d, rank: %d, word_size: %d ",
+        master_addr,
+        master_port,
+        rank,
+        world_size,
+    )
 
     return master_addr, master_port, rank, world_size
+
 
 def setup_rabit_cluster():
     addr, port, rank, world_size = extract_xgbooost_cluster_env()
@@ -46,35 +52,36 @@ def setup_rabit_cluster():
             if rank == 0:
                 logger.info("start the master node")
 
-                rabit = RabitTracker(hostIP="0.0.0.0", nslave=world_size,
-                                     port=port, port_end=port + 1)
+                rabit = RabitTracker(
+                    hostIP="0.0.0.0", nslave=world_size, port=port, port_end=port + 1
+                )
                 rabit.start(world_size)
                 rabit_tracker = rabit
-                logger.info('########### RabitTracker Setup Finished #########')
+                logger.info("########### RabitTracker Setup Finished #########")
 
             envs = [
-                'DMLC_NUM_WORKER=%d' % world_size,
-                'DMLC_TRACKER_URI=%s' % addr,
-                'DMLC_TRACKER_PORT=%d' % port,
-                'DMLC_TASK_ID=%d' % rank
+                "DMLC_NUM_WORKER=%d" % world_size,
+                "DMLC_TRACKER_URI=%s" % addr,
+                "DMLC_TRACKER_PORT=%d" % port,
+                "DMLC_TASK_ID=%d" % rank,
             ]
-            logger.info('##### Rabit rank setup with below envs #####')
+            logger.info("##### Rabit rank setup with below envs #####")
             for i, env in enumerate(envs):
                 logger.info(env)
                 envs[i] = str.encode(env)
 
             xgb.rabit.init(envs)
-            logger.info('##### Rabit rank = %d' % xgb.rabit.get_rank())
+            logger.info("##### Rabit rank = %d" % xgb.rabit.get_rank())
 
             rank = xgb.rabit.get_rank()
             s = None
             if rank == 0:
-                s = {'hello world': 100, 2: 3}
+                s = {"hello world": 100, 2: 3}
 
-            logger.info('@node[%d] before-broadcast: s=\"%s\"' % (rank, str(s)))
+            logger.info('@node[%d] before-broadcast: s="%s"' % (rank, str(s)))
             s = xgb.rabit.broadcast(s, 0)
 
-            logger.info('@node[%d] after-broadcast: s=\"%s\"' % (rank, str(s)))
+            logger.info('@node[%d] after-broadcast: s="%s"' % (rank, str(s)))
 
     except Exception as e:
         logger.error("something wrong happen: %s", traceback.format_exc())
@@ -86,6 +93,7 @@ def setup_rabit_cluster():
             rabit_tracker.join()
 
         logger.info("the rabit network testing finished!")
+
 
 def main():
 
@@ -102,6 +110,7 @@ def main():
     logging.info("RANK: %s", rank)
 
     setup_rabit_cluster()
+
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)

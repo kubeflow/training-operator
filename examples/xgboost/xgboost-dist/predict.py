@@ -36,6 +36,6 @@ def predict(args):
     preds = booster.predict(dmatrix)
 
     best_preds = np.asarray([np.argmax(line) for line in preds])
-    score = precision_score(y_test, best_preds, average='macro')
+    score = precision_score(y_test, best_preds, average="macro")
 
     logging.info("Predict accuracy: %f", score)
