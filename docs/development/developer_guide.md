@@ -13,6 +13,7 @@ Kubeflow Training Operator is currently at v1.
 - [Kind](https://kind.sigs.k8s.io/) (0.22.0 or later)
 - [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop) (0.21.0 or later)
   - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS) (0.6.8 or later)
+- [pre-commit](https://pre-commit.com/)
 
 Note for Lima the link is to the Adopters, which supports several different container environments.
 
@@ -194,12 +195,12 @@ Make sure to install [pre-commit](https://pre-commit.com/) (`pip install
 pre-commit`) and run `pre-commit install` from the root of the repository at
 least once before creating git commits.
 
-The pre-commit [hooks](../.pre-commit-config.yaml) ensure code quality and
+The pre-commit [hooks](../../.pre-commit-config.yaml) ensure code quality and
 consistency. They are executed in CI. PRs that fail to comply with the hooks
 will not be able to pass the corresponding CI gate. The hooks are only executed
 against staged files unless you run `pre-commit run --all`, in which case,
 they'll be executed against every file in the repository.
 
 Specific programmatically generated files listed in the `exclude` field in
-[.pre-commit-config.yaml](../.pre-commit-config.yaml) are deliberately excluded
-from the hooks.
+[.pre-commit-config.yaml](../../.pre-commit-config.yaml) are deliberately
+excluded from the hooks.
