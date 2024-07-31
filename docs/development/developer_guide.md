@@ -173,22 +173,6 @@ sdk/python/kubeflow/training/api
 
 ## Code Style
 
-### Python
-
-- Use [`black`](https://github.com/psf/black) to format Python code
-
-- Run the following to install `black`:
-
-  ```
-  pip install black==23.9.1
-  ```
-
-- To check your code:
-
-  ```sh
-  black --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py' sdk/
-  ```
-
 ### pre-commit
 
 Make sure to install [pre-commit](https://pre-commit.com/) (`pip install
