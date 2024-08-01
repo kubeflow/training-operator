@@ -1,6 +1,7 @@
 import multiprocessing
 import pytest
 from unittest.mock import patch, Mock
+from types import SimpleNamespace
 
 from typing import Optional
 from kubeflow.training import TrainingClient
@@ -17,11 +18,23 @@ from kubernetes.client import V1PodSpec
 from kubernetes.client import V1Container
 from kubernetes.client import V1ResourceRequirements
 
-LIST_RESPONSE = [{"metadata": {"name": "Dummy V1PodList"}}]
+LIST_RESPONSE = [
+    {"metadata": {"name": "Dummy V1PodList-1"}},
+    {"metadata": {"name": "Dummy V1PodList-2"}},
+]
 TEST_NAME = "test"
 
 
-def create_namespaced_custom_object_response(*args, **kwargs):
+def dict_to_object(dictionary):
+    return SimpleNamespace(
+        **{
+            k: dict_to_object(v) if isinstance(v, dict) else v
+            for k, v in dictionary.items()
+        }
+    )
+
+
+def conditional_error_handler(*args, **kwargs):
     if args[2] == "timeout":
         raise multiprocessing.TimeoutError()
     elif args[2] == "runtime":
@@ -37,6 +50,15 @@ def list_namespaced_pod_response(*args, **kwargs):
                 raise multiprocessing.TimeoutError()
             if args[0] == "runtime":
                 raise Exception()
+            if args[0] == "2_pods":
+                return Mock(
+                    items=[
+                        dict_to_object(LIST_RESPONSE[0]),
+                        dict_to_object(LIST_RESPONSE[1]),
+                    ]
+                )
+            if args[0] == "no_pods":
+                return Mock(items=[])
             return Mock(items=LIST_RESPONSE)
 
     return MockResponse()
@@ -250,14 +272,72 @@ test_data_get_job_pods = [
 ]
 
 
+test_data_get_job_pod_names = [
+    (
+        "valid flow with 2 pods",
+        {
+            "name": TEST_NAME,
+            "namespace": "2_pods",
+        },
+        ["Dummy V1PodList-1", "Dummy V1PodList-2"],
+    ),
+    (
+        "valid flow with no pods available",
+        {
+            "name": TEST_NAME,
+            "namespace": "no_pods",
+        },
+        [],
+    ),
+]
+
+
+test_data_update_job = [
+    (
+        "valid flow",
+        {
+            "name": TEST_NAME,
+            "job": create_job(),
+        },
+        "No output",
+    ),
+    (
+        "invalid job_kind",
+        {
+            "name": TEST_NAME,
+            "job": create_job(),
+            "job_kind": "invalid_job_kind",
+        },
+        ValueError,
+    ),
+    (
+        "invalid flow with TimeoutError",
+        {
+            "name": TEST_NAME,
+            "namespace": "timeout",
+            "job": create_job(),
+        },
+        TimeoutError,
+    ),
+    (
+        "invalid flow with RuntimeError",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job": create_job(),
+        },
+        RuntimeError,
+    ),
+]
+
+
 @pytest.fixture
 def training_client():
     with patch(
         "kubernetes.client.CustomObjectsApi",
         return_value=Mock(
-            create_namespaced_custom_object=Mock(
-                side_effect=create_namespaced_custom_object_response
-            )
+            create_namespaced_custom_object=Mock(side_effect=conditional_error_handler),
+            patch_namespaced_custom_object=Mock(side_effect=conditional_error_handler),
         ),
     ), patch(
         "kubernetes.client.CoreV1Api",
@@ -306,6 +386,43 @@ def test_get_job_pods(
         )
         assert out[0].pop("timeout") == kwargs.get("timeout", constants.DEFAULT_TIMEOUT)
         assert out == expected_output
+    except Exception as e:
+        assert type(e) is expected_output
+    print("test execution complete")
+
+
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output",
+    test_data_get_job_pod_names,
+)
+def test_get_job_pod_names(training_client, test_name, kwargs, expected_output):
+    """
+    test get_job_pod_names function of training client
+    """
+    print("Executing test:", test_name)
+    out = training_client.get_job_pod_names(**kwargs)
+    assert out == expected_output
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_update_job)
+def test_update_job(training_client, test_name, kwargs, expected_output):
+    """
+    test update_job function of training client
+    """
+    print("Executing test:", test_name)
+    try:
+        training_client.update_job(**kwargs)
+        training_client.custom_api.patch_namespaced_custom_object.assert_called_with(
+            constants.GROUP,
+            constants.VERSION,
+            kwargs.get("namespace", constants.DEFAULT_NAMESPACE),
+            constants.JOB_PARAMETERS[kwargs.get("job_kind", training_client.job_kind)][
+                "plural"
+            ],
+            kwargs.get("name"),
+            kwargs.get("job"),
+        )
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
