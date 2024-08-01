@@ -80,6 +80,8 @@ Based on the above personas, we should build an API that everyone will benefit f
   models (e.g. Mistral, LLama-70b, Gemma-7b).
 - Work on the following `JobSet` improvements: https://github.com/kubernetes-sigs/jobset/issues/463
   and https://github.com/kubernetes-sigs/jobset/issues/572
+- Integrate `TrainJob` with Kueue and MultiKueue to effectively manage resources for training jobs
+  and orchestrate resources across multiple clusters.
 
 ### Non-Goals
 
