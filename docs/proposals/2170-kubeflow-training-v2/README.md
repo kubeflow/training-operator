@@ -1436,3 +1436,41 @@ spec:
                   command:
                     - torchrun train.py
 ```
+
+## Alternatives
+
+Alternatives details can be found in
+[this Google document](https://docs.google.com/document/d/1bha8rB6_iPTi9rXjJMnKi-CLxfL7dwtmQCKH4N6dcsI/edit#heading=h.b6cb7hecqms).
+
+### Inline JobSet APIs into TrainJob
+
+```golang
+type TrainJobSpec struct {
+    ...
+
+    JobSetSpec *batchv1.JobSetSpec `json:",inline"`
+}
+```
+
+In that case, `TrainJob` API will be very complex and users still have to specify every Kubernetes
+API parameter on job submission.
+
+### Use JobSetTemplate as a Training Runtime
+
+Instead of creating the custom CRD for `TrainingRuntime`, use the `JobSetTemplate` API to create
+blueprints for training runtimes.
+
+Platform engineers need to understand all aspect on how to configure parameters for various
+frameworks (e.g. PyTorch or HuggingFace). Also, it will be hard to implement custom orchestration
+when it is requires (e.g. MPI or Slurm use-case).
+
+### Using CRD for Every Framework (e.g. PyTorchJob)
+
+Instead of `TrainJob` maintain different CRDs for each framework: `PyTorchJob`, `JaxJob`, `MPIJob`.
+
+Given that ML framework space is growing very fast, it will be very hard to maintain CRD for every
+framework that users want to run on Kubernetes.
+
+Since frameworks share common functionality for distributed training (data parallelizm or
+model parallelizm). For some specific use-cases like MPI or Elastic PyTorch, we will leverage
+`MLSpec` parameter.
