@@ -424,7 +424,7 @@ spec:
       split: train[:5000]
   modelConfig:
     input:
-      storageUri: hf://yelp-review-full
+      storageUri: hf://meta-llama/Llama-2-7b
     output:
       storageUri: s3://trained-model
 ```
@@ -604,7 +604,7 @@ type OutputModel struct {
 
 Initially we will support the following model providers:
 
-- **HuggingFace:** `storageUri: hf://model-name`
+- **HuggingFace:** `storageUri: hf://model-path`
 
 Parameters will be converted to the environment variables for the `model-initializer` container
 in the `Initializer` Job.
