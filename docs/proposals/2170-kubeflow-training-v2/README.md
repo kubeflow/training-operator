@@ -16,8 +16,10 @@ This document discusses the new Kubeflow Training V2 API.
 When we built the
 [Kubeflow Training Operator a couple of years ago](https://docs.google.com/document/d/1x1JPDQfDMIbnoQRftDH1IzGU0qvHGSU4W6Jl4rJLPhI/edit?usp=sharing),
 Kubernetes lacked better features to support distributed machine learning (ML) training, such as
-SuccessPolicy and RestartPolicy (FailurePolicy). Recently, the Kubernetes community launched the
-working group Batch, and then the working group actively worked on evolving the batch/v1 `Job` API
+[SuccessPolicy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#success-policy)
+and RestartPolicy ([PodFailurePolicy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-failure-policy) in `Job`).
+Recently, the Kubernetes community launched the working group Batch, and then the working group
+actively worked on evolving the batch/v1 `Job` API
 and built [a new Kubernetes SIGs project: `JobSet`](https://github.com/kubernetes-sigs/jobset) to
 manage groups of `Jobs`.
 
