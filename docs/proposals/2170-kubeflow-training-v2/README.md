@@ -80,8 +80,10 @@ Based on the above personas, we should build an API that everyone will benefit f
 - Create community-supported `ClusterTrainingRuntime` for distributed training with PyTorch and MPI.
 - Create community-supported `ClusterTrainingRuntime` for LLM fine-tuning for various foundational
   models (e.g. Mistral, LLama-70b, Gemma-7b).
-- Work on the following `JobSet` improvements: https://github.com/kubernetes-sigs/jobset/issues/463
-  and https://github.com/kubernetes-sigs/jobset/issues/572
+- Work on the following `JobSet` improvements:
+  - For PyTorch Elastic: https://github.com/kubernetes-sigs/jobset/issues/463
+  - For PVC management: https://github.com/kubernetes-sigs/jobset/issues/572
+  - For PyTorch Elastic: https://github.com/kubernetes-sigs/jobset/issues/570
 - Integrate `TrainJob` with Kueue and MultiKueue to effectively manage resources for training jobs
   and orchestrate resources across multiple clusters.
 
@@ -91,6 +93,10 @@ Based on the above personas, we should build an API that everyone will benefit f
 - Distributed training for TensorFlow, XGboost, JAX, and PaddlePaddle will be added after initial
   implementation.
 - Migrate Kubeflow V1 controller to use `JobSet`.
+- Propose the migration mechanisms / ways from Kubeflow Training v1 to v2. We will create dedicated
+  KEP for customers migration.
+- Propose the changes to Kubeflow Training Python SDK. After controller implementation, we will
+  propose changes to the `kubeflow-training` SDK.
 
 ## Design Details
 
@@ -287,6 +293,9 @@ type TrainJobSpec struct {
 	// Custom metadata to apply for Job, JobSet, etc.
 	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// PodSpecOverrides represents overrides for the TrainingRuntime when TrainJob is created.
+	PodSpecOverrides []PodSpecOverrides `json:"podSpecOverrides,omitempty"`
 }
 
 type TrainingRuntimeRef struct {
@@ -519,15 +528,14 @@ The `DatasetConfig` represents the APIs that data scientists can use to configur
 
 ```golang
 type DatasetConfig struct {
-
 	// Storage uri for the dataset provider.
 	StorageUri string `json:"storageUri"`
 
 	// Custom parameters for the dataset initializer.
-	Parameters *[string]string `json:"parameters,omitempty"`
+	Parameters map[string]string `json:"parameters,omitempty"`
 
-  // Reference to the secrets to access dataset.
-  SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secrets to access dataset.
+	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -586,7 +594,7 @@ type InputModel struct {
 	StorageUri string `json:"storageUri"`
 
 	// Custom parameters for the model initializer.
-	Parameters *[string]string `json:"parameters,omitempty"`
+	Parameters map[string]string `json:"parameters,omitempty"`
 
 	// Reference to the secrets to access model.
 	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
@@ -597,7 +605,7 @@ type OutputModel struct {
 	StorageUri string `json:"storageUri"`
 
 	// Custom parameters for the model exporter.
-	Parameters *[string]string `json:"parameters,omitempty"`
+	Parameters map[string]string `json:"parameters,omitempty"`
 
 	// Reference to the secrets to export model.
 	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
@@ -776,7 +784,7 @@ type Container struct {
     Name string `json:"name"`
 
     // Command for the container.
-    Command []string `json:"command,omitempty" protobuf:"bytes,3,rep,name=command"`
+    Command []string `json:"command,omitempty"`
 
     // Args for the container.
     Args []string `json:"args,omitempty"`
@@ -810,8 +818,7 @@ spec:
     image: docker.io/custom-training
   podSpecOverrides:
     - targetReplicatedJobs:
-        - initializer
-          node
+        - node
       containers:
         - name: user-identity
           value: 123
@@ -865,8 +872,8 @@ type TrainingRuntime struct {
     // Framework specific parameters.
     MLSpec *MLSpec `json:"mlSpec,omitempty"`
 
-    // Number of nodes to execute training.
-    NumNodes int `json:"numNodes,omitempty"`
+    // Number of nodes to execute training. Defaults to 1.
+    NumNodes int `json:"numNodes"`
 
     // JobSet spec.
     JobSetSpec *batchv1.JobSetSpec `json:",inline"`
@@ -896,7 +903,7 @@ type GangScheduler struct {
     Plugin *GangSchedulerPlugin `json:plugin,omitempty"`
 
     // Time threshold to schedule PodGroup for gang scheduling.
-    ScheduleTimeoutSeconds string `json:scheduleTimeoutSeconds,omitempty"`
+    ScheduleTimeoutSeconds *string `json:scheduleTimeoutSeconds,omitempty"`
 }
 
 type GangSchedulerPlugin string
@@ -933,7 +940,7 @@ we won't support them in `TorchSpec`. We can introduce them in the future if use
 type TorchSpec struct {
 
     // Number of Procs per Node.
-    NumProcPerNode int `json:"numProcPerNode,omitempty"`
+    NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
     // Used for single-node multi-worker training
     Standalone bool `json:"standalone,omitempty"`
@@ -973,14 +980,14 @@ Check [the proposal for the MPI V2 APIs.](https://github.com/kubeflow/mpi-operat
 ```golang
 type MPISpec struct {
     // Number of Procs per Node.
-    NumProcPerNode int `json:"numProcPerNode,omitempty"`
+    NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
     // MPI Implementation to create appropriate host-files.
     // Can be one of OpenMPI, Intel, or MPICH.
-    MPIImplementation MPIImplementation `json:"mpiImplementation,omitempty"`
+    MPIImplementation *MPIImplementation `json:"mpiImplementation"`
 
     // Directory where SSH keys are mounted.
-    SSHAuthMountPath string `json:"SSHAuthMountPath,omitempty"`
+    SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
 }
 
 type MPIImplementation string
