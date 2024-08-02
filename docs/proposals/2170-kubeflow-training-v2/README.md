@@ -296,14 +296,26 @@ type TrainJobSpec struct {
 
 	// PodSpecOverrides represents overrides for the TrainingRuntime when TrainJob is created.
 	PodSpecOverrides []PodSpecOverrides `json:"podSpecOverrides,omitempty"`
+
+	// Suspend suspends TrainJob.
+	Suspend *bool `json:"suspend,omitempty"`
+
+	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
 type TrainingRuntimeRef struct {
 	// Name for the training runtime.
 	Name string `json:"name"`
-	// Namespace for the runtime.
-	// If namespace is set, TrainingRuntime is used. Otherwise, ClusterTrainingRuntime is used.
-	Namespace string `json:"namespace,omitempty"`
+
+	// Namespace for the runtime. In that case, user should use TrainingRuntime
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Kind for the runtime. TrainingRuntime or ClusterTrainingRuntime
+	Kind *string `json:"kind,omitempty"`
+
+	// Version for the runtime. For example: v2alpha1
+	Version *string `json:"version,omitempty"`
 }
 
 type TrainJobStatus struct {
@@ -359,6 +371,12 @@ This table explains the rationale for each `TrainJob` parameter:
     <code>TrainJob</code> resources. For example, the user identity. Usually, it is managed by
     custom admission webhooks that inject data to the <code>TrainJob</code> after the user creates it
     via the Python SDK or <code>kubectl</code>
+   </td>
+  </tr>
+  <tr>
+   <td>Suspend and ManagedBy
+   </td>
+   <td>Scheduling directives for Kueue and MultiKueue
    </td>
   </tr>
 </table>
@@ -433,8 +451,9 @@ spec:
     name: torch-tune-llama-7b
   datasetConfig:
     storageUri: s3://dataset/custom-dataset/yelp-review
-    parameters:
-      split: train[:5000]
+    env:
+      - name: SPLIT
+        value: train[:5000]
   modelConfig:
     input:
       storageUri: hf://meta-llama/Llama-2-7b
@@ -450,28 +469,28 @@ This trainer is executed on every distributed training Node.
 ```golang
 type Trainer struct {
 
-  // Docker image for the Trainer.
-  Image string `json:"image,omitempty"`
+	// Docker image for the Trainer.
+	Image string `json:"image,omitempty"`
 
-  // Command for the training container.
-  // Validate that command contains torchrun or mpirun.
-  Command []string `json:"command,omitempty"`
+	// Command for the training container.
+	// Validate that command contains torchrun or mpirun.
+	Command []string `json:"command,omitempty"`
 
-  // Args for the training container.
-  Args []string `json:"args,omitempty"`
+	// Args for the training container.
+	Args []string `json:"args,omitempty"`
 
-  // Env for the training container.
-  Env []corev1.EnvVar `json:"env,omitempty"`
+	// Env for the training container.
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
-  // Number of training nodes.
-  NumNodes *int32 `json:"numNodes,omitempty"`
+	// Number of training nodes.
+	NumNodes *int32 `json:"numNodes,omitempty"`
 
-  // Resource for each node.
-  ResourcesPerNode []corev1.resources `json:"resourcesPerNode,omitempty"`
+	// Resource for each node.
+	ResourcesPerNode []corev1.resources `json:"resourcesPerNode,omitempty"`
 
-  // Number of processes in a single node.
-  // By default this value == number of GPUs in resources limits.
-  NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+	// Number of processes in a single node.
+	// By default this value == number of GPUs in resources limits.
+	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 }
 ```
 
@@ -531,8 +550,8 @@ type DatasetConfig struct {
 	// Storage uri for the dataset provider.
 	StorageUri string `json:"storageUri"`
 
-	// Custom parameters for the dataset initializer.
-	Parameters map[string]string `json:"parameters,omitempty"`
+	// Custom env variables for dataset initializer
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secrets to access dataset.
 	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
@@ -544,16 +563,17 @@ Initially we will support the following dataset providers:
 - **S3:** `storageUri: s3://bucket-name/path/dataset`
 - **HuggingFace:** `storageUri: hf://repo-id`
 
-Parameters will be converted to the environment variables for the `dataset-initializer` container
-in the `Initializer` Job.
+User can override the default env variables in the `dataset-initializer` container
+of the `Initializer` Job.
 
 For example:
 
 ```yaml
 datasetConfig:
   storageUri: s3://datasets/yelp-review
-  parameters:
-    endpointUrl: s3.custom.com
+  env:
+    - name: ENDPOINT_URL
+      value: s3.custom.com
 ```
 
 Will be converted to:
@@ -593,8 +613,8 @@ type InputModel struct {
 	// Storage uri for the model provider.
 	StorageUri string `json:"storageUri"`
 
-	// Custom parameters for the model initializer.
-	Parameters map[string]string `json:"parameters,omitempty"`
+	// Custom env variables for model initializer
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secrets to access model.
 	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
@@ -604,8 +624,8 @@ type OutputModel struct {
 	// Storage uri for the model exported.
 	StorageUri string `json:"storageUri"`
 
-	// Custom parameters for the model exporter.
-	Parameters map[string]string `json:"parameters,omitempty"`
+	// Custom env variables for model exporter.
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secrets to export model.
 	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
@@ -618,16 +638,16 @@ Initially we will support the following model providers:
 
 - **HuggingFace:** `storageUri: hf://model-path`
 
-Parameters will be converted to the environment variables for the `model-initializer` container
-in the `Initializer` Job.
-
+User can override the default env variables in the `model-initializer` container
+of the `Initializer` Job.
 For example:
 
 ```yaml
 modelConfig:
   storageUri: hf://bert-based-cased
-  parameters:
-    transformerType: AutoModelForCausalLM
+  env:
+    - name: TRANSFORMER_TYPE
+      value: AutoModelForCausalLM
 ```
 
 Will be converted to:
@@ -942,8 +962,9 @@ type TorchSpec struct {
     // Number of Procs per Node.
     NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
-    // Used for single-node multi-worker training
-    Standalone bool `json:"standalone,omitempty"`
+    // Used for single-node multi-worker training.
+    // Defaults to false.
+    Standalone *bool `json:"standalone,omitempty"`
 
     // Torch Elastic Policy.
     ElasticPolicy *TorchElasticPolicy `json:"elasticPolicy,omitempty"`
@@ -988,6 +1009,10 @@ type MPISpec struct {
 
     // Directory where SSH keys are mounted.
     SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
+
+    // RunLauncherAsNode indicates whether to run training process in launcher.
+    // Defaults to false.
+    RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
 }
 
 type MPIImplementation string
