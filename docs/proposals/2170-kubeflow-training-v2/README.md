@@ -873,7 +873,7 @@ type TrainingRuntime struct {
     MLSpec *MLSpec `json:"mlSpec,omitempty"`
 
     // Number of nodes to execute training. Defaults to 1.
-    NumNodes int `json:"numNodes"`
+    NumNodes *int32 `json:"numNodes,omitempty"`
 
     // JobSet spec.
     JobSetSpec *batchv1.JobSetSpec `json:",inline"`
