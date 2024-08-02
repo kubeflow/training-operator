@@ -279,7 +279,7 @@ type TrainJob struct {
 
 type TrainJobSpec struct {
 	// Reference to the Training Runtime.
-	TrainingRuntimeRef *TrainingRuntimeRef `json:"trainingRuntimeRef"`
+	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
 
 	// Parameters that data scientists can override
 	Trainer *Trainer `json:"trainer,omitempty"`
