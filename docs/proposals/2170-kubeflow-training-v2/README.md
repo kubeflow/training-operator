@@ -780,43 +780,51 @@ In the future, we can add more parameters if we find use-cases when it is requir
 
 ```golang
 type PodSpecOverride struct {
-    // Name of the training replica in the training runtime template to override
-    TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
+	// Name of the training replica in the training runtime template to override
+	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
 
-    // Override parameters for Containers.
-    Containers []Container `json:"container,omitempty"`
+	// Override parameters for Containers.
+	Containers []Container `json:"container,omitempty"`
 
-    // Override parameters for InitContainers.
-    InitContainer []Container `json:"initContainer,omitempty"`
+	// Override parameters for InitContainers.
+	InitContainer []Container `json:"initContainer,omitempty"`
 
-    // Override parameters for volumes.
-    Volumes []corev1.Volume `json:"volume,omitempty"`
+	// Override parameters for volumes.
+	Volumes []corev1.Volume `json:"volume,omitempty"`
 
-    // Custom Service Account
-    ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// Custom Service Account
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// Node selector to fit pod on the node. This is needed to integrate TrainJob and Kueue
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Override Pod's tolerations. This is needed to integrate TrainJob and Kueue
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Custom scheduler for TrainJob, for example YuniKorn.
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // Override for each container.
 // Parameters from Trainer, DatasetConfig, and ModelConfig will take precedence.
 type Container struct {
+	// Name for the container.
+	Name string `json:"name"`
 
-    // Name for the container.
-    Name string `json:"name"`
+	// Command for the container.
+	Command []string `json:"command,omitempty"`
 
-    // Command for the container.
-    Command []string `json:"command,omitempty"`
+	// Args for the container.
+	Args []string `json:"args,omitempty"`
 
-    // Args for the container.
-    Args []string `json:"args,omitempty"`
+	// Env for the container.
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
-    // Env for the container.
-    Env []corev1.EnvVar `json:"env,omitempty"`
+	// Env for the container.
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
-    // Env for the container.
-    EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
-
-    // Override parameters for volume mounts.
-    VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
+	// Override parameters for volume mounts.
+	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
 }
 ```
 
