@@ -909,8 +909,8 @@ type GangScheduler struct {
 type GangSchedulerPlugin string
 
 const (
-    GangSchedulerPluginVolcano GangSchedulerPlugin = "volcano"
-    GangSchedulerPlugins       GangSchedulerPlugin = "scheduler-plugins"
+    GangSchedulerPluginVolcano            GangSchedulerPlugin = "volcano"
+    GangSchedulerPluginCoscheduling       GangSchedulerPlugin = "coscheduling"
 )
 ```
 
