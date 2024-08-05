@@ -10,6 +10,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-kubeflow-org-v1-jaxjob
+  failurePolicy: Fail
+  name: validator.jaxjob.training-operator.kubeflow.org
+  rules:
+  - apiGroups:
+    - kubeflow.org
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - jaxjobs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-kubeflow-org-v1-paddlejob
   failurePolicy: Fail
   name: validator.paddlejob.training-operator.kubeflow.org

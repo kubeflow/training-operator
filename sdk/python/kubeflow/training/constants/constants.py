@@ -138,6 +138,13 @@ PADDLEJOB_BASE_IMAGE = (
     "docker.io/paddlepaddle/paddle:2.4.0rc0-gpu-cuda11.2-cudnn8.1-trt8.0"
 )
 
+# JAXJob constants
+JAXJOB_KIND = "JAXJob"
+JAXJOB_MODEL = "KubeflowOrgV1JAXJob"
+JAXJOB_PLURAL = "jaxjobs"
+JAXJOB_CONTAINER = "jax"
+JAXJOB_REPLICA_TYPES = REPLICA_TYPE_WORKER.lower()
+JAXJOB_BASE_IMAGE = "kubeflow/jaxjob-simple:latest"
 
 # Dictionary to get plural, model, and container for each Job kind.
 JOB_PARAMETERS = {
@@ -171,6 +178,12 @@ JOB_PARAMETERS = {
         "container": PADDLEJOB_CONTAINER,
         "base_image": PADDLEJOB_BASE_IMAGE,
     },
+    JAXJOB_KIND: {
+        "model": JAXJOB_MODEL,
+        "plural": JAXJOB_PLURAL,
+        "container": JAXJOB_CONTAINER,
+        "base_image": "JAXJOB_BASE_IMAGE",
+    },
 }
 
 # Tuple of all Job models.
@@ -183,4 +196,5 @@ JOB_MODELS_TYPE = Union[
     models.KubeflowOrgV1XGBoostJob,
     models.KubeflowOrgV1MPIJob,
     models.KubeflowOrgV1PaddleJob,
+    models.KubeflowOrgV1JAXJob,
 ]
