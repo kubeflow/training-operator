@@ -1,0 +1,109 @@
+// Copyright 2024 The Kubeflow Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License
+
+package jax
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+
+	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+)
+
+type EnvVarGenerator interface {
+	Generate(job *kubeflowv1.JAXJob) ([]corev1.EnvVar, error)
+}
+
+func setPodEnv(obj interface{}, podTemplateSpec *corev1.PodTemplateSpec, rtype, index string) error {
+	jaxjob, ok := obj.(*kubeflowv1.JAXJob)
+	if !ok {
+		return fmt.Errorf("%+v is not a type of JAXJob", obj)
+	}
+
+	coordinatorAddr := replicaName(jaxjob.Name, kubeflowv1.JAXJobReplicaTypeWorker, 0)
+
+	coordinatorPort, err := getPortFromJAXJob(jaxjob, kubeflowv1.JAXJobReplicaTypeWorker)
+	if err != nil {
+		return err
+	}
+
+	totalReplicas := getTotalReplicas(jaxjob)
+
+	for i := range podTemplateSpec.Spec.Containers {
+		// Initialize the environment variables.
+		if len(podTemplateSpec.Spec.Containers[i].Env) == 0 {
+			podTemplateSpec.Spec.Containers[i].Env = make([]corev1.EnvVar, 0)
+		}
+
+		rank, err := strconv.Atoi(index)
+		if err != nil {
+			return err
+		}
+		// Set PYTHONUNBUFFERED to true, to disable output buffering.
+		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "PYTHONUNBUFFERED",
+			Value: "1",
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "COORDINATOR_PORT",
+			Value: strconv.Itoa(int(coordinatorPort)),
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "COORDINATOR_ADDRESS",
+			Value: coordinatorAddr,
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "NUM_PROCESSES",
+			Value: strconv.Itoa(int(totalReplicas)),
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "PROCESS_ID",
+			Value: strconv.Itoa(rank),
+		})
+	}
+
+	return nil
+}
+
+func getTotalReplicas(job *kubeflowv1.JAXJob) int32 {
+	jobReplicas := int32(0)
+	for _, r := range job.Spec.JAXReplicaSpecs {
+		jobReplicas += *r.Replicas
+	}
+	return jobReplicas
+}
+
+func replicaName(jobName string, rtype kubeflowv1.ReplicaType, index int) string {
+	n := jobName + "-" + strings.ToLower(string(rtype)) + "-" + strconv.Itoa(index)
+	return strings.Replace(n, "/", "-", -1)
+}
+
+func getPortFromJAXJob(job *kubeflowv1.JAXJob, rtype kubeflowv1.ReplicaType) (int32, error) {
+	containers := job.Spec.JAXReplicaSpecs[rtype].Template.Spec.Containers
+	for _, container := range containers {
+		if container.Name == kubeflowv1.JAXJobDefaultContainerName {
+			ports := container.Ports
+			for _, port := range ports {
+				if port.Name == kubeflowv1.JAXJobDefaultPortName {
+					return port.ContainerPort, nil
+				}
+			}
+		}
+	}
+	return -1, fmt.Errorf("port not found")
+}
