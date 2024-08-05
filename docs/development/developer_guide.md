@@ -5,7 +5,7 @@ Kubeflow Training Operator is currently at v1.
 ## Requirements
 
 - [Go](https://golang.org/) (1.22 or later)
-- [Docker](https://docs.docker.com/) 
+- [Docker](https://docs.docker.com/)
 - [Docker](https://docs.docker.com/) (20.10 or later)
 - [Docker Buildx](https://docs.docker.com/build/buildx/) (0.8.0 or later)
 - [Python](https://www.python.org/) (3.11 or later)
@@ -13,6 +13,7 @@ Kubeflow Training Operator is currently at v1.
 - [Kind](https://kind.sigs.k8s.io/) (0.22.0 or later)
 - [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop) (0.21.0 or later)
   - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS) (0.6.8 or later)
+- [pre-commit](https://pre-commit.com/)
 
 Note for Lima the link is to the Adopters, which supports several different container environments.
 
@@ -49,12 +50,12 @@ First, you need to run a Kubernetes cluster locally. We recommend [Kind](https:/
 
 You can create a `kind` cluster by running
 ```sh
-kind create cluster 
+kind create cluster
 ```
-This will load your kubernetes config file with the new cluster. 
+This will load your kubernetes config file with the new cluster.
 
-After creating the cluster, you can check the nodes with the code below which should show you the kind-control-plane. 
-```sh 
+After creating the cluster, you can check the nodes with the code below which should show you the kind-control-plane.
+```sh
 kubectl get nodes
 ```
 The output should look something like below:
@@ -74,9 +75,9 @@ Then we can patch it with the latest operator image.
 ```sh
 kubectl patch -n kubeflow deployments training-operator --type json -p '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "kubeflow/training-operator:latest"}]'
 ```
-Then we can run the job with the following command. 
+Then we can run the job with the following command.
 
-```sh 
+```sh
 kubectl apply -f https://raw.githubusercontent.com/kubeflow/training-operator/master/examples/pytorch/simple.yaml
 ```
 And we can see the output of the job from the logs, which may take some time to produce but should look something like below.
@@ -116,10 +117,10 @@ make docker-build IMG=my-username/training-operator:my-pr-01
 ```
 You can swap `my-username/training-operator:my-pr-01` with whatever you would like.
 
-## Load docker image 
+## Load docker image
 ```sh
 kind load docker-image my-username/training-operator:my-pr-01
-``` 
+```
 
 ## Modify operator image with new one
 
@@ -129,8 +130,8 @@ kustomize edit set image my-username/training-operator=my-username/training-oper
 ```
 Update the `newTag` key in `./manifests/overlayes/standalone/kustimization.yaml` with the new image.
 
-Deploy the operator with: 
-```sh 
+Deploy the operator with:
+```sh
 kubectl apply -k ./manifests/overlays/standalone
 ```
 And now we can submit jobs to the operator.
@@ -140,7 +141,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubeflow/training-operator/ma
 ```
 You should be able to see a pod for your training operator running in your namespace using
 ```
-kubectl logs -n kubeflow -l training.kubeflow.org/job-name=pytorch-simple 
+kubectl logs -n kubeflow -l training.kubeflow.org/job-name=pytorch-simple
 ```
 ## Go version
 
@@ -172,18 +173,18 @@ sdk/python/kubeflow/training/api
 
 ## Code Style
 
-### Python
+### pre-commit
 
-- Use [`black`](https://github.com/psf/black) to format Python code
+Make sure to install [pre-commit](https://pre-commit.com/) (`pip install
+pre-commit`) and run `pre-commit install` from the root of the repository at
+least once before creating git commits.
 
-- Run the following to install `black`:
+The pre-commit [hooks](../../.pre-commit-config.yaml) ensure code quality and
+consistency. They are executed in CI. PRs that fail to comply with the hooks
+will not be able to pass the corresponding CI gate. The hooks are only executed
+against staged files unless you run `pre-commit run --all`, in which case,
+they'll be executed against every file in the repository.
 
-  ```
-  pip install black==23.9.1
-  ```
-
-- To check your code:
-
-  ```sh
-  black --check --exclude '/*kubeflow_org_v1*|__init__.py|api_client.py|configuration.py|exceptions.py|rest.py' sdk/
-  ```
+Specific programmatically generated files listed in the `exclude` field in
+[.pre-commit-config.yaml](../../.pre-commit-config.yaml) are deliberately
+excluded from the hooks.

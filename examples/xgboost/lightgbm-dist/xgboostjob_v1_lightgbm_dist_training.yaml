@@ -72,4 +72,3 @@ spec:
               - --is_enable_sparse=true
               - --use_two_round_loading=false
               - --is_save_binary_file=false
-

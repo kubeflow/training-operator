@@ -2,13 +2,13 @@ apiVersion: "kubeflow.org/v1"
 kind: "TFJob"
 metadata:
   name: "mnist"
-  namespace: kubeflow 
+  namespace: kubeflow
 spec:
   runPolicy:
     cleanPodPolicy: None
   tfReplicaSpecs:
     Worker:
-      replicas: 1 
+      replicas: 1
       restartPolicy: Never
       template:
         spec:
@@ -27,4 +27,4 @@ spec:
           volumes:
             - name: "training"
               persistentVolumeClaim:
-                claimName: "tfevent-volume"  
+                claimName: "tfevent-volume"
