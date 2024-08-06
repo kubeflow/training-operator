@@ -160,7 +160,7 @@ the following table explains the naming that each framework or technology uses:
   <tr>
    <td>PyTorch
    </td>
-   <td>Worker 
+   <td>Worker
 <p>
 <code>(--nproc-per-node)</code>
    </td>
@@ -180,7 +180,7 @@ the following table explains the naming that each framework or technology uses:
 <p>
 <code>(--np)</code>
    </td>
-   <td>Node 
+   <td>Node
 <p>
 <code>(--host)</code>
    </td>
@@ -194,7 +194,7 @@ the following table explains the naming that each framework or technology uses:
    </td>
    <td>Worker
    </td>
-   <td>Worker Pool 
+   <td>Worker Pool
 <p>
 <a href="https://cloud.google.com/vertex-ai/docs/training/distributed-training#cluster-spec-format">Cluster Spec</a>
    </td>
@@ -236,7 +236,7 @@ the following table explains the naming that each framework or technology uses:
    </td>
    <td><em>Not Applicable</em>
    </td>
-   <td><code>python</code> 
+   <td><code>python</code>
    </td>
    <td><a href="https://github.com/dmlc/xgboost/blob/a5a58102e5e82fa508514c34cd8e5f408dcfd3e1/python-package/xgboost/tracker.py#L17">Rabit Tracker</a> for c10d
    </td>
