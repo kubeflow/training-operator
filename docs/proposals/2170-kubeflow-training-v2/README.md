@@ -402,13 +402,14 @@ spec:
         nvidia.com/gpu: 2
 ```
 
-The above command will be converted to:
+The container's `torchrun` command in the above YAML will be converted into:
 
 ```bash
 torchrun --nnodes=5 --nproc-per-node=2 train.py
 ```
 
-Additionally, the Kubeflow Training SDK allows the user to create the above `TrainJob` using the Python API:
+Additionally, the Kubeflow Training SDK allows the user to create the above `TrainJob` using
+the Python API:
 
 ```python
 def train_func():
@@ -800,9 +801,6 @@ type PodSpecOverride struct {
 
 	// Override Pod's tolerations. This is needed to integrate TrainJob and Kueue
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-
-	// Custom scheduler for TrainJob, for example YuniKorn.
-	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // Override for each container.
@@ -906,8 +904,8 @@ type TrainingRuntime struct {
     // JobSet spec.
     JobSetSpec *batchv1.JobSetSpec `json:",inline"`
 
-    // For gang-scheduling using volcano or scheduler plugins, supported for all frameworks.
-    GangScheduler *GangScheduler `json:"gangScheduler,omitempty"`
+    // Spec to create PodGroup for gang-scheduling using volcano or coscheduling.
+    PodGroupSpec *PodGroupSpec `json:"podGroupSpec,omitempty"`
 }
 
 // One of the specs can be selected.
@@ -921,12 +919,15 @@ type MLSpec struct {
 }
 ```
 
-### The Gang Scheduler API
+### The PodGroupSpec API
 
-Gang scheduler plugin is used to create the appropriate `PodGroup` for Volcano or scheduler plugins.
+The `PodGroupSpec` is used to create the appropriate `PodGroup` for gang-scheduling. It can
+be used with Volcano or Coscheduling.
+User should add the scheduler name into Pod's `.spec.schedulerName` if the default scheduler is
+not the same as `PodGroup` plugin.
 
 ```golang
-type GangScheduler struct {
+type PodGroupSpec struct {
     // Plugin for gang scheduling.
     Plugin *GangSchedulerPlugin `json:plugin,omitempty"`
 
@@ -941,6 +942,56 @@ const (
     GangSchedulerPluginCoscheduling       GangSchedulerPlugin = "coscheduling"
 )
 ```
+
+Here is the example of runtime with gang-scheduling using coscheduling plugin.
+
+```yaml
+apiVersion: kubeflow.org/v2alpha1
+kind: ClusterTrainingRuntime
+metadata:
+  name: torch-distributed-multi-node
+spec:
+  mlSpec:
+    torch:
+      numProcPerNode: 5
+  podGroupSpec:
+    plugin: coscheduling
+    scheduleTimeoutSeconds: 100
+  replicatedJobs:
+    - name: node
+      template:
+        spec:
+          template:
+            spec:
+              schedulerName: coscheduling
+              containers:
+                - name: trainer
+                  image: docker.io/kubeflow/pytorch-mnist
+                  resources:
+                    limits:
+                      nvidia.com/gpu: 1
+                  env:
+                    - name: MASTER_ADDR
+                      value: "pytorch-node-0-0.pytorch"
+                    - name: MASTER_PORT
+                      value: 29400
+                  command:
+                    - torchrun train.py
+```
+
+Training Operator will create the `PodGroup` using the following spec:
+
+```yaml
+apiVersion: scheduling.x-k8s.io/v1alpha1
+kind: PodGroup
+metadata:
+  name: nginx
+spec:
+  scheduleTimeoutSeconds: 100
+  minMember: 5
+```
+
+The `TrainJob` will be started only when 5 GPUs are available in the cluster.
 
 ### The Torch Spec API
 
