@@ -70,6 +70,13 @@ def list_namespaced_pod_response(*args, **kwargs):
     return MockResponse()
 
 
+def get_job_response(*args, **kwargs):
+    if kwargs.get("namespace") == "runtime":
+        return generate_job_with_status(create_job(), constants.JOB_CONDITION_FAILED)
+    else:
+        return generate_job_with_status(create_job())
+
+
 def generate_container() -> V1Container:
     return V1Container(
         name="pytorch",
@@ -125,6 +132,21 @@ def create_job():
     )
     pytorchjob = generate_pytorchjob(job_namespace, master, worker)
     return pytorchjob
+
+
+def generate_job_with_status(
+    job: constants.JOB_MODELS_TYPE,
+    condition_type: str = constants.JOB_CONDITION_SUCCEEDED
+) -> constants.JOB_MODELS_TYPE:
+    job.status = KubeflowOrgV1JobStatus(
+        conditions=[
+            KubeflowOrgV1JobCondition(
+                type=condition_type,
+                status=constants.CONDITION_STATUS_TRUE
+            )
+        ]
+    )
+    return job
 
 
 class DummyJobClass:
@@ -279,6 +301,61 @@ test_data_get_job_pods = [
     ),
 ]
 
+test_data_wait_for_job_conditions = [
+    (
+        "timeout waiting for succeeded condition",
+        {
+            "name": TEST_NAME,
+            "namespace": "timeout",
+            "wait_timeout": 0
+        },
+        TimeoutError
+    ),
+    (
+        "invalid expected condition",
+        {
+            "name": TEST_NAME,
+            "namespace": "value",
+            "expected_conditions": {"invalid"}
+        },
+        ValueError
+    ),
+    (
+        "invalid expected condition(lowercase)",
+        {
+            "name": TEST_NAME,
+            "namespace": "value",
+            "expected_conditions": {"succeeded"}
+        },
+        ValueError
+    ),
+    (
+        "job failed unexpectedly",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime"
+        },
+        RuntimeError
+    ),
+    (
+        "valid case",
+        {
+            "name": TEST_NAME,
+            "namespace": "test-namespace"
+        },
+        generate_job_with_status(create_job())
+    ),
+    (
+        "valid case with specified callback",
+        {
+            "name": TEST_NAME,
+            "namespace": "test-namespace",
+            "callback": lambda job: "test train function" 
+        },
+        generate_job_with_status(create_job())
+    )
+]
+
 
 test_data_get_job_pod_names = [
     (
@@ -359,6 +436,17 @@ def training_client():
         yield client
 
 
+@pytest.fixture
+def training_client_wait_for_job_conditions():
+    with patch.object(
+        TrainingClient, 
+        "get_job",
+        side_effect=get_job_response
+    ): 
+        client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
+        yield client
+
+
 @pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_create_job)
 def test_create_job(training_client, test_name, kwargs, expected_output):
     """
@@ -431,6 +519,22 @@ def test_update_job(training_client, test_name, kwargs, expected_output):
             kwargs.get("name"),
             kwargs.get("job"),
         )
+    except Exception as e:
+        assert type(e) is expected_output
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_wait_for_job_conditions)
+def test_wait_for_job_conditions(
+    training_client_wait_for_job_conditions, test_name, kwargs, expected_output
+):
+    """
+    test wait_for_job_conditions function of training client
+    """
+    print("Executing test:", test_name)
+    try:
+        out = training_client_wait_for_job_conditions.wait_for_job_conditions(**kwargs)
+        assert out == expected_output
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
