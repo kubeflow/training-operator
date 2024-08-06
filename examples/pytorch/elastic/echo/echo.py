@@ -3,12 +3,10 @@ import io
 import os
 import pprint
 import sys
-import time
 
 import torch.distributed as dist
 
 if __name__ == "__main__":
-
     env_dict = {
         k: os.environ[k]
         for k in (
