@@ -923,8 +923,6 @@ type MLSpec struct {
 
 The `PodGroupSpec` is used to create the appropriate `PodGroup` for gang-scheduling. It can
 be used with Volcano or Coscheduling.
-User should add the scheduler name into Pod's `.spec.schedulerName` if the default scheduler is
-not the same as `PodGroup` plugin.
 
 ```golang
 type PodGroupSpec struct {
@@ -943,7 +941,9 @@ const (
 )
 ```
 
-Here is the example of runtime with gang-scheduling using coscheduling plugin.
+The following example shows example of runtime with gang-scheduling using coscheduling plugin.
+**Note:** User should add the scheduler name into Pod's `.spec.schedulerName` if the default
+scheduler is not the same as `PodGroup` plugin.
 
 ```yaml
 apiVersion: kubeflow.org/v2alpha1
