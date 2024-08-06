@@ -319,10 +319,35 @@ type TrainingRuntimeRef struct {
 }
 
 type TrainJobStatus struct {
-	// Conditions for the TrainJob
+	// Conditions for the TrainJob. Initially, it will have the same conditions as JobSet.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+  // ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
+  ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
+type ReplicatedJobStatus struct {
+	// Name of the ReplicatedJob.
+	Name string `json:"name"`
+
+	// Ready is the number of child Jobs where the number of ready pods and completed pods
+	// is greater than or equal to the total expected pod count for the Job (i.e., the minimum
+	// of job.spec.parallelism and job.spec.completions).
+	Ready int32 `json:"ready"`
+
+	// Succeeded is the number of successfully completed child Jobs.
+	Succeeded int32 `json:"succeeded"`
+
+	// Failed is the number of failed child Jobs.
+	Failed int32 `json:"failed"`
+
+	// Active is the number of child Jobs with at least 1 pod in a running or pending state
+	// which are not marked for deletion.
+	Active int32 `json:"active"`
+
+	// Suspended is the number of child Jobs which are in a suspended state.
+	Suspended int32 `json:"suspended"`
+}
 ```
 
 This table explains the rationale for each `TrainJob` parameter:
@@ -902,7 +927,7 @@ type TrainingRuntime struct {
     NumNodes *int32 `json:"numNodes,omitempty"`
 
     // JobSet spec.
-    JobSetSpec *batchv1.JobSetSpec `json:",inline"`
+    JobSetSpec *jobsetv1.JobSetSpec `json:",inline"`
 
     // Spec to create PodGroup for gang-scheduling using volcano or coscheduling.
     PodGroupSpec *PodGroupSpec `json:"podGroupSpec,omitempty"`
@@ -1539,7 +1564,7 @@ Alternatives details can be found in
 type TrainJobSpec struct {
     ...
 
-    JobSetSpec *batchv1.JobSetSpec `json:",inline"`
+    JobSetSpec *jobsetv1.JobSetSpec `json:",inline"`
 }
 ```
 
