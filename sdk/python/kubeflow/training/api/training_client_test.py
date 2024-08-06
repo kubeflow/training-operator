@@ -420,7 +420,9 @@ def training_client():
 
 @pytest.fixture
 def training_client_wait_for_job_conditions():
-    with patch.object(TrainingClient, "get_job", side_effect=get_job_response):
+    with patch.object(TrainingClient, "get_job", side_effect=get_job_response), patch(
+        "kubernetes.config.load_kube_config", return_value=Mock()
+    ):
         client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
         yield client
 
