@@ -136,13 +136,13 @@ def create_job():
 
 def generate_job_with_status(
     job: constants.JOB_MODELS_TYPE,
-    condition_type: str = constants.JOB_CONDITION_SUCCEEDED
+    condition_type: str = constants.JOB_CONDITION_SUCCEEDED,
 ) -> constants.JOB_MODELS_TYPE:
     job.status = KubeflowOrgV1JobStatus(
         conditions=[
             KubeflowOrgV1JobCondition(
                 type=condition_type,
-                status=constants.CONDITION_STATUS_TRUE
+                status=constants.CONDITION_STATUS_TRUE,
             )
         ]
     )
@@ -304,56 +304,38 @@ test_data_get_job_pods = [
 test_data_wait_for_job_conditions = [
     (
         "timeout waiting for succeeded condition",
-        {
-            "name": TEST_NAME,
-            "namespace": "timeout",
-            "wait_timeout": 0
-        },
-        TimeoutError
+        {"name": TEST_NAME, "namespace": "timeout", "wait_timeout": 0},
+        TimeoutError,
     ),
     (
         "invalid expected condition",
-        {
-            "name": TEST_NAME,
-            "namespace": "value",
-            "expected_conditions": {"invalid"}
-        },
-        ValueError
+        {"name": TEST_NAME, "namespace": "value", "expected_conditions": {"invalid"}},
+        ValueError,
     ),
     (
         "invalid expected condition(lowercase)",
-        {
-            "name": TEST_NAME,
-            "namespace": "value",
-            "expected_conditions": {"succeeded"}
-        },
-        ValueError
+        {"name": TEST_NAME, "namespace": "value", "expected_conditions": {"succeeded"}},
+        ValueError,
     ),
     (
         "job failed unexpectedly",
-        {
-            "name": TEST_NAME,
-            "namespace": "runtime"
-        },
-        RuntimeError
+        {"name": TEST_NAME, "namespace": "runtime"},
+        RuntimeError,
     ),
     (
         "valid case",
-        {
-            "name": TEST_NAME,
-            "namespace": "test-namespace"
-        },
-        generate_job_with_status(create_job())
+        {"name": TEST_NAME, "namespace": "test-namespace"},
+        generate_job_with_status(create_job()),
     ),
     (
         "valid case with specified callback",
         {
             "name": TEST_NAME,
             "namespace": "test-namespace",
-            "callback": lambda job: "test train function" 
+            "callback": lambda job: "test train function",
         },
-        generate_job_with_status(create_job())
-    )
+        generate_job_with_status(create_job()),
+    ),
 ]
 
 
@@ -438,11 +420,7 @@ def training_client():
 
 @pytest.fixture
 def training_client_wait_for_job_conditions():
-    with patch.object(
-        TrainingClient, 
-        "get_job",
-        side_effect=get_job_response
-    ): 
+    with patch.object(TrainingClient, "get_job", side_effect=get_job_response):
         client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
         yield client
 
