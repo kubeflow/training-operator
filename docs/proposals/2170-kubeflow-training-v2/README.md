@@ -305,17 +305,18 @@ type TrainJobSpec struct {
 }
 
 type TrainingRuntimeRef struct {
-	// Name for the training runtime.
+	// Name for the runtime.
+	// This must indicate the runtime deployed in the same namespace as the TrainJob
+	// when TrainingRuntime is used in the kind.
 	Name string `json:"name"`
+	
+	// APIVersion is the apiVersion for the runtime.
+	// Defaults to the v2alpha1.
+	APIVersion *string `json:apiVersion,omitempty`
 
-	// Namespace for the runtime. In that case, user should use TrainingRuntime
-	Namespace *string `json:"namespace,omitempty"`
-
-	// Kind for the runtime. TrainingRuntime or ClusterTrainingRuntime
+	// Kind for the runtime, which must be TrainingRuntime or ClusterTrainingRuntime.
+	// Defaults to the TrainingRuntime.
 	Kind *string `json:"kind,omitempty"`
-
-	// Version for the runtime. For example: v2alpha1
-	Version *string `json:"version,omitempty"`
 }
 
 type TrainJobStatus struct {
