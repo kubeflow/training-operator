@@ -321,9 +321,9 @@ type TrainingRuntimeRef struct {
 type TrainJobStatus struct {
 	// Conditions for the TrainJob. Initially, it will have the same conditions as JobSet.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-  // ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
-  ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	
+	// ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
+	ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
 type ReplicatedJobStatus struct {
