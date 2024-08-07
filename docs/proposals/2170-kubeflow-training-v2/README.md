@@ -301,6 +301,18 @@ type TrainJobSpec struct {
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+	// The value must be either an empty, 'training-operator.kubeflow.org/trainjob-controller' or
+	// 'kueue.x-k8s.io/multikueue'.
+	// The built-in TrainJob controller reconciles TrainJob which don't have this
+	// field at all or the field value is the reserved string
+	// 'training-operator.kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
+	//
+	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
+	// all characters before the first "/" must be a valid subdomain as defined
+	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
+	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
+	// The field is immutable.
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
@@ -309,7 +321,7 @@ type TrainingRuntimeRef struct {
 	// This must indicate the runtime deployed in the same namespace as the TrainJob
 	// when TrainingRuntime is used in the kind.
 	Name string `json:"name"`
-	
+
 	// APIVersion is the apiVersion for the runtime.
 	// Defaults to the v2alpha1.
 	APIVersion *string `json:apiVersion,omitempty`
@@ -322,7 +334,7 @@ type TrainingRuntimeRef struct {
 type TrainJobStatus struct {
 	// Conditions for the TrainJob. Initially, it will have the same conditions as JobSet.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-	
+
 	// ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
 	ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
@@ -1591,3 +1603,17 @@ framework that users want to run on Kubernetes.
 Since frameworks share common functionality for distributed training (data parallelizm or
 model parallelizm). For some specific use-cases like MPI or Elastic PyTorch, we will leverage
 `MLSpec` parameter.
+
+### Allow users to specify arbitrary value in the managedBy field
+
+We can allow users to specify the arbitrary values instead of restricting the `.spec.managedBy` field in the TrainJob
+with an empty, 'training-operator.kubeflow.org/trainjob-controller' or 'kusus.x-k8s.io/multikueue'.
+
+But, the arbitrary values allow users to specify external or in-house customized training-operator, which means that
+the TrainJobs are reconciled by the controllers without any specification compliance.
+
+Specifically, the arbitrary training-operator could bring bugs for the status transitions.
+So, we do not support the arbitrary values until we find reasonable use cases that the external controllers
+need to reconcile the TrainJob.
+
+Note that we should implement the status transitions validations to once we support the arbitrary values in the `manageBy` field.
