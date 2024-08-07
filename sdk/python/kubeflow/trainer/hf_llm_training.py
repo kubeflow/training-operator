@@ -109,6 +109,13 @@ def load_and_preprocess_data(dataset_dir, transformer_type, tokenizer):
 def setup_peft_model(model, lora_config):
     # Set up the PEFT model
     lora_config = LoraConfig(**json.loads(lora_config))
+    reference_lora_config = LoraConfig()
+    for key, val in lora_config.__dict__.items():
+        old_attr = getattr(reference_lora_config, key, None)
+        if old_attr is not None:
+            val = type(old_attr)(val)
+        setattr(lora_config, key, val)
+
     model.enable_input_require_grads()
     model = get_peft_model(model, lora_config)
     return model
@@ -158,6 +165,15 @@ if __name__ == "__main__":
     logger.info("Starting HuggingFace LLM Trainer")
     args = parse_arguments()
     train_args = TrainingArguments(**json.loads(args.training_parameters))
+    reference_train_args = transformers.TrainingArguments(
+        output_dir=train_args.output_dir
+    )
+    for key, val in train_args.to_dict().items():
+        old_attr = getattr(reference_train_args, key, None)
+        if old_attr is not None:
+            val = type(old_attr)(val)
+        setattr(train_args, key, val)
+
     transformer_type = getattr(transformers, args.transformer_type)
 
     logger.info("Setup model and tokenizer")
