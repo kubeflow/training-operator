@@ -1,6 +1,6 @@
 import multiprocessing
-from typing import Optional
 from types import SimpleNamespace
+from typing import Optional
 from unittest.mock import Mock
 from unittest.mock import patch
 
