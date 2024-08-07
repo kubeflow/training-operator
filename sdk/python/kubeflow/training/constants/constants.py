@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kubeflow.training import models
-from typing import Union, Dict
+from typing import Dict, Union
+
 from kubeflow.storage_initializer.constants import INIT_CONTAINER_MOUNT_PATH
+from kubeflow.training import models
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
@@ -87,12 +88,7 @@ STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
     name=STORAGE_INITIALIZER,
     mount_path=INIT_CONTAINER_MOUNT_PATH,
 )
-STORAGE_INITIALIZER_VOLUME = models.V1Volume(
-    name=STORAGE_INITIALIZER,
-    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-        claim_name=STORAGE_INITIALIZER
-    ),
-)
+
 TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
 
 # TFJob constants.

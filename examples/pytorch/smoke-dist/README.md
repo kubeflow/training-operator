@@ -1,4 +1,4 @@
-### Distributed send/recv e2e test 
+### Distributed send/recv e2e test
 
 This folder containers Dockerfile and distributed send/recv test.
 

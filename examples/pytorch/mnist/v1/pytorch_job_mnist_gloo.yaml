@@ -22,7 +22,7 @@ spec:
       restartPolicy: OnFailure
       template:
         spec:
-          containers: 
+          containers:
             - name: pytorch
               image: kubeflow/pytorch-dist-mnist:latest
               args: ["--backend", "gloo"]

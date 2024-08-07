@@ -12,23 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import multiprocessing
-import logging
-import time
 import json
-from typing import Optional, Callable, Tuple, List, Dict, Any, Set, Union
+import logging
+import multiprocessing
 import queue
-from kubernetes import client, config, watch
+import time
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from kubeflow.storage_initializer.constants import VOLUME_PATH_DATASET
+from kubeflow.storage_initializer.constants import VOLUME_PATH_MODEL
 from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
-from kubeflow.storage_initializer.constants import (
-    VOLUME_PATH_DATASET,
-    VOLUME_PATH_MODEL,
-)
-
+from kubernetes import client
+from kubernetes import config
+from kubernetes import watch
 
 logger = logging.getLogger(__name__)
 
@@ -176,11 +175,16 @@ class TrainingClient(object):
                 "Train API dependencies not installed. "
                 + "Run: pip install -U 'kubeflow-training[huggingface]' "
             )
+
+        # fmt: off
+
+        from kubeflow.storage_initializer.hugging_face import \
+            HuggingFaceDatasetParams
+        from kubeflow.storage_initializer.hugging_face import \
+            HuggingFaceModelParams
         from kubeflow.storage_initializer.s3 import S3DatasetParams
-        from kubeflow.storage_initializer.hugging_face import (
-            HuggingFaceModelParams,
-            HuggingFaceDatasetParams,
-        )
+
+        # fmt: on
 
         print(
             "Thank you for using `train` API for LLMs fine-tuning. This feature is in alpha stage "
@@ -204,7 +208,7 @@ class TrainingClient(object):
             self.core_api.create_namespaced_persistent_volume_claim(
                 namespace=namespace,
                 body=utils.get_pvc_spec(
-                    pvc_name=constants.STORAGE_INITIALIZER,
+                    pvc_name=name,
                     namespace=namespace,
                     storage_config=storage_config,
                 ),
@@ -213,11 +217,8 @@ class TrainingClient(object):
             pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
             # Check if the PVC with the specified name exists
             for pvc in pvc_list.items:
-                if pvc.metadata.name == constants.STORAGE_INITIALIZER:
-                    print(
-                        f"PVC '{constants.STORAGE_INITIALIZER}' already exists in namespace "
-                        f"{namespace}."
-                    )
+                if pvc.metadata.name == name:
+                    print(f"PVC '{name}' already exists in namespace " f"{namespace}.")
                     break
             else:
                 raise RuntimeError(f"failed to create PVC. Error: {e}")
@@ -279,17 +280,24 @@ class TrainingClient(object):
             resources=resources_per_worker,
         )
 
+        storage_initializer_volume = models.V1Volume(
+            name=constants.STORAGE_INITIALIZER,
+            persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                claim_name=name
+            ),
+        )
+
         # create worker pod spec
         worker_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
-            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[storage_initializer_volume],
         )
 
         # create master pod spec
         master_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
             init_containers=[init_container_spec],
-            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[storage_initializer_volume],
         )
 
         job = utils.get_pytorchjob_template(
