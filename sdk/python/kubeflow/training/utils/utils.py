@@ -233,8 +233,8 @@ def get_container_spec(
     container_spec.resources = resources
 
     # Add environment variables to the container spec.
-    container_spec.env = env if env else None
-    container_spec.env_from = env_from if env_from else None
+    container_spec.env = env
+    container_spec.env_from = env_from
 
     return container_spec
 
