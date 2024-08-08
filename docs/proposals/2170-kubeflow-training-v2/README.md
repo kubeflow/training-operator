@@ -322,10 +322,6 @@ type TrainingRuntimeRef struct {
 	// when TrainingRuntime is used in the kind.
 	Name string `json:"name"`
 
-	// APIVersion is the apiVersion for the runtime.
-	// Defaults to the v2alpha1.
-	APIVersion *string `json:apiVersion,omitempty`
-
 	// Kind for the runtime, which must be TrainingRuntime or ClusterTrainingRuntime.
 	// Defaults to the ClusterTrainingRuntime.
 	Kind *string `json:"kind,omitempty"`
@@ -1617,3 +1613,28 @@ So, we do not support the arbitrary values until we find reasonable use cases th
 need to reconcile the TrainJob.
 
 Note that we should implement the status transitions validations to once we support the arbitrary values in the `manageBy` field.
+
+### Support Multiple API Versions of TrainingRuntime
+
+We can consider to introduce the `version` field for runtime API version to the `.spec.trainingRuntimeRef`
+so that we can support multiple API versions of TrainingRuntime.
+
+It could mitigate the pain points when users upgrade the older API Version to newer API Version like alpha to beta.
+But, we do not aim to support both Alpha and Beta versions or both first Alpha and second Alpha versions in the specific training-operator release.
+Hence, the `version` field was not introduced.
+
+```go
+type TrainingRuntimeRef struct {
+	[...]
+
+	// APIVersion is the apiVersion for the runtime.
+	// Defaults to the v2alpha1.
+	Version *string `json:version,omitempty`
+
+	[...]
+}
+```
+
+However, we may want to revisit this discussion when we graduate the API version from Beta to GA
+because in general, it would be better to support both Beta and GA versions for a while
+so that we can align with the Kubernetes deprecation policy for mitigating migration obstacles.
