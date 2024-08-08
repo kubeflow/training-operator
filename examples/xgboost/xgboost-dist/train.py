@@ -15,8 +15,8 @@ import logging
 import traceback
 
 from tracker import RabitTracker
-from utils import extract_xgbooost_cluster_env, read_train_data
-
+from utils import extract_xgbooost_cluster_env
+from utils import read_train_data
 import xgboost as xgb
 
 logger = logging.getLogger(__name__)
@@ -36,25 +36,26 @@ def train(args):
             if rank == 0:
                 logger.info("start the master node")
 
-                rabit = RabitTracker(hostIP="0.0.0.0", nslave=world_size,
-                                     port=port, port_end=port + 1)
+                rabit = RabitTracker(
+                    hostIP="0.0.0.0", nslave=world_size, port=port, port_end=port + 1
+                )
                 rabit.start(world_size)
                 rabit_tracker = rabit
-                logger.info('###### RabitTracker Setup Finished ######')
+                logger.info("###### RabitTracker Setup Finished ######")
 
             envs = [
-                'DMLC_NUM_WORKER=%d' % world_size,
-                'DMLC_TRACKER_URI=%s' % addr,
-                'DMLC_TRACKER_PORT=%d' % port,
-                'DMLC_TASK_ID=%d' % rank
+                "DMLC_NUM_WORKER=%d" % world_size,
+                "DMLC_TRACKER_URI=%s" % addr,
+                "DMLC_TRACKER_PORT=%d" % port,
+                "DMLC_TASK_ID=%d" % rank,
             ]
-            logger.info('##### Rabit rank setup with below envs #####')
+            logger.info("##### Rabit rank setup with below envs #####")
             for i, env in enumerate(envs):
                 logger.info(env)
                 envs[i] = str.encode(env)
 
             xgb.rabit.init(envs)
-            logger.info('##### Rabit rank = %d' % xgb.rabit.get_rank())
+            logger.info("##### Rabit rank = %d" % xgb.rabit.get_rank())
             rank = xgb.rabit.get_rank()
 
         else:
@@ -65,8 +66,13 @@ def train(args):
         kwargs = {}
         kwargs["dtrain"] = df
         kwargs["num_boost_round"] = int(args.n_estimators)
-        param_xgboost_default = {'max_depth': 2, 'eta': 1, 'silent': 1,
-                                 'objective': 'multi:softprob', 'num_class': 3}
+        param_xgboost_default = {
+            "max_depth": 2,
+            "eta": 1,
+            "silent": 1,
+            "objective": "multi:softprob",
+            "num_class": 3,
+        }
         kwargs["params"] = param_xgboost_default
 
         logging.info("starting to train xgboost at node with rank %d", rank)

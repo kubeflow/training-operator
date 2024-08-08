@@ -1,5 +1,7 @@
 import argparse
-from .hugging_face import HuggingFace, HuggingFaceDataset
+
+from .hugging_face import HuggingFace
+from .hugging_face import HuggingFaceDataset
 from .s3 import S3
 
 

@@ -26,4 +26,3 @@ spec:
                 - torch.distributed.run
                 - --rdzv_backend=c10d
                 - ./echo.py
-

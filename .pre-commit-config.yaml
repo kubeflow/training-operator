@@ -1,0 +1,44 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/pycqa/isort
+    rev: 5.11.5
+    hooks:
+      - id: isort
+        name: isort
+        entry: isort --profile google
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+    - id: black
+      files: (sdk|examples)/.*
+      exclude: |
+        (?x)^(
+          /*kubeflow_org_v1*|
+          __init__.py|
+          api_client.py|
+          configuration.py|
+          exceptions.py|
+          rest.py
+        )$
+exclude: |
+  (?x)^(
+    pkg/apis/kubeflow.org/v1/openapi_generated.go|
+    pkg/apis/kubeflow.org/v1/zz_.*|
+    pkg/client/.*|
+    test_job/apis/test_job/v1/.*generated.*.go|
+    test_job/client/.*|
+    sdk/python/kubeflow/training/[^/]*.py|
+    sdk/python/kubeflow/training/models/.*|
+    sdk/python/test/.*|
+    docs/api/.*|
+    sdk/python/docs/.*|
+    sdk/python/.openapi-generator/VERSION|
+    sdk/python/kubeflow/__init__.py
+  )$

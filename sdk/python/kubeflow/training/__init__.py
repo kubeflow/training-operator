@@ -28,6 +28,9 @@ from kubeflow.training.exceptions import ApiKeyError
 from kubeflow.training.exceptions import ApiException
 # import models into sdk package
 from kubeflow.training.models.kubeflow_org_v1_elastic_policy import KubeflowOrgV1ElasticPolicy
+from kubeflow.training.models.kubeflow_org_v1_jax_job import KubeflowOrgV1JAXJob
+from kubeflow.training.models.kubeflow_org_v1_jax_job_list import KubeflowOrgV1JAXJobList
+from kubeflow.training.models.kubeflow_org_v1_jax_job_spec import KubeflowOrgV1JAXJobSpec
 from kubeflow.training.models.kubeflow_org_v1_job_condition import KubeflowOrgV1JobCondition
 from kubeflow.training.models.kubeflow_org_v1_job_status import KubeflowOrgV1JobStatus
 from kubeflow.training.models.kubeflow_org_v1_mpi_job import KubeflowOrgV1MPIJob

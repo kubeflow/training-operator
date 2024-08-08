@@ -18,8 +18,10 @@ import logging
 
 import numpy as np
 from sklearn.metrics import precision_score
-from utils import dump_model, read_model, read_predict_data, read_train_data
-
+from utils import dump_model
+from utils import read_model
+from utils import read_predict_data
+from utils import read_train_data
 import xgboost as xgb
 
 logger = logging.getLogger(__name__)
@@ -35,8 +37,13 @@ def test_train_model():
     place = "/tmp/data"
     dmatrix = read_train_data(rank, world_size, place)
 
-    param_xgboost_default = {'max_depth': 2, 'eta': 1, 'silent': 1,
-                             'objective': 'multi:softprob', 'num_class': 3}
+    param_xgboost_default = {
+        "max_depth": 2,
+        "eta": 1,
+        "silent": 1,
+        "objective": "multi:softprob",
+        "num_class": 3,
+    }
 
     booster = xgb.train(param_xgboost_default, dtrain=dmatrix)
 
@@ -57,7 +64,7 @@ def test_model_predict(booster):
 
     preds = booster.predict(dmatrix)
     best_preds = np.asarray([np.argmax(line) for line in preds])
-    score = precision_score(y_test, best_preds, average='macro')
+    score = precision_score(y_test, best_preds, average="macro")
 
     assert score > 0.99
 
@@ -90,9 +97,9 @@ def run_test():
     logging.info("Finish the local test")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    logging.basicConfig(format='%(message)s')
+    logging.basicConfig(format="%(message)s")
     logging.getLogger().setLevel(logging.INFO)
 
     run_test()

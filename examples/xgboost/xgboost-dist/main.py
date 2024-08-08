@@ -21,10 +21,10 @@ from utils import dump_model
 def main(args):
 
     model_storage_type = args.model_storage_type
-    if (model_storage_type == "local" or model_storage_type == "oss"):
-      print ( "The storage type is " + model_storage_type)
+    if model_storage_type == "local" or model_storage_type == "oss":
+        print("The storage type is " + model_storage_type)
     else:
-      raise Exception("Only supports storage types like local and OSS")
+        raise Exception("Only supports storage types like local and OSS")
 
     if args.job_type == "Predict":
         logging.info("starting the predict job")
@@ -45,50 +45,37 @@ def main(args):
     logging.info("Finish distributed XGBoost job")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--job_type", help="Train, Predict, All", required=True)
     parser.add_argument(
-           '--job_type',
-           help="Train, Predict, All",
-           required=True
-           )
+        "--xgboost_parameter",
+        help="XGBoost model parameter like: objective, number_class",
+    )
     parser.add_argument(
-           '--xgboost_parameter',
-           help='XGBoost model parameter like: objective, number_class',
-          )
+        "--n_estimators", help="Number of trees in the model", type=int, default=1000
+    )
     parser.add_argument(
-          '--n_estimators',
-          help='Number of trees in the model',
-          type=int,
-          default=1000
-          )
+        "--learning_rate", help="Learning rate for the model", default=0.1
+    )
     parser.add_argument(
-           '--learning_rate',
-           help='Learning rate for the model',
-           default=0.1
-          )
+        "--early_stopping_rounds",
+        help="XGBoost argument for stopping early",
+        default=50,
+    )
     parser.add_argument(
-          '--early_stopping_rounds',
-          help='XGBoost argument for stopping early',
-          default=50
-          )
+        "--model_path", help="place to store model", default="/tmp/xgboost_model"
+    )
     parser.add_argument(
-          '--model_path',
-          help='place to store model',
-          default="/tmp/xgboost_model"
-          )
+        "--model_storage_type", help="place to store the model", default="oss"
+    )
     parser.add_argument(
-          '--model_storage_type',
-          help='place to store the model',
-          default="oss"
-          )
-    parser.add_argument(
-          '--oss_param',
-          help='oss parameter if you choose the model storage as OSS type',
-          )
+        "--oss_param",
+        help="oss parameter if you choose the model storage as OSS type",
+    )
 
-    logging.basicConfig(format='%(message)s')
+    logging.basicConfig(format="%(message)s")
     logging.getLogger().setLevel(logging.INFO)
     main_args = parser.parse_args()
     main(main_args)

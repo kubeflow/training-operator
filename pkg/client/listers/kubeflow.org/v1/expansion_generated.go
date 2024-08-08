@@ -16,6 +16,14 @@
 
 package v1
 
+// JAXJobListerExpansion allows custom methods to be added to
+// JAXJobLister.
+type JAXJobListerExpansion interface{}
+
+// JAXJobNamespaceListerExpansion allows custom methods to be added to
+// JAXJobNamespaceLister.
+type JAXJobNamespaceListerExpansion interface{}
+
 // MPIJobListerExpansion allows custom methods to be added to
 // MPIJobLister.
 type MPIJobListerExpansion interface{}

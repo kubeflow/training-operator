@@ -18,8 +18,8 @@
 This script is used for updating generated SDK files.
 """
 
-import os
 import fileinput
+import os
 import re
 
 __replacements = [

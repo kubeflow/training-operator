@@ -3,14 +3,15 @@ from __future__ import print_function
 import argparse
 import os
 
+from tensorboardX import SummaryWriter
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from tensorboardX import SummaryWriter
 from torch.utils.data import DistributedSampler
-from torchvision import datasets, transforms
+from torchvision import datasets
+from torchvision import transforms
 
 
 class Net(nn.Module):

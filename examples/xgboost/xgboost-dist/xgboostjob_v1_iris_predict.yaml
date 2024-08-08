@@ -38,5 +38,3 @@ spec:
              - --model_path=autoAI/xgb-opt/2
              - --model_storage_type=oss
              - --oss_param=unknown
-
-

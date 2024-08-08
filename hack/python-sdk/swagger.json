@@ -64,6 +64,86 @@
         }
       }
     },
+    "kubeflow.org.v1.JAXJob": {
+      "description": "JAXJob Represents a JAXJob resource.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "default": {},
+          "$ref": "#/definitions/v1.ObjectMeta"
+        },
+        "spec": {
+          "description": "Specification of the desired state of the JAXJob.",
+          "default": {},
+          "$ref": "#/definitions/kubeflow.org.v1.JAXJobSpec"
+        },
+        "status": {
+          "description": "Most recently observed status of the JAXJob. Read-only (modified by the system).",
+          "default": {},
+          "$ref": "#/definitions/kubeflow.org.v1.JobStatus"
+        }
+      }
+    },
+    "kubeflow.org.v1.JAXJobList": {
+      "description": "JAXJobList is a list of JAXJobs.",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "description": "List of JAXJobs.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/kubeflow.org.v1.JAXJob"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Standard list metadata.",
+          "default": {},
+          "$ref": "#/definitions/v1.ListMeta"
+        }
+      }
+    },
+    "kubeflow.org.v1.JAXJobSpec": {
+      "description": "JAXJobSpec is a desired state description of the JAXJob.",
+      "type": "object",
+      "required": [
+        "runPolicy",
+        "jaxReplicaSpecs"
+      ],
+      "properties": {
+        "jaxReplicaSpecs": {
+          "description": "A map of JAXReplicaType (type) to ReplicaSpec (value). Specifies the JAX cluster configuration. For example,\n  {\n    \"Worker\": JAXReplicaSpec,\n  }",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/kubeflow.org.v1.ReplicaSpec"
+          }
+        },
+        "runPolicy": {
+          "description": "RunPolicy encapsulates various runtime policies of the distributed training job, for example how to clean up resources and how long the job can stay active.",
+          "default": {},
+          "$ref": "#/definitions/kubeflow.org.v1.RunPolicy"
+        }
+      }
+    },
     "kubeflow.org.v1.JobCondition": {
       "description": "JobCondition describes the state of the job at a certain point.",
       "type": "object",
