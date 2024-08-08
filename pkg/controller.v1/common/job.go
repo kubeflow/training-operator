@@ -455,3 +455,10 @@ func (jc *JobController) CleanupJob(runPolicy *apiv1.RunPolicy, jobStatus apiv1.
 func (jc *JobController) calcPGMinResources(minMember int32, replicas map[apiv1.ReplicaType]*apiv1.ReplicaSpec) *corev1.ResourceList {
 	return CalcPGMinResources(minMember, replicas, jc.PriorityClassLister.Get)
 }
+
+func (jc *JobController) ManagedByExternalController(rp apiv1.RunPolicy) *string {
+	if controllerName := rp.ManagedBy; controllerName != nil && *controllerName != jc.Controller.ControllerName() {
+		return controllerName
+	}
+	return nil
+}

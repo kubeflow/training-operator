@@ -127,6 +127,11 @@ func (r *TFJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if manager := r.ManagedByExternalController(tfjob.Spec.RunPolicy); manager != nil {
+		logger.Info("Skipping TFJob managed by a different controller", "managed-by", manager)
+		return ctrl.Result{}, nil
+	}
+
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(tfjob)
 	if err != nil {
