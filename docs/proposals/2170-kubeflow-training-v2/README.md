@@ -327,7 +327,7 @@ type TrainingRuntimeRef struct {
 	APIVersion *string `json:apiVersion,omitempty`
 
 	// Kind for the runtime, which must be TrainingRuntime or ClusterTrainingRuntime.
-	// Defaults to the TrainingRuntime.
+	// Defaults to the ClusterTrainingRuntime.
 	Kind *string `json:"kind,omitempty"`
 }
 
