@@ -301,11 +301,11 @@ type TrainJobSpec struct {
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
-	// The value must be either an empty, 'training-operator.kubeflow.org/trainjob-controller' or
+	// The value must be either an empty, 'kubeflow.org/trainjob-controller' or
 	// 'kueue.x-k8s.io/multikueue'.
 	// The built-in TrainJob controller reconciles TrainJob which don't have this
 	// field at all or the field value is the reserved string
-	// 'training-operator.kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
+	// 'kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
 	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
 	//
 	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
@@ -1607,7 +1607,7 @@ model parallelizm). For some specific use-cases like MPI or Elastic PyTorch, we 
 ### Allow users to specify arbitrary value in the managedBy field
 
 We can allow users to specify the arbitrary values instead of restricting the `.spec.managedBy` field in the TrainJob
-with an empty, 'training-operator.kubeflow.org/trainjob-controller' or 'kusus.x-k8s.io/multikueue'.
+with an empty, 'kubeflow.org/trainjob-controller' or 'kusus.x-k8s.io/multikueue'.
 
 But, the arbitrary values allow users to specify external or in-house customized training-operator, which means that
 the TrainJobs are reconciled by the controllers without any specification compliance.
