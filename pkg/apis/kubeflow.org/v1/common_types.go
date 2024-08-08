@@ -221,6 +221,21 @@ type RunPolicy struct {
 	// +kubebuilder:default:=false
 	// +optional
 	Suspend *bool `json:"suspend,omitempty"`
+
+	// ManagedBy is used to indicate the controller or entity that manages a job.
+	// The value must be either an empty, 'kubeflow.org/training-operator' or
+	// 'kueue.x-k8s.io/multikueue'.
+	// The built-in job controller reconciles a job which don't have this
+	// field at all or the field value is the reserved string
+	// 'kubeflow.org/training-operator', but delegates reconciling the job
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
+	//
+	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
+	// all characters before the first "/" must be a valid subdomain as defined
+	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
+	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
+	// The field is immutable.
+	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
 // SchedulingPolicy encapsulates various scheduling policies of the distributed training
