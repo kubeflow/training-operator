@@ -193,7 +193,7 @@ def get_container_spec(
     args: Optional[List[str]] = None,
     resources: Union[dict, models.V1ResourceRequirements, None] = None,
     volume_mounts: Optional[List[models.V1VolumeMount]] = None,
-    #TODO (helenxie): Implement `env` and `env_from` in the future.
+    #TODO (helenxie-bit): Implement `env` and `env_from` in the future.
 ) -> models.V1Container:
     """
     Get container spec for the given parameters.
