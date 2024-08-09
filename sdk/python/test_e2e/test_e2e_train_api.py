@@ -20,8 +20,8 @@ from kubeflow.storage_initializer.hugging_face import HuggingFaceDatasetParams
 from kubeflow.storage_initializer.hugging_face import HuggingFaceModelParams
 from kubeflow.storage_initializer.hugging_face import HuggingFaceTrainerParams
 from kubeflow.training import constants
-from kubeflow.training.utils import utils
 from kubeflow.training import TrainingClient
+from kubeflow.training.utils import utils
 from kubernetes import client
 from kubernetes import config
 from kubernetes.client.exceptions import ApiException
@@ -160,10 +160,14 @@ def test_train_api(job_namespace):
         # Check if the job has succeeded.
         if utils.has_condition(conditions, constants.JOB_CONDITION_SUCCEEDED):
             get_logs_of_master_pod(job_namespace, num_workers)
-            logging.info("---------------------------------------------------------------")
+            logging.info(
+                "---------------------------------------------------------------"
+            )
             logging.info(f"Training job {JOB_NAME} is succeeded.")
 
-            logging.info("---------------------------------------------------------------")
+            logging.info(
+                "---------------------------------------------------------------"
+            )
             TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
             break
 
