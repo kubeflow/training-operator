@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dataclasses import field
 import json
 import os
 from urllib.parse import urlparse
@@ -71,4 +70,4 @@ class S3(datasetProvider):
             # Download the file
             file_path = os.path.sep.join(path_components[1:])
             bucket.download_file(obj_key, os.path.join(VOLUME_PATH_DATASET, file_path))
-        print(f"Files downloaded")
+        print("Files downloaded")

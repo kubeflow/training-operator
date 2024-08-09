@@ -348,7 +348,7 @@ def load_checkpoint(
 
         # max_epoch == -1 means no one has checkpointed return base state
         if max_epoch == -1:
-            print(f"=> no workers have checkpoints, starting from epoch 0")
+            print("=> no workers have checkpoints, starting from epoch 0")
             return state
 
         # broadcast the state from max_rank (which has the most up-to-date state)
@@ -370,7 +370,7 @@ def load_checkpoint(
             blob = torch.as_tensor(raw_blob, dtype=torch.uint8)
 
         dist.broadcast(blob, src=max_rank, group=pg)
-        print(f"=> done broadcasting checkpoint")
+        print("=> done broadcasting checkpoint")
 
         if rank != max_rank:
             with io.BytesIO(blob.numpy()) as f:
@@ -380,7 +380,7 @@ def load_checkpoint(
         # wait till everyone has loaded the checkpoint
         dist.barrier(group=pg)
 
-    print(f"=> done restoring from previous checkpoint")
+    print("=> done restoring from previous checkpoint")
     return state
 
 

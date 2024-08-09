@@ -225,8 +225,10 @@ test_data_get_job_pods = [
             "replica_type": constants.REPLICA_TYPE_MASTER.lower(),
             "replica_index": 0,
         },
-        f"{constants.JOB_NAME_LABEL}={TEST_NAME},{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER}"
-        f",{constants.REPLICA_TYPE_LABEL}={constants.REPLICA_TYPE_MASTER.lower()},{constants.REPLICA_INDEX_LABEL}=0",
+        f"{constants.JOB_NAME_LABEL}={TEST_NAME},"
+        f"{constants.JOB_ROLE_LABEL}={constants.JOB_ROLE_MASTER},"
+        f"{constants.REPLICA_TYPE_LABEL}={constants.REPLICA_TYPE_MASTER.lower()},"
+        f"{constants.REPLICA_INDEX_LABEL}=0",
         LIST_RESPONSE,
     ),
     (

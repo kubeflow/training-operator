@@ -16,17 +16,31 @@ repos:
   - repo: https://github.com/psf/black
     rev: 24.2.0
     hooks:
-    - id: black
-      files: (sdk|examples)/.*
-      exclude: |
-        (?x)^(
-          /*kubeflow_org_v1*|
-          __init__.py|
-          api_client.py|
-          configuration.py|
-          exceptions.py|
-          rest.py
-        )$
+      - id: black
+        files: (sdk|examples)/.*
+        exclude: |
+          (?x)^(
+            /*kubeflow_org_v1*|
+            __init__.py|
+            api_client.py|
+            configuration.py|
+            exceptions.py|
+            rest.py
+          )$
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        files: ^(sdk|examples)/.*$
+        exclude: |
+          (?x)^(
+            .*kubeflow_org_v1.*|
+            __init__\.py|
+            api_client\.py|
+            configuration\.py|
+            exceptions\.py|
+            rest\.py
+          )$
 exclude: |
   (?x)^(
     pkg/apis/kubeflow.org/v1/openapi_generated.go|
