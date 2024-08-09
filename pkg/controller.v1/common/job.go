@@ -383,8 +383,11 @@ func (jc *JobController) CleanUpResources(
 			jc.Recorder.Eventf(runtimeObject, corev1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", metaObject.GetName())
 		}
 	}
-	if err := jc.CleanupJob(runPolicy, jobStatus, runtimeObject); err != nil {
-		return err
+
+	if !trainutil.IsJobSuspended(runPolicy) {
+		if err := jc.CleanupJob(runPolicy, jobStatus, runtimeObject); err != nil {
+			return err
+		}
 	}
 	return nil
 }
