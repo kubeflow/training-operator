@@ -317,13 +317,18 @@ type TrainJobSpec struct {
 }
 
 type TrainingRuntimeRef struct {
-	// Name for the runtime.
+	// Name is the name of the runtime being referenced.
 	// This must indicate the runtime deployed in the same namespace as the TrainJob
 	// when TrainingRuntime is used in the kind.
 	Name string `json:"name"`
 
-	// Kind for the runtime, which must be TrainingRuntime or ClusterTrainingRuntime.
-	// Defaults to the ClusterTrainingRuntime.
+	// APIGroup is the group of the runtime being referenced.
+	// Defaults to 'kubeflow.org'.
+	APIGroup *string `json:"apiGroup,omitempty"`
+
+	// Kind is the kind of the runtime being referenced.
+	// The value must be TrainingRuntime or ClusterTrainingRuntime when the 'kubeflow.org' is used in the apiGroup.
+	// Defaults to the ClusterTrainingRuntime when the 'kubeflow.org' is used in the apiGroup.
 	Kind *string `json:"kind,omitempty"`
 }
 
