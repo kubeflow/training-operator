@@ -182,6 +182,9 @@ const (
 	RestartPolicyExitCode RestartPolicy = "ExitCode"
 )
 
+// maximum length of the value of the ManagedBy field
+const MaxManagedByLength = 63
+
 // RunPolicy encapsulates various runtime policies of the distributed training
 // job, for example how to clean up resources and how long the job can stay
 // active.
