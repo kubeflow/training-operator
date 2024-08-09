@@ -132,7 +132,9 @@ def test_train_api(job_namespace):
 
             # Ensure that container_statuses is not None before iterating.
             if pod_status.status.container_statuses is None:
-                logging.warning(f"Pod {pod_name} has no container statuses available yet.")
+                logging.warning(
+                    f"Pod {pod_name} has no container statuses available yet."
+                )
                 continue
 
             # Check if any container in the pod has been restarted, indicating a previous failure.
