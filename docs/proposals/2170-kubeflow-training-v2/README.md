@@ -301,29 +301,38 @@ type TrainJobSpec struct {
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+	// The value must be either an empty, 'kubeflow.org/trainjob-controller' or
+	// 'kueue.x-k8s.io/multikueue'.
+	// The built-in TrainJob controller reconciles TrainJob which don't have this
+	// field at all or the field value is the reserved string
+	// 'kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
+	//
+	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
+	// all characters before the first "/" must be a valid subdomain as defined
+	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
+	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
+	// The field is immutable.
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
 type TrainingRuntimeRef struct {
-	// Name for the training runtime.
+	// Name for the runtime.
+	// This must indicate the runtime deployed in the same namespace as the TrainJob
+	// when TrainingRuntime is used in the kind.
 	Name string `json:"name"`
 
-	// Namespace for the runtime. In that case, user should use TrainingRuntime
-	Namespace *string `json:"namespace,omitempty"`
-
-	// Kind for the runtime. TrainingRuntime or ClusterTrainingRuntime
+	// Kind for the runtime, which must be TrainingRuntime or ClusterTrainingRuntime.
+	// Defaults to the ClusterTrainingRuntime.
 	Kind *string `json:"kind,omitempty"`
-
-	// Version for the runtime. For example: v2alpha1
-	Version *string `json:"version,omitempty"`
 }
 
 type TrainJobStatus struct {
 	// Conditions for the TrainJob. Initially, it will have the same conditions as JobSet.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-  // ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
-  ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
+	ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
 type ReplicatedJobStatus struct {
@@ -1590,3 +1599,42 @@ framework that users want to run on Kubernetes.
 Since frameworks share common functionality for distributed training (data parallelizm or
 model parallelizm). For some specific use-cases like MPI or Elastic PyTorch, we will leverage
 `MLSpec` parameter.
+
+### Allow users to specify arbitrary value in the managedBy field
+
+We can allow users to specify the arbitrary values instead of restricting the `.spec.managedBy` field in the TrainJob
+with an empty, 'kubeflow.org/trainjob-controller' or 'kusus.x-k8s.io/multikueue'.
+
+But, the arbitrary values allow users to specify external or in-house customized training-operator, which means that
+the TrainJobs are reconciled by the controllers without any specification compliance.
+
+Specifically, the arbitrary training-operator could bring bugs for the status transitions.
+So, we do not support the arbitrary values until we find reasonable use cases that the external controllers
+need to reconcile the TrainJob.
+
+Note that we should implement the status transitions validations to once we support the arbitrary values in the `manageBy` field.
+
+### Support Multiple API Versions of TrainingRuntime
+
+We can consider to introduce the `version` field for runtime API version to the `.spec.trainingRuntimeRef`
+so that we can support multiple API versions of TrainingRuntime.
+
+It could mitigate the pain points when users upgrade the older API Version to newer API Version like alpha to beta.
+But, we do not aim to support both Alpha and Beta versions or both first Alpha and second Alpha versions in the specific training-operator release.
+Hence, the `version` field was not introduced.
+
+```go
+type TrainingRuntimeRef struct {
+	[...]
+
+	// APIVersion is the apiVersion for the runtime.
+	// Defaults to the v2alpha1.
+	Version *string `json:version,omitempty`
+
+	[...]
+}
+```
+
+However, we may want to revisit this discussion when we graduate the API version from Beta to GA
+because in general, it would be better to support both Beta and GA versions for a while
+so that we can align with the Kubernetes deprecation policy for mitigating migration obstacles.
