@@ -78,7 +78,7 @@ PVC_DEFAULT_ACCESS_MODES = ["ReadWriteOnce", "ReadOnlyMany"]
 
 
 # TODO (andreyvelich): We should add image tag for Storage Initializer and Trainer.
-STORAGE_INITIALIZER_IMAGE = "docker.io/kubeflow/storage-initializer"
+STORAGE_INITIALIZER_IMAGE = "docker.io/helenxiehz428/test"
 
 STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
     name=STORAGE_INITIALIZER,
@@ -90,7 +90,7 @@ STORAGE_INITIALIZER_VOLUME = models.V1Volume(
         claim_name=STORAGE_INITIALIZER
     ),
 )
-TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
+TRAINER_TRANSFORMER_IMAGE = "docker.io/helenxiehz428/test_llm4"
 
 # TFJob constants.
 TFJOB_KIND = "TFJob"
