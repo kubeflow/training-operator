@@ -14,7 +14,7 @@
 
 import logging
 import test.e2e.utils as utils
- 
+
 from kubeflow.storage_initializer.hugging_face import HuggingFaceDatasetParams
 from kubeflow.storage_initializer.hugging_face import HuggingFaceModelParams
 from kubeflow.storage_initializer.hugging_face import HuggingFaceTrainerParams

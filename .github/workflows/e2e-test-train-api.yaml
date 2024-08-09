@@ -1,6 +1,6 @@
 name: E2E Test with train API
 
-on: 
+on:
   - pull_request
 
 concurrency:
