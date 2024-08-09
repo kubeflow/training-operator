@@ -113,7 +113,7 @@ def test_train_api(job_namespace):
 
     logging.info("---------------------------------------------------------------")
     wait_timeout = 60 * 60
-    polling_interval = 15
+    polling_interval = 30
     for _ in range(round(wait_timeout / polling_interval)):
 
         # Get the list of pods associated with the job.
@@ -129,6 +129,11 @@ def test_train_api(job_namespace):
             pod_status = v1.read_namespaced_pod_status(
                 name=pod_name, namespace=job_namespace
             )
+
+            # Ensure that container_statuses is not None before iterating.
+            if pod_status.status.container_statuses is None:
+                logging.warning(f"Pod {pod_name} has no container statuses available yet.")
+                continue
 
             # Check if any container in the pod has been restarted, indicating a previous failure.
             for container_status in pod_status.status.container_statuses:
