@@ -130,6 +130,8 @@ def test_train_api(job_namespace):
                 name=pod_name, namespace=job_namespace
             )
 
+            get_logs_of_master_pod(job_namespace, num_workers)
+
             # Ensure that container_statuses is not None before iterating.
             if pod_status.status.container_statuses is None:
                 logging.warning(
