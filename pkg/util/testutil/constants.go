@@ -16,4 +16,6 @@ const (
 
 var (
 	IgnoreJobConditionsTimes = cmpopts.IgnoreFields(kubeflowv1.JobCondition{}, "LastUpdateTime", "LastTransitionTime")
+	MalformedManagedBy       = "other-job-controller"
+	TooLongManagedBy         = "kubeflow.org/very-very-very-very-very-very-very-very-long-job-controller"
 )

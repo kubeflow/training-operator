@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 func TestValidateV1PyTorchJob(t *testing.T) {
@@ -82,6 +84,9 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(common.KubeflowJobsController),
+					},
 					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
 				},
 			},
@@ -282,6 +287,38 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			wantWarnings: admission.Warnings{
 				fmt.Sprintf("%s is deprecated, use %s instead",
 					specPath.Child("elasticPolicy").Child("nProcPerNode"), specPath.Child("nprocPerNode")),
+			},
+		},
+		"managedBy controller name is malformed": {
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.MalformedManagedBy),
+					},
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
+			},
+		},
+		"managedBy controller name is too long": {
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.TooLongManagedBy),
+					},
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
 			},
 		},
 	}

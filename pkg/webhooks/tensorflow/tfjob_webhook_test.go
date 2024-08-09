@@ -27,6 +27,8 @@ import (
 	"k8s.io/utils/ptr"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 func TestValidateTFJob(t *testing.T) {
@@ -59,6 +61,9 @@ func TestValidateTFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.TFJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(common.KubeflowJobsController),
+					},
 					TFReplicaSpecs: validTFReplicaSpecs,
 				},
 			},
@@ -178,6 +183,38 @@ func TestValidateTFJob(t *testing.T) {
 			},
 			wantErr: field.ErrorList{
 				field.Forbidden(tfReplicaSpecPath, ""),
+			},
+		},
+		"managedBy controller name is malformed": {
+			tfJob: &trainingoperator.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.TFJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.MalformedManagedBy),
+					},
+					TFReplicaSpecs: validTFReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
+			},
+		},
+		"managedBy controller name is too long": {
+			tfJob: &trainingoperator.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.TFJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.TooLongManagedBy),
+					},
+					TFReplicaSpecs: validTFReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
 			},
 		},
 	}

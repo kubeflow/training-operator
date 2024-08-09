@@ -27,6 +27,8 @@ import (
 	"k8s.io/utils/ptr"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
+	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
 func TestValidateXGBoostJob(t *testing.T) {
@@ -91,6 +93,9 @@ func TestValidateXGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.XGBoostJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(common.KubeflowJobsController),
+					},
 					XGBReplicaSpecs: validXGBoostReplicaSpecs,
 				},
 			},
@@ -229,6 +234,38 @@ func TestValidateXGBoostJob(t *testing.T) {
 			},
 			wantErr: field.ErrorList{
 				field.Required(xgbReplicaSpecPath.Key(string(trainingoperator.XGBoostJobReplicaTypeMaster)), ""),
+			},
+		},
+		"managedBy controller name is malformed": {
+			xgboostJob: &trainingoperator.XGBoostJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.XGBoostJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.MalformedManagedBy),
+					},
+					XGBReplicaSpecs: validXGBoostReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
+			},
+		},
+		"managedBy controller name is too long": {
+			xgboostJob: &trainingoperator.XGBoostJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.XGBoostJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(testutil.TooLongManagedBy),
+					},
+					XGBReplicaSpecs: validXGBoostReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
 			},
 		},
 	}

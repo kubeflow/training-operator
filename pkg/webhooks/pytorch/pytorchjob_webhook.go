@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 var (
@@ -74,10 +75,10 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 func validatePyTorchJob(job *trainingoperator.PyTorchJob) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
-
 	if errors := apimachineryvalidation.NameIsDNS1035Label(job.ObjectMeta.Name, false); len(errors) != 0 {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
+	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
 	ws, err := validateSpec(job.Spec)
 	warnings = append(warnings, ws...)
 	allErrs = append(allErrs, err...)

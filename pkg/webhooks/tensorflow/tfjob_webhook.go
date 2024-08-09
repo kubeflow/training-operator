@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 var (
@@ -73,6 +74,7 @@ func validateTFJob(job *trainingoperator.TFJob) field.ErrorList {
 	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
+	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
 	allErrs = append(allErrs, validateSpec(job.Spec)...)
 	return allErrs
 }
