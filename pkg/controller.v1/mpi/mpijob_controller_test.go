@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	common "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -1065,6 +1066,69 @@ var _ = Describe("MPIJob controller", func() {
 
 			By("Checking if the startTime is updated")
 			Expect(created.Status.StartTime).ShouldNot(Equal(startTimeBeforeSuspended))
+		})
+
+		It("Should not reconcile a job while managed by external controller", func() {
+			By("Creating a MPIJob managed by external controller")
+			otherController := "kueue.x-k8s.io/multikueue"
+			job.Spec.RunPolicy = v1.RunPolicy{
+				ManagedBy: &otherController,
+			}
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
+			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
+
+			created := &kubeflowv1.MPIJob{}
+			By("Checking created MPIJob")
+			Eventually(func() bool {
+				err := testK8sClient.Get(ctx, jobKey, created)
+				return err == nil
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
+
+			By("Checking created MPIJob has a nil startTime")
+			Consistently(func() *metav1.Time {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.StartTime
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeNil())
+
+			launcherPod := &corev1.Pod{}
+			workerPod := &corev1.Pod{}
+			launcherSvc := &corev1.Service{}
+			workerSvc := &corev1.Service{}
+
+			By("Checking if the pods and services aren't created")
+			Consistently(func() bool {
+				errMasterPod := testK8sClient.Get(ctx, launcherKey, launcherPod)
+				errWorkerPod := testK8sClient.Get(ctx, worker0Key, workerPod)
+				errMasterSvc := testK8sClient.Get(ctx, launcherKey, launcherSvc)
+				errWorkerSvc := testK8sClient.Get(ctx, worker0Key, workerSvc)
+				return errors.IsNotFound(errMasterPod) && errors.IsNotFound(errWorkerPod) &&
+					errors.IsNotFound(errMasterSvc) && errors.IsNotFound(errWorkerSvc)
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeTrue())
+
+			By("Checking if the MPIJob status was not updated")
+			Eventually(func() []kubeflowv1.JobCondition {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.Conditions
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeComparableTo([]v1.JobCondition(nil)))
+
+			By("Unsuspending the MPIJob")
+			Eventually(func() error {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
+				return testK8sClient.Update(ctx, created)
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
+			By("Checking created MPIJob still has a nil startTime")
+			Eventually(func() *metav1.Time {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.StartTime
+			}, testutil.Timeout, testutil.Interval).Should(BeNil())
+
+			By("Checking if the MPIJob status was not updated, even after unsuspending")
+			Eventually(func() []kubeflowv1.JobCondition {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.Conditions
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeComparableTo([]v1.JobCondition(nil)))
 		})
 	})
 })

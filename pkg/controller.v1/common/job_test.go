@@ -219,6 +219,40 @@ func TestPastActiveDeadline(T *testing.T) {
 	}
 }
 
+func TestManagedBy(T *testing.T) {
+	cases := map[string]struct {
+		managedBy string
+	}{
+		"managedBy is empty": {
+			managedBy: "",
+		},
+		"managedBy is training-operator controller": {
+			managedBy: KubeflowJobsController,
+		},
+		"managedBy is not the training-operator controller": {
+			managedBy: "kueue.x-k8s.io/multikueue",
+		},
+		"managedBy is other value": {
+			managedBy: "other-job-controller",
+		},
+	}
+	for name, tc := range cases {
+		T.Run(name, func(t *testing.T) {
+			jobController := JobController{}
+			runPolicy := &apiv1.RunPolicy{
+				ManagedBy: &tc.managedBy,
+			}
+			if tc.managedBy == "" {
+				runPolicy.ManagedBy = nil
+			}
+
+			if got := jobController.ManagedByExternalController(*runPolicy); got != nil && tc.managedBy != *got {
+				t.Errorf("Unexpected manager controller: \nwant: %v\ngot: %v\n", tc.managedBy, *got)
+			}
+		})
+	}
+}
+
 func newPod(name string, phase corev1.PodPhase) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

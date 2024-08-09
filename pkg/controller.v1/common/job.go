@@ -457,7 +457,7 @@ func (jc *JobController) calcPGMinResources(minMember int32, replicas map[apiv1.
 }
 
 func (jc *JobController) ManagedByExternalController(rp apiv1.RunPolicy) *string {
-	if controllerName := rp.ManagedBy; controllerName != nil && *controllerName != jc.Controller.ControllerName() {
+	if controllerName := rp.ManagedBy; controllerName != nil && *controllerName != KubeflowJobsController {
 		return controllerName
 	}
 	return nil
