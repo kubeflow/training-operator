@@ -47,6 +47,7 @@ class TestKubeflowOrgV1XGBoostJobList(unittest.TestCase):
                                 active_deadline_seconds = 56, 
                                 backoff_limit = 56, 
                                 clean_pod_policy = '0', 
+                                managed_by = '0', 
                                 scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                                     min_available = 56, 
                                     min_resources = {
@@ -100,6 +101,7 @@ class TestKubeflowOrgV1XGBoostJobList(unittest.TestCase):
                                 active_deadline_seconds = 56, 
                                 backoff_limit = 56, 
                                 clean_pod_policy = '0', 
+                                managed_by = '0', 
                                 scheduling_policy = kubeflow_org_v1_scheduling_policy.KubeflowOrgV1SchedulingPolicy(
                                     min_available = 56, 
                                     min_resources = {
