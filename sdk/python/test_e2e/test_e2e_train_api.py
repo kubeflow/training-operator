@@ -37,7 +37,7 @@ JOB_NAME = "test-train-api"
 
 
 def test_train_api(job_namespace):
-    num_workers = 1
+    num_workers = 4
 
     # Use test case from fine-tuning API tutorial
     # https://www.kubeflow.org/docs/components/training/user-guides/fine-tuning/
@@ -74,10 +74,10 @@ def test_train_api(job_namespace):
             ),
         ),
         num_workers=num_workers,  # nodes parameter for torchrun command.
-        num_procs_per_worker=1,  # nproc-per-node parameter for torchrun command.
+        num_procs_per_worker=2,  # nproc-per-node parameter for torchrun command.
         resources_per_worker={
-            "gpu": 0,
-            "cpu": 2,
+            "gpu": 2,
+            "cpu": 5,
             "memory": "10G",
         },
     )
@@ -87,7 +87,7 @@ def test_train_api(job_namespace):
 
     try:
         utils.verify_job_e2e(
-            TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=60 * 30
+            TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=60 * 60
         )
         logging.info(f"Training job {JOB_NAME} is succeded.")
     except Exception as e:
