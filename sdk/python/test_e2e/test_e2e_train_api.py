@@ -105,7 +105,7 @@ def test_train_api(job_namespace):
             "size": "2Gi",
             "storage_class": "ReadWriteOnce",
             "access_modes": ["ReadWriteOnce", "ReadOnlyMany"],
-        }
+        },
     )
 
     logging.info("---------------------------------------------------------------")
