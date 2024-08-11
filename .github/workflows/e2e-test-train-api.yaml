@@ -58,4 +58,10 @@ jobs:
               run: |
                 python3 -m pip install -e sdk/python[huggingface]
                 ./sdk/python/test_e2e/test_e2e_train_api.sh
-                (kubectl get pods -n default && kubectl describe pod -n default $(kubectl get pods -n default -o jsonpath='{.items[0].metadata.name}'); exit 1)
+                kubectl get pods -n default 
+                POD_NAME=$(kubectl get pods -n default -o jsonpath='{.items[0].metadata.name}')
+                kubectl describe pod -n default $POD_NAME
+                kubectl get pvc -n default
+                PVC_NAME=$(kubectl get pvc -n default -o jsonpath='{.items[0].metadata.name}')
+                kubectl describe pvc -n default $PVC_NAME
+                exit 1

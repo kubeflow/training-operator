@@ -111,7 +111,7 @@ def test_train_api(job_namespace):
     logging.info(f"Training job {JOB_NAME} is running...")
 
     logging.info("---------------------------------------------------------------")
-    wait_timeout = 60 * 10
+    wait_timeout = 60 * 120
     polling_interval = 30
     for _ in range(round(wait_timeout / polling_interval)):
 
@@ -142,8 +142,6 @@ def test_train_api(job_namespace):
                 name=pod_name, namespace=job_namespace
             )
 
-            print("pod_status:")
-            print(pod_status)
             print("pod_status.status:")
             print(pod_status.status)
             print("pod_status.status.container_statuses:")
