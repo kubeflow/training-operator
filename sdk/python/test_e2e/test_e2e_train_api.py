@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import test.e2e.utils as utils
 import time
 
 from kubeflow.storage_initializer.hugging_face import HuggingFaceDatasetParams
@@ -124,13 +123,32 @@ def test_train_api(job_namespace):
         config.load_kube_config()  # Load kube config to interact with the cluster.
         v1 = client.CoreV1Api()
 
+        # Get Job only once per cycle and check the statuses.
+        job = TRAINING_CLIENT.get_job(
+            name=JOB_NAME,
+            namespace=job_namespace,
+            job_kind=constants.PYTORCHJOB_KIND,
+            timeout=constants.DEFAULT_TIMEOUT,
+        )
+
+        for replica_name, replica_status in job.status.replica_statuses.items():
+            logging.info(
+                f"Replica {replica_name} status: {replica_status.succeeded} succeeded, {replica_status.failed} failed."
+            )
+
         # Iterate over each pod to check its status.
         for pod_name in pod_names:
             pod_status = v1.read_namespaced_pod_status(
                 name=pod_name, namespace=job_namespace
             )
 
-            get_logs_of_master_pod(job_namespace, num_workers)
+            print("pod_status:")
+            print(pod_status)
+            print("pod_status.status:")
+            print(pod_status.status)
+            print("pod_status.status.container_statuses:")
+            print(pod_status.status.container_statuses)
+            print("continue...")
 
             # Ensure that container_statuses is not None before iterating.
             if pod_status.status.container_statuses is None:
@@ -152,14 +170,6 @@ def test_train_api(job_namespace):
 
                     # Raise an exception to indicate that a pod has failed at least once.
                     raise Exception(f"Training job {JOB_NAME} is failed.")
-
-        # Get Job only once per cycle and check the statuses.
-        job = TRAINING_CLIENT.get_job(
-            name=JOB_NAME,
-            namespace=job_namespace,
-            job_kind=constants.PYTORCHJOB_KIND,
-            timeout=constants.DEFAULT_TIMEOUT,
-        )
 
         # Get Job conditions.
         conditions = TRAINING_CLIENT.get_job_conditions(
