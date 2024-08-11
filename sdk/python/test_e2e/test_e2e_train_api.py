@@ -111,7 +111,7 @@ def test_train_api(job_namespace):
     logging.info(f"Training job {JOB_NAME} is running...")
 
     logging.info("---------------------------------------------------------------")
-    wait_timeout = 60 * 60
+    wait_timeout = 60 * 10
     polling_interval = 30
     for _ in range(round(wait_timeout / polling_interval)):
 
