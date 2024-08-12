@@ -10,6 +10,7 @@ from kubeflow.training import KubeflowOrgV1ReplicaSpec
 from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training import TrainingClient
+from kubeflow.training.models import V1DeleteOptions
 from kubernetes.client import V1Container
 from kubernetes.client import V1ObjectMeta
 from kubernetes.client import V1PodSpec
@@ -40,6 +41,13 @@ def list_namespaced_pod_response(*args, **kwargs):
             return Mock(items=LIST_RESPONSE)
 
     return MockResponse()
+
+
+def delete_namespaced_custom_object_response(*args, **kwargs):
+    if args[2] == "timeout":
+        raise multiprocessing.TimeoutError()
+    elif args[2] == "runtime":
+        raise RuntimeError()
 
 
 def generate_container() -> V1Container:
@@ -257,7 +265,10 @@ def training_client():
         return_value=Mock(
             create_namespaced_custom_object=Mock(
                 side_effect=create_namespaced_custom_object_response
-            )
+            ),
+            delete_namespaced_custom_object=Mock(
+                side_effect=delete_namespaced_custom_object_response
+            ),
         ),
     ), patch(
         "kubernetes.client.CoreV1Api",
@@ -306,6 +317,70 @@ def test_get_job_pods(
         )
         assert out[0].pop("timeout") == kwargs.get("timeout", constants.DEFAULT_TIMEOUT)
         assert out == expected_output
+    except Exception as e:
+        assert type(e) is expected_output
+    print("test execution complete")
+
+
+test_data_delete_job = [
+    (
+        "valid flow with default namespace",
+        {
+            "name": TEST_NAME,
+        },
+        "success",
+    ),
+    (
+        "invalid extra parameter",
+        {"name": TEST_NAME, "namespace": TEST_NAME, "example": "test"},
+        TypeError,
+    ),
+    (
+        "invalid job kind",
+        {"name": TEST_NAME, "job_kind": "invalid_job_kind"},
+        RuntimeError,
+    ),
+    (
+        "job name missing",
+        {"namespace": TEST_NAME, "job_kind": "PyTorchJob"},
+        TypeError,
+    ),
+    (
+        "delete_namespaced_custom_object timeout error",
+        {"name": TEST_NAME, "namespace": "timeout"},
+        TimeoutError,
+    ),
+    (
+        "delete_namespaced_custom_object runtime error",
+        {"name": TEST_NAME, "namespace": "runtime"},
+        RuntimeError,
+    ),
+    (
+        "valid flow",
+        {"name": TEST_NAME, "namespace": TEST_NAME, "job_kind": "PyTorchJob"},
+        "success",
+    ),
+    (
+        "valid flow with delete options",
+        {
+            "name": TEST_NAME,
+            "delete_options": V1DeleteOptions(grace_period_seconds=30),
+        },
+        "success",
+    ),
+]
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_delete_job)
+def test_delete_job(training_client, test_name, kwargs, expected_output):
+    """
+    test delete_job function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.delete_job(**kwargs)
+        assert expected_output == "success"
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
