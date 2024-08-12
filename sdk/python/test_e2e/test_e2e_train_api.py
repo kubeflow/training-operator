@@ -118,7 +118,7 @@ def test_train_api(job_namespace):
     logging.info(f"Training job {JOB_NAME} is running...")
 
     logging.info("---------------------------------------------------------------")
-    wait_timeout = 60 * 30  # 30 minutes.
+    wait_timeout = 60 * 15  # 30 minutes.
     polling_interval = 30  # 30 seconds.
     for _ in range(round(wait_timeout / polling_interval)):
         # Get the list of pods associated with the job.
