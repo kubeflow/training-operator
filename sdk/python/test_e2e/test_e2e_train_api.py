@@ -88,6 +88,8 @@ def test_train_api(job_namespace):
                 disable_tqdm=True,
                 log_level="info",
                 num_train_epochs=1,
+                no_cuda=True,
+                use_cpu=True,
             ),
             # Set LoRA config to reduce number of trainable model parameters.
             lora_config=LoraConfig(
@@ -100,8 +102,8 @@ def test_train_api(job_namespace):
         num_workers=num_workers,  # nodes parameter for torchrun command.
         num_procs_per_worker=1,  # nproc-per-node parameter for torchrun command.
         resources_per_worker={
-            "gpu": 1,
-            "cpu": 0,
+            "gpu": 0,
+            "cpu": 2,
             "memory": "2G",
         },
         storage_config={
@@ -118,7 +120,7 @@ def test_train_api(job_namespace):
     logging.info(f"Training job {JOB_NAME} is running...")
 
     logging.info("---------------------------------------------------------------")
-    wait_timeout = 60 * 10  # 1 hour.
+    wait_timeout = 60 * 60  # 1 hour.
     polling_interval = 30  # 30 seconds.
     for _ in range(round(wait_timeout / polling_interval)):
         # Get the list of pods associated with the job.
