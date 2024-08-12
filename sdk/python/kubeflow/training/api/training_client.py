@@ -168,8 +168,8 @@ class TrainingClient(object):
                 and dataset. You can configure PVC size and storage class name in this argument.
         """
         try:
-            import peft
-            import transformers
+            import peft  # noqa: F401
+            import transformers  # noqa: F401
         except ImportError:
             raise ImportError(
                 "Train API dependencies not installed. "
