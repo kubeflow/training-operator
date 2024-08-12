@@ -27,7 +27,10 @@ from kubernetes.client.exceptions import ApiException
 from peft import LoraConfig
 import transformers
 
-logging.basicConfig(format="%(message)s")
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
@@ -99,12 +102,10 @@ def test_train_api(job_namespace):
         resources_per_worker={
             "gpu": 0,
             "cpu": 2,
-            "memory": "10G",
+            "memory": "2G",
         },
         storage_config={
             "size": "2Gi",
-            "storage_class": "ReadWriteOnce",
-            "access_modes": ["ReadWriteOnce", "ReadOnlyMany"],
         },
     )
 
@@ -119,7 +120,6 @@ def test_train_api(job_namespace):
     wait_timeout = 60 * 30  # 30 minutes.
     polling_interval = 30  # 30 seconds.
     for _ in range(round(wait_timeout / polling_interval)):
-
         # Get the list of pods associated with the job.
         pod_names = TRAINING_CLIENT.get_job_pod_names(
             name=JOB_NAME, namespace=job_namespace
@@ -133,12 +133,6 @@ def test_train_api(job_namespace):
             pod_status = v1.read_namespaced_pod_status(
                 name=pod_name, namespace=job_namespace
             )
-
-            print("pod_status.status:")
-            print(pod_status.status)
-            print("pod_status.status.container_statuses:")
-            print(pod_status.status.container_statuses)
-            print("continue...")
 
             # Ensure that container_statuses is not None before iterating.
             if pod_status.status.container_statuses is None:
