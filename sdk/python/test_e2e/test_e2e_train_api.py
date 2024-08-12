@@ -100,8 +100,8 @@ def test_train_api(job_namespace):
         num_workers=num_workers,  # nodes parameter for torchrun command.
         num_procs_per_worker=1,  # nproc-per-node parameter for torchrun command.
         resources_per_worker={
-            "gpu": 0,
-            "cpu": 2,
+            "gpu": 1,
+            "cpu": 0,
             "memory": "2G",
         },
         storage_config={
@@ -118,7 +118,7 @@ def test_train_api(job_namespace):
     logging.info(f"Training job {JOB_NAME} is running...")
 
     logging.info("---------------------------------------------------------------")
-    wait_timeout = 60 * 15  # 30 minutes.
+    wait_timeout = 60 * 60  # 1 hour.
     polling_interval = 30  # 30 seconds.
     for _ in range(round(wait_timeout / polling_interval)):
         # Get the list of pods associated with the job.
@@ -151,7 +151,7 @@ def test_train_api(job_namespace):
 
                     get_logs_of_master_pod(job_namespace, num_workers)
 
-                    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+                    #TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
                     # Raise an exception to indicate that a pod has failed at least once.
                     raise Exception(f"Training job {JOB_NAME} is failed.")
