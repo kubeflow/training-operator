@@ -106,6 +106,7 @@ def test_train_api(job_namespace):
         },
         storage_config={
             "size": "2Gi",
+            "access_modes": "ReadWriteOnce",
         },
     )
 
@@ -150,7 +151,7 @@ def test_train_api(job_namespace):
 
                     get_logs_of_master_pod(job_namespace, num_workers)
 
-                    TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+                    #TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
                     # Raise an exception to indicate that a pod has failed at least once.
                     raise Exception(f"Training job {JOB_NAME} is failed.")
