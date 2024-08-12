@@ -106,7 +106,7 @@ def test_train_api(job_namespace):
         },
         storage_config={
             "size": "2Gi",
-            "access_modes": "ReadWriteOnce",
+            "access_modes": ["ReadWriteOnce"],
         },
     )
 
