@@ -72,6 +72,7 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 
 func validateXGBoostJob(job *trainingoperator.XGBoostJob) field.ErrorList {
 	var allErrs field.ErrorList
+
 	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}

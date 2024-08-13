@@ -75,6 +75,7 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 func validatePyTorchJob(job *trainingoperator.PyTorchJob) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
+
 	if errors := apimachineryvalidation.NameIsDNS1035Label(job.ObjectMeta.Name, false); len(errors) != 0 {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
