@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	tftestutil "github.com/kubeflow/training-operator/pkg/controller.v1/tensorflow/testutil"
 	commonutil "github.com/kubeflow/training-operator/pkg/util"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
@@ -611,7 +610,7 @@ var _ = Describe("TFJob controller", func() {
 		It("Should not reconcile a job while managed by external controller", func() {
 			By("Creating a TFJob managed by external controller")
 			otherController := "kueue.x-k8s.io/multikueue"
-			job.Spec.RunPolicy = v1.RunPolicy{
+			job.Spec.RunPolicy = kubeflowv1.RunPolicy{
 				ManagedBy: &otherController,
 			}
 			job.Spec.RunPolicy.Suspend = ptr.To(true)
@@ -630,26 +629,25 @@ var _ = Describe("TFJob controller", func() {
 				return created.Status.StartTime
 			}, testutil.ConsistentDuration, testutil.Interval).Should(BeNil())
 
-			chiefPod := &corev1.Pod{}
-			workerPod := &corev1.Pod{}
-			chiefSvc := &corev1.Service{}
-			workerSvc := &corev1.Service{}
-
 			By("Checking if the pods and services aren't created")
 			Consistently(func() bool {
+				chiefPod := &corev1.Pod{}
+				workerPod := &corev1.Pod{}
+				chiefSvc := &corev1.Service{}
+				workerSvc := &corev1.Service{}
 				errMasterPod := testK8sClient.Get(ctx, chiefKey, chiefPod)
 				errWorkerPod := testK8sClient.Get(ctx, worker0Key, workerPod)
 				errMasterSvc := testK8sClient.Get(ctx, chiefKey, chiefSvc)
 				errWorkerSvc := testK8sClient.Get(ctx, worker0Key, workerSvc)
 				return errors.IsNotFound(errMasterPod) && errors.IsNotFound(errWorkerPod) &&
 					errors.IsNotFound(errMasterSvc) && errors.IsNotFound(errWorkerSvc)
-			}, testutil.ConsistentDuration, testutil.Interval).Should(BeTrue())
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeTrue(), "pods and services should be created by external controller (here not existent)")
 
 			By("Checking if the TFJob status was not updated")
 			Eventually(func() []kubeflowv1.JobCondition {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
 				return created.Status.Conditions
-			}, testutil.ConsistentDuration, testutil.Interval).Should(BeComparableTo([]v1.JobCondition(nil)))
+			}, testutil.Timeout, testutil.Interval).Should(BeComparableTo([]kubeflowv1.JobCondition(nil)))
 
 			By("Unsuspending the TFJob")
 			Eventually(func() error {
@@ -659,16 +657,16 @@ var _ = Describe("TFJob controller", func() {
 			}, testutil.Timeout, testutil.Interval).Should(Succeed())
 
 			By("Checking created TFJob still has a nil startTime")
-			Eventually(func() *metav1.Time {
+			Consistently(func() *metav1.Time {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
 				return created.Status.StartTime
-			}, testutil.Timeout, testutil.Interval).Should(BeNil())
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeNil())
 
 			By("Checking if the TFJob status was not updated, even after unsuspending")
 			Eventually(func() []kubeflowv1.JobCondition {
 				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
 				return created.Status.Conditions
-			}, testutil.ConsistentDuration, testutil.Interval).Should(BeComparableTo([]v1.JobCondition(nil)))
+			}, testutil.Timeout, testutil.Interval).Should(BeComparableTo([]kubeflowv1.JobCondition(nil)))
 		})
 	})
 })
