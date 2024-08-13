@@ -77,8 +77,6 @@ func (c *JobControllerConfiguration) EnableGangScheduling() bool {
 	return c.GangScheduling != "" && c.GangScheduling != GangSchedulerNone
 }
 
-const KubeflowJobsController = "kubeflow.org/training-operator"
-
 // JobController abstracts other operators to manage the lifecycle of Jobs.
 // User need to first implement the ControllerInterface(objectA) and then initialize a JobController(objectB) struct with objectA
 // as the parameter.

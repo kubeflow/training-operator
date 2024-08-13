@@ -35,6 +35,12 @@ const (
 
 	// JobRoleLabel represents the label key for the job role, e.g. master.
 	JobRoleLabel = "training.kubeflow.org/job-role"
+
+	// KubeflowJobsController represents the value of the default jobs controller
+	KubeflowJobsController = "kubeflow.org/training-operator"
+
+	// MultiKueueController represents the value of the only allowed external controller except for KubeflowJobsController
+	MultiKueueController = "kueue.x-k8s.io/multikueue"
 )
 
 // JobStatus represents the current observed state of the training Job.
