@@ -227,7 +227,7 @@ func TestManagedBy(T *testing.T) {
 			managedBy: "",
 		},
 		"managedBy is training-operator controller": {
-			managedBy: KubeflowJobsController,
+			managedBy: apiv1.KubeflowJobsController,
 		},
 		"managedBy is not the training-operator controller": {
 			managedBy: "kueue.x-k8s.io/multikueue",

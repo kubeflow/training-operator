@@ -27,7 +27,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
@@ -94,7 +93,7 @@ func TestValidateXGBoostJob(t *testing.T) {
 				},
 				Spec: trainingoperator.XGBoostJobSpec{
 					RunPolicy: trainingoperator.RunPolicy{
-						ManagedBy: ptr.To(common.KubeflowJobsController),
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
 					},
 					XGBReplicaSpecs: validXGBoostReplicaSpecs,
 				},
