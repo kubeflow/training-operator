@@ -15,6 +15,9 @@ func ValidateManagedBy(runPolicy *v1.RunPolicy, allErrs field.ErrorList) field.E
 		if len(manager) > v1.MaxManagedByLength {
 			allErrs = append(allErrs, field.TooLongMaxLength(fieldPath, manager, v1.MaxManagedByLength))
 		}
+		if manager != v1.MultiKueueController || manager != v1.KubeflowJobsController {
+			allErrs = append(allErrs, field.NotSupported(fieldPath, manager, []string{v1.MultiKueueController, v1.KubeflowJobsController}))
+		}
 	}
 	return allErrs
 }
