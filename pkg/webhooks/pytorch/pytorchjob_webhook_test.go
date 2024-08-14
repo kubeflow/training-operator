@@ -24,11 +24,13 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 	"github.com/kubeflow/training-operator/pkg/util/testutil"
 )
 
@@ -302,6 +304,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			},
 			wantErr: field.ErrorList{
 				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
+				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},
 		"managedBy controller name is too long": {
@@ -318,6 +321,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			},
 			wantErr: field.ErrorList{
 				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
+				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},
 	}
