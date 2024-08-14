@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:1.11.0
+FROM tensorflow/tensorflow:2.17.0
 
 ADD examples/tensorflow/mnist_with_summaries/ /var/tf_mnist
 ENTRYPOINT ["python", "/var/tf_mnist/mnist_with_summaries.py"]
