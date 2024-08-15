@@ -13,6 +13,7 @@ jobs:
       platforms: ${{ matrix.platforms }}
       dockerfile: ${{ matrix.dockerfile }}
       context: ${{ matrix.context }}
+      prefix: ${{matrix.prefix}}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -24,6 +25,10 @@ jobs:
           - component-name: training-operator
             dockerfile: build/images/training-operator/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
+          - component-name: training-operator
+            dockerfile: cmd/training-operator.v2alpha1/Dockerfile
+            platforms: linux/amd64,linux/arm64,linux/ppc64le
+            prefix: v2alpha1
           - component-name: kubectl-delivery
             dockerfile: build/images/kubectl-delivery/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
