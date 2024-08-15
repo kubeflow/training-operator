@@ -13,7 +13,7 @@ jobs:
       platforms: ${{ matrix.platforms }}
       dockerfile: ${{ matrix.dockerfile }}
       context: ${{ matrix.context }}
-      prefix: ${{matrix.prefix}}
+      prefix: ${{ matrix.prefix }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
