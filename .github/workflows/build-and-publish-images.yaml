@@ -17,6 +17,10 @@ on:
         required: false
         type: string
         default: .
+      tag-prefix:
+        required: false
+        type: string
+        default: v1
     secrets:
       DOCKERHUB_USERNAME:
         required: false
@@ -57,6 +61,7 @@ jobs:
           platforms: ${{ inputs.platforms }}
           context: ${{ inputs.context }}
           push: true
+          tag-prefix: ${{ inputs.tag-prefix }}
 
       - name: Test Build For Component ${{ inputs.component-name }}
         if: steps.publish.outcome == 'skipped'
@@ -67,3 +72,4 @@ jobs:
           platforms: ${{ inputs.platforms }}
           context: ${{ inputs.context }}
           push: false
+          tag-prefix: ${{ inputs.tag-prefix }}
