@@ -88,8 +88,6 @@ def test_train_api(job_namespace):
                 disable_tqdm=True,
                 log_level="info",
                 num_train_epochs=1,
-                no_cuda=True,
-                use_cpu=True,
             ),
             # Set LoRA config to reduce number of trainable model parameters.
             lora_config=LoraConfig(
@@ -104,10 +102,10 @@ def test_train_api(job_namespace):
         resources_per_worker={
             "gpu": 0,
             "cpu": 2,
-            "memory": "2G",
+            "memory": "10G",
         },
         storage_config={
-            "size": "2Gi",
+            "size": "10Gi",
             "access_modes": ["ReadWriteOnce"],
         },
     )
@@ -122,7 +120,16 @@ def test_train_api(job_namespace):
     logging.info("---------------------------------------------------------------")
     wait_timeout = 60 * 60  # 1 hour.
     polling_interval = 30  # 30 seconds.
-    for _ in range(round(wait_timeout / polling_interval)):
+    start_time = time.time()  # Record the start time
+
+    while True:
+        elapsed_time = time.time() - start_time  # Calculate the elapsed time
+        if elapsed_time > wait_timeout:
+            # Raise a TimeoutError if the job takes too long
+            logging.error(f"Training job {JOB_NAME} exceeded the timeout of {wait_timeout} seconds.")
+            TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+            raise TimeoutError(f"Training job {JOB_NAME} did not complete within the allowed time of {wait_timeout} seconds.")
+
         # Get the list of pods associated with the job.
         pod_names = TRAINING_CLIENT.get_job_pod_names(
             name=JOB_NAME, namespace=job_namespace
@@ -156,7 +163,7 @@ def test_train_api(job_namespace):
                     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
 
                     # Raise an exception to indicate that a pod has failed at least once.
-                    raise Exception(f"Training job {JOB_NAME} is failed.")
+                    raise Exception(f"Training job {JOB_NAME} has failed.")
 
         # Get Job only once per cycle and check the statuses.
         job = TRAINING_CLIENT.get_job(
@@ -177,7 +184,7 @@ def test_train_api(job_namespace):
             logging.info(
                 "---------------------------------------------------------------"
             )
-            logging.info(f"Training job {JOB_NAME} is succeeded.")
+            logging.info(f"Training job {JOB_NAME} has succeeded.")
 
             logging.info(
                 "---------------------------------------------------------------"
@@ -190,3 +197,4 @@ def test_train_api(job_namespace):
 
 if __name__ == "__main__":
     test_train_api(job_namespace="default")
+    
