@@ -17,8 +17,8 @@ on:
         required: false
         type: string
         default: .
-      prefix:
-        required: true
+      tag-prefix:
+        required: false
         type: string
         default: v1
     secrets:
@@ -61,7 +61,7 @@ jobs:
           platforms: ${{ inputs.platforms }}
           context: ${{ inputs.context }}
           push: true
-          prefix: ${{ inputs.prefix }}
+          tag-prefix: ${{ inputs.tag-prefix }}
 
       - name: Test Build For Component ${{ inputs.component-name }}
         if: steps.publish.outcome == 'skipped'
@@ -72,4 +72,4 @@ jobs:
           platforms: ${{ inputs.platforms }}
           context: ${{ inputs.context }}
           push: false
-          prefix: ${{ inputs.prefix }}
+          tag-prefix: ${{ inputs.tag-prefix }}

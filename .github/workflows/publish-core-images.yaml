@@ -13,7 +13,7 @@ jobs:
       platforms: ${{ matrix.platforms }}
       dockerfile: ${{ matrix.dockerfile }}
       context: ${{ matrix.context }}
-      prefix: ${{ matrix.prefix }}
+      tag-prefix: ${{ matrix.tag-prefix }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -25,18 +25,22 @@ jobs:
           - component-name: training-operator
             dockerfile: build/images/training-operator/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
+            tag-prefix: v1
           - component-name: training-operator
             dockerfile: cmd/training-operator.v2alpha1/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
-            prefix: v2alpha1
+            tag-prefix: v2alpha1
           - component-name: kubectl-delivery
             dockerfile: build/images/kubectl-delivery/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
+            tag-prefix: v1
           - component-name: storage-initializer
             dockerfile: sdk/python/kubeflow/storage_initializer/Dockerfile
             context: sdk/python/kubeflow/storage_initializer
             platforms: linux/amd64,linux/arm64
+            tag-prefix: v1
           - component-name: trainer-huggingface
             dockerfile: sdk/python/kubeflow/trainer/Dockerfile
             context: sdk/python/kubeflow/trainer
             platforms: linux/amd64,linux/arm64
+            tag-prefix: v1
