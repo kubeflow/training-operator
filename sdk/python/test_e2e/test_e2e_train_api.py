@@ -78,7 +78,7 @@ def test_train_api(job_namespace):
             repo_id="yelp_review_full",
             split="train[:8]",
         ),
-        # Specify HuggingFace Trainer parameters. In this example, we will skip evaluation and model checkpoints.
+        # Specify HuggingFace Trainer parameters.
         trainer_parameters=HuggingFaceTrainerParams(
             training_parameters=transformers.TrainingArguments(
                 output_dir="test_trainer",
@@ -131,7 +131,8 @@ def test_train_api(job_namespace):
             )
             TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
             raise TimeoutError(
-                f"Training job {JOB_NAME} did not complete within the allowed time of {wait_timeout} seconds."
+                f"Training job {JOB_NAME} did not complete within the allowed time of "
+                f"{wait_timeout} seconds."
             )
 
         # Get the list of pods associated with the job.
@@ -159,7 +160,8 @@ def test_train_api(job_namespace):
             for container_status in pod_status.status.container_statuses:
                 if container_status.restart_count > 0:
                     logging.warning(
-                        f"Pod {pod_name} in job {JOB_NAME} has been restarted {container_status.restart_count} times. Retrieving logs..."
+                        f"Pod {pod_name} in job {JOB_NAME} has been restarted "
+                        f"{container_status.restart_count} times. Retrieving logs..."
                     )
 
                     get_logs_of_master_pod(job_namespace, num_workers)
