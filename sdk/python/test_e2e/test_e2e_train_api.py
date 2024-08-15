@@ -126,9 +126,13 @@ def test_train_api(job_namespace):
         elapsed_time = time.time() - start_time  # Calculate the elapsed time
         if elapsed_time > wait_timeout:
             # Raise a TimeoutError if the job takes too long
-            logging.error(f"Training job {JOB_NAME} exceeded the timeout of {wait_timeout} seconds.")
+            logging.error(
+                f"Training job {JOB_NAME} exceeded the timeout of {wait_timeout} seconds."
+            )
             TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
-            raise TimeoutError(f"Training job {JOB_NAME} did not complete within the allowed time of {wait_timeout} seconds.")
+            raise TimeoutError(
+                f"Training job {JOB_NAME} did not complete within the allowed time of {wait_timeout} seconds."
+            )
 
         # Get the list of pods associated with the job.
         pod_names = TRAINING_CLIENT.get_job_pod_names(
