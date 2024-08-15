@@ -201,4 +201,3 @@ def test_train_api(job_namespace):
 
 if __name__ == "__main__":
     test_train_api(job_namespace="default")
-    
