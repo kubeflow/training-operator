@@ -22,6 +22,11 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+
 // TrainJob represents configuration of a training job.
 type TrainJob struct {
 	metav1.TypeMeta `json:",inline"`
@@ -34,6 +39,19 @@ type TrainJob struct {
 
 	// Current status of TrainJob.
 	Status TrainJobStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// TrainJobList is a collection of training jobs.
+type TrainJobList struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard list metadata.
+	metav1.ListMeta `json:"metadata,omitempty"`
+
+	// List of TrainJobs.
+	Items []TrainJob `json:"items"`
 }
 
 // TrainJobSpec represents specification of the desired TrainJob.
@@ -226,18 +244,6 @@ type TrainJobStatus struct {
 	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
-// TrainJobList is a collection of training jobs.
-type TrainJobList struct {
-	metav1.TypeMeta `json:",inline"`
-
-	// Standard list metadata.
-	metav1.ListMeta `json:"metadata,omitempty"`
-
-	// List of TrainJobs.
-	Items []TrainJob `json:"items"`
+func init() {
+	SchemeBuilder.Register(&TrainJob{}, &TrainJobList{})
 }
-
-// TODO: Enable this after controller implementation.
-// func init() {
-// 	SchemeBuilder.Register(&TrainJob{}, &TrainJobList{})
-// }

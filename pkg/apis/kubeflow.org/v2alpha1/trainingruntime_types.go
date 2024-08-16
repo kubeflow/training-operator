@@ -22,6 +22,8 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+// +kubebuilder:object:root=true
+
 // ClusterTrainingRuntime represents a training runtime which can be referenced as part of
 // `trainingRuntimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
 // by TrainJob that created in *any* namespace.
@@ -35,6 +37,8 @@ type ClusterTrainingRuntime struct {
 	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
+// +kubebuilder:object:root=true
+
 // ClusterTrainingRuntimeList is a collection of cluster training runtimes.
 type ClusterTrainingRuntimeList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -45,6 +49,8 @@ type ClusterTrainingRuntimeList struct {
 	// List of ClusterTrainingRuntimes.
 	Items []ClusterTrainingRuntime `json:"items"`
 }
+
+// +kubebuilder:object:root=true
 
 // TrainingRuntime represents a training runtime which can be referenced as part of
 // `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
@@ -58,6 +64,8 @@ type TrainingRuntime struct {
 	// Specification of the desired TrainingRuntime.
 	Spec TrainingRuntimeSpec `json:"spec"`
 }
+
+// +kubebuilder:object:root=true
 
 // TrainingRuntimeList is a collection of training runtimes.
 type TrainingRuntimeList struct {
@@ -121,6 +129,7 @@ type TorchSpec struct {
 	// Number of processes per node.
 	// This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
 	// Supported values: `auto`, `cpu`, `gpu`, or int value.
+	// TODO (andreyvelich): Add kubebuilder validation.
 	// Defaults to `auto`.
 	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
 
@@ -181,7 +190,6 @@ const (
 	MPIImplementationMPICH   MPIImplementation = "MPICH"
 )
 
-// TODO: Enable this after controller implementation.
-// func init() {
-// 	SchemeBuilder.Register(&ClusterTrainingRuntime{}, &ClusterTrainingRuntimeList{}, &TrainingRuntime{}, &TrainingRuntimeList{})
-// }
+func init() {
+	SchemeBuilder.Register(&ClusterTrainingRuntime{}, &ClusterTrainingRuntimeList{}, &TrainingRuntime{}, &TrainingRuntimeList{})
+}
