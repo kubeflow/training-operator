@@ -226,8 +226,8 @@ type TrainJobStatus struct {
 	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
-// TranJobList is a collection of training jobs.
-type TranJobList struct {
+// TrainJobList is a collection of training jobs.
+type TrainJobList struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// Standard list metadata.
@@ -239,5 +239,5 @@ type TranJobList struct {
 
 // TODO: Enable this after controller implementation.
 // func init() {
-// 	SchemeBuilder.Register(&TrainJob{}, &TranJobList{})
+// 	SchemeBuilder.Register(&TrainJob{}, &TrainJobList{})
 // }
