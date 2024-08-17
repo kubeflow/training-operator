@@ -1,0 +1,13 @@
+---
+- op: replace
+  path: /webhooks/0/failurePolicy
+  value: Ignore
+- op: replace
+  path: /webhooks/1/failurePolicy
+  value: Ignore
+- op: replace
+  path: /webhooks/2/failurePolicy
+  value: Ignore
+- op: replace
+  path: /webhooks/3/failurePolicy
+  value: Ignore

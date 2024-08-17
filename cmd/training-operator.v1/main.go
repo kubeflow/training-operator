@@ -79,6 +79,7 @@ func main() {
 	var webhookServerPort int
 	var webhookServiceName string
 	var webhookSecretName string
+	var disableWebhook bool
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -110,6 +111,7 @@ func main() {
 	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
 	flag.StringVar(&webhookServiceName, "webhook-service-name", "training-operator", "Name of the Service used as part of the DNSName")
 	flag.StringVar(&webhookSecretName, "webhook-secret-name", "training-operator-webhook-cert", "Name of the Secret to store CA  and server certs")
+	flag.BoolVar(&disableWebhook, "disable-webhook", false, "Disable the webhook server for local debugging.")
 
 	opts := zap.Options{
 		Development:     true,
@@ -129,14 +131,19 @@ func main() {
 		}
 	}
 
+	var webhookServer webhook.Server
+	if !disableWebhook {
+		webhookServer = webhook.NewServer(webhook.Options{
+			Port: webhookServerPort,
+		})
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
 			BindAddress: metricsAddr,
 		},
-		WebhookServer: webhook.NewServer(webhook.Options{
-			Port: webhookServerPort,
-		}),
+		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       leaderElectionID,
@@ -147,20 +154,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup webhook server based on the disableWebhook flag
+
 	certsReady := make(chan struct{})
 	defer close(certsReady)
 	certGenerationConfig := cert.Config{
 		WebhookSecretName:  webhookSecretName,
 		WebhookServiceName: webhookServiceName,
 	}
-	if err = cert.ManageCerts(mgr, certGenerationConfig, certsReady); err != nil {
-		setupLog.Error(err, "Unable to set up cert rotation")
-		os.Exit(1)
+	if !disableWebhook {
+		if err = cert.ManageCerts(mgr, certGenerationConfig, certsReady); err != nil {
+			setupLog.Error(err, "Unable to set up cert rotation")
+			os.Exit(1)
+		}
 	}
 
-	setupProbeEndpoints(mgr, certsReady)
+	setupProbeEndpoints(mgr, certsReady, disableWebhook)
 	// Set up controllers using goroutines to start the manager quickly.
-	go setupControllers(mgr, enabledSchemes, gangSchedulerName, controllerThreads, certsReady)
+	go setupControllers(mgr, enabledSchemes, gangSchedulerName, controllerThreads, certsReady, disableWebhook)
 
 	//+kubebuilder:scaffold:builder
 
@@ -171,10 +182,12 @@ func main() {
 	}
 }
 
-func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchemes, gangSchedulerName string, controllerThreads int, certsReady <-chan struct{}) {
-	setupLog.Info("Waiting for certificate generation to complete")
-	<-certsReady
-	setupLog.Info("Certs ready")
+func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchemes, gangSchedulerName string, controllerThreads int, certsReady <-chan struct{}, disableWebhook bool) {
+	if !disableWebhook {
+		setupLog.Info("Waiting for certificate generation to complete")
+		<-certsReady
+		setupLog.Info("Certs ready")
+	}
 
 	setupLog.Info("registering controllers...")
 	// Prepare GangSchedulingSetupFunc
@@ -207,19 +220,21 @@ func setupControllers(mgr ctrl.Manager, enabledSchemes controllerv1.EnabledSchem
 			setupLog.Error(errors.New(errMsg), "unable to create controller", "scheme", s)
 			os.Exit(1)
 		}
-		setupWebhookFunc, supportedWebhook := webhooks.SupportedSchemeWebhook[s]
-		if !supportedWebhook {
-			setupLog.Error(errors.New(errMsg), "scheme is not supported", "scheme", s)
-			os.Exit(1)
-		}
-		if err := setupWebhookFunc(mgr); err != nil {
-			setupLog.Error(errors.New(errMsg), "unable to start webhook server", "scheme", s)
-			os.Exit(1)
+		if !disableWebhook {
+			setupWebhookFunc, supportedWebhook := webhooks.SupportedSchemeWebhook[s]
+			if !supportedWebhook {
+				setupLog.Error(errors.New(errMsg), "scheme is not supported", "scheme", s)
+				os.Exit(1)
+			}
+			if err := setupWebhookFunc(mgr); err != nil {
+				setupLog.Error(errors.New(errMsg), "unable to start webhook server", "scheme", s)
+				os.Exit(1)
+			}
 		}
 	}
 }
 
-func setupProbeEndpoints(mgr ctrl.Manager, certsReady <-chan struct{}) {
+func setupProbeEndpoints(mgr ctrl.Manager, certsReady <-chan struct{}, disableWebhook bool) {
 	defer setupLog.Info("Probe endpoints are configured on healthz and readyz")
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -230,20 +245,22 @@ func setupProbeEndpoints(mgr ctrl.Manager, certsReady <-chan struct{}) {
 	// Wait for the webhook server to be listening before advertising the
 	// training-operator replica as ready. This allows users to wait with sending the first
 	// requests, requiring webhooks, until the training-operator deployment is available, so
-	// that the early requests are not rejected during the traininig-operator's startup.
+	// that the early requests are not rejected during the training-operator's startup.
 	// We wrap the call to GetWebhookServer in a closure to delay calling
 	// the function, otherwise a not fully-initialized webhook server (without
 	// ready certs) fails the start of the manager.
-	if err := mgr.AddReadyzCheck("readyz", func(req *http.Request) error {
-		select {
-		case <-certsReady:
-			return mgr.GetWebhookServer().StartedChecker()(req)
-		default:
-			return errors.New("certificates are not ready")
+	if !disableWebhook {
+		if err := mgr.AddReadyzCheck("readyz", func(req *http.Request) error {
+			select {
+			case <-certsReady:
+				return mgr.GetWebhookServer().StartedChecker()(req)
+			default:
+				return errors.New("certificates are not ready")
+			}
+		}); err != nil {
+			setupLog.Error(err, "unable to set up ready check")
+			os.Exit(1)
 		}
-	}); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
 	}
 }
 
