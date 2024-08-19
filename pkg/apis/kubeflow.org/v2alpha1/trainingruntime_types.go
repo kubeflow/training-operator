@@ -62,7 +62,7 @@ type TrainingRuntime struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired TrainingRuntime.
-	Spec TrainingRuntimeSpec `json:"spec"`
+	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
