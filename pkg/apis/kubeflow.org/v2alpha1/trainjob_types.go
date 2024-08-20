@@ -108,7 +108,7 @@ type TrainingRuntimeRef struct {
 // Every training runtime contains `trainer` container which represents Trainer.
 type Trainer struct {
 	// Docker image for the training container.
-	Image string `json:"image,omitempty"`
+	Image *string `json:"image,omitempty"`
 
 	// Entrypoint commands for the training container.
 	Command []string `json:"command,omitempty"`
@@ -125,7 +125,7 @@ type Trainer struct {
 	NumNodes *int32 `json:"numNodes,omitempty"`
 
 	// Compute resources for each training node.
-	ResourcesPerNode corev1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
+	ResourcesPerNode *corev1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
 
 	// Number of processes/workers/slots on every training node.
 	// For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set.
@@ -138,14 +138,14 @@ type Trainer struct {
 // the `dataset-initializer` container in the `Initializer` Job.
 type DatasetConfig struct {
 	// Storage uri for the dataset provider.
-	StorageUri string `json:"storageUri"`
+	StorageUri *string `json:"storageUri,omitempty"`
 
 	// List of environment variables to set in the dataset initializer container.
 	// These values will be merged with the TrainingRuntime's dataset initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download dataset.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 // ModelConfig represents the desired model configuration.
@@ -164,27 +164,27 @@ type ModelConfig struct {
 // InputModel represents the desired pre-trained model configuration.
 type InputModel struct {
 	// Storage uri for the model provider.
-	StorageUri string `json:"storageUri"`
+	StorageUri *string `json:"storageUri,omitempty"`
 
 	// List of environment variables to set in the model initializer container.
 	// These values will be merged with the TrainingRuntime's model initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download model.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 // OutputModel represents the desired trained model configuration.
 type OutputModel struct {
 	// Storage uri for the model exporter.
-	StorageUri string `json:"storageUri"`
+	StorageUri *string `json:"storageUri,omitempty"`
 
 	// List of environment variables to set in the model exporter container.
 	// These values will be merged with the TrainingRuntime's model exporter environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to export model.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 // PodSpecOverrides represents the custom overrides that will be applied for the TrainJob's resources.

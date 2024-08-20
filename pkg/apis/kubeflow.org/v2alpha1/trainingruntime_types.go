@@ -171,7 +171,8 @@ type MPISpec struct {
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
 	// Implementation name for the MPI to create the appropriate hostfile.
-	MPIImplementation *MPIImplementation `json:"mpiImplementation"`
+	// Defaults to OpenMPI.
+	MPIImplementation MPIImplementation `json:"mpiImplementation,omitempty"`
 
 	// Directory where SSH keys are mounted.
 	SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
