@@ -48,7 +48,7 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, num_labels
             cache_dir=model_dir,
             local_files_only=True,
             trust_remote_code=True,
-        )        
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_name,
