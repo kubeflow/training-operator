@@ -38,6 +38,7 @@ class HuggingFaceModelParams:
     model_uri: str
     transformer_type: TRANSFORMER_TYPES
     access_token: str = None
+    num_labels: Optional[int] = None
 
     def __post_init__(self):
         # Custom checks or validations can be added here

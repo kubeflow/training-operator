@@ -204,7 +204,7 @@ class TrainingClient(object):
             self.core_api.create_namespaced_persistent_volume_claim(
                 namespace=namespace,
                 body=utils.get_pvc_spec(
-                    pvc_name=constants.STORAGE_INITIALIZER,
+                    pvc_name=name,
                     namespace=namespace,
                     storage_config=storage_config,
                 ),
@@ -213,11 +213,8 @@ class TrainingClient(object):
             pvc_list = self.core_api.list_namespaced_persistent_volume_claim(namespace)
             # Check if the PVC with the specified name exists
             for pvc in pvc_list.items:
-                if pvc.metadata.name == constants.STORAGE_INITIALIZER:
-                    print(
-                        f"PVC '{constants.STORAGE_INITIALIZER}' already exists in namespace "
-                        f"{namespace}."
-                    )
+                if pvc.metadata.name == name:
+                    print(f"PVC '{name}' already exists in namespace " f"{namespace}.")
                     break
             else:
                 raise RuntimeError(f"failed to create PVC. Error: {e}")
@@ -264,6 +261,8 @@ class TrainingClient(object):
                 model_provider_parameters.model_uri,
                 "--transformer_type",
                 model_provider_parameters.transformer_type.__name__,
+                "--num_labels",
+                str(model_provider_parameters.num_labels),
                 "--model_dir",
                 VOLUME_PATH_MODEL,
                 "--dataset_dir",
@@ -279,17 +278,24 @@ class TrainingClient(object):
             resources=resources_per_worker,
         )
 
+        storage_initializer_volume = models.V1Volume(
+            name=constants.STORAGE_INITIALIZER,
+            persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
+                claim_name=name
+            ),
+        )
+
         # create worker pod spec
         worker_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
-            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[storage_initializer_volume],
         )
 
         # create master pod spec
         master_pod_template_spec = utils.get_pod_template_spec(
             containers=[container_spec],
             init_containers=[init_container_spec],
-            volumes=[constants.STORAGE_INITIALIZER_VOLUME],
+            volumes=[storage_initializer_volume],
         )
 
         job = utils.get_pytorchjob_template(
