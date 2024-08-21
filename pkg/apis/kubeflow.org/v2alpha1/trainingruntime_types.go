@@ -172,7 +172,7 @@ type MPISpec struct {
 
 	// Implementation name for the MPI to create the appropriate hostfile.
 	// Defaults to OpenMPI.
-	MPIImplementation MPIImplementation `json:"mpiImplementation,omitempty"`
+	MPIImplementation *MPIImplementation `json:"mpiImplementation,omitempty"`
 
 	// Directory where SSH keys are mounted.
 	SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`

@@ -227,6 +227,11 @@ func (in *MPISpec) DeepCopyInto(out *MPISpec) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.MPIImplementation != nil {
+		in, out := &in.MPIImplementation, &out.MPIImplementation
+		*out = new(MPIImplementation)
+		**out = **in
+	}
 	if in.SSHAuthMountPath != nil {
 		in, out := &in.SSHAuthMountPath, &out.SSHAuthMountPath
 		*out = new(string)
