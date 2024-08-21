@@ -187,13 +187,13 @@ if __name__ == "__main__":
     transformer_type = getattr(transformers, args.transformer_type)
 
     logger.info("Setup model and tokenizer")
-    if args.num_labels != "None":
+    if args.num_labels == "None":
         model, tokenizer = setup_model_and_tokenizer(
-            args.model_uri, transformer_type, args.model_dir, int(args.num_labels)
+            args.model_uri, transformer_type, args.model_dir, 0
         )
     else:
         model, tokenizer = setup_model_and_tokenizer(
-            args.model_uri, transformer_type, args.model_dir, 0
+            args.model_uri, transformer_type, args.model_dir, int(args.num_labels)
         )
 
     logger.info("Preprocess dataset")
