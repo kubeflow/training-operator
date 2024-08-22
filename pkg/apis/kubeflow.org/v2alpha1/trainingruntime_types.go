@@ -80,18 +80,25 @@ type TrainingRuntimeList struct {
 
 // TrainingRuntimeSpec represents a specification of the desired training runtime.
 type TrainingRuntimeSpec struct {
-	// Configuration for the runtime-specific parameters, such as Torch or MPI.
+
+	// Configuration for the model training with ML-specific parameters.
 	MLSpec *MLSpec `json:"mlSpec,omitempty"`
-
-	// Number of training nodes.
-	// Defaults to 1.
-	NumNodes *int32 `json:"numNodes,omitempty"`
-
-	// JobSet configuration which will be used by TrainJob.
-	JobSetSpec *jobsetv1alpha2.JobSetSpec `json:",inline"`
 
 	// Configuration for the PodGroup to enable gang-scheduling via supported plugins.
 	PodGroupSpec *PodGroupSpec `json:"podGroupSpec,omitempty"`
+
+	// JobSet template which will be used by TrainJob.
+	Template JobSetTemplateSpec `json:"template"`
+}
+
+// JobSetTemplateSpec represents a template of the desired JobSet.
+type JobSetTemplateSpec struct {
+	// Metadata for custom JobSet's labels and annotations.
+	// JobSet name and namespace is equal to the TrainJob's name and namespace.
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// Specification of the desired JobSet which will be created from TrainJob.
+	Spec jobsetv1alpha2.JobSetSpec `json:"spec,omitempty"`
 }
 
 // PodGroupSpec represents a PodGroup configuration to enable gang-scheduling.
@@ -114,29 +121,37 @@ const (
 	GangSchedulerPluginCoscheduling GangSchedulerPlugin = "coscheduling"
 )
 
-// MLSpec represents the runtime-specific configuration for various technologies.
-// One of the following specs can be set.
+// MLSpec represents configuration for the model trining with ML-specific parameters.
 type MLSpec struct {
-	// Configuration for the PyTorch runtime.
-	TorchSpec *TorchSpec `json:"torchSpec,omitempty"`
 
-	// Configuration for the MPI Runtime.
-	MPISpec *MPISpec `json:"mpiSpec,omitempty"`
+	// Number of training nodes.
+	// Defaults to 1.
+	NumNodes *int32 `json:"numNodes,omitempty"`
+
+	// Configuration for the runtime-specific parameters, such as Torch or MPI.
+	// One of the following spec sources can be set.
+	MLSpecSource `json:",inline"`
 }
 
-// TorchSpec represents a PyTorch runtime configuration.
-type TorchSpec struct {
+// MLPolicySource represents the runtime-specific configuration for various technologies.
+// One of the following specs can be set.
+type MLSpecSource struct {
+
+	// Configuration for the PyTorch runtime.
+	Torch *TorchMLSpecSource `json:"torch,omitempty"`
+
+	// Configuration for the MPI Runtime.
+	MPI *MPIMLSpecSource `json:"mpi,omitempty"`
+}
+
+// TorchMLSpecSource represents a PyTorch runtime configuration.
+type TorchMLSpecSource struct {
 	// Number of processes per node.
 	// This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
 	// Supported values: `auto`, `cpu`, `gpu`, or int value.
 	// TODO (andreyvelich): Add kubebuilder validation.
 	// Defaults to `auto`.
 	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
-
-	// Whether to run single-node multi-worker training.
-	// This value is inserted into the `--standalone` argument of the `torchrun` CLI.
-	// Defaults to false.
-	Standalone *bool `json:"standalone,omitempty"`
 
 	// Elastic policy for the PyTorch training.
 	ElasticPolicy *TorchElasticPolicy `json:"elasticPolicy,omitempty"`
@@ -164,8 +179,8 @@ type TorchElasticPolicy struct {
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 
-// MPISpec represents a MPI runtime configuration.
-type MPISpec struct {
+// MPIMLSpecSource represents a MPI runtime configuration.
+type MPIMLSpecSource struct {
 	// Number of processes per node.
 	// This value is equal to the number of slots for each node in the hostfile.
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
