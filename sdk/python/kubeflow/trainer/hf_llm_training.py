@@ -33,7 +33,7 @@ def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, num_labels
     parsed_uri = urlparse(model_uri)
     model_name = parsed_uri.netloc + parsed_uri.path
 
-    if num_labels != "None" and num_labels is not None:
+    if num_labels is not None and num_labels != "None":
         model = transformer_type.from_pretrained(
             pretrained_model_name_or_path=model_name,
             cache_dir=model_dir,
