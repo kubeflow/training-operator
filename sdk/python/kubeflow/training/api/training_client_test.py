@@ -38,7 +38,6 @@ def list_namespaced_pod_response(*args, **kwargs):
             and pass timeout for verification
 
             :return:
-            :return:
                 - If `args[0] == "timeout"`, raises `TimeoutError`.
                 - If `args[0] == "runtime"`, raises `Exception`.
                 - If `args[0] == "mock_pod_obj"`, returns a mock pod object with `metadata.name = "Dummy V1PodList"`.
