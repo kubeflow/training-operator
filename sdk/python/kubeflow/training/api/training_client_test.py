@@ -1,5 +1,4 @@
 import multiprocessing
-from types import SimpleNamespace
 from typing import Optional
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -19,19 +18,9 @@ from kubernetes.client import V1ResourceRequirements
 import pytest
 
 LIST_RESPONSE = [
-    {"metadata": {"name": "Dummy V1PodList-1"}},
-    {"metadata": {"name": "Dummy V1PodList-2"}},
+    {"metadata": {"name": "Dummy V1PodList"}},
 ]
 TEST_NAME = "test"
-
-
-def dict_to_object(dictionary):
-    return SimpleNamespace(
-        **{
-            k: dict_to_object(v) if isinstance(v, dict) else v
-            for k, v in dictionary.items()
-        }
-    )
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -44,19 +33,27 @@ def conditional_error_handler(*args, **kwargs):
 def list_namespaced_pod_response(*args, **kwargs):
     class MockResponse:
         def get(self, timeout):
-            # Simulate a response from the Kubernetes API, and pass timeout for verification
+            """
+            Simulates Kubernetes API response for listing namespaced pods,
+            and pass timeout for verification
+
+            :return:
+            :return:
+                - If `args[0] == "timeout"`, raises `TimeoutError`.
+                - If `args[0] == "runtime"`, raises `Exception`.
+                - If `args[0] == "mock_pod_obj"`, returns a mock pod object with `metadata.name = "Dummy V1PodList"`.
+                - If `args[0] == "no_pods"`, returns an empty list of pods.
+                - Otherwise, returns a default list of dicts representing pods, with `timeout` included, for testing.
+            """
             LIST_RESPONSE[0]["timeout"] = timeout
             if args[0] == "timeout":
                 raise multiprocessing.TimeoutError()
             if args[0] == "runtime":
                 raise Exception()
-            if args[0] == "2_pods":
-                return Mock(
-                    items=[
-                        dict_to_object(LIST_RESPONSE[0]),
-                        dict_to_object(LIST_RESPONSE[1]),
-                    ]
-                )
+            if args[0] == "mock_pod_obj":
+                pod_obj = Mock(metadata=Mock())
+                pod_obj.metadata.name = "Dummy V1PodList"
+                return Mock(items=[pod_obj])
             if args[0] == "no_pods":
                 return Mock(items=[])
             return Mock(items=LIST_RESPONSE)
@@ -274,12 +271,12 @@ test_data_get_job_pods = [
 
 test_data_get_job_pod_names = [
     (
-        "valid flow with 2 pods",
+        "valid flow",
         {
             "name": TEST_NAME,
-            "namespace": "2_pods",
+            "namespace": "mock_pod_obj",
         },
-        ["Dummy V1PodList-1", "Dummy V1PodList-2"],
+        ["Dummy V1PodList"],
     ),
     (
         "valid flow with no pods available",
