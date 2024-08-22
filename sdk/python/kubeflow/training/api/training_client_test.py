@@ -17,16 +17,21 @@ from kubernetes.client import V1PodTemplateSpec
 from kubernetes.client import V1ResourceRequirements
 import pytest
 
-LIST_RESPONSE = [
-    {"metadata": {"name": "Dummy V1PodList"}},
-]
 TEST_NAME = "test"
+TIMEOUT = "timeout"
+RUNTIME = "runtime"
+MOCK_POD_OBJ = "mock_pod_obj"
+NO_PODS = "no_pods"
+DUMMY_POD_NAME = "Dummy V1PodList"
+LIST_RESPONSE = [
+    {"metadata": {"name": DUMMY_POD_NAME}},
+]
 
 
 def conditional_error_handler(*args, **kwargs):
-    if args[2] == "timeout":
+    if args[2] == TIMEOUT:
         raise multiprocessing.TimeoutError()
-    elif args[2] == "runtime":
+    elif args[2] == RUNTIME:
         raise RuntimeError()
 
 
@@ -40,20 +45,22 @@ def list_namespaced_pod_response(*args, **kwargs):
             :return:
                 - If `args[0] == "timeout"`, raises `TimeoutError`.
                 - If `args[0] == "runtime"`, raises `Exception`.
-                - If `args[0] == "mock_pod_obj"`, returns a mock pod object with `metadata.name = "Dummy V1PodList"`.
+                - If `args[0] == "mock_pod_obj"`, returns a mock pod object
+                  with `metadata.name = "Dummy V1PodList"`.
                 - If `args[0] == "no_pods"`, returns an empty list of pods.
-                - Otherwise, returns a default list of dicts representing pods, with `timeout` included, for testing.
+                - Otherwise, returns a default list of dicts representing pods,
+                  with `timeout` included, for testing.
             """
-            LIST_RESPONSE[0]["timeout"] = timeout
-            if args[0] == "timeout":
+            LIST_RESPONSE[0][TIMEOUT] = timeout
+            if args[0] == TIMEOUT:
                 raise multiprocessing.TimeoutError()
-            if args[0] == "runtime":
+            if args[0] == RUNTIME:
                 raise Exception()
-            if args[0] == "mock_pod_obj":
+            if args[0] == MOCK_POD_OBJ:
                 pod_obj = Mock(metadata=Mock())
-                pod_obj.metadata.name = "Dummy V1PodList"
+                pod_obj.metadata.name = DUMMY_POD_NAME
                 return Mock(items=[pod_obj])
-            if args[0] == "no_pods":
+            if args[0] == NO_PODS:
                 return Mock(items=[])
             return Mock(items=LIST_RESPONSE)
 
@@ -174,12 +181,12 @@ test_data_create_job = [
     ),
     (
         "create_namespaced_custom_object timeout error",
-        {"job": create_job(), "namespace": "timeout"},
+        {"job": create_job(), "namespace": TIMEOUT},
         TimeoutError,
     ),
     (
         "create_namespaced_custom_object runtime error",
-        {"job": create_job(), "namespace": "runtime"},
+        {"job": create_job(), "namespace": RUNTIME},
         RuntimeError,
     ),
     (
@@ -251,7 +258,7 @@ test_data_get_job_pods = [
         "invalid flow with TimeoutError",
         {
             "name": TEST_NAME,
-            "namespace": "timeout",
+            "namespace": TIMEOUT,
         },
         "Label not relevant",
         TimeoutError,
@@ -260,7 +267,7 @@ test_data_get_job_pods = [
         "invalid flow with RuntimeError",
         {
             "name": TEST_NAME,
-            "namespace": "runtime",
+            "namespace": RUNTIME,
         },
         "Label not relevant",
         RuntimeError,
@@ -273,15 +280,15 @@ test_data_get_job_pod_names = [
         "valid flow",
         {
             "name": TEST_NAME,
-            "namespace": "mock_pod_obj",
+            "namespace": MOCK_POD_OBJ,
         },
-        ["Dummy V1PodList"],
+        [DUMMY_POD_NAME],
     ),
     (
         "valid flow with no pods available",
         {
             "name": TEST_NAME,
-            "namespace": "no_pods",
+            "namespace": NO_PODS,
         },
         [],
     ),
@@ -310,7 +317,7 @@ test_data_update_job = [
         "invalid flow with TimeoutError",
         {
             "name": TEST_NAME,
-            "namespace": "timeout",
+            "namespace": TIMEOUT,
             "job": create_job(),
         },
         TimeoutError,
@@ -319,7 +326,7 @@ test_data_update_job = [
         "invalid flow with RuntimeError",
         {
             "name": TEST_NAME,
-            "namespace": "runtime",
+            "namespace": RUNTIME,
             "job": create_job(),
         },
         RuntimeError,
@@ -380,7 +387,7 @@ def test_get_job_pods(
             label_selector=expected_label_selector,
             async_req=True,
         )
-        assert out[0].pop("timeout") == kwargs.get("timeout", constants.DEFAULT_TIMEOUT)
+        assert out[0].pop(TIMEOUT) == kwargs.get(TIMEOUT, constants.DEFAULT_TIMEOUT)
         assert out == expected_output
     except Exception as e:
         assert type(e) is expected_output
