@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This shell script is used to run Katib Experiment.
-# Input parameter - path to Experiment yaml.
+# This shell script is used to run e2e test.
 
 set -o errexit
 set -o nounset
