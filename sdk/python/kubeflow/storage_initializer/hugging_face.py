@@ -1,17 +1,15 @@
-from dataclasses import dataclass
-from dataclasses import field
 import json
 import logging
+from dataclasses import dataclass, field
 from typing import Optional, Union
 from urllib.parse import urlparse
 
-from peft import LoraConfig
 import transformers
+from peft import LoraConfig
 
 from .abstract_dataset_provider import datasetProvider
 from .abstract_model_provider import modelProvider
-from .constants import VOLUME_PATH_DATASET
-from .constants import VOLUME_PATH_MODEL
+from .constants import VOLUME_PATH_DATASET, VOLUME_PATH_MODEL
 
 TRANSFORMER_TYPES = Union[
     transformers.AutoModelForSequenceClassification,
@@ -97,8 +95,8 @@ class HuggingFaceDataset(datasetProvider):
     def download_dataset(self):
         logger.info("Downloading dataset")
         logger.info("-" * 40)
-        from datasets import load_dataset
         import huggingface_hub
+        from datasets import load_dataset
 
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)

@@ -44,30 +44,30 @@ Usage
 """
 
 import argparse
-from contextlib import contextmanager
-from datetime import timedelta
 import io
 import os
 import shutil
 import time
+from contextlib import contextmanager
+from datetime import timedelta
 from typing import List, Tuple
 
 import numpy
 import torch
 import torch.distributed as dist
-from torch.distributed.elastic.multiprocessing.errors import record
-from torch.distributed.elastic.utils.data import ElasticDistributedSampler
 import torch.nn as nn
 import torch.nn.parallel
-from torch.nn.parallel import DistributedDataParallel
 import torch.optim
-from torch.optim import SGD
 import torch.utils.data
-from torch.utils.data import DataLoader
 import torch.utils.data.distributed
 import torchvision.datasets as datasets
 import torchvision.models as models
 import torchvision.transforms as transforms
+from torch.distributed.elastic.multiprocessing.errors import record
+from torch.distributed.elastic.utils.data import ElasticDistributedSampler
+from torch.nn.parallel import DistributedDataParallel
+from torch.optim import SGD
+from torch.utils.data import DataLoader
 
 model_names = sorted(
     name

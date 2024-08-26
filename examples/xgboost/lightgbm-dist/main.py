@@ -15,8 +15,7 @@ import logging
 import os
 
 from train import train
-from utils import generate_machine_list_file
-from utils import generate_train_conf_file
+from utils import generate_machine_list_file, generate_train_conf_file
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import json
 import os
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from .abstract_dataset_provider import datasetProvider

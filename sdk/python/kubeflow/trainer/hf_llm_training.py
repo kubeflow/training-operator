@@ -4,18 +4,18 @@ import logging
 import os
 from urllib.parse import urlparse
 
-from datasets import Dataset
-from datasets import load_from_disk
-from datasets.distributed import split_dataset_by_node
-from peft import get_peft_model
-from peft import LoraConfig
 import transformers
-from transformers import AutoModelForCausalLM
-from transformers import AutoModelForImageClassification
-from transformers import AutoTokenizer
-from transformers import DataCollatorForLanguageModeling
-from transformers import Trainer
-from transformers import TrainingArguments
+from datasets import Dataset, load_from_disk
+from datasets.distributed import split_dataset_by_node
+from peft import LoraConfig, get_peft_model
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForImageClassification,
+    AutoTokenizer,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
+)
 
 # Configure logger.
 log_formatter = logging.Formatter(
