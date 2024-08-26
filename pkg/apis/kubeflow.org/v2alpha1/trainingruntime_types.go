@@ -82,10 +82,10 @@ type TrainingRuntimeList struct {
 type TrainingRuntimeSpec struct {
 
 	// Configuration for the model training with ML-specific parameters.
-	MLSpec *MLSpec `json:"mlSpec,omitempty"`
+	MLPolicy *MLPolicy `json:"mlPolicy,omitempty"`
 
 	// Configuration for the PodGroup to enable gang-scheduling via supported plugins.
-	PodGroupSpec *PodGroupSpec `json:"podGroupSpec,omitempty"`
+	PodGroupPolicy *PodGroupPolicy `json:"podGroupPolicy,omitempty"`
 
 	// JobSet template which will be used by TrainJob.
 	Template JobSetTemplateSpec `json:"template"`
@@ -101,51 +101,57 @@ type JobSetTemplateSpec struct {
 	Spec jobsetv1alpha2.JobSetSpec `json:"spec,omitempty"`
 }
 
-// PodGroupSpec represents a PodGroup configuration to enable gang-scheduling.
-type PodGroupSpec struct {
-	// Plugin for the gang-scheduling.
-	Plugin GangSchedulerPlugin `json:"plugin"`
+// PodGroupPolicy represents a PodGroup configuration for gang-scheduling.
+type PodGroupPolicy struct {
 
-	// Time threshold to schedule PodGroup for gang-scheduling.
-	ScheduleTimeoutSeconds *string `json:"scheduleTimeoutSeconds,omitempty"`
+	// Configuration for gang-scheduling using various plugins.
+	PodGroupPolicySource `json:",inline"`
 }
 
-// GangSchedulerPlugin represents one of the supported gang-scheduling plugins.
-type GangSchedulerPlugin string
-
-const (
-	// Volcano plugin for gang-scheduling.
-	GangSchedulerPluginVolcano GangSchedulerPlugin = "volcano"
+// PodGroupPolicySource represents supported plugins for gang-scheduling.
+// Only one of its members may be specified.
+type PodGroupPolicySource struct {
 
 	// Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.
-	GangSchedulerPluginCoscheduling GangSchedulerPlugin = "coscheduling"
-)
+	Coscheduling *CoschedulingPodGroupPolicySource `json:"coscheduling,omitempty"`
 
-// MLSpec represents configuration for the model trining with ML-specific parameters.
-type MLSpec struct {
+	// TODO (andreyvelich): Add support for Volcano gang-scheduler.
+}
+
+// CoschedulingPodGroupPolicySource represents configuration for coscheduling plugin.
+type CoschedulingPodGroupPolicySource struct {
+
+	// Time threshold to schedule PodGroup for gang-scheduling.
+	// If the scheduling timeout is equal to 0, the default value is used.
+	// Defaults to 60 seconds.
+	ScheduleTimeoutSeconds *int32 `json:"scheduleTimeoutSeconds,omitempty"`
+}
+
+// MLPolicy represents configuration for the model trining with ML-specific parameters.
+type MLPolicy struct {
 
 	// Number of training nodes.
 	// Defaults to 1.
 	NumNodes *int32 `json:"numNodes,omitempty"`
 
 	// Configuration for the runtime-specific parameters, such as Torch or MPI.
-	// One of the following spec sources can be set.
-	MLSpecSource `json:",inline"`
+	// Only one of its members may be specified.
+	MLPolicySource `json:",inline"`
 }
 
 // MLPolicySource represents the runtime-specific configuration for various technologies.
 // One of the following specs can be set.
-type MLSpecSource struct {
+type MLPolicySource struct {
 
 	// Configuration for the PyTorch runtime.
-	Torch *TorchMLSpecSource `json:"torch,omitempty"`
+	Torch *TorchMLPolicySource `json:"torch,omitempty"`
 
 	// Configuration for the MPI Runtime.
-	MPI *MPIMLSpecSource `json:"mpi,omitempty"`
+	MPI *MPIMLPolicySource `json:"mpi,omitempty"`
 }
 
-// TorchMLSpecSource represents a PyTorch runtime configuration.
-type TorchMLSpecSource struct {
+// TorchMLPolicySource represents a PyTorch runtime configuration.
+type TorchMLPolicySource struct {
 	// Number of processes per node.
 	// This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
 	// Supported values: `auto`, `cpu`, `gpu`, or int value.
@@ -179,8 +185,8 @@ type TorchElasticPolicy struct {
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 
-// MPIMLSpecSource represents a MPI runtime configuration.
-type MPIMLSpecSource struct {
+// MPIMLPolicySource represents a MPI runtime configuration.
+type MPIMLPolicySource struct {
 	// Number of processes per node.
 	// This value is equal to the number of slots for each node in the hostfile.
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
