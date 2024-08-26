@@ -80,7 +80,6 @@ type TrainingRuntimeList struct {
 
 // TrainingRuntimeSpec represents a specification of the desired training runtime.
 type TrainingRuntimeSpec struct {
-
 	// Configuration for the model training with ML-specific parameters.
 	MLPolicy *MLPolicy `json:"mlPolicy,omitempty"`
 
@@ -103,7 +102,6 @@ type JobSetTemplateSpec struct {
 
 // PodGroupPolicy represents a PodGroup configuration for gang-scheduling.
 type PodGroupPolicy struct {
-
 	// Configuration for gang-scheduling using various plugins.
 	PodGroupPolicySource `json:",inline"`
 }
@@ -111,7 +109,6 @@ type PodGroupPolicy struct {
 // PodGroupPolicySource represents supported plugins for gang-scheduling.
 // Only one of its members may be specified.
 type PodGroupPolicySource struct {
-
 	// Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.
 	Coscheduling *CoschedulingPodGroupPolicySource `json:"coscheduling,omitempty"`
 
@@ -119,8 +116,8 @@ type PodGroupPolicySource struct {
 }
 
 // CoschedulingPodGroupPolicySource represents configuration for coscheduling plugin.
+// The number of min members in the PodGroupSpec is always equal to the number of nodes.
 type CoschedulingPodGroupPolicySource struct {
-
 	// Time threshold to schedule PodGroup for gang-scheduling.
 	// If the scheduling timeout is equal to 0, the default value is used.
 	// Defaults to 60 seconds.
@@ -129,7 +126,6 @@ type CoschedulingPodGroupPolicySource struct {
 
 // MLPolicy represents configuration for the model trining with ML-specific parameters.
 type MLPolicy struct {
-
 	// Number of training nodes.
 	// Defaults to 1.
 	NumNodes *int32 `json:"numNodes,omitempty"`
@@ -142,7 +138,6 @@ type MLPolicy struct {
 // MLPolicySource represents the runtime-specific configuration for various technologies.
 // One of the following specs can be set.
 type MLPolicySource struct {
-
 	// Configuration for the PyTorch runtime.
 	Torch *TorchMLPolicySource `json:"torch,omitempty"`
 
