@@ -14,23 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhookv2
+package runtimev2
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
+	"context"
 
-	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
-func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
-	if err := setupWebhookForClusterTrainingRuntime(mgr, runtimes); err != nil {
-		return "ClusterTrainingRuntime", err
-	}
-	if err := setupWebhookForTrainingRuntime(mgr, runtimes); err != nil {
-		return "TrainingRuntime", err
-	}
-	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
-		return "TrainJob", err
-	}
-	return "", nil
+type ReconcilerBuilder func(*builder.Builder, client.Client) *builder.Builder
+
+type Runtime interface {
+	NewObjects(ctx context.Context, trainJob *kubeflowv2.TrainJob) ([]client.Object, error)
+	EventHandlerRegistrars() []ReconcilerBuilder
 }
