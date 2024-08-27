@@ -65,10 +65,10 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "manifests", "base", "crds")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "manifests", "base", "v1", "crds")},
 		ErrorIfCRDPathMissing: true,
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "..", "..", "manifests", "base", "webhook", "manifests.yaml")},
+			Paths: []string{filepath.Join("..", "..", "..", "manifests", "base", "v1", "webhook", "manifests.yaml")},
 		},
 	}
 

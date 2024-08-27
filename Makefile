@@ -38,9 +38,11 @@ help: ## Display this help.
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=training-operator webhook paths="./pkg/apis/kubeflow.org/v1/..." \
-		output:crd:artifacts:config=manifests/base/crds \
-		output:rbac:artifacts:config=manifests/base/rbac \
-		output:webhook:artifacts:config=manifests/base/webhook
+		output:crd:artifacts:config=manifests/base/v1/crds \
+		output:rbac:artifacts:config=manifests/base/v1/rbac \
+		output:webhook:artifacts:config=manifests/v1/base/webhook
+	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" paths="./pkg/apis/kubeflow.org/v2alpha1/..." \
+		output:crd:artifacts:config=manifests/base/v2alpha1/crds
 
 generate: controller-gen ## Generate apidoc, sdk and code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
@@ -95,10 +97,10 @@ docker-push: ## Push docker image with the manager.
 ##@ Deployment
 
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build manifests/base/crds | kubectl apply -f -
+	$(KUSTOMIZE) build manifests/base/v1/crds | kubectl apply -f -
 
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build manifests/base/crds | kubectl delete -f -
+	$(KUSTOMIZE) build manifests/base/v1/crds | kubectl delete -f -
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd manifests/overlays/standalone && $(KUSTOMIZE) edit set image kubeflow/training-operator=${IMG}
