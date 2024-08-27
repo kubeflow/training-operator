@@ -27,7 +27,7 @@ jobs:
 
       - name: Check Go modules
         run: |
-          go mod tidy && git add go.* &&
+          go mod tidy && pushd hack/swagger && go mod tidy && popd && git add go.* &&
           git diff --cached --exit-code || (echo 'Please run "go mod tidy" to sync Go modules' && exit 1);
       - name: Check manifests
         run: |
