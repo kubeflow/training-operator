@@ -10,6 +10,17 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# Setting GREP allows macos users to install GNU grep and use the latter
+# instead of the default BSD grep.
+ifeq ($(shell command -v ggrep 2>/dev/null),)
+    GREP ?= $(shell command -v grep)
+else
+    GREP ?= $(shell command -v ggrep)
+endif
+ifeq ($(shell ${GREP} --version 2>&1 | grep -q GNU; echo $$?),1)
+    $(error !!! GNU grep is required. If on OS X, use 'brew install grep'.)
+endif
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -79,6 +90,10 @@ test: envtest
 .PHONY: test-integrationv2
 test-integrationv2: envtest
 	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
+
+.PHONY: testv2
+testv2:
+	go test $(shell go list ./pkg/... | $(GREP) -E '.*\.v2') -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
