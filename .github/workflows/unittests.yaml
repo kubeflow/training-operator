@@ -31,9 +31,13 @@ jobs:
         with:
           go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator/go.mod
 
-      - name: Run Go test
+      - name: Run Go test for v1
         run: |
           make test ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
+
+      - name: Run Go test for v2
+        run: |
+          make test-integrationv2 ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
 
       - name: Coveralls report
         uses: shogo82148/actions-goveralls@v1
