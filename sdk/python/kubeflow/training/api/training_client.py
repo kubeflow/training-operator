@@ -19,15 +19,15 @@ import queue
 import time
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from kubeflow.storage_initializer.constants import VOLUME_PATH_DATASET
-from kubeflow.storage_initializer.constants import VOLUME_PATH_MODEL
+from kubeflow.storage_initializer.constants import (
+    VOLUME_PATH_DATASET,
+    VOLUME_PATH_MODEL,
+)
 from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
 from kubeflow.training.constants import constants
 from kubeflow.training.utils import utils
-from kubernetes import client
-from kubernetes import config
-from kubernetes import watch
+from kubernetes import client, config, watch
 
 logger = logging.getLogger(__name__)
 
@@ -178,10 +178,10 @@ class TrainingClient(object):
 
         # fmt: off
 
-        from kubeflow.storage_initializer.hugging_face import \
-            HuggingFaceDatasetParams
-        from kubeflow.storage_initializer.hugging_face import \
-            HuggingFaceModelParams
+        from kubeflow.storage_initializer.hugging_face import (
+            HuggingFaceDatasetParams,
+            HuggingFaceModelParams,
+        )
         from kubeflow.storage_initializer.s3 import S3DatasetParams
 
         # fmt: on

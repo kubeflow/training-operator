@@ -16,8 +16,8 @@ import logging
 import os
 import traceback
 
-from tracker import RabitTracker
 import xgboost as xgb
+from tracker import RabitTracker
 
 logger = logging.getLogger(__name__)
 

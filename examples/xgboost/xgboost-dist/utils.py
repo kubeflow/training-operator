@@ -18,8 +18,8 @@ import tempfile
 import joblib
 import oss2
 import pandas as pd
-from sklearn import datasets
 import xgboost as xgb
+from sklearn import datasets
 
 logger = logging.getLogger(__name__)
 

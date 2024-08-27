@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 import inspect
 import json
 import logging
@@ -20,6 +19,7 @@ import os
 import queue
 import textwrap
 import threading
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from kubeflow.training import models

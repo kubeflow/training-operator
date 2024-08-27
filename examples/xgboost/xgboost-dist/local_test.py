@@ -17,12 +17,9 @@ Note: this is not for distributed train and predict test
 import logging
 
 import numpy as np
-from sklearn.metrics import precision_score
-from utils import dump_model
-from utils import read_model
-from utils import read_predict_data
-from utils import read_train_data
 import xgboost as xgb
+from sklearn.metrics import precision_score
+from utils import dump_model, read_model, read_predict_data, read_train_data
 
 logger = logging.getLogger(__name__)
 

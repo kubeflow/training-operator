@@ -14,9 +14,7 @@ import logging
 
 import numpy as np
 from sklearn.metrics import precision_score
-from utils import extract_xgbooost_cluster_env
-from utils import read_model
-from utils import read_predict_data
+from utils import extract_xgbooost_cluster_env, read_model, read_predict_data
 
 
 def predict(args):
