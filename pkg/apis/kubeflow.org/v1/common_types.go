@@ -188,9 +188,6 @@ const (
 	RestartPolicyExitCode RestartPolicy = "ExitCode"
 )
 
-// maximum length of the value of the ManagedBy field
-const MaxManagedByLength = 63
-
 // RunPolicy encapsulates various runtime policies of the distributed training
 // job, for example how to clean up resources and how long the job can stay
 // active.
@@ -242,7 +239,7 @@ type RunPolicy struct {
 	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
 	// all characters before the first "/" must be a valid subdomain as defined
 	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
-	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
+	// characters as defined by RFC 3986.
 	// The field is immutable.
 	ManagedBy *string `json:"managedBy,omitempty"`
 }

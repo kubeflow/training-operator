@@ -17,9 +17,6 @@ func ValidateManagedBy(runPolicy *v1.RunPolicy, allErrs field.ErrorList) field.E
 		manager := *runPolicy.ManagedBy
 		fieldPath := field.NewPath("spec", "managedBy")
 		allErrs = append(allErrs, validation.IsDomainPrefixedPath(fieldPath, manager)...)
-		if len(manager) > v1.MaxManagedByLength {
-			allErrs = append(allErrs, field.TooLongMaxLength(fieldPath, manager, v1.MaxManagedByLength))
-		}
 		if !SupportedJobControllers.Has(manager) {
 			allErrs = append(allErrs, field.NotSupported(fieldPath, manager, sets.List(SupportedJobControllers)))
 		}

@@ -192,23 +192,6 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},
-		"managedBy controller name is too long": {
-			paddleJob: &trainingoperator.PaddleJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
-				Spec: trainingoperator.PaddleJobSpec{
-					RunPolicy: trainingoperator.RunPolicy{
-						ManagedBy: ptr.To(testutil.TooLongManagedBy),
-					},
-					PaddleReplicaSpecs: validPaddleReplicaSpecs,
-				},
-			},
-			wantErr: field.ErrorList{
-				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
-				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
-			},
-		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {

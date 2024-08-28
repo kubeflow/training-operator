@@ -203,23 +203,6 @@ func TestValidateTFJob(t *testing.T) {
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},
-		"managedBy controller name is too long": {
-			tfJob: &trainingoperator.TFJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
-				Spec: trainingoperator.TFJobSpec{
-					RunPolicy: trainingoperator.RunPolicy{
-						ManagedBy: ptr.To(testutil.TooLongManagedBy),
-					},
-					TFReplicaSpecs: validTFReplicaSpecs,
-				},
-			},
-			wantErr: field.ErrorList{
-				field.TooLongMaxLength(field.NewPath("spec").Child("managedBy"), "", trainingoperator.MaxManagedByLength),
-				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
-			},
-		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
