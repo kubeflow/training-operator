@@ -29,17 +29,26 @@ logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
 
-def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
+def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, num_labels):
     # Set up the model and tokenizer
     parsed_uri = urlparse(model_uri)
     model_name = parsed_uri.netloc + parsed_uri.path
 
-    model = transformer_type.from_pretrained(
-        pretrained_model_name_or_path=model_name,
-        cache_dir=model_dir,
-        local_files_only=True,
-        trust_remote_code=True,
-    )
+    if num_labels != "None":
+        model = transformer_type.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            cache_dir=model_dir,
+            local_files_only=True,
+            trust_remote_code=True,
+            num_labels=int(num_labels),
+        )
+    else:
+        model = transformer_type.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            cache_dir=model_dir,
+            local_files_only=True,
+            trust_remote_code=True,
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_name,
@@ -145,6 +154,7 @@ def parse_arguments():
 
     parser.add_argument("--model_uri", help="model uri")
     parser.add_argument("--transformer_type", help="model transformer type")
+    parser.add_argument("--num_labels", default="None", help="number of classes")
     parser.add_argument("--model_dir", help="directory containing model")
     parser.add_argument("--dataset_dir", help="directory containing dataset")
     parser.add_argument("--lora_config", help="lora_config")
@@ -163,7 +173,7 @@ if __name__ == "__main__":
 
     logger.info("Setup model and tokenizer")
     model, tokenizer = setup_model_and_tokenizer(
-        args.model_uri, transformer_type, args.model_dir
+        args.model_uri, transformer_type, args.model_dir, args.num_labels
     )
 
     logger.info("Preprocess dataset")
