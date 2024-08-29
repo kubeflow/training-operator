@@ -504,7 +504,9 @@ def test_update_job(training_client, test_name, kwargs, expected_output):
     print("test execution complete")
 
 
-@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_wait_for_job_conditions)
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output", test_data_wait_for_job_conditions
+)
 def test_wait_for_job_conditions(
     training_client_wait_for_job_conditions, test_name, kwargs, expected_output
 ):
