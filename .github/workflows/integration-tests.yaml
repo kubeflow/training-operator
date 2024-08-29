@@ -92,9 +92,6 @@ jobs:
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-      
-      - name: Check Disk Space
-        run: df -h
 
       - name: Run tests
         run: |
