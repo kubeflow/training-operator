@@ -4,6 +4,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 from kubeflow.training import (
+    KubeflowOrgV1JobCondition,
+    KubeflowOrgV1JobStatus,
     KubeflowOrgV1PyTorchJob,
     KubeflowOrgV1PyTorchJobSpec,
     KubeflowOrgV1ReplicaSpec,
