@@ -266,6 +266,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace):
         model_provider_parameters=HuggingFaceModelParams(
             model_uri="hf://google-bert/bert-base-cased",
             transformer_type=transformers.AutoModelForSequenceClassification,
+            num_labels=5,
         ),
         # In order to save test time, use 8 samples from Yelp dataset.
         dataset_provider_parameters=HuggingFaceDatasetParams(
