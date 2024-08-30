@@ -35,7 +35,6 @@ from kubeflow.training import KubeflowOrgV1PyTorchJobSpec
 from kubeflow.training import KubeflowOrgV1RunPolicy
 from kubeflow.training import KubeflowOrgV1SchedulingPolicy
 from kubeflow.training import constants
-from kubeflow.training.utils import utils
 
 from peft import LoraConfig
 import transformers
@@ -362,23 +361,38 @@ def clean_up_resources():
         print("Disk usage before removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
 
-        # Remove unnecessary docker files
+        # Check detailed disk usage in /mnt
+        print("Detailed disk usage in /mnt before cleanup:")
+        subprocess.run(["du", "-sh", "/mnt/*"], check=True)
+
+        # Remove unnecessary docker files from the correct directory
         print("Freeing up disk space by removing unnecessary files...")
         subprocess.run([
             "sudo", "rm", "-rf", 
-            "mnt/docker"
+            "/mnt/docker"
         ], check=True)
 
-        # Prune Docker images and build cache
+        # List open files in /mnt/docker to understand usage
+        print("Listing open files in /mnt/docker:")
+        subprocess.run(["lsof", "+D", "/mnt/docker"], check=True)
+
+        # Prune Docker images and volumes
         print("Pruning Docker images...")
         subprocess.run(["docker", "image", "prune", "-a", "-f"], check=True)
 
+        print("Pruning Docker volumes...")
+        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
+
         print("Clearing Docker build cache...")
         subprocess.run(["docker", "builder", "prune", "-f"], check=True)
-             
+
         # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
+
+        # Check detailed disk usage in /mnt after cleanup
+        print("Detailed disk usage in /mnt after cleanup:")
+        subprocess.run(["du", "-sh", "/mnt/*"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
