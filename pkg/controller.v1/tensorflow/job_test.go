@@ -663,6 +663,30 @@ var _ = Describe("Test for controller.v1/common", func() {
 			wantTFJobIsRemoved: false,
 			wantErr:            false,
 		}),
+		Entry("No error with completionTime is nil if suspended", &cleanUpCases{
+			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, nil),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: nil,
+				Suspend:                 ptr.To(true),
+			},
+			jobStatus: kubeflowv1.JobStatus{
+				CompletionTime: nil,
+			},
+			wantTFJobIsRemoved: false,
+			wantErr:            false,
+		}),
+		Entry("No error with TTL is set and completionTime is nil, if suspended", &cleanUpCases{
+			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, ptr.To[int32](10)),
+			runPolicy: &kubeflowv1.RunPolicy{
+				TTLSecondsAfterFinished: ptr.To[int32](10),
+				Suspend:                 ptr.To(true),
+			},
+			jobStatus: kubeflowv1.JobStatus{
+				CompletionTime: nil,
+			},
+			wantTFJobIsRemoved: false,
+			wantErr:            false,
+		}),
 		Entry("Error is occurred since completionTime is nil", &cleanUpCases{
 			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, ptr.To[int32](10)),
 			runPolicy: &kubeflowv1.RunPolicy{
