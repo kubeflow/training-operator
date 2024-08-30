@@ -359,8 +359,15 @@ def clean_up_resources():
 
     # Prune all unused Docker images
     try:
+        # Remove all stopped containers
+        subprocess.run(["docker", "container", "prune", "-f"], check=True)
+        # Remove all unused images
         subprocess.run(["docker", "image", "prune", "-a", "-f"], check=True)
+        # Remove all unused volumes
+        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
+        # Remove all unused networks
+        subprocess.run(["docker", "network", "prune", "-f"], check=True)
+        # Show Docker disk usage
         subprocess.run(["docker", "system", "df"], check=True)
-        subprocess.run(["df", "-hT"], check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error during cleanup: {e}")
+        print(f"Error during Docker cleanup: {e}")
