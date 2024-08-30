@@ -311,7 +311,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace):
 
     try:
         utils.verify_job_e2e(
-            TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900
+            TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=300
         )
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)

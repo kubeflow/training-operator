@@ -100,6 +100,12 @@ jobs:
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
 
+      # List all Docker volumes to understand disk usage
+      - name: List Docker volumes
+        run: |
+          echo "Listing all Docker volumes:"
+          docker volume ls
+
       - name: Collect volcano logs
         if: ${{ failure() &&  matrix.gang-scheduler-name == 'volcano' }}
         run: |
