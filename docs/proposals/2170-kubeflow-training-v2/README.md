@@ -307,7 +307,14 @@ type TrainJobSpec struct {
 	// Defaults to false.
 	Suspend *bool `json:"suspend,omitempty"`
 
-	// ManagedBy field indicates the controller that manages a TrainJob.
+	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+	// The value must be either an empty, 'kubeflow.org/trainjob-controller' or
+	// 'kueue.x-k8s.io/multikueue'.
+	// The built-in TrainJob controller reconciles TrainJob which don't have this
+	// field at all or the field value is the reserved string
+	// 'kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
+	// The field is immutable.
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
