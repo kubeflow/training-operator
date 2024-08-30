@@ -358,6 +358,10 @@ def clean_up_resources():
     yield
 
     try:
+        # Check contents of /mnt before cleanup
+        print("Listing contents of /mnt directory before cleanup:")
+        subprocess.run(["ls", "-lh", "/mnt"], check=True)
+        
         # 1. Remove unnecessary files
         print("Freeing up disk space by removing unnecessary files...")
         subprocess.run([
@@ -368,7 +372,7 @@ def clean_up_resources():
             "$AGENT_TOOLSDIRECTORY",
             "/usr/local/lib/android",
             "/usr/local/share/powershell",
-            "/usr/share/swift"
+            "/usr/share/swift",
         ], check=True)
         
         print("Disk usage after removing unnecessary files:")
@@ -380,6 +384,10 @@ def clean_up_resources():
         
         print("Docker disk usage after pruning images:")
         subprocess.run(["docker", "system", "df"], check=True)
+
+        # Check contents of /mnt after cleanup
+        print("Listing contents of /mnt directory after cleanup:")
+        subprocess.run(["ls", "-lh", "/mnt"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
