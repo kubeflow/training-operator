@@ -73,7 +73,7 @@ def list_namespaced_pod_response(*args, **kwargs):
 
 
 def get_job_response(*args, **kwargs):
-    if kwargs.get("namespace") == "runtime":
+    if kwargs.get("namespace") == RUNTIME:
         return generate_job_with_status(create_job(), constants.JOB_CONDITION_FAILED)
     else:
         return generate_job_with_status(create_job())
@@ -306,27 +306,45 @@ test_data_get_job_pods = [
 test_data_wait_for_job_conditions = [
     (
         "timeout waiting for succeeded condition",
-        {"name": TEST_NAME, "namespace": "timeout", "wait_timeout": 0},
+        {
+            "name": TEST_NAME,
+            "namespace": TIMEOUT,
+            "wait_timeout": 0,
+        },
         TimeoutError,
     ),
     (
         "invalid expected condition",
-        {"name": TEST_NAME, "namespace": "value", "expected_conditions": {"invalid"}},
+        {
+            "name": TEST_NAME,
+            "namespace": "value",
+            "expected_conditions": {"invalid"},
+        },
         ValueError,
     ),
     (
         "invalid expected condition(lowercase)",
-        {"name": TEST_NAME, "namespace": "value", "expected_conditions": {"succeeded"}},
+        {
+            "name": TEST_NAME,
+            "namespace": "value",
+            "expected_conditions": {"succeeded"},
+        },
         ValueError,
     ),
     (
         "job failed unexpectedly",
-        {"name": TEST_NAME, "namespace": "runtime"},
+        {
+            "name": TEST_NAME,
+            "namespace": RUNTIME,
+        },
         RuntimeError,
     ),
     (
         "valid case",
-        {"name": TEST_NAME, "namespace": "test-namespace"},
+        {
+            "name": TEST_NAME,
+            "namespace": "test-namespace",
+        },
         generate_job_with_status(create_job()),
     ),
     (
@@ -415,15 +433,8 @@ def training_client():
         ),
     ), patch(
         "kubernetes.config.load_kube_config", return_value=Mock()
-    ):
-        client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
-        yield client
-
-
-@pytest.fixture
-def training_client_wait_for_job_conditions():
-    with patch.object(TrainingClient, "get_job", side_effect=get_job_response), patch(
-        "kubernetes.config.load_kube_config", return_value=Mock()
+    ), patch.object(
+        TrainingClient, "get_job", side_effect=get_job_response
     ):
         client = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
         yield client
@@ -509,15 +520,13 @@ def test_update_job(training_client, test_name, kwargs, expected_output):
 @pytest.mark.parametrize(
     "test_name,kwargs,expected_output", test_data_wait_for_job_conditions
 )
-def test_wait_for_job_conditions(
-    training_client_wait_for_job_conditions, test_name, kwargs, expected_output
-):
+def test_wait_for_job_conditions(training_client, test_name, kwargs, expected_output):
     """
     test wait_for_job_conditions function of training client
     """
     print("Executing test:", test_name)
     try:
-        out = training_client_wait_for_job_conditions.wait_for_job_conditions(**kwargs)
+        out = training_client.wait_for_job_conditions(**kwargs)
         assert out == expected_output
     except Exception as e:
         assert type(e) is expected_output
