@@ -359,32 +359,13 @@ def clean_up_resources():
         print("Disk usage before removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
 
-        # List all volumes and inspect them
-        print("Listing all Docker volumes:")
-        subprocess.run(["docker", "volume", "ls"], check=True)
-
         # Prune unused volumes
         print("Pruning unused Docker volumes...")
-        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
+        subprocess.run(["docker", "system", "prune", "-a", "--volumes", "-f"], check=True)
 
-        # Check for stopped containers
-        print("Checking for stopped containers:")
-        subprocess.run(["docker", "ps", "-a"], check=True)
-
-        # Remove all stopped containers
-        print("Removing stopped containers...")
-        subprocess.run(["docker", "rm", "$(docker ps -a -q)"], shell=True, check=True)
-
-        # Display disk usage before cleanup
-        print("Disk usage before removing unnecessary files:")
+        # Display disk usage after cleanup
+        print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
-
-        # Remove unnecessary docker files from the correct directory
-        print("Freeing up disk space by removing unnecessary files...")
-        subprocess.run([
-            "sudo", "rm", "-rf", 
-            "/var/lib/docker"
-        ], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
