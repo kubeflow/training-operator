@@ -255,8 +255,6 @@ def test_sdk_e2e_create_from_image(job_namespace):
 def test_sdk_e2e_create_from_train_api(job_namespace):
     JOB_NAME = "pytorchjob-from-train-api"
 
-    num_workers = 1
-
     # Use test case from fine-tuning API tutorial.
     # https://www.kubeflow.org/docs/components/training/user-guides/fine-tuning/
     TRAINING_CLIENT.train(
@@ -292,7 +290,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace):
                 bias="none",
             ),
         ),
-        num_workers=num_workers,  # nodes parameter for torchrun command.
+        num_workers=1,  # nodes parameter for torchrun command.
         num_procs_per_worker=1,  # nproc-per-node parameter for torchrun command.
         resources_per_worker={
             "gpu": 0,
@@ -357,23 +355,21 @@ def clean_up_resources():
     yield
 
     try:
-        # Display disk usage before cleanup
-        print("Disk usage before removing unnecessary files:")
-        subprocess.run(["df", "-hT"], check=True)
+        # List all volumes and inspect them
+        print("Listing all Docker volumes:")
+        subprocess.run(["docker", "volume", "ls"], check=True)
 
-        # Check contents of /var/lib/docker before cleanup
-        print("Listing contents of /var/lib/docker directory before cleanup:")
-        try:
-            subprocess.run(["ls", "-lh", "/var/lib/docker"], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error listing /var/lib/docker: {e}")
+        # Check for stopped containers
+        print("Checking for stopped containers:")
+        subprocess.run(["docker", "ps", "-a"], check=True)
 
-        # Check contents of /mnt/docker before cleanup
-        print("Listing contents of /mnt/docker directory before cleanup:")
-        try:
-            subprocess.run(["ls", "-lh", "/mnt/docker"], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error listing /mnt/docker: {e}")
+        # Remove all stopped containers
+        print("Removing stopped containers...")
+        subprocess.run(["docker", "rm", "$(docker ps -a -q)"], shell=True, check=True)
+
+        # Prune unused volumes
+        print("Pruning unused Docker volumes...")
+        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
