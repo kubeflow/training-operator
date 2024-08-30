@@ -267,77 +267,78 @@ a training job:
 
 ```golang
 type TrainJob struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard object's metadata.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec defines the desired state of TrainJob.
-	Spec TrainJobSpec `json:"spec"`
+	// Specification of the desired TrainJob.
+	Spec TrainJobSpec `json:"spec,omitempty"`
 
-	// Status defines the current state of TrainJob.
+	// Current status of TrainJob.
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
 type TrainJobSpec struct {
-	// Reference to the Training Runtime.
+	// Reference to the training runtime.
 	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
 
-	// Parameters that data scientists can override
+	// Configuration of the desired trainer.
 	Trainer *Trainer `json:"trainer,omitempty"`
 
-	// Configuration for training dataset
+	// Configuration of the training dataset.
 	DatasetConfig *DatasetConfig `json:"datasetConfig,omitempty"`
 
-	// Configuration for the pre-trained model and location for model output
+	// Configuration of the pre-trained and trained model.
 	ModelConfig *ModelConfig `json:"modelConfig,omitempty"`
 
-	// Custom metadata to apply for Job, JobSet, etc.
-	Labels      map[string]string `json:"labels,omitempty"`
+	// Labels to apply for the derivative JobSet and Jobs.
+	// They will be merged with the TrainingRuntime values.
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Annotations to apply for the derivative JobSet and Jobs.
+	// They will be merged with the TrainingRuntime values.
 	Annotations map[string]string `json:"annotations,omitempty"`
 
-	// PodSpecOverrides represents overrides for the TrainingRuntime when TrainJob is created.
-	PodSpecOverrides []PodSpecOverrides `json:"podSpecOverrides,omitempty"`
+	// Custom overrides for the training runtime.
+	PodSpecOverrides []PodSpecOverride `json:"podSpecOverrides,omitempty"`
 
-	// Suspend suspends TrainJob.
+	// Whether the controller should suspend the running TrainJob.
+	// Defaults to false.
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
-	// The value must be either an empty, 'kubeflow.org/trainjob-controller' or
-	// 'kueue.x-k8s.io/multikueue'.
-	// The built-in TrainJob controller reconciles TrainJob which don't have this
-	// field at all or the field value is the reserved string
-	// 'kubeflow.org/trainjob-controller', but delegates reconciling TrainJobs
-	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
-	//
-	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
-	// all characters before the first "/" must be a valid subdomain as defined
-	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
-	// characters as defined by RFC 3986. The value cannot exceed 63 characters.
-	// The field is immutable.
+	// The value must be either an empty, `kubeflow.org/trainjob-controller` or
+	// `kueue.x-k8s.io/multikueue`. The built-in TrainJob controller reconciles TrainJob which
+	// don't have this field at all or the field value is the reserved string
+	// `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
+	// Defaults to `kubeflow.org/trainjob-controller`
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
 type TrainingRuntimeRef struct {
-	// Name is the name of the runtime being referenced.
-	// This must indicate the runtime deployed in the same namespace as the TrainJob
-	// when TrainingRuntime is used in the kind.
+	// Name of the runtime being referenced.
+	// When namespaced-scoped TrainingRuntime is used, the TrainJob must have
+	// the same namespace as the deployed runtime.
 	Name string `json:"name"`
 
-	// APIGroup is the group of the runtime being referenced.
-	// Defaults to 'kubeflow.org'.
+	// APIGroup of the runtime being referenced.
+	// Defaults to `kubeflow.org`.
 	APIGroup *string `json:"apiGroup,omitempty"`
 
-	// Kind is the kind of the runtime being referenced.
-	// The value must be TrainingRuntime or ClusterTrainingRuntime when the 'kubeflow.org' is used in the apiGroup.
-	// Defaults to the ClusterTrainingRuntime when the 'kubeflow.org' is used in the apiGroup.
+	// Kind of the runtime being referenced.
+	// It must be one of TrainingRuntime or ClusterTrainingRuntime.
+	// Defaults to ClusterTrainingRuntime.
 	Kind *string `json:"kind,omitempty"`
 }
 
 type TrainJobStatus struct {
-	// Conditions for the TrainJob. Initially, it will have the same conditions as JobSet.
+	// Conditions for the TrainJob.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// ReplicatedJobsStatus track the number of Jobs for each replicatedJob in JobSet.
-	ReplicatedJobsStatus []ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.
+	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
 }
 
 type ReplicatedJobStatus struct {
@@ -508,29 +509,29 @@ This trainer is executed on every distributed training Node.
 
 ```golang
 type Trainer struct {
+	// Docker image for the training container.
+	Image *string `json:"image,omitempty"`
 
-	// Docker image for the Trainer.
-	Image string `json:"image,omitempty"`
-
-	// Command for the training container.
-	// Validate that command contains torchrun or mpirun.
+	// Entrypoint commands for the training container.
 	Command []string `json:"command,omitempty"`
 
-	// Args for the training container.
+	// Arguments to the entrypoint for the training container.
 	Args []string `json:"args,omitempty"`
 
-	// Env for the training container.
+	// List of environment variables to set in the training container.
+	// These values will be merged with the TrainingRuntime's trainer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Number of training nodes.
 	NumNodes *int32 `json:"numNodes,omitempty"`
 
-	// Resource for each node.
-	ResourcesPerNode []corev1.resources `json:"resourcesPerNode,omitempty"`
+	// Compute resources for each training node.
+	ResourcesPerNode *corev1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
 
-	// Number of processes in a single node.
-	// By default this value == number of GPUs in resources limits.
-	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+	// Number of processes/workers/slots on every training node.
+	// For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set.
+	// For the MPI runtime only int value can be set.
+	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
 }
 ```
 
@@ -588,13 +589,14 @@ The `DatasetConfig` represents the APIs that data scientists can use to configur
 ```golang
 type DatasetConfig struct {
 	// Storage uri for the dataset provider.
-	StorageUri string `json:"storageUri"`
+	StorageUri *string `json:"storageUri,omitempty"`
 
-	// Custom env variables for dataset initializer
+	// List of environment variables to set in the dataset initializer container.
+	// These values will be merged with the TrainingRuntime's dataset initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the secrets to access dataset.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the TrainJob's secrets to download dataset.
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -642,33 +644,39 @@ input and output location.
 
 ```golang
 type ModelConfig struct {
-	// Configuration for pre-trained model.
+	// Configuration of the pre-trained model.
+	// When this API is used, the training runtime must have
+	// the `model-initializer` container in the `Initializer` Job.
 	Input *InputModel `json:"input,omitempty"`
 
-	// Configuration for trained model.
+	// Configuration of the trained model.
+	// When this API is used, the training runtime must have
+	// the `model-exporter` container in the `Finalizer` Job.
 	Output *OutputModel `json:"output,omitempty"`
 }
 
 type InputModel struct {
 	// Storage uri for the model provider.
-	StorageUri string `json:"storageUri"`
+	StorageUri *string `json:"storageUri,omitempty"`
 
-	// Custom env variables for model initializer
+	// List of environment variables to set in the model initializer container.
+	// These values will be merged with the TrainingRuntime's model initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the secrets to access model.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the TrainJob's secrets to download model.
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 type OutputModel struct {
-	// Storage uri for the model exported.
-	StorageUri string `json:"storageUri"`
+	// Storage uri for the model exporter.
+	StorageUri *string `json:"storageUri,omitempty"`
 
-	// Custom env variables for model exporter.
+	// List of environment variables to set in the model exporter container.
+	// These values will be merged with the TrainingRuntime's model exporter environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the secrets to export model.
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the TrainJob's secrets to export model.
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -720,97 +728,100 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-tune-llama-7b-export
 spec:
-  numNodes: 1
-  startupPolicy:
-    startupPolicyOrder: InOrder
-  replicatedJobs:
-    - name: Initializer
-      template:
-        spec:
+  mlPolicy:
+    numNodes: 1
+  template:
+    spec:
+      startupPolicy:
+        startupPolicyOrder: InOrder
+      replicatedJobs:
+        - name: Initializer
           template:
             spec:
-              containers:
-                - name: dataset-initializer
-                  image: docker.io/kubeflow/dataset-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://tatsu-lab/alpaca
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                - name: model-initializer
-                  image: docker.io/kubeflow/model-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://meta-llama/Llama-2-7b
-                  volumeMounts:
-                    - mountPath: /workspace/model
-                      name: model-initializer
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
-    - name: Node
-      template:
-        spec:
+              template:
+                spec:
+                  containers:
+                    - name: dataset-initializer
+                      image: docker.io/kubeflow/dataset-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://tatsu-lab/alpaca
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                    - name: model-initializer
+                      image: docker.io/kubeflow/model-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://meta-llama/Llama-2-7b
+                      volumeMounts:
+                        - mountPath: /workspace/model
+                          name: model-initializer
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/llm-trainer
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                    - name: LORA_CONFIG
-                      value: |
-                        {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
-                  command:
-                    - torchrun hf_llm_training.py
-                  resources:
-                    limits:
-                      nvidia.com/gpu: 2
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                    - mountPath: /workspace/pre-trained-model
-                      name: model-initializer
-                    - mountPath: /workspace/adapters
-                      name: model-exporter
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
-                - name: model-exporter
-                  persistentVolumeClaim:
-                    claimName: model-exporter
-    - name: Exporter
-      template:
-        spec:
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/llm-trainer
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                        - name: LORA_CONFIG
+                          value: |
+                            {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
+                      command:
+                        - torchrun hf_llm_training.py
+                      resources:
+                        limits:
+                          nvidia.com/gpu: 2
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                        - mountPath: /workspace/pre-trained-model
+                          name: model-initializer
+                        - mountPath: /workspace/adapters
+                          name: model-exporter
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
+                    - name: model-exporter
+                      persistentVolumeClaim:
+                        claimName: model-exporter
+        - name: Finalizer
           template:
             spec:
-              containers:
-                - name: model-exporter
-                  image: docker.io/kubeflow/model-exporter
-                  volumeMounts:
-                    - mountPath: /workspace/adapters
-                      name: model-exporter
-              volumes:
-                - name: model-exporter
-                  persistentVolumeClaim:
-                    claimName: model-exporter
+              template:
+                spec:
+                  containers:
+                    - name: model-exporter
+                      image: docker.io/kubeflow/model-exporter
+                      volumeMounts:
+                        - mountPath: /workspace/adapters
+                          name: model-exporter
+                  volumes:
+                    - name: model-exporter
+                      persistentVolumeClaim:
+                        claimName: model-exporter
 ```
 
-### The Pod Spec Overrides APIs
+### The PodSpecOverride APIs
 
-The `PodSpecOverrides` represents overrides for the `TrainingRuntime` when `TrainJob` is created.
+The `PodSpecOverride` represents overrides for the `TrainingRuntime` when `TrainJob` is created.
 These parameters can include the user's identity or PVC.
 
 Usually, these parameters should not be configured by the user and should be attached during the
@@ -820,48 +831,50 @@ In the future, we can add more parameters if we find use-cases when it is requir
 
 ```golang
 type PodSpecOverride struct {
-	// Name of the training replica in the training runtime template to override
+	// Names of the training job replicas in the training runtime template to apply the overrides.
 	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
 
-	// Override parameters for Containers.
-	Containers []Container `json:"container,omitempty"`
+	// Overrides for the containers in the desired job templates.
+	Containers []ContainerOverride `json:"containers,omitempty"`
 
-	// Override parameters for InitContainers.
-	InitContainer []Container `json:"initContainer,omitempty"`
+	// Overrides for the init container in the desired job templates.
+	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
 
-	// Override parameters for volumes.
-	Volumes []corev1.Volume `json:"volume,omitempty"`
+	// Overrides for the Pod volume configuration.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
-	// Custom Service Account
+	// Override for the service account.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// Node selector to fit pod on the node. This is needed to integrate TrainJob and Kueue
+	// Override for the node selector to place Pod on the specific mode.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// Override Pod's tolerations. This is needed to integrate TrainJob and Kueue
+	// Override for the Pod's tolerations.
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
-// Override for each container.
-// Parameters from Trainer, DatasetConfig, and ModelConfig will take precedence.
-type Container struct {
-	// Name for the container.
+// ContainerOverride represents parameters that can be overridden using PodSpecOverride.
+// Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
+type ContainerOverride struct {
+	// Name for the container. TrainingRuntime must have this container.
 	Name string `json:"name"`
 
-	// Command for the container.
+	// Entrypoint commands for the training container.
 	Command []string `json:"command,omitempty"`
 
-	// Args for the container.
+	// Arguments to the entrypoint for the training container.
 	Args []string `json:"args,omitempty"`
 
-	// Env for the container.
+	// List of environment variables to set in the container.
+	// These values will be merged with the TrainingRuntime's environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Env for the container.
+	// List of sources to populate environment variables in the container.
+	// These   values will be merged with the TrainingRuntime's environments.
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
-	// Override parameters for volume mounts.
-	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
+	// Pod volumes to mount into the container's filesystem.
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 ```
 
@@ -926,58 +939,97 @@ to control versions of `TrainingRuntime` and enable rolling updates.
 
 We are going to create two CRDs: `TrainingRuntime` and `ClusterTrainingRuntime`. These runtimes have
 exactly the same APIs, but the first one is the namespace-scoped, the second is the cluster-scoped.
-If `trainingRuntimeRef` in `TrainJob` has the namespace, controller will use the `TrainingRuntime`,
-otherwise it will use the `ClusterTrainingRuntime`.
+User can set the `kind` and `apiGroup` parameters in the `trainingRuntimeRef` to use
+the `TrainingRuntime` from the `TrainJob's` namespace, otherwise the `ClusterTrainingRuntime` will
+be used.
 
 ```golang
-type TrainingRuntime struct {
-    metav1.TypeMeta   `json:",inline"`
-    metav1.ObjectMeta `json:"metadata,omitempty"`
+type ClusterTrainingRuntime struct {
+	metav1.TypeMeta `json:",inline"`
 
-    // Framework specific parameters.
-    MLSpec *MLSpec `json:"mlSpec,omitempty"`
+	// Standard object's metadata.
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-    // Number of nodes to execute training. Defaults to 1.
-    NumNodes *int32 `json:"numNodes,omitempty"`
-
-    // JobSet spec.
-    JobSetSpec *jobsetv1.JobSetSpec `json:",inline"`
-
-    // Spec to create PodGroup for gang-scheduling using volcano or coscheduling.
-    PodGroupSpec *PodGroupSpec `json:"podGroupSpec,omitempty"`
+	// Specification of the desired ClusterTrainingRuntime.
+	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
-// One of the specs can be selected.
-type MLSpec struct {
+type TrainingRuntime struct {
+	metav1.TypeMeta `json:",inline"`
 
-    // Custom Spec for Torch
-    TorchSpec *TorchSpec `json:"torchSpec,omitempty"`
+	// Standard object's metadata.
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-    // Custom Spec for MPI
-    MPISpec *MPISpec `json:"mpiSpec,omitempty"`
+	// Specification of the desired TrainingRuntime.
+	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
+}
+
+type TrainingRuntimeSpec struct {
+	// Configuration for the model training with ML-specific parameters.
+	MLPolicy *MLPolicy `json:"mlPolicy,omitempty"`
+
+	// Configuration for the PodGroup to enable gang-scheduling via supported plugins.
+	PodGroupPolicy *PodGroupPolicy `json:"podGroupPolicy,omitempty"`
+
+	// JobSet template which will be used by TrainJob.
+	Template JobSetTemplateSpec `json:"template"`
+}
+
+// JobSetTemplateSpec represents a template of the desired JobSet.
+type JobSetTemplateSpec struct {
+	// Metadata for custom JobSet's labels and annotations.
+	// JobSet name and namespace is equal to the TrainJob's name and namespace.
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// Specification of the desired JobSet which will be created from TrainJob.
+	Spec jobsetv1alpha2.JobSetSpec `json:"spec,omitempty"`
+}
+
+type MLPolicy struct {
+	// Number of training nodes.
+	// Defaults to 1.
+	NumNodes *int32 `json:"numNodes,omitempty"`
+
+	// Configuration for the runtime-specific parameters, such as Torch or MPI.
+	// Only one of its members may be specified.
+	MLPolicySource `json:",inline"`
+}
+
+// MLPolicySource represents the runtime-specific configuration for various technologies.
+// One of the following specs can be set.
+type MLPolicySource struct {
+	// Configuration for the PyTorch runtime.
+	Torch *TorchMLPolicySource `json:"torch,omitempty"`
+
+	// Configuration for the MPI Runtime.
+	MPI *MPIMLPolicySource `json:"mpi,omitempty"`
 }
 ```
 
-### The PodGroupSpec API
+### The PodGroupPolicy API
 
-The `PodGroupSpec` is used to create the appropriate `PodGroup` for gang-scheduling. It can
+The `PodGroupPolicy` is used to create the appropriate `PodGroup` for gang-scheduling. It can
 be used with Volcano or Coscheduling.
 
 ```golang
-type PodGroupSpec struct {
-    // Plugin for gang scheduling.
-    Plugin *GangSchedulerPlugin `json:plugin,omitempty"`
-
-    // Time threshold to schedule PodGroup for gang scheduling.
-    ScheduleTimeoutSeconds *string `json:scheduleTimeoutSeconds,omitempty"`
+type PodGroupPolicy struct {
+	// Configuration for gang-scheduling using various plugins.
+	PodGroupPolicySource `json:",inline"`
 }
 
-type GangSchedulerPlugin string
+// Only one of its members may be specified.
+type PodGroupPolicySource struct {
+	// Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.
+	Coscheduling *CoschedulingPodGroupPolicySource `json:"coscheduling,omitempty"`
+}
 
-const (
-    GangSchedulerPluginVolcano            GangSchedulerPlugin = "volcano"
-    GangSchedulerPluginCoscheduling       GangSchedulerPlugin = "coscheduling"
-)
+// The number of min members in the PodGroupSpec is always equal to the number of nodes.
+type CoschedulingPodGroupPolicySource struct {
+	// Time threshold to schedule PodGroup for gang-scheduling.
+	// If the scheduling timeout is equal to 0, the default value is used.
+	// Defaults to 60 seconds.
+	ScheduleTimeoutSeconds *int32 `json:"scheduleTimeoutSeconds,omitempty"`
+}
 ```
 
 The following example shows example of runtime with gang-scheduling using coscheduling plugin.
@@ -990,32 +1042,35 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-distributed-multi-node
 spec:
-  mlSpec:
+  mlPolicy:
+    numNodes: 2
     torch:
       numProcPerNode: 5
-  podGroupSpec:
-    plugin: coscheduling
-    scheduleTimeoutSeconds: 100
-  replicatedJobs:
-    - name: node
-      template:
-        spec:
+  podGroupPolicy:
+    coscheduling:
+      scheduleTimeoutSeconds: 100
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              schedulerName: coscheduling
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/pytorch-mnist
-                  resources:
-                    limits:
-                      nvidia.com/gpu: 1
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  schedulerName: coscheduling
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/pytorch-mnist
+                      resources:
+                        limits:
+                          nvidia.com/gpu: 1
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                      command:
+                        - torchrun train.py
 ```
 
 Training Operator will create the `PodGroup` using the following spec:
@@ -1024,7 +1079,7 @@ Training Operator will create the `PodGroup` using the following spec:
 apiVersion: scheduling.x-k8s.io/v1alpha1
 kind: PodGroup
 metadata:
-  name: nginx
+  name: torch-distributed-multi-node
 spec:
   scheduleTimeoutSeconds: 100
   minMember: 5
@@ -1032,15 +1087,17 @@ spec:
 
 The `TrainJob` will be started only when 5 GPUs are available in the cluster.
 
-### The Torch Spec API
+### The TorchMLPolicySource API
 
-The `TorchSpec` API represents the configuration for the PyTorch distributed training. This configuration
-allows platform engineers to explicitly configure `torchrun` setting.
+The `TorchMLPolicySource` API represents the configuration for the PyTorch distributed training.
+This configuration allows platform engineers to explicitly configure `torchrun` setting.
 
 The distributed parameters are taken from the
 [PyTorch distributed launch run](https://github.com/pytorch/pytorch/blob/94dc3253a0fefbfb95fbe467ddd628e4c2eb08d7/torch/distributed/run.py).
 
-For Elastic Training we will always pass the following parameters:
+The `--standalone` parameter will be automatically set when `numProcPerNode > 0` and `numNodes=0`.
+
+For the Elastic Training we will always pass the following parameters:
 
 ```bash
 --rdzv-backend=c10d
@@ -1051,45 +1108,46 @@ For Elastic Training we will always pass the following parameters:
 ```
 
 Since the [etcd and etcd-v2 are legacy rendezvous](https://pytorch.org/docs/stable/elastic/run.html#note-on-rendezvous-backend),
-we won't support them in `TorchSpec`. We can introduce them in the future if users will require them.
+we won't support them in `TorchMLPolicySource`. We can introduce them in the future if users will require them.
 
 ```golang
-// TorchSpec represents the configuration for PyTorch.
-type TorchSpec struct {
+type TorchMLPolicySource struct {
+	// Number of processes per node.
+	// This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
+	// Supported values: `auto`, `cpu`, `gpu`, or int value.
+	// Defaults to `auto`.
+	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
 
-    // Number of Procs per Node.
-    NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
-
-    // Used for single-node multi-worker training.
-    // Defaults to false.
-    Standalone *bool `json:"standalone,omitempty"`
-
-    // Torch Elastic Policy.
-    ElasticPolicy *TorchElasticPolicy `json:"elasticPolicy,omitempty"`
+	// Elastic policy for the PyTorch training.
+	ElasticPolicy *TorchElasticPolicy `json:"elasticPolicy,omitempty"`
 }
 
-// If the Elastic Policy is set, the numNodes parameter is ignored.
-// --nnodes=minNodes:maxNodes
+// TorchElasticPolicy represents a configuration for the PyTorch elastic training.
+// If this policy is set, the `.spec.numNodes` parameter must be omitted, since min and max node
+// is used to configure the `torchrun` CLI argument: `--nnodes=minNodes:maxNodes`.
+// Only `c10d` backend is supported for the Rendezvous communication.
 type TorchElasticPolicy struct {
+	// How many times the training job can be restarted.
+	// This value is inserted into the `--max-restarts` argument of the `torchrun` CLI and
+	// the `.spec.failurePolicy.maxRestarts` parameter of the training Job.
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
 
-    // The limits to restart TrainJob.
-    // Insert it to the JobSet.spec.failurePolicy.maxRestarts
-    MaxRestarts *in32 `json:"maxRestarts,omitempty"`
+	// Lower limit for the number of nodes to which training job can scale down.
+	MinNodes *int32 `json:"minNodes,omitempty"`
 
-    // Min number of nodes for HPA and torchrun.
-    MinNodes *in32 `json:"minNodes,omitempty"`
+	// Upper limit for the number of nodes to which training job can scale up.
+	MaxNodes *int32 `json:"maxNodes,omitempty"`
 
-    // Max number of nodes for HPA and torchrun.
-    MaxNodes *in32 `json:"maxNodes,omitempty"`
-
-    // Metrics for scale up and down replicas.
-    Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
+	// Specification which are used to calculate the desired number of nodes. See the individual
+	// metric source types for more information about how each type of metric must respond.
+	// The HPA will be created to perform auto-scaling.
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 ```
 
-### The MPI Spec API
+### The MPIMLPolicySource API
 
-The `MPISpec` API represents the configuration for training using MPI orchestration.
+The `MPIMLPolicySource` API represents the configuration for training using MPI orchestration.
 E.g. creation of host-files and SSH keys. Using MPI might be more efficient for training on HPC
 clusters or for some ML frameworks (e.g. [MLX distributed with MPI](https://ml-explore.github.io/mlx/build/html/usage/distributed.html)).
 
@@ -1097,20 +1155,21 @@ We will fully migrate to the MPI Operator V2 functionality as part of this KEP.
 Check [the proposal for the MPI V2 APIs.](https://github.com/kubeflow/mpi-operator/blob/master/proposals/scalable-robust-operator.md)
 
 ```golang
-type MPISpec struct {
-    // Number of Procs per Node.
-    NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+type MPIMLPolicySource struct {
+	// Number of processes per node.
+	// This value is equal to the number of slots for each node in the hostfile.
+	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
-    // MPI Implementation to create appropriate host-files.
-    // Can be one of OpenMPI, Intel, or MPICH.
-    MPIImplementation *MPIImplementation `json:"mpiImplementation"`
+	// Implementation name for the MPI to create the appropriate hostfile.
+	// Defaults to OpenMPI.
+	MPIImplementation *MPIImplementation `json:"mpiImplementation,omitempty"`
 
-    // Directory where SSH keys are mounted.
-    SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
+	// Directory where SSH keys are mounted.
+	SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
 
-    // RunLauncherAsNode indicates whether to run training process in launcher.
-    // Defaults to false.
-    RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
+	// Whether to run training process on the launcher Job.
+	// Defaults to false.
+	RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
 }
 
 type MPIImplementation string
@@ -1136,25 +1195,28 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-distributed-multi-node
 spec:
-  mlSpec:
+  mlPolicy:
+    numNodes: 2
     torch:
       numProcPerNode: 5
-  replicatedJobs:
-    - name: node
-      template:
-        spec:
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/pytorch-mnist
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/pytorch-mnist
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                      command:
+                        - torchrun train.py
 ```
 
 Example of usage:
@@ -1186,7 +1248,7 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-distributed-elastic
 spec:
-  mlSpec:
+  mlPolicy:
     torchSpec:
       elasticPolicy:
         minNodes: 5
@@ -1198,22 +1260,24 @@ spec:
               target:
                 type: Utilization
                 averageUtilization: 80
-  replicatedJobs:
-    - name: node
-      template:
-        spec:
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/pytorch-mnist
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/pytorch-mnist
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                      command:
+                        - torchrun train.py
 ```
 
 #### Additional PyTorch Runtimes
@@ -1228,17 +1292,19 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-simple
 spec:
-  replicatedJobs:
-    - name: node
-      template:
-        spec:
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/pytorch-mnist
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/pytorch-mnist
+                      command:
+                        - torchrun train.py
 ```
 
 Single node multi worker training:
@@ -1249,26 +1315,27 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-distributed-single-worker
 spec:
-  mlSpec:
+  mlPolicy:
     torch:
       numProcPerNode: 5
-      standalone: True
-  replicatedJobs:
-    - name: Node
-      template:
-        spec:
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/pytorch-mnist
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/pytorch-mnist
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                      command:
+                        - torchrun train.py
 ```
 
 #### LLM Fine-Tuning Runtimes
@@ -1286,76 +1353,79 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-tune-llama-7b
 spec:
-  numNodes: 1
-  startupPolicy:
-    startupPolicyOrder: InOrder
-  replicatedJobs:
-    - name: Initializer
-      template:
-        spec:
+  mlPolicy:
+    numNodes: 1
+  template:
+    spec:
+      startupPolicy:
+        startupPolicyOrder: InOrder
+      replicatedJobs:
+        - name: Initializer
           template:
             spec:
-              containers:
-                - name: dataset-initializer
-                  image: docker.io/kubeflow/dataset-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://tatsu-lab/alpaca
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                - name: model-initializer
-                  image: docker.io/kubeflow/model-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://meta-llama/Llama-2-7b
-                    - name: TRANSFORMER_TYPE
-                      value: AutoModelForCausalLM
-                  volumeMounts:
-                    - mountPath: /workspace/model
-                      name: model-initializer
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
-    - name: Node
-      template:
-        spec:
+              template:
+                spec:
+                  containers:
+                    - name: dataset-initializer
+                      image: docker.io/kubeflow/dataset-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://tatsu-lab/alpaca
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                    - name: model-initializer
+                      image: docker.io/kubeflow/model-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://meta-llama/Llama-2-7b
+                        - name: TRANSFORMER_TYPE
+                          value: AutoModelForCausalLM
+                      volumeMounts:
+                        - mountPath: /workspace/model
+                          name: model-initializer
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/llm-trainer
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                    - name: TRANSFORMER_TYPE
-                      value: AutoModelForCausalLM
-                    - name: LORA_CONFIG
-                      value: |
-                        {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
-                  command:
-                    - torchrun hf_llm_training.py
-                  resources:
-                    limits:
-                      nvidia.com/gpu: 2
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                    - mountPath: /workspace/model
-                      name: model-initializer
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/llm-trainer
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                        - name: TRANSFORMER_TYPE
+                          value: AutoModelForCausalLM
+                        - name: LORA_CONFIG
+                          value: |
+                            {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
+                      command:
+                        - torchrun hf_llm_training.py
+                      resources:
+                        limits:
+                          nvidia.com/gpu: 2
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                        - mountPath: /workspace/model
+                          name: model-initializer
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
 ```
 
 ##### Gemma 7b
@@ -1368,76 +1438,79 @@ kind: ClusterTrainingRuntime
 metadata:
   name: torch-tune-gemma-7b
 spec:
-  numNodes: 1
-  startupPolicy:
-    startupPolicyOrder: InOrder
-  replicatedJobs:
-    - name: Initializer
-      template:
-        spec:
+  mlPolicy:
+    numNodes: 1
+  template:
+    spec:
+      startupPolicy:
+        startupPolicyOrder: InOrder
+      replicatedJobs:
+        - name: Initializer
           template:
             spec:
-              containers:
-                - name: dataset-initializer
-                  image: docker.io/kubeflow/dataset-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://tatsu-lab/alpaca
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                - name: model-initializer
-                  image: docker.io/kubeflow/model-initializer
-                  env:
-                    - name: STORAGE_URI
-                      value: hf://google/gemma-7b
-                    - name: TRANSFORMER_TYPE
-                      value: AutoModelForCausalLM
-                  volumeMounts:
-                    - mountPath: /workspace/model
-                      name: model-initializer
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
-    - name: Node
-      template:
-        spec:
+              template:
+                spec:
+                  containers:
+                    - name: dataset-initializer
+                      image: docker.io/kubeflow/dataset-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://tatsu-lab/alpaca
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                    - name: model-initializer
+                      image: docker.io/kubeflow/model-initializer
+                      env:
+                        - name: STORAGE_URI
+                          value: hf://google/gemma-7b
+                        - name: TRANSFORMER_TYPE
+                          value: AutoModelForCausalLM
+                      volumeMounts:
+                        - mountPath: /workspace/model
+                          name: model-initializer
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflow/llm-trainer
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                    - name: TRANSFORMER_TYPE
-                      value: AutoModelForCausalLM
-                    - name: LORA_CONFIG
-                      value: |
-                        {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
-                  command:
-                    - torchrun hf_llm_training.py
-                  resources:
-                    limits:
-                      nvidia.com/gpu: 2
-                  volumeMounts:
-                    - mountPath: /workspace/dataset
-                      name: dataset-initializer
-                    - mountPath: /workspace/model
-                      name: model-initializer
-              volumes:
-                - name: dataset-initializer
-                  persistentVolumeClaim:
-                    claimName: dataset-initializer
-                - name: model-initializer
-                  persistentVolumeClaim:
-                    claimName: model-initializer
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflow/llm-trainer
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                        - name: TRANSFORMER_TYPE
+                          value: AutoModelForCausalLM
+                        - name: LORA_CONFIG
+                          value: |
+                            {"peft_type": "LORA", "r": 8, "lora_alpha": 16}
+                      command:
+                        - torchrun hf_llm_training.py
+                      resources:
+                        limits:
+                          nvidia.com/gpu: 2
+                      volumeMounts:
+                        - mountPath: /workspace/dataset
+                          name: dataset-initializer
+                        - mountPath: /workspace/model
+                          name: model-initializer
+                  volumes:
+                    - name: dataset-initializer
+                      persistentVolumeClaim:
+                        claimName: dataset-initializer
+                    - name: model-initializer
+                      persistentVolumeClaim:
+                        claimName: model-initializer
 ```
 
 #### MPI Runtime
@@ -1452,32 +1525,33 @@ kind: ClusterTrainingRuntime
 metadata:
   name: mpi-simple
 spec:
-  mlSpec:
+  mlPolicy:
+    numNodes: 5
     mpi:
       mpiImplementation: OpenMPI
       numProcPerNode: 5
-  numNodes: 5
-  replicatedJobs:
-    - name: Launcher
-      template:
-        spec:
-          template:
-            spec:
-              containers:
-                - name: mpi-launcher
-                  image: docker.io/mpi-launch
-                  command:
-                    - mpirun -np 5 --host mpi-simple.default.svc
-    - name: Node
-      template:
-        spec:
-          template:
-            spec:
-              containers:
-                - name: trainer
-                  image: docker.io/mpi-training
-                  command:
-                    - mpirun -np 2 train.py
+  template:
+    replicatedJobs:
+      - name: Launcher
+        template:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: mpi-launcher
+                    image: docker.io/mpi-launch
+                    command:
+                      - mpirun -np 5 --host mpi-simple.default.svc
+      - name: Node
+        template:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: trainer
+                    image: docker.io/mpi-training
+                    command:
+                      - mpirun -np 2 train.py
 ```
 
 #### TensorFlow Runtime
@@ -1548,23 +1622,26 @@ kind: TrainingRuntime
 metadata:
   name: torch-distributed-multi-node
 spec:
-  numNodes: 2
-  replicatedJobs:
-    - name: node
-      template:
-        spec:
+  mlPolicy:
+    numNodes: 2
+  template:
+    spec:
+      replicatedJobs:
+        - name: Node
           template:
             spec:
-              containers:
-                - name: trainer
-                  image: docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727
-                  env:
-                    - name: MASTER_ADDR
-                      value: "pytorch-node-0-0.pytorch"
-                    - name: MASTER_PORT
-                      value: 29400
-                  command:
-                    - torchrun train.py
+              template:
+                spec:
+                  containers:
+                    - name: trainer
+                      image: docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727
+                      env:
+                        - name: MASTER_ADDR
+                          value: "pytorch-node-0-0.pytorch"
+                        - name: MASTER_PORT
+                          value: 29400
+                      command:
+                        - torchrun train.py
 ```
 
 ## Alternatives
@@ -1603,7 +1680,7 @@ framework that users want to run on Kubernetes.
 
 Since frameworks share common functionality for distributed training (data parallelizm or
 model parallelizm). For some specific use-cases like MPI or Elastic PyTorch, we will leverage
-`MLSpec` parameter.
+`MLPolicy` parameter.
 
 ### Allow users to specify arbitrary value in the managedBy field
 
