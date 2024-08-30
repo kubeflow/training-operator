@@ -23,6 +23,8 @@ import (
 )
 
 // +kubebuilder:object:root=true
+// +kubebuilder:storageversion
+// +kubebuilder:resource:scope=Cluster
 
 // ClusterTrainingRuntime represents a training runtime which can be referenced as part of
 // `trainingRuntimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
@@ -51,6 +53,7 @@ type ClusterTrainingRuntimeList struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:storageversion
 
 // TrainingRuntime represents a training runtime which can be referenced as part of
 // `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
