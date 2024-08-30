@@ -421,7 +421,7 @@ func (jc *JobController) CleanupJob(runPolicy *apiv1.RunPolicy, jobStatus apiv1.
 	currentTime := time.Now()
 	metaObject, _ := job.(metav1.Object)
 	ttl := runPolicy.TTLSecondsAfterFinished
-	if ttl == nil {
+	if ttl == nil || trainutil.IsJobSuspended(runPolicy) {
 		return nil
 	}
 	duration := time.Second * time.Duration(*ttl)
