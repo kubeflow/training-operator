@@ -77,13 +77,19 @@ type TrainJobSpec struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// Custom overrides for the training runtime.
-	PodSpecOverrides []PodSpecOverrides `json:"podSpecOverrides,omitempty"`
+	PodSpecOverrides []PodSpecOverride `json:"podSpecOverrides,omitempty"`
 
 	// Whether the controller should suspend the running TrainJob.
 	// Defaults to false.
 	Suspend *bool `json:"suspend,omitempty"`
 
-	// ManagedBy field indicates the controller that manages a TrainJob.
+	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+	// The value must be either an empty, `kubeflow.org/trainjob-controller` or
+	// `kueue.x-k8s.io/multikueue`. The built-in TrainJob controller reconciles TrainJob which
+	// don't have this field at all or the field value is the reserved string
+	// `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
+	// with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
+	// Defaults to `kubeflow.org/trainjob-controller`
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
@@ -187,16 +193,16 @@ type OutputModel struct {
 	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
-// PodSpecOverrides represents the custom overrides that will be applied for the TrainJob's resources.
-type PodSpecOverrides struct {
+// PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.
+type PodSpecOverride struct {
 	// Names of the training job replicas in the training runtime template to apply the overrides.
 	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
 
 	// Overrides for the containers in the desired job templates.
-	Containers []ContainerOverrides `json:"containers,omitempty"`
+	Containers []ContainerOverride `json:"containers,omitempty"`
 
 	// Overrides for the init container in the desired job templates.
-	InitContainers []ContainerOverrides `json:"initContainers,omitempty"`
+	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
 
 	// Overrides for the Pod volume configuration.
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
@@ -213,7 +219,7 @@ type PodSpecOverrides struct {
 
 // ContainerOverrides represents parameters that can be overridden using PodSpecOverrides.
 // Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
-type ContainerOverrides struct {
+type ContainerOverride struct {
 	// Name for the container. TrainingRuntime must have this container.
 	Name string `json:"name"`
 
