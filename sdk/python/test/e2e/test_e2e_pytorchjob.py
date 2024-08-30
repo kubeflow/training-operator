@@ -361,38 +361,19 @@ def clean_up_resources():
         print("Disk usage before removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
 
-        # Check detailed disk usage in /mnt
-        print("Detailed disk usage in /mnt before cleanup:")
-        subprocess.run(["du", "-sh", "/mnt/*"], check=True)
+        # Check contents of /var/lib/docker before cleanup
+        print("Listing contents of /var/lib/docker directory before cleanup:")
+        try:
+            subprocess.run(["ls", "-lh", "/var/lib/docker"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error listing /var/lib/docker: {e}")
 
-        # Remove unnecessary docker files from the correct directory
-        print("Freeing up disk space by removing unnecessary files...")
-        subprocess.run([
-            "sudo", "rm", "-rf", 
-            "/mnt/docker"
-        ], check=True)
-
-        # List open files in /mnt/docker to understand usage
-        print("Listing open files in /mnt/docker:")
-        subprocess.run(["lsof", "+D", "/mnt/docker"], check=True)
-
-        # Prune Docker images and volumes
-        print("Pruning Docker images...")
-        subprocess.run(["docker", "image", "prune", "-a", "-f"], check=True)
-
-        print("Pruning Docker volumes...")
-        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
-
-        print("Clearing Docker build cache...")
-        subprocess.run(["docker", "builder", "prune", "-f"], check=True)
-
-        # Display disk usage after cleanup
-        print("Disk usage after removing unnecessary files:")
-        subprocess.run(["df", "-hT"], check=True)
-
-        # Check detailed disk usage in /mnt after cleanup
-        print("Detailed disk usage in /mnt after cleanup:")
-        subprocess.run(["du", "-sh", "/mnt/*"], check=True)
+        # Check contents of /mnt/docker before cleanup
+        print("Listing contents of /mnt/docker directory before cleanup:")
+        try:
+            subprocess.run(["ls", "-lh", "/mnt/docker"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error listing /mnt/docker: {e}")
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
