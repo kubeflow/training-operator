@@ -332,7 +332,7 @@ def generate_pytorchjob(
         metadata=V1ObjectMeta(name=job_name, namespace=job_namespace),
         spec=KubeflowOrgV1PyTorchJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(
-                clean_pod_policy="None",
+                clean_pod_policy="Running",
                 scheduling_policy=scheduling_policy,
             ),
             pytorch_replica_specs={"Master": master, "Worker": worker},
@@ -355,9 +355,17 @@ def clean_up_resources():
     yield
 
     try:
+        # Display disk usage before cleanup
+        print("Disk usage before removing unnecessary files:")
+        subprocess.run(["df", "-hT"], check=True)
+
         # List all volumes and inspect them
         print("Listing all Docker volumes:")
         subprocess.run(["docker", "volume", "ls"], check=True)
+
+        # Prune unused volumes
+        print("Pruning unused Docker volumes...")
+        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
 
         # Check for stopped containers
         print("Checking for stopped containers:")
@@ -367,9 +375,9 @@ def clean_up_resources():
         print("Removing stopped containers...")
         subprocess.run(["docker", "rm", "$(docker ps -a -q)"], shell=True, check=True)
 
-        # Prune unused volumes
-        print("Pruning unused Docker volumes...")
-        subprocess.run(["docker", "volume", "prune", "-f"], check=True)
+        # Display disk usage before cleanup
+        print("Disk usage before removing unnecessary files:")
+        subprocess.run(["df", "-hT"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
