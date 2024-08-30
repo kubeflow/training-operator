@@ -332,7 +332,7 @@ def generate_pytorchjob(
         metadata=V1ObjectMeta(name=job_name, namespace=job_namespace),
         spec=KubeflowOrgV1PyTorchJobSpec(
             run_policy=KubeflowOrgV1RunPolicy(
-                clean_pod_policy="Running",
+                clean_pod_policy="None",
                 scheduling_policy=scheduling_policy,
             ),
             pytorch_replica_specs={"Master": master, "Worker": worker},
@@ -378,6 +378,13 @@ def clean_up_resources():
         # Display disk usage before cleanup
         print("Disk usage before removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
+
+        # Remove unnecessary docker files from the correct directory
+        print("Freeing up disk space by removing unnecessary files...")
+        subprocess.run([
+            "sudo", "rm", "-rf", 
+            "/var/lib/docker"
+        ], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
