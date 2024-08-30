@@ -197,8 +197,14 @@ spec:
                   They will be merged with the TrainingRuntime values.
                 type: object
               managedBy:
-                description: ManagedBy field indicates the controller that manages
-                  a TrainJob.
+                description: |-
+                  ManagedBy is used to indicate the controller or entity that manages a TrainJob.
+                  The value must be either an empty, `kubeflow.org/trainjob-controller` or
+                  `kueue.x-k8s.io/multikueue`. The built-in TrainJob controller reconciles TrainJob which
+                  don't have this field at all or the field value is the reserved string
+                  `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
+                  with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
+                  Defaults to `kubeflow.org/trainjob-controller`
                 type: string
               modelConfig:
                 description: Configuration of the pre-trained and trained model.
@@ -487,7 +493,7 @@ spec:
               podSpecOverrides:
                 description: Custom overrides for the training runtime.
                 items:
-                  description: PodSpecOverrides represents the custom overrides that
+                  description: PodSpecOverride represents the custom overrides that
                     will be applied for the TrainJob's resources.
                   properties:
                     containers:
