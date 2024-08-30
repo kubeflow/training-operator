@@ -667,7 +667,7 @@ var _ = Describe("Test for controller.v1/common", func() {
 			tfJob: tftestutil.NewTFJobWithCleanupJobDelay(1, 2, 0, nil),
 			runPolicy: &kubeflowv1.RunPolicy{
 				TTLSecondsAfterFinished: nil,
-				Suspend: ptr.To(true),
+				Suspend:                 ptr.To(true),
 			},
 			jobStatus: kubeflowv1.JobStatus{
 				CompletionTime: nil,
