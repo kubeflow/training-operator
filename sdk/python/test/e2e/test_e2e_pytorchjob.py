@@ -358,36 +358,27 @@ def clean_up_resources():
     yield
 
     try:
-        # Check contents of /mnt before cleanup
-        print("Listing contents of /mnt directory before cleanup:")
-        subprocess.run(["ls", "-lh", "/mnt"], check=True)
-        
-        # 1. Remove unnecessary files
+        # Display disk usage before cleanup
+        print("Disk usage before removing unnecessary files:")
+        subprocess.run(["df", "-hT"], check=True)
+
+        # Remove unnecessary docker files
         print("Freeing up disk space by removing unnecessary files...")
         subprocess.run([
             "sudo", "rm", "-rf", 
-            "/usr/share/dotnet",
-            "/opt/ghc",
-            "/usr/local/share/boost",
-            "$AGENT_TOOLSDIRECTORY",
-            "/usr/local/lib/android",
-            "/usr/local/share/powershell",
-            "/usr/share/swift",
+            "mnt/docker"
         ], check=True)
-        
+
+        # Prune Docker images and build cache
+        print("Pruning Docker images...")
+        subprocess.run(["docker", "image", "prune", "-a", "-f"], check=True)
+
+        print("Clearing Docker build cache...")
+        subprocess.run(["docker", "builder", "prune", "-f"], check=True)
+             
+        # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
-
-        # 2. Prune Docker images
-        print("Pruning Docker images to free up space...")
-        subprocess.run(["docker", "image", "prune", "-a", "-f"], check=True)
-        
-        print("Docker disk usage after pruning images:")
-        subprocess.run(["docker", "system", "df"], check=True)
-
-        # Check contents of /mnt after cleanup
-        print("Listing contents of /mnt directory after cleanup:")
-        subprocess.run(["ls", "-lh", "/mnt"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
