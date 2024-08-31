@@ -392,19 +392,12 @@ def clean_up_resources():
         print("Docker volumess before removing unnecessary files:")
         subprocess.run(["docker", "volume", "ls"], check=True)
 
-        # Check Docker root directory disk usage
-        print("Check Docker root directory:")
-        subprocess.run(["sudo", "du", "-sh", "/var/lib/docker"], check=True)
+        # Stop the training-operator-control-plane container if running
+        container_name = "training-operator-cluster-control-plane"
+        print(f"Stopping container {container_name}...")
+        subprocess.run(["docker", "stop", container_name], check=True)
 
-        # Check Docker runtime directory disk usage
-        print("Check Docker runtime directory:")
-        subprocess.run(["sudo", "du", "-sh", "/var/lib/containerd"], check=True)
-
-        # Prune unused volumes
-        print("Pruning unused Docker volumes...")
-        subprocess.run(["sudo", "docker", "system", "prune", "-a", "--volumes", "-f"], check=True)
-
-        # Additional check: List volumes and remove large unused ones
+        # List volumes and remove large unused ones
         print("Listing Docker volumes to check for large unused ones:")
         result = subprocess.run(["docker", "volume", "ls", "-q"], check=True, stdout=subprocess.PIPE)
         volumes = result.stdout.decode().splitlines()
@@ -418,15 +411,20 @@ def clean_up_resources():
             try:
                 volume_size = subprocess.run(["sudo", "du", "-sh", mountpoint], check=True, stdout=subprocess.PIPE).stdout.decode().split()[0]
                 print(f"Volume {volume} size: {volume_size}")
+
                 # Example: Remove if larger than 10GB
                 size_value = float(volume_size[:-1])
                 size_unit = volume_size[-1].upper()
 
                 if size_unit == 'G' and size_value > 10:  # Adjust this condition as needed
-                    print(f"Removing large unused volume: {volume}")
+                    print(f"Removing volume: {volume}")
                     subprocess.run(["docker", "volume", "rm", volume], check=True)
             except subprocess.CalledProcessError:
                 print(f"Volume {volume} not found at expected mountpoint {mountpoint} or cannot access.")
+
+        # Restart the training-operator-control-plane container if necessary
+        print(f"Starting container {container_name}...")
+        subprocess.run(["docker", "start", container_name], check=True)
 
         # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
