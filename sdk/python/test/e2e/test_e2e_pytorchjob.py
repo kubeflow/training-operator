@@ -355,22 +355,6 @@ def clean_up_resources():
     # This code runs after each test function
     yield
 
-    docker_accessible = False
-
-    # Check Docker daemon access
-    try:
-        result = subprocess.run(["docker", "version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print("Docker daemon is accessible.")
-        print(result.stdout.decode())
-        docker_accessible = True
-    except subprocess.CalledProcessError as e:
-        print("Error: Docker daemon is not accessible.")
-        print(e.stderr.decode())
-
-    if not docker_accessible:
-        print("Skipping Docker cleanup since Docker is not accessible.")
-        return
-
     try:
         # Display disk usage before cleanup
         print("Disk usage before removing unnecessary files:")
@@ -389,44 +373,13 @@ def clean_up_resources():
         subprocess.run(["docker", "ps", "-s", "--all"], check=True)
 
         # Display Docker volumes before cleanup
-        print("Docker volumess before removing unnecessary files:")
+        print("Docker volumes before removing unnecessary files:")
         subprocess.run(["docker", "volume", "ls"], check=True)
 
-        # Stop the training-operator-control-plane container if running
-        container_name = "training-operator-cluster-control-plane"
-        print(f"Stopping container {container_name}...")
-        subprocess.run(["docker", "stop", container_name], check=True)
-
-        # List volumes and remove large unused ones
-        print("Listing Docker volumes to check for large unused ones:")
-        result = subprocess.run(["docker", "volume", "ls", "-q"], check=True, stdout=subprocess.PIPE)
-        volumes = result.stdout.decode().splitlines()
-
-        for volume in volumes:
-            inspect_result = subprocess.run(["docker", "volume", "inspect", volume], check=True, stdout=subprocess.PIPE)
-            volume_details = json.loads(inspect_result.stdout.decode())
-            mountpoint = volume_details[0]["Mountpoint"]
-
-            # Check if the mountpoint exists before accessing it
-            try:
-                volume_size = subprocess.run(["sudo", "du", "-sh", mountpoint], check=True, stdout=subprocess.PIPE).stdout.decode().split()[0]
-                print(f"Volume {volume} size: {volume_size}")
-
-                # Example: Remove if larger than 10GB
-                size_value = float(volume_size[:-1])
-                size_unit = volume_size[-1].upper()
-
-                if size_unit == 'G' and size_value > 10:  # Adjust this condition as needed
-                    print(f"Removing volume: {volume}")
-                    subprocess.run(["docker", "volume", "rm", volume], check=True)
-            except subprocess.CalledProcessError:
-                print(f"Volume {volume} not found at expected mountpoint {mountpoint} or cannot access.")
-
-        # Restart the training-operator-control-plane container if necessary
-        print(f"Starting container {container_name}...")
-        subprocess.run(["docker", "start", container_name], check=True)
-
-        # Display disk usage after cleanup
+        # Remove unused Docker volumes
+        print("Remove unused Docker volumes:")
+        subprocess.run(["docker", "volume", "prune", "--filter", "all=1"], check=True)
+        
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
 
