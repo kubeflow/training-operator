@@ -354,18 +354,62 @@ def clean_up_resources():
     # This code runs after each test function
     yield
 
+    docker_accessible = False
+
+    # Check Docker daemon access
+    try:
+        result = subprocess.run(["docker", "version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("Docker daemon is accessible.")
+        print(result.stdout.decode())
+        docker_accessible = True
+    except subprocess.CalledProcessError as e:
+        print("Error: Docker daemon is not accessible.")
+        print(e.stderr.decode())
+
+    if not docker_accessible:
+        print("Skipping Docker cleanup since Docker is not accessible.")
+        return
+
     try:
         # Display disk usage before cleanup
         print("Disk usage before removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
 
+        # Display Docker disk usage before cleanup
+        print("Docker disk usage before removing unnecessary files:")
+        subprocess.run(["docker", "system", "df", "-v"], check=True)
+
+        # Display Docker images before cleanup
+        print("Docker images before removing unnecessary files:")
+        subprocess.run(["docker", "images"], check=True)
+
+        # Display Docker containers before cleanup
+        print("Docker containers before removing unnecessary files:")
+        subprocess.run(["docker", "ps", "-s", "--all"], check=True)
+
+        # Display Docker volumes before cleanup
+        print("Docker volumess before removing unnecessary files:")
+        subprocess.run(["docker", "volume", "ls"], check=True)
+
+        # Check Docker root directory disk usage
+        print("Check Docker root directory:")
+        subprocess.run(["sudo", "du", "-sh", "/var/lib/docker"], check=True)
+
+        # Check Docker runtime directory disk usage
+        print("Check Docker runtime directory:")
+        subprocess.run(["sudo", "du", "-sh", "/var/lib/containerd"], check=True)
+
         # Prune unused volumes
         print("Pruning unused Docker volumes...")
-        subprocess.run(["docker", "system", "prune", "-a", "--volumes", "-f"], check=True)
+        subprocess.run(["sudo", "docker", "system", "prune", "-a", "--volumes", "-f"], check=True)
 
         # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
+
+        # Display Docker disk usage after cleanup
+        print("Docker disk usage after removing unnecessary files:")
+        subprocess.run(["docker", "system", "df", "-v"], check=True)
 
     except subprocess.CalledProcessError as e:
         print(f"Error during Docker cleanup: {e}")
