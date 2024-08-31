@@ -378,7 +378,7 @@ def clean_up_resources():
 
         # Remove unused Docker volumes
         print("Remove unused Docker volumes:")
-        subprocess.run(["docker", "volume", "prune", "--filter", "all=1"], check=True)
+        subprocess.run(["docker", "volume", "prune", "--filter", "all=1", "-f"], check=True)
         
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
