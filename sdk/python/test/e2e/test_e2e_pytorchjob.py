@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import json
 import logging
 import pytest
 import subprocess
@@ -407,16 +408,25 @@ def clean_up_resources():
         print("Listing Docker volumes to check for large unused ones:")
         result = subprocess.run(["docker", "volume", "ls", "-q"], check=True, stdout=subprocess.PIPE)
         volumes = result.stdout.decode().splitlines()
+
         for volume in volumes:
             inspect_result = subprocess.run(["docker", "volume", "inspect", volume], check=True, stdout=subprocess.PIPE)
-            volume_details = inspect_result.stdout.decode()
-            if '"Mountpoint":' in volume_details and '/mnt/' in volume_details:
-                volume_size = subprocess.run(["sudo", "du", "-sh", f"/mnt/{volume}"], check=True, stdout=subprocess.PIPE).stdout.decode().split()[0]
+            volume_details = json.loads(inspect_result.stdout.decode())
+            mountpoint = volume_details[0]["Mountpoint"]
+
+            # Check if the mountpoint exists before accessing it
+            try:
+                volume_size = subprocess.run(["sudo", "du", "-sh", mountpoint], check=True, stdout=subprocess.PIPE).stdout.decode().split()[0]
                 print(f"Volume {volume} size: {volume_size}")
                 # Example: Remove if larger than 10GB
-                if float(volume_size[:-1]) > 10:  # Adjust this condition as needed
+                size_value = float(volume_size[:-1])
+                size_unit = volume_size[-1].upper()
+
+                if size_unit == 'G' and size_value > 10:  # Adjust this condition as needed
                     print(f"Removing large unused volume: {volume}")
                     subprocess.run(["docker", "volume", "rm", volume], check=True)
+            except subprocess.CalledProcessError:
+                print(f"Volume {volume} not found at expected mountpoint {mountpoint} or cannot access.")
 
         # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
