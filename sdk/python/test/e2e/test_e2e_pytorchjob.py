@@ -403,6 +403,21 @@ def clean_up_resources():
         print("Pruning unused Docker volumes...")
         subprocess.run(["sudo", "docker", "system", "prune", "-a", "--volumes", "-f"], check=True)
 
+        # Additional check: List volumes and remove large unused ones
+        print("Listing Docker volumes to check for large unused ones:")
+        result = subprocess.run(["docker", "volume", "ls", "-q"], check=True, stdout=subprocess.PIPE)
+        volumes = result.stdout.decode().splitlines()
+        for volume in volumes:
+            inspect_result = subprocess.run(["docker", "volume", "inspect", volume], check=True, stdout=subprocess.PIPE)
+            volume_details = inspect_result.stdout.decode()
+            if '"Mountpoint":' in volume_details and '/mnt/' in volume_details:
+                volume_size = subprocess.run(["sudo", "du", "-sh", f"/mnt/{volume}"], check=True, stdout=subprocess.PIPE).stdout.decode().split()[0]
+                print(f"Volume {volume} size: {volume_size}")
+                # Example: Remove if larger than 10GB
+                if float(volume_size[:-1]) > 10:  # Adjust this condition as needed
+                    print(f"Removing large unused volume: {volume}")
+                    subprocess.run(["docker", "volume", "rm", volume], check=True)
+
         # Display disk usage after cleanup
         print("Disk usage after removing unnecessary files:")
         subprocess.run(["df", "-hT"], check=True)
