@@ -14,6 +14,7 @@ from kubeflow.training import (
     TrainingClient,
     constants,
 )
+from kubeflow.training.models import V1DeleteOptions
 from kubernetes.client import (
     V1Container,
     V1ObjectMeta,
@@ -31,6 +32,7 @@ DUMMY_POD_NAME = "Dummy V1PodList"
 LIST_RESPONSE = [
     {"metadata": {"name": DUMMY_POD_NAME}},
 ]
+SUCCESS = "success"
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -219,7 +221,7 @@ test_data_create_job = [
     (
         "valid flow",
         {"job": create_job(), "namespace": TEST_NAME},
-        "success",
+        SUCCESS,
     ),
     (
         "valid flow to create job from func",
@@ -232,7 +234,7 @@ test_data_create_job = [
             "packages_to_install": ["boto3==1.34.14"],
             "pip_index_url": "https://pypi.custom.com/simple",
         },
-        "success",
+        SUCCESS,
     ),
     (
         "valid flow to create job using image",
@@ -242,7 +244,7 @@ test_data_create_job = [
             "base_image": "docker.io/test-training",
             "num_workers": 2,
         },
-        "success",
+        SUCCESS,
     ),
 ]
 
@@ -425,6 +427,7 @@ def training_client():
         return_value=Mock(
             create_namespaced_custom_object=Mock(side_effect=conditional_error_handler),
             patch_namespaced_custom_object=Mock(side_effect=conditional_error_handler),
+            delete_namespaced_custom_object=Mock(side_effect=conditional_error_handler),
         ),
     ), patch(
         "kubernetes.client.CoreV1Api",
@@ -448,7 +451,7 @@ def test_create_job(training_client, test_name, kwargs, expected_output):
     print("Executing test:", test_name)
     try:
         training_client.create_job(**kwargs)
-        assert expected_output == "success"
+        assert expected_output == SUCCESS
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
@@ -528,6 +531,74 @@ def test_wait_for_job_conditions(training_client, test_name, kwargs, expected_ou
     try:
         out = training_client.wait_for_job_conditions(**kwargs)
         assert out == expected_output
+    except Exception as e:
+        assert type(e) is expected_output
+    print("test execution complete")
+
+
+test_data_delete_job = [
+    (
+        "valid flow with default namespace",
+        {
+            "name": TEST_NAME,
+        },
+        SUCCESS,
+    ),
+    (
+        "invalid extra parameter",
+        {"name": TEST_NAME, "namespace": TEST_NAME, "example": "test"},
+        TypeError,
+    ),
+    (
+        "invalid job kind",
+        {"name": TEST_NAME, "job_kind": "invalid_job_kind"},
+        RuntimeError,
+    ),
+    (
+        "job name missing",
+        {"namespace": TEST_NAME, "job_kind": constants.PYTORCHJOB_KIND},
+        TypeError,
+    ),
+    (
+        "delete_namespaced_custom_object timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+    (
+        "delete_namespaced_custom_object runtime error",
+        {"name": TEST_NAME, "namespace": RUNTIME},
+        RuntimeError,
+    ),
+    (
+        "valid flow",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        SUCCESS,
+    ),
+    (
+        "valid flow with delete options",
+        {
+            "name": TEST_NAME,
+            "delete_options": V1DeleteOptions(grace_period_seconds=30),
+        },
+        SUCCESS,
+    ),
+]
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_delete_job)
+def test_delete_job(training_client, test_name, kwargs, expected_output):
+    """
+    test delete_job function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.delete_job(**kwargs)
+        assert expected_output == SUCCESS
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
