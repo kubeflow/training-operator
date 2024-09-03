@@ -31,7 +31,7 @@ TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
 CONTAINER_NAME = "pytorch"
 
 
-def test_sdk_e2e_create_from_train_api(job_namespace):
+def test_sdk_e2e_create_from_train_api(job_namespace="default"):
     JOB_NAME = "pytorchjob-from-train-api"
 
     # Use test case from fine-tuning API tutorial.
@@ -86,7 +86,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace):
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     try:
-        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=300)
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)

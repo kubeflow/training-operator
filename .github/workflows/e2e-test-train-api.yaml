@@ -56,4 +56,4 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest
-          python3 -m pip install -e sdk/python -r sdk/python/kubeflow/trainer/requirements.txt; pytest -s sdk/python/test_train_api --log-cli-level=debug --namespace=default
+          python3 -m pip install -e sdk/python -r sdk/python/kubeflow/trainer/requirements.txt; pytest -s sdk/python/test_train_api/test_e2e_train_api.py --log-cli-level=debug
