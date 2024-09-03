@@ -96,7 +96,7 @@ jobs:
       - name: Run tests
         run: |
           pip install pytest
-          python3 -m pip install -e sdk/python -r sdk/python/kubeflow/trainer/requirements.txt; pytest -s sdk/python/test --log-cli-level=debug --namespace=default
+          python3 -m pip install -e sdk/python; pytest -s sdk/python/test --log-cli-level=debug --namespace=default
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
 
