@@ -68,8 +68,8 @@ def test_sdk_e2e_create_from_train_api(job_namespace="default"):
                 bias="none",
             ),
         ),
-        num_workers=1,  # nodes parameter for torchrun command.
-        num_procs_per_worker=1,  # nproc-per-node parameter for torchrun command.
+        num_workers=1,
+        num_procs_per_worker=1,
         resources_per_worker={
             "gpu": 0,
             "cpu": 2,
