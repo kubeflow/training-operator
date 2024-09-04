@@ -28,7 +28,6 @@ logging.basicConfig(format="%(message)s")
 logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
-CONTAINER_NAME = "pytorch"
 
 
 def test_sdk_e2e_create_from_train_api(job_namespace="default"):
@@ -90,7 +89,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace="default"):
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
-        raise Exception(f"PyTorchJob create from function E2E fails. Exception: {e}")
+        raise Exception(f"PyTorchJob create from API E2E fails. Exception: {e}")
 
     utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
     TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
