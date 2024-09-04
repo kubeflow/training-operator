@@ -175,7 +175,7 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				field.Required(paddleReplicaSpecPath, ""),
 			},
 		},
-		"managedBy controller name is malformed": {
+		"unsupported managedBy controller name": {
 			paddleJob: &trainingoperator.PaddleJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -188,7 +188,6 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},

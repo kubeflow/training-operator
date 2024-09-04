@@ -469,9 +469,8 @@ var _ = Describe("PyTorchJob controller", func() {
 
 		It("Should not reconcile a job while managed by external controller", func() {
 			By("Creating a PyTorchJob managed by external controller")
-			otherController := "kueue.x-k8s.io/multikueue"
 			job.Spec.RunPolicy = kubeflowv1.RunPolicy{
-				ManagedBy: &otherController,
+				ManagedBy: ptr.To(kubeflowv1.MultiKueueController),
 			}
 			job.Spec.RunPolicy.Suspend = ptr.To(true)
 			job.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeWorker].Replicas = ptr.To[int32](1)

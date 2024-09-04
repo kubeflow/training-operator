@@ -155,7 +155,7 @@ class KubeflowOrgV1RunPolicy(object):
     def managed_by(self):
         """Gets the managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
 
-        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The built-in job controller reconciles a job which don't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with a 'kueue.x-k8s.io/multikueue' to the Kueue.  The value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.  # noqa: E501
+        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The training-operator reconciles a job which doesn't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.  # noqa: E501
 
         :return: The managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
         :rtype: str
@@ -166,7 +166,7 @@ class KubeflowOrgV1RunPolicy(object):
     def managed_by(self, managed_by):
         """Sets the managed_by of this KubeflowOrgV1RunPolicy.
 
-        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The built-in job controller reconciles a job which don't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with a 'kueue.x-k8s.io/multikueue' to the Kueue.  The value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.  # noqa: E501
+        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The training-operator reconciles a job which doesn't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.  # noqa: E501
 
         :param managed_by: The managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
         :type: str

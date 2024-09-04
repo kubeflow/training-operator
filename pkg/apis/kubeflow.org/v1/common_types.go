@@ -39,7 +39,7 @@ const (
 	// KubeflowJobsController represents the value of the default jobs controller
 	KubeflowJobsController = "kubeflow.org/training-operator"
 
-	// MultiKueueController represents the value of the only allowed external controller except for KubeflowJobsController
+	// MultiKueueController represents the MultiKueue controller
 	MultiKueueController = "kueue.x-k8s.io/multikueue"
 )
 
@@ -231,15 +231,10 @@ type RunPolicy struct {
 	// ManagedBy is used to indicate the controller or entity that manages a job.
 	// The value must be either an empty, 'kubeflow.org/training-operator' or
 	// 'kueue.x-k8s.io/multikueue'.
-	// The built-in job controller reconciles a job which don't have this
+	// The training-operator reconciles a job which doesn't have this
 	// field at all or the field value is the reserved string
 	// 'kubeflow.org/training-operator', but delegates reconciling the job
 	// with a 'kueue.x-k8s.io/multikueue' to the Kueue.
-	//
-	// The value must be a valid domain-prefixed path (e.g. acme.io/foo) -
-	// all characters before the first "/" must be a valid subdomain as defined
-	// by RFC 1123. All characters trailing the first "/" must be valid HTTP Path
-	// characters as defined by RFC 3986.
 	// The field is immutable.
 	ManagedBy *string `json:"managedBy,omitempty"`
 }

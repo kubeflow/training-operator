@@ -237,7 +237,7 @@ func TestValidateXGBoostJob(t *testing.T) {
 				field.Required(xgbReplicaSpecPath.Key(string(trainingoperator.XGBoostJobReplicaTypeMaster)), ""),
 			},
 		},
-		"managedBy controller name is malformed": {
+		"unsupported managedBy controller name": {
 			xgboostJob: &trainingoperator.XGBoostJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -250,7 +250,6 @@ func TestValidateXGBoostJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},

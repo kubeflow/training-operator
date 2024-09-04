@@ -362,9 +362,8 @@ var _ = Describe("XGBoost controller", func() {
 
 		It("Should not reconcile a job while managed by external controller", func() {
 			By("Creating a XGBoostJob managed by external controller")
-			otherController := "kueue.x-k8s.io/multikueue"
 			job.Spec.RunPolicy = kubeflowv1.RunPolicy{
-				ManagedBy: &otherController,
+				ManagedBy: ptr.To(kubeflowv1.MultiKueueController),
 			}
 			job.Spec.RunPolicy.Suspend = ptr.To(true)
 			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())

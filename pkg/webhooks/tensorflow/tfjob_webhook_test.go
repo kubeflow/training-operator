@@ -186,7 +186,7 @@ func TestValidateTFJob(t *testing.T) {
 				field.Forbidden(tfReplicaSpecPath, ""),
 			},
 		},
-		"managedBy controller name is malformed": {
+		"unsupported managedBy controller name": {
 			tfJob: &trainingoperator.TFJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -199,7 +199,6 @@ func TestValidateTFJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},

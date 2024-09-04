@@ -290,7 +290,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					specPath.Child("elasticPolicy").Child("nProcPerNode"), specPath.Child("nprocPerNode")),
 			},
 		},
-		"managedBy controller name is malformed": {
+		"unsupported managedBy controller name": {
 			pytorchJob: &trainingoperator.PyTorchJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -303,7 +303,6 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("managedBy"), "", ""),
 				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
 			},
 		},
