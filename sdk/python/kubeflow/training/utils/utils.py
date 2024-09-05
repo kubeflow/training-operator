@@ -390,7 +390,6 @@ def get_pvc_spec(
     pvc_spec = models.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
-        # fix typo
         metadata={"name": pvc_name, "namespace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
             access_modes=storage_config["access_modes"],
