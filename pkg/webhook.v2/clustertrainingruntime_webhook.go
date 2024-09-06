@@ -27,27 +27,27 @@ import (
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
-type TrainJobWebhook struct{}
+type ClusterTrainingRuntimeWebhook struct{}
 
-func setupWebhookForTrainJob(mgr ctrl.Manager) error {
+func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&kubeflowv2.TrainJob{}).
-		WithValidator(&TrainJobWebhook{}).
+		For(&kubeflowv2.ClusterTrainingRuntime{}).
+		WithValidator(&ClusterTrainingRuntimeWebhook{}).
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-kubeflow-org-v2alpha1-trainjob,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubeflow.org,resources=trainjobs,verbs=create;update,versions=v2alpha1,name=validator.trainjob.kubeflow.org,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-kubeflow-org-v2alpha1-clustertrainingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubeflow.org,resources=clustertrainingruntimes,verbs=create;update,versions=v2alpha1,name=validator.clustertrainingruntime.kubeflow.org,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = (*TrainJobWebhook)(nil)
+var _ webhook.CustomValidator = (*ClusterTrainingRuntimeWebhook)(nil)
 
-func (w *TrainJobWebhook) ValidateCreate(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (w *TrainJobWebhook) ValidateUpdate(context.Context, runtime.Object, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateUpdate(context.Context, runtime.Object, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (w *TrainJobWebhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
