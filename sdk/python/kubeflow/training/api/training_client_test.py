@@ -631,6 +631,65 @@ test_data_get_job_conditions = [
 ]
 
 
+test_data_is_job_created = [
+    (
+        "valid flow with default namespace and default timeout",
+        {"name": TEST_NAME},
+        False,  # Default created Job condition is Succeded
+    ),
+    (
+        "valid flow with job that is created",
+        {"name": TEST_NAME, "namespace": CREATED},
+        True,
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": CREATED,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow withincorrect value",
+        {"name": TEST_NAME, "job_kind": "FailJob"},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+    (
+        "invalid flow with runtime error",
+        {"name": TEST_NAME, "namespace": RUNTIME},
+        RuntimeError,
+    ),
+]
+
+
 @pytest.fixture
 def training_client():
     with patch(
@@ -793,6 +852,25 @@ def test_get_job_conditions(training_client, test_name, kwargs, expected_output)
         assert expected_output == generate_job_with_status(
             create_job(), namespace=kwargs.get("namespace")
         )
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_created)
+def test_is_job_created(training_client, test_name, kwargs, expected_output):
+    """
+    test is_job_created function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_created(**kwargs)
+        if kwargs.get("namespace") is not (CREATED or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
     except Exception as e:
         assert type(e) is expected_output
 
