@@ -58,7 +58,7 @@ pip install -U kubeflow-training
 ## Getting Started
 
 Please refer to [the getting started guide](https://www.kubeflow.org/docs/components/training/getting-started/#getting-started-with-pytorchjob)
-to quickly create your first distributed training job using Python SDK.
+to quickly create your first distributed training job using the Python SDK.
 
 If you want to work directly with Kubernetes Custom Resources provided by Training Operator,
 follow [the PyTorchJob MNIST guide](https://www.kubeflow.org/docs/components/training/pytorch/#creating-a-pytorch-training-job).
@@ -79,7 +79,7 @@ Please refer to the [CONTRIBUTING guide](CONTRIBUTING.md).
 
 ## Change Log
 
-Please refer to [CHANGELOG](CHANGELOG.md).
+Please refer to the [CHANGELOG](CHANGELOG.md).
 
 ## Version Matrix
 
