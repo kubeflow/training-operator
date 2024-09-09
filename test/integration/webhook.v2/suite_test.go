@@ -16,8 +16,27 @@ limitations under the License.
 
 package webhookv2
 
-import ctrl "sigs.k8s.io/controller-runtime"
+import (
+	"context"
+	"testing"
 
-func Setup(ctrl.Manager) (string, error) {
-	return "", nil
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kubeflow/training-operator/test/integration/framework"
+)
+
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	ctx       context.Context
+	fwk       *framework.Framework
+)
+
+func TestAPIs(t *testing.T) {
+	gomega.RegisterFailHandler(ginkgo.Fail)
+
+	ginkgo.RunSpecs(t, "v2 Webhooks Suite")
 }

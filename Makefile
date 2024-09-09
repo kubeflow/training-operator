@@ -41,8 +41,9 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 		output:crd:artifacts:config=manifests/base/crds \
 		output:rbac:artifacts:config=manifests/base/rbac \
 		output:webhook:artifacts:config=manifests/base/webhook
-	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" paths="./pkg/apis/kubeflow.org/v2alpha1/..." \
-		output:crd:artifacts:config=manifests/v2/base/crds
+	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" "webhook" paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/webhook.v2/..." \
+		output:crd:artifacts:config=manifests/v2/base/crds \
+		output:webhook:artifacts:config=manifests/v2/base/webhook
 
 generate: controller-gen ## Generate apidoc, sdk and code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
