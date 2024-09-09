@@ -34,6 +34,10 @@ LIST_RESPONSE = [
     {"metadata": {"name": DUMMY_POD_NAME}},
 ]
 SUCCESS = "success"
+FAILED = "failed"
+CREATED = "created"
+RUNNING = "running"
+RESTARTING = "restarting"
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -55,7 +59,9 @@ def get_namespaced_custom_object_response(*args, **kwargs):
         raise RuntimeError()
 
     # Create a serialized Job
-    serialized_job = serialize_k8s_object(generate_job_with_status(create_job()))
+    serialized_job = serialize_k8s_object(
+        generate_job_with_status(create_job(), kwargs.get("namespace"))
+    )
 
     # Mock the thread and set it's return value to the serialized Job
     mock_thread = Mock()
@@ -94,13 +100,6 @@ def list_namespaced_pod_response(*args, **kwargs):
             return Mock(items=LIST_RESPONSE)
 
     return MockResponse()
-
-
-def get_job_response(*args, **kwargs):
-    if kwargs.get("namespace") == RUNTIME:
-        return generate_job_with_status(create_job(), constants.JOB_CONDITION_FAILED)
-    else:
-        return generate_job_with_status(create_job())
 
 
 def generate_container() -> V1Container:
@@ -162,8 +161,19 @@ def create_job():
 
 def generate_job_with_status(
     job: constants.JOB_MODELS_TYPE,
+    namespace: str = constants.DEFAULT_NAMESPACE,
     condition_type: str = constants.JOB_CONDITION_SUCCEEDED,
 ) -> constants.JOB_MODELS_TYPE:
+
+    if namespace == FAILED:
+        condition_type = constants.JOB_CONDITION_FAILED
+    elif namespace == CREATED:
+        condition_type = constants.JOB_CONDITION_CREATED
+    elif namespace == RESTARTING:
+        condition_type = constants.JOB_CONDITION_RESTARTING
+    elif namespace == RUNNING:
+        condition_type = constants.JOB_CONDITION_RUNNING
+
     job.status = KubeflowOrgV1JobStatus(
         conditions=[
             KubeflowOrgV1JobCondition(
@@ -547,6 +557,80 @@ test_data_delete_job = [
 ]
 
 
+test_data_get_job_conditions = [
+    (
+        "valid flow with default namespace and default timeout",
+        {"name": TEST_NAME},
+        generate_job_with_status(create_job()),
+    ),
+    (
+        "valid flow with failed job condition",
+        {"name": TEST_NAME, "namespace": FAILED},
+        generate_job_with_status(create_job(), namespace=FAILED),
+    ),
+    (
+        "valid flow with restarting job condition",
+        {"name": TEST_NAME, "namespace": RESTARTING},
+        generate_job_with_status(create_job(), namespace=RESTARTING),
+    ),
+    (
+        "valid flow with running job condition",
+        {"name": TEST_NAME, "namespace": RUNNING},
+        generate_job_with_status(create_job(), namespace=RUNNING),
+    ),
+    (
+        "valid flow with created job condition",
+        {"name": TEST_NAME, "namespace": RUNNING},
+        generate_job_with_status(create_job(), namespace=RUNNING),
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        generate_job_with_status(create_job()),
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow withincorrect value",
+        {"name": TEST_NAME, "job_kind": "FailJob"},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+    (
+        "invalid flow with runtime error",
+        {"name": TEST_NAME, "namespace": RUNTIME},
+        RuntimeError,
+    ),
+]
+
+
 @pytest.fixture
 def training_client():
     with patch(
@@ -689,6 +773,26 @@ def test_get_job(training_client, test_name, kwargs, expected_output):
     try:
         training_client.get_job(**kwargs)
         assert expected_output == SUCCESS
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output", test_data_get_job_conditions
+)
+def test_get_job_conditions(training_client, test_name, kwargs, expected_output):
+    """
+    test get_job_conditions function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.get_job_conditions(**kwargs)
+        assert expected_output == generate_job_with_status(
+            create_job(), namespace=kwargs.get("namespace")
+        )
     except Exception as e:
         assert type(e) is expected_output
 
