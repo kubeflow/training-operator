@@ -38,6 +38,7 @@ FAILED = "failed"
 CREATED = "created"
 RUNNING = "running"
 RESTARTING = "restarting"
+SUCCEEDED = "succeeded"
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -173,6 +174,8 @@ def generate_job_with_status(
         condition_type = constants.JOB_CONDITION_RESTARTING
     elif namespace == RUNNING:
         condition_type = constants.JOB_CONDITION_RUNNING
+    elif namespace == SUCCEEDED:
+        condition_type = constants.JOB_CONDITION_SUCCEEDED
 
     job.status = KubeflowOrgV1JobStatus(
         conditions=[
@@ -182,6 +185,7 @@ def generate_job_with_status(
             )
         ]
     )
+    print(job)
     return job
 
 
@@ -867,6 +871,60 @@ test_data_is_job_failed = [
 ]
 
 
+test_data_is_job_succeded = [
+    (
+        "valid flow with job that is succeeded",
+        {"name": TEST_NAME, "namespace": SUCCEEDED},
+        True,
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": SUCCEEDED,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow withincorrect value",
+        {"name": TEST_NAME, "job_kind": "FailJob"},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+    (
+        "invalid flow with runtime error",
+        {"name": TEST_NAME, "namespace": RUNTIME},
+        RuntimeError,
+    ),
+]
+
+
 @pytest.fixture
 def training_client():
     with patch(
@@ -1104,6 +1162,25 @@ def test_is_job_failed(training_client, test_name, kwargs, expected_output):
     try:
         training_client.is_job_failed(**kwargs)
         if kwargs.get("namespace") is not (FAILED or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_succeded)
+def test_is_job_succeeded(training_client, test_name, kwargs, expected_output):
+    """
+    test is_job_succeeded function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_succeeded(**kwargs)
+        if kwargs.get("namespace") is not (SUCCEEDED or RUNTIME or TIMEOUT):
             assert expected_output is False
         else:
             assert expected_output is True
