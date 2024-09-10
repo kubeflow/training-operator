@@ -7319,7 +7319,7 @@ spec:
                       The training-operator reconciles a job which doesn't have this
                       field at all or the field value is the reserved string
                       'kubeflow.org/training-operator', but delegates reconciling the job
-                      with a 'kueue.x-k8s.
+                      with 'kueue.x-k8s.
                     type: string
                   schedulingPolicy:
                     description: SchedulingPolicy defines the policy related to scheduling,
