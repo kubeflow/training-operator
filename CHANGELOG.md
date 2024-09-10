@@ -1,5 +1,15 @@
 # Changelog
 
+# [v1.8.1](https://github.com/kubeflow/training-operator/tree/v1.8.1) (2024-09-10)
+
+## Bug Fixes
+
+- [Bug] Finish CleanupJob early if the job is suspended ([#2243](https://github.com/kubeflow/training-operator/pull/2243) by [@mszadkow](https://github.com/mszadkow))
+- [SDK] Fix trainer error: Update the version of base image and add "num_labels" for downloading pretrained models ([#2230](https://github.com/kubeflow/training-operator/pull/2230) by [@helenxie-bit](https://github.com/helenxie-bit))
+- Update huggingface_hub Version in the storage initializer to fix ImportError ([#2180](https://github.com/kubeflow/training-operator/pull/2180) by [@helenxie-bit](https://github.com/helenxie-bit))
+
+[Full Changelog](https://github.com/kubeflow/training-operator/compare/v1.8.0...v1.8.1)
+
 # [v1.8.0](https://github.com/kubeflow/training-operator/tree/v1.8.0) (2024-07-15)
 
 ## Breaking Changes
