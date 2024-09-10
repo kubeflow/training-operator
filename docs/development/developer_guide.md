@@ -106,6 +106,39 @@ Defaulted container "pytorch" out of: pytorch, init-pytorch (init)
 2024-04-19T19:00:57Z INFO     Train Epoch: 1 [10240/60000 (17%)]	loss=1.1650
 ```
 
+## Running the Operator and Debugging Locally
+
+If you need to develop, test, and debug the Operator on your local machine (such as a Mac) and want to disable webhook validation, you can follow the steps below.
+
+### Configure KUBECONFIG and KUBEFLOW_NAMESPACE
+
+We can configure the Operator to use the configuration available in your kubeconfig to communicate with a K8s cluster. Set your environment:
+
+```sh
+export KUBECONFIG=$(echo ~/.kube/config)
+```
+
+### Create the CRDS
+After the cluster is up, the CRDS should be created on the cluster.
+The CRDS created using `/manifests/overlays/local` will ignore the webhook validation.
+
+```bash
+kubectl apply -k ./manifests/overlays/local
+```
+
+### Run Operator
+
+Now we are ready to run the Operator locally and disable webhook validation, 
+
+```sh
+go run ./cmd/training-operator.v1/main.go -disable-webhook=true
+```
+- `-disable-webhook=true`: This flag disables webhook validation.
+
+
+This way, the Operator will run locally and will not perform any webhook-related operations, making it easier for you to debug.
+
+
 ## Testing changes locally
 
 Now that you confirmed you can spin up an operator locally, you can try to test your local changes to the operator.
@@ -143,6 +176,9 @@ You should be able to see a pod for your training operator running in your names
 ```
 kubectl logs -n kubeflow -l training.kubeflow.org/job-name=pytorch-simple
 ```
+
+
+
 ## Go version
 
 On ubuntu the default go package appears to be gccgo-go which has problems see [issue](https://github.com/golang/go/issues/15429) golang-go package is also really old so install from golang tarballs instead.
