@@ -24,6 +24,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from kubeflow.training import models
 from kubeflow.training.constants import constants
+from kubernetes import config
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,11 @@ def is_running_in_k8s():
 
 def get_default_target_namespace():
     if not is_running_in_k8s():
-        return constants.DEFAULT_NAMESPACE
+        try:
+            _, current_context = config.list_kube_config_contexts()
+            return current_context["context"]["namespace"]
+        except Exception:
+            return constants.DEFAULT_NAMESPACE
     with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
         return f.readline()
 
