@@ -229,7 +229,10 @@ def test_sdk_e2e_managed_by(job_namespace):
             if job._metadata.name == 'kubeflow.org/training-operator':
                 utils.verify_job_e2e(TRAINING_CLIENT, job._metadata.name, job_namespace, wait_timeout=900)
             if job._metadata.name == 'kueue.x-k8s.io/multikueue':
-                utils.verify_externally_managed_job_e2e(TRAINING_CLIENT, job._metadata.name, job_namespace)
+                conditions = TRAINING_CLIENT.get_job_conditions(job._metadata.name, job_namespace, TRAINING_CLIENT.job_kind, job)
+                if len(conditions) != 0:
+                    raise Exception(f"{TRAINING_CLIENT.job_kind} conditions {conditions} should not be updated, externally managed by {managed_by}")
+
 
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)

@@ -28,8 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/common/util"
-	"github.com/kubeflow/training-operator/pkg/util/testutil"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 func TestValidateV1PaddleJob(t *testing.T) {
@@ -182,13 +181,15 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				},
 				Spec: trainingoperator.PaddleJobSpec{
 					RunPolicy: trainingoperator.RunPolicy{
-						ManagedBy: ptr.To(testutil.MalformedManagedBy),
+						ManagedBy: ptr.To("other-job-controller"),
 					},
 					PaddleReplicaSpecs: validPaddleReplicaSpecs,
 				},
 			},
 			wantErr: field.ErrorList{
-				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
+				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(sets.New(
+					v1.MultiKueueController,
+					v1.KubeflowJobsController))),
 			},
 		},
 	}

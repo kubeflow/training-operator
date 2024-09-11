@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 )
 
 func TestDeletePodsAndServices(T *testing.T) {
@@ -221,33 +222,32 @@ func TestPastActiveDeadline(T *testing.T) {
 
 func TestManagedBy(T *testing.T) {
 	cases := map[string]struct {
-		managedBy string
+		managedBy *string
 	}{
 		"managedBy is empty": {
-			managedBy: "",
+			managedBy: ptr.To[string](""),
 		},
 		"managedBy is training-operator controller": {
-			managedBy: apiv1.KubeflowJobsController,
+			managedBy: ptr.To[string](apiv1.KubeflowJobsController),
 		},
 		"managedBy is not the training-operator controller": {
-			managedBy: "kueue.x-k8s.io/multikueue",
+			managedBy: ptr.To[string]("kueue.x-k8s.io/multikueue"),
 		},
 		"managedBy is other value": {
-			managedBy: "other-job-controller",
+			managedBy: ptr.To[string]("other-job-controller"),
 		},
 	}
 	for name, tc := range cases {
 		T.Run(name, func(t *testing.T) {
 			jobController := JobController{}
 			runPolicy := &apiv1.RunPolicy{
-				ManagedBy: &tc.managedBy,
-			}
-			if tc.managedBy == "" {
-				runPolicy.ManagedBy = nil
+				ManagedBy: tc.managedBy,
 			}
 
-			if got := jobController.ManagedByExternalController(*runPolicy); got != nil && tc.managedBy != *got {
-				t.Errorf("Unexpected manager controller: \nwant: %v\ngot: %v\n", tc.managedBy, *got)
+			if got := jobController.ManagedByExternalController(*runPolicy); got != nil {
+				if diff := cmp.Diff(tc.managedBy, got); diff != "" {
+					t.Errorf("Unexpected manager controller (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

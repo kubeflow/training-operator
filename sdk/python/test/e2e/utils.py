@@ -11,14 +11,6 @@ logging.basicConfig(format="%(message)s")
 logging.getLogger().setLevel(logging.INFO)
 
 
-def verify_externally_managed_job_e2e(client: TrainingClient, name: str, namespace: str):
-    """Verify externally managed Training Job e2e test."""
-    job = client.get_job(name, namespace)
-    conditions = client.get_job_conditions(name, namespace, client.job_kind, job)
-    if len(conditions) != 0:
-        raise Exception(f"{client.job_kind} conditions {conditions} should not be updated, externally managed by {managed_by}")
-
-
 def verify_unschedulable_job_e2e(client: TrainingClient, name: str, namespace: str):
     """Verify unschedulable Training Job e2e test."""
     logging.info(f"\n\n\n{client.job_kind} is creating")

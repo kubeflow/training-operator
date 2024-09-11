@@ -30,8 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"github.com/kubeflow/training-operator/pkg/common/util"
-	"github.com/kubeflow/training-operator/pkg/util/testutil"
+	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 func TestValidateV1PyTorchJob(t *testing.T) {
@@ -297,13 +296,15 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 				},
 				Spec: trainingoperator.PyTorchJobSpec{
 					RunPolicy: trainingoperator.RunPolicy{
-						ManagedBy: ptr.To(testutil.MalformedManagedBy),
+						ManagedBy: ptr.To("other-job-controller"),
 					},
 					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
 				},
 			},
 			wantErr: field.ErrorList{
-				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(util.SupportedJobControllers)),
+				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(sets.New(
+					v1.MultiKueueController,
+					v1.KubeflowJobsController))),
 			},
 		},
 	}

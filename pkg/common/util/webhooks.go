@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-var SupportedJobControllers = sets.New(
+var supportedJobControllers = sets.New(
 	v1.MultiKueueController,
 	v1.KubeflowJobsController)
 
@@ -15,8 +15,8 @@ func ValidateManagedBy(runPolicy *v1.RunPolicy, allErrs field.ErrorList) field.E
 	if runPolicy.ManagedBy != nil {
 		manager := *runPolicy.ManagedBy
 		fieldPath := field.NewPath("spec", "managedBy")
-		if !SupportedJobControllers.Has(manager) {
-			allErrs = append(allErrs, field.NotSupported(fieldPath, manager, SupportedJobControllers.UnsortedList()))
+		if !supportedJobControllers.Has(manager) {
+			allErrs = append(allErrs, field.NotSupported(fieldPath, manager, supportedJobControllers.UnsortedList()))
 		}
 	}
 	return allErrs
