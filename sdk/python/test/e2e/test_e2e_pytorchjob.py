@@ -171,6 +171,79 @@ def test_sdk_e2e(job_namespace):
     GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
     reason="For plain scheduling",
 )
+def test_sdk_e2e_managed_by(job_namespace):
+    JOB_NAME = "pytorchjob-e2e"
+    container = generate_container()
+
+    master = KubeflowOrgV1ReplicaSpec(
+        replicas=1,
+        restart_policy="OnFailure",
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
+            spec=V1PodSpec(containers=[container]),
+        ),
+    )
+
+    worker = KubeflowOrgV1ReplicaSpec(
+        replicas=1,
+        restart_policy="OnFailure",
+        template=V1PodTemplateSpec(
+            metadata=V1ObjectMeta(
+                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+            ),
+            spec=V1PodSpec(containers=[container]),
+        ),
+    )
+
+    #1. Job created with default value: 'kubeflow.org/training-operator' - job created and status updated
+    #2. Job created with kueue value: 'kueue.x-k8s.io/multikueue' - job created but status not updated
+    #3. Job created with invalid value (not acceptable by the webhook) - job not created
+    controllers = {
+        JOB_NAME+"-default-controller": 'kubeflow.org/training-operator',
+        JOB_NAME+"-multikueue-controller": 'kueue.x-k8s.io/multikueue', 
+        JOB_NAME+"-invalid-controller": 'kueue.x-k8s.io/other-controller',
+    }
+    for job_name, managed_by in controllers.items():
+        pytorchjob = generate_pytorchjob(job_namespace, job_name, master, worker, managed_by=managed_by)
+        try:
+            TRAINING_CLIENT.create_job(job=pytorchjob, namespace=job_namespace)
+        except Exception as e:
+            if "invalid" in str(job_name):
+                error_message = f"Failed to create PyTorchJob: {job_namespace}/{job_name}"
+                assert error_message in str(e), f"Unexpected error: {e}"
+            else:
+                raise Exception(f"PyTorchJob E2E fails. Exception: {e}")
+    
+    logging.info(f"List of created {TRAINING_CLIENT.job_kind}s")
+    jobs = TRAINING_CLIENT.list_jobs(job_namespace)
+    logging.info(jobs)
+
+    try:
+        #Only jobs with valid controllers should be created, 2 out of 3 satisfy this condition: 'kubeflow.org/training-operator' and 'kueue.x-k8s.io/multikueue'
+        if len(jobs) != 2:
+            raise Exception(f"Too many PyTorchJobs created {jobs}")
+    
+        for job in jobs:
+            if job._metadata.name == 'kubeflow.org/training-operator':
+                utils.verify_job_e2e(TRAINING_CLIENT, job._metadata.name, job_namespace, wait_timeout=900)
+            if job._metadata.name == 'kueue.x-k8s.io/multikueue':
+                utils.verify_externally_managed_job_e2e(TRAINING_CLIENT, job._metadata.name, job_namespace)
+
+    except Exception as e:
+        utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        raise Exception(f"PyTorchJob E2E fails. Exception: {e}")
+
+    for job in jobs:
+        utils.print_job_results(TRAINING_CLIENT, job._metadata.name, job_namespace)
+        TRAINING_CLIENT.delete_job(job._metadata.name, job_namespace)
+
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
+)
 def test_sdk_e2e_create_from_func(job_namespace):
     JOB_NAME = "pytorchjob-from-func"
 
@@ -246,6 +319,7 @@ def generate_pytorchjob(
     master: KubeflowOrgV1ReplicaSpec,
     worker: KubeflowOrgV1ReplicaSpec,
     scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
+    managed_by: Optional[str] = None,
 ) -> KubeflowOrgV1PyTorchJob:
     return KubeflowOrgV1PyTorchJob(
         api_version=constants.API_VERSION,
@@ -255,6 +329,7 @@ def generate_pytorchjob(
             run_policy=KubeflowOrgV1RunPolicy(
                 clean_pod_policy="None",
                 scheduling_policy=scheduling_policy,
+                managed_by=managed_by,
             ),
             pytorch_replica_specs={"Master": master, "Worker": worker},
         ),
