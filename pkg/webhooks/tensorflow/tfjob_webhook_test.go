@@ -184,7 +184,7 @@ func TestValidateTFJob(t *testing.T) {
 				field.Forbidden(tfReplicaSpecPath, ""),
 			},
 		},
-		"unsupported managedBy controller name": {
+		"attempt to set unsupported managedBy controller name gets rejected": {
 			tfJob: &trainingoperator.TFJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",

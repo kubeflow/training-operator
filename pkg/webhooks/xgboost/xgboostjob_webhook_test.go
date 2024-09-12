@@ -235,7 +235,7 @@ func TestValidateXGBoostJob(t *testing.T) {
 				field.Required(xgbReplicaSpecPath.Key(string(trainingoperator.XGBoostJobReplicaTypeMaster)), ""),
 			},
 		},
-		"unsupported managedBy controller name": {
+		"attempt to set unsupported managedBy controller name gets rejected": {
 			xgboostJob: &trainingoperator.XGBoostJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",

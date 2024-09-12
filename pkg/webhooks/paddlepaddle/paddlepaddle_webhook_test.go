@@ -173,7 +173,7 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				field.Required(paddleReplicaSpecPath, ""),
 			},
 		},
-		"unsupported managedBy controller name": {
+		"attempt to set unsupported managedBy controller name gets rejected": {
 			paddleJob: &trainingoperator.PaddleJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",

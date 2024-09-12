@@ -253,7 +253,7 @@ func TestManagedByExternalController(T *testing.T) {
 				ManagedBy: tc.managedBy,
 			}
 
-			if got := jobController.ManagedByExternalController(*runPolicy); got != nil {
+			if got := jobController.ManagedByExternalController(runPolicy.ManagedBy); got != nil {
 				if !tc.wantResult {
 					t.Errorf("Unwanted manager controller: %s\n", *got)
 				}

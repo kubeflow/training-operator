@@ -132,7 +132,7 @@ func (r *PyTorchJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if manager := r.ManagedByExternalController(pytorchjob.Spec.RunPolicy); manager != nil {
+	if manager := r.ManagedByExternalController(pytorchjob.Spec.RunPolicy.ManagedBy); manager != nil {
 		logger.Info("Skipping PyTorchJob managed by a custom controller", "managed-by", manager)
 		return ctrl.Result{}, nil
 	}

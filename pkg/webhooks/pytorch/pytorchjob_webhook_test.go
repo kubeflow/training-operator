@@ -290,7 +290,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					specPath.Child("elasticPolicy").Child("nProcPerNode"), specPath.Child("nprocPerNode")),
 			},
 		},
-		"unsupported managedBy controller name": {
+		"attempt to set unsupported managedBy controller name gets rejected": {
 			pytorchJob: &trainingoperator.PyTorchJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -308,7 +308,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					trainingoperator.KubeflowJobsController))),
 			},
 		},
-		"managedBy field becomes mutable": {
+		"attempt to update the managedBy field gets rejected": {
 			oldPytorchJob: &trainingoperator.PyTorchJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
