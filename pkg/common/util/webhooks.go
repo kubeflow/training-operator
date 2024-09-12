@@ -14,8 +14,8 @@ var supportedJobControllers = sets.New(
 func ValidateManagedBy(runPolicy *v1.RunPolicy, allErrs field.ErrorList) field.ErrorList {
 	if runPolicy.ManagedBy != nil {
 		manager := *runPolicy.ManagedBy
-		fieldPath := field.NewPath("spec", "managedBy")
 		if !supportedJobControllers.Has(manager) {
+			fieldPath := field.NewPath("spec", "managedBy")
 			allErrs = append(allErrs, field.NotSupported(fieldPath, manager, supportedJobControllers.UnsortedList()))
 		}
 	}

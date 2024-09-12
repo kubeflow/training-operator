@@ -136,7 +136,7 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if manager := jc.ManagedByExternalController(mpijob.Spec.RunPolicy); manager != nil {
-		logger.Info("Skipping MPIJob managed by a different controller", "managed-by", manager)
+		logger.Info("Skipping MPIJob managed by a custom controller", "managed-by", manager)
 		return ctrl.Result{}, nil
 	}
 

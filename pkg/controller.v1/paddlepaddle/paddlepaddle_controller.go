@@ -132,7 +132,7 @@ func (r *PaddleJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if manager := r.ManagedByExternalController(paddlejob.Spec.RunPolicy); manager != nil {
-		logger.Info("Skipping PaddleJob managed by a different controller", "managed-by", manager)
+		logger.Info("Skipping PaddleJob managed by a custom controller", "managed-by", manager)
 		return ctrl.Result{}, nil
 	}
 

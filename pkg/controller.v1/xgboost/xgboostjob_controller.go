@@ -131,7 +131,7 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if manager := r.ManagedByExternalController(xgboostjob.Spec.RunPolicy); manager != nil {
-		logger.Info("Skipping XGBoostJob managed by a different controller", "managed-by", manager)
+		logger.Info("Skipping XGBoostJob managed by a custom controller", "managed-by", manager)
 		return ctrl.Result{}, nil
 	}
 

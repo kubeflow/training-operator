@@ -220,21 +220,30 @@ func TestPastActiveDeadline(T *testing.T) {
 	}
 }
 
-func TestManagedBy(T *testing.T) {
+func TestManagedByExternalController(T *testing.T) {
 	cases := map[string]struct {
-		managedBy *string
+		managedBy  *string
+		wantResult bool
 	}{
+		"managedBy is nil": {
+			managedBy:  nil,
+			wantResult: false,
+		},
 		"managedBy is empty": {
-			managedBy: ptr.To[string](""),
+			managedBy:  ptr.To[string](""),
+			wantResult: true,
 		},
 		"managedBy is training-operator controller": {
-			managedBy: ptr.To[string](apiv1.KubeflowJobsController),
+			managedBy:  ptr.To[string](apiv1.KubeflowJobsController),
+			wantResult: false,
 		},
 		"managedBy is not the training-operator controller": {
-			managedBy: ptr.To[string]("kueue.x-k8s.io/multikueue"),
+			managedBy:  ptr.To[string]("kueue.x-k8s.io/multikueue"),
+			wantResult: true,
 		},
 		"managedBy is other value": {
-			managedBy: ptr.To[string]("other-job-controller"),
+			managedBy:  ptr.To[string]("other-job-controller"),
+			wantResult: true,
 		},
 	}
 	for name, tc := range cases {
@@ -245,6 +254,9 @@ func TestManagedBy(T *testing.T) {
 			}
 
 			if got := jobController.ManagedByExternalController(*runPolicy); got != nil {
+				if !tc.wantResult {
+					t.Errorf("Unwanted manager controller: %s\n", *got)
+				}
 				if diff := cmp.Diff(tc.managedBy, got); diff != "" {
 					t.Errorf("Unexpected manager controller (-want +got):\n%s", diff)
 				}
