@@ -2,13 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kubeflow
 resources:
-- ../../base
-- namespace.yaml
+  - ../../base
+  - namespace.yaml
 images:
-- name: kubeflow/training-operator
-  newName: kubeflowtraining/training-operator
-  newTag: test
+  - name: kubeflow/training-operator
+    newTag: "latest"
 secretGenerator:
-- name: training-operator-webhook-cert
-  options:
-    disableNameSuffixHash: true
+  - name: training-operator-webhook-cert
+    options:
+      disableNameSuffixHash: true
