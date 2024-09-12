@@ -28,7 +28,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
 func TestValidateXGBoostJob(t *testing.T) {
@@ -249,15 +248,15 @@ func TestValidateXGBoostJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.NotSupported(field.NewPath("spec").Child("managedBy"), "", sets.List(sets.New(
-					v1.MultiKueueController,
-					v1.KubeflowJobsController))),
+				field.NotSupported(field.NewPath("spec", "runPolicy", "managedBy"), "", sets.List(sets.New(
+					trainingoperator.MultiKueueController,
+					trainingoperator.KubeflowJobsController))),
 			},
 		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got := validateXGBoostJob(tc.xgboostJob)
+			got := validateXGBoostJob(nil, tc.xgboostJob)
 			if diff := cmp.Diff(tc.wantErr, got, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}

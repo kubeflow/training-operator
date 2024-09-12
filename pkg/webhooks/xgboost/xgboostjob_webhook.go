@@ -56,29 +56,38 @@ func (w *Webhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admis
 	job := obj.(*trainingoperator.XGBoostJob)
 	log := ctrl.LoggerFrom(ctx).WithName("xgboostjob-webhook")
 	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(job))
-	return nil, validateXGBoostJob(job).ToAggregate()
+	return nil, validateXGBoostJob(nil, job).ToAggregate()
 }
 
-func (w *Webhook) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	job := newObj.(*trainingoperator.XGBoostJob)
+func (w *Webhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldJob := oldObj.(*trainingoperator.XGBoostJob)
+	newJob := newObj.(*trainingoperator.XGBoostJob)
 	log := ctrl.LoggerFrom(ctx).WithName("xgboostjob-webhook")
-	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(job))
-	return nil, validateXGBoostJob(job).ToAggregate()
+	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(newJob))
+	return nil, validateXGBoostJob(oldJob, newJob).ToAggregate()
 }
 
 func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func validateXGBoostJob(job *trainingoperator.XGBoostJob) field.ErrorList {
+func validateXGBoostJob(oldJob, newJob *trainingoperator.XGBoostJob) field.ErrorList {
 	var allErrs field.ErrorList
-
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.Name, false); len(errors) != 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
-	allErrs = append(allErrs, validateSpec(job.Spec)...)
+	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	allErrs = append(allErrs, validateSpec(newJob.Spec)...)
 	return allErrs
+}
+
+func validateRunPolicy(oldJob, newJob *trainingoperator.XGBoostJob) field.ErrorList {
+	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
+	if oldJob != nil {
+		oldRunPolicy = &oldJob.Spec.RunPolicy
+	}
+
+	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(spec trainingoperator.XGBoostJobSpec) field.ErrorList {

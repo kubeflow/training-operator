@@ -56,28 +56,39 @@ func (w Webhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admiss
 	job := obj.(*trainingoperator.PaddleJob)
 	log := ctrl.LoggerFrom(ctx).WithName("paddlejob-webhook")
 	log.V(5).Info("Validating create", "paddleJob", klog.KObj(job))
-	return nil, validatePaddleJob(job).ToAggregate()
+	return nil, validatePaddleJob(nil, job).ToAggregate()
 }
 
-func (w Webhook) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	job := newObj.(*trainingoperator.PaddleJob)
+func (w Webhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldJob := oldObj.(*trainingoperator.PaddleJob)
+	newJob := newObj.(*trainingoperator.PaddleJob)
 	log := ctrl.LoggerFrom(ctx).WithName("paddlejob-webhook")
-	log.V(5).Info("Validating update", "paddleJob", klog.KObj(job))
-	return nil, validatePaddleJob(job).ToAggregate()
+	log.V(5).Info("Validating update", "paddleJob", klog.KObj(newJob))
+	return nil, validatePaddleJob(oldJob, newJob).ToAggregate()
 }
 
 func (w Webhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func validatePaddleJob(job *trainingoperator.PaddleJob) field.ErrorList {
+func validatePaddleJob(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorList {
 	var allErrs field.ErrorList
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.Name, false); len(errors) != 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
-	allErrs = append(allErrs, validateSpec(job.Spec.PaddleReplicaSpecs)...)
+
+	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	allErrs = append(allErrs, validateSpec(newJob.Spec.PaddleReplicaSpecs)...)
 	return allErrs
+}
+
+func validateRunPolicy(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorList {
+	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
+	if oldJob != nil {
+		oldRunPolicy = &oldJob.Spec.RunPolicy
+	}
+
+	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {

@@ -55,28 +55,38 @@ func (w *Webhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admis
 	job := obj.(*trainingoperator.TFJob)
 	log := ctrl.LoggerFrom(ctx).WithName("tfjob-webhook")
 	log.V(5).Info("Validating create", "TFJob", klog.KObj(job))
-	return nil, validateTFJob(job).ToAggregate()
+	return nil, validateTFJob(nil, job).ToAggregate()
 }
 
-func (w *Webhook) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	job := newObj.(*trainingoperator.TFJob)
+func (w *Webhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldJob := oldObj.(*trainingoperator.TFJob)
+	newJob := newObj.(*trainingoperator.TFJob)
 	log := ctrl.LoggerFrom(ctx).WithName("tfjob-webhook")
-	log.V(5).Info("Validating update", "NewTFJob", klog.KObj(job))
-	return nil, validateTFJob(job).ToAggregate()
+	log.V(5).Info("Validating update", "NewTFJob", klog.KObj(newJob))
+	return nil, validateTFJob(oldJob, newJob).ToAggregate()
 }
 
 func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func validateTFJob(job *trainingoperator.TFJob) field.ErrorList {
+func validateTFJob(oldJob, newJob *trainingoperator.TFJob) field.ErrorList {
 	var allErrs field.ErrorList
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.Name, false); len(errors) != 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
-	allErrs = append(allErrs, validateSpec(job.Spec)...)
+	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	allErrs = append(allErrs, validateSpec(newJob.Spec)...)
 	return allErrs
+}
+
+func validateRunPolicy(oldJob, newJob *trainingoperator.TFJob) field.ErrorList {
+	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
+	if oldJob != nil {
+		oldRunPolicy = &oldJob.Spec.RunPolicy
+	}
+
+	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(spec trainingoperator.TFJobSpec) field.ErrorList {

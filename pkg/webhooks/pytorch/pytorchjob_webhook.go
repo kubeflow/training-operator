@@ -56,15 +56,16 @@ func (w *Webhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admis
 	job := obj.(*trainingoperator.PyTorchJob)
 	log := ctrl.LoggerFrom(ctx).WithName("pytorchjob-webhook")
 	log.V(5).Info("Validating create", "pytorchJob", klog.KObj(job))
-	warnings, errs := validatePyTorchJob(job)
+	warnings, errs := validatePyTorchJob(nil, job)
 	return warnings, errs.ToAggregate()
 }
 
-func (w *Webhook) ValidateUpdate(ctx context.Context, _ runtime.Object, newObj runtime.Object) (admission.Warnings, error) {
-	job := newObj.(*trainingoperator.PyTorchJob)
+func (w *Webhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldJob := newObj.(*trainingoperator.PyTorchJob)
+	newJob := newObj.(*trainingoperator.PyTorchJob)
 	log := ctrl.LoggerFrom(ctx).WithName("pytorchjob-webhook")
-	log.V(5).Info("Validating update", "pytorchJob", klog.KObj(job))
-	warnings, errs := validatePyTorchJob(job)
+	log.V(5).Info("Validating update", "pytorchJob", klog.KObj(newJob))
+	warnings, errs := validatePyTorchJob(oldJob, newJob)
 	return warnings, errs.ToAggregate()
 }
 
@@ -72,18 +73,27 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 	return nil, nil
 }
 
-func validatePyTorchJob(job *trainingoperator.PyTorchJob) (admission.Warnings, field.ErrorList) {
+func validatePyTorchJob(oldJob, newJob *trainingoperator.PyTorchJob) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.ObjectMeta.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.ObjectMeta.Name, false); len(errors) != 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = util.ValidateManagedBy(&job.Spec.RunPolicy, allErrs)
-	ws, err := validateSpec(job.Spec)
+	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	ws, err := validateSpec(newJob.Spec)
 	warnings = append(warnings, ws...)
 	allErrs = append(allErrs, err...)
 	return warnings, allErrs
+}
+
+func validateRunPolicy(oldJob, newJob *trainingoperator.PyTorchJob) field.ErrorList {
+	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
+	if oldJob != nil {
+		oldRunPolicy = &oldJob.Spec.RunPolicy
+	}
+
+	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, field.ErrorList) {
