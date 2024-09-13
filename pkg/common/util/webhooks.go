@@ -12,22 +12,21 @@ var supportedJobControllers = sets.New(
 	v1.MultiKueueController,
 	v1.KubeflowJobsController)
 
-func ValidateManagedBy(oldRunPolicy *v1.RunPolicy, newRunPolicy *v1.RunPolicy) field.ErrorList {
+func ValidateRunPolicyCreate(runPolicy *v1.RunPolicy) field.ErrorList {
 	errs := field.ErrorList{}
-	// Validate immutability
-	if oldRunPolicy != nil && newRunPolicy != nil {
-		oldManager := oldRunPolicy.ManagedBy
-		newManager := newRunPolicy.ManagedBy
-		fieldPath := field.NewPath("spec", "runPolicy", "managedBy")
-		errs = apivalidation.ValidateImmutableField(newManager, oldManager, fieldPath)
-	}
-	// Validate the value
-	if newRunPolicy != nil && newRunPolicy.ManagedBy != nil {
-		manager := *newRunPolicy.ManagedBy
+	if runPolicy.ManagedBy != nil {
+		manager := *runPolicy.ManagedBy
 		if !supportedJobControllers.Has(manager) {
 			fieldPath := field.NewPath("spec", "runPolicy", "managedBy")
 			errs = append(errs, field.NotSupported(fieldPath, manager, supportedJobControllers.UnsortedList()))
 		}
 	}
 	return errs
+}
+
+func ValidateRunPolicyUpdate(oldRunPolicy, newRunPolicy *v1.RunPolicy) field.ErrorList {
+	oldManager := oldRunPolicy.ManagedBy
+	newManager := newRunPolicy.ManagedBy
+	fieldPath := field.NewPath("spec", "runPolicy", "managedBy")
+	return apivalidation.ValidateImmutableField(newManager, oldManager, fieldPath)
 }

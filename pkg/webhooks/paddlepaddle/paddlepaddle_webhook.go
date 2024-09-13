@@ -77,18 +77,13 @@ func validatePaddleJob(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorLi
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
 
-	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	if oldJob != nil {
+		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
+	} else {
+		allErrs = append(allErrs, util.ValidateRunPolicyCreate(&newJob.Spec.RunPolicy)...)
+	}
 	allErrs = append(allErrs, validateSpec(newJob.Spec.PaddleReplicaSpecs)...)
 	return allErrs
-}
-
-func validateRunPolicy(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorList {
-	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
-	if oldJob != nil {
-		oldRunPolicy = &oldJob.Spec.RunPolicy
-	}
-
-	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {

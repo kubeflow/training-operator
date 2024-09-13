@@ -80,20 +80,15 @@ func validatePyTorchJob(oldJob, newJob *trainingoperator.PyTorchJob) (admission.
 	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.ObjectMeta.Name, false); len(errors) != 0 {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = append(allErrs, validateRunPolicy(oldJob, newJob)...)
+	if oldJob != nil {
+		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
+	} else {
+		allErrs = append(allErrs, util.ValidateRunPolicyCreate(&newJob.Spec.RunPolicy)...)
+	}
 	ws, err := validateSpec(newJob.Spec)
 	warnings = append(warnings, ws...)
 	allErrs = append(allErrs, err...)
 	return warnings, allErrs
-}
-
-func validateRunPolicy(oldJob, newJob *trainingoperator.PyTorchJob) field.ErrorList {
-	var oldRunPolicy, newRunPolicy *trainingoperator.RunPolicy = nil, &newJob.Spec.RunPolicy
-	if oldJob != nil {
-		oldRunPolicy = &oldJob.Spec.RunPolicy
-	}
-
-	return util.ValidateManagedBy(oldRunPolicy, newRunPolicy)
 }
 
 func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, field.ErrorList) {
