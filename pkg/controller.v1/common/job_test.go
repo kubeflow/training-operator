@@ -222,28 +222,28 @@ func TestPastActiveDeadline(T *testing.T) {
 
 func TestManagedByExternalController(T *testing.T) {
 	cases := map[string]struct {
-		managedBy  *string
-		wantResult bool
+		managedBy          *string
+		wantControllerName *string
 	}{
 		"managedBy is nil": {
-			managedBy:  nil,
-			wantResult: false,
+			managedBy:          nil,
+			wantControllerName: nil,
 		},
 		"managedBy is empty": {
-			managedBy:  ptr.To[string](""),
-			wantResult: true,
+			managedBy:          ptr.To[string](""),
+			wantControllerName: ptr.To[string](""),
 		},
 		"managedBy is training-operator controller": {
-			managedBy:  ptr.To[string](apiv1.KubeflowJobsController),
-			wantResult: false,
+			managedBy:          ptr.To[string](apiv1.KubeflowJobsController),
+			wantControllerName: nil,
 		},
 		"managedBy is not the training-operator controller": {
-			managedBy:  ptr.To[string]("kueue.x-k8s.io/multikueue"),
-			wantResult: true,
+			managedBy:          ptr.To[string]("kueue.x-k8s.io/multikueue"),
+			wantControllerName: ptr.To[string]("kueue.x-k8s.io/multikueue"),
 		},
 		"managedBy is other value": {
-			managedBy:  ptr.To[string]("other-job-controller"),
-			wantResult: true,
+			managedBy:          ptr.To[string]("other-job-controller"),
+			wantControllerName: ptr.To[string]("other-job-controller"),
 		},
 	}
 	for name, tc := range cases {
@@ -253,13 +253,9 @@ func TestManagedByExternalController(T *testing.T) {
 				ManagedBy: tc.managedBy,
 			}
 
-			if got := jobController.ManagedByExternalController(runPolicy.ManagedBy); got != nil {
-				if !tc.wantResult {
-					t.Errorf("Unwanted manager controller: %s\n", *got)
-				}
-				if diff := cmp.Diff(tc.managedBy, got); diff != "" {
-					t.Errorf("Unexpected manager controller (-want +got):\n%s", diff)
-				}
+			gotControllerName := jobController.ManagedByExternalController(runPolicy.ManagedBy)
+			if diff := cmp.Diff(tc.wantControllerName, gotControllerName); diff != "" {
+				t.Errorf("Unexpected manager controller (-want +got):\n%s", diff)
 			}
 		})
 	}
