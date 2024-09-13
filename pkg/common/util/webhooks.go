@@ -12,7 +12,7 @@ var supportedJobControllers = sets.New(
 	v1.MultiKueueController,
 	v1.KubeflowJobsController)
 
-func ValidateRunPolicyCreate(runPolicy *v1.RunPolicy) field.ErrorList {
+func ValidateRunPolicy(runPolicy *v1.RunPolicy) field.ErrorList {
 	errs := field.ErrorList{}
 	if runPolicy.ManagedBy != nil {
 		manager := *runPolicy.ManagedBy

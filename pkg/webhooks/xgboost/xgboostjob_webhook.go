@@ -78,9 +78,8 @@ func validateXGBoostJob(oldJob, newJob *trainingoperator.XGBoostJob) field.Error
 	}
 	if oldJob != nil {
 		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
-	} else {
-		allErrs = append(allErrs, util.ValidateRunPolicyCreate(&newJob.Spec.RunPolicy)...)
 	}
+	allErrs = append(allErrs, util.ValidateRunPolicy(&newJob.Spec.RunPolicy)...)
 	allErrs = append(allErrs, validateSpec(newJob.Spec)...)
 	return allErrs
 }

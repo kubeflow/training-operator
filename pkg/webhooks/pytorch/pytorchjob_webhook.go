@@ -82,9 +82,8 @@ func validatePyTorchJob(oldJob, newJob *trainingoperator.PyTorchJob) (admission.
 	}
 	if oldJob != nil {
 		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
-	} else {
-		allErrs = append(allErrs, util.ValidateRunPolicyCreate(&newJob.Spec.RunPolicy)...)
 	}
+	allErrs = append(allErrs, util.ValidateRunPolicy(&newJob.Spec.RunPolicy)...)
 	ws, err := validateSpec(newJob.Spec)
 	warnings = append(warnings, ws...)
 	allErrs = append(allErrs, err...)
