@@ -197,15 +197,14 @@ spec:
                   They will be merged with the TrainingRuntime values.
                 type: object
               managedBy:
-                description: |-
-                  ManagedBy is used to indicate the controller or entity that manages a TrainJob.
-                  The value must be either an empty, `kubeflow.org/trainjob-controller` or
-                  `kueue.x-k8s.io/multikueue`. The built-in TrainJob controller reconciles TrainJob which
-                  don't have this field at all or the field value is the reserved string
-                  `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
-                  with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
-                  Defaults to `kubeflow.org/trainjob-controller`
+                default: kubeflow.org/trainjob-controller
                 type: string
+                x-kubernetes-validations:
+                - message: ManagedBy must be kubeflow.org/trainjob-controller or kueue.x-k8s.io/multikueue
+                    if set
+                  rule: self in ['kubeflow.org/trainjob-controller', 'kueue.x-k8s.io/multikueue']
+                - message: ManagedBy value is immutable
+                  rule: self == oldSelf
               modelConfig:
                 description: Configuration of the pre-trained and trained model.
                 properties:
@@ -2733,6 +2732,7 @@ spec:
                   type: object
                 type: array
               suspend:
+                default: false
                 description: |-
                   Whether the controller should suspend the running TrainJob.
                   Defaults to false.
@@ -2941,16 +2941,22 @@ spec:
                 description: Reference to the training runtime.
                 properties:
                   apiGroup:
+                    default: kubeflow.org
                     description: |-
                       APIGroup of the runtime being referenced.
                       Defaults to `kubeflow.org`.
                     type: string
                   kind:
+                    default: ClusterTrainingRuntime
                     description: |-
                       Kind of the runtime being referenced.
                       It must be one of TrainingRuntime or ClusterTrainingRuntime.
                       Defaults to ClusterTrainingRuntime.
                     type: string
+                    x-kubernetes-validations:
+                    - message: Kind must be ClusterTrainingRuntime or TrainingRuntime
+                        if set
+                      rule: self in ['ClusterTrainingRuntime', 'TrainingRuntime']
                   name:
                     description: |-
                       Name of the runtime being referenced.
@@ -2963,6 +2969,9 @@ spec:
             required:
             - trainingRuntimeRef
             type: object
+            x-kubernetes-validations:
+            - message: ManagedBy is required once set
+              rule: '!has(oldSelf.managedBy) || has(self.managedBy)'
           status:
             description: Current status of TrainJob.
             properties:
