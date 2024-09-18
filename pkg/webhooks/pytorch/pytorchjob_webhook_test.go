@@ -23,7 +23,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -72,9 +74,10 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		pytorchJob   *trainingoperator.PyTorchJob
-		wantErr      field.ErrorList
-		wantWarnings admission.Warnings
+		pytorchJob    *trainingoperator.PyTorchJob
+		oldPytorchJob *trainingoperator.PyTorchJob
+		wantErr       field.ErrorList
+		wantWarnings  admission.Warnings
 	}{
 		"valid PyTorchJob": {
 			pytorchJob: &trainingoperator.PyTorchJob{
@@ -82,6 +85,9 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
+					},
 					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
 				},
 			},
@@ -284,11 +290,56 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					specPath.Child("elasticPolicy").Child("nProcPerNode"), specPath.Child("nprocPerNode")),
 			},
 		},
+		"attempt to set unsupported managedBy controller name gets rejected": {
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To("other-job-controller"),
+					},
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.NotSupported(field.NewPath("spec", "runPolicy", "managedBy"), "", sets.List(sets.New(
+					trainingoperator.MultiKueueController,
+					trainingoperator.KubeflowJobsController))),
+			},
+		},
+		"attempt to update the managedBy field gets rejected": {
+			oldPytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
+					},
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.MultiKueueController),
+					},
+					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Invalid(field.NewPath("spec", "runPolicy", "managedBy"), trainingoperator.MultiKueueController, apivalidation.FieldImmutableErrorMsg),
+			},
+		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			gotWarnings, gotError := validatePyTorchJob(tc.pytorchJob)
+			gotWarnings, gotError := validatePyTorchJob(tc.oldPytorchJob, tc.pytorchJob)
 			if diff := cmp.Diff(tc.wantWarnings, gotWarnings, cmpopts.SortSlices(func(a, b string) bool { return a < b })); len(diff) != 0 {
 				t.Errorf("Unexpected warnings (-want,+got):\n%s", diff)
 			}

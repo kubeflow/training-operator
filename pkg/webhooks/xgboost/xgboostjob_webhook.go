@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/common/util"
 )
 
 var (
@@ -55,27 +56,31 @@ func (w *Webhook) ValidateCreate(ctx context.Context, obj runtime.Object) (admis
 	job := obj.(*trainingoperator.XGBoostJob)
 	log := ctrl.LoggerFrom(ctx).WithName("xgboostjob-webhook")
 	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(job))
-	return nil, validateXGBoostJob(job).ToAggregate()
+	return nil, validateXGBoostJob(nil, job).ToAggregate()
 }
 
-func (w *Webhook) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	job := newObj.(*trainingoperator.XGBoostJob)
+func (w *Webhook) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldJob := oldObj.(*trainingoperator.XGBoostJob)
+	newJob := newObj.(*trainingoperator.XGBoostJob)
 	log := ctrl.LoggerFrom(ctx).WithName("xgboostjob-webhook")
-	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(job))
-	return nil, validateXGBoostJob(job).ToAggregate()
+	log.V(5).Info("Validating create", "xgboostJob", klog.KObj(newJob))
+	return nil, validateXGBoostJob(oldJob, newJob).ToAggregate()
 }
 
 func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func validateXGBoostJob(job *trainingoperator.XGBoostJob) field.ErrorList {
+func validateXGBoostJob(oldJob, newJob *trainingoperator.XGBoostJob) field.ErrorList {
 	var allErrs field.ErrorList
-
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.Name, false); len(errors) != 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
 	}
-	allErrs = append(allErrs, validateSpec(job.Spec)...)
+	if oldJob != nil {
+		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
+	}
+	allErrs = append(allErrs, util.ValidateRunPolicy(&newJob.Spec.RunPolicy)...)
+	allErrs = append(allErrs, validateSpec(newJob.Spec)...)
 	return allErrs
 }
 

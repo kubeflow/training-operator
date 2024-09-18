@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
@@ -65,6 +66,9 @@ func TestValidateV1PaddleJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.PaddleJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
+					},
 					PaddleReplicaSpecs: validPaddleReplicaSpecs,
 				},
 			},
@@ -169,10 +173,28 @@ func TestValidateV1PaddleJob(t *testing.T) {
 				field.Required(paddleReplicaSpecPath, ""),
 			},
 		},
+		"attempt to set unsupported managedBy controller name gets rejected": {
+			paddleJob: &trainingoperator.PaddleJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PaddleJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To("other-job-controller"),
+					},
+					PaddleReplicaSpecs: validPaddleReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.NotSupported(field.NewPath("spec", "runPolicy", "managedBy"), "", sets.List(sets.New(
+					trainingoperator.MultiKueueController,
+					trainingoperator.KubeflowJobsController))),
+			},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got := validatePaddleJob(tc.paddleJob)
+			got := validatePaddleJob(nil, tc.paddleJob)
 			if diff := cmp.Diff(tc.wantErr, got, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
 			}

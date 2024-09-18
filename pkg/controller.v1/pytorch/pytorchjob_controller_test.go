@@ -466,6 +466,69 @@ var _ = Describe("PyTorchJob controller", func() {
 			By("Checking if the startTime is updated")
 			Expect(created.Status.StartTime).ShouldNot(Equal(startTimeBeforeSuspended))
 		})
+
+		It("Should not reconcile a job while managed by external controller", func() {
+			By("Creating a PyTorchJob managed by external controller")
+			job.Spec.RunPolicy = kubeflowv1.RunPolicy{
+				ManagedBy: ptr.To(kubeflowv1.MultiKueueController),
+			}
+			job.Spec.RunPolicy.Suspend = ptr.To(true)
+			job.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeWorker].Replicas = ptr.To[int32](1)
+			Expect(testK8sClient.Create(ctx, job)).Should(Succeed())
+
+			created := &kubeflowv1.PyTorchJob{}
+			By("Checking created PyTorchJob")
+			Eventually(func() bool {
+				err := testK8sClient.Get(ctx, jobKey, created)
+				return err == nil
+			}, testutil.Timeout, testutil.Interval).Should(BeTrue())
+
+			By("Checking created PyTorchJob has a nil startTime")
+			Consistently(func() *metav1.Time {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.StartTime
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeNil())
+
+			By("Checking if the pods and services aren't created")
+			Consistently(func() bool {
+				masterPod := &corev1.Pod{}
+				workerPod := &corev1.Pod{}
+				masterSvc := &corev1.Service{}
+				workerSvc := &corev1.Service{}
+				errMasterPod := testK8sClient.Get(ctx, masterKey, masterPod)
+				errWorkerPod := testK8sClient.Get(ctx, worker0Key, workerPod)
+				errMasterSvc := testK8sClient.Get(ctx, masterKey, masterSvc)
+				errWorkerSvc := testK8sClient.Get(ctx, worker0Key, workerSvc)
+				return errors.IsNotFound(errMasterPod) && errors.IsNotFound(errWorkerPod) &&
+					errors.IsNotFound(errMasterSvc) && errors.IsNotFound(errWorkerSvc)
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeTrue(), "pods and services should be created by external controller (here not existent)")
+
+			By("Checking if the PyTorchJob status was not updated")
+			Eventually(func() []kubeflowv1.JobCondition {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.Conditions
+			}, testutil.Timeout, testutil.Interval).Should(BeComparableTo([]kubeflowv1.JobCondition(nil)))
+
+			By("Unsuspending the PyTorchJob")
+			Eventually(func() error {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				created.Spec.RunPolicy.Suspend = ptr.To(false)
+				return testK8sClient.Update(ctx, created)
+			}, testutil.Timeout, testutil.Interval).Should(Succeed())
+
+			By("Checking created PyTorchJob still has a nil startTime")
+			Consistently(func() *metav1.Time {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.StartTime
+			}, testutil.ConsistentDuration, testutil.Interval).Should(BeNil())
+
+			By("Checking if the PyTorchJob status was not updated, even after unsuspending")
+			Eventually(func() []kubeflowv1.JobCondition {
+				Expect(testK8sClient.Get(ctx, jobKey, created)).Should(Succeed())
+				return created.Status.Conditions
+			}, testutil.Timeout, testutil.Interval).Should(BeComparableTo([]kubeflowv1.JobCondition(nil)))
+
+		})
 	})
 
 	Context("When creating the elastic PyTorchJob", func() {

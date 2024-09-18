@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
@@ -59,6 +60,9 @@ func TestValidateTFJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.TFJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
+					},
 					TFReplicaSpecs: validTFReplicaSpecs,
 				},
 			},
@@ -180,10 +184,28 @@ func TestValidateTFJob(t *testing.T) {
 				field.Forbidden(tfReplicaSpecPath, ""),
 			},
 		},
+		"attempt to set unsupported managedBy controller name gets rejected": {
+			tfJob: &trainingoperator.TFJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.TFJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To("other-job-controller"),
+					},
+					TFReplicaSpecs: validTFReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.NotSupported(field.NewPath("spec", "runPolicy", "managedBy"), "", sets.List(sets.New(
+					trainingoperator.MultiKueueController,
+					trainingoperator.KubeflowJobsController))),
+			},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got := validateTFJob(tc.tfJob)
+			got := validateTFJob(nil, tc.tfJob)
 			if diff := cmp.Diff(tc.wantErr, got, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
 			}
