@@ -15,7 +15,7 @@
 package jax
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -23,6 +23,11 @@ import (
 	"k8s.io/utils/ptr"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+)
+
+var (
+	errorDefaulContainerPortNotExposed = errors.New("default container port is not exposed")
+	errorFailedToRecognizeRank         = errors.New("failed to recognize the JAXJob Rank")
 )
 
 type EnvVarGenerator interface {
@@ -44,7 +49,7 @@ func setPodEnv(jaxjob *kubeflowv1.JAXJob, podTemplateSpec *corev1.PodTemplateSpe
 
 		rank, err := strconv.Atoi(index)
 		if err != nil {
-			return err
+			return errorFailedToRecognizeRank
 		}
 		// Set PYTHONUNBUFFERED to true, to disable output buffering.
 		// Ref https://stackoverflow.com/questions/59812009/what-is-the-use-of-pythonunbuffered-in-docker-file.
@@ -98,5 +103,5 @@ func getPortFromJAXJob(job *kubeflowv1.JAXJob, rtype kubeflowv1.ReplicaType) (in
 			}
 		}
 	}
-	return -1, fmt.Errorf("port not found")
+	return -1, errorDefaulContainerPortNotExposed
 }

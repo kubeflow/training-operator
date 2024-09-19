@@ -26,14 +26,14 @@ def _main(argv):
     )
 
     print(
-        f"JAX process {jax.process_index()}/{jax.process_count()} initialized on "
+        f"JAX process {jax.process_index()}/{jax.process_count() - 1} initialized on "
         f"{socket.gethostname()}"
     )
     print(f"JAX global devices:{jax.devices()}")
     print(f"JAX local devices:{jax.local_devices()}")
 
-    print(jax.device_count())
-    print(jax.local_device_count())
+    print(f"JAX device count:{jax.device_count()}")
+    print(f"JAX local device count:{jax.local_device_count()}")
 
     xs = jax.numpy.ones(jax.local_device_count())
     print(jax.pmap(lambda x: jax.lax.psum(x, "i"), axis_name="i")(xs))
