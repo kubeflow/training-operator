@@ -971,6 +971,8 @@ class TrainingClient(object):
 
                 For PaddleJob one of `master` or `worker`.
 
+                For JAXJob `worker`.
+
             replica_index: Index for the Job replica.
             timeout: Kubernetes API server timeout in seconds to execute the request.
 
@@ -992,6 +994,7 @@ class TrainingClient(object):
             and replica_type not in constants.XGBOOSTJOB_REPLICA_TYPES
             and replica_type not in constants.MPIJOB_REPLICA_TYPES
             and replica_type not in constants.PADDLEJOB_REPLICA_TYPES
+            and replica_type not in constants.JAXJOB_REPLICA_TYPES
         ):
             raise ValueError(
                 f"TFJob replica type must be one of {constants.TFJOB_REPLICA_TYPES}\n"
@@ -999,6 +1002,7 @@ class TrainingClient(object):
                 f"XGBoostJob replica type must be one of {constants.XGBOOSTJOB_REPLICA_TYPES}\n"
                 f"MPIJob replica type must be one of {constants.MPIJOB_REPLICA_TYPES}\n"
                 f"PaddleJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
+                f"JAXJob replica type must be one of {constants.PADDLEJOB_REPLICA_TYPES}"
             )
 
         label_selector = f"{constants.JOB_NAME_LABEL}={name}"
@@ -1057,6 +1061,8 @@ class TrainingClient(object):
                 For MPIJob one of `launcher` or `worker`.
 
                 For PaddleJob one of `master` or `worker`.
+
+                For JAXJob `worker`.
 
             replica_index: Index for the Job replica.
             timeout: Kubernetes API server timeout in seconds to execute the request.
@@ -1118,6 +1124,8 @@ class TrainingClient(object):
                 For MPIJob one of `launcher` or `worker`.
 
                 For PaddleJob one of `master` or `worker`.
+
+                For JAXJob `worker`.
             replica_index: Optional, index for the Job replica.
             container: Pod container to get the logs.
             follow: Whether to follow the log stream of the pod and print logs to StdOut.

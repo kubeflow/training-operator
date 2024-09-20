@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/webhooks/jax"
 	"github.com/kubeflow/training-operator/pkg/webhooks/paddlepaddle"
 	"github.com/kubeflow/training-operator/pkg/webhooks/pytorch"
 	"github.com/kubeflow/training-operator/pkg/webhooks/tensorflow"
@@ -35,6 +36,7 @@ var (
 		trainingoperator.XGBoostJobKind: xgboost.SetupWebhook,
 		trainingoperator.MPIJobKind:     scaffold,
 		trainingoperator.PaddleJobKind:  paddlepaddle.SetupWebhook,
+		trainingoperator.JAXJobKind:     jax.SetupWebhook,
 	}
 )
 
