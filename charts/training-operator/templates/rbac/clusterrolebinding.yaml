@@ -1,0 +1,18 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "training-operator.clusterRoleBindingName" . }}
+  labels:
+    {{- include "training-operator.labels" . | nindent 4 }}
+  {{- with .Values.rbac.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "training-operator.clusterRoleName" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "training-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
