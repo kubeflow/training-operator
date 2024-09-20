@@ -8,7 +8,7 @@
 
 Kubeflow Training Operator is a Kubernetes-native project for fine-tuning and
 scalable distributed training of machine learning (ML) models created with various ML frameworks
-such as PyTorch, TensorFlow, HuggingFace, Jax, DeepSpeed, XGBoost, PaddlePaddle and others.
+such as PyTorch, TensorFlow, HuggingFace, [JAX](https://jax.readthedocs.io/en/latest/), DeepSpeed, XGBoost, PaddlePaddle and others.
 
 You can run high-performance computing (HPC) tasks with the Training Operator and `MPIJob` since it
 supports running Message Passing Interface (MPI) on Kubernetes which is heavily used for HPC.
@@ -103,6 +103,7 @@ For a complete reference of the custom resource definitions, please refer to the
 - [XGBoost API Definition](pkg/apis/kubeflow.org/v1/xgboost_types.go)
 - [MPI API Definition](pkg/apis/kubeflow.org/v1/mpi_types.go)
 - [PaddlePaddle API Definition](pkg/apis/kubeflow.org/v1/paddlepaddle_types.go)
+- [JAX API Definition](pkg/apis/kubeflow.org/v1/jax_types.go)
 
 For details on the Training Operator custom resources APIs, refer to
 [the following API documentation](docs/api/kubeflow.org_v1_generated.asciidoc)
