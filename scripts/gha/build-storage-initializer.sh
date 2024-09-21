@@ -22,4 +22,3 @@ set -o nounset
 set -o pipefail
 
 docker build sdk/python/kubeflow/storage_initializer -t ${STORAGE_INITIALIZER_CI_IMAGE} -f sdk/python/kubeflow/storage_initializer/Dockerfile
-docker build sdk/python/kubeflow/trainer -t ${TRAINER_CI_IMAGE} -f sdk/python/kubeflow/trainer/Dockerfile
