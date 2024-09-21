@@ -909,7 +909,9 @@ class TrainingClient(object):
             )
 
             # Get Job conditions.
-            conditions = self.get_job_conditions(job=job, timeout=timeout, job_kind=job_kind)
+            conditions = self.get_job_conditions(
+                job=job, timeout=timeout, job_kind=job_kind
+            )
             if len(conditions) > 0:
                 status_logger(
                     name,
