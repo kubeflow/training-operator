@@ -48,37 +48,57 @@ jobs:
           GANG_SCHEDULER_NAME: "none"
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
       
+      - name: Prune docker images
+        shell: bash
+        run: |
+          docker image prune -a -f
+          docker system df
+          df -h
+
       - name: Build storage initializer and trainer
         run: |
           ./scripts/gha/setup-storage-initializer-and-trainer.sh
+          docker system df
+          df -h
         env:
           STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
-
-      - name: Check disk space
-        run: df -h
 
       - name: Load storage initializer
         run: |
           kind load docker-image ${{ env.STORAGE_INITIALIZER_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
-          docker rmi ${{ env.STORAGE_INITIALIZER_CI_IMAGE }}
+          docker system df
+          df -h
         env:
           KIND_CLUSTER: training-operator-cluster
           STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
       
-      - name: Check disk space
-        run: df -h
-      
+      - name: Remove image
+        run: |
+          docker rmi ${{ env.STORAGE_INITIALIZER_CI_IMAGE}}
+          docker system df
+          df -h
+        env:
+          STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
+
+      - name: Monitor resources usage of node
+        run: |
+          echo "Monitor resources usage of node"
+          kubectl describe nodes training-operator-cluster-control-plane
+          echo "Monitor resources usage of pods"
+          kubectl get pods --all-namespaces
+          echo "Monitor resources usage of storage"
+          docker exec -it training-operator-cluster-control-plane df -h
+   
       - name: Load trainer
         run: |
           kind load docker-image ${{ env.TRAINER_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
           docker rmi ${{ env.TRAINER_CI_IMAGE }}
+          docker system df
+          df -h
         env:
           KIND_CLUSTER: training-operator-cluster
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
-      
-      - name: Check disk space
-        run: df -h
       
       - name: Run tests
         run: |
