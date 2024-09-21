@@ -33,13 +33,11 @@ jobs:
           cluster_name: training-operator-cluster
           kubectl_version: ${{ matrix.kubernetes-version }}
 
-      - name: Build training-operator, storage-initializer, and trainer images
+      - name: Build training-operator
         run: |
           ./scripts/gha/build-image.sh
         env:
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
-          STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
-          TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
 
       - name: Deploy training operator
         run: |
@@ -49,11 +47,21 @@ jobs:
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
           GANG_SCHEDULER_NAME: "none"
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
+      
+      - name: Build and load storage initializer and trainer
+        run: |
+          ./scripts/gha/setup-storage-initializer-and-trainer.sh
+        env:
+          STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
+          TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
+
+      - name: Check disk space
+        run: df -h
 
       - name: Run tests
         run: |
           kind load docker-image ${{ env.STORAGE_INITIALIZER_IMAGE }} --name ${{ env.KIND_CLUSTER }}
-          kind load docker-image ${{ env.TRAINER_TRANSFORMER_IMAGE_DEFAULT }} --name ${{ env.KIND_CLUSTER }}
+          kind load docker-image ${{ env.TRAINER_TRANSFORMER_IMAGE_DEFAULT }} --name ${{ env.KIND_CLUSTER }} 
           pip install pytest
           python3 -m pip install -e sdk/python[huggingface]
           pytest -s sdk/python/test/e2e-train-api/test_e2e_train_api.py --log-cli-level=debug

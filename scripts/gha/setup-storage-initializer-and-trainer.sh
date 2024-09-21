@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2022 The Kubeflow Authors.
+# Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,4 +21,5 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-docker build . -t ${TRAINING_CI_IMAGE} -f build/images/training-operator/Dockerfile
+docker build sdk/python/kubeflow/storage_initializer -t ${STORAGE_INITIALIZER_CI_IMAGE} -f sdk/python/kubeflow/storage_initializer/Dockerfile
+docker build sdk/python/kubeflow/trainer -t ${TRAINER_CI_IMAGE} -f sdk/python/kubeflow/trainer/Dockerfile
