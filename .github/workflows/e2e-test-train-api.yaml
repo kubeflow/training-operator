@@ -77,6 +77,9 @@ jobs:
           KIND_CLUSTER: training-operator-cluster
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
       
+      - name: Check disk space
+        run: df -h
+      
       - name: Run tests
         run: |
           pip install pytest
