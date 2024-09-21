@@ -83,6 +83,24 @@ jobs:
           KIND_CLUSTER: training-operator-cluster
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
       
+      # Step to move Docker data directory back to / for Storage Initializer build
+      - name: Move docker data directory back to / for Storage Initializer build
+        shell: bash
+        run: |
+          echo "Stopping docker service ..."
+          sudo systemctl stop docker
+          DOCKER_DEFAULT_ROOT_DIR=/var/lib/docker
+          DOCKER_ROOT_DIR=/mnt/docker
+          echo "Removing symlink and moving Docker data back to ${DOCKER_DEFAULT_ROOT_DIR}..."
+          sudo rm -rf ${DOCKER_DEFAULT_ROOT_DIR}
+          sudo mv ${DOCKER_ROOT_DIR} ${DOCKER_DEFAULT_ROOT_DIR}
+          echo "$(sudo ls -l ${DOCKER_DEFAULT_ROOT_DIR})"
+          echo "Starting docker service ..."
+          sudo systemctl daemon-reload
+          sudo systemctl start docker
+          echo "Docker service status:"
+          sudo systemctl --no-pager -l -o short status docker
+          
       - name: Build storage initializer
         run: |
           ./scripts/gha/build-storage-initializer.sh
