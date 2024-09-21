@@ -78,7 +78,7 @@ jobs:
       - name: Remove image
         run: |
           docker rmi ${{ env.STORAGE_INITIALIZER_CI_IMAGE}}
-          docker builder prune
+          docker builder prune --all --force
           docker system df
           df -h
         env:
