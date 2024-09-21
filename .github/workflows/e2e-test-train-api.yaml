@@ -33,11 +33,13 @@ jobs:
           cluster_name: training-operator-cluster
           kubectl_version: ${{ matrix.kubernetes-version }}
 
-      - name: Build training-operator
+      - name: Build training-operator, storage-initializer, and trainer images
         run: |
           ./scripts/gha/build-image.sh
         env:
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+          STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
+          TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
 
       - name: Deploy training operator
         run: |
@@ -50,5 +52,12 @@ jobs:
 
       - name: Run tests
         run: |
+          kind load docker-image ${{ env.STORAGE_INITIALIZER_IMAGE }} --name ${{ env.KIND_CLUSTER }}
+          kind load docker-image ${{ env.TRAINER_TRANSFORMER_IMAGE_DEFAULT }} --name ${{ env.KIND_CLUSTER }}
           pip install pytest
-          python3 -m pip install -e sdk/python[huggingface]; pytest -s sdk/python/test/e2e-train-api/test_e2e_train_api.py --log-cli-level=debug
+          python3 -m pip install -e sdk/python[huggingface]
+          pytest -s sdk/python/test/e2e-train-api/test_e2e_train_api.py --log-cli-level=debug
+        env:
+          KIND_CLUSTER: training-operator-cluster
+          STORAGE_INITIALIZER_IMAGE: kubeflowtraining/storage-initializer:test
+          TRAINER_TRANSFORMER_IMAGE_DEFAULT: kubeflowtraining/trainer:test
