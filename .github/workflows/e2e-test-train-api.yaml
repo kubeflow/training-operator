@@ -48,7 +48,7 @@ jobs:
           GANG_SCHEDULER_NAME: "none"
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
       
-      - name: Build and load storage initializer and trainer
+      - name: Build storage initializer and trainer
         run: |
           ./scripts/gha/setup-storage-initializer-and-trainer.sh
         env:
