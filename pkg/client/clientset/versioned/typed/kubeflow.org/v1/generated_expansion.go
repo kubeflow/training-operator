@@ -16,9 +16,9 @@
 
 package v1
 
-type MPIJobExpansion interface{}
+type JAXJobExpansion interface{}
 
-type MXJobExpansion interface{}
+type MPIJobExpansion interface{}
 
 type PaddleJobExpansion interface{}
 

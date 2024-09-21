@@ -130,6 +130,11 @@ func (r *XGBoostJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if manager := r.ManagedByExternalController(xgboostjob.Spec.RunPolicy.ManagedBy); manager != nil {
+		logger.Info("Skipping XGBoostJob managed by a custom controller", "managed-by", manager)
+		return ctrl.Result{}, nil
+	}
+
 	// Check reconcile is required.
 	jobKey, err := common.KeyFunc(xgboostjob)
 	if err != nil {

@@ -131,6 +131,11 @@ func (r *PaddleJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if manager := r.ManagedByExternalController(paddlejob.Spec.RunPolicy.ManagedBy); manager != nil {
+		logger.Info("Skipping PaddleJob managed by a custom controller", "managed-by", manager)
+		return ctrl.Result{}, nil
+	}
+
 	// Check if reconciliation is needed
 	jobKey, err := common.KeyFunc(paddlejob)
 	if err != nil {

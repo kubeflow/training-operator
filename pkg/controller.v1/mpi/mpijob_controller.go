@@ -135,6 +135,11 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if manager := jc.ManagedByExternalController(mpijob.Spec.RunPolicy.ManagedBy); manager != nil {
+		logger.Info("Skipping MPIJob managed by a custom controller", "managed-by", manager)
+		return ctrl.Result{}, nil
+	}
+
 	if err = kubeflowv1.ValidateV1MpiJobSpec(&mpijob.Spec); err != nil {
 		logger.Error(err, "MPIJob failed validation")
 		jc.Recorder.Eventf(mpijob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedValidationReason),

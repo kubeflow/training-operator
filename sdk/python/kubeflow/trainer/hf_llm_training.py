@@ -1,22 +1,21 @@
 import argparse
-import logging
-from urllib.parse import urlparse
 import json
+import logging
 import os
+from urllib.parse import urlparse
 
-from datasets import load_from_disk, Dataset
+import transformers
+from datasets import Dataset, load_from_disk
 from datasets.distributed import split_dataset_by_node
 from peft import LoraConfig, get_peft_model
-import transformers
 from transformers import (
     AutoModelForCausalLM,
-    AutoTokenizer,
     AutoModelForImageClassification,
-    TrainingArguments,
+    AutoTokenizer,
     DataCollatorForLanguageModeling,
     Trainer,
+    TrainingArguments,
 )
-
 
 # Configure logger.
 log_formatter = logging.Formatter(
@@ -29,17 +28,26 @@ logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
 
-def setup_model_and_tokenizer(model_uri, transformer_type, model_dir):
+def setup_model_and_tokenizer(model_uri, transformer_type, model_dir, num_labels):
     # Set up the model and tokenizer
     parsed_uri = urlparse(model_uri)
     model_name = parsed_uri.netloc + parsed_uri.path
 
-    model = transformer_type.from_pretrained(
-        pretrained_model_name_or_path=model_name,
-        cache_dir=model_dir,
-        local_files_only=True,
-        trust_remote_code=True,
-    )
+    if num_labels != "None":
+        model = transformer_type.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            cache_dir=model_dir,
+            local_files_only=True,
+            trust_remote_code=True,
+            num_labels=int(num_labels),
+        )
+    else:
+        model = transformer_type.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            cache_dir=model_dir,
+            local_files_only=True,
+            trust_remote_code=True,
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_name,
@@ -110,6 +118,13 @@ def load_and_preprocess_data(dataset_dir, transformer_type, tokenizer):
 def setup_peft_model(model, lora_config):
     # Set up the PEFT model
     lora_config = LoraConfig(**json.loads(lora_config))
+    reference_lora_config = LoraConfig()
+    for key, val in lora_config.__dict__.items():
+        old_attr = getattr(reference_lora_config, key, None)
+        if old_attr is not None:
+            val = type(old_attr)(val)
+        setattr(lora_config, key, val)
+
     model.enable_input_require_grads()
     model = get_peft_model(model, lora_config)
     return model
@@ -145,6 +160,7 @@ def parse_arguments():
 
     parser.add_argument("--model_uri", help="model uri")
     parser.add_argument("--transformer_type", help="model transformer type")
+    parser.add_argument("--num_labels", default="None", help="number of classes")
     parser.add_argument("--model_dir", help="directory containing model")
     parser.add_argument("--dataset_dir", help="directory containing dataset")
     parser.add_argument("--lora_config", help="lora_config")
@@ -159,11 +175,20 @@ if __name__ == "__main__":
     logger.info("Starting HuggingFace LLM Trainer")
     args = parse_arguments()
     train_args = TrainingArguments(**json.loads(args.training_parameters))
+    reference_train_args = transformers.TrainingArguments(
+        output_dir=train_args.output_dir
+    )
+    for key, val in train_args.to_dict().items():
+        old_attr = getattr(reference_train_args, key, None)
+        if old_attr is not None:
+            val = type(old_attr)(val)
+        setattr(train_args, key, val)
+
     transformer_type = getattr(transformers, args.transformer_type)
 
     logger.info("Setup model and tokenizer")
     model, tokenizer = setup_model_and_tokenizer(
-        args.model_uri, transformer_type, args.model_dir
+        args.model_uri, transformer_type, args.model_dir, args.num_labels
     )
 
     logger.info("Preprocess dataset")

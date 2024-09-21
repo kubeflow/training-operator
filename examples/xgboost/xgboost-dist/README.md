@@ -9,10 +9,10 @@ User can extend provided data reader to read data from distributed data storage 
 **Configure the job runtime via Yaml file**
 
 The following files are available to setup distributed XGBoost computation runtime
- 
+
 To store the model in OSS:
 
-* xgboostjob_v1_iris_train.yaml 
+* xgboostjob_v1_iris_train.yaml
 * xgboostjob_v1_iris_predict.yaml
 
 To store the model in local path:
@@ -160,7 +160,7 @@ Kind:         XGBoostJob
 Metadata:
   Creation Timestamp:  2019-06-27T06:06:53Z
   Generation:          8
-  Resource Version:    394523 
+  Resource Version:    394523
   UID:                 c2a04cbc-98a1-11e9-bbab-080027dfbfe2
 Spec:
   Run Policy:
@@ -249,8 +249,8 @@ Events:
 **Start the distributed XGBoost train to store the model locally**
 
 Before proceeding with training we will create a PVC to store the model trained.
-Creating pvc : 
-create a yaml file with the below content 
+Creating pvc :
+create a yaml file with the below content
 pvc.yaml
 ```
 apiVersion: v1
@@ -268,13 +268,13 @@ spec:
 ```
 kubectl create -f pvc.yaml
 ```
-Note: 
+Note:
 
 * Please use the storage class which supports ReadWriteMany. The example yaml above uses glusterfs
 
 * Mention model_storage_type=local and model_path accordingly( In the example /tmp/xgboost_model/2 is used ) in xgboostjob_v1_iris_train_local.yaml and xgboostjob_v1_iris_predict_local.yaml"
 
-Now start the distributed XGBoost train. 
+Now start the distributed XGBoost train.
 ```
 kubectl create -f xgboostjob_v1_iris_train_local.yaml
 ```
@@ -382,7 +382,7 @@ status:
     Master:
       succeeded: 1
     Worker:
-      succeeded: 2 
+      succeeded: 2
  ```
 **Start the distributed XGBoost job predict**
 ```

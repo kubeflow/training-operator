@@ -36,6 +36,7 @@ class KubeflowOrgV1RunPolicy(object):
         'active_deadline_seconds': 'int',
         'backoff_limit': 'int',
         'clean_pod_policy': 'str',
+        'managed_by': 'str',
         'scheduling_policy': 'KubeflowOrgV1SchedulingPolicy',
         'suspend': 'bool',
         'ttl_seconds_after_finished': 'int'
@@ -45,12 +46,13 @@ class KubeflowOrgV1RunPolicy(object):
         'active_deadline_seconds': 'activeDeadlineSeconds',
         'backoff_limit': 'backoffLimit',
         'clean_pod_policy': 'cleanPodPolicy',
+        'managed_by': 'managedBy',
         'scheduling_policy': 'schedulingPolicy',
         'suspend': 'suspend',
         'ttl_seconds_after_finished': 'ttlSecondsAfterFinished'
     }
 
-    def __init__(self, active_deadline_seconds=None, backoff_limit=None, clean_pod_policy=None, scheduling_policy=None, suspend=None, ttl_seconds_after_finished=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, active_deadline_seconds=None, backoff_limit=None, clean_pod_policy=None, managed_by=None, scheduling_policy=None, suspend=None, ttl_seconds_after_finished=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV1RunPolicy - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -59,6 +61,7 @@ class KubeflowOrgV1RunPolicy(object):
         self._active_deadline_seconds = None
         self._backoff_limit = None
         self._clean_pod_policy = None
+        self._managed_by = None
         self._scheduling_policy = None
         self._suspend = None
         self._ttl_seconds_after_finished = None
@@ -70,6 +73,8 @@ class KubeflowOrgV1RunPolicy(object):
             self.backoff_limit = backoff_limit
         if clean_pod_policy is not None:
             self.clean_pod_policy = clean_pod_policy
+        if managed_by is not None:
+            self.managed_by = managed_by
         if scheduling_policy is not None:
             self.scheduling_policy = scheduling_policy
         if suspend is not None:
@@ -145,6 +150,29 @@ class KubeflowOrgV1RunPolicy(object):
         """
 
         self._clean_pod_policy = clean_pod_policy
+
+    @property
+    def managed_by(self):
+        """Gets the managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
+
+        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The training-operator reconciles a job which doesn't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.  # noqa: E501
+
+        :return: The managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
+        :rtype: str
+        """
+        return self._managed_by
+
+    @managed_by.setter
+    def managed_by(self, managed_by):
+        """Sets the managed_by of this KubeflowOrgV1RunPolicy.
+
+        ManagedBy is used to indicate the controller or entity that manages a job. The value must be either an empty, 'kubeflow.org/training-operator' or 'kueue.x-k8s.io/multikueue'. The training-operator reconciles a job which doesn't have this field at all or the field value is the reserved string 'kubeflow.org/training-operator', but delegates reconciling the job with 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.  # noqa: E501
+
+        :param managed_by: The managed_by of this KubeflowOrgV1RunPolicy.  # noqa: E501
+        :type: str
+        """
+
+        self._managed_by = managed_by
 
     @property
     def scheduling_policy(self):

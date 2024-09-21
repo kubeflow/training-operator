@@ -22,10 +22,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// JAXJobs returns a JAXJobInformer.
+	JAXJobs() JAXJobInformer
 	// MPIJobs returns a MPIJobInformer.
 	MPIJobs() MPIJobInformer
-	// MXJobs returns a MXJobInformer.
-	MXJobs() MXJobInformer
 	// PaddleJobs returns a PaddleJobInformer.
 	PaddleJobs() PaddleJobInformer
 	// PyTorchJobs returns a PyTorchJobInformer.
@@ -47,14 +47,14 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// JAXJobs returns a JAXJobInformer.
+func (v *version) JAXJobs() JAXJobInformer {
+	return &jAXJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // MPIJobs returns a MPIJobInformer.
 func (v *version) MPIJobs() MPIJobInformer {
 	return &mPIJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// MXJobs returns a MXJobInformer.
-func (v *version) MXJobs() MXJobInformer {
-	return &mXJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // PaddleJobs returns a PaddleJobInformer.

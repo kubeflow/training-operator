@@ -27,10 +27,10 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&JAXJob{}, func(obj interface{}) { SetObjectDefaults_JAXJob(obj.(*JAXJob)) })
+	scheme.AddTypeDefaultingFunc(&JAXJobList{}, func(obj interface{}) { SetObjectDefaults_JAXJobList(obj.(*JAXJobList)) })
 	scheme.AddTypeDefaultingFunc(&MPIJob{}, func(obj interface{}) { SetObjectDefaults_MPIJob(obj.(*MPIJob)) })
 	scheme.AddTypeDefaultingFunc(&MPIJobList{}, func(obj interface{}) { SetObjectDefaults_MPIJobList(obj.(*MPIJobList)) })
-	scheme.AddTypeDefaultingFunc(&MXJob{}, func(obj interface{}) { SetObjectDefaults_MXJob(obj.(*MXJob)) })
-	scheme.AddTypeDefaultingFunc(&MXJobList{}, func(obj interface{}) { SetObjectDefaults_MXJobList(obj.(*MXJobList)) })
 	scheme.AddTypeDefaultingFunc(&PaddleJob{}, func(obj interface{}) { SetObjectDefaults_PaddleJob(obj.(*PaddleJob)) })
 	scheme.AddTypeDefaultingFunc(&PaddleJobList{}, func(obj interface{}) { SetObjectDefaults_PaddleJobList(obj.(*PaddleJobList)) })
 	scheme.AddTypeDefaultingFunc(&PyTorchJob{}, func(obj interface{}) { SetObjectDefaults_PyTorchJob(obj.(*PyTorchJob)) })
@@ -42,6 +42,17 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 	return nil
 }
 
+func SetObjectDefaults_JAXJob(in *JAXJob) {
+	SetDefaults_JAXJob(in)
+}
+
+func SetObjectDefaults_JAXJobList(in *JAXJobList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_JAXJob(a)
+	}
+}
+
 func SetObjectDefaults_MPIJob(in *MPIJob) {
 	SetDefaults_MPIJob(in)
 }
@@ -50,17 +61,6 @@ func SetObjectDefaults_MPIJobList(in *MPIJobList) {
 	for i := range in.Items {
 		a := &in.Items[i]
 		SetObjectDefaults_MPIJob(a)
-	}
-}
-
-func SetObjectDefaults_MXJob(in *MXJob) {
-	SetDefaults_MXJob(in)
-}
-
-func SetObjectDefaults_MXJobList(in *MXJobList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_MXJob(a)
 	}
 }
 

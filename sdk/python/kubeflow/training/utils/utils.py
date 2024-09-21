@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-import os
-import logging
-import textwrap
 import inspect
-from typing import Optional, Callable, List, Dict, Any, Tuple, Union
 import json
-import threading
+import logging
+import os
 import queue
+import textwrap
+import threading
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from kubeflow.training.constants import constants
 from kubeflow.training import models
-
+from kubeflow.training.constants import constants
+from kubernetes import config
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,11 @@ def is_running_in_k8s():
 
 def get_default_target_namespace():
     if not is_running_in_k8s():
-        return "default"
+        try:
+            _, current_context = config.list_kube_config_contexts()
+            return current_context["context"]["namespace"]
+        except Exception:
+            return constants.DEFAULT_NAMESPACE
     with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
         return f.readline()
 
@@ -391,7 +395,7 @@ def get_pvc_spec(
     pvc_spec = models.V1PersistentVolumeClaim(
         api_version="v1",
         kind="PersistentVolumeClaim",
-        metadata={"name": pvc_name, "namepsace": namespace},
+        metadata={"name": pvc_name, "namespace": namespace},
         spec=models.V1PersistentVolumeClaimSpec(
             access_modes=storage_config["access_modes"],
             resources=models.V1ResourceRequirements(

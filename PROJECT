@@ -32,7 +32,7 @@ resources:
     namespaced: true
   controller: true
   group: kubeflow.org
-  kind: MXJob
+  kind: JAXJob
   path: github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1
   version: v1
 version: "3"

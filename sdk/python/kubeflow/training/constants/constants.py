@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kubeflow.training import models
-from typing import Union, Dict
+from typing import Union
+
 from kubeflow.storage_initializer.constants import INIT_CONTAINER_MOUNT_PATH
+from kubeflow.training import models
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
 
 # The default PIP index URL to download Python packages.
 DEFAULT_PIP_INDEX_URL = "https://pypi.org/simple"
+
+# The default namespace in case namespace not define explicitly
+DEFAULT_NAMESPACE = "default"
 
 # Annotation to disable Istio sidecar.
 ISTIO_SIDECAR_INJECTION = "sidecar.istio.io/inject"
@@ -78,19 +82,14 @@ PVC_DEFAULT_ACCESS_MODES = ["ReadWriteOnce", "ReadOnlyMany"]
 
 
 # TODO (andreyvelich): We should add image tag for Storage Initializer and Trainer.
-STORAGE_INITIALIZER_IMAGE = "docker.io/kubeflow/storage-initializer"
+STORAGE_INITIALIZER_IMAGE_DEFAULT = "docker.io/kubeflow/storage-initializer"
 
 STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
     name=STORAGE_INITIALIZER,
     mount_path=INIT_CONTAINER_MOUNT_PATH,
 )
-STORAGE_INITIALIZER_VOLUME = models.V1Volume(
-    name=STORAGE_INITIALIZER,
-    persistent_volume_claim=models.V1PersistentVolumeClaimVolumeSource(
-        claim_name=STORAGE_INITIALIZER
-    ),
-)
-TRAINER_TRANSFORMER_IMAGE = "docker.io/kubeflow/trainer-huggingface"
+
+TRAINER_TRANSFORMER_IMAGE_DEFAULT = "docker.io/kubeflow/trainer-huggingface"
 
 # TFJob constants.
 TFJOB_KIND = "TFJob"
@@ -113,17 +112,6 @@ PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime"
-
-# MXJob constants
-MXJOB_KIND = "MXJob"
-MXJOB_MODEL = "KubeflowOrgV1MXJob"
-MXJOB_PLURAL = "mxjobs"
-MXJOB_CONTAINER = "mxnet"
-MXJOB_REPLICA_TYPES = (
-    REPLICA_TYPE_SCHEDULER.lower(),
-    REPLICA_TYPE_SERVER.lower(),
-    REPLICA_TYPE_WORKER.lower(),
-)
 
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"
@@ -150,6 +138,13 @@ PADDLEJOB_BASE_IMAGE = (
     "docker.io/paddlepaddle/paddle:2.4.0rc0-gpu-cuda11.2-cudnn8.1-trt8.0"
 )
 
+# JAXJob constants
+JAXJOB_KIND = "JAXJob"
+JAXJOB_MODEL = "KubeflowOrgV1JAXJob"
+JAXJOB_PLURAL = "jaxjobs"
+JAXJOB_CONTAINER = "jax"
+JAXJOB_REPLICA_TYPES = REPLICA_TYPE_WORKER.lower()
+JAXJOB_BASE_IMAGE = "docker.io/kubeflow/jaxjob-simple:latest"
 
 # Dictionary to get plural, model, and container for each Job kind.
 JOB_PARAMETERS = {
@@ -164,12 +159,6 @@ JOB_PARAMETERS = {
         "plural": PYTORCHJOB_PLURAL,
         "container": PYTORCHJOB_CONTAINER,
         "base_image": PYTORCHJOB_BASE_IMAGE,
-    },
-    MXJOB_KIND: {
-        "model": MXJOB_MODEL,
-        "plural": MXJOB_PLURAL,
-        "container": MXJOB_CONTAINER,
-        "base_image": "TODO",
     },
     XGBOOSTJOB_KIND: {
         "model": XGBOOSTJOB_MODEL,
@@ -189,6 +178,12 @@ JOB_PARAMETERS = {
         "container": PADDLEJOB_CONTAINER,
         "base_image": PADDLEJOB_BASE_IMAGE,
     },
+    JAXJOB_KIND: {
+        "model": JAXJOB_MODEL,
+        "plural": JAXJOB_PLURAL,
+        "container": JAXJOB_CONTAINER,
+        "base_image": "JAXJOB_BASE_IMAGE",
+    },
 }
 
 # Tuple of all Job models.
@@ -198,8 +193,8 @@ JOB_MODELS = tuple([d["model"] for d in list(JOB_PARAMETERS.values())])
 JOB_MODELS_TYPE = Union[
     models.KubeflowOrgV1TFJob,
     models.KubeflowOrgV1PyTorchJob,
-    models.KubeflowOrgV1MXJob,
     models.KubeflowOrgV1XGBoostJob,
     models.KubeflowOrgV1MPIJob,
     models.KubeflowOrgV1PaddleJob,
+    models.KubeflowOrgV1JAXJob,
 ]

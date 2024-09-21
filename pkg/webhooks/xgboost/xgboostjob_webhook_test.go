@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
@@ -91,6 +92,9 @@ func TestValidateXGBoostJob(t *testing.T) {
 					Name: "test",
 				},
 				Spec: trainingoperator.XGBoostJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
+					},
 					XGBReplicaSpecs: validXGBoostReplicaSpecs,
 				},
 			},
@@ -231,10 +235,28 @@ func TestValidateXGBoostJob(t *testing.T) {
 				field.Required(xgbReplicaSpecPath.Key(string(trainingoperator.XGBoostJobReplicaTypeMaster)), ""),
 			},
 		},
+		"attempt to set unsupported managedBy controller name gets rejected": {
+			xgboostJob: &trainingoperator.XGBoostJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.XGBoostJobSpec{
+					RunPolicy: trainingoperator.RunPolicy{
+						ManagedBy: ptr.To("other-job-controller"),
+					},
+					XGBReplicaSpecs: validXGBoostReplicaSpecs,
+				},
+			},
+			wantErr: field.ErrorList{
+				field.NotSupported(field.NewPath("spec", "runPolicy", "managedBy"), "", sets.List(sets.New(
+					trainingoperator.MultiKueueController,
+					trainingoperator.KubeflowJobsController))),
+			},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got := validateXGBoostJob(tc.xgboostJob)
+			got := validateXGBoostJob(nil, tc.xgboostJob)
 			if diff := cmp.Diff(tc.wantErr, got, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}

@@ -15,12 +15,12 @@ from setuptools import find_packages, setup
 REQUIRED_PACKAGES = []
 
 setup(
-    name='tf_sample',
-    version='0.1.1',
-    author='Jeremy Lewi',
-    author_email='jlewi@google.com',
+    name="tf_sample",
+    version="0.1.1",
+    author="Jeremy Lewi",
+    author_email="jlewi@google.com",
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),
-    description='Sample TF program',
+    description="Sample TF program",
     requires=[],
 )

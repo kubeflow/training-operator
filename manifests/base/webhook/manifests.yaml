@@ -10,9 +10,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubeflow-org-v1-mxjob
+      path: /validate-kubeflow-org-v1-jaxjob
   failurePolicy: Fail
-  name: validator.mxjob.training-operator.kubeflow.org
+  name: validator.jaxjob.training-operator.kubeflow.org
   rules:
   - apiGroups:
     - kubeflow.org
@@ -21,9 +21,8 @@ webhooks:
     operations:
     - CREATE
     - UPDATE
-    - DELETE
     resources:
-    - mxjobs
+    - jaxjobs
   sideEffects: None
 - admissionReviewVersions:
   - v1

@@ -28,14 +28,14 @@ from kubeflow.training.exceptions import ApiKeyError
 from kubeflow.training.exceptions import ApiException
 # import models into sdk package
 from kubeflow.training.models.kubeflow_org_v1_elastic_policy import KubeflowOrgV1ElasticPolicy
+from kubeflow.training.models.kubeflow_org_v1_jax_job import KubeflowOrgV1JAXJob
+from kubeflow.training.models.kubeflow_org_v1_jax_job_list import KubeflowOrgV1JAXJobList
+from kubeflow.training.models.kubeflow_org_v1_jax_job_spec import KubeflowOrgV1JAXJobSpec
 from kubeflow.training.models.kubeflow_org_v1_job_condition import KubeflowOrgV1JobCondition
 from kubeflow.training.models.kubeflow_org_v1_job_status import KubeflowOrgV1JobStatus
 from kubeflow.training.models.kubeflow_org_v1_mpi_job import KubeflowOrgV1MPIJob
 from kubeflow.training.models.kubeflow_org_v1_mpi_job_list import KubeflowOrgV1MPIJobList
 from kubeflow.training.models.kubeflow_org_v1_mpi_job_spec import KubeflowOrgV1MPIJobSpec
-from kubeflow.training.models.kubeflow_org_v1_mx_job import KubeflowOrgV1MXJob
-from kubeflow.training.models.kubeflow_org_v1_mx_job_list import KubeflowOrgV1MXJobList
-from kubeflow.training.models.kubeflow_org_v1_mx_job_spec import KubeflowOrgV1MXJobSpec
 from kubeflow.training.models.kubeflow_org_v1_paddle_elastic_policy import KubeflowOrgV1PaddleElasticPolicy
 from kubeflow.training.models.kubeflow_org_v1_paddle_job import KubeflowOrgV1PaddleJob
 from kubeflow.training.models.kubeflow_org_v1_paddle_job_list import KubeflowOrgV1PaddleJobList

@@ -95,6 +95,32 @@ rules:
 - apiGroups:
   - kubeflow.org
   resources:
+  - jaxjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - jaxjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubeflow.org
+  resources:
+  - jaxjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kubeflow.org
+  resources:
   - mpijobs
   verbs:
   - create
@@ -114,32 +140,6 @@ rules:
   - kubeflow.org
   resources:
   - mpijobs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubeflow.org
-  resources:
-  - mxjobs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubeflow.org
-  resources:
-  - mxjobs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kubeflow.org
-  resources:
-  - mxjobs/status
   verbs:
   - get
   - patch
