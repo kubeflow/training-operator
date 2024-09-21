@@ -42,6 +42,8 @@ jobs:
       - name: Deploy training operator
         run: |
           ./scripts/gha/setup-training-operator.sh
+          docker system df
+          df -h
         env:
           KIND_CLUSTER: training-operator-cluster
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
@@ -76,6 +78,7 @@ jobs:
       - name: Remove image
         run: |
           docker rmi ${{ env.STORAGE_INITIALIZER_CI_IMAGE}}
+          docker builder prune
           docker system df
           df -h
         env:
@@ -87,8 +90,6 @@ jobs:
           kubectl describe nodes training-operator-cluster-control-plane
           echo "Monitor resources usage of pods"
           kubectl get pods --all-namespaces
-          echo "Monitor resources usage of storage"
-          docker exec -it training-operator-cluster-control-plane df -h
    
       - name: Load trainer
         run: |
