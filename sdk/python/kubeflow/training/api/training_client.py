@@ -258,10 +258,6 @@ class TrainingClient(object):
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
         )
-        base_image1 = os.getenv(
-            "STORAGE_INITIALIZER_IMAGE", constants.STORAGE_INITIALIZER_IMAGE_DEFAULT
-        )
-        print("base_image1: " + base_image1)
 
         # create app container spec
         container_spec = utils.get_container_spec(
@@ -291,11 +287,6 @@ class TrainingClient(object):
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
             resources=resources_per_worker,
         )
-        base_image2 = os.getenv(
-            "TRAINER_TRANSFORMER_IMAGE_DEFAULT",
-            constants.TRAINER_TRANSFORMER_IMAGE_DEFAULT,
-        )
-        print("base_image2: " + base_image2)
 
         storage_initializer_volume = models.V1Volume(
             name=constants.STORAGE_INITIALIZER,
