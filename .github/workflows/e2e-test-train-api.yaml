@@ -42,35 +42,20 @@ jobs:
       - name: Deploy training operator
         run: |
           ./scripts/gha/setup-training-operator.sh
-          docker system df
-          df -h
         env:
           KIND_CLUSTER: training-operator-cluster
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
           GANG_SCHEDULER_NAME: "none"
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-      
-      - name: Prune docker images
-        shell: bash
-        run: |
-          docker image prune -a -f
-          docker system df
-          df -h
 
       - name: Build trainer
         run: |
           ./scripts/gha/build-trainer.sh
+          docker builder prune --all --force
           docker system df
           df -h
         env:
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
-      
-      - name: Clean up build cache
-        run: |
-          docker builder prune --all --force
-          docker volume ls
-          docker system df
-          df -h
 
       - name: Load trainer
         run: |
@@ -82,40 +67,16 @@ jobs:
         env:
           KIND_CLUSTER: training-operator-cluster
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
-      
-      # Step to move Docker data directory back to / for Storage Initializer build
-      - name: Move docker data directory back to / for Storage Initializer build
-        shell: bash
-        run: |
-          echo "Stopping docker service ..."
-          sudo systemctl stop docker
-          DOCKER_DEFAULT_ROOT_DIR=/var/lib/docker
-          DOCKER_ROOT_DIR=/mnt/docker
-          echo "Removing symlink and moving Docker data back to ${DOCKER_DEFAULT_ROOT_DIR}..."
-          sudo rm -rf ${DOCKER_DEFAULT_ROOT_DIR}
-          sudo mv ${DOCKER_ROOT_DIR} ${DOCKER_DEFAULT_ROOT_DIR}
-          echo "$(sudo ls -l ${DOCKER_DEFAULT_ROOT_DIR})"
-          echo "Starting docker service ..."
-          sudo systemctl daemon-reload
-          sudo systemctl start docker
-          echo "Docker service status:"
-          sudo systemctl --no-pager -l -o short status docker
-          
+
       - name: Build storage initializer
         run: |
           ./scripts/gha/build-storage-initializer.sh
+          docker builder prune --all --force
           docker system df
           df -h
         env:
           STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
           TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
-      
-      - name: Clean up build cache
-        run: |
-          docker builder prune --all --force
-          docker volume ls
-          docker system df
-          df -h
 
       - name: Load storage initializer
         run: |
@@ -127,13 +88,6 @@ jobs:
         env:
           KIND_CLUSTER: training-operator-cluster
           STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
-      
-      - name: Monitor resources usage of node
-        run: |
-          echo "Monitor resources usage of node"
-          kubectl describe nodes training-operator-cluster-control-plane
-          echo "Monitor resources usage of pods"
-          kubectl get pods --all-namespaces
          
       - name: Run tests
         run: |
