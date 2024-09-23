@@ -15,7 +15,6 @@
 import json
 import logging
 import multiprocessing
-import os
 import queue
 import time
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
@@ -243,9 +242,7 @@ class TrainingClient(object):
         # create init container spec
         init_container_spec = utils.get_container_spec(
             name=constants.STORAGE_INITIALIZER,
-            base_image=os.getenv(
-                "STORAGE_INITIALIZER_IMAGE", constants.STORAGE_INITIALIZER_IMAGE_DEFAULT
-            ),
+            base_image=constants.STORAGE_INITIALIZER_IMAGE,
             args=[
                 "--model_provider",
                 mp,
@@ -262,10 +259,7 @@ class TrainingClient(object):
         # create app container spec
         container_spec = utils.get_container_spec(
             name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
-            base_image=os.getenv(
-                "TRAINER_TRANSFORMER_IMAGE_DEFAULT",
-                constants.TRAINER_TRANSFORMER_IMAGE_DEFAULT,
-            ),
+            base_image=constants.TRAINER_TRANSFORMER_IMAGE,
             args=[
                 "--model_uri",
                 model_provider_parameters.model_uri,
