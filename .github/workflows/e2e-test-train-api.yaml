@@ -54,7 +54,7 @@ jobs:
       - name: Build trainer
         run: |
           ./scripts/gha/build-trainer.sh
-          docker builder prune --all --force
+          docker builder prune -a -f
           docker system df
           df -h
         env:
@@ -73,7 +73,7 @@ jobs:
       - name: Build storage initializer
         run: |
           ./scripts/gha/build-storage-initializer.sh
-          docker builder prune --all --force
+          docker builder prune -a -f
           docker system df
           df -h
         env:
