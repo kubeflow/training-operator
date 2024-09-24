@@ -42,6 +42,9 @@ jobs:
       - name: Deploy training operator
         run: |
           ./scripts/gha/setup-training-operator.sh
+          docker system prune -a -f
+          docker system df
+          df -h
         env:
           KIND_CLUSTER: training-operator-cluster
           TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
@@ -60,8 +63,7 @@ jobs:
       - name: Load trainer
         run: |
           kind load docker-image ${{ env.TRAINER_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
-          docker image prune -a -f
-          docker volume prune -f
+          docker system prune -a -f
           docker system df
           df -h
         env:
@@ -81,8 +83,7 @@ jobs:
       - name: Load storage initializer
         run: |
           kind load docker-image ${{ env.STORAGE_INITIALIZER_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
-          docker image prune -a -f
-          docker volume prune -f
+          docker system prune -a -f
           docker system df
           df -h
         env:
