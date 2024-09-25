@@ -81,7 +81,6 @@ def main():
     os.environ["GRPC_FAIL_FAST"] = "use_caller"
 
     cluster_resolver = tf.distribute.cluster_resolver.TFConfigClusterResolver()
-    print(f"{cluster_resolver=}")
 
     # Get the cluster specification
     cluster_spec = cluster_resolver.cluster_spec()
