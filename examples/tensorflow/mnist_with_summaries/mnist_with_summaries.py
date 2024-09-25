@@ -21,142 +21,14 @@ It demonstrates the functionality of every TensorBoard dashboard.
 import argparse
 import os
 
-import numpy as np
+import mnist_utils as helper
 import tensorflow as tf
-from tensorflow.keras.datasets import mnist
+
+args = None
 
 
-def load_data(fake_data=False):
-    """
-     Loads the MNIST dataset and converts it into TensorFlow datasets.
-
-    Args:
-         fake_data (bool): If `True`, loads a fake dataset for testing purposes.
-                           If `False`, loads the real MNIST dataset.
-
-     Returns:
-         train_ds (tf.data.Dataset): Dataset containing the training data (images and labels).
-         test_ds (tf.data.Dataset): Dataset containing the test data (images and labels).
-    """
-    if fake_data:
-        (x_train, y_train), (x_test, y_test) = load_fake_data()
-    else:
-        (x_train, y_train), (x_test, y_test) = mnist.load_data(path=FLAGS.data_path)
-    # Create TensorFlow datasets from the NumPy arrays
-    train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-    return train_ds, test_ds
-
-
-def load_fake_data():
-    x_train = np.random.randint(0, 256, (60000, 28, 28)).astype(np.uint8)
-    y_train = np.random.randint(0, 10, (60000,)).astype(np.uint8)
-    x_test = np.random.randint(0, 256, (10000, 28, 28)).astype(np.uint8)
-    y_test = np.random.randint(0, 10, (10000,)).astype(np.uint8)
-
-    return (x_train, y_train), (x_test, y_test)
-
-
-def preprocess(ds):
-    """
-    Preprocesses the dataset by normalizing the images, shuffling, batching, and prefetching.
-
-    Args:
-        ds (tf.data.Dataset): The dataset to preprocess (either training or testing data).
-
-    Returns:
-        ds (tf.data.Dataset): The preprocessed dataset.
-    """
-
-    def normalize_img(image, label):
-        """
-        Normalizes images by scaling pixel values from the range [0, 255] to [0, 1].
-
-        Args:
-            image (tf.Tensor): The image tensor.
-            label (tf.Tensor): The corresponding label tensor.
-
-        Returns:
-            tuple: The normalized image and the corresponding label.
-        """
-        image = tf.cast(image, tf.float32) / 255.0
-        return image, label
-
-    # Map the normalization function across the dataset
-    ds = ds.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    ds = ds.cache()  # Cache the dataset to improve performance
-    ds = ds.shuffle(
-        buffer_size=10000
-    )  # Shuffle the dataset with a buffer size of 10,000
-    ds = ds.batch(FLAGS.batch_size)  # Batch the dataset
-    ds = ds.prefetch(
-        buffer_size=tf.data.experimental.AUTOTUNE
-    )  # Prefetch to improve performance
-    return ds
-
-
-def build_model():
-    """
-    Builds a simple neural network model using Keras Sequential API.
-
-    Returns:
-        model (tf.keras.Model): The compiled Keras model.
-    """
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Input(
-                shape=(28, 28, 1)
-            ),  # Input layer with the shape of MNIST images
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(
-                128, activation="relu"
-            ),  # Dense layer with 128 neurons and ReLU activation
-            tf.keras.layers.Dropout(
-                1 - FLAGS.dropout
-            ),  # Dropout layer to prevent overfitting
-            tf.keras.layers.Dense(
-                10, activation="softmax"
-            ),  # Output layer with 10 neurons (one for each class)
-        ]
-    )
-    # Define an optimizer with a specific learning rate
-    optimizer = tf.keras.optimizers.Adam(learning_rate=FLAGS.learning_rate)
-    # Compile the model with Adam optimizer and sparse categorical crossentropy loss
-    model.compile(
-        optimizer=optimizer,
-        loss="sparse_categorical_crossentropy",
-        metrics=["accuracy"],
-    )
-    return model
-
-
-def main():
-    """
-    The main function to load data, preprocess it, build the model, and train it.
-    """
-    # Load and preprocess data
-    train_ds, test_ds = load_data(fake_data=FLAGS.fake_data)
-    train_ds = preprocess(train_ds)
-    test_ds = preprocess(test_ds)
-
-    # Build model
-    model = build_model()
-
-    # Setup TensorBoard
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=FLAGS.log_dir, histogram_freq=1
-    )
-
-    # Train the model
-    model.fit(
-        train_ds,
-        epochs=FLAGS.epochs,
-        validation_data=test_ds,
-        callbacks=[tensorboard_callback],
-    )
-
-
-if __name__ == "__main__":
+def init_parser():
+    global args
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--fake_data",
@@ -196,6 +68,38 @@ if __name__ == "__main__":
         ),
         help="Summaries log directory",
     )
-    FLAGS, _ = parser.parse_known_args()
-    print(f"Run script with {FLAGS=}")
+    args = parser.parse_args()
+    print(f"Run script with {args=}")
+
+
+def main():
+    """
+    The main function to load data, preprocess it, build the model, and train it.
+    """
+    # Load and preprocess data
+    train_ds, test_ds = helper.load_data(
+        data_path=args.data_path, fake_data=args.fake_data
+    )
+    train_ds = helper.preprocess(ds=train_ds, batch_size=args.batch_size)
+    test_ds = helper.preprocess(ds=test_ds, batch_size=args.batch_size)
+
+    # Build model
+    model = helper.build_model(dropout=args.dropout, learning_rate=args.learning_rate)
+
+    # Setup TensorBoard
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=args.log_dir, histogram_freq=1
+    )
+
+    # Train the model
+    model.fit(
+        train_ds,
+        epochs=args.epochs,
+        validation_data=test_ds,
+        callbacks=[tensorboard_callback],
+    )
+
+
+if __name__ == "__main__":
+    init_parser()
     main()

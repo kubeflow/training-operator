@@ -15,4 +15,5 @@
 FROM tensorflow/tensorflow:2.17.0
 
 ADD examples/tensorflow/mnist_with_summaries/ /var/tf_mnist
+ADD examples/tensorflow/mnist_utils.py /var/tf_mnist
 ENTRYPOINT ["python", "/var/tf_mnist/mnist_with_summaries.py"]
