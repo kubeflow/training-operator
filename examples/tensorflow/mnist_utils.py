@@ -29,7 +29,7 @@ def load_data(fake_data=False, data_path=None, repeat=False):
      Loads the MNIST dataset and converts it into TensorFlow datasets.
 
     Args:
-         fake_data (bool): If `True`, loads a fake dataset for testing purposes.
+         fake_data (bool, optional): If `True`, loads a fake dataset for testing purposes.
                            If `False`, loads the real MNIST dataset.
          data_path (str, optional): Path where to cache the dataset locally.
                            If `None`, the dataset is loaded to the default location.

@@ -14,7 +14,8 @@
 
 FROM tensorflow/tensorflow:2.17.0
 
-# Using keras-2.17 because of bug on keras-3.4.1 which used by default by TF-2.17
+# Using keras-2.17 because of bug on keras-3.4.1
+# which used by default by TF-2.17 (https://github.com/tensorflow/tensorflow/issues/72388)
 ENV TF_USE_LEGACY_KERAS 1
 RUN pip install tf_keras
 
