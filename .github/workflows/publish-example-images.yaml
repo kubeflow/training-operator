@@ -24,12 +24,9 @@ jobs:
           - component-name: tf-dist-mnist-test
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/tensorflow/dist-mnist/Dockerfile
-          - component-name: tf-distributed-worker
-            platforms: linux/amd64,linux/arm64
-            dockerfile: examples/tensorflow/distribution_strategy/estimator-API/Dockerfile
           - component-name: tf-multi-worker-strategy
             platforms: linux/amd64,linux/arm64
-            dockerfile: examples/tensorflow/distribution_strategy/keras-API/Dockerfile
+            dockerfile: examples/tensorflow/distribution_strategy/Dockerfile
           - component-name: tf-mnist-with-summaries
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/tensorflow/mnist_with_summaries/Dockerfile
