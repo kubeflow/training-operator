@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:1.5.0
+FROM tensorflow/tensorflow:2.17.0
+
+# Using keras-2.17 because of bug on keras-3.4.1 which used by default by TF-2.17
+ENV TF_USE_LEGACY_KERAS 1
+RUN pip install tf_keras
 
 ADD examples/tensorflow/dist-mnist/ /var/tf_dist_mnist
+ADD examples/tensorflow/mnist_utils.py /var/tf_dist_mnist
 ENTRYPOINT ["python", "/var/tf_dist_mnist/dist_mnist.py"]
