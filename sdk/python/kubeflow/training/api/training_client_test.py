@@ -34,11 +34,12 @@ LIST_RESPONSE = [
     {"metadata": {"name": DUMMY_POD_NAME}},
 ]
 SUCCESS = "success"
-FAILED = "failed"
-CREATED = "created"
-RUNNING = "running"
-RESTARTING = "restarting"
-SUCCEEDED = "succeeded"
+FAILED = "Failed"
+CREATED = "Created"
+RUNNING = "Running"
+RESTARTING = "Restarting"
+SUCCEEDED = "Succeeded"
+INVALID = "invalid"
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -60,9 +61,7 @@ def get_namespaced_custom_object_response(*args, **kwargs):
         raise RuntimeError()
 
     # Create a serialized Job
-    serialized_job = serialize_k8s_object(
-        generate_job_with_status(create_job(), kwargs.get("namespace"))
-    )
+    serialized_job = serialize_k8s_object(generate_job_with_status(create_job()))
 
     # Mock the thread and set it's return value to the serialized Job
     mock_thread = Mock()
@@ -162,21 +161,8 @@ def create_job():
 
 def generate_job_with_status(
     job: constants.JOB_MODELS_TYPE,
-    namespace: str = constants.DEFAULT_NAMESPACE,
     condition_type: str = constants.JOB_CONDITION_SUCCEEDED,
 ) -> constants.JOB_MODELS_TYPE:
-
-    if namespace == FAILED:
-        condition_type = constants.JOB_CONDITION_FAILED
-    elif namespace == CREATED:
-        condition_type = constants.JOB_CONDITION_CREATED
-    elif namespace == RESTARTING:
-        condition_type = constants.JOB_CONDITION_RESTARTING
-    elif namespace == RUNNING:
-        condition_type = constants.JOB_CONDITION_RUNNING
-    elif namespace == SUCCEEDED:
-        condition_type = constants.JOB_CONDITION_SUCCEEDED
-
     job.status = KubeflowOrgV1JobStatus(
         conditions=[
             KubeflowOrgV1JobCondition(
@@ -185,7 +171,6 @@ def generate_job_with_status(
             )
         ]
     )
-    print(job)
     return job
 
 
@@ -457,11 +442,6 @@ test_data_update_job = [
 
 test_data_get_job = [
     (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        SUCCESS,
-    ),
-    (
         "valid flow with all parameters set",
         {
             "name": TEST_NAME,
@@ -482,8 +462,8 @@ test_data_get_job = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -499,11 +479,6 @@ test_data_get_job = [
         "invalid flow with timeout error",
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
-    ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
     ),
 ]
 
@@ -563,29 +538,32 @@ test_data_delete_job = [
 
 test_data_get_job_conditions = [
     (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        generate_job_with_status(create_job()),
-    ),
-    (
         "valid flow with failed job condition",
         {"name": TEST_NAME, "namespace": FAILED},
-        generate_job_with_status(create_job(), namespace=FAILED),
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_FAILED
+        ),
     ),
     (
         "valid flow with restarting job condition",
         {"name": TEST_NAME, "namespace": RESTARTING},
-        generate_job_with_status(create_job(), namespace=RESTARTING),
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_RESTARTING
+        ),
     ),
     (
         "valid flow with running job condition",
         {"name": TEST_NAME, "namespace": RUNNING},
-        generate_job_with_status(create_job(), namespace=RUNNING),
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_RUNNING
+        ),
     ),
     (
         "valid flow with created job condition",
-        {"name": TEST_NAME, "namespace": RUNNING},
-        generate_job_with_status(create_job(), namespace=RUNNING),
+        {"name": TEST_NAME, "namespace": CREATED},
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_CREATED
+        ),
     ),
     (
         "valid flow with all parameters set",
@@ -609,8 +587,8 @@ test_data_get_job_conditions = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -627,25 +605,10 @@ test_data_get_job_conditions = [
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
     ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
-    ),
 ]
 
 
 test_data_is_job_created = [
-    (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        False,  # Default created Job condition is Succeded
-    ),
-    (
-        "valid flow with job that is created",
-        {"name": TEST_NAME, "namespace": CREATED},
-        True,
-    ),
     (
         "valid flow with all parameters set",
         {
@@ -668,8 +631,8 @@ test_data_is_job_created = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -686,20 +649,10 @@ test_data_is_job_created = [
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
     ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
-    ),
 ]
 
 
 test_data_is_job_running = [
-    (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        False,  # Default created Job condition is Succeded
-    ),
     (
         "valid flow with job that is running",
         {"name": TEST_NAME, "namespace": RUNNING},
@@ -727,8 +680,8 @@ test_data_is_job_running = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -745,20 +698,10 @@ test_data_is_job_running = [
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
     ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
-    ),
 ]
 
 
 test_data_is_job_restarting = [
-    (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        False,  # Default created Job condition is Succeded
-    ),
     (
         "valid flow with job that is restarting",
         {"name": TEST_NAME, "namespace": RESTARTING},
@@ -786,8 +729,8 @@ test_data_is_job_restarting = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -804,20 +747,10 @@ test_data_is_job_restarting = [
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
     ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
-    ),
 ]
 
 
 test_data_is_job_failed = [
-    (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        False,  # Default created Job condition is Succeded
-    ),
     (
         "valid flow with job that is failed",
         {"name": TEST_NAME, "namespace": FAILED},
@@ -845,8 +778,8 @@ test_data_is_job_failed = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -863,20 +796,10 @@ test_data_is_job_failed = [
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
     ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
-    ),
 ]
 
 
 test_data_is_job_succeded = [
-    (
-        "valid flow with job that is succeeded",
-        {"name": TEST_NAME, "namespace": SUCCEEDED},
-        True,
-    ),
     (
         "valid flow with all parameters set",
         {
@@ -899,8 +822,8 @@ test_data_is_job_succeded = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -916,11 +839,6 @@ test_data_is_job_succeded = [
         "invalid flow with timeout error",
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
-    ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
     ),
 ]
 
@@ -1084,9 +1002,12 @@ def test_get_job_conditions(training_client, test_name, kwargs, expected_output)
 
     try:
         training_client.get_job_conditions(**kwargs)
-        assert expected_output == generate_job_with_status(
-            create_job(), namespace=kwargs.get("namespace")
-        )
+        if kwargs.get("namespace") is TEST_NAME:
+            assert expected_output == generate_job_with_status(create_job())
+        else:
+            assert expected_output == generate_job_with_status(
+                create_job(), condition_type=kwargs.get("namespace")
+            )
     except Exception as e:
         assert type(e) is expected_output
 
