@@ -1,4 +1,4 @@
-// Copyright 2023 The Kubeflow Authors
+// Copyright 2024 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import (
 	clientset "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1"
 	fakekubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1/fake"
+	kubeflowv2alpha1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v2alpha1"
+	fakekubeflowv2alpha1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v2alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -80,4 +82,9 @@ var (
 // KubeflowV1 retrieves the KubeflowV1Client
 func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
 	return &fakekubeflowv1.FakeKubeflowV1{Fake: &c.Fake}
+}
+
+// KubeflowV2alpha1 retrieves the KubeflowV2alpha1Client
+func (c *Clientset) KubeflowV2alpha1() kubeflowv2alpha1.KubeflowV2alpha1Interface {
+	return &fakekubeflowv2alpha1.FakeKubeflowV2alpha1{Fake: &c.Fake}
 }
