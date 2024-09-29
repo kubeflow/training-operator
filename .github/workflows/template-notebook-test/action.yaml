@@ -32,6 +32,11 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        pip install papermill
+
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@v1.10.0
       with:
