@@ -23,43 +23,43 @@ inputs:
 
 runs:
   using: composite
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Free-Up Disk Space
-        uses: ./.github/workflows/free-up-disk-space
+    - name: Free-Up Disk Space
+      uses: ./.github/workflows/free-up-disk-space
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ inputs.python-version }}
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
 
-      - name: Create k8s Kind Cluster
-        uses: helm/kind-action@v1.10.0
-        with:
-          node_image: kindest/node:${{ inputs.kubernetes-version }}
-          cluster_name: training-operator-cluster
-          kubectl_version: ${{ inputs.kubernetes-version }}
+    - name: Create k8s Kind Cluster
+      uses: helm/kind-action@v1.10.0
+      with:
+        node_image: kindest/node:${{ inputs.kubernetes-version }}
+        cluster_name: training-operator-cluster
+        kubectl_version: ${{ inputs.kubernetes-version }}
 
-      - name: Build training-operator
-        run: |
-          ./scripts/gha/build-image.sh
-        env:
-          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+    - name: Build training-operator
+      run: |
+        ./scripts/gha/build-image.sh
+      env:
+        TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
 
-      - name: Deploy training operator
-        run: |
-          ./scripts/gha/setup-training-operator.sh
-          docker system prune -a -f
-          docker system df
-          df -h
-        env:
-          KIND_CLUSTER: training-operator-cluster
-          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
-          GANG_SCHEDULER_NAME: "none"
-          KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}
+    - name: Deploy training operator
+      run: |
+        ./scripts/gha/setup-training-operator.sh
+        docker system prune -a -f
+        docker system df
+        df -h
+      env:
+        KIND_CLUSTER: training-operator-cluster
+        TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+        GANG_SCHEDULER_NAME: "none"
+        KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}
 
-      - name: Run Jupyter Notebook with Papermill
-        run: |
-          papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml ${{ inputs.papermill-args-yaml }}
+    - name: Run Jupyter Notebook with Papermill
+      run: |
+        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml ${{ inputs.papermill-args-yaml }}
