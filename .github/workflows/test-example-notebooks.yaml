@@ -27,6 +27,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           notebook-input: ./examples/pytorch/image-classification/create-pytorchjob.ipynb
           notebook-output: ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb
-          papermill-args-yaml: "
+          papermill-args-yaml: |
+          "
           namespace: default
+          testing: arg
           "
