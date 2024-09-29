@@ -17,7 +17,7 @@ jobs:
         python-version: ["3.9", "3.10", "3.11"]
     steps:
       - name: Test Notebook
-        uses: .github/workflows/template-notebook-test
+        uses: ./.github/workflows/template-notebook-test
         with:
           kubernetes-version: ${{ matrix.kubernetes-version }}
           python-version: ${{ matrix.python-version }}
