@@ -1,0 +1,26 @@
+name: Test example notebooks
+
+on:
+  - pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-pytorch-notebook-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes-version: ["v1.28.7"]
+        python-version: ["3.9", "3.10", "3.11"]
+    steps:
+      - name: Test Notebook
+        uses: .github/workflows/template-notebook-test
+        with:
+          kubernetes-version: ${{ matrix.kubernetes-version }}
+          python-version: ${{ matrix.python-version }}
+          notebook-input: ./examples/pytorch/image-classification/create-pytorchjob.ipynb
+          notebook-output: ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb
+          papermill-args-yaml: "namespace: default"
