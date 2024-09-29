@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  create-pytorch-notebook-test:
+  create-pytorchjob-notebook-test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
