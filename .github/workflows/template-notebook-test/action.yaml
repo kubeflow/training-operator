@@ -67,4 +67,4 @@ runs:
     - name: Run Jupyter Notebook with Papermill
       shell: bash
       run: |
-        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml ${{ inputs.papermill-args-yaml }}
+        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml "${{ inputs.papermill-args-yaml }}"
