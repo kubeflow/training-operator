@@ -40,12 +40,14 @@ runs:
         kubectl_version: ${{ inputs.kubernetes-version }}
 
     - name: Build training-operator
+      shell: bash
       run: |
         ./scripts/gha/build-image.sh
       env:
         TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
 
     - name: Deploy training operator
+      shell: bash
       run: |
         ./scripts/gha/setup-training-operator.sh
         docker system prune -a -f
@@ -58,5 +60,6 @@ runs:
         KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}
 
     - name: Run Jupyter Notebook with Papermill
+      shell: bash
       run: |
         papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml ${{ inputs.papermill-args-yaml }}
