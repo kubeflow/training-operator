@@ -64,11 +64,7 @@ runs:
         GANG_SCHEDULER_NAME: "none"
         KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}
 
-    - name: Print Papermill Args
-      shell: bash
-      run: echo "${{ github.event.inputs.papermill-args-yaml }}"
-
     - name: Run Jupyter Notebook with Papermill
       shell: bash
       run: |
-        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} --parameters_yaml "${{ inputs.papermill-args-yaml }}"
+        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} -p kubeflow_python_sdk "./sdk/python" --parameters_yaml "${{ inputs.papermill-args-yaml }}"
