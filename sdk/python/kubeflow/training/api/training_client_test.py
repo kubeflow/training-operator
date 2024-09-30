@@ -34,6 +34,12 @@ LIST_RESPONSE = [
     {"metadata": {"name": DUMMY_POD_NAME}},
 ]
 SUCCESS = "success"
+FAILED = "Failed"
+CREATED = "Created"
+RUNNING = "Running"
+RESTARTING = "Restarting"
+SUCCEEDED = "Succeeded"
+INVALID = "invalid"
 
 
 def conditional_error_handler(*args, **kwargs):
@@ -94,13 +100,6 @@ def list_namespaced_pod_response(*args, **kwargs):
             return Mock(items=LIST_RESPONSE)
 
     return MockResponse()
-
-
-def get_job_response(*args, **kwargs):
-    if kwargs.get("namespace") == RUNTIME:
-        return generate_job_with_status(create_job(), constants.JOB_CONDITION_FAILED)
-    else:
-        return generate_job_with_status(create_job())
 
 
 def generate_container() -> V1Container:
@@ -443,11 +442,6 @@ test_data_update_job = [
 
 test_data_get_job = [
     (
-        "valid flow with default namespace and default timeout",
-        {"name": TEST_NAME},
-        SUCCESS,
-    ),
-    (
         "valid flow with all parameters set",
         {
             "name": TEST_NAME,
@@ -468,8 +462,8 @@ test_data_get_job = [
         TypeError,
     ),
     (
-        "invalid flow withincorrect value",
-        {"name": TEST_NAME, "job_kind": "FailJob"},
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
         ValueError,
     ),
     (
@@ -485,11 +479,6 @@ test_data_get_job = [
         "invalid flow with timeout error",
         {"name": TEST_NAME, "namespace": TIMEOUT},
         TimeoutError,
-    ),
-    (
-        "invalid flow with runtime error",
-        {"name": TEST_NAME, "namespace": RUNTIME},
-        RuntimeError,
     ),
 ]
 
@@ -543,6 +532,313 @@ test_data_delete_job = [
             "delete_options": V1DeleteOptions(grace_period_seconds=30),
         },
         SUCCESS,
+    ),
+]
+
+
+test_data_get_job_conditions = [
+    (
+        "valid flow with failed job condition",
+        {"name": TEST_NAME, "namespace": FAILED},
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_FAILED
+        ),
+    ),
+    (
+        "valid flow with restarting job condition",
+        {"name": TEST_NAME, "namespace": RESTARTING},
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_RESTARTING
+        ),
+    ),
+    (
+        "valid flow with running job condition",
+        {"name": TEST_NAME, "namespace": RUNNING},
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_RUNNING
+        ),
+    ),
+    (
+        "valid flow with created job condition",
+        {"name": TEST_NAME, "namespace": CREATED},
+        generate_job_with_status(
+            create_job(), condition_type=constants.JOB_CONDITION_CREATED
+        ),
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        generate_job_with_status(create_job()),
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+]
+
+
+test_data_is_job_created = [
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": CREATED,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+]
+
+
+test_data_is_job_running = [
+    (
+        "valid flow with job that is running",
+        {"name": TEST_NAME, "namespace": RUNNING},
+        True,
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": RUNNING,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+]
+
+
+test_data_is_job_restarting = [
+    (
+        "valid flow with job that is restarting",
+        {"name": TEST_NAME, "namespace": RESTARTING},
+        True,
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": RESTARTING,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+]
+
+
+test_data_is_job_failed = [
+    (
+        "valid flow with job that is failed",
+        {"name": TEST_NAME, "namespace": FAILED},
+        True,
+    ),
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": FAILED,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
+    ),
+]
+
+
+test_data_is_job_succeded = [
+    (
+        "valid flow with all parameters set",
+        {
+            "name": TEST_NAME,
+            "namespace": SUCCEEDED,
+            "job": create_job(),
+            "job_kind": constants.PYTORCHJOB_KIND,
+            "timeout": 120,
+        },
+        True,
+    ),
+    (
+        "invalid flow with default namespace and a Job that doesn't exist",
+        {"name": TEST_NAME, "job_kind": constants.TFJOB_KIND},
+        RuntimeError,
+    ),
+    (
+        "invalid flow incorrect parameter",
+        {"name": TEST_NAME, "test": "example"},
+        TypeError,
+    ),
+    (
+        "invalid flow with incorrect value",
+        {"name": TEST_NAME, "job_kind": INVALID},
+        ValueError,
+    ),
+    (
+        "runtime error case",
+        {
+            "name": TEST_NAME,
+            "namespace": "runtime",
+            "job_kind": constants.PYTORCHJOB_KIND,
+        },
+        RuntimeError,
+    ),
+    (
+        "invalid flow with timeout error",
+        {"name": TEST_NAME, "namespace": TIMEOUT},
+        TimeoutError,
     ),
 ]
 
@@ -689,6 +985,126 @@ def test_get_job(training_client, test_name, kwargs, expected_output):
     try:
         training_client.get_job(**kwargs)
         assert expected_output == SUCCESS
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output", test_data_get_job_conditions
+)
+def test_get_job_conditions(training_client, test_name, kwargs, expected_output):
+    """
+    test get_job_conditions function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.get_job_conditions(**kwargs)
+        if kwargs.get("namespace") is TEST_NAME:
+            assert expected_output == generate_job_with_status(create_job())
+        else:
+            assert expected_output == generate_job_with_status(
+                create_job(), condition_type=kwargs.get("namespace")
+            )
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_created)
+def test_is_job_created(training_client, test_name, kwargs, expected_output):
+    """
+    test is_job_created function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_created(**kwargs)
+        if kwargs.get("namespace") is not (CREATED or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_running)
+def test_is_job_running(training_client, test_name, kwargs, expected_output):
+    """
+    test is_job_running function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_running(**kwargs)
+        if kwargs.get("namespace") is not (RUNNING or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output", test_data_is_job_restarting
+)
+def test_is_job_restarting(training_client, test_name, kwargs, expected_output):
+    """
+    test is_is_job_restarting function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_restarting(**kwargs)
+        if kwargs.get("namespace") is not (RESTARTING or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_failed)
+def test_is_job_failed(training_client, test_name, kwargs, expected_output):
+    """
+    test is_is_job_failed function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_failed(**kwargs)
+        if kwargs.get("namespace") is not (FAILED or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
+    except Exception as e:
+        assert type(e) is expected_output
+
+    print("test execution complete")
+
+
+@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_is_job_succeded)
+def test_is_job_succeeded(training_client, test_name, kwargs, expected_output):
+    """
+    test is_job_succeeded function of training client
+    """
+    print("Executing test: ", test_name)
+
+    try:
+        training_client.is_job_succeeded(**kwargs)
+        if kwargs.get("namespace") is not (SUCCEEDED or RUNTIME or TIMEOUT):
+            assert expected_output is False
+        else:
+            assert expected_output is True
     except Exception as e:
         assert type(e) is expected_output
 
