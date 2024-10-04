@@ -34,7 +34,7 @@ type Plugin interface {
 
 type CustomValidationPlugin interface {
 	Plugin
-	Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList)
+	Validate(runtimeJobTemplate client.Object, info *runtime.Info, oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList)
 }
 
 type WatchExtensionPlugin interface {

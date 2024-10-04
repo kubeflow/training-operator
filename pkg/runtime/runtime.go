@@ -20,6 +20,8 @@ import (
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
 	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
@@ -145,4 +147,11 @@ func NewInfo(opts ...InfoOption) *Info {
 	}
 
 	return info
+}
+
+func RuntimeRefToRuntimeRegistryKey(runtimeRef trainer.RuntimeRef) string {
+	return schema.GroupKind{
+		Group: ptr.Deref(runtimeRef.APIGroup, ""),
+		Kind:  ptr.Deref(runtimeRef.Kind, ""),
+	}.String()
 }
