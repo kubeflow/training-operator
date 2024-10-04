@@ -26,6 +26,9 @@ const (
 	// JobInitializer is the Job name for the initializer.
 	JobInitializer string = "initializer"
 
+	// JobExporter is the Job name for the exporter.
+	JobExporter string = "exporter"
+
 	// ContainerModelInitializer is the container name for the model initializer.
 	ContainerModelInitializer string = "model-initializer"
 
@@ -51,6 +54,9 @@ const (
 
 	// TorchEnvMasterPort is the env name for the master node port.
 	TorchEnvMasterPort string = "PET_MASTER_PORT"
+
+	// TorchEnvNamePrefix is the env name prefix for the distributed envs for torchrun.
+	TorchEnvNamePrefix = "PET_"
 
 	// TrainJobJobsCreationSucceededMessage is status condition message for the
 	// {"type": "Created", "status": "True", "reason": "JobsCreationSucceeded"} condition.

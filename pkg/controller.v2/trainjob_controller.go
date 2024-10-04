@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/utils/ptr"
 
 	"github.com/go-logr/logr"
 	"github.com/kubeflow/training-operator/pkg/constants"
@@ -29,13 +30,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	jobruntimes "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	runtimeutil "github.com/kubeflow/training-operator/pkg/runtime.v2/util"
 )
 
 var errorUnsupportedRuntime = errors.New("the specified runtime is not supported")
@@ -81,7 +82,7 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	runtimeRefGK := runtimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
+	runtimeRefGK := runtimeutil.RuntimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
 	runtime, ok := r.runtimes[runtimeRefGK]
 	if !ok {
 		return ctrl.Result{}, fmt.Errorf("%w: %s", errorUnsupportedRuntime, runtimeRefGK)
@@ -210,13 +211,6 @@ func setTerminalCondition(ctx context.Context, runtime jobruntimes.Runtime, trai
 func isTrainJobFinished(trainJob *kubeflowv2.TrainJob) bool {
 	return meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobComplete) ||
 		meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobFailed)
-}
-
-func runtimeRefToGroupKind(runtimeRef kubeflowv2.RuntimeRef) schema.GroupKind {
-	return schema.GroupKind{
-		Group: ptr.Deref(runtimeRef.APIGroup, ""),
-		Kind:  ptr.Deref(runtimeRef.Kind, ""),
-	}
 }
 
 func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager) error {

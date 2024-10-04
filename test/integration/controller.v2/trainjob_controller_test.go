@@ -51,7 +51,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
 		cfg = fwk.Init()
-		ctx, k8sClient = fwk.RunManager(cfg)
+		ctx, k8sClient = fwk.RunManager(cfg, true)
 	})
 	ginkgo.AfterAll(func() {
 		fwk.Teardown()
@@ -492,11 +492,11 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 
 var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
-
+	runtimeName := "training-runtime"
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
 		cfg = fwk.Init()
-		ctx, k8sClient = fwk.RunManager(cfg)
+		ctx, k8sClient = fwk.RunManager(cfg, false)
 	})
 	ginkgo.AfterAll(func() {
 		fwk.Teardown()
@@ -513,8 +513,36 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		baseClusterRuntimeWrapper := testingutil.MakeClusterTrainingRuntimeWrapper(runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(
+				testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName).Spec).Obj()).Obj()
+		clusterTrainingRuntime := baseClusterRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(
+				testingutil.MakeClusterTrainingRuntimeWrapper(runtimeName).Spec).Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		gomega.Expect(k8sClient.Create(ctx, clusterTrainingRuntime)).To(gomega.Succeed())
+
+		gomega.Eventually(func() error {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		gomega.Eventually(func() error {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(clusterTrainingRuntime), clusterTrainingRuntime)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, util.Timeout, util.Interval).Should(gomega.Succeed())
 	})
 	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainingRuntime{}, client.InNamespace(ns.Name))).Should(gomega.Succeed())
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.ClusterTrainingRuntime{})).Should(gomega.Succeed())
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainJob{}, client.InNamespace(ns.Name))).Should(gomega.Succeed())
 	})
 
@@ -526,7 +554,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
 						ManagedBy("kubeflow.org/trainjob-controller").
-						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				gomega.Succeed()),
@@ -534,7 +562,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				gomega.Succeed()),
@@ -542,7 +570,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "invalid-managed-by").
 						ManagedBy("invalid").
-						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				testingutil.BeInvalidError()),
@@ -556,53 +584,53 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default managedBy=kubeflow.org/trainjob-controller",
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Suspend(true).
 						Obj()
 				},
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
 						ManagedBy("kubeflow.org/trainjob-controller").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Suspend(true).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default runtimeRef.apiGroup",
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
-						RuntimeRef(schema.GroupVersionKind{Group: "", Version: "", Kind: kubeflowv2.TrainingRuntimeKind}, "testing").
+						RuntimeRef(schema.GroupVersionKind{Group: "", Version: "", Kind: kubeflowv2.TrainingRuntimeKind}, runtimeName).
 						Obj()
 				},
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
 						ManagedBy("kubeflow.org/trainjob-controller").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default runtimeRef.kind",
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(""), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(""), runtimeName).
 						Obj()
 				},
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
 						ManagedBy("kubeflow.org/trainjob-controller").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
@@ -619,7 +647,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-managed-by").
 						ManagedBy("kubeflow.org/trainjob-controller").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func(job *kubeflowv2.TrainJob) *kubeflowv2.TrainJob {
@@ -630,7 +658,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 			ginkgo.Entry("Should fail to update runtimeRef",
 				func() *kubeflowv2.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-runtimeref").
-						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "testing").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func(job *kubeflowv2.TrainJob) *kubeflowv2.TrainJob {
