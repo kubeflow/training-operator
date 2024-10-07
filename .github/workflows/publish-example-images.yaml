@@ -73,3 +73,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/jax/cpu-demo/Dockerfile
             context: examples/jax/cpu-demo
+          - component-name: pytorch-deepspeed-demo
+            platforms: linux/amd64
+            dockerfile: examples/pytorch/deepspeed-demo/Dockerfile
+            context: examples/pytorch/deepspeed-demo
