@@ -120,10 +120,10 @@ def get_script_for_python_packages(
     script_for_python_packages = textwrap.dedent(
         f"""
         if ! [ -x "$(command -v pip)" ]; then
-            python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+            python -m ensurepip || python -m ensurepip --user || apt-get install python-pip
         fi
 
-        PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \
+        PIP_DISABLE_PIP_VERSION_CHECK=1 python -m pip install --quiet \
         --no-warn-script-location --index-url {pip_index_url} {packages_str}
         """
     )
@@ -132,7 +132,8 @@ def get_script_for_python_packages(
 
 
 def get_command_using_train_func(
-    train_func: Optional[Callable],
+    train_func: Callable,
+    entrypoint: str,
     train_func_parameters: Optional[Dict[str, Any]] = None,
     packages_to_install: Optional[List[str]] = None,
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
@@ -170,11 +171,11 @@ def get_command_using_train_func(
                 {func_code}
                 EOM
                 printf "%s" \"$SCRIPT\" > \"$program_path/ephemeral_script.py\"
-                python3 -u \"$program_path/ephemeral_script.py\""""
+                {entrypoint} \"$program_path/ephemeral_script.py\""""
     )
 
     # Add function code to the execute script.
-    exec_script = exec_script.format(func_code=func_code)
+    exec_script = exec_script.format(func_code=func_code, entrypoint=entrypoint)
 
     # Install Python packages if that is required.
     if packages_to_install is not None:
@@ -190,10 +191,7 @@ def get_command_using_train_func(
 def get_container_spec(
     name: str,
     base_image: str,
-    train_func: Optional[Callable] = None,
-    train_func_parameters: Optional[Dict[str, Any]] = None,
-    packages_to_install: Optional[List[str]] = None,
-    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+    command: Optional[List[str]] = None,
     args: Optional[List[str]] = None,
     resources: Union[dict, models.V1ResourceRequirements, None] = None,
     volume_mounts: Optional[List[models.V1VolumeMount]] = None,
@@ -207,17 +205,12 @@ def get_container_spec(
 
     # Create initial container spec.
     container_spec = models.V1Container(
-        name=name, image=base_image, args=args, volume_mounts=volume_mounts
+        name=name,
+        image=base_image,
+        command=command,
+        args=args,
+        volume_mounts=volume_mounts,
     )
-
-    # If training function is set, override container command and args to execute the function.
-    if train_func is not None:
-        container_spec.command, container_spec.args = get_command_using_train_func(
-            train_func=train_func,
-            train_func_parameters=train_func_parameters,
-            packages_to_install=packages_to_install,
-            pip_index_url=pip_index_url,
-        )
 
     # Convert dict to the Kubernetes container resources if that is required.
     if isinstance(resources, dict):
@@ -265,15 +258,10 @@ def get_tfjob_template(
     name: str,
     namespace: str,
     pod_template_spec: models.V1PodTemplateSpec,
-    num_workers: Optional[int] = None,
+    num_workers: int,
     num_chief_replicas: Optional[int] = None,
     num_ps_replicas: Optional[int] = None,
 ):
-    # Check if at least one replica is set.
-    # TODO (andreyvelich): Remove this check once we have CEL validation.
-    # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_workers is None and num_chief_replicas is None and num_ps_replicas is None:
-        raise ValueError("At least one replica for TFJob must be set")
 
     # Create TFJob template.
     tfjob = models.KubeflowOrgV1TFJob(
@@ -320,14 +308,8 @@ def get_pytorchjob_template(
     num_workers: int,
     worker_pod_template_spec: Optional[models.V1PodTemplateSpec],
     master_pod_template_spec: Optional[models.V1PodTemplateSpec] = None,
-    num_procs_per_worker: Optional[int] = None,
-    elastic_policy: Optional[models.KubeflowOrgV1ElasticPolicy] = None,
+    num_procs_per_worker: Optional[Union[int, str]] = None,
 ):
-    # Check if at least one Worker is set.
-    # TODO (andreyvelich): Remove this check once we have CEL validation.
-    # Ref: https://github.com/kubeflow/training-operator/issues/1708
-    if num_workers is None or num_workers < 1:
-        raise ValueError("At least one Worker for PyTorchJob must be set")
 
     # Create PyTorchJob template.
     pytorchjob = models.KubeflowOrgV1PyTorchJob(
@@ -337,11 +319,9 @@ def get_pytorchjob_template(
         spec=models.KubeflowOrgV1PyTorchJobSpec(
             run_policy=models.KubeflowOrgV1RunPolicy(clean_pod_policy=None),
             pytorch_replica_specs={},
-            elastic_policy=elastic_policy,
         ),
     )
 
-    # TODO (andreyvelich): Should we make spec.nproc_per_node int ?
     if num_procs_per_worker:
         pytorchjob.spec.nproc_per_node = str(num_procs_per_worker)
 

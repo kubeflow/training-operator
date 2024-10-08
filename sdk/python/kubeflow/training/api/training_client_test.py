@@ -1,5 +1,4 @@
 import multiprocessing
-from typing import Optional
 from unittest.mock import Mock, patch
 
 import pytest
@@ -10,7 +9,6 @@ from kubeflow.training import (
     KubeflowOrgV1PyTorchJobSpec,
     KubeflowOrgV1ReplicaSpec,
     KubeflowOrgV1RunPolicy,
-    KubeflowOrgV1SchedulingPolicy,
     TrainingClient,
     constants,
 )
@@ -21,10 +19,11 @@ from kubernetes.client import (
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
-    V1ResourceRequirements,
 )
 
 TEST_NAME = "test"
+TEST_IMAGE = "docker.io/test-training"
+
 TIMEOUT = "timeout"
 RUNTIME = "runtime"
 MOCK_POD_OBJ = "mock_pod_obj"
@@ -102,41 +101,20 @@ def list_namespaced_pod_response(*args, **kwargs):
     return MockResponse()
 
 
-def generate_container() -> V1Container:
-    return V1Container(
-        name="pytorch",
-        image="gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0",
-        args=["--backend", "gloo"],
-        resources=V1ResourceRequirements(limits={"memory": "1Gi", "cpu": "0.4"}),
+def create_job(
+    command=None,
+    args=None,
+    num_workers=2,
+):
+    container = V1Container(
+        name=constants.PYTORCHJOB_CONTAINER,
+        image=TEST_IMAGE,
+        command=command,
+        args=args,
     )
 
-
-def generate_pytorchjob(
-    job_namespace: str,
-    master: KubeflowOrgV1ReplicaSpec,
-    worker: KubeflowOrgV1ReplicaSpec,
-    scheduling_policy: Optional[KubeflowOrgV1SchedulingPolicy] = None,
-) -> KubeflowOrgV1PyTorchJob:
-    return KubeflowOrgV1PyTorchJob(
-        api_version=constants.API_VERSION,
-        kind=constants.PYTORCHJOB_KIND,
-        metadata=V1ObjectMeta(name="pytorchjob-mnist-ci-test", namespace=job_namespace),
-        spec=KubeflowOrgV1PyTorchJobSpec(
-            run_policy=KubeflowOrgV1RunPolicy(
-                clean_pod_policy="None",
-                scheduling_policy=scheduling_policy,
-            ),
-            pytorch_replica_specs={"Master": master, "Worker": worker},
-        ),
-    )
-
-
-def create_job():
-    job_namespace = TEST_NAME
-    container = generate_container()
     master = KubeflowOrgV1ReplicaSpec(
         replicas=1,
-        restart_policy="OnFailure",
         template=V1PodTemplateSpec(
             metadata=V1ObjectMeta(
                 annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
@@ -145,18 +123,56 @@ def create_job():
         ),
     )
 
-    worker = KubeflowOrgV1ReplicaSpec(
-        replicas=1,
-        restart_policy="OnFailure",
-        template=V1PodTemplateSpec(
-            metadata=V1ObjectMeta(
-                annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+    pytorch_replica_specs = {"Master": master}
+
+    # PyTorchJob always has 1 master and N-1 worker replicas.
+    if num_workers > 1:
+        pytorch_replica_specs["Worker"] = KubeflowOrgV1ReplicaSpec(
+            replicas=num_workers - 1,
+            template=V1PodTemplateSpec(
+                metadata=V1ObjectMeta(
+                    annotations={constants.ISTIO_SIDECAR_INJECTION: "false"}
+                ),
+                spec=V1PodSpec(containers=[container]),
             ),
-            spec=V1PodSpec(containers=[container]),
+        )
+
+    pytorchjob = KubeflowOrgV1PyTorchJob(
+        api_version=constants.API_VERSION,
+        kind=constants.PYTORCHJOB_KIND,
+        metadata=V1ObjectMeta(name=TEST_NAME, namespace=TEST_NAME),
+        spec=KubeflowOrgV1PyTorchJobSpec(
+            run_policy=KubeflowOrgV1RunPolicy(clean_pod_policy=None),
+            pytorch_replica_specs=pytorch_replica_specs,
         ),
     )
-    pytorchjob = generate_pytorchjob(job_namespace, master, worker)
+
     return pytorchjob
+
+
+# Check if actual string contains all elements from the expected list.
+class AnyStringWithElementsFromList:
+    def __init__(self, expected):
+        self.expected = expected
+
+    def __eq__(self, actual):
+        return all(e in str(actual) for e in self.expected)
+
+
+def create_job_from_func(num_workers, packages_to_install=None, pip_index_url=None):
+
+    command = ["bash", "-c"]
+    if num_workers > 1:
+        args = ['torchrun "$program_path/ephemeral_script.py"']
+    else:
+        args = ['python -u "$program_path/ephemeral_script.py"']
+
+    if pip_index_url and packages_to_install:
+        args += [f"--index-url {pip_index_url} {packages_to_install[0]}"]
+
+    job = create_job(command, AnyStringWithElementsFromList(args), num_workers)
+
+    return job
 
 
 def generate_job_with_status(
@@ -181,39 +197,97 @@ class DummyJobClass:
 
 test_data_create_job = [
     (
-        "invalid extra parameter",
-        {"job": create_job(), "namespace": TEST_NAME, "base_image": "test_image"},
-        ValueError,
+        "valid flow",
+        {"job": create_job(), "namespace": TEST_NAME},
+        SUCCESS,
+        create_job(),
     ),
-    ("invalid job kind", {"job_kind": "invalid_job_kind"}, ValueError),
     (
-        "job name missing ",
+        "valid flow to create multi-node job with torchrun",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "train_func": lambda: print("Test Training Function"),
+            "base_image": TEST_IMAGE,
+            "num_workers": 3,
+            "packages_to_install": ["boto3==1.34.14"],
+            "pip_index_url": "https://pypi.custom.com/simple",
+        },
+        SUCCESS,
+        create_job_from_func(
+            num_workers=3,
+            packages_to_install=["boto3==1.34.1"],
+            pip_index_url="https://pypi.custom.com/simple",
+        ),
+    ),
+    (
+        "valid flow to create job with 1 worker",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "train_func": lambda: print("Test Training Function"),
+            "base_image": TEST_IMAGE,
+            "num_workers": 1,
+        },
+        SUCCESS,
+        create_job_from_func(num_workers=1),
+    ),
+    (
+        "valid flow to create job using image",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "base_image": TEST_IMAGE,
+            "num_workers": 2,
+        },
+        SUCCESS,
+        create_job(num_workers=2),
+    ),
+    (
+        "invalid extra parameter",
+        {
+            "job": create_job(),
+            "namespace": TEST_NAME,
+            "base_image": "test_image",
+        },
+        ValueError,
+        None,
+    ),
+    (
+        "invalid job kind",
+        {"job_kind": "invalid_job_kind"},
+        ValueError,
+        None,
+    ),
+    (
+        "job name missing with train function",
         {"train_func": lambda: "test train function"},
         ValueError,
+        None,
     ),
-    ("job name missing", {"base_image": "test_image"}, ValueError),
+    (
+        "job name missing with base image",
+        {"base_image": "test_image"},
+        ValueError,
+        None,
+    ),
     (
         "uncallable train function",
-        {"name": "test job", "train_func": "uncallable train function"},
-        ValueError,
-    ),
-    (
-        "invalid TFJob replica",
         {
             "name": "test job",
-            "train_func": lambda: "test train function",
-            "job_kind": constants.TFJOB_KIND,
+            "train_func": "uncallable train function",
         },
         ValueError,
+        None,
     ),
     (
-        "invalid PyTorchJob replica",
+        "invalid number of workers",
         {
             "name": "test job",
-            "train_func": lambda: "test train function",
-            "job_kind": constants.PYTORCHJOB_KIND,
+            "num_workers": 0,
         },
         ValueError,
+        None,
     ),
     (
         "paddle job can't be created using function",
@@ -223,49 +297,25 @@ test_data_create_job = [
             "job_kind": constants.PADDLEJOB_KIND,
         },
         ValueError,
+        None,
     ),
     (
         "invalid job object",
         {"job": DummyJobClass(constants.TFJOB_KIND)},
         ValueError,
+        None,
     ),
     (
         "create_namespaced_custom_object timeout error",
         {"job": create_job(), "namespace": TIMEOUT},
         TimeoutError,
+        None,
     ),
     (
         "create_namespaced_custom_object runtime error",
         {"job": create_job(), "namespace": RUNTIME},
         RuntimeError,
-    ),
-    (
-        "valid flow",
-        {"job": create_job(), "namespace": TEST_NAME},
-        SUCCESS,
-    ),
-    (
-        "valid flow to create job from func",
-        {
-            "name": "test-job",
-            "namespace": TEST_NAME,
-            "train_func": lambda: print("Test Training Function"),
-            "base_image": "docker.io/test-training",
-            "num_workers": 3,
-            "packages_to_install": ["boto3==1.34.14"],
-            "pip_index_url": "https://pypi.custom.com/simple",
-        },
-        SUCCESS,
-    ),
-    (
-        "valid flow to create job using image",
-        {
-            "name": "test-job",
-            "namespace": TEST_NAME,
-            "base_image": "docker.io/test-training",
-            "num_workers": 2,
-        },
-        SUCCESS,
+        None,
     ),
 ]
 
@@ -867,15 +917,26 @@ def training_client():
         yield client
 
 
-@pytest.mark.parametrize("test_name,kwargs,expected_output", test_data_create_job)
-def test_create_job(training_client, test_name, kwargs, expected_output):
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output,expected_job", test_data_create_job
+)
+def test_create_job(training_client, test_name, kwargs, expected_output, expected_job):
     """
     test create_job function of training client
     """
     print("Executing test:", test_name)
     try:
         training_client.create_job(**kwargs)
+
         assert expected_output == SUCCESS
+
+        training_client.custom_api.create_namespaced_custom_object.assert_called_with(
+            constants.GROUP,
+            constants.VERSION,
+            kwargs["namespace"],
+            constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["plural"],
+            expected_job,
+        )
     except Exception as e:
         assert type(e) is expected_output
     print("test execution complete")
