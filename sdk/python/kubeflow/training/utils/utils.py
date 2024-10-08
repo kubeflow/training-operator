@@ -185,7 +185,7 @@ def get_command_using_train_func(
         )
 
     # Return container command and args to execute training function.
-    return ["bash", "-c"], [exec_script]
+    return constants.DEFAULT_COMMAND, [exec_script]
 
 
 def get_container_spec(

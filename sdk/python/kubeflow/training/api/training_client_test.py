@@ -161,11 +161,11 @@ class AnyStringWithElementsFromList:
 
 def create_job_from_func(num_workers, packages_to_install=None, pip_index_url=None):
 
-    command = ["bash", "-c"]
+    command = constants.DEFAULT_COMMAND
     if num_workers > 1:
-        args = ['torchrun "$program_path/ephemeral_script.py"']
+        args = [f'{constants.ENTRYPOINT_TORCH} "$program_path/ephemeral_script.py"']
     else:
-        args = ['python -u "$program_path/ephemeral_script.py"']
+        args = [f'{constants.ENTRYPOINT_PYTHON} "$program_path/ephemeral_script.py"']
 
     if pip_index_url and packages_to_install:
         args += [f"--index-url {pip_index_url} {packages_to_install[0]}"]

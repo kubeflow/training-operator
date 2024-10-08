@@ -118,6 +118,10 @@ PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime"
 
+ENTRYPOINT_TORCH = "torchrun"
+ENTRYPOINT_PYTHON = "python -u"
+DEFAULT_COMMAND = ["bash", "-c"]
+
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"
 XGBOOSTJOB_MODEL = "KubeflowOrgV1XGBoostJob"

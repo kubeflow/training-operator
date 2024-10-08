@@ -444,9 +444,9 @@ class TrainingClient(object):
                 if job_kind == constants.PYTORCHJOB_KIND and (
                     num_workers > 1 or num_procs_per_worker is not None
                 ):
-                    entrypoint = "torchrun"
+                    entrypoint = constants.ENTRYPOINT_TORCH
                 else:
-                    entrypoint = "python -u"
+                    entrypoint = constants.ENTRYPOINT_PYTHON
 
                 command, args = utils.get_command_using_train_func(
                     train_func=train_func,
