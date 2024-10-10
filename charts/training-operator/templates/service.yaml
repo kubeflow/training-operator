@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "training-operator.serviceName" . }}
+  labels:
+    {{- include "training-operator.labels" . | nindent 4 }}
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  {{- with .Values.service.type }}
+  type: {{ . }}
+  {{- end }}
+  ports:
+  - name: monitoring-port
+    port: 8080
+    targetPort: 8080
+  - name: webhook-server
+    port: 443
+    protocol: TCP
+    targetPort: 9443
+  selector:
+    {{- include "training-operator.selectorLabels" . | nindent 4 }}
