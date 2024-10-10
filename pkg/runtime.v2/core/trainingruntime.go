@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
@@ -44,7 +43,6 @@ var (
 type TrainingRuntime struct {
 	framework *fwkcore.Framework
 	client    client.Client
-	scheme    *apiruntime.Scheme
 }
 
 var TrainingRuntimeGroupKind = schema.GroupKind{
@@ -67,7 +65,6 @@ func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.Fie
 	trainingRuntimeFactory = &TrainingRuntime{
 		framework: fwk,
 		client:    c,
-		scheme:    c.Scheme(),
 	}
 	return trainingRuntimeFactory, nil
 }
