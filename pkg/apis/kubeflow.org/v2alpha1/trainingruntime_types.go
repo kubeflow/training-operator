@@ -22,6 +22,10 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=clustertrainingruntime
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:resource:scope=Cluster
@@ -39,6 +43,8 @@ type ClusterTrainingRuntime struct {
 	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=clustertrainingruntimes
 // +kubebuilder:object:root=true
 
 // ClusterTrainingRuntimeList is a collection of cluster training runtimes.
@@ -52,6 +58,9 @@ type ClusterTrainingRuntimeList struct {
 	Items []ClusterTrainingRuntime `json:"items"`
 }
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=trainingruntime
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 
@@ -68,6 +77,8 @@ type TrainingRuntime struct {
 	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=trainingruntimes
 // +kubebuilder:object:root=true
 
 // TrainingRuntimeList is a collection of training runtimes.
