@@ -49,7 +49,7 @@ type TrainingRuntime struct {
 
 var TrainingRuntimeGroupKind = schema.GroupKind{
 	Group: kubeflowv2.GroupVersion.Group,
-	Kind:  "TrainingRuntime",
+	Kind:  kubeflowv2.TrainingRuntimeKind,
 }.String()
 
 var _ runtime.Runtime = (*TrainingRuntime)(nil)

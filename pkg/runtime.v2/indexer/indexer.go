@@ -38,7 +38,7 @@ func IndexTrainJobTrainingRuntimes(obj client.Object) []string {
 		Kind:  ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, ""),
 	}
 	if runtimeRefGroupKind.Group == kubeflowv2.GroupVersion.Group &&
-		(runtimeRefGroupKind.Kind == "TrainingRuntime" || runtimeRefGroupKind.Kind == "ClusterTrainingRuntime") {
+		(runtimeRefGroupKind.Kind == kubeflowv2.TrainingRuntimeKind || runtimeRefGroupKind.Kind == kubeflowv2.ClusterTrainingRuntimeKind) {
 		return []string{trainJob.Spec.TrainingRuntimeRef.Name}
 	}
 	return nil

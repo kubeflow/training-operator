@@ -238,7 +238,7 @@ func MakeTrainingRuntimeWrapper(t *testing.T, namespace, name string) *TrainingR
 		TrainingRuntime: kubeflowv2.TrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeflowv2.SchemeGroupVersion.String(),
-				Kind:       "TrainingRuntime",
+				Kind:       kubeflowv2.TrainingRuntimeKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -309,7 +309,7 @@ func MakeClusterTrainingRuntimeWrapper(t *testing.T, name string) *ClusterTraini
 		ClusterTrainingRuntime: kubeflowv2.ClusterTrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeflowv2.SchemeGroupVersion.String(),
-				Kind:       "ClusterTrainingRuntime",
+				Kind:       kubeflowv2.ClusterTrainingRuntimeKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,

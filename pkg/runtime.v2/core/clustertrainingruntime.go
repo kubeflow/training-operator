@@ -42,7 +42,7 @@ var _ runtime.Runtime = (*ClusterTrainingRuntime)(nil)
 
 var ClusterTrainingRuntimeGroupKind = schema.GroupKind{
 	Group: kubeflowv2.GroupVersion.Group,
-	Kind:  "ClusterTrainingRuntime",
+	Kind:  kubeflowv2.ClusterTrainingRuntimeKind,
 }.String()
 
 func NewClusterTrainingRuntime(context.Context, client.Client, client.FieldIndexer) (runtime.Runtime, error) {
