@@ -24,8 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -118,4 +120,17 @@ func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
 		builders = append(builders, ex.ReconcilerBuilders()...)
 	}
 	return builders
+}
+
+func (r *TrainingRuntime) ValidateObjects(ctx context.Context, old, new *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
+	if err := r.client.Get(ctx, client.ObjectKey{
+		Namespace: old.Namespace,
+		Name:      old.Spec.TrainingRuntimeRef.Name,
+	}, &kubeflowv2.TrainingRuntime{}); err != nil {
+		return nil, field.ErrorList{
+			field.Invalid(field.NewPath("spec", "trainingRuntimeRef"), old.Spec.TrainingRuntimeRef,
+				fmt.Sprintf("%v: specified trainingRuntime must be created before the TrainJob is created", err)),
+		}
+	}
+	return r.framework.RunCustomValidationPlugins(old, new)
 }

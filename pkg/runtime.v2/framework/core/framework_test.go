@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -291,7 +292,7 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 		oldObj       client.Object
 		newObj       client.Object
 		wantWarnings admission.Warnings
-		wantError    error
+		wantError    field.ErrorList
 	}{
 		// Need to implement more detail testing after we implement custom validator in any plugins.
 		"there are not any custom validations": {
@@ -300,7 +301,7 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 			oldObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
 			newObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
 		},
-		"an  empty registry": {
+		"an empty registry": {
 			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
 			oldObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
 			newObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
@@ -316,11 +317,11 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			warnings, err := fwk.RunCustomValidationPlugins(tc.oldObj, tc.newObj)
+			warnings, errs := fwk.RunCustomValidationPlugins(tc.oldObj, tc.newObj)
 			if diff := cmp.Diff(tc.wantWarnings, warnings, cmpopts.SortSlices(func(a, b string) bool { return a < b })); len(diff) != 0 {
 				t.Errorf("Unexpected warninigs (-want,+got):\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
+			if diff := cmp.Diff(tc.wantError, errs, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
 			}
 		})
