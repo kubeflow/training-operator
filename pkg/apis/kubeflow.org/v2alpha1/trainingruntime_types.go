@@ -22,6 +22,13 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+const (
+	// TrainingRuntimeKind is the GroupVersionKind Kind name for the TrainingRuntime.
+	TrainingRuntimeKind string = "TrainingRuntime"
+	// ClusterTrainingRuntimeKind is the GroupVersionKind Kind name for the ClusterTrainingRuntime.
+	ClusterTrainingRuntimeKind string = "ClusterTrainingRuntime"
+)
+
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

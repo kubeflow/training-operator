@@ -47,7 +47,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 		"succeeded to build JobSet and PodGroup": {
 			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind("ClusterTrainingRuntime"), "test-runtime").
+				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper(t).
 						ContainerImage("test:trainjob").
@@ -93,7 +93,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 		"missing trainingRuntime resource": {
 			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind("ClusterTrainingRuntime"), "test-runtime").
+				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper(t).
 						ContainerImage("test:trainjob").

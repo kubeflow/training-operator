@@ -19,15 +19,16 @@ package webhookv2
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
 func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
 	if err := setupWebhookForClusterTrainingRuntime(mgr, runtimes); err != nil {
-		return "ClusterTrainingRuntime", err
+		return kubeflowv2.ClusterTrainingRuntimeKind, err
 	}
 	if err := setupWebhookForTrainingRuntime(mgr, runtimes); err != nil {
-		return "TrainingRuntime", err
+		return kubeflowv2.TrainingRuntimeKind, err
 	}
 	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
 		return "TrainJob", err
