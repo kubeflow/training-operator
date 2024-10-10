@@ -1,4 +1,4 @@
-// Copyright 2023 The Kubeflow Authors
+// Copyright 2024 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1"
+	kubeflowv2alpha1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v2alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,17 +30,24 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KubeflowV1() kubeflowv1.KubeflowV1Interface
+	KubeflowV2alpha1() kubeflowv2alpha1.KubeflowV2alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	kubeflowV1 *kubeflowv1.KubeflowV1Client
+	kubeflowV1       *kubeflowv1.KubeflowV1Client
+	kubeflowV2alpha1 *kubeflowv2alpha1.KubeflowV2alpha1Client
 }
 
 // KubeflowV1 retrieves the KubeflowV1Client
 func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
 	return c.kubeflowV1
+}
+
+// KubeflowV2alpha1 retrieves the KubeflowV2alpha1Client
+func (c *Clientset) KubeflowV2alpha1() kubeflowv2alpha1.KubeflowV2alpha1Interface {
+	return c.kubeflowV2alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -90,6 +98,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
+	cs.kubeflowV2alpha1, err = kubeflowv2alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
@@ -112,6 +124,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.kubeflowV1 = kubeflowv1.New(c)
+	cs.kubeflowV2alpha1 = kubeflowv2alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

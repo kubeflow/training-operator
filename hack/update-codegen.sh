@@ -72,10 +72,10 @@ chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
-echo "Generating client,lister,informer for kubeflow.org/v1"
+echo "Generating client,lister,informer for kubeflow.org/v1 and kubeflow.org/v2alpha1"
 ${CODEGEN_PKG}/generate-groups.sh "client,lister,informer" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
-    kubeflow.org:v1 \
+    kubeflow.org:v1,v2alpha1 \
     --output-base "${TEMP_DIR}" \
     --go-header-file hack/boilerplate/boilerplate.go.txt
 
@@ -101,8 +101,15 @@ go build -o openapi-gen ${OPENAPI_PKG}/cmd/openapi-gen
 
 echo "Generating OpenAPI specification for kubeflow.org/v1"
 ./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
-    --report-filename=hack/violation_exception.list \
+    --report-filename=hack/violation_exception_v1.list \
     --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1 \
+    --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
+    --output-base "${TEMP_DIR}"
+
+echo "Generating OpenAPI specification for kubeflow.org/v2alpha1"
+./openapi-gen --input-dirs github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1 \
+    --report-filename=hack/violation_exception_v2alpha1.list \
+    --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1 \
     --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
     --output-base "${TEMP_DIR}"
 
