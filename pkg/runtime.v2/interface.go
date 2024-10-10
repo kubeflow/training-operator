@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhookv2
+package runtimev2
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
+	"context"
+
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
-	if err := setupWebhookForClusterTrainingRuntime(mgr, runtimes); err != nil {
-		return kubeflowv2.ClusterTrainingRuntimeKind, err
-	}
-	if err := setupWebhookForTrainingRuntime(mgr, runtimes); err != nil {
-		return kubeflowv2.TrainingRuntimeKind, err
-	}
-	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
-		return "TrainJob", err
-	}
-	return "", nil
+type ReconcilerBuilder func(*builder.Builder, client.Client) *builder.Builder
+
+type Runtime interface {
+	NewObjects(ctx context.Context, trainJob *kubeflowv2.TrainJob) ([]client.Object, error)
+	EventHandlerRegistrars() []ReconcilerBuilder
+	ValidateObjects(ctx context.Context, old, new *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList)
 }

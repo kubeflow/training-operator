@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
 type TrainJobReconciler struct {
@@ -53,8 +54,15 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&kubeflowv2.TrainJob{}).
-		Complete(r)
+func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) error {
+	b := ctrl.NewControllerManagedBy(mgr).
+		For(&kubeflowv2.TrainJob{})
+	for _, run := range runtimes {
+		for _, registrar := range run.EventHandlerRegistrars() {
+			if registrar != nil {
+				b = registrar(b, mgr.GetClient())
+			}
+		}
+	}
+	return b.Complete(r)
 }

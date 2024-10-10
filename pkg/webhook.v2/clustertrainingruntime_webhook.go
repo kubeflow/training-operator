@@ -19,20 +19,23 @@ package webhookv2
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-type ClusterTrainingRuntimeWebhook struct{}
+type ClusterTrainingRuntimeWebhook struct {
+	runtimes map[string]runtime.Runtime
+}
 
-func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager) error {
+func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager, run map[string]runtime.Runtime) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&kubeflowv2.ClusterTrainingRuntime{}).
-		WithValidator(&ClusterTrainingRuntimeWebhook{}).
+		WithValidator(&ClusterTrainingRuntimeWebhook{runtimes: run}).
 		Complete()
 }
 
@@ -40,14 +43,14 @@ func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager) error {
 
 var _ webhook.CustomValidator = (*ClusterTrainingRuntimeWebhook)(nil)
 
-func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(context.Context, apiruntime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (w *ClusterTrainingRuntimeWebhook) ValidateUpdate(context.Context, runtime.Object, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateUpdate(context.Context, apiruntime.Object, apiruntime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (w *ClusterTrainingRuntimeWebhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *ClusterTrainingRuntimeWebhook) ValidateDelete(context.Context, apiruntime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

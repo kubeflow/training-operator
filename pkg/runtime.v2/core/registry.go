@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhookv2
+package core
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
+	"context"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
-	if err := setupWebhookForClusterTrainingRuntime(mgr, runtimes); err != nil {
-		return kubeflowv2.ClusterTrainingRuntimeKind, err
+type Registry map[string]func(ctx context.Context, client client.Client, indexer client.FieldIndexer) (runtime.Runtime, error)
+
+func NewRuntimeRegistry() Registry {
+	return Registry{
+		TrainingRuntimeGroupKind:        NewTrainingRuntime,
+		ClusterTrainingRuntimeGroupKind: NewClusterTrainingRuntime,
 	}
-	if err := setupWebhookForTrainingRuntime(mgr, runtimes); err != nil {
-		return kubeflowv2.TrainingRuntimeKind, err
-	}
-	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
-		return "TrainJob", err
-	}
-	return "", nil
 }

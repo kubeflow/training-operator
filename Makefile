@@ -80,6 +80,10 @@ test: envtest
 test-integrationv2: envtest
 	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
 
+.PHONY: testv2
+testv2:
+	go test ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhook.v2/... ./pkg/util.v2/... -coverprofile cover.out
+
 envtest:
 ifndef HAS_SETUP_ENVTEST
 	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@bf15e44028f908c790721fc8fe67c7bf2d06a611 # v0.17.2
