@@ -274,7 +274,7 @@ test_data_create_job = [
     (
         "uncallable train function",
         {
-            "name": "test job",
+            "name": TEST_NAME,
             "train_func": "uncallable train function",
         },
         ValueError,
@@ -283,8 +283,30 @@ test_data_create_job = [
     (
         "invalid number of workers",
         {
-            "name": "test job",
+            "name": TEST_NAME,
             "num_workers": 0,
+        },
+        ValueError,
+        None,
+    ),
+    (
+        "num_procs_per_worker is set for TFJob",
+        {
+            "name": TEST_NAME,
+            "job_kind": constants.TFJOB_KIND,
+            "num_procs_per_worker": 5,
+            "base_image": "test_image",
+        },
+        ValueError,
+        None,
+    ),
+    (
+        "num_chief_replicas and num_ps_replicas is set for PyTorchJov",
+        {
+            "name": TEST_NAME,
+            "num_chief_replicas": 1,
+            "num_ps_replicas": 1,
+            "base_image": "test_image",
         },
         ValueError,
         None,
@@ -292,7 +314,7 @@ test_data_create_job = [
     (
         "paddle job can't be created using function",
         {
-            "name": "test job",
+            "name": TEST_NAME,
             "train_func": lambda: "test train function",
             "job_kind": constants.PADDLEJOB_KIND,
         },

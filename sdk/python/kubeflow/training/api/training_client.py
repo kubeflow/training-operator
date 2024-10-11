@@ -416,12 +416,6 @@ class TrainingClient(object):
                 f"Job kind must be one of these: {constants.JOB_PARAMETERS.keys()}"
             )
 
-        # Check if at least one Worker is set.
-        # TODO (andreyvelich): Remove this check once we have CEL validation.
-        # Ref: https://github.com/kubeflow/training-operator/issues/1708
-        if num_workers is None or num_workers < 1:
-            raise ValueError(f"At least one Worker for {job_kind} must be set")
-
         # If Training function or base image is set, configure Job template.
         if job is None and (train_func is not None or base_image is not None):
             # Job name must be set to configure Job template.
@@ -429,6 +423,12 @@ class TrainingClient(object):
                 raise ValueError(
                     "Job name must be set to configure Job from function or image"
                 )
+
+            # Check if at least one Worker is set.
+            # TODO (andreyvelich): Remove this check once we have CEL validation.
+            # Ref: https://github.com/kubeflow/training-operator/issues/1708
+            if num_workers is None or num_workers < 1:
+                raise ValueError(f"At least one Worker for {job_kind} must be set")
 
             # Assign the default base image.
             # TODO (andreyvelich): Add base image for other Job kinds.
@@ -473,6 +473,10 @@ class TrainingClient(object):
             # Configure template for different Jobs.
             # TODO (andreyvelich): Add support for other kinds (e.g. MPIJob).
             if job_kind == constants.TFJOB_KIND:
+                if num_procs_per_worker is not None:
+                    raise ValueError(
+                        f"num_procs_per_worker can't be set for {constants.TFJOB_KIND}"
+                    )
                 job = utils.get_tfjob_template(
                     name=name,
                     namespace=namespace,
@@ -481,7 +485,12 @@ class TrainingClient(object):
                     num_chief_replicas=num_chief_replicas,
                     num_ps_replicas=num_ps_replicas,
                 )
-            elif job_kind == constants.PYTORCHJOB_KIND and num_workers:
+            elif job_kind == constants.PYTORCHJOB_KIND:
+                if num_chief_replicas is not None or num_ps_replicas is not None:
+                    raise ValueError(
+                        "num_chief_replicas and num_ps_replicas can't be set for "
+                        f"{constants.PYTORCHJOB_KIND}"
+                    )
                 job = utils.get_pytorchjob_template(
                     name=name,
                     namespace=namespace,
