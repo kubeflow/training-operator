@@ -2732,6 +2732,29 @@ spec:
                   - targetReplicatedJobs
                   type: object
                 type: array
+              runtimeRef:
+                description: Reference to the training runtime.
+                properties:
+                  apiGroup:
+                    description: |-
+                      APIGroup of the runtime being referenced.
+                      Defaults to `kubeflow.org`.
+                    type: string
+                  kind:
+                    description: |-
+                      Kind of the runtime being referenced.
+                      It must be one of TrainingRuntime or ClusterTrainingRuntime.
+                      Defaults to ClusterTrainingRuntime.
+                    type: string
+                  name:
+                    description: |-
+                      Name of the runtime being referenced.
+                      When namespaced-scoped TrainingRuntime is used, the TrainJob must have
+                      the same namespace as the deployed runtime.
+                    type: string
+                required:
+                - name
+                type: object
               suspend:
                 description: |-
                   Whether the controller should suspend the running TrainJob.
@@ -2937,31 +2960,8 @@ spec:
                         type: object
                     type: object
                 type: object
-              trainingRuntimeRef:
-                description: Reference to the training runtime.
-                properties:
-                  apiGroup:
-                    description: |-
-                      APIGroup of the runtime being referenced.
-                      Defaults to `kubeflow.org`.
-                    type: string
-                  kind:
-                    description: |-
-                      Kind of the runtime being referenced.
-                      It must be one of TrainingRuntime or ClusterTrainingRuntime.
-                      Defaults to ClusterTrainingRuntime.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the runtime being referenced.
-                      When namespaced-scoped TrainingRuntime is used, the TrainJob must have
-                      the same namespace as the deployed runtime.
-                    type: string
-                required:
-                - name
-                type: object
             required:
-            - trainingRuntimeRef
+            - runtimeRef
             type: object
           status:
             description: Current status of TrainJob.

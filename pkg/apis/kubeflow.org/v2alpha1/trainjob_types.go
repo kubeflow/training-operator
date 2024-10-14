@@ -63,7 +63,7 @@ type TrainJobList struct {
 // TrainJobSpec represents specification of the desired TrainJob.
 type TrainJobSpec struct {
 	// Reference to the training runtime.
-	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
+	RuntimeRef RuntimeRef `json:"runtimeRef"`
 
 	// Configuration of the desired trainer.
 	Trainer *Trainer `json:"trainer,omitempty"`
@@ -99,8 +99,8 @@ type TrainJobSpec struct {
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
-// TrainingRuntimeRef represents the reference to the existing training runtime.
-type TrainingRuntimeRef struct {
+// RuntimeRef represents the reference to the existing training runtime.
+type RuntimeRef struct {
 	// Name of the runtime being referenced.
 	// When namespaced-scoped TrainingRuntime is used, the TrainJob must have
 	// the same namespace as the deployed runtime.

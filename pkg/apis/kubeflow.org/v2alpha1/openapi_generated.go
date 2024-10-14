@@ -43,6 +43,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodGroupPolicy":                   schema_pkg_apis_kubefloworg_v2alpha1_PodGroupPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodGroupPolicySource":             schema_pkg_apis_kubefloworg_v2alpha1_PodGroupPolicySource(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverride":                  schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.RuntimeRef":                       schema_pkg_apis_kubefloworg_v2alpha1_RuntimeRef(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TorchElasticPolicy":               schema_pkg_apis_kubefloworg_v2alpha1_TorchElasticPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TorchMLPolicySource":              schema_pkg_apis_kubefloworg_v2alpha1_TorchMLPolicySource(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainJob":                         schema_pkg_apis_kubefloworg_v2alpha1_TrainJob(ref),
@@ -52,7 +53,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.Trainer":                          schema_pkg_apis_kubefloworg_v2alpha1_Trainer(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntime":                  schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntime(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntimeList":              schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntimeList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntimeRef":               schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntimeRef(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntimeSpec":              schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntimeSpec(ref),
 	}
 }
@@ -61,7 +61,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ClusterTrainingRuntime(ref common.Refe
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ClusterTrainingRuntime represents a training runtime which can be referenced as part of `trainingRuntimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced by TrainJob that created in *any* namespace.",
+				Description: "ClusterTrainingRuntime represents a training runtime which can be referenced as part of `runtimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced by TrainJob that created in *any* namespace.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -703,6 +703,42 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 	}
 }
 
+func schema_pkg_apis_kubefloworg_v2alpha1_RuntimeRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RuntimeRef represents the reference to the existing training runtime.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the runtime being referenced. When namespaced-scoped TrainingRuntime is used, the TrainJob must have the same namespace as the deployed runtime.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiGroup": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIGroup of the runtime being referenced. Defaults to `kubeflow.org`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind of the runtime being referenced. It must be one of TrainingRuntime or ClusterTrainingRuntime. Defaults to ClusterTrainingRuntime.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_kubefloworg_v2alpha1_TorchElasticPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -889,11 +925,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobSpec(ref common.ReferenceCallb
 				Description: "TrainJobSpec represents specification of the desired TrainJob.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"trainingRuntimeRef": {
+					"runtimeRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Reference to the training runtime.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntimeRef"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.RuntimeRef"),
 						},
 					},
 					"trainer": {
@@ -975,11 +1011,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobSpec(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"trainingRuntimeRef"},
+				Required: []string{"runtimeRef"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.DatasetConfig", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.ModelConfig", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverride", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.Trainer", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntimeRef"},
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.DatasetConfig", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.ModelConfig", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverride", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.RuntimeRef", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.Trainer"},
 	}
 }
 
@@ -1116,7 +1152,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntime(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "TrainingRuntime represents a training runtime which can be referenced as part of `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced by TrainJob that created in the *same* namespace as the TrainingRuntime.",
+				Description: "TrainingRuntime represents a training runtime which can be referenced as part of `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced by TrainJob that created in the *same* namespace as the TrainingRuntime.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -1203,42 +1239,6 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntimeList(ref common.Referen
 		},
 		Dependencies: []string{
 			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TrainingRuntime", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_pkg_apis_kubefloworg_v2alpha1_TrainingRuntimeRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "TrainingRuntimeRef represents the reference to the existing training runtime.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the runtime being referenced. When namespaced-scoped TrainingRuntime is used, the TrainJob must have the same namespace as the deployed runtime.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiGroup": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIGroup of the runtime being referenced. Defaults to `kubeflow.org`.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the runtime being referenced. It must be one of TrainingRuntime or ClusterTrainingRuntime. Defaults to ClusterTrainingRuntime.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
 	}
 }
 
