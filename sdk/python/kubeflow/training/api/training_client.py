@@ -102,6 +102,12 @@ class TrainingClient(object):
         model_provider_parameters=None,
         dataset_provider_parameters=None,
         trainer_parameters=None,
+        init_env_vars: Optional[
+            Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
+        ] = None,
+        worker_env_vars: Optional[
+            Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
+        ] = None,
         storage_config: Dict[str, Optional[Union[str, List[str]]]] = {
             "size": constants.PVC_DEFAULT_SIZE,
             "storage_class": None,
@@ -164,6 +170,20 @@ class TrainingClient(object):
                 and HuggingFace training arguments like optimizer or number of training epochs.
                 This argument must be the type of
                 `kubeflow.storage_initializer.HuggingFaceTrainerParams`
+            init_env_vars: Environment variable(s) to be attached to init container.
+                You can specify a dictionary as a mapping object representing the environment
+                variables. Otherwise, you can specify a list, in which the element can either
+                be a kubernetes.client.models.V1EnvVar (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVar.md)
+                or a kubernetes.client.models.V1EnvFromSource (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvFromSource.md)
+            worker_env_vars: Environment variable(s) to be attached to training container.
+                You can specify a dictionary as a mapping object representing the environment
+                variables. Otherwise, you can specify a list, in which the element can either
+                be a kubernetes.client.models.V1EnvVar (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVar.md)
+                or a kubernetes.client.models.V1EnvFromSource (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvFromSource.md)
             storage_config: Configuration for Storage Initializer PVC to download pre-trained model
                 and dataset. You can configure PVC size and storage class name in this argument.
         """
@@ -254,6 +274,7 @@ class TrainingClient(object):
                 json.dumps(dataset_provider_parameters.__dict__),
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
+            env=init_env_vars,
         )
 
         # create app container spec
@@ -280,6 +301,7 @@ class TrainingClient(object):
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
             resources=resources_per_worker,
+            env=worker_env_vars,
         )
 
         storage_initializer_volume = models.V1Volume(
@@ -329,6 +351,9 @@ class TrainingClient(object):
         num_ps_replicas: Optional[int] = None,
         packages_to_install: Optional[List[str]] = None,
         pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+        env_vars: Optional[
+            Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
+        ] = None,
     ):
         """Create the Training Job.
         Job can be created using one of the following options:
@@ -386,6 +411,13 @@ class TrainingClient(object):
                 to the base image packages if `train_func` parameter is set.
                 These packages are installed before executing the objective function.
             pip_index_url: The PyPI url from which to install Python packages.
+            env_vars: Environment variable(s) to be attached to training container.
+                You can specify a dictionary as a mapping object representing the environment
+                variables. Otherwise, you can specify a list, in which the element can either
+                be a kubernetes.client.models.V1EnvVar (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVar.md)
+                or a kubernetes.client.models.V1EnvFromSource (documented here:
+                https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvFromSource.md)
 
         Raises:
             ValueError: Invalid input parameters.
@@ -463,6 +495,7 @@ class TrainingClient(object):
                 command=command,
                 args=args,
                 resources=resources_per_worker,
+                env=env_vars,
             )
 
             # Get Pod template spec using the above container.

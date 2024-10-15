@@ -195,6 +195,9 @@ def get_container_spec(
     args: Optional[List[str]] = None,
     resources: Union[dict, models.V1ResourceRequirements, None] = None,
     volume_mounts: Optional[List[models.V1VolumeMount]] = None,
+    env: Optional[
+        Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
+    ] = None,
 ) -> models.V1Container:
     """
     Get container spec for the given parameters.
@@ -210,6 +213,7 @@ def get_container_spec(
         command=command,
         args=args,
         volume_mounts=volume_mounts,
+        env=env,
     )
 
     # Convert dict to the Kubernetes container resources if that is required.
