@@ -17,7 +17,6 @@ limitations under the License.
 package indexer
 
 import (
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -25,20 +24,29 @@ import (
 )
 
 const (
-	TrainJobTrainingRuntimeRefKey = ".spec.trainingRuntimeRef"
+	TrainJobTrainingRuntimeRefKey        = ".spec.trainingRuntimeRef.kind=trainingRuntime"
+	TrainJobClusterTrainingRuntimeRefKey = ".spec.trainingRuntimeRef.kind=clusterTrainingRuntime"
 )
 
-func IndexTrainJobTrainingRuntimes(obj client.Object) []string {
+func IndexTrainJobTrainingRuntime(obj client.Object) []string {
 	trainJob, ok := obj.(*kubeflowv2.TrainJob)
 	if !ok {
 		return nil
 	}
-	runtimeRefGroupKind := schema.GroupKind{
-		Group: ptr.Deref(trainJob.Spec.TrainingRuntimeRef.APIGroup, ""),
-		Kind:  ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, ""),
+	if ptr.Deref(trainJob.Spec.TrainingRuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, "") == kubeflowv2.TrainingRuntimeKind {
+		return []string{trainJob.Spec.TrainingRuntimeRef.Name}
 	}
-	if runtimeRefGroupKind.Group == kubeflowv2.GroupVersion.Group &&
-		(runtimeRefGroupKind.Kind == kubeflowv2.TrainingRuntimeKind || runtimeRefGroupKind.Kind == kubeflowv2.ClusterTrainingRuntimeKind) {
+	return nil
+}
+
+func IndexTrainJobClusterTrainingRuntime(obj client.Object) []string {
+	trainJob, ok := obj.(*kubeflowv2.TrainJob)
+	if !ok {
+		return nil
+	}
+	if ptr.Deref(trainJob.Spec.TrainingRuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, "") == kubeflowv2.ClusterTrainingRuntimeKind {
 		return []string{trainJob.Spec.TrainingRuntimeRef.Name}
 	}
 	return nil

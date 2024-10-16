@@ -55,8 +55,11 @@ var _ runtime.Runtime = (*TrainingRuntime)(nil)
 var trainingRuntimeFactory *TrainingRuntime
 
 func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.FieldIndexer) (runtime.Runtime, error) {
-	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobTrainingRuntimeRefKey, idxer.IndexTrainJobTrainingRuntimes); err != nil {
-		return nil, fmt.Errorf("setting index on TrainingRuntime and ClusterTrainigRuntime for TrainJob: %w", err)
+	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobTrainingRuntimeRefKey, idxer.IndexTrainJobTrainingRuntime); err != nil {
+		return nil, fmt.Errorf("setting index on TrainingRuntime for TrainJob: %w", err)
+	}
+	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobClusterTrainingRuntimeRefKey, idxer.IndexTrainJobClusterTrainingRuntime); err != nil {
+		return nil, fmt.Errorf("setting index on ClusterTrainingRuntime for TrainJob: %w", err)
 	}
 	fwk, err := fwkcore.New(ctx, c, fwkplugins.NewRegistry(), indexer)
 	if err != nil {

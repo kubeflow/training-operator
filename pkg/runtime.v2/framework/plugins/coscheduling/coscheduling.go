@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	nodev1 "k8s.io/api/node/v1"
@@ -203,22 +204,29 @@ func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJob(ctx context.Context
 		return err
 	}
 
-	var runtimeNames []string
+	var trainJobs []kubeflowv2.TrainJob
 	for _, trainingRuntime := range trainingRuntimes.Items {
-		runtimeNames = append(runtimeNames, trainingRuntime.Name)
-	}
-	for _, clusterTrainingRuntime := range clusterTrainingRuntimes.Items {
-		runtimeNames = append(runtimeNames, clusterTrainingRuntime.Name)
-	}
-	for _, runtimeName := range runtimeNames {
-		var trainJobs kubeflowv2.TrainJobList
-		if err := h.client.List(ctx, &trainJobs, client.MatchingFields{runtimeindexer.TrainJobTrainingRuntimeRefKey: runtimeName}); err != nil {
+		var trainJobsWithTrainingRuntime kubeflowv2.TrainJobList
+		err := h.client.List(ctx, &trainJobsWithTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobTrainingRuntimeRefKey: trainingRuntime.Name})
+		if err != nil {
 			return err
 		}
-		for _, trainJob := range trainJobs.Items {
-			if ptr.Deref(trainJob.Spec.Suspend, false) {
-				q.Add(client.ObjectKeyFromObject(&trainJob))
-			}
+		trainJobs = append(trainJobs, trainJobsWithTrainingRuntime.Items...)
+	}
+	for _, clusterTrainingRuntime := range clusterTrainingRuntimes.Items {
+		var trainJobsWithClTrainingRuntime kubeflowv2.TrainJobList
+		err := h.client.List(ctx, &trainJobsWithClTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobClusterTrainingRuntimeRefKey: clusterTrainingRuntime.Name})
+		if err != nil {
+			return err
+		}
+		trainJobs = append(trainJobs, trainJobsWithClTrainingRuntime.Items...)
+	}
+	trainJobs = slices.CompactFunc(trainJobs, func(a, b kubeflowv2.TrainJob) bool {
+		return a.Name == b.Name
+	})
+	for _, trainJob := range trainJobs {
+		if ptr.Deref(trainJob.Spec.Suspend, false) {
+			q.Add(client.ObjectKeyFromObject(&trainJob))
 		}
 	}
 	return nil
