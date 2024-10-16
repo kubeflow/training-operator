@@ -160,7 +160,7 @@ func (h *PodGroupRuntimeClassHandler) Create(ctx context.Context, e event.Create
 		return
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(containerRuntimeClass))
-	if err := h.queueSuspendedTrainJob(ctx, containerRuntimeClass, q); err != nil {
+	if err := h.queueSuspendedTrainJobs(ctx, containerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
@@ -175,7 +175,7 @@ func (h *PodGroupRuntimeClassHandler) Update(ctx context.Context, e event.Update
 		return
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(newContainerRuntimeClass))
-	if err := h.queueSuspendedTrainJob(ctx, newContainerRuntimeClass, q); err != nil {
+	if err := h.queueSuspendedTrainJobs(ctx, newContainerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
@@ -186,7 +186,7 @@ func (h *PodGroupRuntimeClassHandler) Delete(ctx context.Context, e event.Delete
 		return
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(containerRuntimeClass))
-	if err := h.queueSuspendedTrainJob(ctx, containerRuntimeClass, q); err != nil {
+	if err := h.queueSuspendedTrainJobs(ctx, containerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
@@ -194,7 +194,7 @@ func (h *PodGroupRuntimeClassHandler) Delete(ctx context.Context, e event.Delete
 func (h *PodGroupRuntimeClassHandler) Generic(context.Context, event.GenericEvent, workqueue.RateLimitingInterface) {
 }
 
-func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJob(ctx context.Context, runtimeClass *nodev1.RuntimeClass, q workqueue.RateLimitingInterface) error {
+func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Context, runtimeClass *nodev1.RuntimeClass, q workqueue.RateLimitingInterface) error {
 	var trainingRuntimes kubeflowv2.TrainingRuntimeList
 	if err := h.client.List(ctx, &trainingRuntimes, client.MatchingFields{TrainingRuntimeContainerRuntimeClassKey: runtimeClass.Name}); err != nil {
 		return err
