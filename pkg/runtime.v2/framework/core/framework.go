@@ -89,7 +89,7 @@ func (f *Framework) RunEnforcePodGroupPolicyPlugins(trainJob *kubeflowv2.TrainJo
 	return nil
 }
 
-func (f *Framework) RunCustomValidationPlugins(oldObj, newObj client.Object) (admission.Warnings, field.ErrorList) {
+func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
 	var aggregatedWarnings admission.Warnings
 	var aggregatedErrors field.ErrorList
 	for _, plugin := range f.customValidationPlugins {
@@ -100,9 +100,6 @@ func (f *Framework) RunCustomValidationPlugins(oldObj, newObj client.Object) (ad
 		if errs != nil {
 			aggregatedErrors = append(aggregatedErrors, errs...)
 		}
-	}
-	if len(aggregatedErrors) == 0 {
-		return aggregatedWarnings, nil
 	}
 	return aggregatedWarnings, aggregatedErrors
 }

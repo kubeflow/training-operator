@@ -48,7 +48,7 @@ type EnforceMLPolicyPlugin interface {
 
 type CustomValidationPlugin interface {
 	Plugin
-	Validate(oldObj, newObj client.Object) (admission.Warnings, field.ErrorList)
+	Validate(oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList)
 }
 
 type ComponentBuilderPlugin interface {

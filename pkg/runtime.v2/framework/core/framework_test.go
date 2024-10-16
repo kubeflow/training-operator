@@ -287,24 +287,21 @@ func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 
 func TestRunCustomValidationPlugins(t *testing.T) {
 	cases := map[string]struct {
-		trainJob     *kubeflowv2.TrainJob
 		registry     fwkplugins.Registry
-		oldObj       client.Object
-		newObj       client.Object
+		oldObj       *kubeflowv2.TrainJob
+		newObj       *kubeflowv2.TrainJob
 		wantWarnings admission.Warnings
 		wantError    field.ErrorList
 	}{
 		// Need to implement more detail testing after we implement custom validator in any plugins.
 		"there are not any custom validations": {
-			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
 			registry: fwkplugins.NewRegistry(),
-			oldObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
-			newObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
+			oldObj:   testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").Obj(),
+			newObj:   testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").Obj(),
 		},
 		"an empty registry": {
-			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
-			oldObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
-			newObj:   testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test").Obj(),
+			oldObj: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").Obj(),
+			newObj: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").Obj(),
 		},
 	}
 	for name, tc := range cases {
@@ -329,7 +326,7 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 }
 
 func TestRunComponentBuilderPlugins(t *testing.T) {
-	jobSetBase := testingutil.MakeJobSetWrapper(t, metav1.NamespaceDefault, "test-job").
+	jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 		ResourceRequests(0, corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("2"),
 			corev1.ResourceMemory: resource.MustParse("4Gi"),
@@ -354,10 +351,10 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 		wantObjs        []client.Object
 	}{
 		"coscheduling and jobset are performed": {
-			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
 				Trainer(
-					testingutil.MakeTrainJobTrainerWrapper(t).
+					testingutil.MakeTrainJobTrainerWrapper().
 						ContainerImage("foo:bar").
 						Obj(),
 				).
@@ -396,7 +393,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 			},
 			registry: fwkplugins.NewRegistry(),
 			wantObjs: []client.Object{
-				testingutil.MakeSchedulerPluginsPodGroup(t, metav1.NamespaceDefault, "test-job").
+				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
 					SchedulingTimeout(300).
 					MinMember(20).
 					MinResources(corev1.ResourceList{

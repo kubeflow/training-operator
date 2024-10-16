@@ -20,6 +20,7 @@ import (
 	"context"
 
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -43,8 +44,11 @@ func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager, run map[string]runt
 
 var _ webhook.CustomValidator = (*ClusterTrainingRuntimeWebhook)(nil)
 
-func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(context.Context, apiruntime.Object) (admission.Warnings, error) {
-	return nil, nil
+func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(ctx context.Context, obj apiruntime.Object) (admission.Warnings, error) {
+	clTrainingRuntime := obj.(*kubeflowv2.ClusterTrainingRuntime)
+	log := ctrl.LoggerFrom(ctx).WithName("clustertrainingruntime-webhook")
+	log.V(5).Info("Validating create", "clusterTrainingRuntime", klog.KObj(clTrainingRuntime))
+	return nil, validateReplicatedJobs(clTrainingRuntime.Spec.Template.Spec.ReplicatedJobs).ToAggregate()
 }
 
 func (w *ClusterTrainingRuntimeWebhook) ValidateUpdate(context.Context, apiruntime.Object, apiruntime.Object) (admission.Warnings, error) {

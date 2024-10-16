@@ -32,7 +32,7 @@ import (
 )
 
 func TestNewInfo(t *testing.T) {
-	jobSetBase := testingutil.MakeJobSetWrapper(t, metav1.NamespaceDefault, "test-job").
+	jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 		Clone()
 
 	cases := map[string]struct {
@@ -159,7 +159,7 @@ func TestNewInfo(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	jobSetBase := testingutil.MakeJobSetWrapper(t, metav1.NamespaceDefault, "test-job").
+	jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 		Clone()
 
 	cases := map[string]struct {
@@ -172,7 +172,7 @@ func TestUpdate(t *testing.T) {
 			info: &Info{
 				Obj: jobSetBase.Obj(),
 			},
-			obj: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
+			obj: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				Obj(),
 			wantInfo: &Info{
 				Obj: jobSetBase.Obj(),

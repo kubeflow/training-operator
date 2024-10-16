@@ -107,9 +107,6 @@ func (r *TrainingRuntime) buildObjects(
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}
 	for idx, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
-		if rJob.Replicas == 0 {
-			jobSetTemplateSpec.Spec.ReplicatedJobs[idx].Replicas = 1
-		}
 		replicas := jobSetTemplateSpec.Spec.ReplicatedJobs[idx].Replicas * ptr.Deref(rJob.Template.Spec.Completions, 1)
 		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, replicas, rJob.Template.Spec.Template.Spec))
 	}

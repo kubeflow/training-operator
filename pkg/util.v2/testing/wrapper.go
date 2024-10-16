@@ -17,8 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"testing"
-
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,8 +33,7 @@ type JobSetWrapper struct {
 	jobsetv1alpha2.JobSet
 }
 
-func MakeJobSetWrapper(t *testing.T, namespace, name string) *JobSetWrapper {
-	t.Helper()
+func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 	return &JobSetWrapper{
 		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
@@ -170,6 +167,13 @@ func (j *JobSetWrapper) Annotation(key, value string) *JobSetWrapper {
 	return j
 }
 
+func (j *JobSetWrapper) Replicas(replicas int32) *JobSetWrapper {
+	for idx := range j.Spec.ReplicatedJobs {
+		j.Spec.ReplicatedJobs[idx].Replicas = replicas
+	}
+	return j
+}
+
 func (j *JobSetWrapper) Clone() *JobSetWrapper {
 	return &JobSetWrapper{
 		JobSet: *j.JobSet.DeepCopy(),
@@ -184,8 +188,7 @@ type TrainJobWrapper struct {
 	kubeflowv2.TrainJob
 }
 
-func MakeTrainJobWrapper(t *testing.T, namespace, name string) *TrainJobWrapper {
-	t.Helper()
+func MakeTrainJobWrapper(namespace, name string) *TrainJobWrapper {
 	return &TrainJobWrapper{
 		TrainJob: kubeflowv2.TrainJob{
 			TypeMeta: metav1.TypeMeta{
@@ -226,8 +229,7 @@ type TrainJobTrainerWrapper struct {
 	kubeflowv2.Trainer
 }
 
-func MakeTrainJobTrainerWrapper(t *testing.T) *TrainJobTrainerWrapper {
-	t.Helper()
+func MakeTrainJobTrainerWrapper() *TrainJobTrainerWrapper {
 	return &TrainJobTrainerWrapper{
 		Trainer: kubeflowv2.Trainer{},
 	}
@@ -264,8 +266,7 @@ type TrainingRuntimeWrapper struct {
 	kubeflowv2.TrainingRuntime
 }
 
-func MakeTrainingRuntimeWrapper(t *testing.T, namespace, name string) *TrainingRuntimeWrapper {
-	t.Helper()
+func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper {
 	return &TrainingRuntimeWrapper{
 		TrainingRuntime: kubeflowv2.TrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
@@ -281,7 +282,8 @@ func MakeTrainingRuntimeWrapper(t *testing.T, namespace, name string) *TrainingR
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
-								Name: "Coordinator",
+								Name:     "Coordinator",
+								Replicas: 1,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
@@ -295,7 +297,8 @@ func MakeTrainingRuntimeWrapper(t *testing.T, namespace, name string) *TrainingR
 								},
 							},
 							{
-								Name: "Worker",
+								Name:     "Worker",
+								Replicas: 1,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
@@ -351,8 +354,7 @@ type ClusterTrainingRuntimeWrapper struct {
 	kubeflowv2.ClusterTrainingRuntime
 }
 
-func MakeClusterTrainingRuntimeWrapper(t *testing.T, name string) *ClusterTrainingRuntimeWrapper {
-	t.Helper()
+func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapper {
 	return &ClusterTrainingRuntimeWrapper{
 		ClusterTrainingRuntime: kubeflowv2.ClusterTrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
@@ -367,7 +369,8 @@ func MakeClusterTrainingRuntimeWrapper(t *testing.T, name string) *ClusterTraini
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
-								Name: "Coordinator",
+								Name:     "Coordinator",
+								Replicas: 1,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
@@ -381,7 +384,8 @@ func MakeClusterTrainingRuntimeWrapper(t *testing.T, name string) *ClusterTraini
 								},
 							},
 							{
-								Name: "Worker",
+								Name:     "Worker",
+								Replicas: 1,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
@@ -421,11 +425,17 @@ type TrainingRuntimeSpecWrapper struct {
 	kubeflowv2.TrainingRuntimeSpec
 }
 
-func MakeTrainingRuntimeSpecWrapper(t *testing.T, spec kubeflowv2.TrainingRuntimeSpec) *TrainingRuntimeSpecWrapper {
-	t.Helper()
+func MakeTrainingRuntimeSpecWrapper(spec kubeflowv2.TrainingRuntimeSpec) *TrainingRuntimeSpecWrapper {
 	return &TrainingRuntimeSpecWrapper{
 		TrainingRuntimeSpec: spec,
 	}
+}
+
+func (s *TrainingRuntimeSpecWrapper) Replicas(replicas int32) *TrainingRuntimeSpecWrapper {
+	for idx := range s.Template.Spec.ReplicatedJobs {
+		s.Template.Spec.ReplicatedJobs[idx].Replicas = replicas
+	}
+	return s
 }
 
 func (s *TrainingRuntimeSpecWrapper) ContainerImage(image string) *TrainingRuntimeSpecWrapper {
@@ -475,8 +485,7 @@ type SchedulerPluginsPodGroupWrapper struct {
 	schedulerpluginsv1alpha1.PodGroup
 }
 
-func MakeSchedulerPluginsPodGroup(t *testing.T, namespace, name string) *SchedulerPluginsPodGroupWrapper {
-	t.Helper()
+func MakeSchedulerPluginsPodGroup(namespace, name string) *SchedulerPluginsPodGroupWrapper {
 	return &SchedulerPluginsPodGroupWrapper{
 		PodGroup: schedulerpluginsv1alpha1.PodGroup{
 			TypeMeta: metav1.TypeMeta{

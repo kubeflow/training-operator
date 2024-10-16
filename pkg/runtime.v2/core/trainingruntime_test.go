@@ -35,7 +35,7 @@ import (
 )
 
 func TestTrainingRuntimeNewObjects(t *testing.T) {
-	baseRuntime := testingutil.MakeTrainingRuntimeWrapper(t, metav1.NamespaceDefault, "test-runtime").
+	baseRuntime := testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").
 		Clone()
 
 	cases := map[string]struct {
@@ -45,13 +45,13 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		wantError       error
 	}{
 		"succeeded to build JobSet and PodGroup": {
-			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
 				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
 				SpecLabel("conflictLabel", "override").
 				SpecAnnotation("conflictAnnotation", "override").
 				Trainer(
-					testingutil.MakeTrainJobTrainerWrapper(t).
+					testingutil.MakeTrainJobTrainerWrapper().
 						ContainerImage("test:trainjob").
 						Obj(),
 				).
@@ -60,7 +60,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				Label("conflictLabel", "overridden").
 				Annotation("conflictAnnotation", "overridden").
 				RuntimeSpec(
-					testingutil.MakeTrainingRuntimeSpecWrapper(t, baseRuntime.Spec).
+					testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
 						ContainerImage("test:runtime").
 						PodGroupPolicySchedulingTimeout(120).
 						MLPolicyNumNodes(20).
@@ -73,7 +73,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 						Obj(),
 				).Obj(),
 			wantObjs: []client.Object{
-				testingutil.MakeJobSetWrapper(t, metav1.NamespaceDefault, "test-job").
+				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 					Label("conflictLabel", "override").
 					Annotation("conflictAnnotation", "override").
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
@@ -87,7 +87,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					}).
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
 					Obj(),
-				testingutil.MakeSchedulerPluginsPodGroup(t, metav1.NamespaceDefault, "test-job").
+				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
 					MinMember(40).
 					SchedulingTimeout(120).
@@ -98,11 +98,11 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			},
 		},
 		"missing trainingRuntime resource": {
-			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
 				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
 				Trainer(
-					testingutil.MakeTrainJobTrainerWrapper(t).
+					testingutil.MakeTrainJobTrainerWrapper().
 						ContainerImage("test:trainjob").
 						Obj(),
 				).
