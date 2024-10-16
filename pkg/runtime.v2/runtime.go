@@ -33,11 +33,10 @@ var (
 )
 
 type Info struct {
-	Obj            client.Object
-	Labels         map[string]string
-	PodLabels      map[string]string
-	Annotations    map[string]string
-	PodAnnotations map[string]string
+	Obj         client.Object
+	Labels      map[string]string
+	PodLabels   map[string]string
+	Annotations map[string]string
 	Policy
 	TotalRequests map[string]TotalResourceRequest
 }
