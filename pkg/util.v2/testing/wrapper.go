@@ -154,6 +154,22 @@ func (j *JobSetWrapper) PodLabel(key, value string) *JobSetWrapper {
 	return j
 }
 
+func (j *JobSetWrapper) Label(key, value string) *JobSetWrapper {
+	if j.ObjectMeta.Labels == nil {
+		j.ObjectMeta.Labels = make(map[string]string, 1)
+	}
+	j.ObjectMeta.Labels[key] = value
+	return j
+}
+
+func (j *JobSetWrapper) Annotation(key, value string) *JobSetWrapper {
+	if j.ObjectMeta.Annotations == nil {
+		j.ObjectMeta.Annotations = make(map[string]string, 1)
+	}
+	j.ObjectMeta.Annotations[key] = value
+	return j
+}
+
 func (j *JobSetWrapper) Clone() *JobSetWrapper {
 	return &JobSetWrapper{
 		JobSet: *j.JobSet.DeepCopy(),
@@ -187,6 +203,22 @@ func MakeTrainJobWrapper(t *testing.T, namespace, name string) *TrainJobWrapper 
 
 func (t *TrainJobWrapper) UID(uid string) *TrainJobWrapper {
 	t.ObjectMeta.UID = types.UID(uid)
+	return t
+}
+
+func (t *TrainJobWrapper) SpecLabel(key, value string) *TrainJobWrapper {
+	if t.Spec.Labels == nil {
+		t.Spec.Labels = make(map[string]string, 1)
+	}
+	t.Spec.Labels[key] = value
+	return t
+}
+
+func (t *TrainJobWrapper) SpecAnnotation(key, value string) *TrainJobWrapper {
+	if t.Spec.Annotations == nil {
+		t.Spec.Annotations = make(map[string]string, 1)
+	}
+	t.Spec.Annotations[key] = value
 	return t
 }
 
@@ -286,6 +318,22 @@ func MakeTrainingRuntimeWrapper(t *testing.T, namespace, name string) *TrainingR
 
 func (r *TrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv2.TrainingRuntimeSpec) *TrainingRuntimeWrapper {
 	r.Spec = spec
+	return r
+}
+
+func (r *TrainingRuntimeWrapper) Label(key, value string) *TrainingRuntimeWrapper {
+	if r.ObjectMeta.Labels == nil {
+		r.ObjectMeta.Labels = make(map[string]string, 1)
+	}
+	r.ObjectMeta.Labels[key] = value
+	return r
+}
+
+func (r *TrainingRuntimeWrapper) Annotation(key, value string) *TrainingRuntimeWrapper {
+	if r.ObjectMeta.Annotations == nil {
+		r.ObjectMeta.Annotations = make(map[string]string, 1)
+	}
+	r.ObjectMeta.Annotations[key] = value
 	return r
 }
 

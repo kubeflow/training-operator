@@ -81,11 +81,28 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *kubeflowv2.T
 	return r.buildObjects(ctx, trainJob, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
 }
 
-func (r *TrainingRuntime) buildObjects(ctx context.Context, trainJob *kubeflowv2.TrainJob, jobSetTemplateSpec kubeflowv2.JobSetTemplateSpec,
-	mlPolicy *kubeflowv2.MLPolicy, podGroupPolicy *kubeflowv2.PodGroupPolicy) ([]client.Object, error) {
+func (r *TrainingRuntime) buildObjects(
+	ctx context.Context, trainJob *kubeflowv2.TrainJob, jobSetTemplateSpec kubeflowv2.JobSetTemplateSpec, mlPolicy *kubeflowv2.MLPolicy, podGroupPolicy *kubeflowv2.PodGroupPolicy,
+) ([]client.Object, error) {
+	propagationLabels := jobSetTemplateSpec.Labels
+	if propagationLabels == nil && trainJob.Spec.Labels != nil {
+		propagationLabels = make(map[string]string, len(trainJob.Spec.Labels))
+	}
+	for k, v := range trainJob.Spec.Labels {
+		// The JobSetTemplateSpec labels are overridden by the TrainJob Labels (.spec.labels).
+		propagationLabels[k] = v
+	}
+	propagationAnnotations := jobSetTemplateSpec.Annotations
+	if propagationAnnotations == nil && trainJob.Spec.Annotations != nil {
+		propagationAnnotations = make(map[string]string, len(trainJob.Spec.Annotations))
+	}
+	for k, v := range trainJob.Spec.Annotations {
+		// The JobSetTemplateSpec annotations are overridden by the TrainJob Annotations (.spec.annotations).
+		propagationAnnotations[k] = v
+	}
 	opts := []runtime.InfoOption{
-		runtime.WithLabels(jobSetTemplateSpec.Labels),
-		runtime.WithAnnotations(jobSetTemplateSpec.Annotations),
+		runtime.WithLabels(propagationLabels),
+		runtime.WithAnnotations(propagationAnnotations),
 		runtime.WithMLPolicy(mlPolicy),
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}

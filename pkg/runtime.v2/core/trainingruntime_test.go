@@ -48,27 +48,34 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			trainJob: testingutil.MakeTrainJobWrapper(t, metav1.NamespaceDefault, "test-job").
 				UID("uid").
 				TrainingRuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
+				SpecLabel("conflictLabel", "override").
+				SpecAnnotation("conflictAnnotation", "override").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper(t).
 						ContainerImage("test:trainjob").
 						Obj(),
 				).
 				Obj(),
-			trainingRuntime: baseRuntime.RuntimeSpec(
-				testingutil.MakeTrainingRuntimeSpecWrapper(t, baseRuntime.Spec).
-					ContainerImage("test:runtime").
-					PodGroupPolicySchedulingTimeout(120).
-					MLPolicyNumNodes(20).
-					ResourceRequests(0, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("1"),
-					}).
-					ResourceRequests(1, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("2"),
-					}).
-					Obj(),
-			).Obj(),
+			trainingRuntime: baseRuntime.
+				Label("conflictLabel", "overridden").
+				Annotation("conflictAnnotation", "overridden").
+				RuntimeSpec(
+					testingutil.MakeTrainingRuntimeSpecWrapper(t, baseRuntime.Spec).
+						ContainerImage("test:runtime").
+						PodGroupPolicySchedulingTimeout(120).
+						MLPolicyNumNodes(20).
+						ResourceRequests(0, corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("1"),
+						}).
+						ResourceRequests(1, corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("2"),
+						}).
+						Obj(),
+				).Obj(),
 			wantObjs: []client.Object{
 				testingutil.MakeJobSetWrapper(t, metav1.NamespaceDefault, "test-job").
+					Label("conflictLabel", "override").
+					Annotation("conflictAnnotation", "override").
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
 					ContainerImage(ptr.To("test:trainjob")).
 					JobCompletionMode(batchv1.IndexedCompletion).
