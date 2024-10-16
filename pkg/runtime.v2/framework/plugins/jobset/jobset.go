@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +30,7 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -43,6 +45,7 @@ type JobSet struct {
 	client     client.Client
 	restMapper meta.RESTMapper
 	scheme     *apiruntime.Scheme
+	logger     logr.Logger
 }
 
 var _ framework.WatchExtensionPlugin = (*JobSet)(nil)
@@ -50,11 +53,12 @@ var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
 
 const Name = "JobSet"
 
-func New(_ context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &JobSet{
 		client:     c,
 		restMapper: c.RESTMapper(),
 		scheme:     c.Scheme(),
+		logger:     ctrl.LoggerFrom(ctx).WithValues("pluginName", "JobSet"),
 	}, nil
 }
 
@@ -77,6 +81,7 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubefl
 		},
 		Spec: raw.Spec,
 	})
+	// TODO (tenzen-y): We should support all field propagation in builder.
 	jobSet := jobSetBuilder.
 		ContainerImage(trainJob.Spec.Trainer.Image).
 		JobCompletionMode(batchv1.IndexedCompletion).
@@ -111,7 +116,8 @@ func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 		schema.GroupKind{Group: jobsetv1alpha2.GroupVersion.Group, Kind: "JobSet"},
 		jobsetv1alpha2.SchemeGroupVersion.Version,
 	); err != nil {
-		return nil
+		// TODO (tenzen-y): After we provide the Configuration API, we should return errors based on the enabled plugins.
+		j.logger.Error(err, "JobSet CRDs must be installed in advance")
 	}
 	return []runtime.ReconcilerBuilder{
 		func(b *builder.Builder, c client.Client) *builder.Builder {
