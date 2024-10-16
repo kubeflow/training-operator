@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	errorNotFoundSpecifiedTrainingRuntime = errors.New("not found TrainingRuntime specified in TrainJob")
+	errorNotFoundSpecifiedTrainingRuntime = errors.New("TrainingRuntime specified in TrainJob is not found")
 )
 
 type TrainingRuntime struct {
