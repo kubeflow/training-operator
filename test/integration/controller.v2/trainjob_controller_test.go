@@ -29,6 +29,8 @@ import (
 
 var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
+	apiGroup := kubeflowv2.GroupVersion.Group
+	trainingRuntimeKind := kubeflowv2.TrainingRuntimeKind
 
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
@@ -69,6 +71,122 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				},
 			}
 			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+		})
+	})
+
+	ginkgo.When("TrainJob CR Validation", func() {
+		ginkgo.AfterEach(func() {
+			gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainJob{}, client.InNamespace(ns.Name))).Should(
+				gomega.Succeed())
+		})
+
+		ginkgo.It("Should succeed in creating TrainJob", func() {
+
+			managedBy := "kubeflow.org/trainjob-controller"
+
+			trainingRuntimeRef := kubeflowv2.RuntimeRef{
+				Name:     "InvalidRuntimeRef",
+				APIGroup: &apiGroup,
+				Kind:     &trainingRuntimeKind,
+			}
+			jobSpec := kubeflowv2.TrainJobSpec{
+				RuntimeRef: trainingRuntimeRef,
+				ManagedBy:  &managedBy,
+			}
+			trainJob := &kubeflowv2.TrainJob{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
+					Kind:       kubeflowv2.TrainJobKind,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "valid-trainjob-",
+					Namespace:    ns.Name,
+				},
+				Spec: jobSpec,
+			}
+
+			err := k8sClient.Create(ctx, trainJob)
+			gomega.Expect(err).Should(gomega.Succeed())
+		})
+
+		ginkgo.It("Should fail in creating TrainJob with invalid spec.trainingRuntimeRef", func() {
+
+			kind := "InvalidRuntime"
+
+			trainingRuntimeRef := kubeflowv2.RuntimeRef{
+				Name:     "InvalidRuntimeRef",
+				APIGroup: &apiGroup,
+				Kind:     &kind,
+			}
+			jobSpec := kubeflowv2.TrainJobSpec{
+				RuntimeRef: trainingRuntimeRef,
+			}
+			trainJob := &kubeflowv2.TrainJob{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
+					Kind:       kubeflowv2.TrainJobKind,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "invalid-trainjob-",
+					Namespace:    ns.Name,
+				},
+				Spec: jobSpec,
+			}
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.MatchError(
+				gomega.ContainSubstring("spec.runtimeRef.kind: Invalid value")))
+		})
+
+		ginkgo.It("Should fail in creating TrainJob with invalid spec.managedBy", func() {
+			managedBy := "invalidManagedBy"
+			jobSpec := kubeflowv2.TrainJobSpec{
+				ManagedBy: &managedBy,
+			}
+			trainJob := &kubeflowv2.TrainJob{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
+					Kind:       kubeflowv2.TrainJobKind,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-trainjob",
+					Namespace: ns.Name,
+				},
+				Spec: jobSpec,
+			}
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.MatchError(
+				gomega.ContainSubstring("spec.managedBy: Invalid value")))
+		})
+
+		ginkgo.It("Should fail in updating spec.managedBy", func() {
+
+			managedBy := "kubeflow.org/trainjob-controller"
+
+			trainingRuntimeRef := kubeflowv2.RuntimeRef{
+				Name:     "InvalidRuntimeRef",
+				APIGroup: &apiGroup,
+				Kind:     &trainingRuntimeKind,
+			}
+			jobSpec := kubeflowv2.TrainJobSpec{
+				RuntimeRef: trainingRuntimeRef,
+				ManagedBy:  &managedBy,
+			}
+			trainJob := &kubeflowv2.TrainJob{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
+					Kind:       kubeflowv2.TrainJobKind,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "job-with-failed-update",
+					Namespace: ns.Name,
+				},
+				Spec: jobSpec,
+			}
+
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+			updatedManagedBy := "kueue.x-k8s.io/multikueue"
+			jobSpec.ManagedBy = &updatedManagedBy
+			trainJob.Spec = jobSpec
+			gomega.Expect(k8sClient.Update(ctx, trainJob)).To(gomega.MatchError(
+				gomega.ContainSubstring("ManagedBy value is immutable")))
 		})
 	})
 })
