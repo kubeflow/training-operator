@@ -53,7 +53,7 @@ func NewClusterTrainingRuntime(context.Context, client.Client, client.FieldIndex
 
 func (r *ClusterTrainingRuntime) NewObjects(ctx context.Context, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
 	var clTrainingRuntime kubeflowv2.ClusterTrainingRuntime
-	if err := r.client.Get(ctx, client.ObjectKey{Name: trainJob.Spec.TrainingRuntimeRef.Name}, &clTrainingRuntime); err != nil {
+	if err := r.client.Get(ctx, client.ObjectKey{Name: trainJob.Spec.RuntimeRef.Name}, &clTrainingRuntime); err != nil {
 		return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedClusterTrainingRuntime, err)
 	}
 	return r.buildObjects(ctx, trainJob, clTrainingRuntime.Spec.Template, clTrainingRuntime.Spec.MLPolicy, clTrainingRuntime.Spec.PodGroupPolicy)
@@ -66,10 +66,10 @@ func (r *ClusterTrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBu
 func (r *ClusterTrainingRuntime) ValidateObjects(ctx context.Context, old, new *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
 	if err := r.client.Get(ctx, client.ObjectKey{
 		Namespace: old.Namespace,
-		Name:      old.Spec.TrainingRuntimeRef.Name,
+		Name:      old.Spec.RuntimeRef.Name,
 	}, &kubeflowv2.ClusterTrainingRuntime{}); err != nil {
 		return nil, field.ErrorList{
-			field.Invalid(field.NewPath("spec", "trainingRuntimeRef"), old.Spec.TrainingRuntimeRef,
+			field.Invalid(field.NewPath("spec", "RuntimeRef"), old.Spec.RuntimeRef,
 				fmt.Sprintf("%v: specified clusterTrainingRuntime must be created before the TrainJob is created", err)),
 		}
 	}

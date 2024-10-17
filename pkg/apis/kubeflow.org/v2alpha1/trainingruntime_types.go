@@ -38,7 +38,7 @@ const (
 // +kubebuilder:resource:scope=Cluster
 
 // ClusterTrainingRuntime represents a training runtime which can be referenced as part of
-// `trainingRuntimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
+// `runtimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
 // by TrainJob that created in *any* namespace.
 type ClusterTrainingRuntime struct {
 	metav1.TypeMeta `json:",inline"`
@@ -72,7 +72,7 @@ type ClusterTrainingRuntimeList struct {
 // +kubebuilder:storageversion
 
 // TrainingRuntime represents a training runtime which can be referenced as part of
-// `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
+// `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
 // by TrainJob that created in the *same* namespace as the TrainingRuntime.
 type TrainingRuntime struct {
 	metav1.TypeMeta `json:",inline"`

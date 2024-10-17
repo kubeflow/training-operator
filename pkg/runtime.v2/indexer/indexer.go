@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	TrainJobTrainingRuntimeRefKey        = ".spec.trainingRuntimeRef.kind=trainingRuntime"
-	TrainJobClusterTrainingRuntimeRefKey = ".spec.trainingRuntimeRef.kind=clusterTrainingRuntime"
+	TrainJobRuntimeRefKey        = ".spec.runtimeRef.kind=trainingRuntime"
+	TrainJobClusterRuntimeRefKey = ".spec.runtimeRef.kind=clusterTrainingRuntime"
 )
 
 func IndexTrainJobTrainingRuntime(obj client.Object) []string {
@@ -33,9 +33,9 @@ func IndexTrainJobTrainingRuntime(obj client.Object) []string {
 	if !ok {
 		return nil
 	}
-	if ptr.Deref(trainJob.Spec.TrainingRuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
-		ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, "") == kubeflowv2.TrainingRuntimeKind {
-		return []string{trainJob.Spec.TrainingRuntimeRef.Name}
+	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == kubeflowv2.TrainingRuntimeKind {
+		return []string{trainJob.Spec.RuntimeRef.Name}
 	}
 	return nil
 }
@@ -45,9 +45,9 @@ func IndexTrainJobClusterTrainingRuntime(obj client.Object) []string {
 	if !ok {
 		return nil
 	}
-	if ptr.Deref(trainJob.Spec.TrainingRuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
-		ptr.Deref(trainJob.Spec.TrainingRuntimeRef.Kind, "") == kubeflowv2.ClusterTrainingRuntimeKind {
-		return []string{trainJob.Spec.TrainingRuntimeRef.Name}
+	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == kubeflowv2.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == kubeflowv2.ClusterTrainingRuntimeKind {
+		return []string{trainJob.Spec.RuntimeRef.Name}
 	}
 	return nil
 }

@@ -19,7 +19,7 @@ spec:
       openAPIV3Schema:
         description: |-
           TrainingRuntime represents a training runtime which can be referenced as part of
-          `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
+          `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
           by TrainJob that created in the *same* namespace as the TrainingRuntime.
         properties:
           apiVersion:
