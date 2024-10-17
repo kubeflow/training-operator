@@ -207,7 +207,7 @@ func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Contex
 	var trainJobs []kubeflowv2.TrainJob
 	for _, trainingRuntime := range trainingRuntimes.Items {
 		var trainJobsWithTrainingRuntime kubeflowv2.TrainJobList
-		err := h.client.List(ctx, &trainJobsWithTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobTrainingRuntimeRefKey: trainingRuntime.Name})
+		err := h.client.List(ctx, &trainJobsWithTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobRuntimeRefKey: trainingRuntime.Name})
 		if err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Contex
 	}
 	for _, clusterTrainingRuntime := range clusterTrainingRuntimes.Items {
 		var trainJobsWithClTrainingRuntime kubeflowv2.TrainJobList
-		err := h.client.List(ctx, &trainJobsWithClTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobClusterTrainingRuntimeRefKey: clusterTrainingRuntime.Name})
+		err := h.client.List(ctx, &trainJobsWithClTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobClusterRuntimeRefKey: clusterTrainingRuntime.Name})
 		if err != nil {
 			return err
 		}

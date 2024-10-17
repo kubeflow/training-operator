@@ -249,8 +249,8 @@ func (t *TrainJobWrapper) Trainer(trainer *kubeflowv2.Trainer) *TrainJobWrapper 
 	return t
 }
 
-func (t *TrainJobWrapper) TrainingRuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
-	t.Spec.TrainingRuntimeRef = kubeflowv2.TrainingRuntimeRef{
+func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
+	t.Spec.RuntimeRef = kubeflowv2.RuntimeRef{
 		APIGroup: &gvk.Group,
 		Kind:     &gvk.Kind,
 		Name:     name,

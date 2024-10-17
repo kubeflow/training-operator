@@ -55,10 +55,10 @@ var _ runtime.Runtime = (*TrainingRuntime)(nil)
 var trainingRuntimeFactory *TrainingRuntime
 
 func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.FieldIndexer) (runtime.Runtime, error) {
-	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobTrainingRuntimeRefKey, idxer.IndexTrainJobTrainingRuntime); err != nil {
+	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobRuntimeRefKey, idxer.IndexTrainJobTrainingRuntime); err != nil {
 		return nil, fmt.Errorf("setting index on TrainingRuntime for TrainJob: %w", err)
 	}
-	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobClusterTrainingRuntimeRefKey, idxer.IndexTrainJobClusterTrainingRuntime); err != nil {
+	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobClusterRuntimeRefKey, idxer.IndexTrainJobClusterTrainingRuntime); err != nil {
 		return nil, fmt.Errorf("setting index on ClusterTrainingRuntime for TrainJob: %w", err)
 	}
 	fwk, err := fwkcore.New(ctx, c, fwkplugins.NewRegistry(), indexer)
@@ -74,7 +74,7 @@ func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.Fie
 
 func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
 	var trainingRuntime kubeflowv2.TrainingRuntime
-	err := r.client.Get(ctx, client.ObjectKey{Namespace: trainJob.Namespace, Name: trainJob.Spec.TrainingRuntimeRef.Name}, &trainingRuntime)
+	err := r.client.Get(ctx, client.ObjectKey{Namespace: trainJob.Namespace, Name: trainJob.Spec.RuntimeRef.Name}, &trainingRuntime)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedTrainingRuntime, err)
 	}
@@ -139,10 +139,10 @@ func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
 func (r *TrainingRuntime) ValidateObjects(ctx context.Context, old, new *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
 	if err := r.client.Get(ctx, client.ObjectKey{
 		Namespace: old.Namespace,
-		Name:      old.Spec.TrainingRuntimeRef.Name,
+		Name:      old.Spec.RuntimeRef.Name,
 	}, &kubeflowv2.TrainingRuntime{}); err != nil {
 		return nil, field.ErrorList{
-			field.Invalid(field.NewPath("spec", "trainingRuntimeRef"), old.Spec.TrainingRuntimeRef,
+			field.Invalid(field.NewPath("spec", "runtimeRef"), old.Spec.RuntimeRef,
 				fmt.Sprintf("%v: specified trainingRuntime must be created before the TrainJob is created", err)),
 		}
 	}
