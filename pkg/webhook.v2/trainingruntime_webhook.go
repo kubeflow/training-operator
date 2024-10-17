@@ -19,20 +19,26 @@ package webhookv2
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-type TrainingRuntimeWebhook struct{}
+type TrainingRuntimeWebhook struct {
+	runtimes map[string]runtime.Runtime
+}
 
-func setupWebhookForTrainingRuntime(mgr ctrl.Manager) error {
+func setupWebhookForTrainingRuntime(mgr ctrl.Manager, run map[string]runtime.Runtime) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&kubeflowv2.TrainingRuntime{}).
-		WithValidator(&TrainingRuntimeWebhook{}).
+		WithValidator(&TrainingRuntimeWebhook{runtimes: run}).
 		Complete()
 }
 
@@ -40,14 +46,31 @@ func setupWebhookForTrainingRuntime(mgr ctrl.Manager) error {
 
 var _ webhook.CustomValidator = (*TrainingRuntimeWebhook)(nil)
 
-func (w *TrainingRuntimeWebhook) ValidateCreate(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *TrainingRuntimeWebhook) ValidateCreate(ctx context.Context, obj apiruntime.Object) (admission.Warnings, error) {
+	trainingRuntime := obj.(*kubeflowv2.TrainingRuntime)
+	log := ctrl.LoggerFrom(ctx).WithName("trainingruntime-webhook")
+	log.V(5).Info("Validating create", "trainingRuntime", klog.KObj(trainingRuntime))
+	return nil, validateReplicatedJobs(trainingRuntime.Spec.Template.Spec.ReplicatedJobs).ToAggregate()
+}
+
+func validateReplicatedJobs(rJobs []jobsetv1alpha2.ReplicatedJob) field.ErrorList {
+	rJobsPath := field.NewPath("spec").
+		Child("template").
+		Child("spec").
+		Child("replicatedJobs")
+	var allErrs field.ErrorList
+	for idx, rJob := range rJobs {
+		if rJob.Replicas != 1 {
+			allErrs = append(allErrs, field.Invalid(rJobsPath.Index(idx).Child("replicas"), rJob.Replicas, "always must be 1"))
+		}
+	}
+	return allErrs
+}
+
+func (w *TrainingRuntimeWebhook) ValidateUpdate(context.Context, apiruntime.Object, apiruntime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (w *TrainingRuntimeWebhook) ValidateUpdate(context.Context, runtime.Object, runtime.Object) (admission.Warnings, error) {
-	return nil, nil
-}
-
-func (w *TrainingRuntimeWebhook) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
+func (w *TrainingRuntimeWebhook) ValidateDelete(context.Context, apiruntime.Object) (admission.Warnings, error) {
 	return nil, nil
 }

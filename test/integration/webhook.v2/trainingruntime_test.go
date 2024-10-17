@@ -21,9 +21,14 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 )
+
+const trainingRuntimeName = "test-trainingruntime"
 
 var _ = ginkgo.Describe("TrainingRuntime Webhook", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
@@ -48,5 +53,26 @@ var _ = ginkgo.Describe("TrainingRuntime Webhook", ginkgo.Ordered, func() {
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+	})
+
+	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainingRuntime{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
+	})
+
+	ginkgo.When("Creating TrainingRuntime", func() {
+		ginkgo.DescribeTable("Validate TrainingRuntime on creation", func(runtime func() *kubeflowv2.TrainingRuntime) {
+			gomega.Expect(k8sClient.Create(ctx, runtime())).Should(gomega.Succeed())
+		},
+			ginkgo.Entry("Should succeed to create TrainingRuntime",
+				func() *kubeflowv2.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, trainingRuntimeName).Clone()
+					return baseRuntime.
+						RuntimeSpec(
+							testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+								Replicas(1).
+								Obj()).
+						Obj()
+				}),
+		)
 	})
 })
