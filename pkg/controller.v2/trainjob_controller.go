@@ -43,6 +43,13 @@ func NewTrainJobReconciler(client client.Client, recorder record.EventRecorder) 
 	}
 }
 
+//+kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kubeflow.org,resources=trainingruntimes,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kubeflow.org,resources=clustertrainingruntimes,verbs=get;list;watch
+//+kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
+//+kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create
+
 func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var trainJob kubeflowv2.TrainJob
 	if err := r.client.Get(ctx, req.NamespacedName, &trainJob); err != nil {
