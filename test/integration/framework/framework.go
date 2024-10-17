@@ -39,6 +39,7 @@ import (
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
+	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
 )
 
@@ -89,10 +90,17 @@ func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client
 	})
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "failed to create manager")
 
-	failedCtrlName, err := controllerv2.SetupControllers(mgr)
+	runtimes, err := runtimecore.New(ctx, mgr.GetClient(), mgr.GetFieldIndexer())
+	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
+	gomega.ExpectWithOffset(1, runtimes).NotTo(gomega.BeNil())
+
+	failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes)
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
-	failedWebhookName, err := webhookv2.Setup(mgr)
+	gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
+
+	failedWebhookName, err := webhookv2.Setup(mgr, runtimes)
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "webhook", failedWebhookName)
+	gomega.ExpectWithOffset(1, failedWebhookName).To(gomega.BeEmpty())
 
 	go func() {
 		defer ginkgo.GinkgoRecover()

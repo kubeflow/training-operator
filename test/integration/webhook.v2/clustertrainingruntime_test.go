@@ -22,8 +22,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 )
+
+const clTrainingRuntimeName = "test-clustertrainingruntime"
 
 var _ = ginkgo.Describe("ClusterTrainingRuntime Webhook", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
@@ -48,5 +52,26 @@ var _ = ginkgo.Describe("ClusterTrainingRuntime Webhook", ginkgo.Ordered, func()
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+	})
+
+	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.ClusterTrainingRuntime{})).To(gomega.Succeed())
+	})
+
+	ginkgo.When("Creating ClusterTrainingRuntime", func() {
+		ginkgo.DescribeTable("", func(runtime func() *kubeflowv2.ClusterTrainingRuntime) {
+			gomega.Expect(k8sClient.Create(ctx, runtime())).Should(gomega.Succeed())
+		},
+			ginkgo.Entry("Should succeed to create ClusterTrainingRuntime",
+				func() *kubeflowv2.ClusterTrainingRuntime {
+					baseRuntime := testingutil.MakeClusterTrainingRuntimeWrapper(clTrainingRuntimeName)
+					return baseRuntime.
+						RuntimeSpec(
+							testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+								Replicas(1).
+								Obj()).
+						Obj()
+				}),
+		)
 	})
 })
