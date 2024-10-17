@@ -6,9 +6,8 @@ resources:
   # TODO (andreyvelich): JobSet should support kubeflow-system namespace.
   - https://github.com/kubernetes-sigs/jobset/releases/download/v0.6.0/manifests.yaml
 images:
-  - name: docker.io/kubeflow/training-operator-v2
-    newTag: v2alpha1-6965c1a
-    newName: docker.io/kubeflow/training-operator
+  - name: kubeflow/training-operator-v2
+    newTag: latest
 secretGenerator:
   - name: training-operator-v2-webhook-cert
     namespace: kubeflow-system
