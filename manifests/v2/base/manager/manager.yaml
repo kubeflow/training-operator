@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training-operator-v2
+  labels:
+    training.kubeflow.org/component: manager
+spec:
+  selector:
+    matchLabels:
+      training.kubeflow.org/component: manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        training.kubeflow.org/component: manager
+    spec:
+      containers:
+        - name: manager
+          image: docker.io/kubeflow/training-operator-v2
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+      serviceAccountName: training-operator-v2
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: training-operator-v2-webhook-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: training-operator-v2
+spec:
+  ports:
+    - name: monitoring-port
+      port: 8080
+      targetPort: 8080
+    - name: webhook-server
+      port: 443
+      protocol: TCP
+      targetPort: 9443
+  selector:
+    training.kubeflow.org/component: manager
