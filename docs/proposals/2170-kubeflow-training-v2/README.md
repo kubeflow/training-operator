@@ -281,7 +281,7 @@ type TrainJob struct {
 
 type TrainJobSpec struct {
 	// Reference to the training runtime.
-	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
+	RuntimeRef RuntimeRef `json:"runtimeRef"`
 
 	// Configuration of the desired trainer.
 	Trainer *Trainer `json:"trainer,omitempty"`
@@ -317,7 +317,7 @@ type TrainJobSpec struct {
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
-type TrainingRuntimeRef struct {
+type RuntimeRef struct {
 	// Name of the runtime being referenced.
 	// When namespaced-scoped TrainingRuntime is used, the TrainJob must have
 	// the same namespace as the deployed runtime.
@@ -375,7 +375,7 @@ This table explains the rationale for each `TrainJob` parameter:
    </td>
   </tr>
   <tr>
-   <td><code>TrainingRuntimeRef</code>
+   <td><code>RuntimeRef</code>
    </td>
    <td>Reference to the existing <code>TrainingRuntime</code> that is pre-deployed by platform engineers
    </td>
@@ -430,7 +430,7 @@ metadata:
   name: torch-ddp
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-distributed-multi-node
   trainer:
     image: docker.io/custom-training
@@ -488,7 +488,7 @@ metadata:
   name: tune-llama-with-yelp
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-tune-llama-7b
   datasetConfig:
     storageUri: s3://dataset/custom-dataset/yelp-review
@@ -890,7 +890,7 @@ metadata:
   name: pytorch-distributed
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: pytorch-distributed-gpu
   trainer:
     image: docker.io/custom-training
@@ -939,7 +939,7 @@ to control versions of `TrainingRuntime` and enable rolling updates.
 
 We are going to create two CRDs: `TrainingRuntime` and `ClusterTrainingRuntime`. These runtimes have
 exactly the same APIs, but the first one is the namespace-scoped, the second is the cluster-scoped.
-User can set the `kind` and `apiGroup` parameters in the `trainingRuntimeRef` to use
+User can set the `kind` and `apiGroup` parameters in the `runtimeRef` to use
 the `TrainingRuntime` from the `TrainJob's` namespace, otherwise the `ClusterTrainingRuntime` will
 be used.
 
@@ -1228,7 +1228,7 @@ metadata:
   name: torch-test
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-distributed-multi-node
   trainer:
     resourcesPerNode:
@@ -1698,7 +1698,7 @@ Note that we should implement the status transitions validations to once we supp
 
 ### Support Multiple API Versions of TrainingRuntime
 
-We can consider to introduce the `version` field for runtime API version to the `.spec.trainingRuntimeRef`
+We can consider to introduce the `version` field for runtime API version to the `.spec.runtimeRef`
 so that we can support multiple API versions of TrainingRuntime.
 
 It could mitigate the pain points when users upgrade the older API Version to newer API Version like alpha to beta.
@@ -1706,7 +1706,7 @@ But, we do not aim to support both Alpha and Beta versions or both first Alpha a
 Hence, the `version` field was not introduced.
 
 ```go
-type TrainingRuntimeRef struct {
+type RuntimeRef struct {
 	[...]
 
 	// APIVersion is the apiVersion for the runtime.
