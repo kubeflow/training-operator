@@ -197,6 +197,7 @@ spec:
                   They will be merged with the TrainingRuntime values.
                 type: object
               managedBy:
+                default: kubeflow.org/trainjob-controller
                 description: |-
                   ManagedBy is used to indicate the controller or entity that manages a TrainJob.
                   The value must be either an empty, `kubeflow.org/trainjob-controller` or
@@ -206,6 +207,12 @@ spec:
                   with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
                   Defaults to `kubeflow.org/trainjob-controller`
                 type: string
+                x-kubernetes-validations:
+                - message: ManagedBy must be kubeflow.org/trainjob-controller or kueue.x-k8s.io/multikueue
+                    if set
+                  rule: self in ['kubeflow.org/trainjob-controller', 'kueue.x-k8s.io/multikueue']
+                - message: ManagedBy value is immutable
+                  rule: self == oldSelf
               modelConfig:
                 description: Configuration of the pre-trained and trained model.
                 properties:
@@ -2736,14 +2743,15 @@ spec:
                 description: Reference to the training runtime.
                 properties:
                   apiGroup:
+                    default: kubeflow.org
                     description: |-
                       APIGroup of the runtime being referenced.
                       Defaults to `kubeflow.org`.
                     type: string
                   kind:
+                    default: ClusterTrainingRuntime
                     description: |-
                       Kind of the runtime being referenced.
-                      It must be one of TrainingRuntime or ClusterTrainingRuntime.
                       Defaults to ClusterTrainingRuntime.
                     type: string
                   name:
@@ -2756,6 +2764,7 @@ spec:
                 - name
                 type: object
               suspend:
+                default: false
                 description: |-
                   Whether the controller should suspend the running TrainJob.
                   Defaults to false.
