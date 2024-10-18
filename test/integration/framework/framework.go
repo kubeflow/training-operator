@@ -54,7 +54,7 @@ func (f *Framework) Init() *rest.Config {
 	f.testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "crds")},
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "webhook")},
+			Paths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "webhook", "manifests.yaml")},
 		},
 		ErrorIfCRDPathMissing: true,
 	}
