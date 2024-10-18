@@ -167,7 +167,7 @@ func (jc *MPIJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	t, err := util.DurationUntilExpireTime(&mpijob.Spec.RunPolicy, mpijob.Status)
 	if err != nil {
-		logger.Info("Reconcile MPIJob Job error", "error", err)
+		logger.Error(err, "Reconcile MPIJob Job error")
 		return ctrl.Result{}, err
 	}
 	if t >= 0 {
