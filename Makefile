@@ -42,7 +42,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 		output:rbac:artifacts:config=manifests/base/rbac \
 		output:webhook:artifacts:config=manifests/base/webhook
 	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=training-operator-v2 webhook \
-		paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/webhook.v2/...;./pkg/cert/..." \
+		paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhook.v2/...;./pkg/cert/..." \
 		output:crd:artifacts:config=manifests/v2/base/crds \
 		output:rbac:artifacts:config=manifests/v2/base/rbac \
 		output:webhook:artifacts:config=manifests/v2/base/webhook
