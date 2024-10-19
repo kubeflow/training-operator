@@ -4,15 +4,21 @@ kind: Deployment
 metadata:
   name: training-operator-v2
   labels:
-    training.kubeflow.org/component: manager
+    app.kubernetes.io/name: training
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/part-of: kubeflow
 spec:
   selector:
     matchLabels:
-      training.kubeflow.org/component: manager
+      app.kubernetes.io/name: training
+      app.kubernetes.io/component: manager
+      app.kubernetes.io/part-of: kubeflow
   template:
     metadata:
       labels:
-        training.kubeflow.org/component: manager
+        app.kubernetes.io/name: training
+        app.kubernetes.io/component: manager
+        app.kubernetes.io/part-of: kubeflow
     spec:
       containers:
         - name: manager
@@ -61,4 +67,4 @@ spec:
       protocol: TCP
       targetPort: 9443
   selector:
-    training.kubeflow.org/component: manager
+    app.kubernetes.io/component: manager
