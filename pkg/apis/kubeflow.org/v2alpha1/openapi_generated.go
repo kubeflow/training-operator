@@ -727,7 +727,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_RuntimeRef(ref common.ReferenceCallbac
 					},
 					"kind": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the runtime being referenced. It must be one of TrainingRuntime or ClusterTrainingRuntime. Defaults to ClusterTrainingRuntime.",
+							Description: "Kind of the runtime being referenced. Defaults to ClusterTrainingRuntime.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

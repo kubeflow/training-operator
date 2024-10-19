@@ -22,6 +22,10 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+const (
+	TrainJobKind string = "TrainJob"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
@@ -87,6 +91,7 @@ type TrainJobSpec struct {
 
 	// Whether the controller should suspend the running TrainJob.
 	// Defaults to false.
+	// +kubebuilder:default=false
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
@@ -96,6 +101,9 @@ type TrainJobSpec struct {
 	// `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
 	// with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
 	// Defaults to `kubeflow.org/trainjob-controller`
+	// +kubebuilder:default="kubeflow.org/trainjob-controller"
+	// +kubebuilder:validation:XValidation:rule="self in ['kubeflow.org/trainjob-controller', 'kueue.x-k8s.io/multikueue']", message="ManagedBy must be kubeflow.org/trainjob-controller or kueue.x-k8s.io/multikueue if set"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="ManagedBy value is immutable"
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
@@ -108,11 +116,12 @@ type RuntimeRef struct {
 
 	// APIGroup of the runtime being referenced.
 	// Defaults to `kubeflow.org`.
+	// +kubebuilder:default="kubeflow.org"
 	APIGroup *string `json:"apiGroup,omitempty"`
 
 	// Kind of the runtime being referenced.
-	// It must be one of TrainingRuntime or ClusterTrainingRuntime.
 	// Defaults to ClusterTrainingRuntime.
+	// +kubebuilder:default="ClusterTrainingRuntime"
 	Kind *string `json:"kind,omitempty"`
 }
 
