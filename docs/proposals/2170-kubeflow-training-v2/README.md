@@ -279,6 +279,43 @@ type TrainJob struct {
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
+const (
+	// TrainJobSuspended means the TrainJob is suspended.
+	TrainJobSuspended string = "Suspended"
+
+	// TrainJobCompleted means that the actual jobs have completed its execution.
+	TrainJobCompleted string = "Completed"
+
+	// TrainJobFailed means that the actual jobs have failed its execution.
+	TrainJobFailed string = "Failed"
+
+	// TrainJobCreated means that the actual jobs creation has succeeded.
+	TrainJobCreated string = "Created"
+)
+
+const (
+	// TrainJobSuspendedReason is the "Suspended" condition reason.
+	// When the TrainJob is suspended, this is added.
+	TrainJobSuspendedReason string = "Suspended"
+
+	// TrainJobResumedReason is the "Suspended" condition reason.
+	// When the TrainJob suspension is changed from True to False, this is added.
+	TrainJobResumedReason string = "Resumed"
+
+	// TrainJobJobsCreationSucceededReason is the "Created" condition reason.
+	// When the creating objects succeeded after building succeeded, this is added.
+	TrainJobJobsCreationSucceededReason string = "JobsCreationSucceeded"
+
+	// TrainJobJobsBuildFailedReason is the "Created" condition reason.
+	// When the building objects based on the TrainJob and the specified runtime failed,
+	// this is added.
+	TrainJobJobsBuildFailedReason string = "JobsBuildFailed"
+
+	// TrainJobJobsCreationFailedReason is "Created" condition reason.
+	// When the creating objects failed even though building succeeded, this is added.
+	TrainJobJobsCreationFailedReason string = "JobsCreationFailed"
+)
+
 type TrainJobSpec struct {
 	// Reference to the training runtime.
 	// The field is immutable.
@@ -914,6 +951,65 @@ spec:
         - name: user-123-volume
           persistentVolumeClaim:
             claimName: user-123-volume
+```
+
+### State Transition
+
+In this section, we're explaining the TrainJob state transition (`.status.conditions`).
+The basic TrainJob state machine is the below, but the TrainJob has actual Jobs state as well.
+This means that If the TrainJob specifies the TrainingRuntime, the TrainJob has JobSet conditions as well,
+but actual Jobs states are added prefix like `JobSetCompleted`.
+
+Especially, if we specify the TrainingRuntime as a runtime, the TrainJob terminal condition (`Failed` or `Completed`) is decided
+based on the JobSet terminal state (`status.terminalState`) instead of computing from JobSet conditions.
+
+```mermaid
+stateDiagram-v2
+    #CREATION
+    state created_choice <<choice>>
+    [*] --> created_choice: TrainJob is submitted.
+    created_choice --> Created=True: Succeeded to build and deploy Jobs.
+    created_choice --> Created=False: Failed to build and deploy Jobs.
+    Created=False --> Created=False: Wait for updated appropriate TrainJob.
+    Created=False --> Created=True: Succeeded to build and deploy Jobs.
+
+    #SUSPENSION
+    state suspended_choice <<choice>>
+    Created=True --> suspended_choice: Handle TrainJob suspension.
+    suspended_choice --> Suspended=True: TrainJob is suspended.
+    Suspended=True --> Suspended=True: Wait for unsuspending.
+    Suspended=True --> Suspended=False: TrainJob is unsuspended.
+    suspended_choice --> Suspended=False: TrainJob is not suspended.
+
+    #FAILURE
+    state terminal_choice <<choice>>
+    Suspended=False --> terminal_choice: Actual Jobs go to terminal phase.
+    terminal_choice --> Failed=True: Actual Jobs (e.g., JobSet) failed.
+    Failed=True --> [*]
+
+    #COMPLETION
+    terminal_choice --> Completed=True: Actual Jobs (e.g., JobSet) completed.
+    Completed=True --> [*]
+```
+
+Hence, when we specify the JobSet as a runtime, after the TrainJob completed,
+we can see the TrainJob pseudo state in the following:
+
+```yaml
+[...]
+status:
+  conditions:
+  - type: Created
+    status: true
+  - type: Suspended
+    status: false
+  - type: JobSetSuspended
+    status: false
+  - type: JobSetCompleted
+    status: true
+  - type: Completed
+    status: true
+[...]
 ```
 
 ## The Training Runtime API
