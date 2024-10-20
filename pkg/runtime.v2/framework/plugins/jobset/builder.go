@@ -28,12 +28,12 @@ import (
 )
 
 type Builder struct {
-	*jobsetv1alpha2.JobSet
+	jobsetv1alpha2.JobSet
 }
 
 func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSetTemplateSpec) *Builder {
 	return &Builder{
-		JobSet: &jobsetv1alpha2.JobSet{
+		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
 				Kind:       "JobSet",
@@ -76,8 +76,13 @@ func (b *Builder) PodLabels(labels map[string]string) *Builder {
 	return b
 }
 
+func (b *Builder) Suspend(suspend *bool) *Builder {
+	b.Spec.Suspend = suspend
+	return b
+}
+
 // TODO: Need to support all TrainJob fields.
 
 func (b *Builder) Build() *jobsetv1alpha2.JobSet {
-	return b.JobSet
+	return &b.JobSet
 }

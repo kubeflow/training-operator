@@ -74,28 +74,36 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubefl
 	if !ok {
 		return nil, nil
 	}
-	jobSetBuilder := NewBuilder(client.ObjectKeyFromObject(trainJob), kubeflowv2.JobSetTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      info.Labels,
-			Annotations: info.Annotations,
-		},
-		Spec: raw.Spec,
-	})
+
+	var jobSetBuilder *Builder
+	oldJobSet := &jobsetv1alpha2.JobSet{}
+	if err := j.client.Get(ctx, client.ObjectKeyFromObject(trainJob), oldJobSet); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+		jobSetBuilder = NewBuilder(client.ObjectKeyFromObject(trainJob), kubeflowv2.JobSetTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels:      info.Labels,
+				Annotations: info.Annotations,
+			},
+			Spec: raw.Spec,
+		})
+		oldJobSet = nil
+	} else {
+		jobSetBuilder = &Builder{
+			JobSet: *oldJobSet.DeepCopy(),
+		}
+	}
+
 	// TODO (tenzen-y): We should support all field propagation in builder.
 	jobSet := jobSetBuilder.
+		Suspend(trainJob.Spec.Suspend).
 		ContainerImage(trainJob.Spec.Trainer.Image).
 		JobCompletionMode(batchv1.IndexedCompletion).
 		PodLabels(info.PodLabels).
 		Build()
 	if err := ctrlutil.SetControllerReference(trainJob, jobSet, j.scheme); err != nil {
 		return nil, err
-	}
-	oldJobSet := &jobsetv1alpha2.JobSet{}
-	if err := j.client.Get(ctx, client.ObjectKeyFromObject(jobSet), oldJobSet); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, err
-		}
-		oldJobSet = nil
 	}
 	if err := info.Update(jobSet); err != nil {
 		return nil, err
@@ -106,9 +114,14 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubefl
 	return nil, nil
 }
 
-func needsCreateOrUpdate(old, new *jobsetv1alpha2.JobSet, suspended bool) bool {
+func needsCreateOrUpdate(old, new *jobsetv1alpha2.JobSet, trainJobIsSuspended bool) bool {
 	return old == nil ||
-		suspended && (!equality.Semantic.DeepEqual(old.Spec, new.Spec) || !maps.Equal(old.Labels, new.Labels) || !maps.Equal(old.Annotations, new.Annotations))
+		(!trainJobIsSuspended && jobSetIsSuspended(old) && !jobSetIsSuspended(new)) ||
+		(trainJobIsSuspended && (!equality.Semantic.DeepEqual(old.Spec, new.Spec) || !maps.Equal(old.Labels, new.Labels) || !maps.Equal(old.Annotations, new.Annotations)))
+}
+
+func jobSetIsSuspended(jobSet *jobsetv1alpha2.JobSet) bool {
+	return ptr.Deref(jobSet.Spec.Suspend, false)
 }
 
 func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
