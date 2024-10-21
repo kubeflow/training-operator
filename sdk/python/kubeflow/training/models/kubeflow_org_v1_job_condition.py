@@ -79,6 +79,7 @@ class KubeflowOrgV1JobCondition(object):
     def last_transition_time(self):
         """Gets the last_transition_time of this KubeflowOrgV1JobCondition.  # noqa: E501
 
+        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :return: The last_transition_time of this KubeflowOrgV1JobCondition.  # noqa: E501
         :rtype: datetime
@@ -89,6 +90,7 @@ class KubeflowOrgV1JobCondition(object):
     def last_transition_time(self, last_transition_time):
         """Sets the last_transition_time of this KubeflowOrgV1JobCondition.
 
+        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :param last_transition_time: The last_transition_time of this KubeflowOrgV1JobCondition.  # noqa: E501
         :type: datetime
@@ -100,6 +102,7 @@ class KubeflowOrgV1JobCondition(object):
     def last_update_time(self):
         """Gets the last_update_time of this KubeflowOrgV1JobCondition.  # noqa: E501
 
+        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :return: The last_update_time of this KubeflowOrgV1JobCondition.  # noqa: E501
         :rtype: datetime
@@ -110,6 +113,7 @@ class KubeflowOrgV1JobCondition(object):
     def last_update_time(self, last_update_time):
         """Sets the last_update_time of this KubeflowOrgV1JobCondition.
 
+        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :param last_update_time: The last_update_time of this KubeflowOrgV1JobCondition.  # noqa: E501
         :type: datetime

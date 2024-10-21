@@ -196,8 +196,8 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.MPIJob{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: jc.onOwnerCreateFunc()},
+	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.MPIJob{}, &handler.EnqueueRequestForObject{},
+		predicate.Funcs{CreateFunc: jc.onOwnerCreateFunc()}),
 	); err != nil {
 		return err
 	}
@@ -216,23 +216,23 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
 	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}, eventHandler, predicates)); err != nil {
 		return err
 	}
 	// inject watching for job related ConfigMap
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ConfigMap{}), eventHandler, genericPredicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ConfigMap{}, eventHandler, genericPredicates)); err != nil {
 		return err
 	}
 	// inject watching for job related Role
-	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.Role{}), eventHandler, genericPredicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.Role{}, eventHandler, genericPredicates)); err != nil {
 		return err
 	}
 	// inject watching for job related RoleBinding
-	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.RoleBinding{}), eventHandler, genericPredicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &rbacv1.RoleBinding{}, eventHandler, genericPredicates)); err != nil {
 		return err
 	}
 	// inject watching for job related ServiceAccount
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ServiceAccount{}), eventHandler, genericPredicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ServiceAccount{}, eventHandler, genericPredicates)); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
@@ -240,7 +240,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		v1beta1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
 			return err
 		}
 	}
@@ -250,7 +250,7 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
 			return err
 		}
 	}

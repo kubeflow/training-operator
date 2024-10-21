@@ -35,13 +35,6 @@ rules:
   - kubeflow.org
   resources:
   - clustertrainingruntimes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - kubeflow.org
-  resources:
   - trainingruntimes
   verbs:
   - get
