@@ -704,7 +704,7 @@ job, for example `minAvailable` for gang-scheduling.
 | Field | Description
 | *`minAvailable`* __integer__ | 
 | *`queue`* __string__ | 
-| *`minResources`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-api-resource-quantity[$$Quantity$$]__ | 
+| *`minResources`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#quantity-resource-api[$$Quantity$$]__ | 
 | *`priorityClass`* __string__ | 
 | *`scheduleTimeoutSeconds`* __integer__ | 
 |===

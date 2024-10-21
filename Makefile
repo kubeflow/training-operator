@@ -69,9 +69,9 @@ ifeq ($(GOLANGCI_LINT),)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
 	$(info golangci-lint has been installed)
 endif
-	golangci-lint run --timeout 5m --go 1.22 ./...
+	${GOBIN}/golangci-lint run --timeout 5m --go 1.22 ./...
 
-ENVTEST_K8S_VERSION ?= 1.29
+ENVTEST_K8S_VERSION ?= 1.30
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
@@ -126,7 +126,7 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.4
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.

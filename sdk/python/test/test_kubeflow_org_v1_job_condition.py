@@ -36,8 +36,8 @@ class TestKubeflowOrgV1JobCondition(unittest.TestCase):
         # model = kubeflow.training.models.kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition()  # noqa: E501
         if include_optional :
             return KubeflowOrgV1JobCondition(
-                last_transition_time = None, 
-                last_update_time = None, 
+                last_transition_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                last_update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 message = '0', 
                 reason = '0', 
                 status = '0', 

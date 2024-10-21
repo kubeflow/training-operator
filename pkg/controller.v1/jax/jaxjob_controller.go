@@ -177,15 +177,14 @@ func (r *JAXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads 
 		return err
 	}
 
+	predicatesJax := predicate.Funcs[*kubeflowv1.JAXJob]{
+		CreateFunc: r.onOwnerCreateFunc(),
+	}
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.JAXJob{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
-	); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.JAXJob{}, &handler.TypedEnqueueRequestForObject[*kubeflowv1.JAXJob]{}, predicatesJax)); err != nil {
 		return err
 	}
 
-	// eventHandler for owned object
-	eventHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner())
 	predicates := predicate.Funcs{
 		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
 		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
@@ -198,18 +197,18 @@ func (r *JAXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads 
 		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}, &handler.TypedEnqueueRequestForObject[*corev1.Pod]{}, predicates)); err != nil {
 		return err
 	}
 	// inject watching for job related service
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Service{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Service{}, &handler.TypedEnqueueRequestForObject[*corev1.Service]{}, predicates)); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.GroupName, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}, &handler.TypedEnqueueRequestForObject[*v1beta1.PodGroup]{}, genericPredicates)); err != nil {
 			return err
 		}
 	}
@@ -217,7 +216,7 @@ func (r *JAXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads 
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}, &handler.TypedEnqueueRequestForObject[*schedulerpluginsv1alpha1.PodGroup]{}, genericPredicates)); err != nil {
 			return err
 		}
 	}

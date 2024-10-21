@@ -18,9 +18,12 @@ package v2alpha1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type TrainJobInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.TrainJobList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.TrainJob, err error)
+	Apply(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error)
+	ApplyStatus(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error)
 	TrainJobExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *trainJobs) Patch(ctx context.Context, name string, pt types.PatchType, 
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied trainJob.
+func (c *trainJobs) Apply(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error) {
+	if trainJob == nil {
+		return nil, fmt.Errorf("trainJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(trainJob)
+	if err != nil {
+		return nil, err
+	}
+	name := trainJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainJob.Name must be provided to Apply")
+	}
+	result = &v2alpha1.TrainJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("trainjobs").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *trainJobs) ApplyStatus(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error) {
+	if trainJob == nil {
+		return nil, fmt.Errorf("trainJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(trainJob)
+	if err != nil {
+		return nil, err
+	}
+
+	name := trainJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainJob.Name must be provided to Apply")
+	}
+
+	result = &v2alpha1.TrainJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("trainjobs").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

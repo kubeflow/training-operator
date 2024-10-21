@@ -38,7 +38,18 @@ class TestKubeflowOrgV1ReplicaStatus(unittest.TestCase):
             return KubeflowOrgV1ReplicaStatus(
                 active = 56, 
                 failed = 56, 
-                label_selector = None, 
+                label_selector = V1LabelSelector(
+                    match_expressions = [
+                        V1LabelSelectorRequirement(
+                            key = '0', 
+                            operator = '0', 
+                            values = [
+                                '0'
+                                ], )
+                        ], 
+                    match_labels = {
+                        'key' : '0'
+                        }, ), 
                 selector = '0', 
                 succeeded = 56
             )
