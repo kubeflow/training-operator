@@ -65,6 +65,8 @@ var (
 
 const Name = "CoScheduling"
 
+//+kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create
+
 func New(ctx context.Context, c client.Client, indexer client.FieldIndexer) (framework.Plugin, error) {
 	if err := indexer.IndexField(ctx, &kubeflowv2.TrainingRuntime{}, TrainingRuntimeContainerRuntimeClassKey,
 		IndexTrainingRuntimeContainerRuntimeClass); err != nil {

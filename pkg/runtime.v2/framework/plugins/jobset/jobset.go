@@ -53,6 +53,8 @@ var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
 
 const Name = "JobSet"
 
+//+kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
+
 func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &JobSet{
 		client:     c,

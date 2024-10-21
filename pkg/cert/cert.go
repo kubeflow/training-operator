@@ -27,19 +27,19 @@ import (
 
 const (
 	certDir                  = "/tmp/k8s-webhook-server/serving-certs"
-	vwcName                  = "validator.training-operator.kubeflow.org"
 	caName                   = "training-operator-ca"
 	caOrganization           = "training-operator"
 	defaultOperatorNamespace = "kubeflow"
 )
 
 type Config struct {
-	WebhookServiceName string
-	WebhookSecretName  string
+	WebhookServiceName       string
+	WebhookSecretName        string
+	WebhookConfigurationName string
 }
 
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
-// +kubebuilder:rbac:groups="admissionregistration.k8s.io",resources=validatingwebhookconfigurations,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="admissionregistration.k8s.io",resources=validatingwebhookconfigurations,verbs=get;list;watch;update
 
 // ManageCerts creates all certs for webhooks.
 func ManageCerts(mgr ctrl.Manager, cfg Config, setupFinished chan struct{}) error {
@@ -61,7 +61,7 @@ func ManageCerts(mgr ctrl.Manager, cfg Config, setupFinished chan struct{}) erro
 		IsReady:        setupFinished,
 		Webhooks: []cert.WebhookInfo{{
 			Type: cert.Validating,
-			Name: vwcName,
+			Name: cfg.WebhookConfigurationName,
 		}},
 		// When training-operator is running in the leader election mode,
 		// we expect webhook server will run in primary and secondary instance
