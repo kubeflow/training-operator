@@ -44,6 +44,10 @@ import (
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
 )
 
+const (
+	webhookConfigurationName = "validator.training-operator-v2.kubeflow.org"
+)
+
 var (
 	scheme   = apiruntime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -124,8 +128,9 @@ func main() {
 
 	certsReady := make(chan struct{})
 	if err = cert.ManageCerts(mgr, cert.Config{
-		WebhookSecretName:  webhookSecretName,
-		WebhookServiceName: webhookServiceName,
+		WebhookSecretName:        webhookSecretName,
+		WebhookServiceName:       webhookServiceName,
+		WebhookConfigurationName: webhookConfigurationName,
 	}, certsReady); err != nil {
 		setupLog.Error(err, "unable to set up cert rotation")
 		os.Exit(1)
