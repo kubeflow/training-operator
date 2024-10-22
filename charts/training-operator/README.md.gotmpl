@@ -1,0 +1,64 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+## Introduction
+
+This chart bootstraps a [Kubeflow Training Operator]({{template "chart.homepage" . }}) deployment using the [Helm](https://helm.sh) package manager.
+
+## Prerequisites
+
+- Helm >= 3
+- Kubernetes >= 1.20
+
+## Usage
+
+### Add Helm Repo
+
+```shell
+helm repo add training-operator https://kubeflow.github.io/training-operator
+
+helm repo update
+```
+
+See [helm repo](https://helm.sh/docs/helm/helm_repo) for command documentation.
+
+### Install the chart
+
+```shell
+helm install training-operator training-operator/training-operator \
+    --namespace kubeflow \
+    --create-namespace
+```
+
+Note that by passing the `--create-namespace` flag to the `helm install` command, `helm` will create the release namespace if it does not exist.
+
+See [helm install](https://helm.sh/docs/helm/helm_install) for command documentation.
+
+### Upgrade the chart
+
+```shell
+helm upgrade training-operator training-operator/training-operator [flags]
+```
+
+See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade) for command documentation.
+
+### Uninstall the chart
+
+```shell
+helm uninstall training-operator --namespace kubeflow
+```
+
+This removes all the Kubernetes resources associated with the chart and deletes the release, except for the `crds`, those will have to be removed manually.
+
+See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall) for command documentation.
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}

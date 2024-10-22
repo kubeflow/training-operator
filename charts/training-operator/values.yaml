@@ -1,0 +1,123 @@
+#
+# Copyright 2024 The Kubeflow authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Default values for training-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- String to partially override release name.
+nameOverride: ""
+
+# -- String to fully override release name.
+fullnameOverride: ""
+
+# -- Common labels to add to the resources.
+commonLabels: {}
+
+image:
+  # -- Image registry.
+  registry: docker.io
+  # -- Image repository.
+  repository: kubeflow/training-operator
+  # -- Image tag.
+  tag: latest
+  # -- Image pull policy.
+  pullPolicy: IfNotPresent
+  # -- Image pull secrets for private image registry.
+  pullSecrets: []
+  # - name: <secret-name>
+
+# -- Number of replicas of training operator.
+replicas: 1
+
+serviceAccount:
+  # -- Specifies whether to create a service account for the training operator.
+  create: true
+  # -- Optional name for the training operator service account.
+  name: ""
+  # -- Extra annotations for the training operator service account.
+  annotations: {}
+
+rbac:
+  # -- Specifies whether to create RBAC resources for the training operator.
+  create: true
+  # -- Extra annotations for the training operator RBAC resources.
+  annotations: {}
+
+service:
+  # -- Service type.
+  type: ClusterIP
+  # -- Service port.
+  port: 80
+
+# -- Extra labels for training operator pods.
+labels: {}
+  # key1: value1
+  # key2: value2
+
+# -- Extra annotations for training operator pods.
+annotations: {}
+  # key1: value1
+  # key2: value2
+
+# -- Sidecar containers for training operator pods.
+sidecars: []
+
+# -- Volumes for training operator pods.
+volumes: []
+
+# -- Node selector for training operator pods.
+nodeSelector: {}
+
+# -- Affinity for training operator pods.
+affinity: {}
+
+# -- List of node taints to tolerate for training operator pods.
+tolerations: []
+
+# -- Priority class for training operator pods.
+priorityClassName: ""
+
+# -- Security context for training operator pods.
+podSecurityContext: {}
+  # runAsUser: 1000
+  # runAsGroup: 2000
+  # fsGroup: 3000
+
+# -- Environment variables for training operator containers.
+env: []
+
+# -- Environment variable sources for training operator containers.
+envFrom: []
+
+# -- Volume mounts for training operator containers.
+volumeMounts: []
+
+# -- Pod resource requests and limits for training operator pods.
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 300Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 300Mi
+
+# -- Security context for training operator containers.
+securityContext:
+  allowPrivilegeEscalation: false
+  # runAsUser: 1000
+  # runAsGroup: 2000
+  # fsGroup: 3000
