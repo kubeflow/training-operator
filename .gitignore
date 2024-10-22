@@ -4,7 +4,7 @@ bin/
 /tf-operator
 vendor/
 testbin/*
-dep-crds/
+manifests/external-crds/
 cover.out
 
 # IDEs

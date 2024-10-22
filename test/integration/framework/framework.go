@@ -56,8 +56,8 @@ func (f *Framework) Init() *rest.Config {
 	f.testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "manifests", "v2", "base", "crds"),
-			filepath.Join("..", "..", "..", "dep-crds", "scheduler-plugins", "crd.yaml"),
-			filepath.Join("..", "..", "..", "dep-crds", "jobset-operator"),
+			filepath.Join("..", "..", "..", "manifests", "external-crds", "scheduler-plugins", "crd.yaml"),
+			filepath.Join("..", "..", "..", "manifests", "external-crds", "jobset-operator"),
 		},
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "webhook")},

@@ -130,11 +130,11 @@ kustomize: ## Download kustomize locally if necessary.
 	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7
 
 ## Download external CRDs for the integration testings.
-EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/dep-crds
+EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/manifests/external-crds
 
 JOBSET_ROOT = $(shell go list -m -mod=readonly -f "{{.Dir}}" sigs.k8s.io/jobset)
 .PHONY: jobset-operator-crd
-jobset-operator-crd: ## Copy the CRDs from the jobset-operator to the dep-crds directory.
+jobset-operator-crd: ## Copy the CRDs from the jobset-operator to the manifests/external-crds directory.
 	mkdir -p $(EXTERNAL_CRDS_DIR)/jobset-operator/
 	cp -f $(JOBSET_ROOT)/config/components/crd/bases/* $(EXTERNAL_CRDS_DIR)/jobset-operator/
 
@@ -142,4 +142,4 @@ SCHEDULER_PLUGINS_ROOT = $(shell go list -m -f "{{.Dir}}" sigs.k8s.io/scheduler-
 .PHONY: scheduler-plugins-crd
 scheduler-plugins-crd:
 	mkdir -p $(EXTERNAL_CRDS_DIR)/scheduler-plugins/
-	cp -f $(SCHEDULER_PLUGINS_ROOT)/manifests/coscheduling/* $(PROJECT_DIR)/dep-crds/scheduler-plugins
+	cp -f $(SCHEDULER_PLUGINS_ROOT)/manifests/coscheduling/* $(EXTERNAL_CRDS_DIR)/scheduler-plugins
