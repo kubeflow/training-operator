@@ -2747,7 +2747,9 @@ spec:
                   type: object
                 type: array
               runtimeRef:
-                description: Reference to the training runtime.
+                description: |-
+                  Reference to the training runtime.
+                  The field is immutable.
                 properties:
                   apiGroup:
                     default: kubeflow.org
@@ -2770,6 +2772,9 @@ spec:
                 required:
                 - name
                 type: object
+                x-kubernetes-validations:
+                - message: runtimeRef is immutable
+                  rule: self == oldSelf
               suspend:
                 default: false
                 description: |-

@@ -1010,7 +1010,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobSpec(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"runtimeRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Reference to the training runtime.",
+							Description: "Reference to the training runtime. The field is immutable.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.RuntimeRef"),
 						},
