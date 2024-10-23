@@ -17,6 +17,7 @@ package mpi
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -28,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -495,7 +496,7 @@ func (jc *MPIJobReconciler) GetJobFromAPIClient(namespace, name string) (metav1.
 
 	err := jc.apiReader.Get(context.Background(), types.NamespacedName{Namespace: namespace, Name: name}, job)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			logrus.Error(err, "MPIJob not found", "namespace", namespace, "name", name)
 		} else {
 			logrus.Error(err, "failed to get job from api-server", "namespace", namespace, "name", name)
@@ -657,7 +658,7 @@ func (jc *MPIJobReconciler) getLauncherJob(mpiJob *kubeflowv1.MPIJob) (*corev1.P
 	launcher := &corev1.Pod{}
 	NamespacedName := types.NamespacedName{Namespace: mpiJob.Namespace, Name: mpiJob.Name + launcherSuffix}
 	err := jc.Get(context.Background(), NamespacedName, launcher)
-	if errors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
@@ -672,7 +673,7 @@ func (jc *MPIJobReconciler) getLauncherJob(mpiJob *kubeflowv1.MPIJob) (*corev1.P
 	if !metav1.IsControlledBy(launcher, mpiJob) {
 		msg := fmt.Sprintf(MessageResourceExists, launcher.Name, launcher.Kind)
 		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return launcher, fmt.Errorf(msg)
+		return launcher, errors.New(msg)
 	}
 	return launcher, nil
 }
@@ -692,7 +693,7 @@ func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *kubeflowv1.MPIJob, work
 	err = jc.Get(context.Background(), NamespacedName, cm)
 
 	// If the ConfigMap doesn't exist, we'll create it.
-	if errors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		cm, err = jc.KubeClientSet.CoreV1().ConfigMaps(mpiJob.Namespace).Create(context.Background(), newCM, metav1.CreateOptions{})
 	}
 	// If an error occurs during Get/Create, we'll requeue the item so we
@@ -707,7 +708,7 @@ func (jc *MPIJobReconciler) getOrCreateConfigMap(mpiJob *kubeflowv1.MPIJob, work
 	if !metav1.IsControlledBy(cm, mpiJob) {
 		msg := fmt.Sprintf(MessageResourceExists, cm.Name, cm.Kind)
 		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return nil, fmt.Errorf(msg)
+		return nil, errors.New(msg)
 	}
 
 	// If the ConfigMap is changed, update it
@@ -738,7 +739,7 @@ func (jc *MPIJobReconciler) getOrCreateLauncherServiceAccount(mpiJob *kubeflowv1
 		jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, "ServiceAccount is exist", "ServiceAccount: %v", sa.Name)
 	}
 
-	if errors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		sa, err = jc.KubeClientSet.CoreV1().ServiceAccounts(mpiJob.Namespace).Create(context.Background(), newLauncherServiceAccount(mpiJob), metav1.CreateOptions{})
 	}
 	// If an error occurs during Get/Create, we'll requeue the item so we
@@ -763,7 +764,7 @@ func (jc *MPIJobReconciler) getOrCreateLauncherRole(mpiJob *kubeflowv1.MPIJob, w
 
 	launcherRole := newLauncherRole(mpiJob, workerReplicas)
 	// If the Role doesn't exist, we'll create it.
-	if errors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		role, err = jc.KubeClientSet.RbacV1().Roles(mpiJob.Namespace).Create(context.Background(), launcherRole, metav1.CreateOptions{})
 	}
 	// If an error occurs during Get/Create, we'll requeue the item so we
@@ -777,7 +778,7 @@ func (jc *MPIJobReconciler) getOrCreateLauncherRole(mpiJob *kubeflowv1.MPIJob, w
 	if !metav1.IsControlledBy(role, mpiJob) {
 		msg := fmt.Sprintf(MessageResourceExists, role.Name, role.Kind)
 		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return nil, fmt.Errorf(msg)
+		return nil, errors.New(msg)
 	}
 
 	if !reflect.DeepEqual(role.Rules, launcherRole.Rules) {
@@ -802,7 +803,7 @@ func (jc *MPIJobReconciler) getLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) (*
 		jc.Recorder.Eventf(mpiJob, corev1.EventTypeNormal, "RoleBinding is exist", "RoleBinding: %v", rb.Name)
 	}
 
-	if errors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		rb, err = jc.KubeClientSet.RbacV1().RoleBindings(mpiJob.Namespace).Create(context.Background(), newLauncherRoleBinding(mpiJob), metav1.CreateOptions{})
 	}
 	// If an error occurs during Get/Create, we'll requeue the item so we
@@ -816,7 +817,7 @@ func (jc *MPIJobReconciler) getLauncherRoleBinding(mpiJob *kubeflowv1.MPIJob) (*
 	if !metav1.IsControlledBy(rb, mpiJob) {
 		msg := fmt.Sprintf(MessageResourceExists, rb.Name, rb.Kind)
 		jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-		return nil, fmt.Errorf(msg)
+		return nil, errors.New(msg)
 	}
 
 	return rb, nil
@@ -876,13 +877,12 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *kubeflowv1.MPIJob) ([]*cor
 		err := jc.Get(context.Background(), NamespacedName, pod)
 
 		// If the worker Pod doesn't exist, we'll create it.
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			worker := jc.newWorker(mpiJob, name)
 			if worker == nil {
 				msg := fmt.Sprintf(MessageResourceDoesNotExist, "Worker")
 				jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceDoesNotExist, msg)
-				err = fmt.Errorf(msg)
-				return nil, err
+				return nil, errors.New(msg)
 			}
 			// Insert ReplicaIndexLabel
 			worker.Labels[kubeflowv1.ReplicaIndexLabel] = strconv.Itoa(int(i))
@@ -897,7 +897,7 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *kubeflowv1.MPIJob) ([]*cor
 		// If an error occurs during Get/Create, we'll requeue the item so we
 		// can attempt processing again later. This could have been caused by a
 		// temporary network failure, or any other transient reason.
-		if err != nil && !errors.IsNotFound(err) {
+		if err != nil && !apierrors.IsNotFound(err) {
 			jc.Recorder.Eventf(mpiJob, corev1.EventTypeWarning, commonutil.NewReason(kubeflowv1.MPIJobKind, commonutil.JobFailedReason),
 				"worker pod created failed: %v", err)
 			return nil, err
@@ -907,7 +907,7 @@ func (jc *MPIJobReconciler) getOrCreateWorker(mpiJob *kubeflowv1.MPIJob) ([]*cor
 		if pod != nil && !metav1.IsControlledBy(pod, mpiJob) {
 			msg := fmt.Sprintf(MessageResourceExists, pod.Name, pod.Kind)
 			jc.Recorder.Event(mpiJob, corev1.EventTypeWarning, ErrResourceExists, msg)
-			return nil, fmt.Errorf(msg)
+			return nil, errors.New(msg)
 		}
 		workerPods = append(workerPods, pod)
 	}
