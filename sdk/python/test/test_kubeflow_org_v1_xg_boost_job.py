@@ -38,7 +38,45 @@ class TestKubeflowOrgV1XGBoostJob(unittest.TestCase):
             return KubeflowOrgV1XGBoostJob(
                 api_version = '0', 
                 kind = '0', 
-                metadata = None, 
+                metadata = V1ObjectMeta(
+                    annotations = {
+                        'key' : '0'
+                        }, 
+                    creation_timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    deletion_grace_period_seconds = 56, 
+                    deletion_timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    finalizers = [
+                        '0'
+                        ], 
+                    generate_name = '0', 
+                    generation = 56, 
+                    labels = {
+                        'key' : '0'
+                        }, 
+                    managed_fields = [
+                        V1ManagedFieldsEntry(
+                            api_version = '0', 
+                            fields_type = '0', 
+                            fields_v1 = V1FieldsV1(), 
+                            manager = '0', 
+                            operation = '0', 
+                            subresource = '0', 
+                            time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
+                        ], 
+                    name = '0', 
+                    namespace = '0', 
+                    owner_references = [
+                        V1OwnerReference(
+                            api_version = '0', 
+                            block_owner_deletion = True, 
+                            controller = True, 
+                            kind = '0', 
+                            name = '0', 
+                            uid = '0', )
+                        ], 
+                    resource_version = '0', 
+                    self_link = '0', 
+                    uid = '0', ), 
                 spec = kubeflow_org_v1_xg_boost_job_spec.KubeflowOrgV1XGBoostJobSpec(
                     run_policy = kubeflow_org_v1_run_policy.KubeflowOrgV1RunPolicy(
                         active_deadline_seconds = 56, 
@@ -62,26 +100,37 @@ class TestKubeflowOrgV1XGBoostJob(unittest.TestCase):
                             template = None, )
                         }, ), 
                 status = kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus(
-                    completion_time = None, 
+                    completion_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     conditions = [
                         kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition(
-                            last_transition_time = None, 
-                            last_update_time = None, 
+                            last_transition_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                            last_update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                             message = '0', 
                             reason = '0', 
                             status = '0', 
                             type = '0', )
                         ], 
-                    last_reconcile_time = None, 
+                    last_reconcile_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     replica_statuses = {
                         'key' : kubeflow_org_v1_replica_status.KubeflowOrgV1ReplicaStatus(
                             active = 56, 
                             failed = 56, 
-                            label_selector = None, 
+                            label_selector = V1LabelSelector(
+                                match_expressions = [
+                                    V1LabelSelectorRequirement(
+                                        key = '0', 
+                                        operator = '0', 
+                                        values = [
+                                            '0'
+                                            ], )
+                                    ], 
+                                match_labels = {
+                                    'key' : '0'
+                                    }, ), 
                             selector = '0', 
                             succeeded = 56, )
                         }, 
-                    start_time = None, )
+                    start_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
             )
         else :
             return KubeflowOrgV1XGBoostJob(

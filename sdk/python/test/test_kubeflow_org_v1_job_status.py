@@ -36,26 +36,37 @@ class TestKubeflowOrgV1JobStatus(unittest.TestCase):
         # model = kubeflow.training.models.kubeflow_org_v1_job_status.KubeflowOrgV1JobStatus()  # noqa: E501
         if include_optional :
             return KubeflowOrgV1JobStatus(
-                completion_time = None, 
+                completion_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 conditions = [
                     kubeflow_org_v1_job_condition.KubeflowOrgV1JobCondition(
-                        last_transition_time = None, 
-                        last_update_time = None, 
+                        last_transition_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                        last_update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         message = '0', 
                         reason = '0', 
                         status = '0', 
                         type = '0', )
                     ], 
-                last_reconcile_time = None, 
+                last_reconcile_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 replica_statuses = {
                     'key' : kubeflow_org_v1_replica_status.KubeflowOrgV1ReplicaStatus(
                         active = 56, 
                         failed = 56, 
-                        label_selector = None, 
+                        label_selector = V1LabelSelector(
+                            match_expressions = [
+                                V1LabelSelectorRequirement(
+                                    key = '0', 
+                                    operator = '0', 
+                                    values = [
+                                        '0'
+                                        ], )
+                                ], 
+                            match_labels = {
+                                'key' : '0'
+                                }, ), 
                         selector = '0', 
                         succeeded = 56, )
                     }, 
-                start_time = None
+                start_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
             )
         else :
             return KubeflowOrgV1JobStatus(

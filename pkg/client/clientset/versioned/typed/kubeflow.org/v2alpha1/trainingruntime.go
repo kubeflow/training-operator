@@ -18,9 +18,12 @@ package v2alpha1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,6 +47,7 @@ type TrainingRuntimeInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.TrainingRuntimeList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.TrainingRuntime, err error)
+	Apply(ctx context.Context, trainingRuntime *kubefloworgv2alpha1.TrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainingRuntime, err error)
 	TrainingRuntimeExpansion
 }
 
@@ -169,6 +173,32 @@ func (c *trainingRuntimes) Patch(ctx context.Context, name string, pt types.Patc
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied trainingRuntime.
+func (c *trainingRuntimes) Apply(ctx context.Context, trainingRuntime *kubefloworgv2alpha1.TrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainingRuntime, err error) {
+	if trainingRuntime == nil {
+		return nil, fmt.Errorf("trainingRuntime provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(trainingRuntime)
+	if err != nil {
+		return nil, err
+	}
+	name := trainingRuntime.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainingRuntime.Name must be provided to Apply")
+	}
+	result = &v2alpha1.TrainingRuntime{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("trainingruntimes").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

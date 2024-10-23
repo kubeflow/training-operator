@@ -18,8 +18,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -119,6 +122,28 @@ func (c *FakeTrainingRuntimes) DeleteCollection(ctx context.Context, opts v1.Del
 func (c *FakeTrainingRuntimes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.TrainingRuntime, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(trainingruntimesResource, c.ns, name, pt, data, subresources...), &v2alpha1.TrainingRuntime{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v2alpha1.TrainingRuntime), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied trainingRuntime.
+func (c *FakeTrainingRuntimes) Apply(ctx context.Context, trainingRuntime *kubefloworgv2alpha1.TrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainingRuntime, err error) {
+	if trainingRuntime == nil {
+		return nil, fmt.Errorf("trainingRuntime provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(trainingRuntime)
+	if err != nil {
+		return nil, err
+	}
+	name := trainingRuntime.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainingRuntime.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(trainingruntimesResource, c.ns, *name, types.ApplyPatchType, data), &v2alpha1.TrainingRuntime{})
 
 	if obj == nil {
 		return nil, err

@@ -18,9 +18,12 @@ package v2alpha1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,6 +47,7 @@ type ClusterTrainingRuntimeInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v2alpha1.ClusterTrainingRuntimeList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.ClusterTrainingRuntime, err error)
+	Apply(ctx context.Context, clusterTrainingRuntime *kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.ClusterTrainingRuntime, err error)
 	ClusterTrainingRuntimeExpansion
 }
 
@@ -159,6 +163,31 @@ func (c *clusterTrainingRuntimes) Patch(ctx context.Context, name string, pt typ
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied clusterTrainingRuntime.
+func (c *clusterTrainingRuntimes) Apply(ctx context.Context, clusterTrainingRuntime *kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.ClusterTrainingRuntime, err error) {
+	if clusterTrainingRuntime == nil {
+		return nil, fmt.Errorf("clusterTrainingRuntime provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(clusterTrainingRuntime)
+	if err != nil {
+		return nil, err
+	}
+	name := clusterTrainingRuntime.Name
+	if name == nil {
+		return nil, fmt.Errorf("clusterTrainingRuntime.Name must be provided to Apply")
+	}
+	result = &v2alpha1.ClusterTrainingRuntime{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Resource("clustertrainingruntimes").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)
