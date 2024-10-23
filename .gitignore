@@ -10,7 +10,7 @@ cover.out
 .vscode/
 __debug_bin
 
-# Python chache files
+# Python cache files
 __pycache__/
 
 # Emacs temporary files
