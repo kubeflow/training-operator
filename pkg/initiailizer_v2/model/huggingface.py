@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 
-class HuggingFace:
+class HuggingFace(utils.ModelProvider):
 
     def load_config(self):
         config_dict = utils.get_config_from_env(HuggingFaceModelInputConfig)

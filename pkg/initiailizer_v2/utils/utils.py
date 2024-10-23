@@ -1,9 +1,30 @@
 import os
+from abc import ABC, abstractmethod
 from dataclasses import fields
 from typing import Dict
 
 STORAGE_URI_ENV = "STORAGE_URI"
 HF_SCHEME = "hf"
+
+
+class ModelProvider(ABC):
+    @abstractmethod
+    def load_config(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def download_model(self):
+        raise NotImplementedError()
+
+
+class DatasetProvider(ABC):
+    @abstractmethod
+    def load_config(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def download_dataset(self):
+        raise NotImplementedError()
 
 
 # Get DataClass config from the environment variables.

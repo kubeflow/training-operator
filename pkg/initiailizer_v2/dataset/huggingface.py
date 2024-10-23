@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 
-class HuggingFace:
+class HuggingFace(utils.DatasetProvider):
 
     def load_config(self):
         config_dict = utils.get_config_from_env(HuggingFaceDatasetConfig)
