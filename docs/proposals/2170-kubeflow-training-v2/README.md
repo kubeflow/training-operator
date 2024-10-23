@@ -337,17 +337,16 @@ type TrainJobStatus struct {
 	// Conditions for the TrainJob.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.
-	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// JobsStatus tracks the child Jobs in TrainJob.
+	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`
 }
 
-type ReplicatedJobStatus struct {
-	// Name of the ReplicatedJob.
+type JobStatus struct {
+	// Name of the child Job.
 	Name string `json:"name"`
 
 	// Ready is the number of child Jobs where the number of ready pods and completed pods
-	// is greater than or equal to the total expected pod count for the Job (i.e., the minimum
-	// of job.spec.parallelism and job.spec.completions).
+	// is greater than or equal to the total expected pod count for the child Job.
 	Ready int32 `json:"ready"`
 
 	// Succeeded is the number of successfully completed child Jobs.
@@ -831,8 +830,8 @@ In the future, we can add more parameters if we find use-cases when it is requir
 
 ```golang
 type PodSpecOverride struct {
-	// Names of the training job replicas in the training runtime template to apply the overrides.
-	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
+	// TrainJobs is the training job replicas in the training runtime template to apply the overrides.
+	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
 	// Overrides for the containers in the desired job templates.
 	Containers []ContainerOverride `json:"containers,omitempty"`
@@ -851,6 +850,11 @@ type PodSpecOverride struct {
 
 	// Override for the Pod's tolerations.
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+type PodSpecOverrideTargetJob struct {
+	// Name is the target training job name for which the PodSpec is overridden.
+	Name string `json:"name"`
 }
 
 // ContainerOverride represents parameters that can be overridden using PodSpecOverride.
@@ -895,8 +899,8 @@ spec:
   trainer:
     image: docker.io/custom-training
   podSpecOverrides:
-    - targetReplicatedJobs:
-        - node
+    - targetJobs:
+        - name: node
       containers:
         - name: user-identity
           value: 123
