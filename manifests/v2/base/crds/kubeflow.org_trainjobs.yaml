@@ -508,7 +508,7 @@ spec:
                         templates.
                       items:
                         description: |-
-                          ContainerOverrides represents parameters that can be overridden using PodSpecOverrides.
+                          ContainerOverride represents parameters that can be overridden using PodSpecOverrides.
                           Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
                         properties:
                           args:
@@ -740,7 +740,7 @@ spec:
                         job templates.
                       items:
                         description: |-
-                          ContainerOverrides represents parameters that can be overridden using PodSpecOverrides.
+                          ContainerOverride represents parameters that can be overridden using PodSpecOverrides.
                           Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
                         properties:
                           args:
@@ -976,11 +976,18 @@ spec:
                     serviceAccountName:
                       description: Override for the service account.
                       type: string
-                    targetReplicatedJobs:
-                      description: Names of the training job replicas in the training
+                    targetJobs:
+                      description: TrainJobs is the training job replicas in the training
                         runtime template to apply the overrides.
                       items:
-                        type: string
+                        properties:
+                          name:
+                            description: Name is the target training job name for
+                              which the PodSpec is overridden.
+                            type: string
+                        required:
+                        - name
+                        type: object
                       type: array
                     tolerations:
                       description: Override for the Pod's tolerations.
@@ -2736,7 +2743,7 @@ spec:
                         type: object
                       type: array
                   required:
-                  - targetReplicatedJobs
+                  - targetJobs
                   type: object
                 type: array
               runtimeRef:
@@ -3045,12 +3052,9 @@ spec:
                   - type
                   type: object
                 type: array
-              replicatedJobsStatus:
-                description: ReplicatedJobsStatus tracks the number of Jobs for each
-                  replicatedJob in TrainJob.
+              jobsStatus:
+                description: JobsStatus tracks the child Jobs in TrainJob.
                 items:
-                  description: ReplicatedJobStatus defines the observed ReplicatedJobs
-                    Readiness.
                   properties:
                     active:
                       description: |-
@@ -3063,13 +3067,12 @@ spec:
                       format: int32
                       type: integer
                     name:
-                      description: Name of the ReplicatedJob.
+                      description: Name of the child Job.
                       type: string
                     ready:
                       description: |-
                         Ready is the number of child Jobs where the number of ready pods and completed pods
-                        is greater than or equal to the total expected pod count for the Job (i.e., the minimum
-                        of job.spec.parallelism and job.spec.completions).
+                        is greater than or equal to the total expected pod count for the child Job.
                       format: int32
                       type: integer
                     succeeded:

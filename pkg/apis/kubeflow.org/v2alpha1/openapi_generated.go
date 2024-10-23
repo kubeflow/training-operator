@@ -35,6 +35,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.DatasetConfig":                    schema_pkg_apis_kubefloworg_v2alpha1_DatasetConfig(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.InputModel":                       schema_pkg_apis_kubefloworg_v2alpha1_InputModel(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.JobSetTemplateSpec":               schema_pkg_apis_kubefloworg_v2alpha1_JobSetTemplateSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.JobStatus":                        schema_pkg_apis_kubefloworg_v2alpha1_JobStatus(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.MLPolicy":                         schema_pkg_apis_kubefloworg_v2alpha1_MLPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.MLPolicySource":                   schema_pkg_apis_kubefloworg_v2alpha1_MLPolicySource(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.MPIMLPolicySource":                schema_pkg_apis_kubefloworg_v2alpha1_MPIMLPolicySource(ref),
@@ -43,6 +44,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodGroupPolicy":                   schema_pkg_apis_kubefloworg_v2alpha1_PodGroupPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodGroupPolicySource":             schema_pkg_apis_kubefloworg_v2alpha1_PodGroupPolicySource(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverride":                  schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverrideTargetJob":         schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverrideTargetJob(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.RuntimeRef":                       schema_pkg_apis_kubefloworg_v2alpha1_RuntimeRef(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TorchElasticPolicy":               schema_pkg_apis_kubefloworg_v2alpha1_TorchElasticPolicy(ref),
 		"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.TorchMLPolicySource":              schema_pkg_apis_kubefloworg_v2alpha1_TorchMLPolicySource(ref),
@@ -155,7 +157,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ContainerOverrides represents parameters that can be overridden using PodSpecOverrides. Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.",
+				Description: "ContainerOverride represents parameters that can be overridden using PodSpecOverrides. Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -380,6 +382,67 @@ func schema_pkg_apis_kubefloworg_v2alpha1_JobSetTemplateSpec(ref common.Referenc
 	}
 }
 
+func schema_pkg_apis_kubefloworg_v2alpha1_JobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the child Job.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"ready": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Ready is the number of child Jobs where the number of ready pods and completed pods is greater than or equal to the total expected pod count for the child Job.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"succeeded": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Succeeded is the number of successfully completed child Jobs.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"failed": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Failed is the number of failed child Jobs.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Active is the number of child Jobs with at least 1 pod in a running or pending state which are not marked for deletion.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"suspended": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspended is the number of child Jobs which are in a suspended state.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"name", "ready", "succeeded", "failed", "active", "suspended"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_kubefloworg_v2alpha1_MLPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -600,16 +663,15 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 				Description: "PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"targetReplicatedJobs": {
+					"targetJobs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Names of the training job replicas in the training runtime template to apply the overrides.",
+							Description: "TrainJobs is the training job replicas in the training runtime template to apply the overrides.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverrideTargetJob"),
 									},
 								},
 							},
@@ -695,11 +757,32 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"targetReplicatedJobs"},
+				Required: []string{"targetJobs"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.ContainerOverride", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.ContainerOverride", "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.PodSpecOverrideTargetJob", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+	}
+}
+
+func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverrideTargetJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the target training job name for which the PodSpec is overridden.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
 	}
 }
 
@@ -1040,15 +1123,15 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobStatus(ref common.ReferenceCal
 							},
 						},
 					},
-					"replicatedJobsStatus": {
+					"jobsStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.",
+							Description: "JobsStatus tracks the child Jobs in TrainJob.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobStatus"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.JobStatus"),
 									},
 								},
 							},
@@ -1058,7 +1141,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobStatus(ref common.ReferenceCal
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobStatus"},
+			"github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1.JobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 

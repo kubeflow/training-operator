@@ -19,7 +19,6 @@ package v2alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
 const (
@@ -210,8 +209,8 @@ type OutputModel struct {
 
 // PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.
 type PodSpecOverride struct {
-	// Names of the training job replicas in the training runtime template to apply the overrides.
-	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
+	// TrainJobs is the training job replicas in the training runtime template to apply the overrides.
+	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
 	// Overrides for the containers in the desired job templates.
 	Containers []ContainerOverride `json:"containers,omitempty"`
@@ -232,7 +231,12 @@ type PodSpecOverride struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
-// ContainerOverrides represents parameters that can be overridden using PodSpecOverrides.
+type PodSpecOverrideTargetJob struct {
+	// Name is the target training job name for which the PodSpec is overridden.
+	Name string `json:"name"`
+}
+
+// ContainerOverride represents parameters that can be overridden using PodSpecOverrides.
 // Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
 type ContainerOverride struct {
 	// Name for the container. TrainingRuntime must have this container.
@@ -261,8 +265,30 @@ type TrainJobStatus struct {
 	// Conditions for the TrainJob.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.
-	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// JobsStatus tracks the child Jobs in TrainJob.
+	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`
+}
+
+type JobStatus struct {
+	// Name of the child Job.
+	Name string `json:"name"`
+
+	// Ready is the number of child Jobs where the number of ready pods and completed pods
+	// is greater than or equal to the total expected pod count for the child Job.
+	Ready int32 `json:"ready"`
+
+	// Succeeded is the number of successfully completed child Jobs.
+	Succeeded int32 `json:"succeeded"`
+
+	// Failed is the number of failed child Jobs.
+	Failed int32 `json:"failed"`
+
+	// Active is the number of child Jobs with at least 1 pod in a running or pending state
+	// which are not marked for deletion.
+	Active int32 `json:"active"`
+
+	// Suspended is the number of child Jobs which are in a suspended state.
+	Suspended int32 `json:"suspended"`
 }
 
 func init() {
