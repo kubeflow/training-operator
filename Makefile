@@ -76,15 +76,16 @@ HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
 
 test: envtest
-	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" \
+		go test ./pkg/apis/kubeflow.org/v1/... ./pkg/cert/... ./pkg/common/... ./pkg/config/... ./pkg/controller.v1/... ./pkg/core/... ./pkg/util/... ./pkg/webhooks/... -coverprofile cover.out
 
 .PHONY: test-integrationv2
-test-integrationv2: envtest
+test-integrationv2: envtest jobset-operator-crd scheduler-plugins-crd
 	KUBEBUILDER_ASSETS="$(shell setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
 
 .PHONY: testv2
 testv2:
-	go test ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhook.v2/... ./pkg/util.v2/... -coverprofile cover.out
+	go test ./pkg/apis/kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhook.v2/... ./pkg/util.v2/... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
@@ -129,3 +130,18 @@ controller-gen: ## Download controller-gen locally if necessary.
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
 	GOBIN=$(PROJECT_DIR)/bin go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7
+
+## Download external CRDs for the integration testings.
+EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/manifests/external-crds
+
+JOBSET_ROOT = $(shell go list -m -mod=readonly -f "{{.Dir}}" sigs.k8s.io/jobset)
+.PHONY: jobset-operator-crd
+jobset-operator-crd: ## Copy the CRDs from the jobset-operator to the manifests/external-crds directory.
+	mkdir -p $(EXTERNAL_CRDS_DIR)/jobset-operator/
+	cp -f $(JOBSET_ROOT)/config/components/crd/bases/* $(EXTERNAL_CRDS_DIR)/jobset-operator/
+
+SCHEDULER_PLUGINS_ROOT = $(shell go list -m -f "{{.Dir}}" sigs.k8s.io/scheduler-plugins)
+.PHONY: scheduler-plugins-crd
+scheduler-plugins-crd:
+	mkdir -p $(EXTERNAL_CRDS_DIR)/scheduler-plugins/
+	cp -f $(SCHEDULER_PLUGINS_ROOT)/manifests/coscheduling/* $(EXTERNAL_CRDS_DIR)/scheduler-plugins

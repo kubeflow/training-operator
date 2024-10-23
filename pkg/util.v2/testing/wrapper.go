@@ -86,6 +86,11 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 	}
 }
 
+func (j *JobSetWrapper) Suspend(suspend bool) *JobSetWrapper {
+	j.Spec.Suspend = &suspend
+	return j
+}
+
 func (j *JobSetWrapper) Completions(idx int, completions int32) *JobSetWrapper {
 	if len(j.Spec.ReplicatedJobs) < idx {
 		return j
@@ -204,6 +209,11 @@ func MakeTrainJobWrapper(namespace, name string) *TrainJobWrapper {
 	}
 }
 
+func (t *TrainJobWrapper) Suspend(suspend bool) *TrainJobWrapper {
+	t.Spec.Suspend = &suspend
+	return t
+}
+
 func (t *TrainJobWrapper) UID(uid string) *TrainJobWrapper {
 	t.ObjectMeta.UID = types.UID(uid)
 	return t
@@ -225,6 +235,24 @@ func (t *TrainJobWrapper) SpecAnnotation(key, value string) *TrainJobWrapper {
 	return t
 }
 
+func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
+	t.Spec.RuntimeRef = kubeflowv2.RuntimeRef{
+		APIGroup: &gvk.Group,
+		Kind:     &gvk.Kind,
+		Name:     name,
+	}
+	return t
+}
+
+func (t *TrainJobWrapper) Trainer(trainer *kubeflowv2.Trainer) *TrainJobWrapper {
+	t.Spec.Trainer = trainer
+	return t
+}
+
+func (t *TrainJobWrapper) Obj() *kubeflowv2.TrainJob {
+	return &t.TrainJob
+}
+
 type TrainJobTrainerWrapper struct {
 	kubeflowv2.Trainer
 }
@@ -242,24 +270,6 @@ func (t *TrainJobTrainerWrapper) ContainerImage(img string) *TrainJobTrainerWrap
 
 func (t *TrainJobTrainerWrapper) Obj() *kubeflowv2.Trainer {
 	return &t.Trainer
-}
-
-func (t *TrainJobWrapper) Trainer(trainer *kubeflowv2.Trainer) *TrainJobWrapper {
-	t.Spec.Trainer = trainer
-	return t
-}
-
-func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
-	t.Spec.RuntimeRef = kubeflowv2.RuntimeRef{
-		APIGroup: &gvk.Group,
-		Kind:     &gvk.Kind,
-		Name:     name,
-	}
-	return t
-}
-
-func (t *TrainJobWrapper) Obj() *kubeflowv2.TrainJob {
-	return &t.TrainJob
 }
 
 type TrainingRuntimeWrapper struct {
@@ -455,15 +465,19 @@ func (s *TrainingRuntimeSpecWrapper) ResourceRequests(idx int, res corev1.Resour
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) PodGroupPolicySchedulingTimeout(timeout int32) *TrainingRuntimeSpecWrapper {
+func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoscheduling(src *kubeflowv2.CoschedulingPodGroupPolicySource) *TrainingRuntimeSpecWrapper {
+	if s.PodGroupPolicy == nil {
+		s.PodGroupPolicy = &kubeflowv2.PodGroupPolicy{}
+	}
+	s.PodGroupPolicy.Coscheduling = src
+	return s
+}
+
+func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout(timeout int32) *TrainingRuntimeSpecWrapper {
 	if s.PodGroupPolicy == nil || s.PodGroupPolicy.Coscheduling == nil {
-		s.PodGroupPolicy = &kubeflowv2.PodGroupPolicy{
-			PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
-				Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
-					ScheduleTimeoutSeconds: &timeout,
-				},
-			},
-		}
+		return s.PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{
+			ScheduleTimeoutSeconds: &timeout,
+		})
 	}
 	s.PodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds = &timeout
 	return s
