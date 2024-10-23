@@ -46,6 +46,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 	}{
 		"succeeded to build JobSet and PodGroup": {
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				Suspend(true).
 				UID("uid").
 				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
 				SpecLabel("conflictLabel", "override").
@@ -62,7 +63,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				RuntimeSpec(
 					testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
 						ContainerImage("test:runtime").
-						PodGroupPolicySchedulingTimeout(120).
+						PodGroupPolicyCoschedulingSchedulingTimeout(120).
 						MLPolicyNumNodes(20).
 						ResourceRequests(0, corev1.ResourceList{
 							corev1.ResourceCPU: resource.MustParse("1"),
@@ -74,6 +75,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				).Obj(),
 			wantObjs: []client.Object{
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					Suspend(true).
 					Label("conflictLabel", "override").
 					Annotation("conflictAnnotation", "override").
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").

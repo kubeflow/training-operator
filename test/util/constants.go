@@ -14,21 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllerv2
+package util
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
-func SetupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
-	if err := NewTrainJobReconciler(
-		mgr.GetClient(),
-		mgr.GetEventRecorderFor("training-operator-trainjob-controller"),
-		runtimes,
-	).SetupWithManager(mgr); err != nil {
-		return "TrainJob", err
+const (
+	Timeout            = 5 * time.Second
+	ConsistentDuration = time.Second
+	Interval           = time.Millisecond * 250
+)
+
+var (
+	IgnoreObjectMetadata = cmp.Options{
+		cmpopts.IgnoreTypes(metav1.TypeMeta{}),
+		cmpopts.IgnoreFields(metav1.ObjectMeta{}, "UID", "ResourceVersion", "Generation", "CreationTimestamp", "ManagedFields"),
 	}
-	return "", nil
-}
+)

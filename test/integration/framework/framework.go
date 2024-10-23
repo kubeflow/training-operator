@@ -36,6 +36,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
@@ -52,7 +54,11 @@ func (f *Framework) Init() *rest.Config {
 	log.SetLogger(zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.UseDevMode(true)))
 	ginkgo.By("bootstrapping test environment")
 	f.testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "crds")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "..", "manifests", "v2", "base", "crds"),
+			filepath.Join("..", "..", "..", "manifests", "external-crds", "scheduler-plugins", "crd.yaml"),
+			filepath.Join("..", "..", "..", "manifests", "external-crds", "jobset-operator"),
+		},
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "..", "manifests", "v2", "base", "webhook", "manifests.yaml")},
 		},
@@ -67,8 +73,8 @@ func (f *Framework) Init() *rest.Config {
 func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client) {
 	webhookInstallOpts := &f.testEnv.WebhookInstallOptions
 	gomega.ExpectWithOffset(1, kubeflowv2.AddToScheme(scheme.Scheme)).NotTo(gomega.HaveOccurred())
-
-	// +kubebuilder:scaffold:scheme
+	gomega.ExpectWithOffset(1, jobsetv1alpha2.AddToScheme(scheme.Scheme)).NotTo(gomega.HaveOccurred())
+	gomega.ExpectWithOffset(1, schedulerpluginsv1alpha1.AddToScheme(scheme.Scheme)).NotTo(gomega.HaveOccurred())
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())

@@ -334,13 +334,12 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 		ResourceRequests(1, corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("1"),
 			corev1.ResourceMemory: resource.MustParse("2Gi"),
-		}).
-		Clone()
+		})
 	jobSetWithPropagatedTrainJobParams := jobSetBase.
+		Clone().
 		JobCompletionMode(batchv1.IndexedCompletion).
 		ContainerImage(ptr.To("foo:bar")).
-		ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
-		Clone()
+		ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid")
 
 	cases := map[string]struct {
 		runtimeInfo     *runtime.Info
@@ -361,6 +360,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 				Obj(),
 			runtimeInfo: &runtime.Info{
 				Obj: jobSetBase.
+					Clone().
 					Obj(),
 				Policy: runtime.Policy{
 					MLPolicy: &kubeflowv2.MLPolicy{
@@ -403,10 +403,12 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
 					Obj(),
 				jobSetWithPropagatedTrainJobParams.
+					Clone().
 					Obj(),
 			},
 			wantRuntimeInfo: &runtime.Info{
 				Obj: jobSetWithPropagatedTrainJobParams.
+					Clone().
 					Obj(),
 				Policy: runtime.Policy{
 					MLPolicy: &kubeflowv2.MLPolicy{
