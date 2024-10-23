@@ -956,12 +956,10 @@ spec:
 ### State Transition
 
 In this section, we're explaining the TrainJob state transition (`.status.conditions`).
-The basic TrainJob state machine is the below, but the TrainJob has actual Jobs state as well.
-This means that If the TrainJob specifies the TrainingRuntime, the TrainJob has JobSet conditions as well,
-but actual Jobs states are added prefix like `JobSetCompleted`.
-
-Especially, if we specify the TrainingRuntime as a runtime, the TrainJob terminal condition (`Failed` or `Completed`) is decided
-based on the JobSet terminal state (`status.terminalState`) instead of computing from JobSet conditions.
+The basic TrainJob state machine is the below.
+Especially, if we specify the TrainingRuntime or ClusterTrainingRuntime as a runtime,
+the TrainJob terminal condition (`Failed` or `Completed`) is decided based on the JobSet terminal state (`status.terminalState`)
+instead of computing from JobSet conditions.
 
 ```mermaid
 stateDiagram-v2
@@ -992,25 +990,8 @@ stateDiagram-v2
     Completed=True --> [*]
 ```
 
-Hence, when we specify the JobSet as a runtime, after the TrainJob completed,
-we can see the TrainJob pseudo state in the following:
-
-```yaml
-[...]
-status:
-  conditions:
-  - type: Created
-    status: true
-  - type: Suspended
-    status: false
-  - type: JobSetSuspended
-    status: false
-  - type: JobSetCompleted
-    status: true
-  - type: Completed
-    status: true
-[...]
-```
+Additionally, we extend the [runtime framework interfaces](../../../pkg/runtime.v2/framework/interface.go)
+to allow each plugin to propagate the arbitrary conditions to the TrainJob.
 
 ## The Training Runtime API
 
