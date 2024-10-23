@@ -283,7 +283,7 @@ const (
 	// TrainJobSuspended means the TrainJob is suspended.
 	TrainJobSuspended string = "Suspended"
 
-	// TrainJobCompleted means that the actual jobs have completed its execution.
+	// TrainJobCompleted means that the TrainJob has completed its execution.
 	TrainJobCompleted string = "Completed"
 
 	// TrainJobFailed means that the actual jobs have failed its execution.
