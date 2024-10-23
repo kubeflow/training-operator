@@ -1,5 +1,5 @@
 import logging
-from urllib.parse import ParseResult
+from urllib.parse import urlparse
 
 import huggingface_hub
 
@@ -23,8 +23,10 @@ class HuggingFace(utils.DatasetProvider):
         logging.info(f"Config for HuggingFace dataset initiailizer: {config_dict}")
         self.config = HuggingFaceDatasetConfig(**config_dict)
 
-    def download_dataset(self, storage_uri_parsed: ParseResult):
+    def download_dataset(self):
+        storage_uri_parsed = urlparse(self.config.storage_uri)
         dataset_uri = storage_uri_parsed.netloc + storage_uri_parsed.path
+
         logging.info(f"Downloading dataset: {dataset_uri}")
         logging.info("-" * 40)
 

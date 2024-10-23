@@ -20,16 +20,12 @@ if __name__ == "__main__":
         logging.error("STORAGE_URI env variable must be set.")
         raise e
 
-    logging.info(f"Storage URI: {storage_uri}")
-
-    storage_uri_parsed = urlparse(storage_uri)
-
-    match storage_uri_parsed.scheme:
+    match urlparse(storage_uri).scheme:
         # TODO (andreyvelich): Implement more model providers.
         case utils.HF_SCHEME:
             hf = HuggingFace()
             hf.load_config()
-            hf.download_model(storage_uri_parsed)
+            hf.download_model()
         case _:
             logging.error(
                 f"STORAGE_URI must have the valid model provider. STORAGE_URI: {storage_uri}"

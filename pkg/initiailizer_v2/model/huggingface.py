@@ -1,5 +1,5 @@
 import logging
-from urllib.parse import ParseResult
+from urllib.parse import urlparse
 
 import huggingface_hub
 
@@ -23,8 +23,10 @@ class HuggingFace(utils.ModelProvider):
         logging.info(f"Config for HuggingFace model initiailizer: {config_dict}")
         self.config = HuggingFaceModelInputConfig(**config_dict)
 
-    def download_model(self, storage_uri_parsed: ParseResult):
+    def download_model(self):
+        storage_uri_parsed = urlparse(self.config.storage_uri)
         model_uri = storage_uri_parsed.netloc + storage_uri_parsed.path
+
         logging.info(f"Downloading model: {model_uri}")
         logging.info("-" * 40)
 

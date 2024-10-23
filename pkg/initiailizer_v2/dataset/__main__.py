@@ -20,16 +20,12 @@ if __name__ == "__main__":
         logging.error("STORAGE_URI env variable must be set.")
         raise e
 
-    logging.info(f"Storage URI: {storage_uri}")
-
-    storage_uri_parsed = urlparse(storage_uri)
-
-    match storage_uri_parsed.scheme:
+    match urlparse(storage_uri).scheme:
         # TODO (andreyvelich): Implement more dataset providers.
         case utils.HF_SCHEME:
             hf = HuggingFace()
             hf.load_config()
-            hf.download_dataset(storage_uri_parsed)
+            hf.download_dataset()
         case _:
             logging.error("STORAGE_URI must have the valid dataset provider")
             raise Exception
