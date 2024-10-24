@@ -4,16 +4,26 @@ metadata:
   name: "dist-mnist-for-e2e-test"
 spec:
   tfReplicaSpecs:
-    PS:
-      replicas: 2
+    Chief:
+      replicas: 1
       restartPolicy: Never
       template:
         spec:
           containers:
             - name: tensorflow
               image: kubeflow/tf-dist-mnist-test:latest
+
+    PS:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+            - name: tensorflow
+              image: kubeflow/tf-dist-mnist-test:latest
+
     Worker:
-      replicas: 4
+      replicas: 2
       restartPolicy: Never
       template:
         spec:
