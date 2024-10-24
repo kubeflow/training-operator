@@ -236,16 +236,26 @@ func (t *TrainJobWrapper) SpecAnnotation(key, value string) *TrainJobWrapper {
 }
 
 func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
-	t.Spec.RuntimeRef = kubeflowv2.RuntimeRef{
-		APIGroup: &gvk.Group,
-		Kind:     &gvk.Kind,
-		Name:     name,
+	runtimeRef := kubeflowv2.RuntimeRef{
+		Name: name,
 	}
+	if gvk.Group != "" {
+		runtimeRef.APIGroup = &gvk.Group
+	}
+	if gvk.Kind != "" {
+		runtimeRef.Kind = &gvk.Kind
+	}
+	t.Spec.RuntimeRef = runtimeRef
 	return t
 }
 
 func (t *TrainJobWrapper) Trainer(trainer *kubeflowv2.Trainer) *TrainJobWrapper {
 	t.Spec.Trainer = trainer
+	return t
+}
+
+func (t *TrainJobWrapper) ManagedBy(m string) *TrainJobWrapper {
+	t.Spec.ManagedBy = &m
 	return t
 }
 
