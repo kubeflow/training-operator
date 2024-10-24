@@ -43,7 +43,7 @@ func (t *Torch) Name() string {
 	return Name
 }
 
-func (t *Torch) EnforceMLPolicy(info *runtime.Info) error {
+func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch == nil {
 		return nil
 	}

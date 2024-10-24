@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	// TrainingRuntimeKind is the GroupVersionKind Kind name for the TrainingRuntime.
+	// TrainingRuntimeKind is the Kind name for the TrainingRuntime.
 	TrainingRuntimeKind string = "TrainingRuntime"
-	// ClusterTrainingRuntimeKind is the GroupVersionKind Kind name for the ClusterTrainingRuntime.
+	// ClusterTrainingRuntimeKind is the Kind name for the ClusterTrainingRuntime.
 	ClusterTrainingRuntimeKind string = "ClusterTrainingRuntime"
 )
 
