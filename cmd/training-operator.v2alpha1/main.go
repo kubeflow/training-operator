@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"flag"
@@ -40,6 +39,7 @@ import (
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/cert"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
 )
@@ -139,8 +139,13 @@ func main() {
 	ctx := ctrl.SetupSignalHandler()
 
 	setupProbeEndpoints(mgr, certsReady)
+	runtimes, err := runtimecore.New(ctx, mgr.GetClient(), mgr.GetFieldIndexer())
+	if err != nil {
+		setupLog.Error(err, "Could not initialize runtimes")
+		os.Exit(1)
+	}
 	// Set up controllers using goroutines to start the manager quickly.
-	go setupControllers(ctx, mgr, certsReady)
+	go setupControllers(mgr, runtimes, certsReady)
 
 	setupLog.Info("Starting manager")
 	if err = mgr.Start(ctx); err != nil {
@@ -149,16 +154,11 @@ func main() {
 	}
 }
 
-func setupControllers(ctx context.Context, mgr ctrl.Manager, certsReady <-chan struct{}) {
+func setupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, certsReady <-chan struct{}) {
 	setupLog.Info("Waiting for certificate generation to complete")
 	<-certsReady
 	setupLog.Info("Certs ready")
 
-	runtimes, err := runtimecore.New(ctx, mgr.GetClient(), mgr.GetFieldIndexer())
-	if err != nil {
-		setupLog.Error(err, "Could not initialize runtimes")
-		os.Exit(1)
-	}
 	if failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes); err != nil {
 		setupLog.Error(err, "Could not create controller", "controller", failedCtrlName)
 		os.Exit(1)
