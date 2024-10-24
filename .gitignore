@@ -11,8 +11,8 @@ cover.out
 .vscode/
 __debug_bin
 
-# Compiled python files.
-*.pyc
+# Python cache files
+__pycache__/
 
 # Emacs temporary files
 *~
