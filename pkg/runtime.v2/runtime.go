@@ -41,7 +41,7 @@ type Info struct {
 }
 
 type Trainer struct {
-	NumNodes int32
+	NumNodes *int32
 }
 
 type Policy struct {
