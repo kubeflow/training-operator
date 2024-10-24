@@ -19,12 +19,13 @@ package jobset
 import (
 	"maps"
 
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
 type Builder struct {
@@ -49,21 +50,32 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 	}
 }
 
-func (b *Builder) ContainerImage(image *string) *Builder {
-	if image == nil || *image == "" {
-		return b
-	}
+// Trainer updates JobSet values for the trainer Job.
+func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
-		for j := range rJob.Template.Spec.Template.Spec.Containers {
-			b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *image
-		}
-	}
-	return b
-}
+		if rJob.Name == constants.JobTrainerNode {
+			// Update the Parallelism and Completions values for the Trainer Job.
+			b.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = &info.Trainer.NumNodes
+			b.Spec.ReplicatedJobs[i].Template.Spec.Completions = &info.Trainer.NumNodes
 
-func (b *Builder) JobCompletionMode(mode batchv1.CompletionMode) *Builder {
-	for i := range b.Spec.ReplicatedJobs {
-		b.Spec.ReplicatedJobs[i].Template.Spec.CompletionMode = &mode
+			// Update values for the Trainer container.
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					if trainJob.Spec.Trainer.Image != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *trainJob.Spec.Trainer.Image
+					}
+					if trainJob.Spec.Trainer.Command != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = trainJob.Spec.Trainer.Command
+					}
+					if trainJob.Spec.Trainer.Args != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = trainJob.Spec.Trainer.Args
+					}
+					if trainJob.Spec.Trainer.ResourcesPerNode != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources = *trainJob.Spec.Trainer.ResourcesPerNode
+					}
+				}
+			}
+		}
 	}
 	return b
 }

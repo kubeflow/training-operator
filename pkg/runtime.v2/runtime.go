@@ -21,7 +21,6 @@ import (
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -33,12 +32,16 @@ var (
 )
 
 type Info struct {
-	Obj         client.Object
+	Policy
 	Labels      map[string]string
 	PodLabels   map[string]string
 	Annotations map[string]string
-	Policy
+	Trainer
 	TotalRequests map[string]TotalResourceRequest
+}
+
+type Trainer struct {
+	NumNodes int32
 }
 
 type Policy struct {
@@ -102,21 +105,18 @@ func WithMLPolicy(mlPolicy *kubeflowv2.MLPolicy) InfoOption {
 	}
 }
 
-func NewInfo(obj client.Object, opts ...InfoOption) *Info {
+func NewInfo(opts ...InfoOption) *Info {
 	options := defaultOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
-	var copyObj client.Object
-	if obj != nil {
-		copyObj = obj.DeepCopyObject().(client.Object)
-	}
+
 	info := &Info{
-		Obj:           copyObj,
 		Labels:        make(map[string]string),
 		Annotations:   make(map[string]string),
 		TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
 	}
+
 	for _, spec := range options.podSpecReplicas {
 		info.TotalRequests[spec.name] = TotalResourceRequest{
 			Replicas: spec.replicas,
@@ -132,15 +132,4 @@ func NewInfo(obj client.Object, opts ...InfoOption) *Info {
 	}
 	info.Policy = options.Policy
 	return info
-}
-
-func (i *Info) Update(obj client.Object) error {
-	if obj == nil || i.Obj == nil {
-		return errorObjectsAreNil
-	}
-	if i.Obj.GetObjectKind().GroupVersionKind() != obj.GetObjectKind().GroupVersionKind() {
-		return errorDifferentGVK
-	}
-	i.Obj = obj.DeepCopyObject().(client.Object)
-	return nil
 }

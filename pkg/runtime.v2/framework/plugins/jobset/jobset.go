@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/go-logr/logr"
-	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -68,13 +67,14 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
-	if info == nil || info.Obj == nil || trainJob == nil {
+func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeJobTemplateSpec interface{}) (client.Object, error) {
+	if info == nil || trainJob == nil || runtimeJobTemplateSpec == nil {
 		return nil, fmt.Errorf("runtime info or object is missing")
 	}
-	raw, ok := info.Obj.(*jobsetv1alpha2.JobSet)
+
+	raw, ok := runtimeJobTemplateSpec.(jobsetv1alpha2.JobSetSpec)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("failed to cast runtime Job template for JobSetSpec")
 	}
 
 	var jobSetBuilder *Builder
@@ -88,7 +88,7 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubefl
 				Labels:      info.Labels,
 				Annotations: info.Annotations,
 			},
-			Spec: raw.Spec,
+			Spec: raw,
 		})
 		oldJobSet = nil
 	} else {
@@ -97,19 +97,17 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubefl
 		}
 	}
 
-	// TODO (tenzen-y): We should support all field propagation in builder.
+	// TODO (andreyvelich): add support for model and dataset initializers.
+	// TODO (andreyvelich): Add support for the PodSpecOverride.
 	jobSet := jobSetBuilder.
-		Suspend(trainJob.Spec.Suspend).
-		ContainerImage(trainJob.Spec.Trainer.Image).
-		JobCompletionMode(batchv1.IndexedCompletion).
+		Trainer(info, trainJob).
 		PodLabels(info.PodLabels).
+		Suspend(trainJob.Spec.Suspend).
 		Build()
 	if err := ctrlutil.SetControllerReference(trainJob, jobSet, j.scheme); err != nil {
 		return nil, err
 	}
-	if err := info.Update(jobSet); err != nil {
-		return nil, err
-	}
+
 	if needsCreateOrUpdate(oldJobSet, jobSet, ptr.Deref(trainJob.Spec.Suspend, false)) {
 		return jobSet, nil
 	}

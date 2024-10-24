@@ -21,13 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
@@ -106,26 +103,22 @@ func (r *TrainingRuntime) buildObjects(
 		runtime.WithMLPolicy(mlPolicy),
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}
-	for idx, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
-		replicas := jobSetTemplateSpec.Spec.ReplicatedJobs[idx].Replicas * ptr.Deref(rJob.Template.Spec.Completions, 1)
-		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, replicas, rJob.Template.Spec.Template.Spec))
+	for _, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
+		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, 1, rJob.Template.Spec.Template.Spec))
 	}
-	info := runtime.NewInfo(&jobsetv1alpha2.JobSet{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
-			Kind:       "JobSet",
-		},
-		Spec: *jobSetTemplateSpec.Spec.DeepCopy(),
-	}, opts...)
 
-	if err := r.framework.RunEnforceMLPolicyPlugins(info); err != nil {
+	info := runtime.NewInfo(opts...)
+
+	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
 		return nil, err
 	}
-	err := r.framework.RunEnforcePodGroupPolicyPlugins(trainJob, info)
+
+	err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob)
 	if err != nil {
 		return nil, err
 	}
-	return r.framework.RunComponentBuilderPlugins(ctx, info, trainJob)
+
+	return r.framework.RunComponentBuilderPlugins(ctx, info, trainJob, jobSetTemplateSpec.Spec)
 }
 
 func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
