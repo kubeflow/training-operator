@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
 	"net"
 	"path/filepath"
 	"time"
@@ -40,7 +41,6 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
 	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
 )
@@ -70,7 +70,7 @@ func (f *Framework) Init() *rest.Config {
 	return cfg
 }
 
-func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client) {
+func (f *Framework) RunManager(cfg *rest.Config, startControllers bool) (context.Context, client.Client) {
 	webhookInstallOpts := &f.testEnv.WebhookInstallOptions
 	gomega.ExpectWithOffset(1, kubeflowv2.AddToScheme(scheme.Scheme)).NotTo(gomega.HaveOccurred())
 	gomega.ExpectWithOffset(1, jobsetv1alpha2.AddToScheme(scheme.Scheme)).NotTo(gomega.HaveOccurred())
@@ -100,9 +100,11 @@ func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
 	gomega.ExpectWithOffset(1, runtimes).NotTo(gomega.BeNil())
 
-	failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes)
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
-	gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
+	if startControllers {
+		failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes)
+		gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
+		gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
+	}
 
 	failedWebhookName, err := webhookv2.Setup(mgr, runtimes)
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "webhook", failedWebhookName)

@@ -18,14 +18,13 @@ package controllerv2
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	runtimeUtils "github.com/kubeflow/training-operator/pkg/util.v2/runtime"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -33,8 +32,6 @@ import (
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	jobruntimes "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
-
-var errorUnsupportedRuntime = errors.New("the specified runtime is not supported")
 
 type TrainJobReconciler struct {
 	log      logr.Logger
@@ -73,10 +70,10 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *TrainJobReconciler) createOrUpdateObjs(ctx context.Context, trainJob *kubeflowv2.TrainJob) error {
 	log := ctrl.LoggerFrom(ctx)
 
-	runtimeRefGK := runtimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
+	runtimeRefGK := runtimeUtils.RuntimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
 	runtime, ok := r.runtimes[runtimeRefGK]
 	if !ok {
-		return fmt.Errorf("%w: %s", errorUnsupportedRuntime, runtimeRefGK)
+		return fmt.Errorf("%w: %s", runtimeUtils.ErrorUnsupportedRuntime, runtimeRefGK)
 	}
 	objs, err := runtime.NewObjects(ctx, trainJob)
 	if err != nil {
@@ -115,13 +112,6 @@ func (r *TrainJobReconciler) createOrUpdateObjs(ctx context.Context, trainJob *k
 		}
 	}
 	return nil
-}
-
-func runtimeRefToGroupKind(runtimeRef kubeflowv2.RuntimeRef) schema.GroupKind {
-	return schema.GroupKind{
-		Group: ptr.Deref(runtimeRef.APIGroup, ""),
-		Kind:  ptr.Deref(runtimeRef.Kind, ""),
-	}
 }
 
 func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager) error {

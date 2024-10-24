@@ -64,14 +64,17 @@ func (r *ClusterTrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBu
 }
 
 func (r *ClusterTrainingRuntime) ValidateObjects(ctx context.Context, old, new *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
+	clusterTrainingRuntime := &kubeflowv2.ClusterTrainingRuntime{}
 	if err := r.client.Get(ctx, client.ObjectKey{
-		Namespace: old.Namespace,
-		Name:      old.Spec.RuntimeRef.Name,
-	}, &kubeflowv2.ClusterTrainingRuntime{}); err != nil {
+		Namespace: new.Namespace,
+		Name:      new.Spec.RuntimeRef.Name,
+	}, clusterTrainingRuntime); err != nil {
 		return nil, field.ErrorList{
-			field.Invalid(field.NewPath("spec", "RuntimeRef"), old.Spec.RuntimeRef,
+			field.Invalid(field.NewPath("spec", "RuntimeRef"), new.Spec.RuntimeRef,
 				fmt.Sprintf("%v: specified clusterTrainingRuntime must be created before the TrainJob is created", err)),
 		}
 	}
-	return r.framework.RunCustomValidationPlugins(old, new)
+	info := r.getRuntimeInfo(ctx, new, clusterTrainingRuntime.Spec.Template, clusterTrainingRuntime.Spec.MLPolicy,
+		clusterTrainingRuntime.Spec.PodGroupPolicy)
+	return r.framework.RunCustomValidationPlugins(old, new, info)
 }

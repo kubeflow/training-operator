@@ -18,6 +18,7 @@ package mpi
 
 import (
 	"context"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,7 +56,16 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info) error {
 	return nil
 }
 
-// TODO: Need to implement validations for MPIJob.
-func (m *MPI) Validate(oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
+func (m *MPI) Validate(oldJobObj, newJobObj *kubeflowv2.TrainJob, runtimeInfo *runtime.Info) (admission.Warnings, field.ErrorList) {
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+	if newJobObj.Spec.Trainer != nil {
+		numProcPerNodePath := specPath.Child("trainer").Child("numProcPerNode")
+		if runtimeInfo.MLPolicy.MPI != nil {
+			if _, err := strconv.Atoi(*newJobObj.Spec.Trainer.NumProcPerNode); err != nil {
+				allErrs = append(allErrs, field.Invalid(numProcPerNodePath, newJobObj.Spec.Trainer.NumProcPerNode, "should have an int value"))
+			}
+		}
+	}
+	return nil, allErrs
 }

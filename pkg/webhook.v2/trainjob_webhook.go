@@ -18,21 +18,23 @@ package webhookv2
 
 import (
 	"context"
-
+	"fmt"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	jobRuntime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	runtimeUtils "github.com/kubeflow/training-operator/pkg/util.v2/runtime"
 )
 
 type TrainJobWebhook struct {
-	runtimes map[string]runtime.Runtime
+	runtimes map[string]jobRuntime.Runtime
 }
 
-func setupWebhookForTrainJob(mgr ctrl.Manager, run map[string]runtime.Runtime) error {
+func setupWebhookForTrainJob(mgr ctrl.Manager, run map[string]jobRuntime.Runtime) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&kubeflowv2.TrainJob{}).
 		WithValidator(&TrainJobWebhook{runtimes: run}).
@@ -43,12 +45,31 @@ func setupWebhookForTrainJob(mgr ctrl.Manager, run map[string]runtime.Runtime) e
 
 var _ webhook.CustomValidator = (*TrainJobWebhook)(nil)
 
-func (w *TrainJobWebhook) ValidateCreate(context.Context, apiruntime.Object) (admission.Warnings, error) {
-	return nil, nil
+func (w *TrainJobWebhook) ValidateCreate(ctx context.Context, obj apiruntime.Object) (admission.Warnings, error) {
+	trainJob := obj.(*kubeflowv2.TrainJob)
+	log := ctrl.LoggerFrom(ctx).WithName("trainJob-webhook")
+	log.V(5).Info("Validating create", "TrainJob", klog.KObj(trainJob))
+	runtimeRefGK := runtimeUtils.RuntimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
+	runtime, ok := w.runtimes[runtimeRefGK]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", runtimeUtils.ErrorUnsupportedRuntime, runtimeRefGK)
+	}
+	warnings, errorList := runtime.ValidateObjects(ctx, nil, trainJob)
+	return warnings, errorList.ToAggregate()
 }
 
-func (w *TrainJobWebhook) ValidateUpdate(context.Context, apiruntime.Object, apiruntime.Object) (admission.Warnings, error) {
-	return nil, nil
+func (w *TrainJobWebhook) ValidateUpdate(ctx context.Context, oldObj apiruntime.Object, newObj apiruntime.Object) (admission.Warnings, error) {
+	oldTrainJob := oldObj.(*kubeflowv2.TrainJob)
+	newTrainJob := newObj.(*kubeflowv2.TrainJob)
+	log := ctrl.LoggerFrom(ctx).WithName("trainJob-webhook")
+	log.V(5).Info("Validating update", "TrainJob", klog.KObj(newTrainJob))
+	runtimeRefGK := runtimeUtils.RuntimeRefToGroupKind(newTrainJob.Spec.RuntimeRef).String()
+	runtime, ok := w.runtimes[runtimeRefGK]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", runtimeUtils.ErrorUnsupportedRuntime, runtimeRefGK)
+	}
+	warnings, errorList := runtime.ValidateObjects(ctx, oldTrainJob, newTrainJob)
+	return warnings, errorList.ToAggregate()
 }
 
 func (w *TrainJobWebhook) ValidateDelete(context.Context, apiruntime.Object) (admission.Warnings, error) {

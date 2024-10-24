@@ -258,6 +258,10 @@ func (t *TrainJobWrapper) ManagedBy(m string) *TrainJobWrapper {
 	t.Spec.ManagedBy = &m
 	return t
 }
+func (t *TrainJobWrapper) ModelConfig(config *kubeflowv2.ModelConfig) *TrainJobWrapper {
+	t.Spec.ModelConfig = config
+	return t
+}
 
 func (t *TrainJobWrapper) Obj() *kubeflowv2.TrainJob {
 	return &t.TrainJob

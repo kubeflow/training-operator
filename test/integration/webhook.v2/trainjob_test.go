@@ -17,21 +17,27 @@ limitations under the License.
 package webhookv2
 
 import (
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
+	"github.com/kubeflow/training-operator/test/integration/framework"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kubeflow/training-operator/test/integration/framework"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
+	runtimeName := "training-runtime"
+	jobName := "train-job"
 
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
 		cfg = fwk.Init()
-		ctx, k8sClient = fwk.RunManager(cfg)
+		ctx, k8sClient = fwk.RunManager(cfg, false)
 	})
 	ginkgo.AfterAll(func() {
 		fwk.Teardown()
@@ -48,5 +54,194 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+	})
+
+	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainingRuntime{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.ClusterTrainingRuntime{})).To(gomega.Succeed())
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainJob{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
+	})
+
+	ginkgo.It("Should succeed in creating trainJob with namespace scoped trainingRuntime", func() {
+
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.Succeed())
+	})
+
+	ginkgo.It("Should fail in creating trainJob referencing trainingRuntime not present in the namespace", func() {
+
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should succeed in creating trainJob with ClusterTrainingRuntime", func() {
+
+		baseRuntimeWrapper := testingutil.MakeClusterTrainingRuntimeWrapper(runtimeName)
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.Succeed())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with pre-trained model config when referencing "+
+		"a trainingRuntime without an initializer", func() {
+
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).
+			ModelConfig(&kubeflowv2.ModelConfig{Input: &kubeflowv2.InputModel{}}).
+			Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with output model config when referencing a trainingRuntime"+
+		" without an exporter", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).
+			ModelConfig(&kubeflowv2.ModelConfig{Output: &kubeflowv2.OutputModel{}}).
+			Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with podSpecOverrides when referencing a trainingRuntime doesnt "+
+		"have the job specified in the override", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).Obj()
+		trainJob.Spec.PodSpecOverrides = []kubeflowv2.PodSpecOverride{
+			{TargetJobs: []kubeflowv2.PodSpecOverrideTargetJob{{Name: "valid"}, {Name: "invalid"}}},
+		}
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with podSpecOverrides when referencing a trainingRuntime doesnt "+
+		"have the job specified in the override", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+				Replicas(1).
+				Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).Obj()
+		trainJob.Spec.PodSpecOverrides = []kubeflowv2.PodSpecOverride{
+			{TargetJobs: []kubeflowv2.PodSpecOverrideTargetJob{{Name: "valid"}, {Name: "invalid"}}},
+		}
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with invalid trainer config for mpi runtime", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		runtimeSpec := testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+			Replicas(1).
+			MLPolicyNumNodes(1).
+			Obj()
+		runtimeSpec.MLPolicy.MLPolicySource = kubeflowv2.MLPolicySource{MPI: &kubeflowv2.MPIMLPolicySource{}}
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(runtimeSpec).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).
+			Trainer(&kubeflowv2.Trainer{NumProcPerNode: ptr.To("invalid")}).
+			Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should fail in creating trainJob with invalid trainer config for torch runtime", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		runtimeSpec := testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+			Replicas(1).
+			MLPolicyNumNodes(1).
+			Obj()
+		runtimeSpec.MLPolicy.MLPolicySource = kubeflowv2.MLPolicySource{Torch: &kubeflowv2.TorchMLPolicySource{}}
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(runtimeSpec).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).
+			Trainer(&kubeflowv2.Trainer{NumProcPerNode: ptr.To("invalid")}).
+			Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).
+			To(testingutil.BeForbiddenError())
+	})
+
+	ginkgo.It("Should succeed in creating trainJob with valid trainer config for torch runtime", func() {
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		runtimeSpec := testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntimeWrapper.Spec).
+			Replicas(1).
+			MLPolicyNumNodes(1).
+			Obj()
+		runtimeSpec.MLPolicy.MLPolicySource = kubeflowv2.MLPolicySource{Torch: &kubeflowv2.TorchMLPolicySource{}}
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(runtimeSpec).Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		baseTrainJobWrapper := testingutil.MakeTrainJobWrapper(ns.Name, jobName)
+		gvk, _ := apiutil.GVKForObject(baseRuntimeWrapper.Obj(), k8sClient.Scheme())
+
+		trainJob := baseTrainJobWrapper.RuntimeRef(gvk, runtimeName).
+			Trainer(&kubeflowv2.Trainer{NumProcPerNode: ptr.To("auto")}).
+			Obj()
+
+		gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.Succeed())
 	})
 })

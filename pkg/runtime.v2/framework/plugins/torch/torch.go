@@ -18,6 +18,8 @@ package torch
 
 import (
 	"context"
+	"k8s.io/utils/strings/slices"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,7 +53,20 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info) error {
 	return nil
 }
 
-// TODO: Need to implement validateions for TorchJob.
-func (t *Torch) Validate(oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
+func (t *Torch) Validate(oldObj, newObj *kubeflowv2.TrainJob, runtimeInfo *runtime.Info) (admission.Warnings, field.ErrorList) {
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+
+	if newObj.Spec.Trainer != nil {
+		numProcPerNodePath := specPath.Child("trainer").Child("numProcPerNode")
+		if runtimeInfo.MLPolicy.Torch != nil {
+			allowedStringValList := []string{"auto", "cpu", "gpu"}
+			if !slices.Contains(allowedStringValList, *newObj.Spec.Trainer.NumProcPerNode) {
+				if _, err := strconv.Atoi(*newObj.Spec.Trainer.NumProcPerNode); err != nil {
+					allErrs = append(allErrs, field.Invalid(numProcPerNodePath, newObj.Spec.Trainer.NumProcPerNode, "should have an int value or auto/cpu/gpu"))
+				}
+			}
+		}
+	}
+	return nil, allErrs
 }

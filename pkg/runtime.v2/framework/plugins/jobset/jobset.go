@@ -19,7 +19,9 @@ package jobset
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"maps"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
@@ -50,6 +52,7 @@ type JobSet struct {
 
 var _ framework.WatchExtensionPlugin = (*JobSet)(nil)
 var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
+var _ framework.CustomValidationPlugin = (*JobSet)(nil)
 
 const Name = "JobSet"
 
@@ -139,4 +142,116 @@ func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 			return b.Owns(&jobsetv1alpha2.JobSet{})
 		},
 	}
+}
+
+func (j *JobSet) Validate(oldObj, newObj *kubeflowv2.TrainJob, runtimeInfo *runtime.Info) (admission.Warnings, field.ErrorList) {
+
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+
+	jobSet, ok := runtimeInfo.Obj.(*jobsetv1alpha2.JobSet)
+	if !ok {
+		return nil, nil
+	}
+
+	if newObj.Spec.ModelConfig != nil {
+		// validate `model-initializer` container in the `Initializer` Job
+		if newObj.Spec.ModelConfig.Input != nil {
+			modelConfigInputPath := specPath.Child("modelConfig").Child("input")
+			if len(jobSet.Spec.ReplicatedJobs) == 0 {
+				allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Input, "trainingRuntime should have replicated jobs configured with model config input set"))
+			} else {
+				initializerJobFound := false
+				modelInitializerContainerFound := false
+				for _, job := range jobSet.Spec.ReplicatedJobs {
+					if job.Name == "Initializer" {
+						initializerJobFound = true
+						for _, container := range job.Template.Spec.Template.Spec.Containers {
+							if container.Name == "model-initializer" {
+								modelInitializerContainerFound = true
+							}
+						}
+					}
+				}
+				if !initializerJobFound {
+					allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Input, "trainingRuntime should have replicated job configured with name - Initializer"))
+				} else if !modelInitializerContainerFound {
+					allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Input, "trainingRuntime with replicated job initializer should have container with name - model-initializer"))
+				}
+			}
+		}
+
+		// validate `model-exporter` container in the `Exporter` Job
+		if newObj.Spec.ModelConfig.Output != nil {
+			modelConfigInputPath := specPath.Child("modelConfig").Child("output")
+			if len(jobSet.Spec.ReplicatedJobs) == 0 {
+				allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Output, "trainingRuntime should have replicated jobs configured with model config output set"))
+			} else {
+				exporterJobFound := false
+				modelExporterContainerFound := false
+				for _, job := range jobSet.Spec.ReplicatedJobs {
+					if job.Name == "Exporter" {
+						exporterJobFound = true
+						for _, container := range job.Template.Spec.Template.Spec.Containers {
+							if container.Name == "model-exporter" {
+								modelExporterContainerFound = true
+							}
+						}
+					}
+				}
+				if !exporterJobFound {
+					allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Input, "trainingRuntime should have replicated job configured with name - Exporter"))
+				} else if !modelExporterContainerFound {
+					allErrs = append(allErrs, field.Invalid(modelConfigInputPath, newObj.Spec.ModelConfig.Input, "trainingRuntime with replicated job initializer should have contianer with name - model-exporter"))
+				}
+			}
+		}
+	}
+
+	if len(newObj.Spec.PodSpecOverrides) != 0 {
+		podSpecOverridesPath := specPath.Child("podSpecOverrides")
+		jobsMap := map[string]bool{}
+		for _, job := range jobSet.Spec.ReplicatedJobs {
+			jobsMap[job.Name] = true
+		}
+		// validate if jobOverrides are valid
+		for idx, override := range newObj.Spec.PodSpecOverrides {
+			for _, job := range override.TargetJobs {
+				if ok, _ := jobsMap[job.Name]; !ok {
+					allErrs = append(allErrs, field.Invalid(podSpecOverridesPath, newObj.Spec.PodSpecOverrides, fmt.Sprintf("job: %s, configured in the podOverride should be present in the referenced training runtime", job)))
+				}
+			}
+			if len(override.Containers) != 0 {
+				// validate if containerOverrides are valid
+				containerMap := map[string]bool{}
+				for _, job := range jobSet.Spec.ReplicatedJobs {
+					for _, container := range job.Template.Spec.Template.Spec.Containers {
+						containerMap[container.Name] = true
+					}
+				}
+				containerOverridePath := podSpecOverridesPath.Index(idx)
+				for _, container := range override.Containers {
+					if _, ok := containerMap[container.Name]; !ok {
+						allErrs = append(allErrs, field.Invalid(containerOverridePath, override.Containers, fmt.Sprintf("container: %s, configured in the containerOverride should be present in the referenced training runtime", container.Name)))
+					}
+				}
+			}
+			if len(override.InitContainers) != 0 {
+				// validate if initContainerOverrides are valid
+				initContainerMap := map[string]bool{}
+				for _, job := range jobSet.Spec.ReplicatedJobs {
+					for _, initContainer := range job.Template.Spec.Template.Spec.InitContainers {
+						initContainerMap[initContainer.Name] = true
+					}
+				}
+				initContainerOverridePath := podSpecOverridesPath.Index(idx)
+				for _, container := range override.Containers {
+					if _, ok := initContainerMap[container.Name]; !ok {
+						allErrs = append(allErrs, field.Invalid(initContainerOverridePath, override.InitContainers, fmt.Sprintf("initContainer: %s, configured in the initContainerOverride should be present in the referenced training runtime", container.Name)))
+					}
+				}
+			}
+		}
+	}
+	return nil, allErrs
 }
