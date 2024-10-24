@@ -66,6 +66,8 @@ type TrainJobList struct {
 // TrainJobSpec represents specification of the desired TrainJob.
 type TrainJobSpec struct {
 	// Reference to the training runtime.
+	// The field is immutable.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="runtimeRef is immutable"
 	RuntimeRef RuntimeRef `json:"runtimeRef"`
 
 	// Configuration of the desired trainer.

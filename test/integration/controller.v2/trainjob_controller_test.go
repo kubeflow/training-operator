@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -241,93 +242,156 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		})
 	})
+})
 
-	ginkgo.When("TrainJob CR Validation", func() {
-		ginkgo.AfterEach(func() {
-			gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainJob{}, client.InNamespace(ns.Name))).Should(
-				gomega.Succeed())
-		})
+var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ordered, func() {
+	var ns *corev1.Namespace
 
-		ginkgo.It("Should succeed in creating TrainJob", func() {
+	ginkgo.BeforeAll(func() {
+		fwk = &framework.Framework{}
+		cfg = fwk.Init()
+		ctx, k8sClient = fwk.RunManager(cfg)
+	})
+	ginkgo.AfterAll(func() {
+		fwk.Teardown()
+	})
 
-			managedBy := "kubeflow.org/trainjob-controller"
+	ginkgo.BeforeEach(func() {
+		ns = &corev1.Namespace{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: corev1.SchemeGroupVersion.String(),
+				Kind:       "Namespace",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "trainjob-marker-",
+			},
+		}
+		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+	})
+	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &kubeflowv2.TrainJob{}, client.InNamespace(ns.Name))).Should(gomega.Succeed())
+	})
 
-			trainingRuntimeRef := kubeflowv2.RuntimeRef{
-				Name:     "TorchRuntime",
-				APIGroup: ptr.To(kubeflowv2.GroupVersion.Group),
-				Kind:     ptr.To(kubeflowv2.TrainingRuntimeKind),
-			}
-			jobSpec := kubeflowv2.TrainJobSpec{
-				RuntimeRef: trainingRuntimeRef,
-				ManagedBy:  &managedBy,
-			}
-			trainJob := &kubeflowv2.TrainJob{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
-					Kind:       kubeflowv2.TrainJobKind,
+	ginkgo.When("Creating TrainJob", func() {
+		ginkgo.DescribeTable("Validate TrainJob on creation", func(trainJob func() *kubeflowv2.TrainJob, errorMatcher gomega.OmegaMatcher) {
+			gomega.Expect(k8sClient.Create(ctx, trainJob())).Should(errorMatcher)
+		},
+			ginkgo.Entry("Should succeed to create TrainJob with 'managedBy: kubeflow.org/trainjob-conteroller'",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
+						ManagedBy("kubeflow.org/trainjob-controller").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Obj()
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "valid-trainjob-",
-					Namespace:    ns.Name,
+				gomega.Succeed()),
+			ginkgo.Entry("Should succeed to create TrainJob with 'managedBy: kueue.x-k8s.io/multukueue'",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
+						ManagedBy("kueue.x-k8s.io/multikueue").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Obj()
 				},
-				Spec: jobSpec,
-			}
-
-			err := k8sClient.Create(ctx, trainJob)
-			gomega.Expect(err).Should(gomega.Succeed())
-		})
-
-		ginkgo.It("Should fail in creating TrainJob with invalid spec.managedBy", func() {
-			managedBy := "invalidManagedBy"
-			jobSpec := kubeflowv2.TrainJobSpec{
-				ManagedBy: &managedBy,
-			}
-			trainJob := &kubeflowv2.TrainJob{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
-					Kind:       kubeflowv2.TrainJobKind,
+				gomega.Succeed()),
+			ginkgo.Entry("Should fail to create TrainJob with invalid managedBy",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "invalid-managed-by").
+						ManagedBy("invalid").
+						RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Obj()
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-trainjob",
-					Namespace: ns.Name,
+				testingutil.BeInvalidError()),
+		)
+		ginkgo.DescribeTable("Defaulting TrainJob on creation", func(trainJob func() *kubeflowv2.TrainJob, wantTrainJob func() *kubeflowv2.TrainJob) {
+			created := trainJob()
+			gomega.Expect(k8sClient.Create(ctx, created)).Should(gomega.Succeed())
+			gomega.Expect(created).Should(gomega.BeComparableTo(wantTrainJob(), util.IgnoreObjectMetadata))
+		},
+			ginkgo.Entry("Should succeed to default suspend=false",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
+						ManagedBy("kueue.x-k8s.io/multikueue").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						Obj()
 				},
-				Spec: jobSpec,
-			}
-			gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.MatchError(
-				gomega.ContainSubstring("spec.managedBy: Invalid value")))
-		})
-
-		ginkgo.It("Should fail in updating spec.managedBy", func() {
-
-			managedBy := "kubeflow.org/trainjob-controller"
-
-			trainingRuntimeRef := kubeflowv2.RuntimeRef{
-				Name:     "TorchRuntime",
-				APIGroup: ptr.To(kubeflowv2.GroupVersion.Group),
-				Kind:     ptr.To(kubeflowv2.TrainingRuntimeKind),
-			}
-			jobSpec := kubeflowv2.TrainJobSpec{
-				RuntimeRef: trainingRuntimeRef,
-				ManagedBy:  &managedBy,
-			}
-			trainJob := &kubeflowv2.TrainJob{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: kubeflowv2.SchemeGroupVersion.String(),
-					Kind:       kubeflowv2.TrainJobKind,
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
+						ManagedBy("kueue.x-k8s.io/multikueue").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						Suspend(false).
+						Obj()
+				}),
+			ginkgo.Entry("Should succeed to default managedBy=kubeflow.org/trainjob-controller",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Suspend(true).
+						Obj()
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "job-with-failed-update",
-					Namespace: ns.Name,
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
+						ManagedBy("kubeflow.org/trainjob-controller").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Suspend(true).
+						Obj()
+				}),
+			ginkgo.Entry("Should succeed to default runtimeRef.apiGroup",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
+						RuntimeRef(schema.GroupVersionKind{Group: "", Version: "", Kind: kubeflowv2.TrainingRuntimeKind}, "testing").
+						Obj()
 				},
-				Spec: jobSpec,
-			}
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
+						ManagedBy("kubeflow.org/trainjob-controller").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Suspend(false).
+						Obj()
+				}),
+			ginkgo.Entry("Should succeed to default runtimeRef.kind",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(""), "testing").
+						Obj()
+				},
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
+						ManagedBy("kubeflow.org/trainjob-controller").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "testing").
+						Suspend(false).
+						Obj()
+				}),
+		)
+	})
 
-			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
-			updatedManagedBy := "kueue.x-k8s.io/multikueue"
-			jobSpec.ManagedBy = &updatedManagedBy
-			trainJob.Spec = jobSpec
-			gomega.Expect(k8sClient.Update(ctx, trainJob)).To(gomega.MatchError(
-				gomega.ContainSubstring("ManagedBy value is immutable")))
-		})
+	ginkgo.When("Updating TrainJob", func() {
+		ginkgo.DescribeTable("Validate TrainJob on update", func(old func() *kubeflowv2.TrainJob, new func(*kubeflowv2.TrainJob) *kubeflowv2.TrainJob, errorMatcher gomega.OmegaMatcher) {
+			oldTrainJob := old()
+			gomega.Expect(k8sClient.Create(ctx, oldTrainJob)).Should(gomega.Succeed())
+			gomega.Expect(k8sClient.Update(ctx, new(oldTrainJob))).Should(errorMatcher)
+		},
+			ginkgo.Entry("Should fail to update TrainJob managedBy",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-managed-by").
+						ManagedBy("kubeflow.org/trainjob-controller").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "testing").
+						Obj()
+				},
+				func(job *kubeflowv2.TrainJob) *kubeflowv2.TrainJob {
+					job.Spec.ManagedBy = ptr.To("kueue.x-k8s.io/multikueue")
+					return job
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to update runtimeRef",
+				func() *kubeflowv2.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-runtimeref").
+						RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "testing").
+						Obj()
+				},
+				func(job *kubeflowv2.TrainJob) *kubeflowv2.TrainJob {
+					job.Spec.RuntimeRef.Name = "forbidden-update"
+					return job
+				},
+				testingutil.BeInvalidError()),
+		)
 	})
 })
