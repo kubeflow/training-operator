@@ -37,7 +37,7 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
-				Kind:       "JobSet",
+				Kind:       constants.JobSetKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace:   objectKey.Namespace,
@@ -55,24 +55,28 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 	for i, rJob := range b.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobTrainerNode {
 			// Update the Parallelism and Completions values for the Trainer Job.
-			b.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = &info.Trainer.NumNodes
-			b.Spec.ReplicatedJobs[i].Template.Spec.Completions = &info.Trainer.NumNodes
+			b.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = info.Trainer.NumNodes
+			b.Spec.ReplicatedJobs[i].Template.Spec.Completions = info.Trainer.NumNodes
 
 			// Update values for the Trainer container.
 			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
 				if container.Name == constants.ContainerTrainer {
-					if trainJob.Spec.Trainer.Image != nil {
-						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *trainJob.Spec.Trainer.Image
+					// Update values from TrainJob trainer.
+					if trainJob.Spec.Trainer != nil {
+						if trainJob.Spec.Trainer.Image != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *trainJob.Spec.Trainer.Image
+						}
+						if trainJob.Spec.Trainer.Command != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = trainJob.Spec.Trainer.Command
+						}
+						if trainJob.Spec.Trainer.Args != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = trainJob.Spec.Trainer.Args
+						}
+						if trainJob.Spec.Trainer.ResourcesPerNode != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources = *trainJob.Spec.Trainer.ResourcesPerNode
+						}
 					}
-					if trainJob.Spec.Trainer.Command != nil {
-						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = trainJob.Spec.Trainer.Command
-					}
-					if trainJob.Spec.Trainer.Args != nil {
-						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = trainJob.Spec.Trainer.Args
-					}
-					if trainJob.Spec.Trainer.ResourcesPerNode != nil {
-						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources = *trainJob.Spec.Trainer.ResourcesPerNode
-					}
+					// Update values from Info object.
 				}
 			}
 		}

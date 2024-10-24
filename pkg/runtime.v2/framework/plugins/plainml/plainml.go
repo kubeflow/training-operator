@@ -48,12 +48,14 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 
 	// TrainJob contains the actual information for the number of nodes.
 	numNodes := info.MLPolicy.NumNodes
-	if trainJob.Spec.Trainer.NumNodes != nil {
+	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
 		numNodes = trainJob.Spec.Trainer.NumNodes
 	}
+	info.Trainer.NumNodes = numNodes
 
+	// Update total Pod requests for the PodGroupPolicy plugin.
 	for rName := range info.TotalRequests {
-		// For other Jobs replica is always equal to 1.
+		// For other Jobs like the Initializer, replica is always equal to 1.
 		if rName == constants.JobTrainerNode {
 			info.TotalRequests[rName] = runtime.TotalResourceRequest{
 				Replicas:    *numNodes,
@@ -61,8 +63,6 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 			}
 		}
 	}
-
-	info.Trainer.NumNodes = *numNodes
 
 	return nil
 }

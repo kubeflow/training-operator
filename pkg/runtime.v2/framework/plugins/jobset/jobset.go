@@ -36,6 +36,7 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 )
@@ -50,7 +51,7 @@ type JobSet struct {
 var _ framework.WatchExtensionPlugin = (*JobSet)(nil)
 var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
 
-const Name = "JobSet"
+const Name = constants.JobSetKind
 
 //+kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
 
@@ -59,7 +60,7 @@ func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework
 		client:     c,
 		restMapper: c.RESTMapper(),
 		scheme:     c.Scheme(),
-		logger:     ctrl.LoggerFrom(ctx).WithValues("pluginName", "JobSet"),
+		logger:     ctrl.LoggerFrom(ctx).WithValues("pluginName", constants.JobSetKind),
 	}, nil
 }
 
@@ -126,7 +127,7 @@ func jobSetIsSuspended(jobSet *jobsetv1alpha2.JobSet) bool {
 
 func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 	if _, err := j.restMapper.RESTMapping(
-		schema.GroupKind{Group: jobsetv1alpha2.GroupVersion.Group, Kind: "JobSet"},
+		schema.GroupKind{Group: jobsetv1alpha2.GroupVersion.Group, Kind: constants.JobSetKind},
 		jobsetv1alpha2.SchemeGroupVersion.Version,
 	); err != nil {
 		// TODO (tenzen-y): After we provide the Configuration API, we should return errors based on the enabled plugins.
