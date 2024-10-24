@@ -87,7 +87,7 @@ func (c *CoScheduling) Name() string {
 	return Name
 }
 
-func (c *CoScheduling) EnforcePodGroupPolicy(trainJob *kubeflowv2.TrainJob, info *runtime.Info) error {
+func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	if info == nil || info.PodGroupPolicy == nil || trainJob == nil {
 		return nil
 	}
@@ -98,7 +98,7 @@ func (c *CoScheduling) EnforcePodGroupPolicy(trainJob *kubeflowv2.TrainJob, info
 	return nil
 }
 
-func (c *CoScheduling) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
+func (c *CoScheduling) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeJobTemplateSpec interface{}) (client.Object, error) {
 	if info == nil || info.PodGroupPolicy == nil || info.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
 		return nil, nil
 	}

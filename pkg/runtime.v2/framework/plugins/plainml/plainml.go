@@ -19,9 +19,10 @@ package plainml
 import (
 	"context"
 
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 )
@@ -40,16 +41,28 @@ func (p *PlainML) Name() string {
 	return Name
 }
 
-func (p *PlainML) EnforceMLPolicy(info *runtime.Info) error {
+func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch != nil || info.MLPolicy.MPI != nil {
 		return nil
 	}
-	numNodes := ptr.Deref(info.MLPolicy.NumNodes, 1)
+
+	// TrainJob contains the actual information for the number of nodes.
+	numNodes := info.MLPolicy.NumNodes
+	if trainJob.Spec.Trainer.NumNodes != nil {
+		numNodes = trainJob.Spec.Trainer.NumNodes
+	}
+
 	for rName := range info.TotalRequests {
-		info.TotalRequests[rName] = runtime.TotalResourceRequest{
-			Replicas:    numNodes,
-			PodRequests: info.TotalRequests[rName].PodRequests,
+		// For other Jobs replica is always equal to 1.
+		if rName == constants.JobTrainerNode {
+			info.TotalRequests[rName] = runtime.TotalResourceRequest{
+				Replicas:    *numNodes,
+				PodRequests: info.TotalRequests[rName].PodRequests,
+			}
 		}
 	}
+
+	info.Trainer.NumNodes = *numNodes
+
 	return nil
 }

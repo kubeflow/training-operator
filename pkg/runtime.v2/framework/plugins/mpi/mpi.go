@@ -47,7 +47,7 @@ func (m *MPI) Name() string {
 	return Name
 }
 
-func (m *MPI) EnforceMLPolicy(info *runtime.Info) error {
+func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	if info == nil || info.MLPolicy == nil || info.MLPolicy.MPI == nil {
 		return nil
 	}

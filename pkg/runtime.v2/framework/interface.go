@@ -38,12 +38,12 @@ type WatchExtensionPlugin interface {
 
 type EnforcePodGroupPolicyPlugin interface {
 	Plugin
-	EnforcePodGroupPolicy(trainJob *kubeflowv2.TrainJob, info *runtime.Info) error
+	EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error
 }
 
 type EnforceMLPolicyPlugin interface {
 	Plugin
-	EnforceMLPolicy(info *runtime.Info) error
+	EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error
 }
 
 type CustomValidationPlugin interface {
@@ -53,5 +53,5 @@ type CustomValidationPlugin interface {
 
 type ComponentBuilderPlugin interface {
 	Plugin
-	Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error)
+	Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeJobTemplateSpec interface{}) (client.Object, error)
 }
