@@ -33,12 +33,15 @@ class HuggingFace(utils.ModelProvider):
         if self.config.access_token:
             huggingface_hub.login(self.config.access_token)
 
-        # TODO (andreyvelich): We should verify these patterns for different models.
+        # TODO (andreyvelich): We should consider to follow vLLM approach with allow patterns.
+        # Ref: https://github.com/kubeflow/training-operator/pull/2303#discussion_r1815913663
+        # TODO (andreyvelich): We should update patterns for Mistral model
+        # Ref: https://github.com/kubeflow/training-operator/pull/2303#discussion_r1815914270
         huggingface_hub.snapshot_download(
             repo_id=model_uri,
             local_dir=constants.VOLUME_PATH_MODEL,
             allow_patterns=["*.json", "*.safetensors", "*.model"],
-            ignore_patterns=["*.msgpack", "*.h5", "*.bin"],
+            ignore_patterns=["*.msgpack", "*.h5", "*.bin", ".pt", ".pth"],
         )
 
         logging.info("Model has been downloaded")
