@@ -56,6 +56,7 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 	// Update total Pod requests for the PodGroupPolicy plugin.
 	for rName := range info.TotalRequests {
 		// For other Jobs like the Initializer, replica is always equal to 1.
+		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
 		if rName == constants.JobTrainerNode {
 			info.TotalRequests[rName] = runtime.TotalResourceRequest{
 				Replicas:    *numNodes,

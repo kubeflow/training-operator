@@ -5,6 +5,9 @@ const (
 	// JobSetKind is the Kind name for the JobSet.
 	JobSetKind string = "JobSet"
 
+	// PodGroupKind is the Kind name for the PodGroup.
+	PodGroupKind string = "PodGroup"
+
 	// JobTrainerNode is the Job name for the trainer node.
 	JobTrainerNode string = "trainer-node"
 

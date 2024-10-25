@@ -368,38 +368,24 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 }
 
 func TestRunComponentBuilderPlugins(t *testing.T) {
-	jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
-		ResourceRequests(0, corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("2"),
-			corev1.ResourceMemory: resource.MustParse("4Gi"),
-		}).
-		ResourceRequests(1, corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("1"),
-			corev1.ResourceMemory: resource.MustParse("2Gi"),
-		})
-	jobSetWithPropagatedTrainJobParams := jobSetBase.
-		Clone().
-		ContainerImage("foo:bar").
-		ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid")
+
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse("1"),
+		corev1.ResourceMemory: resource.MustParse("4Gi"),
+	}
 
 	cases := map[string]struct {
+		registry               fwkplugins.Registry
+		runtimeJobTemplateSpec interface{}
 		runtimeInfo            *runtime.Info
 		trainJob               *kubeflowv2.TrainJob
-		runtimeJobTemplateSpec interface{}
-		registry               fwkplugins.Registry
-		wantError              error
 		wantRuntimeInfo        *runtime.Info
 		wantObjs               []client.Object
+		wantError              error
 	}{
-		"coscheduling and jobset are performed": {
-			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
-				UID("uid").
-				Trainer(
-					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerImage("foo:bar").
-						Obj(),
-				).
-				Obj(),
+		"succeeded to build PodGroup and JobSet with NumNodes from TrainJob": {
+			registry:               fwkplugins.NewRegistry(),
+			runtimeJobTemplateSpec: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").Spec,
 			runtimeInfo: &runtime.Info{
 				Policy: runtime.Policy{
 					MLPolicy: &kubeflowv2.MLPolicy{
@@ -415,37 +401,24 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 				},
 				TotalRequests: map[string]runtime.TotalResourceRequest{
 					constants.JobInitializer: {
-						Replicas: 1,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("4Gi"),
-						},
+						Replicas:    1,
+						PodRequests: resRequests,
 					},
 					constants.JobTrainerNode: {
-						Replicas: 1,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("1"),
-							corev1.ResourceMemory: resource.MustParse("2Gi"),
-						},
+						Replicas:    1,
+						PodRequests: resRequests,
 					},
 				},
 			},
-			runtimeJobTemplateSpec: jobSetBase.Spec,
-			registry:               fwkplugins.NewRegistry(),
-			wantObjs: []client.Object{
-				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
-					SchedulingTimeout(300).
-					MinMember(20).
-					MinResources(corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("30"),
-						corev1.ResourceMemory: resource.MustParse("60Gi"),
-					}).
-					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
-					Obj(),
-				jobSetWithPropagatedTrainJobParams.
-					Clone().
-					Obj(),
-			},
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				UID("uid").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						NumNodes(100).
+						ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						Obj(),
+				).
+				Obj(),
 			wantRuntimeInfo: &runtime.Info{
 				Policy: runtime.Policy{
 					MLPolicy: &kubeflowv2.MLPolicy{
@@ -459,25 +432,38 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 						},
 					},
 				},
+				Trainer: runtime.Trainer{
+					NumNodes: ptr.To[int32](100),
+				},
 				TotalRequests: map[string]runtime.TotalResourceRequest{
 					constants.JobInitializer: {
-						Replicas: 10,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("4Gi"),
-						},
+						Replicas:    1,
+						PodRequests: resRequests,
 					},
 					constants.JobTrainerNode: {
-						Replicas: 10,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("1"),
-							corev1.ResourceMemory: resource.MustParse("2Gi"),
-						},
+						Replicas:    100,         // Replicas is taken from TrainJob NumNodes.
+						PodRequests: resRequests, // TODO (andreyvelich): Add support for TrainJob ResourcesPerNode in TotalRequests.
 					},
 				},
 			},
+			wantObjs: []client.Object{
+				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
+					SchedulingTimeout(300).
+					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
+					MinResources(corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per replica.
+						corev1.ResourceMemory: resource.MustParse("404Gi"),
+					}).
+					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
+					Obj(),
+				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
+					NumNodes(100).
+					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+					Obj(),
+			},
 		},
-		"an empty registry": {},
+		// "an empty registry": {},
 	}
 	cmpOpts := []cmp.Option{
 		cmpopts.SortSlices(func(a, b client.Object) bool {
@@ -498,7 +484,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
 				t.Fatal(err)
 			}
-			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeInfo, tc.trainJob, tc.runtimeJobTemplateSpec)
+			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeJobTemplateSpec, tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}

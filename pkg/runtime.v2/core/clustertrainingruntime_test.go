@@ -33,8 +33,10 @@ import (
 )
 
 func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
-	baseRuntime := testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
-		Clone()
+
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU: resource.MustParse("1"),
+	}
 
 	cases := map[string]struct {
 		trainJob               *kubeflowv2.TrainJob
@@ -42,50 +44,41 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 		wantObjs               []client.Object
 		wantError              error
 	}{
-		"succeeded to build JobSet and PodGroup": {
+		"succeeded to build PodGroup and JobSet with NumNodes from the Runtime and container from the Trainer.": {
+			clusterTrainingRuntime: testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").RuntimeSpec(
+				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").Spec).
+					NumNodes(100).
+					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					PodGroupPolicyCoschedulingSchedulingTimeout(120).
+					Obj(),
+			).Obj(),
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				Suspend(true).
 				UID("uid").
 				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerImage("test:trainjob").
+						ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						Obj(),
 				).
 				Obj(),
-			clusterTrainingRuntime: baseRuntime.RuntimeSpec(
-				testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
-					ContainerImage("test:runtime").
-					PodGroupPolicyCoschedulingSchedulingTimeout(120).
-					MLPolicyNumNodes(20).
-					ResourceRequests(0, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("1"),
-					}).
-					ResourceRequests(1, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("2"),
-					}).
-					Obj(),
-			).Obj(),
 			wantObjs: []client.Object{
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					NumNodes(100).
+					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+					ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					Suspend(true).
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
-					ContainerImage("test:trainjob").
-					ResourceRequests(0, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("1"),
-					}).
-					ResourceRequests(1, corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("2"),
-					}).
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "test-job", "uid").
 					Obj(),
 				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "test-job", "uid").
-					MinMember(40).
-					SchedulingTimeout(120).
+					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("60"),
+						corev1.ResourceCPU: resource.MustParse("101"), // Every replica has 1 CPU = 101 CPUs in total.
 					}).
+					SchedulingTimeout(120).
 					Obj(),
 			},
 		},
@@ -95,7 +88,6 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerImage("test:trainjob").
 						Obj(),
 				).
 				Obj(),

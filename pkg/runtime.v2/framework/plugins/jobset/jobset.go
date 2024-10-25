@@ -68,8 +68,8 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeJobTemplateSpec interface{}) (client.Object, error) {
-	if info == nil || trainJob == nil || runtimeJobTemplateSpec == nil {
+func (j *JobSet) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
+	if runtimeJobTemplateSpec == nil || info == nil || trainJob == nil {
 		return nil, fmt.Errorf("runtime info or object is missing")
 	}
 

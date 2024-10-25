@@ -85,45 +85,57 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 	}
 }
 
-func (j *JobSetWrapper) Suspend(suspend bool) *JobSetWrapper {
-	j.Spec.Suspend = &suspend
-	return j
-}
-
-func (j *JobSetWrapper) Completions(idx int, completions int32) *JobSetWrapper {
-	if len(j.Spec.ReplicatedJobs) < idx {
-		return j
+func (j *JobSetWrapper) Replicas(replicas int32) *JobSetWrapper {
+	for idx := range j.Spec.ReplicatedJobs {
+		j.Spec.ReplicatedJobs[idx].Replicas = replicas
 	}
-	j.Spec.ReplicatedJobs[idx].Template.Spec.Completions = &completions
 	return j
 }
 
-func (j *JobSetWrapper) Parallelism(idx int, parallelism int32) *JobSetWrapper {
-	if len(j.Spec.ReplicatedJobs) < idx {
-		return j
+func (j *JobSetWrapper) NumNodes(numNodes int32) *JobSetWrapper {
+	for i, rJob := range j.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobTrainerNode {
+			j.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = &numNodes
+			j.Spec.ReplicatedJobs[i].Template.Spec.Completions = &numNodes
+		}
 	}
-	j.Spec.ReplicatedJobs[idx].Template.Spec.Parallelism = &parallelism
 	return j
 }
 
-func (j *JobSetWrapper) ResourceRequests(idx int, res corev1.ResourceList) *JobSetWrapper {
-	if len(j.Spec.ReplicatedJobs) < idx {
-		return j
-	}
-	j.Spec.ReplicatedJobs[idx].Template.Spec.Template.Spec.Containers[0].Resources.Requests = res
-	return j
-}
-
-func (j *JobSetWrapper) ContainerImage(image string) *JobSetWrapper {
+func (j *JobSetWrapper) ContainerTrainer(image string, command []string, args []string, res corev1.ResourceList) *JobSetWrapper {
 	for i, rJob := range j.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobTrainerNode {
 			for k, container := range rJob.Template.Spec.Template.Spec.Containers {
 				if container.Name == constants.ContainerTrainer {
 					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Image = image
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Command = command
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Args = args
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Resources.Requests = res
 				}
 			}
 		}
 	}
+	return j
+}
+
+func (j *JobSetWrapper) ContainerDatasetModelInitializer(image string, command []string, args []string, res corev1.ResourceList) *JobSetWrapper {
+	for i, rJob := range j.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobInitializer {
+			for k, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerDatasetInitializer || container.Name == constants.ContainerModelInitializer {
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Image = image
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Command = command
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Args = args
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Resources.Requests = res
+				}
+			}
+		}
+	}
+	return j
+}
+
+func (j *JobSetWrapper) Suspend(suspend bool) *JobSetWrapper {
+	j.Spec.Suspend = &suspend
 	return j
 }
 
@@ -165,19 +177,6 @@ func (j *JobSetWrapper) Annotation(key, value string) *JobSetWrapper {
 	return j
 }
 
-func (j *JobSetWrapper) Replicas(replicas int32) *JobSetWrapper {
-	for idx := range j.Spec.ReplicatedJobs {
-		j.Spec.ReplicatedJobs[idx].Replicas = replicas
-	}
-	return j
-}
-
-func (j *JobSetWrapper) Clone() *JobSetWrapper {
-	return &JobSetWrapper{
-		JobSet: *j.JobSet.DeepCopy(),
-	}
-}
-
 func (j *JobSetWrapper) Obj() *jobsetv1alpha2.JobSet {
 	return &j.JobSet
 }
@@ -191,7 +190,7 @@ func MakeTrainJobWrapper(namespace, name string) *TrainJobWrapper {
 		TrainJob: kubeflowv2.TrainJob{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeflowv2.SchemeGroupVersion.Version,
-				Kind:       "TrainJob",
+				Kind:       kubeflowv2.TrainJobKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -200,6 +199,21 @@ func MakeTrainJobWrapper(namespace, name string) *TrainJobWrapper {
 			Spec: kubeflowv2.TrainJobSpec{},
 		},
 	}
+}
+
+func (t *TrainJobTrainerWrapper) NumNodes(numNodes int32) *TrainJobTrainerWrapper {
+	t.Trainer.NumNodes = &numNodes
+	return t
+}
+
+func (t *TrainJobTrainerWrapper) ContainerTrainer(image string, command []string, args []string, resRequests corev1.ResourceList) *TrainJobTrainerWrapper {
+	t.Trainer.Image = &image
+	t.Trainer.Command = command
+	t.Trainer.Args = args
+	t.Trainer.ResourcesPerNode = &corev1.ResourceRequirements{
+		Requests: resRequests,
+	}
+	return t
 }
 
 func (t *TrainJobWrapper) Suspend(suspend bool) *TrainJobWrapper {
@@ -266,11 +280,6 @@ func MakeTrainJobTrainerWrapper() *TrainJobTrainerWrapper {
 	}
 }
 
-func (t *TrainJobTrainerWrapper) ContainerImage(img string) *TrainJobTrainerWrapper {
-	t.Image = &img
-	return t
-}
-
 func (t *TrainJobTrainerWrapper) Obj() *kubeflowv2.Trainer {
 	return &t.Trainer
 }
@@ -330,11 +339,6 @@ func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper 
 	}
 }
 
-func (r *TrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv2.TrainingRuntimeSpec) *TrainingRuntimeWrapper {
-	r.Spec = spec
-	return r
-}
-
 func (r *TrainingRuntimeWrapper) Label(key, value string) *TrainingRuntimeWrapper {
 	if r.ObjectMeta.Labels == nil {
 		r.ObjectMeta.Labels = make(map[string]string, 1)
@@ -351,10 +355,9 @@ func (r *TrainingRuntimeWrapper) Annotation(key, value string) *TrainingRuntimeW
 	return r
 }
 
-func (r *TrainingRuntimeWrapper) Clone() *TrainingRuntimeWrapper {
-	return &TrainingRuntimeWrapper{
-		TrainingRuntime: *r.TrainingRuntime.DeepCopy(),
-	}
+func (r *TrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv2.TrainingRuntimeSpec) *TrainingRuntimeWrapper {
+	r.Spec = spec
+	return r
 }
 
 func (r *TrainingRuntimeWrapper) Obj() *kubeflowv2.TrainingRuntime {
@@ -420,12 +423,6 @@ func (r *ClusterTrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv2.TrainingRunt
 	return r
 }
 
-func (r *ClusterTrainingRuntimeWrapper) Clone() *ClusterTrainingRuntimeWrapper {
-	return &ClusterTrainingRuntimeWrapper{
-		ClusterTrainingRuntime: *r.ClusterTrainingRuntime.DeepCopy(),
-	}
-}
-
 func (r *ClusterTrainingRuntimeWrapper) Obj() *kubeflowv2.ClusterTrainingRuntime {
 	return &r.ClusterTrainingRuntime
 }
@@ -440,27 +437,43 @@ func MakeTrainingRuntimeSpecWrapper(spec kubeflowv2.TrainingRuntimeSpec) *Traini
 	}
 }
 
-func (s *TrainingRuntimeSpecWrapper) Replicas(replicas int32) *TrainingRuntimeSpecWrapper {
-	for idx := range s.Template.Spec.ReplicatedJobs {
-		s.Template.Spec.ReplicatedJobs[idx].Replicas = replicas
+func (s *TrainingRuntimeSpecWrapper) NumNodes(numNodes int32) *TrainingRuntimeSpecWrapper {
+	if s.MLPolicy == nil {
+		s.MLPolicy = &kubeflowv2.MLPolicy{}
 	}
+	s.MLPolicy.NumNodes = &numNodes
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) ContainerImage(image string) *TrainingRuntimeSpecWrapper {
+func (s *TrainingRuntimeSpecWrapper) ContainerTrainer(image string, command []string, args []string, res corev1.ResourceList) *TrainingRuntimeSpecWrapper {
 	for i, rJob := range s.Template.Spec.ReplicatedJobs {
-		for j := range rJob.Template.Spec.Template.Spec.Containers {
-			s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = image
+		if rJob.Name == constants.JobTrainerNode {
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = image
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = command
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = args
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources.Requests = res
+				}
+			}
 		}
 	}
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) ResourceRequests(idx int, res corev1.ResourceList) *TrainingRuntimeSpecWrapper {
-	if len(s.Template.Spec.ReplicatedJobs) < idx {
-		return s
+func (s *TrainingRuntimeSpecWrapper) ContainerDatasetModelInitializer(image string, command []string, args []string, res corev1.ResourceList) *TrainingRuntimeSpecWrapper {
+	for i, rJob := range s.Template.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobInitializer {
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerDatasetInitializer || container.Name == constants.ContainerModelInitializer {
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = image
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = command
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = args
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources.Requests = res
+				}
+			}
+		}
 	}
-	s.Template.Spec.ReplicatedJobs[idx].Template.Spec.Template.Spec.Containers[0].Resources.Requests = res
 	return s
 }
 
@@ -482,14 +495,6 @@ func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) MLPolicyNumNodes(numNodes int32) *TrainingRuntimeSpecWrapper {
-	if s.MLPolicy == nil {
-		s.MLPolicy = &kubeflowv2.MLPolicy{}
-	}
-	s.MLPolicy.NumNodes = &numNodes
-	return s
-}
-
 func (s *TrainingRuntimeSpecWrapper) Obj() kubeflowv2.TrainingRuntimeSpec {
 	return s.TrainingRuntimeSpec
 }
@@ -503,7 +508,7 @@ func MakeSchedulerPluginsPodGroup(namespace, name string) *SchedulerPluginsPodGr
 		PodGroup: schedulerpluginsv1alpha1.PodGroup{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: schedulerpluginsv1alpha1.SchemeGroupVersion.String(),
-				Kind:       "PodGroup",
+				Kind:       constants.PodGroupKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -513,11 +518,6 @@ func MakeSchedulerPluginsPodGroup(namespace, name string) *SchedulerPluginsPodGr
 	}
 }
 
-func (p *SchedulerPluginsPodGroupWrapper) SchedulingTimeout(timeout int32) *SchedulerPluginsPodGroupWrapper {
-	p.PodGroup.Spec.ScheduleTimeoutSeconds = &timeout
-	return p
-}
-
 func (p *SchedulerPluginsPodGroupWrapper) MinMember(members int32) *SchedulerPluginsPodGroupWrapper {
 	p.PodGroup.Spec.MinMember = members
 	return p
@@ -525,6 +525,11 @@ func (p *SchedulerPluginsPodGroupWrapper) MinMember(members int32) *SchedulerPlu
 
 func (p *SchedulerPluginsPodGroupWrapper) MinResources(resources corev1.ResourceList) *SchedulerPluginsPodGroupWrapper {
 	p.PodGroup.Spec.MinResources = resources
+	return p
+}
+
+func (p *SchedulerPluginsPodGroupWrapper) SchedulingTimeout(timeout int32) *SchedulerPluginsPodGroupWrapper {
+	p.PodGroup.Spec.ScheduleTimeoutSeconds = &timeout
 	return p
 }
 

@@ -119,7 +119,7 @@ func (r *TrainingRuntime) buildObjects(
 		return nil, err
 	}
 
-	return r.framework.RunComponentBuilderPlugins(ctx, info, trainJob, jobSetTemplateSpec.Spec)
+	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplateSpec.Spec, info, trainJob)
 }
 
 func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
