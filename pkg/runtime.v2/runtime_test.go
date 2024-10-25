@@ -30,8 +30,6 @@ import (
 )
 
 func TestNewInfo(t *testing.T) {
-	// jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
-	// 	Clone()
 
 	cases := map[string]struct {
 		infoOpts []InfoOption
