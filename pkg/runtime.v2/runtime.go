@@ -17,18 +17,12 @@ limitations under the License.
 package runtimev2
 
 import (
-	"errors"
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-)
-
-var (
-	errorDifferentGVK  = errors.New("the GroupVersionKinds are different between old and new objects")
-	errorObjectsAreNil = errors.New("old or new objects are nil")
 )
 
 type Info struct {
