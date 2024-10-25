@@ -104,6 +104,7 @@ func (r *TrainingRuntime) buildObjects(
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}
 	for _, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
+		// By default every ReplicatedJob has only 1 replica.
 		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, 1, rJob.Template.Spec.Template.Spec))
 	}
 

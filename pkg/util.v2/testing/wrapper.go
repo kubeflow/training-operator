@@ -27,6 +27,7 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 )
 
 type JobSetWrapper struct {
@@ -38,7 +39,7 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
-				Kind:       "JobSet",
+				Kind:       constants.JobSetKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -47,15 +48,14 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 			Spec: jobsetv1alpha2.JobSetSpec{
 				ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 					{
-						Name:     "Coordinator",
-						Replicas: 1,
+						Name: constants.JobInitializer,
 						Template: batchv1.JobTemplateSpec{
 							Spec: batchv1.JobSpec{
 								Template: corev1.PodTemplateSpec{
 									Spec: corev1.PodSpec{
 										Containers: []corev1.Container{
 											{
-												Name: "trainer",
+												Name: constants.ContainerDatasetInitializer,
 											},
 										},
 									},
@@ -64,15 +64,14 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 						},
 					},
 					{
-						Name:     "Worker",
-						Replicas: 1,
+						Name: constants.JobTrainerNode,
 						Template: batchv1.JobTemplateSpec{
 							Spec: batchv1.JobSpec{
 								Template: corev1.PodTemplateSpec{
 									Spec: corev1.PodSpec{
 										Containers: []corev1.Container{
 											{
-												Name: "trainer",
+												Name: constants.ContainerTrainer,
 											},
 										},
 									},
@@ -115,20 +114,14 @@ func (j *JobSetWrapper) ResourceRequests(idx int, res corev1.ResourceList) *JobS
 	return j
 }
 
-func (j *JobSetWrapper) JobCompletionMode(mode batchv1.CompletionMode) *JobSetWrapper {
-	for i := range j.Spec.ReplicatedJobs {
-		j.Spec.ReplicatedJobs[i].Template.Spec.CompletionMode = &mode
-	}
-	return j
-}
-
-func (j *JobSetWrapper) ContainerImage(image *string) *JobSetWrapper {
-	if image == nil || *image == "" {
-		return j
-	}
+func (j *JobSetWrapper) ContainerImage(image string) *JobSetWrapper {
 	for i, rJob := range j.Spec.ReplicatedJobs {
-		for k := range rJob.Template.Spec.Template.Spec.Containers {
-			j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Image = *image
+		if rJob.Name == constants.JobTrainerNode {
+			for k, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Image = image
+				}
+			}
 		}
 	}
 	return j
@@ -302,14 +295,13 @@ func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper 
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
-								Name:     "Coordinator",
-								Replicas: 1,
+								Name: constants.JobInitializer,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
 												Containers: []corev1.Container{{
-													Name: "trainer",
+													Name: constants.ContainerDatasetInitializer,
 												}},
 											},
 										},
@@ -317,14 +309,13 @@ func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper 
 								},
 							},
 							{
-								Name:     "Worker",
-								Replicas: 1,
+								Name: constants.JobTrainerNode,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
 												Containers: []corev1.Container{{
-													Name: "trainer",
+													Name: constants.ContainerTrainer,
 												}},
 											},
 										},
@@ -389,14 +380,13 @@ func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapp
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
-								Name:     "Coordinator",
-								Replicas: 1,
+								Name: constants.JobInitializer,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
 												Containers: []corev1.Container{{
-													Name: "trainer",
+													Name: constants.ContainerDatasetInitializer,
 												}},
 											},
 										},
@@ -404,14 +394,13 @@ func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapp
 								},
 							},
 							{
-								Name:     "Worker",
-								Replicas: 1,
+								Name: constants.JobTrainerNode,
 								Template: batchv1.JobTemplateSpec{
 									Spec: batchv1.JobSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
 												Containers: []corev1.Container{{
-													Name: "trainer",
+													Name: constants.ContainerTrainer,
 												}},
 											},
 										},

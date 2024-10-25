@@ -41,6 +41,7 @@ type Info struct {
 }
 
 type Trainer struct {
+	// TODO (andreyvelich): Add more parameters.
 	NumNodes *int32
 }
 
