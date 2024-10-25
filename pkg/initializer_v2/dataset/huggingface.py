@@ -3,11 +3,11 @@ from urllib.parse import urlparse
 
 import huggingface_hub
 
-import pkg.initiailizer_v2.utils.utils as utils
+import pkg.initializer_v2.utils.utils as utils
 
 # TODO (andreyvelich): This should be moved to SDK V2 constants.
 import sdk.python.kubeflow.storage_initializer.constants as constants
-from pkg.initiailizer_v2.dataset.config import HuggingFaceDatasetConfig
+from pkg.initializer_v2.dataset.config import HuggingFaceDatasetConfig
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
@@ -20,7 +20,7 @@ class HuggingFace(utils.DatasetProvider):
 
     def load_config(self):
         config_dict = utils.get_config_from_env(HuggingFaceDatasetConfig)
-        logging.info(f"Config for HuggingFace dataset initiailizer: {config_dict}")
+        logging.info(f"Config for HuggingFace dataset initializer: {config_dict}")
         self.config = HuggingFaceDatasetConfig(**config_dict)
 
     def download_dataset(self):

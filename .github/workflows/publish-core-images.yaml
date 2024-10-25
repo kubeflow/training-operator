@@ -30,12 +30,12 @@ jobs:
             dockerfile: cmd/training-operator.v2alpha1/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
             tag-prefix: v2alpha1
-          - component-name: model-initiailizer-v2
-            dockerfile: cmd/initiailizer_v2/model/Dockerfile
+          - component-name: model-initializer-v2
+            dockerfile: cmd/initializer_v2/model/Dockerfile
             platforms: linux/amd64,linux/arm64
             tag-prefix: v2
-          - component-name: dataset-initiailizer-v2
-            dockerfile: cmd/initiailizer_v2/dataset/Dockerfile
+          - component-name: dataset-initializer-v2
+            dockerfile: cmd/initializer_v2/dataset/Dockerfile
             platforms: linux/amd64,linux/arm64
             tag-prefix: v2
           - component-name: kubectl-delivery
