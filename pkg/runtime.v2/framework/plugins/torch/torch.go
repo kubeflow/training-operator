@@ -67,7 +67,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	// Update envs for Info object.
 	// Add PyTorch distributed "PET_" values for torchrun
 	// TODO (andreyvelich): Add validation to check that TrainJob doesn't have "PET_" envs.
-	info.Trainer.Env = []corev1.EnvVar{
+	infoEnvs := []corev1.EnvVar{
 		{
 			Name:  constants.TorchEnvNumNodes,
 			Value: fmt.Sprintf("%d", *numNodes),
@@ -86,7 +86,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 		},
 		{
 			Name:  constants.TorchEnvMasterAddr,
-			Value: fmt.Sprintf("%v-%v-0-0.%v", trainJob.Name, constants.JobTrainerNode, constants.ContainerTrainer),
+			Value: fmt.Sprintf("%v-%v-0-0.%v", trainJob.Name, constants.JobTrainerNode, trainJob.Name),
 		},
 		{
 			Name:  constants.TorchEnvMasterPort,
@@ -95,8 +95,8 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	}
 
 	// Map for all Info envs.
-	envNames := make(map[string]bool, len(info.Trainer.Env))
-	for _, env := range info.Trainer.Env {
+	envNames := make(map[string]bool, len(infoEnvs))
+	for _, env := range infoEnvs {
 		envNames[env.Name] = true
 	}
 	// Info envs take precedence over TrainJob envs.
@@ -107,6 +107,8 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 			}
 		}
 	}
+	// Insert Torch distributed envs into the list end.
+	info.Trainer.Env = append(info.Trainer.Env, infoEnvs...)
 
 	// Add container port for the headless service.
 	info.Trainer.ContainerPort = &corev1.ContainerPort{

@@ -5,7 +5,7 @@ const (
 	// JobSetKind is the Kind name for the JobSet.
 	JobSetKind string = "JobSet"
 
-	// JobCompletionIndexFieldPath is the field path for the Job completion annotation.
+	// JobCompletionIndexFieldPath is the field path for the Job completion index annotation.
 	JobCompletionIndexFieldPath string = "metadata.annotations['batch.kubernetes.io/job-completion-index']"
 
 	// JobTrainerNode is the Job name for the trainer node.
@@ -37,7 +37,7 @@ const (
 	// TorchEnvNumProcPerNode is the env name for the number of procs per node (e.g. number of GPUs per Pod).
 	TorchEnvNumProcPerNode string = "PET_NPROC_PER_NODE"
 
-	// TorchEnvNodeRank is the env name of the node RANK
+	// TorchEnvNodeRank is the env name for the node RANK
 	TorchEnvNodeRank string = "PET_NODE_RANK"
 
 	// TorchEnvMasterAddr is the env name for the master node address.

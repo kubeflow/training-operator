@@ -46,7 +46,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		wantObjs        []client.Object
 		wantError       error
 	}{
-		// Test cases for PlainML MLPolicy.
+		// Test cases for the PlainML MLPolicy.
 		"succeeded to build PodGroup and JobSet with NumNodes from the TrainJob and container from Runtime.": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").
 				Label("conflictLabel", "overridden").
@@ -156,7 +156,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					Obj(),
 			},
 		},
-		// Test cases for Torch MLPolicy.
+		// Test cases for the Torch MLPolicy.
 		"succeeded to build JobSet with Torch values from the TrainJob": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
 				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
@@ -199,7 +199,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 							{
 								Name:  constants.TorchEnvMasterAddr,
-								Value: fmt.Sprintf("test-job-%v-0-0.%v", constants.JobTrainerNode, constants.ContainerTrainer),
+								Value: fmt.Sprintf("test-job-%v-0-0.test-job", constants.JobTrainerNode),
 							},
 							{
 								Name:  constants.TorchEnvMasterPort,
@@ -259,6 +259,14 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					ContainerTrainerEnv(
 						[]corev1.EnvVar{
 							{
+								Name:  "TRAIN_JOB",
+								Value: "override",
+							},
+							{
+								Name:  "TRAIN_JOB_CUSTOM",
+								Value: "test:trainjob",
+							},
+							{
 								Name:  constants.TorchEnvNumNodes,
 								Value: "100",
 							},
@@ -276,19 +284,11 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 							{
 								Name:  constants.TorchEnvMasterAddr,
-								Value: fmt.Sprintf("test-job-%v-0-0.%v", constants.JobTrainerNode, constants.ContainerTrainer),
+								Value: fmt.Sprintf("test-job-%v-0-0.test-job", constants.JobTrainerNode),
 							},
 							{
 								Name:  constants.TorchEnvMasterPort,
 								Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
-							},
-							{
-								Name:  "TRAIN_JOB",
-								Value: "override",
-							},
-							{
-								Name:  "TRAIN_JOB_CUSTOM",
-								Value: "test:trainjob",
 							},
 							{
 								Name:  "RUNTIME",
