@@ -55,9 +55,8 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 
 	// Add envs from the TrainJob.
 	if trainJob.Spec.Trainer != nil {
-		info.Trainer.Env = make(map[string]string, len(trainJob.Spec.Trainer.Env))
 		for _, env := range trainJob.Spec.Trainer.Env {
-			info.Trainer.Env[env.Name] = env.Value
+			info.Trainer.Env = append(info.Trainer.Env, env)
 		}
 	}
 

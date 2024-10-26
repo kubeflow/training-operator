@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -66,19 +67,52 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	// Update envs for Info object.
 	// Add PyTorch distributed "PET_" values for torchrun
 	// TODO (andreyvelich): Add validation to check that TrainJob doesn't have "PET_" envs.
-	// TODO: Add MASTER Addr, Rank, etc.
-	info.Trainer.Env = map[string]string{
-		constants.TorchEnvNumNodes:       fmt.Sprintf("%d", *numNodes),
-		constants.TorchEnvNumProcPerNode: *numProcPerNode,
+	info.Trainer.Env = []corev1.EnvVar{
+		{
+			Name:  constants.TorchEnvNumNodes,
+			Value: fmt.Sprintf("%d", *numNodes),
+		},
+		{
+			Name:  constants.TorchEnvNumProcPerNode,
+			Value: *numProcPerNode,
+		},
+		{
+			Name: constants.TorchEnvNodeRank,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: constants.JobCompletionIndexFieldPath,
+				},
+			},
+		},
+		{
+			Name:  constants.TorchEnvMasterAddr,
+			Value: fmt.Sprintf("%v-%v-0-0.%v", trainJob.Name, constants.JobTrainerNode, constants.ContainerTrainer),
+		},
+		{
+			Name:  constants.TorchEnvMasterPort,
+			Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
+		},
+	}
+
+	// Map for all Info envs.
+	envNames := make(map[string]bool, len(info.Trainer.Env))
+	for _, env := range info.Trainer.Env {
+		envNames[env.Name] = true
 	}
 	// Info envs take precedence over TrainJob envs.
 	if trainJob.Spec.Trainer != nil {
 		for _, env := range trainJob.Spec.Trainer.Env {
-			if _, ok := info.Trainer.Env[env.Name]; !ok {
-				info.Trainer.Env[env.Name] = env.Value
+			if _, ok := envNames[env.Name]; !ok {
+				info.Trainer.Env = append(info.Trainer.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
 			}
 		}
 	}
+
+	// Add container port for the headless service.
+	info.Trainer.ContainerPort = &corev1.ContainerPort{
+		ContainerPort: constants.ContainerTrainerPort,
+	}
+
 	// Update total Pod requests for the PodGroupPolicy plugin.
 	for rName := range info.TotalRequests {
 		// For other Jobs like the Initializer, replica is always equal to 1.

@@ -118,6 +118,19 @@ func (j *JobSetWrapper) ContainerTrainer(image string, command []string, args []
 	return j
 }
 
+func (j *JobSetWrapper) ContainerTrainerPorts(ports []corev1.ContainerPort) *JobSetWrapper {
+	for i, rJob := range j.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobTrainerNode {
+			for k, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Ports = ports
+				}
+			}
+		}
+	}
+	return j
+}
+
 func (j *JobSetWrapper) ContainerTrainerEnv(env []corev1.EnvVar) *JobSetWrapper {
 	for i, rJob := range j.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobTrainerNode {

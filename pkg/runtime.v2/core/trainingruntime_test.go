@@ -18,6 +18,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,7 +35,6 @@ import (
 )
 
 func TestTrainingRuntimeNewObjects(t *testing.T) {
-
 	resRequests := corev1.ResourceList{
 		corev1.ResourceCPU: resource.MustParse("1"),
 	}
@@ -178,6 +178,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 					NumNodes(30).
 					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					ContainerTrainerPorts([]corev1.ContainerPort{{ContainerPort: constants.ContainerTrainerPort}}).
 					ContainerTrainerEnv(
 						[]corev1.EnvVar{
 							{
@@ -187,6 +188,22 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							{
 								Name:  constants.TorchEnvNumProcPerNode,
 								Value: "3",
+							},
+							{
+								Name: constants.TorchEnvNodeRank,
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{
+										FieldPath: constants.JobCompletionIndexFieldPath,
+									},
+								},
+							},
+							{
+								Name:  constants.TorchEnvMasterAddr,
+								Value: fmt.Sprintf("test-job-%v-0-0.%v", constants.JobTrainerNode, constants.ContainerTrainer),
+							},
+							{
+								Name:  constants.TorchEnvMasterPort,
+								Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
 							},
 						},
 					).
@@ -238,6 +255,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 					NumNodes(100).
 					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+					ContainerTrainerPorts([]corev1.ContainerPort{{ContainerPort: constants.ContainerTrainerPort}}).
 					ContainerTrainerEnv(
 						[]corev1.EnvVar{
 							{
@@ -247,6 +265,22 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							{
 								Name:  constants.TorchEnvNumProcPerNode,
 								Value: "auto",
+							},
+							{
+								Name: constants.TorchEnvNodeRank,
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{
+										FieldPath: constants.JobCompletionIndexFieldPath,
+									},
+								},
+							},
+							{
+								Name:  constants.TorchEnvMasterAddr,
+								Value: fmt.Sprintf("test-job-%v-0-0.%v", constants.JobTrainerNode, constants.ContainerTrainer),
+							},
+							{
+								Name:  constants.TorchEnvMasterPort,
+								Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
 							},
 							{
 								Name:  "TRAIN_JOB",
