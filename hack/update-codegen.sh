@@ -73,7 +73,7 @@ chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 cd ${SCRIPT_ROOT}
 echo "Generating client,lister,informer for kubeflow.org/v1 and kubeflow.org/v2alpha1"
-${CODEGEN_PKG}/generate-groups.sh "client,lister,informer" \
+${CODEGEN_PKG}/generate-groups.sh "client,lister,informer,applyconfiguration" \
     github.com/kubeflow/training-operator/pkg/client github.com/kubeflow/training-operator/pkg/apis \
     kubeflow.org:v1,v2alpha1 \
     --output-base "${TEMP_DIR}" \

@@ -18,9 +18,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
 	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type TFJobInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.TFJobList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.TFJob, err error)
+	Apply(ctx context.Context, tFJob *kubefloworgv1.TFJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.TFJob, err error)
+	ApplyStatus(ctx context.Context, tFJob *kubefloworgv1.TFJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.TFJob, err error)
 	TFJobExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *tFJobs) Patch(ctx context.Context, name string, pt types.PatchType, dat
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied tFJob.
+func (c *tFJobs) Apply(ctx context.Context, tFJob *kubefloworgv1.TFJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.TFJob, err error) {
+	if tFJob == nil {
+		return nil, fmt.Errorf("tFJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(tFJob)
+	if err != nil {
+		return nil, err
+	}
+	name := tFJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("tFJob.Name must be provided to Apply")
+	}
+	result = &v1.TFJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("tfjobs").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *tFJobs) ApplyStatus(ctx context.Context, tFJob *kubefloworgv1.TFJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.TFJob, err error) {
+	if tFJob == nil {
+		return nil, fmt.Errorf("tFJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(tFJob)
+	if err != nil {
+		return nil, err
+	}
+
+	name := tFJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("tFJob.Name must be provided to Apply")
+	}
+
+	result = &v1.TFJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("tfjobs").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)
