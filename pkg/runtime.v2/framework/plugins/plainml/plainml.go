@@ -55,9 +55,7 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 
 	// Add envs from the TrainJob.
 	if trainJob.Spec.Trainer != nil {
-		for _, env := range trainJob.Spec.Trainer.Env {
-			info.Trainer.Env = append(info.Trainer.Env, env)
-		}
+		info.Trainer.Env = append(info.Trainer.Env, trainJob.Spec.Trainer.Env...)
 	}
 
 	// Update total Pod requests for the PodGroupPolicy plugin.
