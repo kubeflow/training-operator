@@ -28,15 +28,9 @@ import (
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
-// Generate OpenAPI spec definitions for API resources
+// Generate Kubeflow Training OpenAPI specification.
 func main() {
-	// if len(os.Args) <= 1 {
-	// 	klog.Fatal("Supply a version")
-	// }
-	// version := os.Args[1]
-	// if !strings.HasPrefix(version, "v") {
-	// 	version = "v" + version
-	// }
+
 	var oAPIDefs = map[string]common.OpenAPIDefinition{}
 	defs := spec.Definitions{}
 

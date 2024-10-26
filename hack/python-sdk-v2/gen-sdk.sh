@@ -19,7 +19,7 @@
 set -o errexit
 set -o nounset
 
-# TODO (andreyvelich): Read this data from global VERSION file.
+# TODO (andreyvelich): Read this data from the global VERSION file.
 SDK_VERSION="2.0.0"
 
 SDK_OUTPUT_PATH="sdk_v2"

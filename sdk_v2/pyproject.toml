@@ -40,6 +40,5 @@ Source = "https://github.com/kubeflow/training-operator"
 [tool.hatch.build.targets.wheel]
 packages = ["kubeflow"]
 
-
 [tool.hatch.version]
 path = "kubeflow/training/__init__.py"
