@@ -30,16 +30,16 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG=github.com/kubeflow/training-operator
 
 GET_PKG_LOCATION() {
-  pkg_name="${1:-}"
+    pkg_name="${1:-}"
 
-  pkg_location="$(go list -m -f '{{.Dir}}' "${pkg_name}" 2>/dev/null)"
-  if [ "${pkg_location}" = "" ]; then
-    echo "${pkg_name} is missing. Running 'go mod download'."
+    pkg_location="$(go list -m -f '{{.Dir}}' "${pkg_name}" 2>/dev/null)"
+    if [ "${pkg_location}" = "" ]; then
+        echo "${pkg_name} is missing. Running 'go mod download'."
 
-    go mod download
-    pkg_location=$(go list -m -f '{{.Dir}}' "${pkg_name}")
-  fi
-  echo "${pkg_location}"
+        go mod download
+        pkg_location=$(go list -m -f '{{.Dir}}' "${pkg_name}")
+    fi
+    echo "${pkg_location}"
 }
 
 # Grab code-generator version from go.sum
@@ -112,6 +112,9 @@ echo "Generating OpenAPI specification for kubeflow.org/v2alpha1"
     --output-package github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1 \
     --go-header-file hack/boilerplate/boilerplate.go.txt "$@" \
     --output-base "${TEMP_DIR}"
+
+echo "Generate OpenAPI Swagger for kubeflow.org/v2alpha1"
+go run hack/swagger-v2/main.go >api.v2/openapi-spec/swagger.json
 
 cd - >/dev/null
 
