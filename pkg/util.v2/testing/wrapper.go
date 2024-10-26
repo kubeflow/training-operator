@@ -118,6 +118,19 @@ func (j *JobSetWrapper) ContainerTrainer(image string, command []string, args []
 	return j
 }
 
+func (j *JobSetWrapper) ContainerTrainerEnv(env []corev1.EnvVar) *JobSetWrapper {
+	for i, rJob := range j.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobTrainerNode {
+			for k, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					j.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Env = env
+				}
+			}
+		}
+	}
+	return j
+}
+
 func (j *JobSetWrapper) ContainerDatasetModelInitializer(image string, command []string, args []string, res corev1.ResourceList) *JobSetWrapper {
 	for i, rJob := range j.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobInitializer {
@@ -206,6 +219,11 @@ func (t *TrainJobTrainerWrapper) NumNodes(numNodes int32) *TrainJobTrainerWrappe
 	return t
 }
 
+func (t *TrainJobTrainerWrapper) NumProcPerNode(numProcPerNode string) *TrainJobTrainerWrapper {
+	t.Trainer.NumProcPerNode = &numProcPerNode
+	return t
+}
+
 func (t *TrainJobTrainerWrapper) ContainerTrainer(image string, command []string, args []string, resRequests corev1.ResourceList) *TrainJobTrainerWrapper {
 	t.Trainer.Image = &image
 	t.Trainer.Command = command
@@ -213,6 +231,11 @@ func (t *TrainJobTrainerWrapper) ContainerTrainer(image string, command []string
 	t.Trainer.ResourcesPerNode = &corev1.ResourceRequirements{
 		Requests: resRequests,
 	}
+	return t
+}
+
+func (t *TrainJobTrainerWrapper) ContainerTrainerEnv(env []corev1.EnvVar) *TrainJobTrainerWrapper {
+	t.Trainer.Env = env
 	return t
 }
 
@@ -438,10 +461,21 @@ func MakeTrainingRuntimeSpecWrapper(spec kubeflowv2.TrainingRuntimeSpec) *Traini
 }
 
 func (s *TrainingRuntimeSpecWrapper) NumNodes(numNodes int32) *TrainingRuntimeSpecWrapper {
-	if s.MLPolicy == nil {
-		s.MLPolicy = &kubeflowv2.MLPolicy{}
+	s.MLPolicy = &kubeflowv2.MLPolicy{
+		NumNodes: &numNodes,
 	}
-	s.MLPolicy.NumNodes = &numNodes
+	return s
+}
+
+func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode string) *TrainingRuntimeSpecWrapper {
+	s.MLPolicy = &kubeflowv2.MLPolicy{
+		NumNodes: &numNodes,
+		MLPolicySource: kubeflowv2.MLPolicySource{
+			Torch: &kubeflowv2.TorchMLPolicySource{
+				NumProcPerNode: &numProcPerNode,
+			},
+		},
+	}
 	return s
 }
 
@@ -454,6 +488,19 @@ func (s *TrainingRuntimeSpecWrapper) ContainerTrainer(image string, command []st
 					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = command
 					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = args
 					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources.Requests = res
+				}
+			}
+		}
+	}
+	return s
+}
+
+func (s *TrainingRuntimeSpecWrapper) ContainerTrainerEnv(env []corev1.EnvVar) *TrainingRuntimeSpecWrapper {
+	for i, rJob := range s.Template.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobTrainerNode {
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					s.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Env = env
 				}
 			}
 		}
@@ -478,10 +525,11 @@ func (s *TrainingRuntimeSpecWrapper) ContainerDatasetModelInitializer(image stri
 }
 
 func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoscheduling(src *kubeflowv2.CoschedulingPodGroupPolicySource) *TrainingRuntimeSpecWrapper {
-	if s.PodGroupPolicy == nil {
-		s.PodGroupPolicy = &kubeflowv2.PodGroupPolicy{}
+	s.PodGroupPolicy = &kubeflowv2.PodGroupPolicy{
+		PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+			Coscheduling: src,
+		},
 	}
-	s.PodGroupPolicy.Coscheduling = src
 	return s
 }
 

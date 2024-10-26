@@ -37,6 +37,7 @@ type Info struct {
 type Trainer struct {
 	// TODO (andreyvelich): Add more parameters.
 	NumNodes *int32
+	Env      map[string]string
 }
 
 type Policy struct {

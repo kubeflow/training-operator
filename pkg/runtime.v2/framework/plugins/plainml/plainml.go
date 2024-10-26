@@ -53,6 +53,14 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 	}
 	info.Trainer.NumNodes = numNodes
 
+	// Add envs from the TrainJob.
+	if trainJob.Spec.Trainer != nil {
+		info.Trainer.Env = make(map[string]string, len(trainJob.Spec.Trainer.Env))
+		for _, env := range trainJob.Spec.Trainer.Env {
+			info.Trainer.Env[env.Name] = env.Value
+		}
+	}
+
 	// Update total Pod requests for the PodGroupPolicy plugin.
 	for rName := range info.TotalRequests {
 		// For other Jobs like the Initializer, replica is always equal to 1.

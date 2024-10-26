@@ -18,12 +18,14 @@ package torch
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 )
@@ -43,11 +45,52 @@ func (t *Torch) Name() string {
 	return Name
 }
 
+// TODO (andreyvelich): Add support for PyTorch elastic when JobSet supports Elastic Jobs.
 func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch == nil {
 		return nil
 	}
-	// TODO: Need to implement main logic.
+
+	// TrainJob contains the actual information for the Trainer.
+	numNodes := info.MLPolicy.NumNodes
+	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
+		numNodes = trainJob.Spec.Trainer.NumNodes
+	}
+	info.Trainer.NumNodes = numNodes
+
+	numProcPerNode := info.MLPolicy.Torch.NumProcPerNode
+	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumProcPerNode != nil {
+		numProcPerNode = trainJob.Spec.Trainer.NumProcPerNode
+	}
+
+	// Update envs for Info object.
+	// Add PyTorch distributed "PET_" values for torchrun
+	// TODO (andreyvelich): Add validation to check that TrainJob doesn't have "PET_" envs.
+	// TODO: Add MASTER Addr, Rank, etc.
+	info.Trainer.Env = map[string]string{
+		constants.TorchEnvNumNodes:       fmt.Sprintf("%d", *numNodes),
+		constants.TorchEnvNumProcPerNode: *numProcPerNode,
+	}
+	// Info envs take precedence over TrainJob envs.
+	if trainJob.Spec.Trainer != nil {
+		for _, env := range trainJob.Spec.Trainer.Env {
+			if _, ok := info.Trainer.Env[env.Name]; !ok {
+				info.Trainer.Env[env.Name] = env.Value
+			}
+		}
+	}
+	// Update total Pod requests for the PodGroupPolicy plugin.
+	for rName := range info.TotalRequests {
+		// For other Jobs like the Initializer, replica is always equal to 1.
+		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
+		if rName == constants.JobTrainerNode {
+			info.TotalRequests[rName] = runtime.TotalResourceRequest{
+				Replicas:    *numNodes,
+				PodRequests: info.TotalRequests[rName].PodRequests,
+			}
+		}
+	}
+
 	return nil
 }
 

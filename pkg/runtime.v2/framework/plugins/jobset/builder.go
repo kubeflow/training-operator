@@ -19,6 +19,7 @@ package jobset
 import (
 	"maps"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -61,7 +62,7 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 			// Update values for the Trainer container.
 			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
 				if container.Name == constants.ContainerTrainer {
-					// Update values from TrainJob trainer.
+					// Update values from the TrainJob trainer.
 					if trainJob.Spec.Trainer != nil {
 						if trainJob.Spec.Trainer.Image != nil {
 							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *trainJob.Spec.Trainer.Image
@@ -76,7 +77,20 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources = *trainJob.Spec.Trainer.ResourcesPerNode
 						}
 					}
-					// Update values from Info object.
+					// Update envs from the Info object, it contains the TrainJob envs.
+					if info.Trainer.Env != nil {
+						trainerEnvs := []corev1.EnvVar{}
+						for name, value := range info.Trainer.Env {
+							trainerEnvs = append(trainerEnvs, corev1.EnvVar{Name: name, Value: value})
+						}
+						// Info envs take precedence over TrainingRuntime envs.
+						for _, env := range container.Env {
+							if _, ok := info.Trainer.Env[env.Name]; !ok {
+								trainerEnvs = append(trainerEnvs, corev1.EnvVar{Name: env.Name, Value: env.Value})
+							}
+						}
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Env = trainerEnvs
+					}
 				}
 			}
 		}
