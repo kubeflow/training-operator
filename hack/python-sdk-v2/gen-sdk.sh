@@ -38,7 +38,6 @@ echo "Generating Python SDK for Training Operator V2 ..."
 java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${SWAGGER_CODEGEN_FILE}" -g python -o "${SDK_OUTPUT_PATH}" -c "${SWAGGER_CODEGEN_CONF}" -p=packageVersion="${SDK_VERSION}"
 
 echo "Removing unused files for the Python SDK"
-
 git clean -f ${SDK_OUTPUT_PATH}/.openapi-generator
 git clean -f ${SDK_OUTPUT_PATH}/.gitignore
 git clean -f ${SDK_OUTPUT_PATH}/.gitlab-ci.yml
