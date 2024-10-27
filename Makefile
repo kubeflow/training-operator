@@ -51,6 +51,7 @@ generate: controller-gen ## Generate apidoc, sdk and code containing DeepCopy, D
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
 	hack/update-codegen.sh
 	hack/python-sdk/gen-sdk.sh
+	hack/python-sdk-v2/gen-sdk.sh
 	$(MAKE) apidoc
 
 apidoc:
