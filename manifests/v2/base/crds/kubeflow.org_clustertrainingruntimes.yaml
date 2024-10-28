@@ -53,6 +53,7 @@ spec:
                         description: Directory where SSH keys are mounted.
                         type: string
                       mpiImplementation:
+                        default: OpenMPI
                         description: |-
                           Implementation name for the MPI to create the appropriate hostfile.
                           Defaults to OpenMPI.
@@ -64,6 +65,7 @@ spec:
                         format: int32
                         type: integer
                       runLauncherAsNode:
+                        default: false
                         description: |-
                           Whether to run training process on the launcher Job.
                           Defaults to false.
@@ -576,6 +578,7 @@ spec:
                             type: integer
                         type: object
                       numProcPerNode:
+                        default: auto
                         description: |-
                           Number of processes per node.
                           This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
@@ -583,8 +586,17 @@ spec:
                           TODO (andreyvelich): Add kubebuilder validation.
                           Defaults to `auto`.
                         type: string
+                        x-kubernetes-validations:
+                        - message: NumProcPerNode must be auto,cpu,gpu strings or
+                            int value
+                          rule: self in ['auto', 'cpu', 'gpu'] || type(self) == int
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: numNodes should not be set if torch.elasticPolicy is configured
+                  rule: '!(has(self.numNodes) && (has(self.torch) && has(self.torch.elasticPolicy)))'
+                - message: Only one of the policy can be configured
+                  rule: '!(has(self.torch) && has(self.mpi))'
               podGroupPolicy:
                 description: Configuration for the PodGroup to enable gang-scheduling
                   via supported plugins.
@@ -594,6 +606,7 @@ spec:
                       for gang-scheduling.
                     properties:
                       scheduleTimeoutSeconds:
+                        default: 60
                         description: |-
                           Time threshold to schedule PodGroup for gang-scheduling.
                           If the scheduling timeout is equal to 0, the default value is used.
