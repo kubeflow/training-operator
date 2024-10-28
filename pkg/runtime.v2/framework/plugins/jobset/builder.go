@@ -20,6 +20,7 @@ import (
 	"maps"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
@@ -79,14 +80,14 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 					// Update values from the Info object.
 					if info.Trainer.Env != nil {
 						// Update JobSet envs from the Info.
-						envNames := make(map[string]bool, len(info.Trainer.Env))
+						envNames := sets.New[string]()
 						for _, env := range info.Trainer.Env {
-							envNames[env.Name] = true
+							envNames.Insert(env.Name)
 						}
 						trainerEnvs := info.Trainer.Env
 						// Info envs take precedence over TrainingRuntime envs.
 						for _, env := range container.Env {
-							if _, ok := envNames[env.Name]; !ok {
+							if !envNames.Has(env.Name) {
 								trainerEnvs = append(trainerEnvs, env)
 							}
 						}

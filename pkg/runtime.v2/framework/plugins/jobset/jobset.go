@@ -75,7 +75,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, 
 
 	raw, ok := runtimeJobTemplateSpec.(jobsetv1alpha2.JobSetSpec)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast runtime Job template for JobSetSpec")
+		return nil, nil
 	}
 
 	var jobSetBuilder *Builder

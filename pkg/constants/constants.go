@@ -1,12 +1,15 @@
 package constants
 
+import (
+	"fmt"
+
+	batchv1 "k8s.io/api/batch/v1"
+)
+
 const (
 
 	// JobSetKind is the Kind name for the JobSet.
 	JobSetKind string = "JobSet"
-
-	// JobCompletionIndexFieldPath is the field path for the Job completion index annotation.
-	JobCompletionIndexFieldPath string = "metadata.annotations['batch.kubernetes.io/job-completion-index']"
 
 	// JobTrainerNode is the Job name for the trainer node.
 	JobTrainerNode string = "trainer-node"
@@ -45,4 +48,9 @@ const (
 
 	// TorchEnvMasterPort is the env name for the master node port.
 	TorchEnvMasterPort string = "PET_MASTER_PORT"
+)
+
+var (
+	// JobCompletionIndexFieldPath is the field path for the Job completion index annotation.
+	JobCompletionIndexFieldPath string = fmt.Sprintf("metadata.annotations['%v']", batchv1.JobCompletionIndexAnnotation)
 )

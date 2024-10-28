@@ -19,6 +19,7 @@ package plainml
 import (
 	"context"
 
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -64,7 +65,7 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
 		if rName == constants.JobTrainerNode {
 			info.TotalRequests[rName] = runtime.TotalResourceRequest{
-				Replicas:    *numNodes,
+				Replicas:    ptr.Deref(numNodes, 1),
 				PodRequests: info.TotalRequests[rName].PodRequests,
 			}
 		}

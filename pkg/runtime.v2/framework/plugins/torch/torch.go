@@ -21,7 +21,9 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -70,11 +72,11 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	infoEnvs := []corev1.EnvVar{
 		{
 			Name:  constants.TorchEnvNumNodes,
-			Value: fmt.Sprintf("%d", *numNodes),
+			Value: fmt.Sprintf("%d", ptr.Deref(numNodes, 1)),
 		},
 		{
 			Name:  constants.TorchEnvNumProcPerNode,
-			Value: *numProcPerNode,
+			Value: ptr.Deref(numProcPerNode, "auto"),
 		},
 		{
 			Name: constants.TorchEnvNodeRank,
@@ -86,7 +88,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 		},
 		{
 			Name:  constants.TorchEnvMasterAddr,
-			Value: fmt.Sprintf("%v-%v-0-0.%v", trainJob.Name, constants.JobTrainerNode, trainJob.Name),
+			Value: fmt.Sprintf("%s-%s-0-0.%s", trainJob.Name, constants.JobTrainerNode, trainJob.Name),
 		},
 		{
 			Name:  constants.TorchEnvMasterPort,
@@ -94,15 +96,15 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 		},
 	}
 
-	// Map for all Info envs.
-	envNames := make(map[string]bool, len(infoEnvs))
+	// Set for all Info envs.
+	envNames := sets.New[string]()
 	for _, env := range infoEnvs {
-		envNames[env.Name] = true
+		envNames.Insert(env.Name)
 	}
 	// Info envs take precedence over TrainJob envs.
 	if trainJob.Spec.Trainer != nil {
 		for _, env := range trainJob.Spec.Trainer.Env {
-			if _, ok := envNames[env.Name]; !ok {
+			if !envNames.Has(env.Name) {
 				info.Trainer.Env = append(info.Trainer.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
 			}
 		}
@@ -121,7 +123,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
 		if rName == constants.JobTrainerNode {
 			info.TotalRequests[rName] = runtime.TotalResourceRequest{
-				Replicas:    *numNodes,
+				Replicas:    ptr.Deref(numNodes, 1),
 				PodRequests: info.TotalRequests[rName].PodRequests,
 			}
 		}
