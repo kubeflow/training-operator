@@ -142,10 +142,13 @@ type CoschedulingPodGroupPolicySource struct {
 	// Time threshold to schedule PodGroup for gang-scheduling.
 	// If the scheduling timeout is equal to 0, the default value is used.
 	// Defaults to 60 seconds.
+	// +kubebuilder:default=60
 	ScheduleTimeoutSeconds *int32 `json:"scheduleTimeoutSeconds,omitempty"`
 }
 
 // MLPolicy represents configuration for the model trining with ML-specific parameters.
+// +kubebuilder:validation:XValidation:rule="!(has(self.numNodes) && (has(self.torch) && has(self.torch.elasticPolicy)))", message="numNodes should not be set if torch.elasticPolicy is configured"
+// +kubebuilder:validation:XValidation:rule="!(has(self.torch) && has(self.mpi))", message="Only one of the policy can be configured"
 type MLPolicy struct {
 	// Number of training nodes.
 	// Defaults to 1.
@@ -173,6 +176,8 @@ type TorchMLPolicySource struct {
 	// Supported values: `auto`, `cpu`, `gpu`, or int value.
 	// TODO (andreyvelich): Add kubebuilder validation.
 	// Defaults to `auto`.
+	// +kubebuilder:default="auto"
+	// +kubebuilder:validation:XValidation:rule="self in ['auto', 'cpu', 'gpu'] || type(self) == int", message="NumProcPerNode must be equal to auto, cpu, gpu, or int value"
 	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
 
 	// Elastic policy for the PyTorch training.
@@ -210,6 +215,7 @@ type MPIMLPolicySource struct {
 
 	// Implementation name for the MPI to create the appropriate hostfile.
 	// Defaults to OpenMPI.
+	// +kubebuilder:default=OpenMPI
 	MPIImplementation MPIImplementation `json:"mpiImplementation,omitempty"`
 
 	// Directory where SSH keys are mounted.
@@ -218,6 +224,7 @@ type MPIMLPolicySource struct {
 
 	// Whether to run training process on the launcher Job.
 	// Defaults to false.
+	// +kubebuilder:default=false
 	RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
 }
 

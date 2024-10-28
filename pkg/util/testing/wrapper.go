@@ -392,8 +392,8 @@ func (t *TrainJobTrainerWrapper) NumNodes(numNodes int32) *TrainJobTrainerWrappe
 	return t
 }
 
-func (t *TrainJobTrainerWrapper) NumProcPerNode(numProcPerNode string) *TrainJobTrainerWrapper {
-	t.Trainer.NumProcPerNode = &numProcPerNode
+func (t *TrainJobTrainerWrapper) NumProcPerNode(numProcPerNode *string) *TrainJobTrainerWrapper {
+	t.Trainer.NumProcPerNode = numProcPerNode
 	return t
 }
 
@@ -689,12 +689,12 @@ func (s *TrainingRuntimeSpecWrapper) NumNodes(numNodes int32) *TrainingRuntimeSp
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode string) *TrainingRuntimeSpecWrapper {
+func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode *string) *TrainingRuntimeSpecWrapper {
 	s.MLPolicy = &trainer.MLPolicy{
 		NumNodes: &numNodes,
 		MLPolicySource: trainer.MLPolicySource{
 			Torch: &trainer.TorchMLPolicySource{
-				NumProcPerNode: &numProcPerNode,
+				NumProcPerNode: numProcPerNode,
 			},
 		},
 	}
