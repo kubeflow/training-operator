@@ -114,8 +114,7 @@ func (r *TrainingRuntime) buildObjects(
 		return nil, err
 	}
 
-	err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob, podGroupPolicy)
-	if err != nil {
+	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob, podGroupPolicy); err != nil {
 		return nil, err
 	}
 
