@@ -21,17 +21,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
-
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
 type Info struct {
-	Policy
 	Labels      map[string]string
-	PodLabels   map[string]string
 	Annotations map[string]string
 	Trainer
-	TotalRequests map[string]TotalResourceRequest
+	*Scheduler
 }
 
 type Trainer struct {
@@ -41,9 +37,10 @@ type Trainer struct {
 	ContainerPort *corev1.ContainerPort
 }
 
-type Policy struct {
-	MLPolicy       *kubeflowv2.MLPolicy
-	PodGroupPolicy *kubeflowv2.PodGroupPolicy
+type Scheduler struct {
+	PodLabels              map[string]string
+	TotalRequests          map[string]TotalResourceRequest
+	ScheduleTimeoutSeconds *int32
 }
 
 type TotalResourceRequest struct {
@@ -53,9 +50,8 @@ type TotalResourceRequest struct {
 
 type InfoOptions struct {
 	podSpecReplicas []podSpecReplica
-	Policy
-	labels      map[string]string
-	annotations map[string]string
+	labels          map[string]string
+	annotations     map[string]string
 }
 
 type InfoOption func(options *InfoOptions)
@@ -90,18 +86,6 @@ func WithAnnotations(annotations map[string]string) InfoOption {
 	}
 }
 
-func WithPodGroupPolicy(pgPolicy *kubeflowv2.PodGroupPolicy) InfoOption {
-	return func(o *InfoOptions) {
-		o.PodGroupPolicy = pgPolicy
-	}
-}
-
-func WithMLPolicy(mlPolicy *kubeflowv2.MLPolicy) InfoOption {
-	return func(o *InfoOptions) {
-		o.MLPolicy = mlPolicy
-	}
-}
-
 func NewInfo(opts ...InfoOption) *Info {
 	options := defaultOptions
 	for _, opt := range opts {
@@ -109,9 +93,11 @@ func NewInfo(opts ...InfoOption) *Info {
 	}
 
 	info := &Info{
-		Labels:        make(map[string]string),
-		Annotations:   make(map[string]string),
-		TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
+		Labels:      make(map[string]string),
+		Annotations: make(map[string]string),
+		Scheduler: &Scheduler{
+			TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
+		},
 	}
 
 	for _, spec := range options.podSpecReplicas {
@@ -127,6 +113,6 @@ func NewInfo(opts ...InfoOption) *Info {
 	if options.annotations != nil {
 		info.Annotations = options.annotations
 	}
-	info.Policy = options.Policy
+
 	return info
 }

@@ -42,13 +42,13 @@ func (p *PlainML) Name() string {
 	return Name
 }
 
-func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
-	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch != nil || info.MLPolicy.MPI != nil {
+func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeMLPolicy *kubeflowv2.MLPolicy) error {
+	if info == nil || runtimeMLPolicy == nil || runtimeMLPolicy.Torch != nil || runtimeMLPolicy.MPI != nil {
 		return nil
 	}
 
 	// TrainJob contains the actual information for the number of nodes.
-	numNodes := info.MLPolicy.NumNodes
+	numNodes := runtimeMLPolicy.NumNodes
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
 		numNodes = trainJob.Spec.Trainer.NumNodes
 	}
@@ -64,7 +64,7 @@ func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.Train
 		// For other Jobs like the Initializer, replica is always equal to 1.
 		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
 		if rName == constants.JobTrainerNode {
-			info.TotalRequests[rName] = runtime.TotalResourceRequest{
+			info.Scheduler.TotalRequests[rName] = runtime.TotalResourceRequest{
 				Replicas:    ptr.Deref(numNodes, 1),
 				PodRequests: info.TotalRequests[rName].PodRequests,
 			}

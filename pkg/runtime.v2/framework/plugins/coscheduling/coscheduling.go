@@ -88,19 +88,19 @@ func (c *CoScheduling) Name() string {
 	return Name
 }
 
-func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
-	if info == nil || info.PodGroupPolicy == nil || trainJob == nil {
+func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimePodGroupPolicy *kubeflowv2.PodGroupPolicy) error {
+	if info == nil || trainJob == nil || runtimePodGroupPolicy == nil || runtimePodGroupPolicy.Coscheduling == nil {
 		return nil
 	}
-	if info.PodLabels == nil {
-		info.PodLabels = make(map[string]string, 1)
-	}
-	info.PodLabels[schedulerpluginsv1alpha1.PodGroupLabel] = trainJob.Name
+
+	info.Scheduler.PodLabels = make(map[string]string, 1)
+	info.Scheduler.PodLabels[schedulerpluginsv1alpha1.PodGroupLabel] = trainJob.Name
+	info.Scheduler.ScheduleTimeoutSeconds = runtimePodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds
 	return nil
 }
 
 func (c *CoScheduling) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
-	if info == nil || info.PodGroupPolicy == nil || info.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
+	if info == nil || info.Scheduler == nil || info.Scheduler.ScheduleTimeoutSeconds == nil || trainJob == nil {
 		return nil, nil
 	}
 
@@ -125,7 +125,7 @@ func (c *CoScheduling) Build(ctx context.Context, runtimeJobTemplate client.Obje
 			Namespace: trainJob.Namespace,
 		},
 		Spec: schedulerpluginsv1alpha1.PodGroupSpec{
-			ScheduleTimeoutSeconds: info.PodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds,
+			ScheduleTimeoutSeconds: info.Scheduler.ScheduleTimeoutSeconds,
 			MinMember:              totalMembers,
 			MinResources:           totalResources,
 		},

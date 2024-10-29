@@ -95,7 +95,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						NumNodes(100).
 						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-						PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{}).
+						PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{ScheduleTimeoutSeconds: ptr.To[int32](100)}).
 						Obj()).
 				Obj()
 		})
@@ -131,6 +131,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 							corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per replica.
 							corev1.ResourceMemory: resource.MustParse("404Gi"),
 						}).
+						SchedulingTimeout(100).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))
@@ -183,6 +184,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 							corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per 101 replica.
 							corev1.ResourceMemory: resource.MustParse("404Gi"),
 						}).
+						SchedulingTimeout(100).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))

@@ -49,19 +49,19 @@ func (t *Torch) Name() string {
 }
 
 // TODO (andreyvelich): Add support for PyTorch elastic when JobSet supports Elastic Jobs.
-func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
-	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch == nil {
+func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeMLPolicy *kubeflowv2.MLPolicy) error {
+	if info == nil || runtimeMLPolicy == nil || runtimeMLPolicy.Torch == nil {
 		return nil
 	}
 
 	// TrainJob contains the actual information for the Trainer.
-	numNodes := info.MLPolicy.NumNodes
+	numNodes := runtimeMLPolicy.NumNodes
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
 		numNodes = trainJob.Spec.Trainer.NumNodes
 	}
 	info.Trainer.NumNodes = numNodes
 
-	numProcPerNode := info.MLPolicy.Torch.NumProcPerNode
+	numProcPerNode := runtimeMLPolicy.Torch.NumProcPerNode
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumProcPerNode != nil {
 		numProcPerNode = trainJob.Spec.Trainer.NumProcPerNode
 	}
