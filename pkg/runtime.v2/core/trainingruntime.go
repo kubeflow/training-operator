@@ -121,7 +121,7 @@ func (r *TrainingRuntime) buildObjects(
 	}
 
 	jobSetTemplate := jobsetv1alpha2.JobSet{
-		Spec: *jobSetTemplateSpec.Spec.DeepCopy(),
+		Spec: jobSetTemplateSpec.Spec,
 	}
 
 	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
