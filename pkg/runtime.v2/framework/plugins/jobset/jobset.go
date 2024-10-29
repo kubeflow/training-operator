@@ -68,12 +68,12 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
-	if runtimeJobTemplateSpec == nil || info == nil || trainJob == nil {
+func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
+	if runtimeJobTemplate == nil || info == nil || trainJob == nil {
 		return nil, fmt.Errorf("runtime info or object is missing")
 	}
 
-	raw, ok := runtimeJobTemplateSpec.(jobsetv1alpha2.JobSetSpec)
+	raw, ok := runtimeJobTemplate.(*jobsetv1alpha2.JobSet)
 	if !ok {
 		return nil, nil
 	}
@@ -89,7 +89,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, 
 				Labels:      info.Labels,
 				Annotations: info.Annotations,
 			},
-			Spec: raw,
+			Spec: raw.Spec,
 		})
 		oldJobSet = nil
 	} else {
@@ -100,6 +100,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, 
 
 	// TODO (andreyvelich): add support for model and dataset initializers.
 	// TODO (andreyvelich): Add support for the PodSpecOverride.
+	// TODO (andreyvelich): Refactor the builder with wrappers for PodSpec.
 	jobSet := jobSetBuilder.
 		Trainer(info, trainJob).
 		PodLabels(info.PodLabels).

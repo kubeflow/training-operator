@@ -99,7 +99,7 @@ func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubef
 	return nil
 }
 
-func (c *CoScheduling) Build(ctx context.Context, runtimeJobTemplateSpec interface{}, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
+func (c *CoScheduling) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
 	if info == nil || info.PodGroupPolicy == nil || info.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
 		return nil, nil
 	}

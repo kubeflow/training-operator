@@ -104,10 +104,10 @@ func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *kubeflowv2.TrainJ
 	return aggregatedWarnings, aggregatedErrors
 }
 
-func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTemplateSpec interface{}, info *runtime.Info, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
+func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
 	var objs []client.Object
 	for _, plugin := range f.componentBuilderPlugins {
-		obj, err := plugin.Build(ctx, runtimeJobTemplateSpec, info, trainJob)
+		obj, err := plugin.Build(ctx, runtimeJobTemplate, info, trainJob)
 		if err != nil {
 			return nil, err
 		}

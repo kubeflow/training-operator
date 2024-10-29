@@ -375,17 +375,17 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		registry               fwkplugins.Registry
-		runtimeJobTemplateSpec interface{}
-		runtimeInfo            *runtime.Info
-		trainJob               *kubeflowv2.TrainJob
-		wantRuntimeInfo        *runtime.Info
-		wantObjs               []client.Object
-		wantError              error
+		registry           fwkplugins.Registry
+		runtimeJobTemplate client.Object
+		runtimeInfo        *runtime.Info
+		trainJob           *kubeflowv2.TrainJob
+		wantRuntimeInfo    *runtime.Info
+		wantObjs           []client.Object
+		wantError          error
 	}{
 		"succeeded to build PodGroup and JobSet with NumNodes from TrainJob": {
-			registry:               fwkplugins.NewRegistry(),
-			runtimeJobTemplateSpec: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").Spec,
+			registry:           fwkplugins.NewRegistry(),
+			runtimeJobTemplate: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").DeepCopy(),
 			runtimeInfo: &runtime.Info{
 				Policy: runtime.Policy{
 					MLPolicy: &kubeflowv2.MLPolicy{
@@ -484,7 +484,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
 				t.Fatal(err)
 			}
-			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeJobTemplateSpec, tc.runtimeInfo, tc.trainJob)
+			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeJobTemplate, tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}

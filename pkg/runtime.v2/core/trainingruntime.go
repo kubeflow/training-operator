@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
@@ -119,7 +120,11 @@ func (r *TrainingRuntime) buildObjects(
 		return nil, err
 	}
 
-	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplateSpec.Spec, info, trainJob)
+	jobSetTemplate := jobsetv1alpha2.JobSet{
+		Spec: *jobSetTemplateSpec.Spec.DeepCopy(),
+	}
+
+	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
 }
 
 func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {

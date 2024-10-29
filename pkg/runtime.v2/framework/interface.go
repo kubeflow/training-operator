@@ -53,5 +53,5 @@ type CustomValidationPlugin interface {
 
 type ComponentBuilderPlugin interface {
 	Plugin
-	Build(ctx context.Context, runtimeJobTemplateSpec interface{}, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error)
+	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error)
 }
