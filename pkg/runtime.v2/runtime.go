@@ -31,8 +31,9 @@ type Info struct {
 }
 
 type Trainer struct {
-	// TODO (andreyvelich): Add more parameters.
-	NumNodes      *int32
+	NumNodes *int32
+	// TODO (andreyvelich). Potentially, we can use map for env and sort it to improve code.
+	// Context: https://github.com/kubeflow/training-operator/pull/2308#discussion_r1823267183
 	Env           []corev1.EnvVar
 	ContainerPort *corev1.ContainerPort
 }

@@ -69,6 +69,8 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	// Update envs for Info object.
 	// Add PyTorch distributed "PET_" values for torchrun
 	// TODO (andreyvelich): Add validation to check that TrainJob doesn't have "PET_" envs.
+	// TODO (andreyvelich): We should validate that envs from different plugins don't conflict with each other.
+	// Ref: https://github.com/kubeflow/training-operator/pull/2308#discussion_r1823229940
 	infoEnvs := []corev1.EnvVar{
 		{
 			Name:  constants.TorchEnvNumNodes,
