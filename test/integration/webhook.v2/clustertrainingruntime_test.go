@@ -68,7 +68,6 @@ var _ = ginkgo.Describe("ClusterTrainingRuntime Webhook", ginkgo.Ordered, func()
 					return baseRuntime.
 						RuntimeSpec(
 							testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
-								Replicas(1).
 								Obj()).
 						Obj()
 				}),

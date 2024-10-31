@@ -19,12 +19,14 @@ package jobset
 import (
 	"maps"
 
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
 type Builder struct {
@@ -36,7 +38,7 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
-				Kind:       "JobSet",
+				Kind:       constants.JobSetKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace:   objectKey.Namespace,
@@ -49,21 +51,55 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 	}
 }
 
-func (b *Builder) ContainerImage(image *string) *Builder {
-	if image == nil || *image == "" {
-		return b
-	}
+// Trainer updates JobSet values for the trainer Job.
+func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
-		for j := range rJob.Template.Spec.Template.Spec.Containers {
-			b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *image
-		}
-	}
-	return b
-}
+		if rJob.Name == constants.JobTrainerNode {
+			// Update the Parallelism and Completions values for the Trainer Job.
+			b.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = info.Trainer.NumNodes
+			b.Spec.ReplicatedJobs[i].Template.Spec.Completions = info.Trainer.NumNodes
 
-func (b *Builder) JobCompletionMode(mode batchv1.CompletionMode) *Builder {
-	for i := range b.Spec.ReplicatedJobs {
-		b.Spec.ReplicatedJobs[i].Template.Spec.CompletionMode = &mode
+			// Update values for the Trainer container.
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerTrainer {
+					// Update values from the TrainJob trainer.
+					if trainJob.Spec.Trainer != nil {
+						if trainJob.Spec.Trainer.Image != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = *trainJob.Spec.Trainer.Image
+						}
+						if trainJob.Spec.Trainer.Command != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = trainJob.Spec.Trainer.Command
+						}
+						if trainJob.Spec.Trainer.Args != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Args = trainJob.Spec.Trainer.Args
+						}
+						if trainJob.Spec.Trainer.ResourcesPerNode != nil {
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Resources = *trainJob.Spec.Trainer.ResourcesPerNode
+						}
+					}
+					// Update values from the Info object.
+					if info.Trainer.Env != nil {
+						// Update JobSet envs from the Info.
+						envNames := sets.New[string]()
+						for _, env := range info.Trainer.Env {
+							envNames.Insert(env.Name)
+						}
+						trainerEnvs := info.Trainer.Env
+						// Info envs take precedence over TrainingRuntime envs.
+						for _, env := range container.Env {
+							if !envNames.Has(env.Name) {
+								trainerEnvs = append(trainerEnvs, env)
+							}
+						}
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Env = trainerEnvs
+					}
+					if info.Trainer.ContainerPort != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports, *info.Trainer.ContainerPort)
+					}
+				}
+			}
+		}
 	}
 	return b
 }

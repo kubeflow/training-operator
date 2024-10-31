@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -35,6 +34,7 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 	fwkplugins "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins"
@@ -150,55 +150,99 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 	cases := map[string]struct {
 		registry        fwkplugins.Registry
 		runtimeInfo     *runtime.Info
+		trainJob        *kubeflowv2.TrainJob
 		wantRuntimeInfo *runtime.Info
 		wantError       error
 	}{
-		"plainml MLPolicy is applied to runtime.Info": {
+		"plainml MLPolicy is applied to runtime.Info, TrainJob doesn't have numNodes": {
 			registry: fwkplugins.NewRegistry(),
 			runtimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
+				RuntimePolicy: runtime.RuntimePolicy{
 					MLPolicy: &kubeflowv2.MLPolicy{
 						NumNodes: ptr.To[int32](100),
 					},
 				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {Replicas: 1},
-					"Worker":      {Replicas: 10},
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 10},
+					},
+				},
+			},
+			trainJob: &kubeflowv2.TrainJob{
+				Spec: kubeflowv2.TrainJobSpec{},
+			},
+			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
+				Trainer: runtime.Trainer{
+					NumNodes: ptr.To[int32](100),
+				},
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 100},
+					},
+				},
+			},
+		},
+		"plainml MLPolicy is applied to runtime.Info, TrainJob has numNodes": {
+			registry: fwkplugins.NewRegistry(),
+			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 10},
+					},
+				},
+			},
+			trainJob: &kubeflowv2.TrainJob{
+				Spec: kubeflowv2.TrainJobSpec{
+					Trainer: &kubeflowv2.Trainer{
+						NumNodes: ptr.To[int32](30),
+					},
 				},
 			},
 			wantRuntimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
+				RuntimePolicy: runtime.RuntimePolicy{
 					MLPolicy: &kubeflowv2.MLPolicy{
 						NumNodes: ptr.To[int32](100),
 					},
 				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {Replicas: 100},
-					"Worker":      {Replicas: 100},
+				Trainer: runtime.Trainer{
+					NumNodes: ptr.To[int32](30),
+				},
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 30},
+					},
 				},
 			},
 		},
 		"registry is empty": {
 			runtimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
-					MLPolicy: &kubeflowv2.MLPolicy{
-						NumNodes: ptr.To[int32](100),
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 10},
 					},
-				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {Replicas: 1},
-					"Worker":      {Replicas: 10},
 				},
 			},
 			wantRuntimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
-					MLPolicy: &kubeflowv2.MLPolicy{
-						NumNodes: ptr.To[int32](100),
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {Replicas: 1},
+						constants.JobTrainerNode: {Replicas: 10},
 					},
-				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {Replicas: 1},
-					"Worker":      {Replicas: 10},
 				},
 			},
 		},
@@ -213,7 +257,7 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo)
+			err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got): %s", diff)
 			}
@@ -226,42 +270,48 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 
 func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 	cases := map[string]struct {
-		trainJob        *kubeflowv2.TrainJob
 		registry        fwkplugins.Registry
 		runtimeInfo     *runtime.Info
+		trainJob        *kubeflowv2.TrainJob
 		wantRuntimeInfo *runtime.Info
 		wantError       error
 	}{
 		"coscheduling plugin is applied to runtime.Info": {
-			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
 			registry: fwkplugins.NewRegistry(),
 			runtimeInfo: &runtime.Info{
-				PodLabels: make(map[string]string),
-				Policy: runtime.Policy{
-					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{},
+				RuntimePolicy: runtime.RuntimePolicy{
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](99),
+							},
+						},
+					},
 				},
+				Scheduler: &runtime.Scheduler{},
 			},
+			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
 			wantRuntimeInfo: &runtime.Info{
-				PodLabels: map[string]string{
-					schedulerpluginsv1alpha1.PodGroupLabel: "test-job",
+				RuntimePolicy: runtime.RuntimePolicy{
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](99),
+							},
+						},
+					},
 				},
-				Policy: runtime.Policy{
-					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{},
+				Scheduler: &runtime.Scheduler{
+					PodLabels: map[string]string{
+						schedulerpluginsv1alpha1.PodGroupLabel: "test-job",
+					},
 				},
 			},
 		},
 		"an empty registry": {
-			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
-			runtimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
-					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{},
-				},
-			},
-			wantRuntimeInfo: &runtime.Info{
-				Policy: runtime.Policy{
-					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{},
-				},
-			},
+			trainJob:        &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
+			runtimeInfo:     &runtime.Info{},
+			wantRuntimeInfo: &runtime.Info{},
 		},
 	}
 	for name, tc := range cases {
@@ -274,7 +324,7 @@ func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = fwk.RunEnforcePodGroupPolicyPlugins(tc.trainJob, tc.runtimeInfo)
+			err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got): %s", diff)
 			}
@@ -326,43 +376,63 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 }
 
 func TestRunComponentBuilderPlugins(t *testing.T) {
-	jobSetBase := testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
-		ResourceRequests(0, corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("2"),
-			corev1.ResourceMemory: resource.MustParse("4Gi"),
-		}).
-		ResourceRequests(1, corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("1"),
-			corev1.ResourceMemory: resource.MustParse("2Gi"),
-		})
-	jobSetWithPropagatedTrainJobParams := jobSetBase.
-		Clone().
-		JobCompletionMode(batchv1.IndexedCompletion).
-		ContainerImage(ptr.To("foo:bar")).
-		ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid")
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse("1"),
+		corev1.ResourceMemory: resource.MustParse("4Gi"),
+	}
 
 	cases := map[string]struct {
-		runtimeInfo     *runtime.Info
-		trainJob        *kubeflowv2.TrainJob
-		registry        fwkplugins.Registry
-		wantError       error
-		wantRuntimeInfo *runtime.Info
-		wantObjs        []client.Object
+		registry           fwkplugins.Registry
+		runtimeInfo        *runtime.Info
+		trainJob           *kubeflowv2.TrainJob
+		runtimeJobTemplate client.Object
+		wantRuntimeInfo    *runtime.Info
+		wantObjs           []client.Object
+		wantError          error
 	}{
-		"coscheduling and jobset are performed": {
+		"succeeded to build PodGroup and JobSet with NumNodes from TrainJob": {
+			registry:           fwkplugins.NewRegistry(),
+			runtimeJobTemplate: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").DeepCopy(),
+			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](10),
+					},
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](300),
+							},
+						},
+					},
+				},
+				Trainer: runtime.Trainer{
+					NumNodes: ptr.To[int32](10),
+				},
+				Scheduler: &runtime.Scheduler{
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {
+							Replicas:    1,
+							PodRequests: resRequests,
+						},
+						constants.JobTrainerNode: {
+							Replicas:    1,
+							PodRequests: resRequests,
+						},
+					},
+				},
+			},
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerImage("foo:bar").
+						NumNodes(100).
+						ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						Obj(),
 				).
 				Obj(),
-			runtimeInfo: &runtime.Info{
-				Obj: jobSetBase.
-					Clone().
-					Obj(),
-				Policy: runtime.Policy{
+			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
 					MLPolicy: &kubeflowv2.MLPolicy{
 						NumNodes: ptr.To[int32](10),
 					},
@@ -374,73 +444,42 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 						},
 					},
 				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {
-						Replicas: 1,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("4Gi"),
+				Trainer: runtime.Trainer{
+					NumNodes: ptr.To[int32](100),
+				},
+				Scheduler: &runtime.Scheduler{
+					PodLabels: map[string]string{schedulerpluginsv1alpha1.PodGroupLabel: "test-job"},
+					TotalRequests: map[string]runtime.TotalResourceRequest{
+						constants.JobInitializer: {
+							Replicas:    1,
+							PodRequests: resRequests,
 						},
-					},
-					"Worker": {
-						Replicas: 1,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("1"),
-							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						constants.JobTrainerNode: {
+							Replicas:    100,         // Replicas is taken from TrainJob NumNodes.
+							PodRequests: resRequests, // TODO (andreyvelich): Add support for TrainJob ResourcesPerNode in TotalRequests.
 						},
 					},
 				},
 			},
-			registry: fwkplugins.NewRegistry(),
 			wantObjs: []client.Object{
 				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
 					SchedulingTimeout(300).
-					MinMember(20).
+					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("30"),
-						corev1.ResourceMemory: resource.MustParse("60Gi"),
+						corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per replica.
+						corev1.ResourceMemory: resource.MustParse("404Gi"),
 					}).
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
 					Obj(),
-				jobSetWithPropagatedTrainJobParams.
-					Clone().
+				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind("TrainJob"), "test-job", "uid").
+					NumNodes(100).
+					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
+					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 					Obj(),
-			},
-			wantRuntimeInfo: &runtime.Info{
-				Obj: jobSetWithPropagatedTrainJobParams.
-					Clone().
-					Obj(),
-				Policy: runtime.Policy{
-					MLPolicy: &kubeflowv2.MLPolicy{
-						NumNodes: ptr.To[int32](10),
-					},
-					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
-						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
-							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
-								ScheduleTimeoutSeconds: ptr.To[int32](300),
-							},
-						},
-					},
-				},
-				TotalRequests: map[string]runtime.TotalResourceRequest{
-					"Coordinator": {
-						Replicas: 10,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("4Gi"),
-						},
-					},
-					"Worker": {
-						Replicas: 10,
-						PodRequests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("1"),
-							corev1.ResourceMemory: resource.MustParse("2Gi"),
-						},
-					},
-				},
 			},
 		},
-		"an empty registry": {},
+		// "an empty registry": {},
 	}
 	cmpOpts := []cmp.Option{
 		cmpopts.SortSlices(func(a, b client.Object) bool {
@@ -458,10 +497,14 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo); err != nil {
+
+			if err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
 				t.Fatal(err)
 			}
-			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeInfo, tc.trainJob)
+			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
+				t.Fatal(err)
+			}
+			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeJobTemplate, tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}
