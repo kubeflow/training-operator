@@ -71,18 +71,18 @@ func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer cl
 	return f, nil
 }
 
-func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info) error {
+func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	for _, plugin := range f.enforceMLPlugins {
-		if err := plugin.EnforceMLPolicy(info); err != nil {
+		if err := plugin.EnforceMLPolicy(info, trainJob); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (f *Framework) RunEnforcePodGroupPolicyPlugins(trainJob *kubeflowv2.TrainJob, info *runtime.Info) error {
+func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	for _, plugin := range f.enforcePodGroupPolicyPlugins {
-		if err := plugin.EnforcePodGroupPolicy(trainJob, info); err != nil {
+		if err := plugin.EnforcePodGroupPolicy(info, trainJob); err != nil {
 			return err
 		}
 	}
@@ -104,10 +104,10 @@ func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *kubeflowv2.TrainJ
 	return aggregatedWarnings, aggregatedErrors
 }
 
-func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
+func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) ([]client.Object, error) {
 	var objs []client.Object
 	for _, plugin := range f.componentBuilderPlugins {
-		obj, err := plugin.Build(ctx, info, trainJob)
+		obj, err := plugin.Build(ctx, runtimeJobTemplate, info, trainJob)
 		if err != nil {
 			return nil, err
 		}

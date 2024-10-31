@@ -22,6 +22,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 )
@@ -40,16 +42,35 @@ func (p *PlainML) Name() string {
 	return Name
 }
 
-func (p *PlainML) EnforceMLPolicy(info *runtime.Info) error {
-	if info == nil || info.MLPolicy == nil || info.MLPolicy.Torch != nil || info.MLPolicy.MPI != nil {
+func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
+	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.Torch != nil || info.RuntimePolicy.MLPolicy.MPI != nil {
 		return nil
 	}
-	numNodes := ptr.Deref(info.MLPolicy.NumNodes, 1)
+
+	// TrainJob contains the actual information for the number of nodes.
+	numNodes := info.RuntimePolicy.MLPolicy.NumNodes
+
+	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
+		numNodes = trainJob.Spec.Trainer.NumNodes
+	}
+	info.Trainer.NumNodes = numNodes
+
+	// Add envs from the TrainJob.
+	if trainJob.Spec.Trainer != nil {
+		info.Trainer.Env = append(info.Trainer.Env, trainJob.Spec.Trainer.Env...)
+	}
+
+	// Update total Pod requests for the PodGroupPolicy plugin.
 	for rName := range info.TotalRequests {
-		info.TotalRequests[rName] = runtime.TotalResourceRequest{
-			Replicas:    numNodes,
-			PodRequests: info.TotalRequests[rName].PodRequests,
+		// For other Jobs like the Initializer, replica is always equal to 1.
+		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
+		if rName == constants.JobTrainerNode {
+			info.Scheduler.TotalRequests[rName] = runtime.TotalResourceRequest{
+				Replicas:    ptr.Deref(numNodes, constants.DefaultJobReplicas),
+				PodRequests: info.TotalRequests[rName].PodRequests,
+			}
 		}
 	}
+
 	return nil
 }

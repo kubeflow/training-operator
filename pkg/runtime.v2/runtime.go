@@ -17,33 +17,43 @@ limitations under the License.
 package runtimev2
 
 import (
-	"errors"
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
-var (
-	errorDifferentGVK  = errors.New("the GroupVersionKinds are different between old and new objects")
-	errorObjectsAreNil = errors.New("old or new objects are nil")
-)
-
 type Info struct {
-	Obj         client.Object
+	// Labels and Annotations to add to the RuntimeJobTemplate.
 	Labels      map[string]string
-	PodLabels   map[string]string
 	Annotations map[string]string
-	Policy
-	TotalRequests map[string]TotalResourceRequest
+	// Original policy values from the runtime.
+	RuntimePolicy RuntimePolicy
+	// Trainer parameters to add to the RuntimeJobTemplate.
+	Trainer
+	// Scheduler parameters to add to the RuntimeJobTemplate.
+	*Scheduler
 }
 
-type Policy struct {
+type RuntimePolicy struct {
 	MLPolicy       *kubeflowv2.MLPolicy
 	PodGroupPolicy *kubeflowv2.PodGroupPolicy
+}
+
+type Trainer struct {
+	NumNodes *int32
+	// TODO (andreyvelich). Potentially, we can use map for env and sort it to improve code.
+	// Context: https://github.com/kubeflow/training-operator/pull/2308#discussion_r1823267183
+	Env           []corev1.EnvVar
+	ContainerPort *corev1.ContainerPort
+}
+
+// TODO (andreyvelich): Potentially, we can add ScheduleTimeoutSeconds to the Scheduler for consistency.
+type Scheduler struct {
+	PodLabels     map[string]string
+	TotalRequests map[string]TotalResourceRequest
 }
 
 type TotalResourceRequest struct {
@@ -52,10 +62,10 @@ type TotalResourceRequest struct {
 }
 
 type InfoOptions struct {
+	labels          map[string]string
+	annotations     map[string]string
+	runtimePolicy   RuntimePolicy
 	podSpecReplicas []podSpecReplica
-	Policy
-	labels      map[string]string
-	annotations map[string]string
 }
 
 type InfoOption func(options *InfoOptions)
@@ -66,16 +76,6 @@ type podSpecReplica struct {
 	replicas int32
 	name     string
 	podSpec  corev1.PodSpec
-}
-
-func WithPodSpecReplicas(replicaName string, replicas int32, podSpec corev1.PodSpec) InfoOption {
-	return func(o *InfoOptions) {
-		o.podSpecReplicas = append(o.podSpecReplicas, podSpecReplica{
-			name:     replicaName,
-			replicas: replicas,
-			podSpec:  podSpec,
-		})
-	}
 }
 
 func WithLabels(labels map[string]string) InfoOption {
@@ -90,33 +90,43 @@ func WithAnnotations(annotations map[string]string) InfoOption {
 	}
 }
 
-func WithPodGroupPolicy(pgPolicy *kubeflowv2.PodGroupPolicy) InfoOption {
-	return func(o *InfoOptions) {
-		o.PodGroupPolicy = pgPolicy
-	}
-}
-
 func WithMLPolicy(mlPolicy *kubeflowv2.MLPolicy) InfoOption {
 	return func(o *InfoOptions) {
-		o.MLPolicy = mlPolicy
+		o.runtimePolicy.MLPolicy = mlPolicy
 	}
 }
 
-func NewInfo(obj client.Object, opts ...InfoOption) *Info {
+func WithPodGroupPolicy(pgPolicy *kubeflowv2.PodGroupPolicy) InfoOption {
+	return func(o *InfoOptions) {
+		o.runtimePolicy.PodGroupPolicy = pgPolicy
+	}
+}
+
+func WithPodSpecReplicas(replicaName string, replicas int32, podSpec corev1.PodSpec) InfoOption {
+	return func(o *InfoOptions) {
+		o.podSpecReplicas = append(o.podSpecReplicas, podSpecReplica{
+			name:     replicaName,
+			replicas: replicas,
+			podSpec:  podSpec,
+		})
+	}
+}
+
+func NewInfo(opts ...InfoOption) *Info {
 	options := defaultOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
-	var copyObj client.Object
-	if obj != nil {
-		copyObj = obj.DeepCopyObject().(client.Object)
-	}
+
 	info := &Info{
-		Obj:           copyObj,
 		Labels:        make(map[string]string),
 		Annotations:   make(map[string]string),
-		TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
+		RuntimePolicy: options.runtimePolicy,
+		Scheduler: &Scheduler{
+			TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
+		},
 	}
+
 	for _, spec := range options.podSpecReplicas {
 		info.TotalRequests[spec.name] = TotalResourceRequest{
 			Replicas: spec.replicas,
@@ -130,17 +140,6 @@ func NewInfo(obj client.Object, opts ...InfoOption) *Info {
 	if options.annotations != nil {
 		info.Annotations = options.annotations
 	}
-	info.Policy = options.Policy
-	return info
-}
 
-func (i *Info) Update(obj client.Object) error {
-	if obj == nil || i.Obj == nil {
-		return errorObjectsAreNil
-	}
-	if i.Obj.GetObjectKind().GroupVersionKind() != obj.GetObjectKind().GroupVersionKind() {
-		return errorDifferentGVK
-	}
-	i.Obj = obj.DeepCopyObject().(client.Object)
-	return nil
+	return info
 }

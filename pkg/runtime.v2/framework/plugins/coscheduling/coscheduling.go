@@ -43,6 +43,7 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
 	runtimeindexer "github.com/kubeflow/training-operator/pkg/runtime.v2/indexer"
@@ -87,19 +88,20 @@ func (c *CoScheduling) Name() string {
 	return Name
 }
 
-func (c *CoScheduling) EnforcePodGroupPolicy(trainJob *kubeflowv2.TrainJob, info *runtime.Info) error {
-	if info == nil || info.PodGroupPolicy == nil || trainJob == nil {
+func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
+	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || trainJob == nil {
 		return nil
 	}
-	if info.PodLabels == nil {
-		info.PodLabels = make(map[string]string, 1)
+
+	if info.Scheduler.PodLabels == nil {
+		info.Scheduler.PodLabels = make(map[string]string, 1)
 	}
-	info.PodLabels[schedulerpluginsv1alpha1.PodGroupLabel] = trainJob.Name
+	info.Scheduler.PodLabels[schedulerpluginsv1alpha1.PodGroupLabel] = trainJob.Name
 	return nil
 }
 
-func (c *CoScheduling) Build(ctx context.Context, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
-	if info == nil || info.PodGroupPolicy == nil || info.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
+func (c *CoScheduling) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error) {
+	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || info.RuntimePolicy.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
 		return nil, nil
 	}
 
@@ -117,14 +119,14 @@ func (c *CoScheduling) Build(ctx context.Context, info *runtime.Info, trainJob *
 	newPG := &schedulerpluginsv1alpha1.PodGroup{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: schedulerpluginsv1alpha1.SchemeGroupVersion.String(),
-			Kind:       "PodGroup",
+			Kind:       constants.PodGroupKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      trainJob.Name,
 			Namespace: trainJob.Namespace,
 		},
 		Spec: schedulerpluginsv1alpha1.PodGroupSpec{
-			ScheduleTimeoutSeconds: info.PodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds,
+			ScheduleTimeoutSeconds: info.RuntimePolicy.PodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds,
 			MinMember:              totalMembers,
 			MinResources:           totalResources,
 		},
