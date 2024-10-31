@@ -93,7 +93,9 @@ func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubef
 		return nil
 	}
 
-	info.Scheduler.PodLabels = make(map[string]string, 1)
+	if info.Scheduler.PodLabels == nil {
+		info.Scheduler.PodLabels = make(map[string]string, 1)
+	}
 	info.Scheduler.PodLabels[schedulerpluginsv1alpha1.PodGroupLabel] = trainJob.Name
 	return nil
 }
