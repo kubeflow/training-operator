@@ -8,6 +8,9 @@ import (
 
 const (
 
+	// DefaultJobReplicas is the default value for the ReplicatedJob replicas.
+	DefaultJobReplicas = 1
+
 	// JobSetKind is the Kind name for the JobSet.
 	JobSetKind string = "JobSet"
 

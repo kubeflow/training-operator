@@ -125,7 +125,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 		// TODO (andreyvelich): Add support for total requests from the TrainJob's ResourcesPerNode.
 		if rName == constants.JobTrainerNode {
 			info.TotalRequests[rName] = runtime.TotalResourceRequest{
-				Replicas:    ptr.Deref(numNodes, 1),
+				Replicas:    ptr.Deref(numNodes, constants.DefaultJobReplicas),
 				PodRequests: info.TotalRequests[rName].PodRequests,
 			}
 		}
