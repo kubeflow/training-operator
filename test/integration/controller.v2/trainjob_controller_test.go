@@ -17,6 +17,8 @@ limitations under the License.
 package controllerv2
 
 import (
+	"fmt"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -105,14 +107,14 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
 			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
 
-			ginkgo.By("Checking if appropriately JobSet and PodGroup are created")
+			ginkgo.By("Checking if the appropriate JobSet and PodGroup are created")
 			gomega.Eventually(func(g gomega.Gomega) {
 				jobSet := &jobsetv1alpha2.JobSet{}
 				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
 				g.Expect(jobSet).Should(gomega.BeComparableTo(
 					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
-						NumNodes(100).
 						Replicas(1).
+						NumNodes(100).
 						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						Suspend(true).
@@ -164,8 +166,8 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
 				g.Expect(jobSet).Should(gomega.BeComparableTo(
 					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
-						NumNodes(100).
 						Replicas(1).
+						NumNodes(100).
 						ContainerTrainer(updatedImageName, []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						Suspend(true).
@@ -239,6 +241,78 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						g.Expect(rJob.Template.Spec.Template.Spec.Containers[0].Image).Should(gomega.Equal(originImageName))
 					}
 				}
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		})
+
+		ginkgo.It("Should succeed to create TrainJob with Torch TrainingRuntime", func() {
+			ginkgo.By("Creating Torch TrainingRuntime and TrainJob")
+			trainJob = testingutil.MakeTrainJobWrapper(ns.Name, "alpha").
+				RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "alpha").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerTrainerEnv([]corev1.EnvVar{{Name: "TRAIN_JOB", Value: "value"}}).
+						Obj()).
+				Obj()
+			trainJobKey = client.ObjectKeyFromObject(trainJob)
+
+			trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
+				RuntimeSpec(
+					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "alpha").Spec).
+						TorchPolicy(100, "auto").
+						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						Obj()).
+				Obj()
+			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if the appropriate JobSet is created")
+			gomega.Eventually(func(g gomega.Gomega) {
+				jobSet := &jobsetv1alpha2.JobSet{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+				g.Expect(jobSet).Should(gomega.BeComparableTo(
+					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
+						Replicas(1).
+						NumNodes(100).
+						Suspend(false).
+						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerTrainerPorts([]corev1.ContainerPort{{ContainerPort: constants.ContainerTrainerPort, Protocol: "TCP"}}).
+						ContainerTrainerEnv(
+							[]corev1.EnvVar{
+								{
+									Name:  "TRAIN_JOB",
+									Value: "value",
+								},
+								{
+									Name:  constants.TorchEnvNumNodes,
+									Value: "100",
+								},
+								{
+									Name:  constants.TorchEnvNumProcPerNode,
+									Value: "auto",
+								},
+								{
+									Name: constants.TorchEnvNodeRank,
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: constants.JobCompletionIndexFieldPath,
+										},
+									},
+								},
+								{
+									Name:  constants.TorchEnvMasterAddr,
+									Value: fmt.Sprintf("alpha-%s-0-0.alpha", constants.JobTrainerNode),
+								},
+								{
+									Name:  constants.TorchEnvMasterPort,
+									Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
+								},
+							},
+						).
+						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
+						Obj(),
+					util.IgnoreObjectMetadata))
+
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		})
 	})

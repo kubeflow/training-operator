@@ -199,7 +199,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 							{
 								Name:  constants.TorchEnvMasterAddr,
-								Value: fmt.Sprintf("test-job-%v-0-0.test-job", constants.JobTrainerNode),
+								Value: fmt.Sprintf("test-job-%s-0-0.test-job", constants.JobTrainerNode),
 							},
 							{
 								Name:  constants.TorchEnvMasterPort,
@@ -284,7 +284,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 							{
 								Name:  constants.TorchEnvMasterAddr,
-								Value: fmt.Sprintf("test-job-%v-0-0.test-job", constants.JobTrainerNode),
+								Value: fmt.Sprintf("test-job-%s-0-0.test-job", constants.JobTrainerNode),
 							},
 							{
 								Name:  constants.TorchEnvMasterPort,

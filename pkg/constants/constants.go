@@ -52,5 +52,5 @@ const (
 
 var (
 	// JobCompletionIndexFieldPath is the field path for the Job completion index annotation.
-	JobCompletionIndexFieldPath string = fmt.Sprintf("metadata.annotations['%v']", batchv1.JobCompletionIndexAnnotation)
+	JobCompletionIndexFieldPath string = fmt.Sprintf("metadata.annotations['%s']", batchv1.JobCompletionIndexAnnotation)
 )
