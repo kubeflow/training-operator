@@ -42,13 +42,14 @@ func (p *PlainML) Name() string {
 	return Name
 }
 
-func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeMLPolicy *kubeflowv2.MLPolicy) error {
-	if info == nil || runtimeMLPolicy == nil || runtimeMLPolicy.Torch != nil || runtimeMLPolicy.MPI != nil {
+func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
+	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.Torch != nil || info.RuntimePolicy.MLPolicy.MPI != nil {
 		return nil
 	}
 
 	// TrainJob contains the actual information for the number of nodes.
-	numNodes := runtimeMLPolicy.NumNodes
+	numNodes := info.RuntimePolicy.MLPolicy.NumNodes
+
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {
 		numNodes = trainJob.Spec.Trainer.NumNodes
 	}

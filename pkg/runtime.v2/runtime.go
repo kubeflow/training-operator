@@ -21,13 +21,25 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
+
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
 type Info struct {
+	// Labels and Annotations to add to the RuntimeJobTemplate.
 	Labels      map[string]string
 	Annotations map[string]string
+	// Original policy values from the runtime.
+	RuntimePolicy RuntimePolicy
+	// Trainer parameters to add to the RuntimeJobTemplate.
 	Trainer
+	// Scheduler parameters to add to the RuntimeJobTemplate.
 	*Scheduler
+}
+
+type RuntimePolicy struct {
+	MLPolicy       *kubeflowv2.MLPolicy
+	PodGroupPolicy *kubeflowv2.PodGroupPolicy
 }
 
 type Trainer struct {
@@ -38,10 +50,10 @@ type Trainer struct {
 	ContainerPort *corev1.ContainerPort
 }
 
+// TODO (andreyvelich): Potentially, we can add ScheduleTimeoutSeconds to the Scheduler for consistency.
 type Scheduler struct {
-	PodLabels              map[string]string
-	TotalRequests          map[string]TotalResourceRequest
-	ScheduleTimeoutSeconds *int32
+	PodLabels     map[string]string
+	TotalRequests map[string]TotalResourceRequest
 }
 
 type TotalResourceRequest struct {
@@ -50,9 +62,10 @@ type TotalResourceRequest struct {
 }
 
 type InfoOptions struct {
-	podSpecReplicas []podSpecReplica
 	labels          map[string]string
 	annotations     map[string]string
+	runtimePolicy   RuntimePolicy
+	podSpecReplicas []podSpecReplica
 }
 
 type InfoOption func(options *InfoOptions)
@@ -63,16 +76,6 @@ type podSpecReplica struct {
 	replicas int32
 	name     string
 	podSpec  corev1.PodSpec
-}
-
-func WithPodSpecReplicas(replicaName string, replicas int32, podSpec corev1.PodSpec) InfoOption {
-	return func(o *InfoOptions) {
-		o.podSpecReplicas = append(o.podSpecReplicas, podSpecReplica{
-			name:     replicaName,
-			replicas: replicas,
-			podSpec:  podSpec,
-		})
-	}
 }
 
 func WithLabels(labels map[string]string) InfoOption {
@@ -87,6 +90,28 @@ func WithAnnotations(annotations map[string]string) InfoOption {
 	}
 }
 
+func WithMLPolicy(mlPolicy *kubeflowv2.MLPolicy) InfoOption {
+	return func(o *InfoOptions) {
+		o.runtimePolicy.MLPolicy = mlPolicy
+	}
+}
+
+func WithPodGroupPolicy(pgPolicy *kubeflowv2.PodGroupPolicy) InfoOption {
+	return func(o *InfoOptions) {
+		o.runtimePolicy.PodGroupPolicy = pgPolicy
+	}
+}
+
+func WithPodSpecReplicas(replicaName string, replicas int32, podSpec corev1.PodSpec) InfoOption {
+	return func(o *InfoOptions) {
+		o.podSpecReplicas = append(o.podSpecReplicas, podSpecReplica{
+			name:     replicaName,
+			replicas: replicas,
+			podSpec:  podSpec,
+		})
+	}
+}
+
 func NewInfo(opts ...InfoOption) *Info {
 	options := defaultOptions
 	for _, opt := range opts {
@@ -94,8 +119,9 @@ func NewInfo(opts ...InfoOption) *Info {
 	}
 
 	info := &Info{
-		Labels:      make(map[string]string),
-		Annotations: make(map[string]string),
+		Labels:        make(map[string]string),
+		Annotations:   make(map[string]string),
+		RuntimePolicy: options.runtimePolicy,
 		Scheduler: &Scheduler{
 			TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
 		},

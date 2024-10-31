@@ -71,18 +71,18 @@ func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer cl
 	return f, nil
 }
 
-func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimeMLPolicy *kubeflowv2.MLPolicy) error {
+func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	for _, plugin := range f.enforceMLPlugins {
-		if err := plugin.EnforceMLPolicy(info, trainJob, runtimeMLPolicy); err != nil {
+		if err := plugin.EnforceMLPolicy(info, trainJob); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob, runtimePodGroupPolicy *kubeflowv2.PodGroupPolicy) error {
+func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob *kubeflowv2.TrainJob) error {
 	for _, plugin := range f.enforcePodGroupPolicyPlugins {
-		if err := plugin.EnforcePodGroupPolicy(info, trainJob, runtimePodGroupPolicy); err != nil {
+		if err := plugin.EnforcePodGroupPolicy(info, trainJob); err != nil {
 			return err
 		}
 	}

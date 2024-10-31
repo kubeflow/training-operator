@@ -101,6 +101,8 @@ func (r *TrainingRuntime) buildObjects(
 	opts := []runtime.InfoOption{
 		runtime.WithLabels(propagationLabels),
 		runtime.WithAnnotations(propagationAnnotations),
+		runtime.WithMLPolicy(mlPolicy),
+		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}
 
 	for _, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
@@ -110,11 +112,11 @@ func (r *TrainingRuntime) buildObjects(
 
 	info := runtime.NewInfo(opts...)
 
-	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob, mlPolicy); err != nil {
+	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
 		return nil, err
 	}
 
-	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob, podGroupPolicy); err != nil {
+	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
 		return nil, err
 	}
 

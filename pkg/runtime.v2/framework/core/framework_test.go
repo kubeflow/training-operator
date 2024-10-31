@@ -151,13 +151,17 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 		registry        fwkplugins.Registry
 		runtimeInfo     *runtime.Info
 		trainJob        *kubeflowv2.TrainJob
-		runtimeMLPolicy *kubeflowv2.MLPolicy
 		wantRuntimeInfo *runtime.Info
 		wantError       error
 	}{
 		"plainml MLPolicy is applied to runtime.Info, TrainJob doesn't have numNodes": {
 			registry: fwkplugins.NewRegistry(),
 			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
 				Scheduler: &runtime.Scheduler{
 					TotalRequests: map[string]runtime.TotalResourceRequest{
 						constants.JobInitializer: {Replicas: 1},
@@ -168,10 +172,12 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 			trainJob: &kubeflowv2.TrainJob{
 				Spec: kubeflowv2.TrainJobSpec{},
 			},
-			runtimeMLPolicy: &kubeflowv2.MLPolicy{
-				NumNodes: ptr.To[int32](100),
-			},
 			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
 				Trainer: runtime.Trainer{
 					NumNodes: ptr.To[int32](100),
 				},
@@ -186,6 +192,11 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 		"plainml MLPolicy is applied to runtime.Info, TrainJob has numNodes": {
 			registry: fwkplugins.NewRegistry(),
 			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
 				Scheduler: &runtime.Scheduler{
 					TotalRequests: map[string]runtime.TotalResourceRequest{
 						constants.JobInitializer: {Replicas: 1},
@@ -200,10 +211,12 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 					},
 				},
 			},
-			runtimeMLPolicy: &kubeflowv2.MLPolicy{
-				NumNodes: ptr.To[int32](100),
-			},
 			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](100),
+					},
+				},
 				Trainer: runtime.Trainer{
 					NumNodes: ptr.To[int32](30),
 				},
@@ -244,7 +257,7 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob, tc.runtimeMLPolicy)
+			err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got): %s", diff)
 			}
@@ -257,40 +270,48 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 
 func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 	cases := map[string]struct {
-		registry              fwkplugins.Registry
-		runtimeInfo           *runtime.Info
-		trainJob              *kubeflowv2.TrainJob
-		runtimePodGroupPolicy *kubeflowv2.PodGroupPolicy
-		wantRuntimeInfo       *runtime.Info
-		wantError             error
+		registry        fwkplugins.Registry
+		runtimeInfo     *runtime.Info
+		trainJob        *kubeflowv2.TrainJob
+		wantRuntimeInfo *runtime.Info
+		wantError       error
 	}{
 		"coscheduling plugin is applied to runtime.Info": {
 			registry: fwkplugins.NewRegistry(),
 			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](99),
+							},
+						},
+					},
+				},
 				Scheduler: &runtime.Scheduler{},
 			},
 			trainJob: &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
-			runtimePodGroupPolicy: &kubeflowv2.PodGroupPolicy{
-				PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
-					Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
-						ScheduleTimeoutSeconds: ptr.To[int32](99),
+			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](99),
+							},
+						},
 					},
 				},
-			},
-			wantRuntimeInfo: &runtime.Info{
 				Scheduler: &runtime.Scheduler{
 					PodLabels: map[string]string{
 						schedulerpluginsv1alpha1.PodGroupLabel: "test-job",
 					},
-					ScheduleTimeoutSeconds: ptr.To[int32](99),
 				},
 			},
 		},
 		"an empty registry": {
-			trainJob:              &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
-			runtimeInfo:           &runtime.Info{},
-			runtimePodGroupPolicy: &kubeflowv2.PodGroupPolicy{},
-			wantRuntimeInfo:       &runtime.Info{},
+			trainJob:        &kubeflowv2.TrainJob{ObjectMeta: metav1.ObjectMeta{Name: "test-job", Namespace: metav1.NamespaceDefault}},
+			runtimeInfo:     &runtime.Info{},
+			wantRuntimeInfo: &runtime.Info{},
 		},
 	}
 	for name, tc := range cases {
@@ -303,7 +324,7 @@ func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob, tc.runtimePodGroupPolicy)
+			err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got): %s", diff)
 			}
@@ -361,25 +382,34 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		registry              fwkplugins.Registry
-		runtimeInfo           *runtime.Info
-		trainJob              *kubeflowv2.TrainJob
-		runtimeMLPolicy       *kubeflowv2.MLPolicy
-		runtimePodGroupPolicy *kubeflowv2.PodGroupPolicy
-		runtimeJobTemplate    client.Object
-		wantRuntimeInfo       *runtime.Info
-		wantObjs              []client.Object
-		wantError             error
+		registry           fwkplugins.Registry
+		runtimeInfo        *runtime.Info
+		trainJob           *kubeflowv2.TrainJob
+		runtimeJobTemplate client.Object
+		wantRuntimeInfo    *runtime.Info
+		wantObjs           []client.Object
+		wantError          error
 	}{
 		"succeeded to build PodGroup and JobSet with NumNodes from TrainJob": {
 			registry:           fwkplugins.NewRegistry(),
 			runtimeJobTemplate: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").DeepCopy(),
 			runtimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](10),
+					},
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](300),
+							},
+						},
+					},
+				},
 				Trainer: runtime.Trainer{
 					NumNodes: ptr.To[int32](10),
 				},
 				Scheduler: &runtime.Scheduler{
-					ScheduleTimeoutSeconds: ptr.To[int32](300),
 					TotalRequests: map[string]runtime.TotalResourceRequest{
 						constants.JobInitializer: {
 							Replicas:    1,
@@ -401,23 +431,24 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 						Obj(),
 				).
 				Obj(),
-			runtimeMLPolicy: &kubeflowv2.MLPolicy{
-				NumNodes: ptr.To[int32](10),
-			},
-			runtimePodGroupPolicy: &kubeflowv2.PodGroupPolicy{
-				PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
-					Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
-						ScheduleTimeoutSeconds: ptr.To[int32](300),
+			wantRuntimeInfo: &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{
+					MLPolicy: &kubeflowv2.MLPolicy{
+						NumNodes: ptr.To[int32](10),
+					},
+					PodGroupPolicy: &kubeflowv2.PodGroupPolicy{
+						PodGroupPolicySource: kubeflowv2.PodGroupPolicySource{
+							Coscheduling: &kubeflowv2.CoschedulingPodGroupPolicySource{
+								ScheduleTimeoutSeconds: ptr.To[int32](300),
+							},
+						},
 					},
 				},
-			},
-			wantRuntimeInfo: &runtime.Info{
 				Trainer: runtime.Trainer{
 					NumNodes: ptr.To[int32](100),
 				},
 				Scheduler: &runtime.Scheduler{
-					ScheduleTimeoutSeconds: ptr.To[int32](300),
-					PodLabels:              map[string]string{schedulerpluginsv1alpha1.PodGroupLabel: "test-job"},
+					PodLabels: map[string]string{schedulerpluginsv1alpha1.PodGroupLabel: "test-job"},
 					TotalRequests: map[string]runtime.TotalResourceRequest{
 						constants.JobInitializer: {
 							Replicas:    1,
@@ -467,10 +498,10 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob, tc.runtimePodGroupPolicy); err != nil {
+			if err = fwk.RunEnforcePodGroupPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
 				t.Fatal(err)
 			}
-			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob, tc.runtimeMLPolicy); err != nil {
+			if err = fwk.RunEnforceMLPolicyPlugins(tc.runtimeInfo, tc.trainJob); err != nil {
 				t.Fatal(err)
 			}
 			objs, err := fwk.RunComponentBuilderPlugins(ctx, tc.runtimeJobTemplate, tc.runtimeInfo, tc.trainJob)
