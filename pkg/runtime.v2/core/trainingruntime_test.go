@@ -86,6 +86,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "test-job", "uid").
 					MinMember(31). // 31 replicas = 30 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
+						// TODO (andreyvelich): Create helper function to calculate PodGroup resources in the unit tests.
 						corev1.ResourceCPU: resource.MustParse("31"), // Every replica has 1 CPU = 31 CPUs in total.
 					}).
 					SchedulingTimeout(120).
