@@ -173,15 +173,15 @@ spec:
                       type: object
                     type: array
                   secretRef:
-                    description: Reference to the TrainJob's secrets to download dataset.
+                    description: |-
+                      Reference to the secret with credentials to download dataset.
+                      Secret must be created in the TrainJob's namespace.
                     properties:
                       name:
-                        description: name is unique within a namespace to reference
-                          a secret resource.
-                        type: string
-                      namespace:
-                        description: namespace defines the space within which the
-                          secret name must be unique.
+                        description: |-
+                          Name of the referent.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
@@ -339,16 +339,15 @@ spec:
                           type: object
                         type: array
                       secretRef:
-                        description: Reference to the TrainJob's secrets to download
-                          model.
+                        description: |-
+                          Reference to the secret with credentials to download model.
+                          Secret must be created in the TrainJob's namespace.
                         properties:
                           name:
-                            description: name is unique within a namespace to reference
-                              a secret resource.
-                            type: string
-                          namespace:
-                            description: namespace defines the space within which
-                              the secret name must be unique.
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
@@ -479,16 +478,15 @@ spec:
                           type: object
                         type: array
                       secretRef:
-                        description: Reference to the TrainJob's secrets to export
-                          model.
+                        description: |-
+                          Reference to the secret with credentials to export model.
+                          Secret must be created in the TrainJob's namespace.
                         properties:
                           name:
-                            description: name is unique within a namespace to reference
-                              a secret resource.
-                            type: string
-                          namespace:
-                            description: namespace defines the space within which
-                              the secret name must be unique.
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
