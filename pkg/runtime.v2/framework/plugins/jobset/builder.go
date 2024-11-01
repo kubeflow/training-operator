@@ -52,7 +52,7 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 	}
 }
 
-// mergeInitializerEnvs merge the TrainJob and Runtime Pod envs.
+// mergeInitializerEnvs merges the TrainJob and Runtime Pod envs.
 func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev1.EnvVar) []corev1.EnvVar {
 	envNames := sets.New[string]()
 	envs := []corev1.EnvVar{}
@@ -66,11 +66,9 @@ func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev
 	}
 	// Add the rest TrainJob envs.
 	// TODO (andreyvelich): Validate that TrainJob dataset and model envs don't have the STORAGE_URI env.
-	if trainJobEnvs != nil {
-		for _, e := range trainJobEnvs {
-			envNames.Insert(e.Name)
-			envs = append(envs, e)
-		}
+	for _, e := range trainJobEnvs {
+		envNames.Insert(e.Name)
+		envs = append(envs, e)
 	}
 
 	// TrainJob envs take precedence over the TrainingRuntime envs.
@@ -83,7 +81,7 @@ func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev
 }
 
 // Initializer updates JobSet values for the initializer Job.
-func (b *Builder) Initializer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
+func (b *Builder) Initializer(trainJob *kubeflowv2.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobInitializer {
 			// TODO (andreyvelich): Currently, we use initContainers for the initializers.
@@ -110,7 +108,7 @@ func (b *Builder) Initializer(info *runtime.Info, trainJob *kubeflowv2.TrainJob)
 						)
 					}
 				}
-				// TODO (andreyvelich): Add support for the model exporter when we support it.
+				// TODO (andreyvelich): Add the model exporter when we support it.
 				// Update values for the model initializer container.
 				if container.Name == constants.ContainerModelInitializer && trainJob.Spec.ModelConfig != nil && trainJob.Spec.ModelConfig.Input != nil {
 					// Update the model initializer envs.

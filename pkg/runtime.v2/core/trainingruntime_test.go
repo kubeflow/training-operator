@@ -87,8 +87,8 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					MinMember(31). // 31 replicas = 30 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
 						// Every replica has 1 CPU = 31 CPUs in total.
-						// Since initializers use init containers, they execute sequentially.
-						// MinResources is equal to the maximum from the initContainer resources.
+						// Initializer uses InitContainers which execute sequentially.
+						// Thus, the MinResources is equal to the maximum from the initContainer resources.
 						corev1.ResourceCPU: resource.MustParse("31"),
 					}).
 					SchedulingTimeout(120).

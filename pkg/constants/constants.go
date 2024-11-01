@@ -65,7 +65,7 @@ var (
 	// JobCompletionIndexFieldPath is the field path for the Job completion index annotation.
 	JobCompletionIndexFieldPath string = fmt.Sprintf("metadata.annotations['%s']", batchv1.JobCompletionIndexAnnotation)
 
-	// This is temp container that we use in the initializer ReplicatedJob.
+	// This is the temporary container that we use in the initializer ReplicatedJob.
 	// TODO (andreyvelich): Once JobSet supports execution policy, we can remove it.
 	// TODO (andreyvelich): Add validation to check that initializer ReplicatedJob has this container.
 	ContainerBusyBox corev1.Container = corev1.Container{
