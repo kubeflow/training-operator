@@ -31,6 +31,7 @@ import (
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/constants"
+	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 )
 
@@ -211,7 +212,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					InitContainerDatasetInitializerEnv(
 						[]corev1.EnvVar{
 							{
-								Name:  constants.InitializerEnvStorageUri,
+								Name:  jobsetplugin.InitializerEnvStorageUri,
 								Value: "hf://trainjob-dataset",
 							},
 							{
@@ -234,7 +235,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					InitContainerModelInitializerEnv(
 						[]corev1.EnvVar{
 							{
-								Name:  constants.InitializerEnvStorageUri,
+								Name:  jobsetplugin.InitializerEnvStorageUri,
 								Value: "hf://trainjob-model",
 							},
 							{

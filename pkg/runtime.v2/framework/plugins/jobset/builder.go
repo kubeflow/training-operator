@@ -58,9 +58,9 @@ func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev
 	var envs []corev1.EnvVar
 	// Add the Storage URI env.
 	if storageUri != nil {
-		envNames.Insert(constants.InitializerEnvStorageUri)
+		envNames.Insert(InitializerEnvStorageUri)
 		envs = append(envs, corev1.EnvVar{
-			Name:  constants.InitializerEnvStorageUri,
+			Name:  InitializerEnvStorageUri,
 			Value: *storageUri,
 		})
 	}

@@ -28,6 +28,7 @@ import (
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/constants"
+	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 )
 
 type JobSetWrapper struct {
@@ -57,21 +58,21 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 											{
 												Name: constants.ContainerDatasetInitializer,
 												VolumeMounts: []corev1.VolumeMount{
-													constants.VolumeMountDatasetInitializer,
+													jobsetplugin.VolumeMountDatasetInitializer,
 												},
 											},
 											{
 												Name: constants.ContainerModelInitializer,
 												VolumeMounts: []corev1.VolumeMount{
-													constants.VolumeMountModelInitializer,
+													jobsetplugin.VolumeMountModelInitializer,
 												},
 											},
 										},
 										Containers: []corev1.Container{
-											constants.ContainerBusyBox,
+											jobsetplugin.ContainerBusyBox,
 										},
 										Volumes: []corev1.Volume{
-											constants.VolumeInitializer,
+											jobsetplugin.VolumeInitializer,
 										},
 									},
 								},
@@ -88,13 +89,13 @@ func MakeJobSetWrapper(namespace, name string) *JobSetWrapper {
 											{
 												Name: constants.ContainerTrainer,
 												VolumeMounts: []corev1.VolumeMount{
-													constants.VolumeMountDatasetInitializer,
-													constants.VolumeMountModelInitializer,
+													jobsetplugin.VolumeMountDatasetInitializer,
+													jobsetplugin.VolumeMountModelInitializer,
 												},
 											},
 										},
 										Volumes: []corev1.Volume{
-											constants.VolumeInitializer,
+											jobsetplugin.VolumeInitializer,
 										},
 									},
 								},
@@ -498,21 +499,21 @@ func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper 
 													{
 														Name: constants.ContainerDatasetInitializer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountDatasetInitializer,
+															jobsetplugin.VolumeMountDatasetInitializer,
 														},
 													},
 													{
 														Name: constants.ContainerModelInitializer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountModelInitializer,
+															jobsetplugin.VolumeMountModelInitializer,
 														},
 													},
 												},
 												Containers: []corev1.Container{
-													constants.ContainerBusyBox,
+													jobsetplugin.ContainerBusyBox,
 												},
 												Volumes: []corev1.Volume{
-													constants.VolumeInitializer,
+													jobsetplugin.VolumeInitializer,
 												},
 											},
 										},
@@ -529,13 +530,13 @@ func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper 
 													{
 														Name: constants.ContainerTrainer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountDatasetInitializer,
-															constants.VolumeMountModelInitializer,
+															jobsetplugin.VolumeMountDatasetInitializer,
+															jobsetplugin.VolumeMountModelInitializer,
 														},
 													},
 												},
 												Volumes: []corev1.Volume{
-													constants.VolumeInitializer,
+													jobsetplugin.VolumeInitializer,
 												},
 											},
 										},
@@ -603,21 +604,21 @@ func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapp
 													{
 														Name: constants.ContainerDatasetInitializer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountDatasetInitializer,
+															jobsetplugin.VolumeMountDatasetInitializer,
 														},
 													},
 													{
 														Name: constants.ContainerModelInitializer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountModelInitializer,
+															jobsetplugin.VolumeMountModelInitializer,
 														},
 													},
 												},
 												Containers: []corev1.Container{
-													constants.ContainerBusyBox,
+													jobsetplugin.ContainerBusyBox,
 												},
 												Volumes: []corev1.Volume{
-													constants.VolumeInitializer,
+													jobsetplugin.VolumeInitializer,
 												},
 											},
 										},
@@ -634,13 +635,13 @@ func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapp
 													{
 														Name: constants.ContainerTrainer,
 														VolumeMounts: []corev1.VolumeMount{
-															constants.VolumeMountDatasetInitializer,
-															constants.VolumeMountModelInitializer,
+															jobsetplugin.VolumeMountDatasetInitializer,
+															jobsetplugin.VolumeMountModelInitializer,
 														},
 													},
 												},
 												Volumes: []corev1.Volume{
-													constants.VolumeInitializer,
+													jobsetplugin.VolumeInitializer,
 												},
 											},
 										},

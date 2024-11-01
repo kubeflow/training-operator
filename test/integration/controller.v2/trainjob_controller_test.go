@@ -32,6 +32,7 @@ import (
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/constants"
+	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 	"github.com/kubeflow/training-operator/test/util"
@@ -128,8 +129,8 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						NumNodes(100).
 						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: constants.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
-						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: constants.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
@@ -183,8 +184,8 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						NumNodes(100).
 						ContainerTrainer(updatedImageName, []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: constants.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
-						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: constants.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
