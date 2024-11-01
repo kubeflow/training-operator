@@ -55,7 +55,7 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 // mergeInitializerEnvs merges the TrainJob and Runtime Pod envs.
 func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev1.EnvVar) []corev1.EnvVar {
 	envNames := sets.New[string]()
-	envs := []corev1.EnvVar{}
+	var envs []corev1.EnvVar
 	// Add the Storage URI env.
 	if storageUri != nil {
 		envNames.Insert(constants.InitializerEnvStorageUri)
