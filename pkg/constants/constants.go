@@ -70,7 +70,7 @@ var (
 	// TODO (andreyvelich): Add validation to check that initializer ReplicatedJob has this container.
 	ContainerBusyBox corev1.Container = corev1.Container{
 		Name:  "busybox",
-		Image: "busybox",
+		Image: "busybox:stable-glibc",
 	}
 
 	// VolumeMountModelInitializer is the volume mount for the model initializer container.
