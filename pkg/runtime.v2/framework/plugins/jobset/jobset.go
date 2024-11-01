@@ -98,10 +98,10 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, in
 		}
 	}
 
-	// TODO (andreyvelich): add support for model and dataset initializers.
 	// TODO (andreyvelich): Add support for the PodSpecOverride.
 	// TODO (andreyvelich): Refactor the builder with wrappers for PodSpec.
 	jobSet := jobSetBuilder.
+		Initializer(info, trainJob).
 		Trainer(info, trainJob).
 		PodLabels(info.PodLabels).
 		Suspend(trainJob.Spec.Suspend).

@@ -19,6 +19,7 @@ package jobset
 import (
 	"maps"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,6 +50,92 @@ func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv2.JobSet
 			Spec: *jobSetTemplateSpec.Spec.DeepCopy(),
 		},
 	}
+}
+
+// mergeInitializerEnvs merge the TrainJob and Runtime Pod envs.
+func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev1.EnvVar) []corev1.EnvVar {
+	envNames := sets.New[string]()
+	envs := []corev1.EnvVar{}
+	// Add the Storage URI env.
+	if storageUri != nil {
+		envNames.Insert(constants.InitializerEnvStorageUri)
+		envs = append(envs, corev1.EnvVar{
+			Name:  constants.InitializerEnvStorageUri,
+			Value: *storageUri,
+		})
+	}
+	// Add the rest TrainJob envs.
+	// TODO (andreyvelich): Validate that TrainJob dataset and model envs don't have the STORAGE_URI env.
+	if trainJobEnvs != nil {
+		for _, e := range trainJobEnvs {
+			envNames.Insert(e.Name)
+			envs = append(envs, e)
+		}
+	}
+
+	// TrainJob envs take precedence over the TrainingRuntime envs.
+	for _, e := range containerEnv {
+		if !envNames.Has(e.Name) {
+			envs = append(envs, e)
+		}
+	}
+	return envs
+}
+
+// Initializer updates JobSet values for the initializer Job.
+func (b *Builder) Initializer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
+	for i, rJob := range b.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobInitializer {
+			// TODO (andreyvelich): Currently, we use initContainers for the initializers.
+			// Once JobSet supports execution policy for the ReplicatedJobs, we should migrate to containers.
+			// Ref: https://github.com/kubernetes-sigs/jobset/issues/672
+			for j, container := range rJob.Template.Spec.Template.Spec.InitContainers {
+				// Update values for the dataset initializer container.
+				if container.Name == constants.ContainerDatasetInitializer && trainJob.Spec.DatasetConfig != nil {
+					// Update the dataset initializer envs.
+					b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].Env = mergeInitializerEnvs(
+						trainJob.Spec.DatasetConfig.StorageUri,
+						trainJob.Spec.DatasetConfig.Env,
+						container.Env,
+					)
+					// Update the dataset initializer secret reference.
+					if trainJob.Spec.DatasetConfig.SecretRef != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].EnvFrom = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].EnvFrom,
+							corev1.EnvFromSource{
+								SecretRef: &corev1.SecretEnvSource{
+									LocalObjectReference: *trainJob.Spec.DatasetConfig.SecretRef,
+								},
+							},
+						)
+					}
+				}
+				// TODO (andreyvelich): Add support for the model exporter when we support it.
+				// Update values for the model initializer container.
+				if container.Name == constants.ContainerModelInitializer && trainJob.Spec.ModelConfig != nil && trainJob.Spec.ModelConfig.Input != nil {
+					// Update the model initializer envs.
+					b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].Env = mergeInitializerEnvs(
+						trainJob.Spec.ModelConfig.Input.StorageUri,
+						trainJob.Spec.ModelConfig.Input.Env,
+						container.Env,
+					)
+					// Update the model initializer secret reference.
+					if trainJob.Spec.ModelConfig.Input.SecretRef != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].EnvFrom = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.InitContainers[j].EnvFrom,
+							corev1.EnvFromSource{
+								SecretRef: &corev1.SecretEnvSource{
+									LocalObjectReference: *trainJob.Spec.ModelConfig.Input.SecretRef,
+								},
+							},
+						)
+					}
+
+				}
+			}
+		}
+	}
+	return b
 }
 
 // Trainer updates JobSet values for the trainer Job.
@@ -85,7 +172,7 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 							envNames.Insert(env.Name)
 						}
 						trainerEnvs := info.Trainer.Env
-						// Info envs take precedence over TrainingRuntime envs.
+						// Info envs take precedence over the TrainingRuntime envs.
 						for _, env := range container.Env {
 							if !envNames.Has(env.Name) {
 								trainerEnvs = append(trainerEnvs, env)
@@ -93,6 +180,7 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Bu
 						}
 						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Env = trainerEnvs
 					}
+					// Update the Trainer container port.
 					if info.Trainer.ContainerPort != nil {
 						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports = append(
 							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports, *info.Trainer.ContainerPort)

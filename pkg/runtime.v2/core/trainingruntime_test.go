@@ -47,15 +47,15 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		wantError       error
 	}{
 		// Test cases for the PlainML MLPolicy.
-		"succeeded to build PodGroup and JobSet with NumNodes from the TrainJob and container from Runtime.": {
+		"succeeded to build PodGroup and JobSet with NumNodes from the TrainJob and container from the Runtime.": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").
 				Label("conflictLabel", "overridden").
 				Annotation("conflictAnnotation", "overridden").
 				RuntimeSpec(
 					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						NumNodes(100).
 						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						PodGroupPolicyCoschedulingSchedulingTimeout(120).
 						Obj(),
 				).Obj(),
@@ -73,9 +73,9 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				Obj(),
 			wantObjs: []client.Object{
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					NumNodes(30).
 					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-					ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					Suspend(true).
 					Label("conflictLabel", "override").
 					Annotation("conflictAnnotation", "override").
@@ -86,8 +86,10 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "test-job", "uid").
 					MinMember(31). // 31 replicas = 30 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
-						// TODO (andreyvelich): Create helper function to calculate PodGroup resources in the unit tests.
-						corev1.ResourceCPU: resource.MustParse("31"), // Every replica has 1 CPU = 31 CPUs in total.
+						// Every replica has 1 CPU = 31 CPUs in total.
+						// Since initializers use init containers, they execute sequentially.
+						// MinResources is equal to the maximum from the initContainer resources.
+						corev1.ResourceCPU: resource.MustParse("31"),
 					}).
 					SchedulingTimeout(120).
 					Obj(),
@@ -117,8 +119,8 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
-						ContainerTrainerEnv(
+						Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerEnv(
 							[]corev1.EnvVar{
 								{
 									Name:  "TRAIN_JOB",
@@ -150,6 +152,105 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							{
 								Name:  "RUNTIME",
 								Value: "test:runtime",
+							},
+						},
+					).
+					ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), "test-job", "uid").
+					Obj(),
+			},
+		},
+		"succeeded to build JobSet with dataset and model initializer from the TrainJob.": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
+					InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					NumNodes(100).
+					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				UID("uid").
+				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						Obj(),
+				).
+				DatasetConfig(
+					testingutil.MakeTrainJobDatasetConfigWrapper().
+						StorageUri("hf://trainjob-dataset").
+						ContainerEnv(
+							[]corev1.EnvVar{
+								{
+									Name:  "TRAIN_JOB",
+									Value: "test:trainjob:dataset",
+								},
+							},
+						).
+						SecretRef(corev1.LocalObjectReference{Name: "trainjob-secret-dataset"}).
+						Obj(),
+				).
+				ModelConfig(
+					testingutil.MakeTrainJobModelConfigWrapper().
+						StorageUri("hf://trainjob-model").
+						ContainerEnv(
+							[]corev1.EnvVar{
+								{
+									Name:  "TRAIN_JOB",
+									Value: "test:trainjob:model",
+								},
+							},
+						).
+						SecretRef(corev1.LocalObjectReference{Name: "trainjob-secret-model"}).
+						Obj(),
+				).
+				Obj(),
+			wantObjs: []client.Object{
+				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					NumNodes(100).
+					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					InitContainerDatasetInitializerEnv(
+						[]corev1.EnvVar{
+							{
+								Name:  constants.InitializerEnvStorageUri,
+								Value: "hf://trainjob-dataset",
+							},
+							{
+								Name:  "TRAIN_JOB",
+								Value: "test:trainjob:dataset",
+							},
+						},
+					).
+					InitContainerDatasetInitializerEnvFrom(
+						[]corev1.EnvFromSource{
+							{
+								SecretRef: &corev1.SecretEnvSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "trainjob-secret-dataset",
+									},
+								},
+							},
+						},
+					).
+					InitContainerModelInitializerEnv(
+						[]corev1.EnvVar{
+							{
+								Name:  constants.InitializerEnvStorageUri,
+								Value: "hf://trainjob-model",
+							},
+							{
+								Name:  "TRAIN_JOB",
+								Value: "test:trainjob:model",
+							},
+						},
+					).
+					InitContainerModelInitializerEnvFrom(
+						[]corev1.EnvFromSource{
+							{
+								SecretRef: &corev1.SecretEnvSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "trainjob-secret-model",
+									},
+								},
 							},
 						},
 					).
@@ -236,8 +337,8 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				RuntimeRef(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
-						ContainerTrainerEnv(
+						Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerEnv(
 							[]corev1.EnvVar{
 								{
 									Name:  "TRAIN_JOB",
