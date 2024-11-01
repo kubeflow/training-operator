@@ -166,7 +166,7 @@ func (in *DatasetConfig) DeepCopyInto(out *DatasetConfig) {
 	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(v1.SecretReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 }
@@ -198,7 +198,7 @@ func (in *InputModel) DeepCopyInto(out *InputModel) {
 	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(v1.SecretReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 }
@@ -368,7 +368,7 @@ func (in *OutputModel) DeepCopyInto(out *OutputModel) {
 	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(v1.SecretReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 }

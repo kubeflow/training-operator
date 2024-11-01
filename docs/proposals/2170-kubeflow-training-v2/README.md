@@ -597,7 +597,7 @@ type DatasetConfig struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download dataset.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -665,7 +665,7 @@ type InputModel struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 type OutputModel struct {
@@ -677,7 +677,7 @@ type OutputModel struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to export model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 ```
 

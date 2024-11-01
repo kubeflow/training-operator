@@ -299,15 +299,15 @@ func schema_pkg_apis_kubefloworg_v2alpha1_DatasetConfig(ref common.ReferenceCall
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Reference to the TrainJob's secrets to download dataset.",
-							Ref:         ref("k8s.io/api/core/v1.SecretReference"),
+							Description: "Reference to the secret with credentials to download dataset. Secret must be created in the TrainJob's namespace.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.SecretReference"},
+			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -341,15 +341,15 @@ func schema_pkg_apis_kubefloworg_v2alpha1_InputModel(ref common.ReferenceCallbac
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Reference to the TrainJob's secrets to download model.",
-							Ref:         ref("k8s.io/api/core/v1.SecretReference"),
+							Description: "Reference to the secret with credentials to download model. Secret must be created in the TrainJob's namespace.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.SecretReference"},
+			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -602,15 +602,15 @@ func schema_pkg_apis_kubefloworg_v2alpha1_OutputModel(ref common.ReferenceCallba
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Reference to the TrainJob's secrets to export model.",
-							Ref:         ref("k8s.io/api/core/v1.SecretReference"),
+							Description: "Reference to the secret with credentials to export model. Secret must be created in the TrainJob's namespace.",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.SecretReference"},
+			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 

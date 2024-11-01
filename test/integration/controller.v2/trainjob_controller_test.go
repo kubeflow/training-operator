@@ -32,6 +32,7 @@ import (
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/constants"
+	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 	"github.com/kubeflow/training-operator/test/util"
@@ -86,8 +87,18 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				SpecAnnotation("testingKey", "testingVal").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						Container("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						Obj()).
+				DatasetConfig(
+					testingutil.MakeTrainJobDatasetConfigWrapper().
+						StorageUri("hf://trainjob-dataset").
+						Obj(),
+				).
+				ModelConfig(
+					testingutil.MakeTrainJobModelConfigWrapper().
+						StorageUri("hf://trainjob-model").
+						Obj(),
+				).
 				Obj()
 			trainJobKey = client.ObjectKeyFromObject(trainJob)
 
@@ -96,12 +107,13 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "alpha").Spec).
 						NumNodes(100).
 						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{ScheduleTimeoutSeconds: ptr.To[int32](100)}).
 						Obj()).
 				Obj()
 		})
 
+		// Integration tests for the PlainML Runtime.
 		ginkgo.It("Should succeed to create TrainJob with TrainingRuntime", func() {
 			ginkgo.By("Creating TrainingRuntime and TrainJob")
 			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
@@ -116,7 +128,9 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Replicas(1).
 						NumNodes(100).
 						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
-						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
@@ -169,7 +183,9 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Replicas(1).
 						NumNodes(100).
 						ContainerTrainer(updatedImageName, []string{"trainjob"}, []string{"trainjob"}, resRequests).
-						ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
@@ -244,14 +260,15 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		})
 
+		// Integration tests for the Torch Runtime.
 		ginkgo.It("Should succeed to create TrainJob with Torch TrainingRuntime", func() {
 			ginkgo.By("Creating Torch TrainingRuntime and TrainJob")
 			trainJob = testingutil.MakeTrainJobWrapper(ns.Name, "alpha").
 				RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "alpha").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
-						ContainerTrainerEnv([]corev1.EnvVar{{Name: "TRAIN_JOB", Value: "value"}}).
+						Container("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerEnv([]corev1.EnvVar{{Name: "TRAIN_JOB", Value: "value"}}).
 						Obj()).
 				Obj()
 			trainJobKey = client.ObjectKeyFromObject(trainJob)
