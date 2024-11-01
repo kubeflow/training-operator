@@ -34,7 +34,7 @@ class KubeflowOrgV2alpha1OutputModel(object):
     """
     openapi_types = {
         'env': 'list[V1EnvVar]',
-        'secret_ref': 'V1SecretReference',
+        'secret_ref': 'V1LocalObjectReference',
         'storage_uri': 'str'
     }
 
@@ -91,7 +91,7 @@ class KubeflowOrgV2alpha1OutputModel(object):
 
 
         :return: The secret_ref of this KubeflowOrgV2alpha1OutputModel.  # noqa: E501
-        :rtype: V1SecretReference
+        :rtype: V1LocalObjectReference
         """
         return self._secret_ref
 
@@ -101,7 +101,7 @@ class KubeflowOrgV2alpha1OutputModel(object):
 
 
         :param secret_ref: The secret_ref of this KubeflowOrgV2alpha1OutputModel.  # noqa: E501
-        :type: V1SecretReference
+        :type: V1LocalObjectReference
         """
 
         self._secret_ref = secret_ref
