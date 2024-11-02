@@ -279,6 +279,43 @@ type TrainJob struct {
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
+const (
+	// TrainJobSuspended means the TrainJob is suspended.
+	TrainJobSuspended string = "Suspended"
+
+	// TrainJobComplete means that the TrainJob has completed its execution.
+	TrainJobComplete string = "Complete"
+
+	// TrainJobFailed means that the actual jobs have failed its execution.
+	TrainJobFailed string = "Failed"
+
+	// TrainJobCreated means that the actual jobs creation has succeeded.
+	TrainJobCreated string = "Created"
+)
+
+const (
+	// TrainJobSuspendedReason is the "Suspended" condition reason.
+	// When the TrainJob is suspended, this is added.
+	TrainJobSuspendedReason string = "Suspended"
+
+	// TrainJobResumedReason is the "Suspended" condition reason.
+	// When the TrainJob suspension is changed from True to False, this is added.
+	TrainJobResumedReason string = "Resumed"
+
+	// TrainJobJobsCreationSucceededReason is the "Created" condition reason.
+	// When the creating objects succeeded after building succeeded, this is added.
+	TrainJobJobsCreationSucceededReason string = "JobsCreationSucceeded"
+
+	// TrainJobJobsBuildFailedReason is the "Created" condition reason.
+	// When the building objects based on the TrainJob and the specified runtime failed,
+	// this is added.
+	TrainJobJobsBuildFailedReason string = "JobsBuildFailed"
+
+	// TrainJobJobsCreationFailedReason is "Created" condition reason.
+	// When the creating objects failed even though building succeeded, this is added.
+	TrainJobJobsCreationFailedReason string = "JobsCreationFailed"
+)
+
 type TrainJobSpec struct {
 	// Reference to the training runtime.
 	// The field is immutable.
@@ -915,6 +952,52 @@ spec:
           persistentVolumeClaim:
             claimName: user-123-volume
 ```
+
+### State Transition
+
+In this section, we're explaining the TrainJob state transition (`.status.conditions`).
+The basic TrainJob state machine is the below.
+Especially, if we specify the TrainingRuntime or ClusterTrainingRuntime as a runtime,
+the TrainJob terminal condition (`Failed` or `Complete`) is decided based on the JobSet terminal state (`status.terminalState`)
+instead of computing from JobSet conditions.
+
+```mermaid
+stateDiagram-v2
+    #CREATION
+    state created_choice <<choice>>
+    [*] --> created_choice: TrainJob is submitted.
+    created_choice --> Created=True: Succeeded to build and deploy Jobs.
+    created_choice --> Created=False: Failed to build and deploy Jobs.
+    Created=False --> Created=False: Wait for updated appropriate TrainJob.
+    Created=False --> Created=True: Succeeded to build and deploy Jobs.
+
+    #SUSPENSION
+    state suspended_choice <<choice>>
+    Created=True --> suspended_choice: Handle TrainJob suspension.
+    suspended_choice --> Suspended=True: TrainJob is suspended.
+    Suspended=True --> Suspended=True: Wait for unsuspending.
+    Suspended=True --> Suspended=False: TrainJob is unsuspended.
+    suspended_choice --> Suspended=False: TrainJob is not suspended.
+
+    #FAILURE
+    state terminal_choice <<choice>>
+    Suspended=False --> terminal_choice: Actual Jobs go to terminal phase.
+    terminal_choice --> Failed=True: Actual Jobs (e.g., JobSet) failed.
+    Failed=True --> [*]
+
+    #COMPLETION
+    terminal_choice --> Complete=True: Actual Jobs (e.g., JobSet) completed.
+    Complete=True --> [*]
+```
+
+In the above state transition, the `Created=False` will happen in the following situations and
+those different situations can be identified by the condition reasons (`.status.conditions.[type="Created"].reason`).
+
+- `JobsBuildFailed`: When the TrainJob controller failed to construct objects (resources) using the [runtime framework interfaces](../../../pkg/runtime.v2/framework/interface.go)
+- `JobsCreationFailed`: When the TrainJob controller succeeded to construct objects, but it failed to deploy objects to the cluster.
+
+Additionally, we extend the [runtime framework interfaces](../../../pkg/runtime.v2/framework/interface.go)
+to allow each plugin to propagate the arbitrary conditions to the TrainJob.
 
 ## The Training Runtime API
 
