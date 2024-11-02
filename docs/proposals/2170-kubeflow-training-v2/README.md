@@ -283,8 +283,8 @@ const (
 	// TrainJobSuspended means the TrainJob is suspended.
 	TrainJobSuspended string = "Suspended"
 
-	// TrainJobCompleted means that the TrainJob has completed its execution.
-	TrainJobCompleted string = "Completed"
+	// TrainJobComplete means that the TrainJob has completed its execution.
+	TrainJobComplete string = "Complete"
 
 	// TrainJobFailed means that the actual jobs have failed its execution.
 	TrainJobFailed string = "Failed"
@@ -958,7 +958,7 @@ spec:
 In this section, we're explaining the TrainJob state transition (`.status.conditions`).
 The basic TrainJob state machine is the below.
 Especially, if we specify the TrainingRuntime or ClusterTrainingRuntime as a runtime,
-the TrainJob terminal condition (`Failed` or `Completed`) is decided based on the JobSet terminal state (`status.terminalState`)
+the TrainJob terminal condition (`Failed` or `Complete`) is decided based on the JobSet terminal state (`status.terminalState`)
 instead of computing from JobSet conditions.
 
 ```mermaid
@@ -986,8 +986,8 @@ stateDiagram-v2
     Failed=True --> [*]
 
     #COMPLETION
-    terminal_choice --> Completed=True: Actual Jobs (e.g., JobSet) completed.
-    Completed=True --> [*]
+    terminal_choice --> Complete=True: Actual Jobs (e.g., JobSet) completed.
+    Complete=True --> [*]
 ```
 
 In the above state transition, the `Created=False` will happen in the following situations and
