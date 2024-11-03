@@ -18,6 +18,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,6 +32,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	jobsetconsts "sigs.k8s.io/jobset/pkg/constants"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -87,6 +90,9 @@ func TestNew(t *testing.T) {
 				},
 				componentBuilderPlugins: []framework.ComponentBuilderPlugin{
 					&coscheduling.CoScheduling{},
+					&jobset.JobSet{},
+				},
+				terminalConditionPlugins: []framework.TerminalConditionPlugin{
 					&jobset.JobSet{},
 				},
 			},
@@ -479,7 +485,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 					Obj(),
 			},
 		},
-		// "an empty registry": {},
+		"an empty registry": {},
 	}
 	cmpOpts := []cmp.Option{
 		cmpopts.SortSlices(func(a, b client.Object) bool {
@@ -518,7 +524,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 	}
 }
 
-func TestRunExtensionPlugins(t *testing.T) {
+func TestWatchExtensionPlugins(t *testing.T) {
 	cases := map[string]struct {
 		registry    fwkplugins.Registry
 		wantPlugins []framework.WatchExtensionPlugin
@@ -551,6 +557,111 @@ func TestRunExtensionPlugins(t *testing.T) {
 			plugins := fwk.WatchExtensionPlugins()
 			if diff := cmp.Diff(tc.wantPlugins, plugins, cmpOpts...); len(diff) != 0 {
 				t.Errorf("Unexpected plugins (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+type fakeTerminalConditionPlugin struct{}
+
+var _ framework.TerminalConditionPlugin = (*fakeTerminalConditionPlugin)(nil)
+
+func newFakeTerminalConditionPlugin(context.Context, client.Client, client.FieldIndexer) (framework.Plugin, error) {
+	return &fakeTerminalConditionPlugin{}, nil
+}
+
+const fakeTerminalConditionPluginName = "fake"
+
+func (f fakeTerminalConditionPlugin) Name() string { return fakeTerminalConditionPluginName }
+func (f fakeTerminalConditionPlugin) TerminalCondition(context.Context, *kubeflowv2.TrainJob) (*metav1.Condition, error) {
+	return nil, nil
+}
+
+func TestTerminalConditionPlugins(t *testing.T) {
+	cases := map[string]struct {
+		registry      fwkplugins.Registry
+		trainJob      *kubeflowv2.TrainJob
+		jobSet        *jobsetv1alpha2.JobSet
+		wantCondition *metav1.Condition
+		wantError     error
+	}{
+		"jobSet has not been finalized, yet": {
+			registry: fwkplugins.NewRegistry(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "testing").
+				Obj(),
+			jobSet: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "testing").
+				Conditions(metav1.Condition{
+					Type:    string(jobsetv1alpha2.JobSetSuspended),
+					Reason:  jobsetconsts.JobSetSuspendedReason,
+					Message: jobsetconsts.JobSetSuspendedMessage,
+					Status:  metav1.ConditionFalse,
+				}).
+				Obj(),
+		},
+		"succeeded to obtain completed terminal condition": {
+			registry: fwkplugins.NewRegistry(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "testing").
+				Obj(),
+			jobSet: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "testing").
+				Conditions(metav1.Condition{
+					Type:    string(jobsetv1alpha2.JobSetCompleted),
+					Reason:  jobsetconsts.AllJobsCompletedReason,
+					Message: jobsetconsts.AllJobsCompletedMessage,
+					Status:  metav1.ConditionTrue,
+				}).
+				Obj(),
+			wantCondition: &metav1.Condition{
+				Type:    kubeflowv2.TrainJobComplete,
+				Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetCompleted, jobsetconsts.AllJobsCompletedReason),
+				Message: jobsetconsts.AllJobsCompletedMessage,
+				Status:  metav1.ConditionTrue,
+			},
+		},
+		"succeeded to obtain failed terminal condition": {
+			registry: fwkplugins.NewRegistry(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "testing").
+				Obj(),
+			jobSet: testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "testing").
+				Conditions(metav1.Condition{
+					Type:    string(jobsetv1alpha2.JobSetFailed),
+					Reason:  jobsetconsts.FailedJobsReason,
+					Message: jobsetconsts.FailedJobsMessage,
+					Status:  metav1.ConditionTrue,
+				}).
+				Obj(),
+			wantCondition: &metav1.Condition{
+				Type:    kubeflowv2.TrainJobFailed,
+				Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetFailed, jobsetconsts.FailedJobsReason),
+				Message: jobsetconsts.FailedJobsMessage,
+				Status:  metav1.ConditionTrue,
+			},
+		},
+		"failed to obtain any terminal condition due to multiple terminalCondition plugin": {
+			registry: fwkplugins.Registry{
+				jobset.Name:                     jobset.New,
+				fakeTerminalConditionPluginName: newFakeTerminalConditionPlugin,
+			},
+			wantError: errorTooManyTerminalConditionPlugin,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+			clientBuilder := testingutil.NewClientBuilder()
+			if tc.jobSet != nil {
+				clientBuilder = clientBuilder.WithObjects(tc.jobSet)
+			}
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotCond, gotErr := fwk.RunTerminalConditionPlugins(ctx, tc.trainJob)
+			if diff := cmp.Diff(tc.wantError, gotErr, cmpopts.EquateErrors()); len(diff) != 0 {
+				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tc.wantCondition, gotCond); len(diff) != 0 {
+				t.Errorf("Unexpected terminal condition (-want,+got):\n%s", diff)
 			}
 		})
 	}

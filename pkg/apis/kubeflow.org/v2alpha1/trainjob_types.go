@@ -48,6 +48,43 @@ type TrainJob struct {
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
+const (
+	// TrainJobSuspended means the TrainJob is suspended.
+	TrainJobSuspended string = "Suspended"
+
+	// TrainJobComplete means that the TrainJob has completed its execution.
+	TrainJobComplete string = "Complete"
+
+	// TrainJobFailed means that the actual jobs have failed its execution.
+	TrainJobFailed string = "Failed"
+
+	// TrainJobCreated means that the actual jobs creation has succeeded.
+	TrainJobCreated string = "Created"
+)
+
+const (
+	// TrainJobSuspendedReason is the "Suspended" condition reason.
+	// When the TrainJob is suspended, this is added.
+	TrainJobSuspendedReason string = "Suspended"
+
+	// TrainJobResumedReason is the "Suspended" condition reason.
+	// When the TrainJob suspension is changed from True to False, this is added.
+	TrainJobResumedReason string = "Resumed"
+
+	// TrainJobJobsCreationSucceededReason is the "Created" condition reason.
+	// When the creating objects succeeded after building succeeded, this is added.
+	TrainJobJobsCreationSucceededReason string = "JobsCreationSucceeded"
+
+	// TrainJobJobsBuildFailedReason is the "Created" condition reason.
+	// When the building objects based on the TrainJob and the specified runtime failed,
+	// this is added.
+	TrainJobJobsBuildFailedReason string = "JobsBuildFailed"
+
+	// TrainJobJobsCreationFailedReason is the "Created" condition reason.
+	// When the creating objects failed even though building succeeded, this is added.
+	TrainJobJobsCreationFailedReason string = "JobsCreationFailed"
+)
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=trainjobs
 
@@ -269,7 +306,13 @@ type ContainerOverride struct {
 // TrainJobStatus represents the current status of TrainJob.
 type TrainJobStatus struct {
 	// Conditions for the TrainJob.
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
 	// JobsStatus tracks the child Jobs in TrainJob.
 	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`

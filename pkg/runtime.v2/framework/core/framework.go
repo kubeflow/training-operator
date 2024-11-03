@@ -18,7 +18,9 @@ package core
 
 import (
 	"context"
+	"errors"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,6 +31,8 @@ import (
 	fwkplugins "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins"
 )
 
+var errorTooManyTerminalConditionPlugin = errors.New("too many TerminalCondition plugins are registered")
+
 type Framework struct {
 	registry                     fwkplugins.Registry
 	plugins                      map[string]framework.Plugin
@@ -37,6 +41,7 @@ type Framework struct {
 	customValidationPlugins      []framework.CustomValidationPlugin
 	watchExtensionPlugins        []framework.WatchExtensionPlugin
 	componentBuilderPlugins      []framework.ComponentBuilderPlugin
+	terminalConditionPlugins     []framework.TerminalConditionPlugin
 }
 
 func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer client.FieldIndexer) (*Framework, error) {
@@ -65,6 +70,9 @@ func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer cl
 		}
 		if p, ok := plugin.(framework.ComponentBuilderPlugin); ok {
 			f.componentBuilderPlugins = append(f.componentBuilderPlugins, p)
+		}
+		if p, ok := plugin.(framework.TerminalConditionPlugin); ok {
+			f.terminalConditionPlugins = append(f.terminalConditionPlugins, p)
 		}
 	}
 	f.plugins = plugins
@@ -116,6 +124,17 @@ func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTe
 		}
 	}
 	return objs, nil
+}
+
+func (f *Framework) RunTerminalConditionPlugins(ctx context.Context, trainJob *kubeflowv2.TrainJob) (*metav1.Condition, error) {
+	// TODO (tenzen-y): Once we provide the Configuration API, we should validate which plugin should have terminalCondition execution points.
+	if len(f.terminalConditionPlugins) > 1 {
+		return nil, errorTooManyTerminalConditionPlugin
+	}
+	if len(f.terminalConditionPlugins) != 0 {
+		return f.terminalConditionPlugins[0].TerminalCondition(ctx, trainJob)
+	}
+	return nil, nil
 }
 
 func (f *Framework) WatchExtensionPlugins() []framework.WatchExtensionPlugin {

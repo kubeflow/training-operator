@@ -22,6 +22,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
@@ -35,6 +38,15 @@ import (
 )
 
 var errorUnsupportedRuntime = errors.New("the specified runtime is not supported")
+
+type objsOpState int
+
+const (
+	succeeded      objsOpState = iota
+	buildFailed    objsOpState = iota
+	creationFailed objsOpState = iota
+	updateFailed   objsOpState = iota
+)
 
 type TrainJobReconciler struct {
 	log      logr.Logger
@@ -63,29 +75,41 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	log := ctrl.LoggerFrom(ctx).WithValues("trainJob", klog.KObj(&trainJob))
 	ctx = ctrl.LoggerInto(ctx, log)
 	log.V(2).Info("Reconciling TrainJob")
-	if err := r.createOrUpdateObjs(ctx, &trainJob); err != nil {
-		return ctrl.Result{}, err
+	if isTrainJobFinished(&trainJob) {
+		log.V(5).Info("TrainJob has already been finished")
+		return ctrl.Result{}, nil
 	}
-	// TODO (tenzen-y): Do update the status.
-	return ctrl.Result{}, nil
-}
-
-func (r *TrainJobReconciler) createOrUpdateObjs(ctx context.Context, trainJob *kubeflowv2.TrainJob) error {
-	log := ctrl.LoggerFrom(ctx)
 
 	runtimeRefGK := runtimeRefToGroupKind(trainJob.Spec.RuntimeRef).String()
 	runtime, ok := r.runtimes[runtimeRefGK]
 	if !ok {
-		return fmt.Errorf("%w: %s", errorUnsupportedRuntime, runtimeRefGK)
+		return ctrl.Result{}, fmt.Errorf("%w: %s", errorUnsupportedRuntime, runtimeRefGK)
 	}
+	opState, err := r.reconcileObjects(ctx, runtime, &trainJob)
+
+	originStatus := trainJob.Status.DeepCopy()
+	setSuspendedCondition(&trainJob)
+	setCreatedCondition(&trainJob, opState)
+	if terminalCondErr := setTerminalCondition(ctx, runtime, &trainJob); terminalCondErr != nil {
+		return ctrl.Result{}, errors.Join(err, terminalCondErr)
+	}
+	if !equality.Semantic.DeepEqual(&trainJob, originStatus) {
+		return ctrl.Result{}, errors.Join(err, r.client.Status().Update(ctx, &trainJob))
+	}
+	return ctrl.Result{}, err
+}
+
+func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobruntimes.Runtime, trainJob *kubeflowv2.TrainJob) (objsOpState, error) {
+	log := ctrl.LoggerFrom(ctx)
+
 	objs, err := runtime.NewObjects(ctx, trainJob)
 	if err != nil {
-		return err
+		return buildFailed, err
 	}
 	for _, obj := range objs {
 		var gvk schema.GroupVersionKind
 		if gvk, err = apiutil.GVKForObject(obj.DeepCopyObject(), r.client.Scheme()); err != nil {
-			return err
+			return buildFailed, err
 		}
 		logKeysAndValues := []any{
 			"groupVersionKind", gvk.String(),
@@ -102,19 +126,89 @@ func (r *TrainJobReconciler) createOrUpdateObjs(ctx context.Context, trainJob *k
 		}
 		switch {
 		case created:
-			log.V(5).Info("Succeeded to create object", logKeysAndValues)
+			log.V(5).Info("Succeeded to create object", logKeysAndValues...)
 			continue
 		case client.IgnoreAlreadyExists(creationErr) != nil:
-			return creationErr
+			return creationFailed, creationErr
 		default:
 			// This indicates CREATE operation has not been performed or the object has already existed in the cluster.
 			if err = r.client.Update(ctx, obj); err != nil {
-				return err
+				return updateFailed, err
 			}
-			log.V(5).Info("Succeeded to update object", logKeysAndValues)
+			log.V(5).Info("Succeeded to update object", logKeysAndValues...)
 		}
 	}
+	return succeeded, nil
+}
+
+func setCreatedCondition(trainJob *kubeflowv2.TrainJob, opState objsOpState) {
+	var newCond metav1.Condition
+	switch opState {
+	case succeeded:
+		newCond = metav1.Condition{
+			Type:    kubeflowv2.TrainJobCreated,
+			Status:  metav1.ConditionTrue,
+			Message: "Succeeded to create Jobs",
+			Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
+		}
+	case buildFailed:
+		newCond = metav1.Condition{
+			Type:    kubeflowv2.TrainJobCreated,
+			Status:  metav1.ConditionFalse,
+			Message: "Failed to build Jobs",
+			Reason:  kubeflowv2.TrainJobJobsBuildFailedReason,
+		}
+	// TODO (tenzen-y): Provide more granular the message based on creation or update failure.
+	case creationFailed, updateFailed:
+		newCond = metav1.Condition{
+			Type:    kubeflowv2.TrainJobCreated,
+			Status:  metav1.ConditionFalse,
+			Message: "Failed to create Jobs",
+			Reason:  kubeflowv2.TrainJobJobsCreationFailedReason,
+		}
+	default:
+		return
+	}
+	meta.SetStatusCondition(&trainJob.Status.Conditions, newCond)
+}
+
+func setSuspendedCondition(trainJob *kubeflowv2.TrainJob) {
+	var newCond metav1.Condition
+	switch {
+	case ptr.Deref(trainJob.Spec.Suspend, false):
+		newCond = metav1.Condition{
+			Type:    kubeflowv2.TrainJobSuspended,
+			Status:  metav1.ConditionTrue,
+			Message: "TrainJob is suspended",
+			Reason:  kubeflowv2.TrainJobSuspendedReason,
+		}
+	case meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobSuspended):
+		newCond = metav1.Condition{
+			Type:    kubeflowv2.TrainJobSuspended,
+			Status:  metav1.ConditionFalse,
+			Message: "TrainJob is resumed",
+			Reason:  kubeflowv2.TrainJobResumedReason,
+		}
+	default:
+		return
+	}
+	meta.SetStatusCondition(&trainJob.Status.Conditions, newCond)
+}
+
+func setTerminalCondition(ctx context.Context, runtime jobruntimes.Runtime, trainJob *kubeflowv2.TrainJob) error {
+	terminalCond, err := runtime.TerminalCondition(ctx, trainJob)
+	if err != nil {
+		return err
+	}
+	if terminalCond != nil {
+		meta.SetStatusCondition(&trainJob.Status.Conditions, *terminalCond)
+	}
 	return nil
+}
+
+func isTrainJobFinished(trainJob *kubeflowv2.TrainJob) bool {
+	return meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobComplete) ||
+		meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobFailed)
 }
 
 func runtimeRefToGroupKind(runtimeRef kubeflowv2.RuntimeRef) schema.GroupKind {

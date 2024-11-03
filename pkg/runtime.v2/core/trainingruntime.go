@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -125,6 +126,10 @@ func (r *TrainingRuntime) buildObjects(
 	}
 
 	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
+}
+
+func (r *TrainingRuntime) TerminalCondition(ctx context.Context, trainJob *kubeflowv2.TrainJob) (*metav1.Condition, error) {
+	return r.framework.RunTerminalConditionPlugins(ctx, trainJob)
 }
 
 func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
