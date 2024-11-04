@@ -88,6 +88,9 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					RunPolicy: trainingoperator.RunPolicy{
 						ManagedBy: ptr.To(trainingoperator.KubeflowJobsController),
 					},
+					ElasticPolicy: &trainingoperator.ElasticPolicy{
+						RDZVBackend: ptr.To(trainingoperator.BackendC10D),
+					},
 					PyTorchReplicaSpecs: validPyTorchReplicaSpecs,
 				},
 			},
@@ -247,6 +250,19 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 								},
 							},
 						},
+						trainingoperator.PyTorchJobReplicaTypeWorker: {
+							Replicas: ptr.To[int32](1),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -267,6 +283,19 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 					},
 					PyTorchReplicaSpecs: map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec{
 						trainingoperator.PyTorchJobReplicaTypeMaster: {
+							Replicas: ptr.To[int32](1),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+						trainingoperator.PyTorchJobReplicaTypeWorker: {
 							Replicas: ptr.To[int32](1),
 							Template: corev1.PodTemplateSpec{
 								Spec: corev1.PodSpec{
@@ -333,6 +362,62 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 			},
 			wantErr: field.ErrorList{
 				field.Invalid(field.NewPath("spec", "runPolicy", "managedBy"), trainingoperator.MultiKueueController, apivalidation.FieldImmutableErrorMsg),
+			},
+		},
+		"attempt to configure elasticPolicy when no worker is configured": {
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					ElasticPolicy: &trainingoperator.ElasticPolicy{},
+					PyTorchReplicaSpecs: map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec{
+						trainingoperator.PyTorchJobReplicaTypeMaster: {
+							Replicas: ptr.To[int32](1),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Required(field.NewPath("spec", "pytorchReplicaSpecs", "Worker"), "must be configured if elastic policy is used"),
+			},
+		},
+		"attempt to configure elasticPolicy when worker replicas is 0": {
+			pytorchJob: &trainingoperator.PyTorchJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: trainingoperator.PyTorchJobSpec{
+					ElasticPolicy: &trainingoperator.ElasticPolicy{},
+					PyTorchReplicaSpecs: map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec{
+						trainingoperator.PyTorchJobReplicaTypeWorker: {
+							Replicas: ptr.To[int32](0),
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Name:  "pytorch",
+											Image: "gcr.io/kubeflow-ci/pytorch-dist-mnist_test:1.0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: field.ErrorList{
+				field.Forbidden(field.NewPath("spec", "pytorchReplicaSpecs", "Worker", "replicas"), "must be at least 1 if elastic policy is used"),
 			},
 		},
 	}
