@@ -21,10 +21,8 @@ import (
 	"errors"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -106,26 +104,27 @@ func (r *TrainingRuntime) buildObjects(
 		runtime.WithMLPolicy(mlPolicy),
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 	}
-	for idx, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
-		replicas := jobSetTemplateSpec.Spec.ReplicatedJobs[idx].Replicas * ptr.Deref(rJob.Template.Spec.Completions, 1)
-		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, replicas, rJob.Template.Spec.Template.Spec))
-	}
-	info := runtime.NewInfo(&jobsetv1alpha2.JobSet{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: jobsetv1alpha2.SchemeGroupVersion.String(),
-			Kind:       "JobSet",
-		},
-		Spec: *jobSetTemplateSpec.Spec.DeepCopy(),
-	}, opts...)
 
-	if err := r.framework.RunEnforceMLPolicyPlugins(info); err != nil {
+	for _, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
+		// By default every ReplicatedJob has only 1 replica.
+		opts = append(opts, runtime.WithPodSpecReplicas(rJob.Name, 1, rJob.Template.Spec.Template.Spec))
+	}
+
+	info := runtime.NewInfo(opts...)
+
+	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
 		return nil, err
 	}
-	err := r.framework.RunEnforcePodGroupPolicyPlugins(trainJob, info)
-	if err != nil {
+
+	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
 		return nil, err
 	}
-	return r.framework.RunComponentBuilderPlugins(ctx, info, trainJob)
+
+	jobSetTemplate := jobsetv1alpha2.JobSet{
+		Spec: jobSetTemplateSpec.Spec,
+	}
+
+	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
 }
 
 func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {

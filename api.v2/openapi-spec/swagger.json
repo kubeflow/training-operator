@@ -137,8 +137,8 @@
           }
         },
         "secretRef": {
-          "description": "Reference to the TrainJob's secrets to download dataset.",
-          "$ref": "#/definitions/v1.SecretReference"
+          "description": "Reference to the secret with credentials to download dataset. Secret must be created in the TrainJob's namespace.",
+          "$ref": "#/definitions/v1.LocalObjectReference"
         },
         "storageUri": {
           "description": "Storage uri for the dataset provider.",
@@ -159,8 +159,8 @@
           }
         },
         "secretRef": {
-          "description": "Reference to the TrainJob's secrets to download model.",
-          "$ref": "#/definitions/v1.SecretReference"
+          "description": "Reference to the secret with credentials to download model. Secret must be created in the TrainJob's namespace.",
+          "$ref": "#/definitions/v1.LocalObjectReference"
         },
         "storageUri": {
           "description": "Storage uri for the model provider.",
@@ -315,8 +315,8 @@
           }
         },
         "secretRef": {
-          "description": "Reference to the TrainJob's secrets to export model.",
-          "$ref": "#/definitions/v1.SecretReference"
+          "description": "Reference to the secret with credentials to export model. Secret must be created in the TrainJob's namespace.",
+          "$ref": "#/definitions/v1.LocalObjectReference"
         },
         "storageUri": {
           "description": "Storage uri for the model exporter.",

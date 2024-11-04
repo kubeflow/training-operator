@@ -65,11 +65,10 @@ var _ = ginkgo.Describe("TrainingRuntime Webhook", ginkgo.Ordered, func() {
 		},
 			ginkgo.Entry("Should succeed to create TrainingRuntime",
 				func() *kubeflowv2.TrainingRuntime {
-					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, trainingRuntimeName).Clone()
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, trainingRuntimeName)
 					return baseRuntime.
 						RuntimeSpec(
 							testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
-								Replicas(1).
 								Obj()).
 						Obj()
 				}),

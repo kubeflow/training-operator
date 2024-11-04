@@ -17,9 +17,10 @@ limitations under the License.
 package controllerv2
 
 import (
+	"fmt"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,8 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	"github.com/kubeflow/training-operator/pkg/constants"
+	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 	"github.com/kubeflow/training-operator/test/util"
@@ -37,6 +40,11 @@ import (
 
 var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
+
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse("1"),
+		corev1.ResourceMemory: resource.MustParse("4Gi"),
+	}
 
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
@@ -79,50 +87,54 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				SpecAnnotation("testingKey", "testingVal").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
-						ContainerImage("trainJob").
+						Container("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 						Obj()).
+				DatasetConfig(
+					testingutil.MakeTrainJobDatasetConfigWrapper().
+						StorageUri("hf://trainjob-dataset").
+						Obj(),
+				).
+				ModelConfig(
+					testingutil.MakeTrainJobModelConfigWrapper().
+						StorageUri("hf://trainjob-model").
+						Obj(),
+				).
 				Obj()
 			trainJobKey = client.ObjectKeyFromObject(trainJob)
-			baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha")
-			trainingRuntime = baseRuntime.Clone().
+
+			trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
 				RuntimeSpec(
-					testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Clone().Spec).
-						ContainerImage("trainingRuntime").
-						PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{}).
-						MLPolicyNumNodes(100).
-						ResourceRequests(0, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("5"),
-						}).
-						ResourceRequests(1, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("10"),
-						}).
+					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "alpha").Spec).
+						NumNodes(100).
+						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						PodGroupPolicyCoscheduling(&kubeflowv2.CoschedulingPodGroupPolicySource{ScheduleTimeoutSeconds: ptr.To[int32](100)}).
 						Obj()).
 				Obj()
 		})
 
+		// Integration tests for the PlainML Runtime.
 		ginkgo.It("Should succeed to create TrainJob with TrainingRuntime", func() {
 			ginkgo.By("Creating TrainingRuntime and TrainJob")
 			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
 			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
 
-			ginkgo.By("Checking if appropriately JobSet and PodGroup are created")
+			ginkgo.By("Checking if the appropriate JobSet and PodGroup are created")
 			gomega.Eventually(func(g gomega.Gomega) {
 				jobSet := &jobsetv1alpha2.JobSet{}
 				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
 				g.Expect(jobSet).Should(gomega.BeComparableTo(
 					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
+						Replicas(1).
+						NumNodes(100).
+						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
 						PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, trainJobKey.Name).
-						ContainerImage(ptr.To("trainJob")).
-						JobCompletionMode(batchv1.IndexedCompletion).
-						ResourceRequests(0, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("5"),
-						}).
-						ResourceRequests(1, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("10"),
-						}).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))
@@ -130,10 +142,12 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, pg)).Should(gomega.Succeed())
 				g.Expect(pg).Should(gomega.BeComparableTo(
 					testingutil.MakeSchedulerPluginsPodGroup(ns.Name, trainJobKey.Name).
-						MinMember(200).
+						MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
 						MinResources(corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("1500"),
+							corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per replica.
+							corev1.ResourceMemory: resource.MustParse("404Gi"),
 						}).
+						SchedulingTimeout(100).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))
@@ -166,18 +180,16 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
 				g.Expect(jobSet).Should(gomega.BeComparableTo(
 					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
+						Replicas(1).
+						NumNodes(100).
+						ContainerTrainer(updatedImageName, []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						InitContainerDatasetInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-dataset"}}).
+						InitContainerModelInitializerEnv([]corev1.EnvVar{{Name: jobsetplugin.InitializerEnvStorageUri, Value: "hf://trainjob-model"}}).
 						Suspend(true).
 						Label("testingKey", "testingVal").
 						Annotation("testingKey", "testingVal").
 						PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, trainJobKey.Name).
-						ContainerImage(&updatedImageName).
-						JobCompletionMode(batchv1.IndexedCompletion).
-						ResourceRequests(0, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("5"),
-						}).
-						ResourceRequests(1, corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("10"),
-						}).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))
@@ -185,10 +197,12 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, pg)).Should(gomega.Succeed())
 				g.Expect(pg).Should(gomega.BeComparableTo(
 					testingutil.MakeSchedulerPluginsPodGroup(ns.Name, trainJobKey.Name).
-						MinMember(200).
+						MinMember(101).
 						MinResources(corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("1500"),
+							corev1.ResourceCPU:    resource.MustParse("101"), // 1 CPU and 4Gi per 101 replica.
+							corev1.ResourceMemory: resource.MustParse("404Gi"),
 						}).
+						SchedulingTimeout(100).
 						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 						Obj(),
 					util.IgnoreObjectMetadata))
@@ -206,23 +220,25 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(ptr.Deref(jobSet.Spec.Suspend, false)).Should(gomega.BeFalse())
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 
-			ginkgo.By("Trying to restore trainer image")
+			ginkgo.By("Trying to restore Trainer image")
 			gomega.Eventually(func(g gomega.Gomega) {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, trainJob)).Should(gomega.Succeed())
 				trainJob.Spec.Trainer.Image = &originImageName
 				g.Expect(k8sClient.Update(ctx, trainJob)).Should(gomega.Succeed())
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 
-			ginkgo.By("Checking if JobSet keep having updated image")
+			ginkgo.By("Checking if JobSet keep having updated Trainer image")
 			gomega.Consistently(func(g gomega.Gomega) {
 				jobSet := &jobsetv1alpha2.JobSet{}
 				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
 				for _, rJob := range jobSet.Spec.ReplicatedJobs {
-					g.Expect(rJob.Template.Spec.Template.Spec.Containers[0].Image).Should(gomega.Equal(updatedImageName))
+					if rJob.Name == constants.JobTrainerNode {
+						g.Expect(rJob.Template.Spec.Template.Spec.Containers[0].Image).Should(gomega.Equal(updatedImageName))
+					}
 				}
 			}, util.ConsistentDuration, util.Interval).Should(gomega.Succeed())
 
-			ginkgo.By("Trying to re-suspend TrainJob and restore trainer image")
+			ginkgo.By("Trying to re-suspend TrainJob and restore Trainer image")
 			gomega.Eventually(func(g gomega.Gomega) {
 				g.Expect(k8sClient.Get(ctx, trainJobKey, trainJob))
 				trainJob.Spec.Suspend = ptr.To(true)
@@ -237,8 +253,83 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(jobSet.Spec.Suspend).ShouldNot(gomega.BeNil())
 				g.Expect(*jobSet.Spec.Suspend).Should(gomega.BeTrue())
 				for _, rJob := range jobSet.Spec.ReplicatedJobs {
-					g.Expect(rJob.Template.Spec.Template.Spec.Containers[0].Image).Should(gomega.Equal(originImageName))
+					if rJob.Name == constants.JobTrainerNode {
+						g.Expect(rJob.Template.Spec.Template.Spec.Containers[0].Image).Should(gomega.Equal(originImageName))
+					}
 				}
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		})
+
+		// Integration tests for the Torch Runtime.
+		ginkgo.It("Should succeed to create TrainJob with Torch TrainingRuntime", func() {
+			ginkgo.By("Creating Torch TrainingRuntime and TrainJob")
+			trainJob = testingutil.MakeTrainJobWrapper(ns.Name, "alpha").
+				RuntimeRef(kubeflowv2.GroupVersion.WithKind(kubeflowv2.TrainingRuntimeKind), "alpha").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						Container("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerEnv([]corev1.EnvVar{{Name: "TRAIN_JOB", Value: "value"}}).
+						Obj()).
+				Obj()
+			trainJobKey = client.ObjectKeyFromObject(trainJob)
+
+			trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
+				RuntimeSpec(
+					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "alpha").Spec).
+						TorchPolicy(100, "auto").
+						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						Obj()).
+				Obj()
+			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if the appropriate JobSet is created")
+			gomega.Eventually(func(g gomega.Gomega) {
+				jobSet := &jobsetv1alpha2.JobSet{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+				g.Expect(jobSet).Should(gomega.BeComparableTo(
+					testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
+						Replicas(1).
+						NumNodes(100).
+						Suspend(false).
+						ContainerTrainer("test:trainJob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+						ContainerTrainerPorts([]corev1.ContainerPort{{ContainerPort: constants.ContainerTrainerPort, Protocol: "TCP"}}).
+						ContainerTrainerEnv(
+							[]corev1.EnvVar{
+								{
+									Name:  "TRAIN_JOB",
+									Value: "value",
+								},
+								{
+									Name:  constants.TorchEnvNumNodes,
+									Value: "100",
+								},
+								{
+									Name:  constants.TorchEnvNumProcPerNode,
+									Value: "auto",
+								},
+								{
+									Name: constants.TorchEnvNodeRank,
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: constants.JobCompletionIndexFieldPath,
+										},
+									},
+								},
+								{
+									Name:  constants.TorchEnvMasterAddr,
+									Value: fmt.Sprintf("alpha-%s-0-0.alpha", constants.JobTrainerNode),
+								},
+								{
+									Name:  constants.TorchEnvMasterPort,
+									Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
+								},
+							},
+						).
+						ControllerReference(kubeflowv2.SchemeGroupVersion.WithKind(kubeflowv2.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
+						Obj(),
+					util.IgnoreObjectMetadata))
+
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		})
 	})

@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	// TrainJobKind is the Kind name for the TrainJob.
 	TrainJobKind string = "TrainJob"
 )
 
@@ -166,8 +167,9 @@ type DatasetConfig struct {
 	// These values will be merged with the TrainingRuntime's dataset initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to download dataset.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to download dataset.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // ModelConfig represents the desired model configuration.
@@ -192,8 +194,9 @@ type InputModel struct {
 	// These values will be merged with the TrainingRuntime's model initializer environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to download model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to download model.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // OutputModel represents the desired trained model configuration.
@@ -205,8 +208,9 @@ type OutputModel struct {
 	// These values will be merged with the TrainingRuntime's model exporter environments.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to export model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to export model.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.
