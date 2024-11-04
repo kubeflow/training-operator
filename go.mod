@@ -23,6 +23,7 @@ require (
 	sigs.k8s.io/jobset v0.5.2
 	sigs.k8s.io/kueue v0.6.3
 	sigs.k8s.io/scheduler-plugins v0.28.9
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 	sigs.k8s.io/yaml v1.4.0
 	volcano.sh/apis v1.9.0
 )
@@ -81,5 +82,4 @@ require (
 	k8s.io/component-base v0.29.5 // indirect
 	k8s.io/gengo v0.0.0-20240404160639-a0386bf69313 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )

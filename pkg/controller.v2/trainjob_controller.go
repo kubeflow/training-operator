@@ -28,7 +28,6 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	jobruntimes "github.com/kubeflow/training-operator/pkg/runtime.v2"
@@ -82,37 +81,20 @@ func (r *TrainJobReconciler) createOrUpdateObjs(ctx context.Context, trainJob *k
 	if err != nil {
 		return err
 	}
+
 	for _, obj := range objs {
-		var gvk schema.GroupVersionKind
-		if gvk, err = apiutil.GVKForObject(obj.DeepCopyObject(), r.client.Scheme()); err != nil {
-			return err
+		// TODO: evaluate the fields we need in apply configuration from the object.
+		//applyConfig := v2alpha1applyconfiguration.TrainJob(trainJob.Name, trainJob.Namespace).WithSpec(
+		//	v2alpha1applyconfiguration.TrainJobSpec())
+
+		if err := r.client.Patch(ctx, obj, client.Apply, client.FieldOwner("trainjob-controller"), client.ForceOwnership); err != nil {
+			return fmt.Errorf("failed to apply object: %w", err)
 		}
-		logKeysAndValues := []any{
-			"groupVersionKind", gvk.String(),
+
+		log.V(5).Info("Successfully applied object",
+			"groupVersionKind", obj.GetObjectKind().GroupVersionKind().String(),
 			"namespace", obj.GetNamespace(),
-			"name", obj.GetName(),
-		}
-		// TODO (tenzen-y): Ideally, we should use the SSA instead of checking existence.
-		// Non-empty resourceVersion indicates UPDATE operation.
-		var creationErr error
-		var created bool
-		if obj.GetResourceVersion() == "" {
-			creationErr = r.client.Create(ctx, obj)
-			created = creationErr == nil
-		}
-		switch {
-		case created:
-			log.V(5).Info("Succeeded to create object", logKeysAndValues)
-			continue
-		case client.IgnoreAlreadyExists(creationErr) != nil:
-			return creationErr
-		default:
-			// This indicates CREATE operation has not been performed or the object has already existed in the cluster.
-			if err = r.client.Update(ctx, obj); err != nil {
-				return err
-			}
-			log.V(5).Info("Succeeded to update object", logKeysAndValues)
-		}
+			"name", obj.GetName())
 	}
 	return nil
 }
