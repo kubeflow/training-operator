@@ -49,7 +49,7 @@ type TrainJob struct {
 }
 
 const (
-	// TrainJobSuspended means the TrainJob is suspended.
+	// TrainJobSuspended means that TrainJob is suspended.
 	TrainJobSuspended string = "Suspended"
 
 	// TrainJobComplete means that the TrainJob has completed its execution.
