@@ -13,21 +13,24 @@
 # limitations under the License.
 
 import inspect
+import json
 import os
 import queue
 import textwrap
 import threading
 from typing import Any, Callable, Dict, List, Optional
 
+from kubeflow.training import models
 from kubeflow.training.constants import constants
+from kubeflow.training.types import types
 from kubernetes import client, config
 
 
-def is_running_in_k8s():
+def is_running_in_k8s() -> bool:
     return os.path.isdir("/var/run/secrets/kubernetes.io/")
 
 
-def get_default_target_namespace():
+def get_default_target_namespace() -> str:
     if not is_running_in_k8s():
         try:
             _, current_context = config.list_kube_config_contexts()
@@ -41,7 +44,7 @@ def get_default_target_namespace():
 # TODO (andreyvelich): Discuss if we want to support V1ResourceRequirements resources as input.
 def get_resources_per_node(resources_per_node: dict) -> client.V1ResourceRequirements:
     """
-    Get resources for the Trainer container from the given dict.
+    Get the Trainer resources for the training node from the given dict.
     """
 
     # Convert all keys in resources to lowercase.
@@ -56,28 +59,6 @@ def get_resources_per_node(resources_per_node: dict) -> client.V1ResourceRequire
     return resources
 
 
-def get_script_for_python_packages(
-    packages_to_install: List[str], pip_index_url: str
-) -> str:
-    """
-    Get init script to install Python packages from the given pip index URL.
-    """
-    packages_str = " ".join([str(package) for package in packages_to_install])
-
-    script_for_python_packages = textwrap.dedent(
-        f"""
-        if ! [ -x "$(command -v pip)" ]; then
-            python -m ensurepip || python -m ensurepip --user || apt-get install python-pip
-        fi
-
-        PIP_DISABLE_PIP_VERSION_CHECK=1 python -m pip install --quiet \
-        --no-warn-script-location --index-url {pip_index_url} {packages_str}
-        """
-    )
-
-    return script_for_python_packages
-
-
 def get_args_using_train_func(
     train_func: Callable,
     train_func_parameters: Optional[Dict[str, Any]] = None,
@@ -85,7 +66,7 @@ def get_args_using_train_func(
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
 ) -> List[str]:
     """
-    Get Trainer args from the given training function and parameters.
+    Get the Trainer args from the given training function and parameters.
     """
     # Check if training function is callable.
     if not callable(train_func):
@@ -143,6 +124,77 @@ def get_args_using_train_func(
 
     # Return container command and args to execute training function.
     return [exec_script]
+
+
+def get_script_for_python_packages(
+    packages_to_install: List[str], pip_index_url: str
+) -> str:
+    """
+    Get init script to install Python packages from the given pip index URL.
+    """
+    packages_str = " ".join([str(package) for package in packages_to_install])
+
+    script_for_python_packages = textwrap.dedent(
+        f"""
+        if ! [ -x "$(command -v pip)" ]; then
+            python -m ensurepip || python -m ensurepip --user || apt-get install python-pip
+        fi
+
+        PIP_DISABLE_PIP_VERSION_CHECK=1 python -m pip install --quiet \
+        --no-warn-script-location --index-url {pip_index_url} {packages_str}
+        """
+    )
+
+    return script_for_python_packages
+
+
+def get_lora_config(lora_config: types.LoraConfig) -> List[client.V1EnvVar]:
+    """
+    Get the TrainJob env from the given Lora config.
+    """
+
+    env = client.V1EnvVar(
+        name=constants.ENV_LORA_CONFIG, value=json.dumps(lora_config.__dict__)
+    )
+    return [env]
+
+
+def get_dataset_config(
+    dataset_config: Optional[types.HuggingFaceDatasetConfig] = None,
+) -> Optional[models.KubeflowOrgV2alpha1DatasetConfig]:
+    """
+    Get the TrainJob DatasetConfig from the given config.
+    """
+    if dataset_config is None:
+        return None
+
+    # TODO (andreyvelich): Support more parameters.
+    ds_config = models.KubeflowOrgV2alpha1DatasetConfig(
+        storage_uri=(
+            dataset_config.storage_uri
+            if dataset_config.storage_uri.startswith("hf://")
+            else "hf://" + dataset_config.storage_uri
+        )
+    )
+
+    return ds_config
+
+
+def get_model_config(
+    model_config: Optional[types.HuggingFaceModelInputConfig] = None,
+) -> Optional[models.KubeflowOrgV2alpha1ModelConfig]:
+    """
+    Get the TrainJob ModelConfig from the given config.
+    """
+    if model_config is None:
+        return None
+
+    # TODO (andreyvelich): Support more parameters.
+    m_config = models.KubeflowOrgV2alpha1ModelConfig(
+        input=models.KubeflowOrgV2alpha1InputModel(storage_uri=model_config.storage_uri)
+    )
+
+    return m_config
 
 
 def get_pod_type(labels: Dict) -> str:
