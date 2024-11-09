@@ -3055,6 +3055,9 @@ spec:
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               jobsStatus:
                 description: JobsStatus tracks the child Jobs in TrainJob.
                 items:

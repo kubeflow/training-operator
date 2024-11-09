@@ -50,6 +50,7 @@ type JobSet struct {
 
 var _ framework.WatchExtensionPlugin = (*JobSet)(nil)
 var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
+var _ framework.TerminalConditionPlugin = (*JobSet)(nil)
 
 const Name = constants.JobSetKind
 
@@ -124,6 +125,22 @@ func needsCreateOrUpdate(old, new *jobsetv1alpha2.JobSet, trainJobIsSuspended bo
 
 func jobSetIsSuspended(jobSet *jobsetv1alpha2.JobSet) bool {
 	return ptr.Deref(jobSet.Spec.Suspend, false)
+}
+
+func (j *JobSet) TerminalCondition(ctx context.Context, trainJob *kubeflowv2.TrainJob) (*metav1.Condition, error) {
+	jobSet := &jobsetv1alpha2.JobSet{}
+	if err := j.client.Get(ctx, client.ObjectKeyFromObject(trainJob), jobSet); err != nil {
+		return nil, err
+	}
+	if completed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetCompleted)); completed != nil && completed.Status == metav1.ConditionTrue {
+		completed.Type = kubeflowv2.TrainJobComplete
+		return completed, nil
+	}
+	if failed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetFailed)); failed != nil && failed.Status == metav1.ConditionTrue {
+		failed.Type = kubeflowv2.TrainJobFailed
+		return failed, nil
+	}
+	return nil, nil
 }
 
 func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {

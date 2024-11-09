@@ -26,12 +26,12 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -51,7 +51,7 @@ type Framework struct {
 }
 
 func (f *Framework) Init() *rest.Config {
-	log.SetLogger(zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.Level(zapcore.Level(-5)), zap.UseDevMode(true)))
 	ginkgo.By("bootstrapping test environment")
 	f.testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{

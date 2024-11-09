@@ -34,4 +34,7 @@ var (
 		cmpopts.IgnoreTypes(metav1.TypeMeta{}),
 		cmpopts.IgnoreFields(metav1.ObjectMeta{}, "UID", "ResourceVersion", "Generation", "CreationTimestamp", "ManagedFields"),
 	}
+	IgnoreConditions = cmp.Options{
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime", "ObservedGeneration"),
+	}
 )
