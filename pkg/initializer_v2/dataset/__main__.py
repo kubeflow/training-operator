@@ -11,7 +11,8 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-if __name__ == "__main__":
+
+def main():
     logging.info("Starting dataset initialization")
 
     try:
@@ -29,3 +30,7 @@ if __name__ == "__main__":
         case _:
             logging.error("STORAGE_URI must have the valid dataset provider")
             raise Exception
+
+
+if __name__ == "__main__":
+    main()
