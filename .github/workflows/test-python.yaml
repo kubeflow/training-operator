@@ -32,4 +32,13 @@ jobs:
           pip install -U './sdk/python[huggingface]'
 
       - name: Run unit test for training sdk
-        run: pytest ./sdk/python/kubeflow/training/api/training_client_test.py
+        run: |
+          pytest ./sdk/python/kubeflow/training/api/training_client_test.py
+
+      - name: Run Python unit tests for v2
+        run: |
+          pip install -U './sdk_v2'
+          export PYTHONPATH="${{ github.workspace }}:$PYTHONPATH"
+          pytest ./pkg/initializer_v2/model
+          pytest ./pkg/initializer_v2/dataset
+          pytest ./pkg/initializer_v2/utils
