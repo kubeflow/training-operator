@@ -610,7 +610,13 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.Condition"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "type"
+          ],
+          "x-kubernetes-list-type": "map",
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "jobsStatus": {
           "description": "JobsStatus tracks the child Jobs in TrainJob.",

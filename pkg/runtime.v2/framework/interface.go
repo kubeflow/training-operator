@@ -19,6 +19,7 @@ package framework
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -54,4 +55,9 @@ type CustomValidationPlugin interface {
 type ComponentBuilderPlugin interface {
 	Plugin
 	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv2.TrainJob) (client.Object, error)
+}
+
+type TerminalConditionPlugin interface {
+	Plugin
+	TerminalCondition(ctx context.Context, trainJob *kubeflowv2.TrainJob) (*metav1.Condition, error)
 }

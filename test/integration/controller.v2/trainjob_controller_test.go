@@ -22,12 +22,14 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	jobsetconsts "sigs.k8s.io/jobset/pkg/constants"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -330,6 +332,159 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Obj(),
 					util.IgnoreObjectMetadata))
 
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		})
+
+		ginkgo.It("Should succeeded to reconcile TrainJob conditions with Complete condition", func() {
+			ginkgo.By("Creating TrainingRuntime and suspended TrainJob")
+			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if JobSet and PodGroup are created")
+			gomega.Eventually(func(g gomega.Gomega) {
+				g.Expect(k8sClient.Get(ctx, trainJobKey, &jobsetv1alpha2.JobSet{})).Should(gomega.Succeed())
+				g.Expect(k8sClient.Get(ctx, trainJobKey, &schedulerpluginsv1alpha1.PodGroup{})).Should(gomega.Succeed())
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if TrainJob has Suspended and Created conditions")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &kubeflowv2.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+					{
+						Type:    kubeflowv2.TrainJobSuspended,
+						Status:  metav1.ConditionTrue,
+						Reason:  kubeflowv2.TrainJobSuspendedReason,
+						Message: constants.TrainJobSuspendedMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobCreated,
+						Status:  metav1.ConditionTrue,
+						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
+						Message: constants.TrainJobJobsCreationSucceededMessage,
+					},
+				}, util.IgnoreConditions))
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if the TrainJob has Resumed and Created conditions after unsuspended")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &kubeflowv2.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				gotTrainJob.Spec.Suspend = ptr.To(false)
+				g.Expect(k8sClient.Update(ctx, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+					{
+						Type:    kubeflowv2.TrainJobSuspended,
+						Status:  metav1.ConditionFalse,
+						Reason:  kubeflowv2.TrainJobResumedReason,
+						Message: constants.TrainJobResumedMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobCreated,
+						Status:  metav1.ConditionTrue,
+						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
+						Message: constants.TrainJobJobsCreationSucceededMessage,
+					},
+				}, util.IgnoreConditions))
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Updating the JobSet condition with Completed")
+			gomega.Eventually(func(g gomega.Gomega) {
+				jobSet := &jobsetv1alpha2.JobSet{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+				meta.SetStatusCondition(&jobSet.Status.Conditions, metav1.Condition{
+					Type:    string(jobsetv1alpha2.JobSetCompleted),
+					Reason:  jobsetconsts.AllJobsCompletedReason,
+					Message: jobsetconsts.AllJobsCompletedMessage,
+					Status:  metav1.ConditionTrue,
+				})
+				g.Expect(k8sClient.Status().Update(ctx, jobSet)).Should(gomega.Succeed())
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if the TranJob has Resumed, Created, and Completed conditions")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &kubeflowv2.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+					{
+						Type:    kubeflowv2.TrainJobSuspended,
+						Status:  metav1.ConditionFalse,
+						Reason:  kubeflowv2.TrainJobResumedReason,
+						Message: constants.TrainJobResumedMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobCreated,
+						Status:  metav1.ConditionTrue,
+						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
+						Message: constants.TrainJobJobsCreationSucceededMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobComplete,
+						Status:  metav1.ConditionTrue,
+						Reason:  jobsetconsts.AllJobsCompletedReason,
+						Message: jobsetconsts.AllJobsCompletedMessage,
+					},
+				}, util.IgnoreConditions))
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		})
+
+		ginkgo.It("Should succeeded to reconcile TrainJob conditions with Failed condition", func() {
+			ginkgo.By("Creating TrainingRuntime and suspended TrainJob")
+			gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+			gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if JobSet and PodGroup are created")
+			gomega.Eventually(func(g gomega.Gomega) {
+				g.Expect(k8sClient.Get(ctx, trainJobKey, &jobsetv1alpha2.JobSet{})).Should(gomega.Succeed())
+				g.Expect(k8sClient.Get(ctx, trainJobKey, &schedulerpluginsv1alpha1.PodGroup{})).Should(gomega.Succeed())
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Unsuspending the TrainJob")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &kubeflowv2.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				gotTrainJob.Spec.Suspend = ptr.To(false)
+				g.Expect(k8sClient.Update(ctx, gotTrainJob)).Should(gomega.Succeed())
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Updating the JobSet condition with Failed")
+			gomega.Eventually(func(g gomega.Gomega) {
+				jobSet := &jobsetv1alpha2.JobSet{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+				meta.SetStatusCondition(&jobSet.Status.Conditions, metav1.Condition{
+					Type:    string(jobsetv1alpha2.JobSetFailed),
+					Reason:  jobsetconsts.FailedJobsReason,
+					Message: jobsetconsts.FailedJobsMessage,
+					Status:  metav1.ConditionTrue,
+				})
+				g.Expect(k8sClient.Status().Update(ctx, jobSet)).Should(gomega.Succeed())
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+			ginkgo.By("Checking if the TranJob has Resumed, Created, and Failed conditions")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &kubeflowv2.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+					{
+						Type:    kubeflowv2.TrainJobSuspended,
+						Status:  metav1.ConditionFalse,
+						Reason:  kubeflowv2.TrainJobResumedReason,
+						Message: constants.TrainJobResumedMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobCreated,
+						Status:  metav1.ConditionTrue,
+						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
+						Message: constants.TrainJobJobsCreationSucceededMessage,
+					},
+					{
+						Type:    kubeflowv2.TrainJobFailed,
+						Status:  metav1.ConditionTrue,
+						Reason:  jobsetconsts.FailedJobsReason,
+						Message: jobsetconsts.FailedJobsMessage,
+					},
+				}, util.IgnoreConditions))
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		})
 	})

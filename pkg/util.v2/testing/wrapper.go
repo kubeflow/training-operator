@@ -282,6 +282,13 @@ func (j *JobSetWrapper) Annotation(key, value string) *JobSetWrapper {
 	return j
 }
 
+func (j *JobSetWrapper) Conditions(conditions ...metav1.Condition) *JobSetWrapper {
+	if len(conditions) != 0 {
+		j.Status.Conditions = append(j.Status.Conditions, conditions...)
+	}
+	return j
+}
+
 func (j *JobSetWrapper) Obj() *jobsetv1alpha2.JobSet {
 	return &j.JobSet
 }
