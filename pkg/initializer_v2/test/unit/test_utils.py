@@ -1,0 +1,25 @@
+import pytest
+
+from pkg.initializer_v2.model.config import HuggingFaceModelInputConfig
+from pkg.initializer_v2.utils.utils import get_config_from_env
+
+
+@pytest.mark.parametrize(
+    "config_class,env_vars,expected",
+    [
+        (
+            HuggingFaceModelInputConfig,
+            {"STORAGE_URI": "hf://test", "ACCESS_TOKEN": "token"},
+            {"storage_uri": "hf://test", "access_token": "token"},
+        ),
+        (
+            HuggingFaceModelInputConfig,
+            {"STORAGE_URI": "hf://test"},
+            {"storage_uri": "hf://test", "access_token": None},
+        ),
+    ],
+)
+def test_get_config_from_env(mock_env_vars, config_class, env_vars, expected):
+    mock_env_vars(**env_vars)
+    result = get_config_from_env(config_class)
+    assert result == expected

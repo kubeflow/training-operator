@@ -32,4 +32,6 @@ jobs:
           pip install -U './sdk/python[huggingface]'
 
       - name: Run unit test for training sdk
-        run: pytest ./sdk/python/kubeflow/training/api/training_client_test.py
+        run: |
+          pytest ./sdk/python/kubeflow/training/api/training_client_test.py
+          pytest ./pkg/initializer_v2/test/unit
