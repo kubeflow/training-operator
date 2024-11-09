@@ -355,13 +355,13 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Type:    kubeflowv2.TrainJobSuspended,
 						Status:  metav1.ConditionTrue,
 						Reason:  kubeflowv2.TrainJobSuspendedReason,
-						Message: "TrainJob is suspended",
+						Message: constants.TrainJobSuspendedMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobCreated,
 						Status:  metav1.ConditionTrue,
 						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
-						Message: "Succeeded to create Jobs",
+						Message: constants.TrainJobJobsCreationSucceededMessage,
 					},
 				}, util.IgnoreConditions))
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
@@ -378,13 +378,13 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Type:    kubeflowv2.TrainJobSuspended,
 						Status:  metav1.ConditionFalse,
 						Reason:  kubeflowv2.TrainJobResumedReason,
-						Message: "TrainJob is resumed",
+						Message: constants.TrainJobResumedMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobCreated,
 						Status:  metav1.ConditionTrue,
 						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
-						Message: "Succeeded to create Jobs",
+						Message: constants.TrainJobJobsCreationSucceededMessage,
 					},
 				}, util.IgnoreConditions))
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
@@ -411,13 +411,13 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Type:    kubeflowv2.TrainJobSuspended,
 						Status:  metav1.ConditionFalse,
 						Reason:  kubeflowv2.TrainJobResumedReason,
-						Message: "TrainJob is resumed",
+						Message: constants.TrainJobResumedMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobCreated,
 						Status:  metav1.ConditionTrue,
 						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
-						Message: "Succeeded to create Jobs",
+						Message: constants.TrainJobJobsCreationSucceededMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobComplete,
@@ -470,13 +470,13 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						Type:    kubeflowv2.TrainJobSuspended,
 						Status:  metav1.ConditionFalse,
 						Reason:  kubeflowv2.TrainJobResumedReason,
-						Message: "TrainJob is resumed",
+						Message: constants.TrainJobResumedMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobCreated,
 						Status:  metav1.ConditionTrue,
 						Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
-						Message: "Succeeded to create Jobs",
+						Message: constants.TrainJobJobsCreationSucceededMessage,
 					},
 					{
 						Type:    kubeflowv2.TrainJobFailed,

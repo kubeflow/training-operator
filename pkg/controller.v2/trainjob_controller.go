@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/kubeflow/training-operator/pkg/constants"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,10 +43,10 @@ var errorUnsupportedRuntime = errors.New("the specified runtime is not supported
 type objsOpState int
 
 const (
-	succeeded      objsOpState = iota
-	buildFailed    objsOpState = iota
-	creationFailed objsOpState = iota
-	updateFailed   objsOpState = iota
+	creationSucceeded objsOpState = iota
+	buildFailed       objsOpState = iota
+	creationFailed    objsOpState = iota
+	updateFailed      objsOpState = iota
 )
 
 type TrainJobReconciler struct {
@@ -138,32 +139,32 @@ func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobru
 			log.V(5).Info("Succeeded to update object", logKeysAndValues...)
 		}
 	}
-	return succeeded, nil
+	return creationSucceeded, nil
 }
 
 func setCreatedCondition(trainJob *kubeflowv2.TrainJob, opState objsOpState) {
 	var newCond metav1.Condition
 	switch opState {
-	case succeeded:
+	case creationSucceeded:
 		newCond = metav1.Condition{
 			Type:    kubeflowv2.TrainJobCreated,
 			Status:  metav1.ConditionTrue,
-			Message: "Succeeded to create Jobs",
+			Message: constants.TrainJobJobsCreationSucceededMessage,
 			Reason:  kubeflowv2.TrainJobJobsCreationSucceededReason,
 		}
 	case buildFailed:
 		newCond = metav1.Condition{
 			Type:    kubeflowv2.TrainJobCreated,
 			Status:  metav1.ConditionFalse,
-			Message: "Failed to build Jobs",
+			Message: constants.TrainJobJobsBuildFailedMessage,
 			Reason:  kubeflowv2.TrainJobJobsBuildFailedReason,
 		}
-	// TODO (tenzen-y): Provide more granular the message based on creation or update failure.
+	// TODO (tenzen-y): Provide more granular message based on creation or update failure.
 	case creationFailed, updateFailed:
 		newCond = metav1.Condition{
 			Type:    kubeflowv2.TrainJobCreated,
 			Status:  metav1.ConditionFalse,
-			Message: "Failed to create Jobs",
+			Message: constants.TrainJobJobsCreationFailedMessage,
 			Reason:  kubeflowv2.TrainJobJobsCreationFailedReason,
 		}
 	default:
@@ -179,14 +180,14 @@ func setSuspendedCondition(trainJob *kubeflowv2.TrainJob) {
 		newCond = metav1.Condition{
 			Type:    kubeflowv2.TrainJobSuspended,
 			Status:  metav1.ConditionTrue,
-			Message: "TrainJob is suspended",
+			Message: constants.TrainJobSuspendedMessage,
 			Reason:  kubeflowv2.TrainJobSuspendedReason,
 		}
 	case meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv2.TrainJobSuspended):
 		newCond = metav1.Condition{
 			Type:    kubeflowv2.TrainJobSuspended,
 			Status:  metav1.ConditionFalse,
-			Message: "TrainJob is resumed",
+			Message: constants.TrainJobResumedMessage,
 			Reason:  kubeflowv2.TrainJobResumedReason,
 		}
 	default:
