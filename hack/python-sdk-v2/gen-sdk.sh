@@ -58,5 +58,5 @@ git clean -f ${SDK_OUTPUT_PATH}/tox.ini
 git checkout ${SDK_OUTPUT_PATH}/README.md
 git checkout ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
 
-# Manually modify the version in the __init__.py file.
+# Manually modify the SDK version in the __init__.py file.
 sed -i '' -e "s/__version__.*/__version__ = \"${SDK_VERSION}\"/" ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py

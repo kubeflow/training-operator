@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -42,8 +42,25 @@ class Pod:
     status: Optional[str] = None
 
 
+# Configuration for the Lora to configure parameter efficient fine-tuning.
 @dataclass
+class LoraConfig:
+    r: Optional[int] = field(
+        default=None, metadata={"help": "Lora attention dimension"}
+    )
+    lora_alpha: Optional[int] = field(default=None, metadata={"help": "Lora alpha"})
+    lora_dropout: Optional[int] = field(default=None, metadata={"help": "Lora dropout"})
+
+
+# Configuration for the LLM Trainer.
+# TODO (andreyvelich): Discuss what values should be on the Trainer.
+@dataclass
+class TrainerConfig:
+    lora_config: LoraConfig
+
+
 # Configuration for the HuggingFace dataset provider.
+@dataclass
 class HuggingFaceDatasetConfig:
     storage_uri: str
     access_token: Optional[str] = None

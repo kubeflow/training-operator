@@ -111,10 +111,10 @@ class TrainingClient:
                 f"Timeout to list {constants.CLUSTER_TRAINING_RUNTIME_KIND}s "
                 f"in namespace: {self.namespace}"
             )
-        except Exception as e:
+        except Exception:
             raise RuntimeError(
                 f"Failed to list {constants.CLUSTER_TRAINING_RUNTIME_KIND}s "
-                f"in namespace: {self.namespace}. Error: {e}"
+                f"in namespace: {self.namespace}"
             )
 
         return result
@@ -125,8 +125,14 @@ class TrainingClient:
         train_func: Optional[Callable] = None,
         num_nodes: Optional[int] = None,
         resources_per_node: Optional[dict] = None,
+        packages_to_install: Optional[List[str]] = None,
+        pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
+        # TODO (andreyvelich): Add num_nodes, func, resources to the Trainer or TrainerConfig ?
+        trainer_config: Optional[types.TrainerConfig] = None,
+        dataset_config: Optional[types.HuggingFaceDatasetConfig] = None,
+        model_config: Optional[types.HuggingFaceModelInputConfig] = None,
     ) -> str:
-        """Create the TrainJob. TODO: Add description
+        """Create the TrainJob. TODO (andreyvelich): Add description
 
         Returns:
             str: The unique name of the TrainJob that has been generated.
@@ -141,7 +147,9 @@ class TrainingClient:
         # TODO (andreyvelich): Discuss this TrainJob name generation.
         train_job_name = random.choice(string.ascii_lowercase) + uuid.uuid4().hex[:11]
 
+        # Build the Trainer.
         trainer = models.KubeflowOrgV2alpha1Trainer()
+
         # Add number of nodes to the Trainer.
         if num_nodes is not None:
             trainer.num_nodes = num_nodes
@@ -152,10 +160,20 @@ class TrainingClient:
                 resources_per_node
             )
 
+        # Add command and args to the Trainer if training function is set.
         if train_func is not None:
             trainer.command = constants.DEFAULT_COMMAND
-            # TODO: Support more params
-            trainer.args = utils.get_args_using_train_func(train_func)
+            # TODO: Support train function parameters.
+            trainer.args = utils.get_args_using_train_func(
+                train_func,
+                None,
+                packages_to_install,
+                pip_index_url,
+            )
+
+        # Add the Lora config to the Trainer envs.
+        if trainer_config and trainer_config.lora_config:
+            trainer.env = utils.get_lora_config(trainer_config.lora_config)
 
         train_job = models.KubeflowOrgV2alpha1TrainJob(
             api_version=constants.API_VERSION,
@@ -166,8 +184,12 @@ class TrainingClient:
                 trainer=(
                     trainer if trainer != models.KubeflowOrgV2alpha1Trainer() else None
                 ),
+                dataset_config=utils.get_dataset_config(dataset_config),
+                model_config=utils.get_model_config(model_config),
             ),
         )
+        print(train_job)
+        raise Exception
 
         # Create the TrainJob.
         try:

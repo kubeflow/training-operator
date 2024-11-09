@@ -81,3 +81,6 @@ POD_PENDING = "Pending"
 
 # The container name for the Trainer.
 CONTAINER_TRAINER = "trainer"
+
+# Env variable for the Lora config
+ENV_LORA_CONFIG = "LORA_CONFIG"

@@ -17,4 +17,15 @@ from __future__ import absolute_import
 
 __version__ = "2.0.0"
 
+# Import the public API client.
 from kubeflow.training.api.training_client import TrainingClient
+
+# Import the Trainer configs.
+from kubeflow.training.types.types import TrainerConfig
+from kubeflow.training.types.types import LoraConfig
+
+# Import the Dataset configs.
+from kubeflow.training.types.types import HuggingFaceDatasetConfig
+
+# Import the Model configs.
+from kubeflow.training.types.types import HuggingFaceModelInputConfig
