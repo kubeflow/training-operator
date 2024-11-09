@@ -422,7 +422,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					{
 						Type:    kubeflowv2.TrainJobComplete,
 						Status:  metav1.ConditionTrue,
-						Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetCompleted, jobsetconsts.AllJobsCompletedReason),
+						Reason:  jobsetconsts.AllJobsCompletedReason,
 						Message: jobsetconsts.AllJobsCompletedMessage,
 					},
 				}, util.IgnoreConditions))
@@ -481,7 +481,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					{
 						Type:    kubeflowv2.TrainJobFailed,
 						Status:  metav1.ConditionTrue,
-						Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetFailed, jobsetconsts.FailedJobsReason),
+						Reason:  jobsetconsts.FailedJobsReason,
 						Message: jobsetconsts.FailedJobsMessage,
 					},
 				}, util.IgnoreConditions))

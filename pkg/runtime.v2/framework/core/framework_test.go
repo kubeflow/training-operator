@@ -18,7 +18,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -612,7 +611,7 @@ func TestTerminalConditionPlugins(t *testing.T) {
 				Obj(),
 			wantCondition: &metav1.Condition{
 				Type:    kubeflowv2.TrainJobComplete,
-				Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetCompleted, jobsetconsts.AllJobsCompletedReason),
+				Reason:  jobsetconsts.AllJobsCompletedReason,
 				Message: jobsetconsts.AllJobsCompletedMessage,
 				Status:  metav1.ConditionTrue,
 			},
@@ -631,7 +630,7 @@ func TestTerminalConditionPlugins(t *testing.T) {
 				Obj(),
 			wantCondition: &metav1.Condition{
 				Type:    kubeflowv2.TrainJobFailed,
-				Reason:  fmt.Sprintf("%sDueTo%s", jobsetv1alpha2.JobSetFailed, jobsetconsts.FailedJobsReason),
+				Reason:  jobsetconsts.FailedJobsReason,
 				Message: jobsetconsts.FailedJobsMessage,
 				Status:  metav1.ConditionTrue,
 			},

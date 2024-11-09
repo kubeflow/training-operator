@@ -133,12 +133,10 @@ func (j *JobSet) TerminalCondition(ctx context.Context, trainJob *kubeflowv2.Tra
 		return nil, err
 	}
 	if completed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetCompleted)); completed != nil && completed.Status == metav1.ConditionTrue {
-		completed.Reason = fmt.Sprintf("%sDueTo%s", completed.Type, completed.Reason)
 		completed.Type = kubeflowv2.TrainJobComplete
 		return completed, nil
 	}
 	if failed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetFailed)); failed != nil && failed.Status == metav1.ConditionTrue {
-		failed.Reason = fmt.Sprintf("%sDueTo%s", failed.Type, failed.Reason)
 		failed.Type = kubeflowv2.TrainJobFailed
 		return failed, nil
 	}
