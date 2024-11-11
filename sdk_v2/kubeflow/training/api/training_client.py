@@ -188,8 +188,6 @@ class TrainingClient:
                 model_config=utils.get_model_config(model_config),
             ),
         )
-        print(train_job)
-        raise Exception
 
         # Create the TrainJob.
         try:
