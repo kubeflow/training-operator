@@ -237,16 +237,25 @@ class TrainingClient:
             response = thread.get(constants.DEFAULT_TIMEOUT)
 
             for item in response["items"]:
-                result.append(
-                    types.TrainJob(
-                        name=item["metadata"]["name"],
-                        runtime_ref=item["spec"]["runtimeRef"]["name"],
-                        creation_timestamp=item["metadata"]["creationTimestamp"],
-                    )
+
+                item = self.api_client.deserialize(
+                    utils.FakeResponse(item),
+                    models.KubeflowOrgV2alpha1TrainJob,
                 )
-                # TODO: Add status
-                if "status" in item:
-                    pass
+
+                train_job = types.TrainJob(
+                    name=item.metadata.name,  # type: ignore
+                    runtime_ref=item.spec.runtime_ref.name,  # type: ignore
+                    creation_timestamp=item.metadata.creation_timestamp,  # type: ignore
+                )
+
+                # TODO (andreyvelich): This should be changed.
+                if item.status:  # type: ignore
+                    train_job.status = utils.get_trainjob_status(
+                        item.status.conditions  # type: ignore
+                    )
+
+                result.append(train_job)
 
         except multiprocessing.TimeoutError:
             raise TimeoutError(
@@ -277,7 +286,7 @@ class TrainingClient:
                 result.append(
                     types.Pod(
                         name=item.metadata.name,
-                        type=utils.get_pod_type(item.metadata.labels),
+                        component=utils.get_pod_type(item.metadata.labels),
                         status=item.status.phase if item.status else None,
                     )
                 )
@@ -294,15 +303,26 @@ class TrainingClient:
         return result
 
     def get_job_logs(
-        self, name: str, follow: bool = False, stage: str = "trainer"
+        self,
+        name: str,
+        follow: bool = False,
+        component: str = constants.JOB_TRAINER_NODE,
+        node_index: int = 0,
     ) -> Dict[str, str]:
-        """Get the Trainer logs from TrainJob"""
+        """Get the logs from TrainJob
+        TODO (andreyvelich): Should we change node_index to node_rank ?
+        TODO (andreyvelich): For the initializer, we can add the unit argument.
+        """
 
-        # Trainer node with index 0 must be deployed.
         pod = None
+        # Get Initializer or Trainer Pod.
         for p in self.get_job_pods(name):
-            if p.type == constants.MASTER_NODE and p.type != constants.POD_PENDING:
-                pod = p
+            if p.status != constants.POD_PENDING:
+                if p.component == component and component == constants.JOB_INITIALIZER:
+                    pod = p
+                elif p.component == component + "-" + str(node_index):
+                    pod = p
+
         if pod is None:
             return {}
 
@@ -311,7 +331,8 @@ class TrainingClient:
 
         # TODO (andreyvelich): Potentially, refactor this.
         # Support logging of multiple Pods.
-        if follow:
+        # TODO (andreyvelich): Currently, follow is supported only for Trainer.
+        if follow and component == constants.JOB_TRAINER_NODE:
             log_streams = []
             log_streams.append(
                 watch.Watch().stream(
@@ -341,24 +362,41 @@ class TrainingClient:
                                 finished[index] = True
                                 break
                             # Print logs to the StdOut
-                            print(f"[{pod.type}]: {logline}")
+                            print(f"[{pod.component}]: {logline}")
                             # Add logs to the results dict.
-                            if pod.type not in logs_dict:
-                                logs_dict[pod.type] = logline + "\n"
+                            if pod.component not in logs_dict:
+                                logs_dict[pod.component] = logline + "\n"
                             else:
-                                logs_dict[pod.type] += logline + "\n"
+                                logs_dict[pod.component] += logline + "\n"
                         except queue.Empty:
                             break
                 if all(finished):
                     return logs_dict
 
         try:
-            pod_logs = self.core_api.read_namespaced_pod_log(
-                name=pod.name,
-                namespace=self.namespace,
-                container=constants.CONTAINER_TRAINER,
-            )
-            logs_dict[pod.name] = pod_logs
+            if component == constants.JOB_INITIALIZER:
+                logs_dict[constants.CONTAINER_DATASET_INITIALIZER] = (
+                    self.core_api.read_namespaced_pod_log(
+                        name=pod.name,
+                        namespace=self.namespace,
+                        container=constants.CONTAINER_DATASET_INITIALIZER,
+                    )
+                )
+                logs_dict[constants.CONTAINER_MODEL_INITIALIZER] = (
+                    self.core_api.read_namespaced_pod_log(
+                        name=pod.name,
+                        namespace=self.namespace,
+                        container=constants.CONTAINER_MODEL_INITIALIZER,
+                    )
+                )
+            else:
+                logs_dict[component + "-" + str(node_index)] = (
+                    self.core_api.read_namespaced_pod_log(
+                        name=pod.name,
+                        namespace=self.namespace,
+                        container=constants.CONTAINER_TRAINER,
+                    )
+                )
         except Exception:
             raise RuntimeError(
                 f"Failed to read logs for the pod {self.namespace}/{pod.name}"

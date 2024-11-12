@@ -41,6 +41,16 @@ def get_default_target_namespace() -> str:
         return f.readline()
 
 
+class FakeResponse:
+    """Fake object of RESTResponse to deserialize
+    Ref) https://github.com/kubeflow/katib/pull/1630#discussion_r697877815
+    Ref) https://github.com/kubernetes-client/python/issues/977#issuecomment-592030030
+    """
+
+    def __init__(self, obj):
+        self.data = json.dumps(obj)
+
+
 # TODO (andreyvelich): Discuss if we want to support V1ResourceRequirements resources as input.
 def get_resources_per_node(resources_per_node: dict) -> client.V1ResourceRequirements:
     """
@@ -195,6 +205,24 @@ def get_model_config(
     )
 
     return m_config
+
+
+# TODO (andreyvelich): Discuss how we should show TrainJob status to SDK users.
+def get_trainjob_status(conditions: List[client.V1Condition]) -> str:
+    """
+    Convert the TrainJob status to the user-friendly status.
+    """
+    status = "Unknown"
+
+    for c in conditions:
+        if c.type == "Created" and c.status == "True":
+            status = "Created"
+        elif c.type == "Complete" and c.status == "True":
+            status = "Succeeded"
+        elif c.type == "Failed" and c.status == "True":
+            status = "Failed"
+
+    return status
 
 
 def get_pod_type(labels: Dict) -> str:

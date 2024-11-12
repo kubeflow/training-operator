@@ -60,3 +60,7 @@ git checkout ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
 
 # Manually modify the SDK version in the __init__.py file.
 sed -i '' -e "s/__version__.*/__version__ = \"${SDK_VERSION}\"/" ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
+
+# Kubeflow models must have Kubernetes models to perform serialization.
+printf "\n# Import Kubernetes models for the serialization\n" >>${SDK_OUTPUT_PATH}/kubeflow/training/models/__init__.py
+printf "from kubernetes.client import *\n" >>${SDK_OUTPUT_PATH}/kubeflow/training/models/__init__.py
