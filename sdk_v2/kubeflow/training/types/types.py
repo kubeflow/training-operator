@@ -31,14 +31,14 @@ class TrainJob:
     name: str
     runtime_ref: str
     creation_timestamp: str
-    status: Optional[str] = None
+    status: Optional[str] = "Unknown"
 
 
 # Representation for the Pod.
 @dataclass
 class Pod:
     name: str
-    type: str
+    component: str
     status: Optional[str] = None
 
 

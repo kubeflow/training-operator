@@ -20,7 +20,6 @@ class HuggingFace(utils.DatasetProvider):
 
     def load_config(self):
         config_dict = utils.get_config_from_env(HuggingFaceDatasetConfig)
-        logging.info(f"Config for HuggingFace dataset initializer: {config_dict}")
         self.config = HuggingFaceDatasetConfig(**config_dict)
 
     def download_dataset(self):

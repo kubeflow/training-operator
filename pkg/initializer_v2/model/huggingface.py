@@ -20,7 +20,6 @@ class HuggingFace(utils.ModelProvider):
 
     def load_config(self):
         config_dict = utils.get_config_from_env(HuggingFaceModelInputConfig)
-        logging.info(f"Config for HuggingFace model initializer: {config_dict}")
         self.config = HuggingFaceModelInputConfig(**config_dict)
 
     def download_model(self):

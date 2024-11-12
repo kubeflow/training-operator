@@ -42,3 +42,6 @@ from kubeflow.training.models.kubeflow_org_v2alpha1_trainer import KubeflowOrgV2
 from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime import KubeflowOrgV2alpha1TrainingRuntime
 from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime_list import KubeflowOrgV2alpha1TrainingRuntimeList
 from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime_spec import KubeflowOrgV2alpha1TrainingRuntimeSpec
+
+# Import Kubernetes models for the serialization
+from kubernetes.client import *

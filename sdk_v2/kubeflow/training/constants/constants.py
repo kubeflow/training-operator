@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 
 # How long to wait in seconds for requests to the Kubernetes API Server.
 DEFAULT_TIMEOUT = 120
@@ -49,7 +50,7 @@ TRAINJOB_KIND = "TrainJob"
 TRAINJOB_PLURAL = "trainjobs"
 
 # The default PIP index URL to download Python packages.
-DEFAULT_PIP_INDEX_URL = "https://pypi.org/simple"
+DEFAULT_PIP_INDEX_URL = os.getenv("DEFAULT_PIP_INDEX_URL", "https://pypi.org/simple")
 
 # The default command for the Trainer.
 DEFAULT_COMMAND = ["bash", "-c"]
@@ -68,6 +69,12 @@ JOB_INDEX_KEY = "batch.kubernetes.io/job-completion-index"
 
 # The Job name for the initializer.
 JOB_INITIALIZER = "initializer"
+
+# The container name for the dataset initializer.
+CONTAINER_DATASET_INITIALIZER = "dataset-initializer"
+
+# The container name for the model initializer.
+CONTAINER_MODEL_INITIALIZER = "model-initializer"
 
 # The Job name for the trainer nodes.
 JOB_TRAINER_NODE = "trainer-node"
