@@ -41,7 +41,7 @@ PHASE_KEY = "training.kubeflow.org/phase"
 PHASE_PRE_TRAINING = "pre-training"
 
 # The value indicates that runtime can be used for the model pre-training.
-PHASE_PRE_TRAINING = "post-training"
+PHASE_POST_TRAINING = "post-training"
 
 # The Kind name for the TrainJob.
 TRAINJOB_KIND = "TrainJob"
