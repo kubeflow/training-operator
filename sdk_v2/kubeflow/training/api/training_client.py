@@ -96,16 +96,43 @@ class TrainingClient:
                 constants.CLUSTER_TRAINING_RUNTIME_PLURAL,
                 async_req=True,
             )
+            # TODO (andreyvelich): We should de-serialize runtime into object.
+            # For that, we need to import the JobSet models.
             response = thread.get(constants.DEFAULT_TIMEOUT)
             for item in response["items"]:
                 # TODO (andreyvelich): Currently, the training phase label must be presented.
                 if "labels" in item["metadata"]:
-                    result.append(
-                        types.Runtime(
-                            name=item["metadata"]["name"],
-                            phase=item["metadata"]["labels"][constants.PHASE_KEY],
-                        )
+                    # Get the Trainer container resources.
+                    resources = None
+                    for job in item["spec"]["template"]["spec"]["replicatedJobs"]:
+                        if job["name"] == constants.JOB_TRAINER_NODE:
+                            pod_spec = job["template"]["spec"]["template"]["spec"]
+                            for container in pod_spec["containers"]:
+                                if container["name"] == constants.CONTAINER_TRAINER:
+                                    if "resources" in container:
+                                        resources = client.V1ResourceRequirements(
+                                            **container["resources"]
+                                        )
+
+                    # TODO (andreyvelich): Currently, only Torch is supported for NumProcPerNode.
+                    num_procs = None
+                    if "torch" in item["spec"]["mlPolicy"]:
+                        num_procs = item["spec"]["mlPolicy"]["torch"]["numProcPerNode"]
+
+                    # Get the devices count.
+                    device_count = utils.get_device_count(
+                        item["spec"]["mlPolicy"]["numNodes"],
+                        num_procs,
+                        resources,
                     )
+                    runtime = types.Runtime(
+                        name=item["metadata"]["name"],  # type: ignore
+                        phase=item["metadata"]["labels"][constants.PHASE_KEY],  # type: ignore
+                        device=item["metadata"]["labels"][constants.DEVICE_KEY],  # type: ignore
+                        device_count=device_count,
+                    )
+
+                    result.append(runtime)
         except multiprocessing.TimeoutError:
             raise TimeoutError(
                 f"Timeout to list {constants.CLUSTER_TRAINING_RUNTIME_KIND}s "
@@ -237,7 +264,6 @@ class TrainingClient:
             response = thread.get(constants.DEFAULT_TIMEOUT)
 
             for item in response["items"]:
-
                 item = self.api_client.deserialize(
                     utils.FakeResponse(item),
                     models.KubeflowOrgV2alpha1TrainJob,

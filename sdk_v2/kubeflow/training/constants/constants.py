@@ -40,8 +40,18 @@ PHASE_KEY = "training.kubeflow.org/phase"
 # The value indicates that runtime can be used for the model pre-training.
 PHASE_PRE_TRAINING = "pre-training"
 
-# The value indicates that runtime can be used for the model pre-training.
+# The value indicates that runtime can be used for the model post-training.
 PHASE_POST_TRAINING = "post-training"
+
+# The label key to identify the device (e.g. GPU, TPU) that is used for training.
+# TODO: Potentially, we should get this data from the Node selectors.
+DEVICE_KEY = "training.kubeflow.org/device"
+
+# The label for GPU device in the container resources.
+GPU_DEVICE_LABEL = "nvidia.com/gpu"
+
+# The label for TPU device in the container resources.
+TPU_DEVICE_LABEL = "google.com/tpu"
 
 # The Kind name for the TrainJob.
 TRAINJOB_KIND = "TrainJob"
