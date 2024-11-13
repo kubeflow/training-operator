@@ -235,37 +235,6 @@ def get_model_config(
     return m_config
 
 
-# TODO (andreyvelich): Discuss how we should show TrainJob status to SDK users.
-def get_trainjob_status(conditions: List[client.V1Condition]) -> str:
-    """
-    Convert the TrainJob status to the user-friendly status.
-    """
-    status = "Unknown"
-
-    for c in conditions:
-        if c.type == "Created" and c.status == "True":
-            status = "Created"
-        elif c.type == "Complete" and c.status == "True":
-            status = "Succeeded"
-        elif c.type == "Failed" and c.status == "True":
-            status = "Failed"
-
-    return status
-
-
-def get_pod_type(labels: Dict) -> str:
-    """
-    Identify the Pod type from the given Pod labels.
-    Pod type contains the node index for the Trainer Job
-    """
-
-    # For the Trainer
-    if labels[constants.JOBSET_REPLICATED_JOB_KEY] == constants.JOB_TRAINER_NODE:
-        return f"{constants.JOB_TRAINER_NODE}-{labels[constants.JOB_INDEX_KEY]}"
-
-    return labels[constants.JOBSET_REPLICATED_JOB_KEY]
-
-
 def wrap_log_stream(q: queue.Queue, log_stream: Any):
     while True:
         try:

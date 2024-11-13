@@ -72,7 +72,7 @@ ENTRYPOINT_TORCH = "torchrun"
 JOBSET_NAME_KEY = "jobset.sigs.k8s.io/jobset-name"
 
 # The label key to identify the JobSet's ReplicatedJob of the Pod.
-JOBSET_REPLICATED_JOB_KEY = "jobset.sigs.k8s.io/replicatedjob-name"
+REPLICATED_JOB_KEY = "jobset.sigs.k8s.io/replicatedjob-name"
 
 # The label key to identify the Job completion index of the Pod.
 JOB_INDEX_KEY = "batch.kubernetes.io/job-completion-index"
