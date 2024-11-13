@@ -18,7 +18,7 @@ import os
 import queue
 import textwrap
 import threading
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from kubeflow.training import models
 from kubeflow.training.constants import constants
@@ -49,6 +49,34 @@ class FakeResponse:
 
     def __init__(self, obj):
         self.data = json.dumps(obj)
+
+
+def get_device_count(
+    numNodes: int,
+    num_procs_per_node: Optional[str],
+    resources_per_node: Optional[client.V1ResourceRequirements],
+) -> Union[str, int]:
+    """
+    Get the device count from the given runtime spec.
+    """
+    device_count = None
+
+    # TODO (andreyvelich): Support other resources (e.g. CPUs, NPUs).
+    if resources_per_node and resources_per_node.limits:
+        if constants.GPU_DEVICE_LABEL in resources_per_node.limits:
+            device_count = resources_per_node.limits[constants.GPU_DEVICE_LABEL]
+        elif constants.TPU_DEVICE_LABEL in resources_per_node.limits:
+            device_count = resources_per_node.limits[constants.TPU_DEVICE_LABEL]
+
+    if num_procs_per_node and num_procs_per_node.isdigit():
+        device_count = int(num_procs_per_node)
+
+    if device_count:
+        device_count = device_count * numNodes
+    else:
+        device_count = "Unknown"
+
+    return device_count
 
 
 # TODO (andreyvelich): Discuss if we want to support V1ResourceRequirements resources as input.
