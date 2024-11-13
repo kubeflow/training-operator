@@ -264,24 +264,11 @@ class TrainingClient:
             response = thread.get(constants.DEFAULT_TIMEOUT)
 
             for item in response["items"]:
-                item = self.api_client.deserialize(
+                trainjob = self.api_client.deserialize(
                     utils.FakeResponse(item),
                     models.KubeflowOrgV2alpha1TrainJob,
                 )
-
-                train_job = types.TrainJob(
-                    name=item.metadata.name,  # type: ignore
-                    runtime_ref=item.spec.runtime_ref.name,  # type: ignore
-                    creation_timestamp=item.metadata.creation_timestamp,  # type: ignore
-                )
-
-                # TODO (andreyvelich): This should be changed.
-                if item.status:  # type: ignore
-                    train_job.status = utils.get_trainjob_status(
-                        item.status.conditions  # type: ignore
-                    )
-
-                result.append(train_job)
+                result.append(self.__get_trainjob_from_crd(trainjob))  # type: ignore
 
         except multiprocessing.TimeoutError:
             raise TimeoutError(
@@ -294,39 +281,34 @@ class TrainingClient:
 
         return result
 
-    # TODO (andreyvelich): Discuss whether we need this API.
-    # Potentially, we can move this data to the TrainJob type.
-    def get_job_pods(self, name: str) -> List[types.Pod]:
-        """Get pod names for the TrainJob Job."""
+    def get_job(self, name: str) -> types.TrainJob:
+        """Get the TrainJob information"""
 
-        result = []
         try:
-            thread = self.core_api.list_namespaced_pod(
+            thread = self.custom_api.get_namespaced_custom_object(
+                constants.GROUP,
+                constants.VERSION,
                 self.namespace,
-                label_selector=f"{constants.JOBSET_NAME_KEY}={name}",
+                constants.TRAINJOB_PLURAL,
+                name,
                 async_req=True,
             )
-            response = thread.get(constants.DEFAULT_TIMEOUT)
 
-            for item in response.items:
-                result.append(
-                    types.Pod(
-                        name=item.metadata.name,
-                        component=utils.get_pod_type(item.metadata.labels),
-                        status=item.status.phase if item.status else None,
-                    )
-                )
+            trainjob = self.api_client.deserialize(
+                utils.FakeResponse(thread.get(constants.DEFAULT_TIMEOUT)),  # type: ignore
+                models.KubeflowOrgV2alpha1TrainJob,
+            )
 
         except multiprocessing.TimeoutError:
             raise TimeoutError(
-                f"Timeout to list {constants.TRAINJOB_KIND}'s pods: {self.namespace}/{name}"
+                f"Timeout to get {constants.TRAINJOB_KIND}: {self.namespace}/{name}"
             )
         except Exception:
             raise RuntimeError(
-                f"Failed to list {constants.TRAINJOB_KIND}'s pods: {self.namespace}/{name}"
+                f"Failed to get {constants.TRAINJOB_KIND}: {self.namespace}/{name}"
             )
 
-        return result
+        return self.__get_trainjob_from_crd(trainjob)  # type: ignore
 
     def get_job_logs(
         self,
@@ -340,16 +322,16 @@ class TrainingClient:
         TODO (andreyvelich): For the initializer, we can add the unit argument.
         """
 
-        pod = None
-        # Get Initializer or Trainer Pod.
-        for p in self.get_job_pods(name):
-            if p.status != constants.POD_PENDING:
-                if p.component == component and component == constants.JOB_INITIALIZER:
-                    pod = p
-                elif p.component == component + "-" + str(node_index):
-                    pod = p
+        pod_name = None
+        # Get Initializer or Trainer Pod name.
+        for c in self.get_job(name).components:
+            if c.status != constants.POD_PENDING:
+                if c.name == component and component == constants.JOB_INITIALIZER:
+                    pod_name = c.pod_name
+                elif c.name == component + "-" + str(node_index):
+                    pod_name = c.pod_name
 
-        if pod is None:
+        if pod_name is None:
             return {}
 
         # Dict where key is the Pod type and value is the Pod logs.
@@ -363,7 +345,7 @@ class TrainingClient:
             log_streams.append(
                 watch.Watch().stream(
                     self.core_api.read_namespaced_pod_log,
-                    name=pod.name,
+                    name=pod_name,
                     namespace=self.namespace,
                     container=constants.CONTAINER_TRAINER,
                 )
@@ -388,12 +370,12 @@ class TrainingClient:
                                 finished[index] = True
                                 break
                             # Print logs to the StdOut
-                            print(f"[{pod.component}]: {logline}")
+                            print(f"[{component}]: {logline}")
                             # Add logs to the results dict.
-                            if pod.component not in logs_dict:
-                                logs_dict[pod.component] = logline + "\n"
+                            if component not in logs_dict:
+                                logs_dict[component] = logline + "\n"
                             else:
-                                logs_dict[pod.component] += logline + "\n"
+                                logs_dict[component] += logline + "\n"
                         except queue.Empty:
                             break
                 if all(finished):
@@ -403,14 +385,14 @@ class TrainingClient:
             if component == constants.JOB_INITIALIZER:
                 logs_dict[constants.CONTAINER_DATASET_INITIALIZER] = (
                     self.core_api.read_namespaced_pod_log(
-                        name=pod.name,
+                        name=pod_name,
                         namespace=self.namespace,
                         container=constants.CONTAINER_DATASET_INITIALIZER,
                     )
                 )
                 logs_dict[constants.CONTAINER_MODEL_INITIALIZER] = (
                     self.core_api.read_namespaced_pod_log(
-                        name=pod.name,
+                        name=pod_name,
                         namespace=self.namespace,
                         container=constants.CONTAINER_MODEL_INITIALIZER,
                     )
@@ -418,14 +400,14 @@ class TrainingClient:
             else:
                 logs_dict[component + "-" + str(node_index)] = (
                     self.core_api.read_namespaced_pod_log(
-                        name=pod.name,
+                        name=pod_name,
                         namespace=self.namespace,
                         container=constants.CONTAINER_TRAINER,
                     )
                 )
         except Exception:
             raise RuntimeError(
-                f"Failed to read logs for the pod {self.namespace}/{pod.name}"
+                f"Failed to read logs for the pod {self.namespace}/{pod_name}"
             )
 
         return logs_dict
@@ -461,3 +443,67 @@ class TrainingClient:
         logger.debug(
             f"{constants.TRAINJOB_KIND} {self.namespace}/{name} has been deleted"
         )
+
+    def __get_trainjob_from_crd(
+        self,
+        trainjob_crd: models.KubeflowOrgV2alpha1TrainJob,
+    ) -> types.TrainJob:
+
+        name = trainjob_crd.metadata.name  # type: ignore
+        namespace = trainjob_crd.metadata.namespace  # type: ignore
+
+        # Construct the TrainJob from the CRD.
+        train_job = types.TrainJob(
+            name=name,
+            runtime_ref=trainjob_crd.spec.runtime_ref.name,  # type: ignore
+            creation_timestamp=trainjob_crd.metadata.creation_timestamp,  # type: ignore
+            status="Unknown",
+            components=[],
+        )
+
+        # Add the TrainJob components, e.g. trainer nodes and initializer.
+        try:
+            response = self.core_api.list_namespaced_pod(
+                namespace,
+                label_selector=f"{constants.JOBSET_NAME_KEY}={name}",
+                async_req=True,
+            ).get(constants.DEFAULT_TIMEOUT)
+
+            for pod in response.items:
+                labels = pod.metadata.labels
+
+                # Component can be Trainer or Initializer.
+                if labels[constants.REPLICATED_JOB_KEY] == constants.JOB_TRAINER_NODE:
+                    name = f"{constants.JOB_TRAINER_NODE}-{labels[constants.JOB_INDEX_KEY]}"
+                else:
+                    name = labels[constants.REPLICATED_JOB_KEY]
+
+                train_job.components.append(
+                    types.Component(
+                        name=name,
+                        status=pod.status.phase if pod.status else None,  # type: ignore
+                        pod_name=pod.metadata.name,
+                    )
+                )
+        except multiprocessing.TimeoutError:
+            raise TimeoutError(
+                f"Timeout to list {constants.TRAINJOB_KIND}'s components: {namespace}/{name}"
+            )
+        except Exception:
+            raise RuntimeError(
+                f"Failed to list {constants.TRAINJOB_KIND}'s components: {namespace}/{name}"
+            )
+
+        # Add the TrainJob status.
+        # TODO (andreyvelich): Discuss how we should show TrainJob status to SDK users.
+        if trainjob_crd.status:
+            for c in trainjob_crd.status.conditions:  # type: ignore
+                if c.type == "Created" and c.status == "True":
+                    status = "Created"
+                elif c.type == "Complete" and c.status == "True":
+                    status = "Succeeded"
+                elif c.type == "Failed" and c.status == "True":
+                    status = "Failed"
+            train_job.status = status
+
+        return train_job

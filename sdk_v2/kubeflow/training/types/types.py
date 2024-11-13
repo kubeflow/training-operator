@@ -14,7 +14,7 @@
 
 
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 
 # Representation for the Training Runtime.
@@ -26,6 +26,14 @@ class Runtime:
     device_count: Union[str, int]
 
 
+# Representation for the TrainJob component.
+@dataclass
+class Component:
+    name: str
+    status: str
+    pod_name: str
+
+
 # Representation for the TrainJob.
 # TODO (andreyvelich): Discuss what fields users want to get.
 @dataclass
@@ -33,15 +41,8 @@ class TrainJob:
     name: str
     runtime_ref: str
     creation_timestamp: str
+    components: List[Component]
     status: Optional[str] = "Unknown"
-
-
-# Representation for the Pod.
-@dataclass
-class Pod:
-    name: str
-    component: str
-    status: Optional[str] = None
 
 
 # Configuration for the Lora to configure parameter efficient fine-tuning.
