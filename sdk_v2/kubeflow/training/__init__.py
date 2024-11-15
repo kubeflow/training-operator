@@ -29,3 +29,6 @@ from kubeflow.training.types.types import HuggingFaceDatasetConfig
 
 # Import the Model configs.
 from kubeflow.training.types.types import HuggingFaceModelInputConfig
+
+# Import constants for users.
+from kubeflow.training.constants.constants import DATASET_PATH, MODEL_PATH

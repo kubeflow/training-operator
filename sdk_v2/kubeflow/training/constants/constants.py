@@ -25,13 +25,11 @@ API_VERSION = f"{GROUP}/{VERSION}"
 # The default Kubernetes namespace.
 DEFAULT_NAMESPACE = "default"
 
-
 # The Kind name for the ClusterTrainingRuntime.
 CLUSTER_TRAINING_RUNTIME_KIND = "ClusterTrainingRuntime"
 
 # The plural for the ClusterTrainingRuntime.
 CLUSTER_TRAINING_RUNTIME_PLURAL = "clustertrainingruntimes"
-
 
 # The label key to identify training phase where TrainingRuntime should be used.
 # For example, runtime for the pre-training or post-training.
@@ -47,7 +45,7 @@ PHASE_POST_TRAINING = "post-training"
 # TODO: Potentially, we should get this data from the Node selectors.
 DEVICE_KEY = "training.kubeflow.org/device"
 
-# The value to indicate that device and number of devices is unknown for the container.
+# This values indicates that device or number of devices are unknown for the container.
 UNKNOWN_DEVICE = "Unknown"
 
 # The label for CPU device in the container resources.
@@ -101,6 +99,15 @@ CONTAINER_DATASET_INITIALIZER = "dataset-initializer"
 # The container name for the model initializer.
 CONTAINER_MODEL_INITIALIZER = "model-initializer"
 
+# The default path to the users' workspace.
+WORKSPACE_PATH = "/workspace"
+
+# The path where initializer downloads dataset.
+DATASET_PATH = os.path.join(WORKSPACE_PATH, "dataset")
+
+# The path where initializer downloads model.
+MODEL_PATH = os.path.join(WORKSPACE_PATH, "model")
+
 # The Job name for the trainer nodes.
 JOB_TRAINER_NODE = "trainer-node"
 
@@ -116,7 +123,6 @@ CONTAINER_TRAINER = "trainer"
 
 # The Torch env name for the number of procs per node (e.g. number of GPUs per Pod).
 TORCH_ENV_NUM_PROC_PER_NODE = "PET_NPROC_PER_NODE"
-
 
 # Env variable for the Lora config
 ENV_LORA_CONFIG = "LORA_CONFIG"
