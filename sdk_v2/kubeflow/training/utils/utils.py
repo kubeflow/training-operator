@@ -18,7 +18,7 @@ import os
 import queue
 import textwrap
 import threading
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from kubeflow.training import models
 from kubeflow.training.constants import constants
@@ -51,32 +51,43 @@ class FakeResponse:
         self.data = json.dumps(obj)
 
 
-def get_device_count(
-    numNodes: int,
-    num_procs_per_node: Optional[str],
-    resources_per_node: Optional[client.V1ResourceRequirements],
-) -> Union[str, int]:
+def get_container_devices(
+    resources: Optional[client.V1ResourceRequirements], num_procs: Optional[str] = None
+) -> Tuple[str, str]:
     """
-    Get the device count from the given runtime spec.
+    Get the device type and device count for the given container.
     """
-    device_count = None
 
-    # TODO (andreyvelich): Support other resources (e.g. CPUs, NPUs).
-    if resources_per_node and resources_per_node.limits:
-        if constants.GPU_DEVICE_LABEL in resources_per_node.limits:
-            device_count = resources_per_node.limits[constants.GPU_DEVICE_LABEL]
-        elif constants.TPU_DEVICE_LABEL in resources_per_node.limits:
-            device_count = resources_per_node.limits[constants.TPU_DEVICE_LABEL]
+    # TODO (andreyvelich): We should discuss how to get container device type.
+    # Potentially, we can use the training.kubeflow.org/device label from the runtime or
+    # node types.
+    device = constants.UNKNOWN_DEVICE
+    device_count = constants.UNKNOWN_DEVICE
 
-    if num_procs_per_node and num_procs_per_node.isdigit():
-        device_count = int(num_procs_per_node)
+    # If containers resource limits are empty, return Unknown.
+    if resources is None or resources.limits is None:
+        return device, device_count
 
-    if device_count:
-        device_count = device_count * numNodes
+    # TODO (andreyvelich): Support other resource labels (e.g. NPUs).
+    if constants.GPU_DEVICE_LABEL in resources.limits:
+        device = constants.GPU_DEVICE_TYPE
+        device_count = resources.limits[constants.GPU_DEVICE_LABEL]
+    elif constants.TPU_DEVICE_LABEL in resources.limits:
+        device = constants.TPU_DEVICE_TYPE
+        device_count = resources.limits[constants.TPU_DEVICE_LABEL]
+    elif constants.CPU_DEVICE_LABEL in resources.limits:
+        device = constants.CPU_DEVICE_TYPE
+        device_count = resources.limits[constants.CPU_DEVICE_LABEL]
     else:
-        device_count = "Unknown"
+        raise Exception(
+            f"Unknown device type in the container resources: {resources.limits}"
+        )
 
-    return device_count
+    # Num procs override the container resources for the Trainer node.
+    if num_procs and num_procs.isdigit():
+        device_count = num_procs
+
+    return device, device_count
 
 
 # TODO (andreyvelich): Discuss if we want to support V1ResourceRequirements resources as input.

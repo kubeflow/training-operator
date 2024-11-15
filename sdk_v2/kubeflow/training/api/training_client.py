@@ -119,12 +119,16 @@ class TrainingClient:
                     if "torch" in item["spec"]["mlPolicy"]:
                         num_procs = item["spec"]["mlPolicy"]["torch"]["numProcPerNode"]
 
-                    # Get the devices count.
-                    device_count = utils.get_device_count(
-                        item["spec"]["mlPolicy"]["numNodes"],
-                        num_procs,
-                        resources,
-                    )
+                    # Get the device count per Trainer node.
+                    # TODO (andreyvelich): Currently, we get the device type from
+                    # the runtime labels.
+                    _, device_count = utils.get_container_devices(resources, num_procs)
+                    if device_count != constants.UNKNOWN_DEVICE:
+                        device_count = str(
+                            int(device_count)
+                            * int(item["spec"]["mlPolicy"]["numNodes"])
+                        )
+
                     runtime = types.Runtime(
                         name=item["metadata"]["name"],  # type: ignore
                         phase=item["metadata"]["labels"][constants.PHASE_KEY],  # type: ignore
@@ -457,7 +461,6 @@ class TrainingClient:
             name=name,
             runtime_ref=trainjob_crd.spec.runtime_ref.name,  # type: ignore
             creation_timestamp=trainjob_crd.metadata.creation_timestamp,  # type: ignore
-            status="Unknown",
             components=[],
         )
 
@@ -478,13 +481,46 @@ class TrainingClient:
                 else:
                     name = labels[constants.REPLICATED_JOB_KEY]
 
-                train_job.components.append(
-                    types.Component(
-                        name=name,
-                        status=pod.status.phase if pod.status else None,  # type: ignore
-                        pod_name=pod.metadata.name,
-                    )
+                # TODO (andreyvelich): This can be refactored once we use containers for init Job.
+                # Initializer Pod must have the dataset and/or model initializer containers.
+                if name == constants.JOB_INITIALIZER:
+                    device_count = "0"
+                    # TODO (andreyvelich): Currently, we use the InitContainers for initializers.
+                    for container in pod.spec.init_containers:
+                        if (
+                            container.name == constants.CONTAINER_DATASET_INITIALIZER
+                            or container.name == constants.CONTAINER_MODEL_INITIALIZER
+                        ):
+                            device, dc = utils.get_container_devices(
+                                container.resources
+                            )
+                            # If resources are not set in containers, we can't get the device.
+                            if device == constants.UNKNOWN_DEVICE:
+                                device_count = device
+                                break
+                            device_count = str(int(device_count) + int(dc))
+                # Trainer Pod must have the trainer container.
+                else:
+                    for container in pod.spec.containers:
+                        if container.name == constants.CONTAINER_TRAINER:
+                            num_procs = None
+                            # Get the num procs per node if it is set.
+                            for env in container.env:
+                                if env.name == constants.TORCH_ENV_NUM_PROC_PER_NODE:
+                                    num_procs = env.value
+                            device, device_count = utils.get_container_devices(
+                                container.resources, num_procs
+                            )
+
+                c = types.Component(
+                    name=name,
+                    status=pod.status.phase if pod.status else None,  # type: ignore
+                    device=device,
+                    device_count=device_count,
+                    pod_name=pod.metadata.name,
                 )
+
+                train_job.components.append(c)
         except multiprocessing.TimeoutError:
             raise TimeoutError(
                 f"Timeout to list {constants.TRAINJOB_KIND}'s components: {namespace}/{name}"
