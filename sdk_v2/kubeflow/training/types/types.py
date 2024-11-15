@@ -14,7 +14,7 @@
 
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import List, Optional
 
 
 # Representation for the Training Runtime.
@@ -23,7 +23,7 @@ class Runtime:
     name: str
     phase: str
     device: str
-    device_count: Union[str, int]
+    device_count: str
 
 
 # Representation for the TrainJob component.
@@ -31,6 +31,8 @@ class Runtime:
 class Component:
     name: str
     status: str
+    device: str
+    device_count: str
     pod_name: str
 
 

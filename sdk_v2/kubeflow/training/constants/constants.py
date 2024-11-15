@@ -47,11 +47,26 @@ PHASE_POST_TRAINING = "post-training"
 # TODO: Potentially, we should get this data from the Node selectors.
 DEVICE_KEY = "training.kubeflow.org/device"
 
+# The value to indicate that device and number of devices is unknown for the container.
+UNKNOWN_DEVICE = "Unknown"
+
+# The label for CPU device in the container resources.
+CPU_DEVICE_LABEL = "cpu"
+
+# The default type for CPU.
+CPU_DEVICE_TYPE = "cpu"
+
 # The label for GPU device in the container resources.
 GPU_DEVICE_LABEL = "nvidia.com/gpu"
 
+# The default type for GPU
+GPU_DEVICE_TYPE = "gpu"
+
 # The label for TPU device in the container resources.
 TPU_DEVICE_LABEL = "google.com/tpu"
+
+# The default type for TPU.
+TPU_DEVICE_TYPE = "tpu"
 
 # The Kind name for the TrainJob.
 TRAINJOB_KIND = "TrainJob"
@@ -98,6 +113,10 @@ POD_PENDING = "Pending"
 
 # The container name for the Trainer.
 CONTAINER_TRAINER = "trainer"
+
+# The Torch env name for the number of procs per node (e.g. number of GPUs per Pod).
+TORCH_ENV_NUM_PROC_PER_NODE = "PET_NPROC_PER_NODE"
+
 
 # Env variable for the Lora config
 ENV_LORA_CONFIG = "LORA_CONFIG"
