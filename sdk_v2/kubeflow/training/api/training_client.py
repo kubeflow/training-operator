@@ -244,7 +244,7 @@ class TrainingClient:
 
         return train_job_name
 
-    def list_jobs(self) -> List[types.TrainJob]:
+    def list_jobs(self, runtime_ref: Optional[str] = None) -> List[types.TrainJob]:
         """List of all TrainJobs.
 
         Returns:
@@ -268,6 +268,12 @@ class TrainingClient:
             response = thread.get(constants.DEFAULT_TIMEOUT)
 
             for item in response["items"]:
+                # If runtime ref is set, we check the TrainJob's runtime.
+                if (
+                    runtime_ref is not None
+                    and item["spec"]["runtimeRef"]["name"] != runtime_ref
+                ):
+                    continue
                 trainjob = self.api_client.deserialize(
                     utils.FakeResponse(item),
                     models.KubeflowOrgV2alpha1TrainJob,
