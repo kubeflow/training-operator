@@ -26,8 +26,8 @@ spec:
                         - |
                           echo "Torch Distributed Runtime"
 
-                          echo "Torch Python Package"
-                          pip show torch
-
+                          echo "--------------------------------------"
                           echo "Torch Default Runtime Env"
                           env | grep PET_
+
+                          pip list
