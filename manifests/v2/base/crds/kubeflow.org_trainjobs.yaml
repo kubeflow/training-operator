@@ -172,6 +172,9 @@ spec:
                       - name
                       type: object
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   secretRef:
                     description: |-
                       Reference to the secret with credentials to download dataset.
@@ -338,6 +341,9 @@ spec:
                           - name
                           type: object
                         type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       secretRef:
                         description: |-
                           Reference to the secret with credentials to download model.
@@ -477,6 +483,9 @@ spec:
                           - name
                           type: object
                         type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       secretRef:
                         description: |-
                           Reference to the secret with credentials to export model.
@@ -515,11 +524,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                           command:
                             description: Entrypoint commands for the training container.
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                           env:
                             description: |-
                               List of environment variables to set in the container.
@@ -637,6 +648,9 @@ spec:
                               - name
                               type: object
                             type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                           envFrom:
                             description: |-
                               List of sources to populate environment variables in the container.
@@ -681,6 +695,7 @@ spec:
                                   x-kubernetes-map-type: atomic
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           name:
                             description: Name for the container. TrainingRuntime must
                               have this container.
@@ -729,10 +744,16 @@ spec:
                               - name
                               type: object
                             type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                         required:
                         - name
                         type: object
                       type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
                     initContainers:
                       description: Overrides for the init container in the desired
                         job templates.
@@ -747,11 +768,13 @@ spec:
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                           command:
                             description: Entrypoint commands for the training container.
                             items:
                               type: string
                             type: array
+                            x-kubernetes-list-type: atomic
                           env:
                             description: |-
                               List of environment variables to set in the container.
@@ -869,6 +892,9 @@ spec:
                               - name
                               type: object
                             type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                           envFrom:
                             description: |-
                               List of sources to populate environment variables in the container.
@@ -913,6 +939,7 @@ spec:
                                   x-kubernetes-map-type: atomic
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           name:
                             description: Name for the container. TrainingRuntime must
                               have this container.
@@ -961,10 +988,16 @@ spec:
                               - name
                               type: object
                             type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                         required:
                         - name
                         type: object
                       type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
                     nodeSelector:
                       additionalProperties:
                         type: string
@@ -987,6 +1020,7 @@ spec:
                         - name
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     tolerations:
                       description: Override for the Pod's tolerations.
                       items:
@@ -1026,6 +1060,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     volumes:
                       description: Overrides for the Pod volume configuration.
                       items:
@@ -2740,10 +2775,14 @@ spec:
                         - name
                         type: object
                       type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
                   required:
                   - targetJobs
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               runtimeRef:
                 description: |-
                   Reference to the training runtime.
@@ -2787,11 +2826,13 @@ spec:
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   command:
                     description: Entrypoint commands for the training container.
                     items:
                       type: string
                     type: array
+                    x-kubernetes-list-type: atomic
                   env:
                     description: |-
                       List of environment variables to set in the training container.
@@ -2908,6 +2949,9 @@ spec:
                       - name
                       type: object
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   image:
                     description: Docker image for the training container.
                     type: string
@@ -3100,6 +3144,9 @@ spec:
                   - suspended
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
             type: object
         type: object
     served: true

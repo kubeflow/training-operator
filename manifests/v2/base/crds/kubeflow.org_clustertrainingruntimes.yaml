@@ -49,9 +49,6 @@ spec:
                   mpi:
                     description: Configuration for the MPI Runtime.
                     properties:
-                      SSHAuthMountPath:
-                        description: Directory where SSH keys are mounted.
-                        type: string
                       mpiImplementation:
                         description: |-
                           Implementation name for the MPI to create the appropriate hostfile.
@@ -68,6 +65,9 @@ spec:
                           Whether to run training process on the launcher Job.
                           Defaults to false.
                         type: boolean
+                      sshAuthMountPath:
+                        description: Directory where SSH keys are mounted.
+                        type: string
                     type: object
                   numNodes:
                     description: |-
@@ -569,6 +569,7 @@ spec:
                               - type
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           minNodes:
                             description: Lower limit for the number of nodes to which
                               training job can scale down.

@@ -72,7 +72,8 @@
           "items": {
             "type": "string",
             "default": ""
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "command": {
           "description": "Entrypoint commands for the training container.",
@@ -80,7 +81,8 @@
           "items": {
             "type": "string",
             "default": ""
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "env": {
           "description": "List of environment variables to set in the container. These values will be merged with the TrainingRuntime's environments.",
@@ -88,7 +90,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvVar"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "envFrom": {
           "description": "List of sources to populate environment variables in the container. These   values will be merged with the TrainingRuntime's environments.",
@@ -96,7 +102,8 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvFromSource"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "name": {
           "description": "Name for the container. TrainingRuntime must have this container.",
@@ -109,7 +116,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.VolumeMount"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         }
       }
     },
@@ -134,7 +145,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvVar"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "secretRef": {
           "description": "Reference to the secret with credentials to download dataset. Secret must be created in the TrainJob's namespace.",
@@ -156,7 +171,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvVar"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "secretRef": {
           "description": "Reference to the secret with credentials to download model. Secret must be created in the TrainJob's namespace.",
@@ -269,10 +288,6 @@
       "description": "MPIMLPolicySource represents a MPI runtime configuration.",
       "type": "object",
       "properties": {
-        "SSHAuthMountPath": {
-          "description": "Directory where SSH keys are mounted.",
-          "type": "string"
-        },
         "mpiImplementation": {
           "description": "Implementation name for the MPI to create the appropriate hostfile. Defaults to OpenMPI.",
           "type": "string"
@@ -285,6 +300,10 @@
         "runLauncherAsNode": {
           "description": "Whether to run training process on the launcher Job. Defaults to false.",
           "type": "boolean"
+        },
+        "sshAuthMountPath": {
+          "description": "Directory where SSH keys are mounted.",
+          "type": "string"
         }
       }
     },
@@ -312,7 +331,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvVar"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "secretRef": {
           "description": "Reference to the secret with credentials to export model. Secret must be created in the TrainJob's namespace.",
@@ -357,7 +380,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/kubeflow.org.v2alpha1.ContainerOverride"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "initContainers": {
           "description": "Overrides for the init container in the desired job templates.",
@@ -365,7 +392,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/kubeflow.org.v2alpha1.ContainerOverride"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "nodeSelector": {
           "description": "Override for the node selector to place Pod on the specific mode.",
@@ -385,7 +416,8 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/kubeflow.org.v2alpha1.PodSpecOverrideTargetJob"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "tolerations": {
           "description": "Override for the Pod's tolerations.",
@@ -393,7 +425,8 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.Toleration"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "volumes": {
           "description": "Overrides for the Pod volume configuration.",
@@ -401,7 +434,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.Volume"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         }
       }
     },
@@ -460,7 +497,8 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/k8s.io.api.autoscaling.v2.MetricSpec"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "minNodes": {
           "description": "Lower limit for the number of nodes to which training job can scale down.",
@@ -583,7 +621,8 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/kubeflow.org.v2alpha1.PodSpecOverride"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "runtimeRef": {
           "description": "Reference to the training runtime. The field is immutable.",
@@ -624,7 +663,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/kubeflow.org.v2alpha1.JobStatus"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         }
       }
     },
@@ -638,7 +681,8 @@
           "items": {
             "type": "string",
             "default": ""
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "command": {
           "description": "Entrypoint commands for the training container.",
@@ -646,7 +690,8 @@
           "items": {
             "type": "string",
             "default": ""
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "env": {
           "description": "List of environment variables to set in the training container. These values will be merged with the TrainingRuntime's trainer environments.",
@@ -654,7 +699,11 @@
           "items": {
             "default": {},
             "$ref": "#/definitions/v1.EnvVar"
-          }
+          },
+          "x-kubernetes-list-map-keys": [
+            "name"
+          ],
+          "x-kubernetes-list-type": "map"
         },
         "image": {
           "description": "Docker image for the training container.",

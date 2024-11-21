@@ -198,6 +198,7 @@ type TorchElasticPolicy struct {
 	// Specification which are used to calculate the desired number of nodes. See the individual
 	// metric source types for more information about how each type of metric must respond.
 	// The HPA will be created to perform auto-scaling.
+	// +listType=atomic
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 
@@ -212,7 +213,7 @@ type MPIMLPolicySource struct {
 	MPIImplementation *MPIImplementation `json:"mpiImplementation,omitempty"`
 
 	// Directory where SSH keys are mounted.
-	SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
+	SSHAuthMountPath *string `json:"sshAuthMountPath,omitempty"`
 
 	// Whether to run training process on the launcher Job.
 	// Defaults to false.
