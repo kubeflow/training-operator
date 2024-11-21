@@ -4,7 +4,7 @@ Kubeflow Training Operator is currently at v1.
 
 ## Requirements
 
-- [Go](https://golang.org/) (1.22 or later)
+- [Go](https://golang.org/) (1.23 or later)
 - [Docker](https://docs.docker.com/)
 - [Docker](https://docs.docker.com/) (20.10 or later)
 - [Docker Buildx](https://docs.docker.com/build/buildx/) (0.8.0 or later)

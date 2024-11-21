@@ -135,7 +135,7 @@ func computeTotalReplicas(obj metav1.Object) int32 {
 	job := obj.(*kubeflowv1.XGBoostJob)
 	jobReplicas := int32(0)
 
-	if job.Spec.XGBReplicaSpecs == nil || len(job.Spec.XGBReplicaSpecs) == 0 {
+	if len(job.Spec.XGBReplicaSpecs) == 0 {
 		return jobReplicas
 	}
 	for _, r := range job.Spec.XGBReplicaSpecs {
