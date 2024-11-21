@@ -61,8 +61,8 @@ def get_container_devices(
     # TODO (andreyvelich): We should discuss how to get container device type.
     # Potentially, we can use the training.kubeflow.org/device label from the runtime or
     # node types.
-    device = constants.UNKNOWN_DEVICE
-    device_count = constants.UNKNOWN_DEVICE
+    device = constants.UNKNOWN
+    device_count = constants.UNKNOWN
 
     # If containers resource limits are empty, return Unknown.
     if resources is None or resources.limits is None:

@@ -45,8 +45,8 @@ PHASE_POST_TRAINING = "post-training"
 # TODO: Potentially, we should get this data from the Node selectors.
 DEVICE_KEY = "training.kubeflow.org/device"
 
-# This values indicates that device or number of devices are unknown for the container.
-UNKNOWN_DEVICE = "Unknown"
+# Unknown indicates that the value can't be identified.
+UNKNOWN = "Unknown"
 
 # The label for CPU device in the container resources.
 CPU_DEVICE_LABEL = "cpu"

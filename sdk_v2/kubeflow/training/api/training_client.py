@@ -100,7 +100,7 @@ class TrainingClient:
             # For that, we need to import the JobSet models.
             response = thread.get(constants.DEFAULT_TIMEOUT)
             for item in response["items"]:
-                # TODO (andreyvelich): Currently, the training phase label must be presented.
+                # TODO (andreyvelich): Currently, the labels must be presented.
                 if "labels" in item["metadata"]:
                     # Get the Trainer container resources.
                     resources = None
@@ -123,16 +123,24 @@ class TrainingClient:
                     # TODO (andreyvelich): Currently, we get the device type from
                     # the runtime labels.
                     _, device_count = utils.get_container_devices(resources, num_procs)
-                    if device_count != constants.UNKNOWN_DEVICE:
+                    if device_count != constants.UNKNOWN:
                         device_count = str(
                             int(device_count)
                             * int(item["spec"]["mlPolicy"]["numNodes"])
                         )
 
                     runtime = types.Runtime(
-                        name=item["metadata"]["name"],  # type: ignore
-                        phase=item["metadata"]["labels"][constants.PHASE_KEY],  # type: ignore
-                        device=item["metadata"]["labels"][constants.DEVICE_KEY],  # type: ignore
+                        name=item["metadata"]["name"],
+                        phase=(
+                            item["metadata"]["labels"][constants.PHASE_KEY]
+                            if constants.PHASE_KEY in item["metadata"]["labels"]
+                            else constants.UNKNOWN
+                        ),
+                        device=(
+                            item["metadata"]["labels"][constants.DEVICE_KEY]
+                            if constants.DEVICE_KEY in item["metadata"]["labels"]
+                            else constants.UNKNOWN
+                        ),
                         device_count=device_count,
                     )
 
@@ -501,7 +509,7 @@ class TrainingClient:
                                 container.resources
                             )
                             # If resources are not set in containers, we can't get the device.
-                            if device == constants.UNKNOWN_DEVICE:
+                            if device == constants.UNKNOWN:
                                 device_count = device
                                 break
                             device_count = str(int(device_count) + int(dc))
