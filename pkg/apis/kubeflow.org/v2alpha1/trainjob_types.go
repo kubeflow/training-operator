@@ -87,7 +87,6 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=trainjobs
-
 // +kubebuilder:object:root=true
 
 // TrainJobList is a collection of training jobs.

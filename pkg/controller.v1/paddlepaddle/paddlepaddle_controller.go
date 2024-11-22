@@ -103,14 +103,14 @@ type PaddleJobReconciler struct {
 	apiReader client.Reader
 }
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
-//+kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -185,8 +185,8 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.PaddleJob{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
+	if err = c.Watch(source.Kind[*kubeflowv1.PaddleJob](mgr.GetCache(), &kubeflowv1.PaddleJob{}, &handler.TypedEnqueueRequestForObject[*kubeflowv1.PaddleJob]{},
+		predicate.TypedFuncs[*kubeflowv1.PaddleJob]{CreateFunc: r.onOwnerCreateFunc()}),
 	); err != nil {
 		return err
 	}
@@ -205,11 +205,11 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
 	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &corev1.Pod{}, eventHandler, predicates)); err != nil {
 		return err
 	}
 	// inject watching for job related service
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Service{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &corev1.Service{}, eventHandler, predicates)); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
@@ -217,7 +217,7 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 		v1beta1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &v1beta1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
 			return err
 		}
 	}
@@ -227,7 +227,7 @@ func (r *PaddleJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThrea
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
 			return err
 		}
 	}
@@ -513,12 +513,9 @@ func (r *PaddleJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*
 }
 
 // onOwnerCreateFunc modify creation condition.
-func (r *PaddleJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
-		paddlejob, ok := e.Object.(*kubeflowv1.PaddleJob)
-		if !ok {
-			return true
-		}
+func (r *PaddleJobReconciler) onOwnerCreateFunc() func(createEvent event.TypedCreateEvent[*kubeflowv1.PaddleJob]) bool {
+	return func(e event.TypedCreateEvent[*kubeflowv1.PaddleJob]) bool {
+		paddlejob := e.Object
 		r.Scheme.Default(paddlejob)
 		msg := fmt.Sprintf("PaddleJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
