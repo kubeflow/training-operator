@@ -169,6 +169,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 						},
 					},
 					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Entrypoint commands for the training container.",
 							Type:        []string{"array"},
@@ -184,6 +189,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 						},
 					},
 					"args": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments to the entrypoint for the training container.",
 							Type:        []string{"array"},
@@ -199,6 +209,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 						},
 					},
 					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of environment variables to set in the container. These values will be merged with the TrainingRuntime's environments.",
 							Type:        []string{"array"},
@@ -213,6 +231,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 						},
 					},
 					"envFrom": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of sources to populate environment variables in the container. These   values will be merged with the TrainingRuntime's environments.",
 							Type:        []string{"array"},
@@ -227,6 +250,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_ContainerOverride(ref common.Reference
 						},
 					},
 					"volumeMounts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Pod volumes to mount into the container's filesystem.",
 							Type:        []string{"array"},
@@ -284,6 +315,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_DatasetConfig(ref common.ReferenceCall
 						},
 					},
 					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of environment variables to set in the dataset initializer container. These values will be merged with the TrainingRuntime's dataset initializer environments.",
 							Type:        []string{"array"},
@@ -326,6 +365,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_InputModel(ref common.ReferenceCallbac
 						},
 					},
 					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of environment variables to set in the model initializer container. These values will be merged with the TrainingRuntime's model initializer environments.",
 							Type:        []string{"array"},
@@ -525,7 +572,7 @@ func schema_pkg_apis_kubefloworg_v2alpha1_MPIMLPolicySource(ref common.Reference
 							Format:      "",
 						},
 					},
-					"SSHAuthMountPath": {
+					"sshAuthMountPath": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Directory where SSH keys are mounted.",
 							Type:        []string{"string"},
@@ -587,6 +634,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_OutputModel(ref common.ReferenceCallba
 						},
 					},
 					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of environment variables to set in the model exporter container. These values will be merged with the TrainingRuntime's model exporter environments.",
 							Type:        []string{"array"},
@@ -664,6 +719,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"targetJobs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "TrainJobs is the training job replicas in the training runtime template to apply the overrides.",
 							Type:        []string{"array"},
@@ -678,6 +738,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 						},
 					},
 					"containers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Overrides for the containers in the desired job templates.",
 							Type:        []string{"array"},
@@ -692,6 +760,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 						},
 					},
 					"initContainers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Overrides for the init container in the desired job templates.",
 							Type:        []string{"array"},
@@ -706,6 +782,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 						},
 					},
 					"volumes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Overrides for the Pod volume configuration.",
 							Type:        []string{"array"},
@@ -743,6 +827,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCa
 						},
 					},
 					"tolerations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Override for the Pod's tolerations.",
 							Type:        []string{"array"},
@@ -851,6 +940,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TorchElasticPolicy(ref common.Referenc
 						},
 					},
 					"metrics": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification which are used to calculate the desired number of nodes. See the individual metric source types for more information about how each type of metric must respond. The HPA will be created to perform auto-scaling.",
 							Type:        []string{"array"},
@@ -1066,6 +1160,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobSpec(ref common.ReferenceCallb
 						},
 					},
 					"podSpecOverrides": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Custom overrides for the training runtime.",
 							Type:        []string{"array"},
@@ -1134,6 +1233,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_TrainJobStatus(ref common.ReferenceCal
 						},
 					},
 					"jobsStatus": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "JobsStatus tracks the child Jobs in TrainJob.",
 							Type:        []string{"array"},
@@ -1170,6 +1277,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_Trainer(ref common.ReferenceCallback) 
 						},
 					},
 					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Entrypoint commands for the training container.",
 							Type:        []string{"array"},
@@ -1185,6 +1297,11 @@ func schema_pkg_apis_kubefloworg_v2alpha1_Trainer(ref common.ReferenceCallback) 
 						},
 					},
 					"args": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments to the entrypoint for the training container.",
 							Type:        []string{"array"},
@@ -1200,6 +1317,14 @@ func schema_pkg_apis_kubefloworg_v2alpha1_Trainer(ref common.ReferenceCallback) 
 						},
 					},
 					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "List of environment variables to set in the training container. These values will be merged with the TrainingRuntime's trainer environments.",
 							Type:        []string{"array"},

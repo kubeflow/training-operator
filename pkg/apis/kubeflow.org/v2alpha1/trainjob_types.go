@@ -126,6 +126,7 @@ type TrainJobSpec struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// Custom overrides for the training runtime.
+	// +listType=atomic
 	PodSpecOverrides []PodSpecOverride `json:"podSpecOverrides,omitempty"`
 
 	// Whether the controller should suspend the running TrainJob.
@@ -171,13 +172,17 @@ type Trainer struct {
 	Image *string `json:"image,omitempty"`
 
 	// Entrypoint commands for the training container.
+	// +listType=atomic
 	Command []string `json:"command,omitempty"`
 
 	// Arguments to the entrypoint for the training container.
+	// +listType=atomic
 	Args []string `json:"args,omitempty"`
 
 	// List of environment variables to set in the training container.
 	// These values will be merged with the TrainingRuntime's trainer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Number of training nodes.
@@ -202,6 +207,8 @@ type DatasetConfig struct {
 
 	// List of environment variables to set in the dataset initializer container.
 	// These values will be merged with the TrainingRuntime's dataset initializer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secret with credentials to download dataset.
@@ -229,6 +236,8 @@ type InputModel struct {
 
 	// List of environment variables to set in the model initializer container.
 	// These values will be merged with the TrainingRuntime's model initializer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secret with credentials to download model.
@@ -243,6 +252,8 @@ type OutputModel struct {
 
 	// List of environment variables to set in the model exporter container.
 	// These values will be merged with the TrainingRuntime's model exporter environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the secret with credentials to export model.
@@ -253,15 +264,22 @@ type OutputModel struct {
 // PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.
 type PodSpecOverride struct {
 	// TrainJobs is the training job replicas in the training runtime template to apply the overrides.
+	// +listType=atomic
 	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
 	// Overrides for the containers in the desired job templates.
+	// +listType=map
+	// +listMapKey=name
 	Containers []ContainerOverride `json:"containers,omitempty"`
 
 	// Overrides for the init container in the desired job templates.
+	// +listType=map
+	// +listMapKey=name
 	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
 
 	// Overrides for the Pod volume configuration.
+	// +listType=map
+	// +listMapKey=name
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// Override for the service account.
@@ -271,6 +289,7 @@ type PodSpecOverride struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Override for the Pod's tolerations.
+	// +listType=atomic
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
@@ -286,20 +305,27 @@ type ContainerOverride struct {
 	Name string `json:"name"`
 
 	// Entrypoint commands for the training container.
+	// +listType=atomic
 	Command []string `json:"command,omitempty"`
 
 	// Arguments to the entrypoint for the training container.
+	// +listType=atomic
 	Args []string `json:"args,omitempty"`
 
 	// List of environment variables to set in the container.
 	// These values will be merged with the TrainingRuntime's environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// List of sources to populate environment variables in the container.
 	// These   values will be merged with the TrainingRuntime's environments.
+	// +listType=atomic
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Pod volumes to mount into the container's filesystem.
+	// +listType=map
+	// +listMapKey=name
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
@@ -315,6 +341,8 @@ type TrainJobStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
 	// JobsStatus tracks the child Jobs in TrainJob.
+	// +listType=map
+	// +listMapKey=name
 	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`
 }
 
