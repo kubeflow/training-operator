@@ -33,62 +33,39 @@ class KubeflowOrgV2alpha1MPIMLPolicySource(object):
                             and the value is json key in definition.
     """
     openapi_types = {
-        'ssh_auth_mount_path': 'str',
         'mpi_implementation': 'str',
         'num_proc_per_node': 'int',
-        'run_launcher_as_node': 'bool'
+        'run_launcher_as_node': 'bool',
+        'ssh_auth_mount_path': 'str'
     }
 
     attribute_map = {
-        'ssh_auth_mount_path': 'SSHAuthMountPath',
         'mpi_implementation': 'mpiImplementation',
         'num_proc_per_node': 'numProcPerNode',
-        'run_launcher_as_node': 'runLauncherAsNode'
+        'run_launcher_as_node': 'runLauncherAsNode',
+        'ssh_auth_mount_path': 'sshAuthMountPath'
     }
 
-    def __init__(self, ssh_auth_mount_path=None, mpi_implementation=None, num_proc_per_node=None, run_launcher_as_node=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, mpi_implementation=None, num_proc_per_node=None, run_launcher_as_node=None, ssh_auth_mount_path=None, local_vars_configuration=None):  # noqa: E501
         """KubeflowOrgV2alpha1MPIMLPolicySource - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
         self.local_vars_configuration = local_vars_configuration
 
-        self._ssh_auth_mount_path = None
         self._mpi_implementation = None
         self._num_proc_per_node = None
         self._run_launcher_as_node = None
+        self._ssh_auth_mount_path = None
         self.discriminator = None
 
-        if ssh_auth_mount_path is not None:
-            self.ssh_auth_mount_path = ssh_auth_mount_path
         if mpi_implementation is not None:
             self.mpi_implementation = mpi_implementation
         if num_proc_per_node is not None:
             self.num_proc_per_node = num_proc_per_node
         if run_launcher_as_node is not None:
             self.run_launcher_as_node = run_launcher_as_node
-
-    @property
-    def ssh_auth_mount_path(self):
-        """Gets the ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
-
-        Directory where SSH keys are mounted.  # noqa: E501
-
-        :return: The ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
-        :rtype: str
-        """
-        return self._ssh_auth_mount_path
-
-    @ssh_auth_mount_path.setter
-    def ssh_auth_mount_path(self, ssh_auth_mount_path):
-        """Sets the ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.
-
-        Directory where SSH keys are mounted.  # noqa: E501
-
-        :param ssh_auth_mount_path: The ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
-        :type: str
-        """
-
-        self._ssh_auth_mount_path = ssh_auth_mount_path
+        if ssh_auth_mount_path is not None:
+            self.ssh_auth_mount_path = ssh_auth_mount_path
 
     @property
     def mpi_implementation(self):
@@ -158,6 +135,29 @@ class KubeflowOrgV2alpha1MPIMLPolicySource(object):
         """
 
         self._run_launcher_as_node = run_launcher_as_node
+
+    @property
+    def ssh_auth_mount_path(self):
+        """Gets the ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
+
+        Directory where SSH keys are mounted.  # noqa: E501
+
+        :return: The ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
+        :rtype: str
+        """
+        return self._ssh_auth_mount_path
+
+    @ssh_auth_mount_path.setter
+    def ssh_auth_mount_path(self, ssh_auth_mount_path):
+        """Sets the ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.
+
+        Directory where SSH keys are mounted.  # noqa: E501
+
+        :param ssh_auth_mount_path: The ssh_auth_mount_path of this KubeflowOrgV2alpha1MPIMLPolicySource.  # noqa: E501
+        :type: str
+        """
+
+        self._ssh_auth_mount_path = ssh_auth_mount_path
 
     def to_dict(self):
         """Returns the model properties as a dict"""
