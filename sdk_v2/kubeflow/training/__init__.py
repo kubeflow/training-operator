@@ -21,7 +21,8 @@ __version__ = "2.0.0"
 from kubeflow.training.api.training_client import TrainingClient
 
 # Import the Trainer configs.
-from kubeflow.training.types.types import TrainerConfig
+from kubeflow.training.types.types import Trainer
+from kubeflow.training.types.types import FineTuningConfig
 from kubeflow.training.types.types import LoraConfig
 
 # Import the Dataset configs.

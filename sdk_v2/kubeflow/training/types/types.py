@@ -14,7 +14,9 @@
 
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
+
+from kubeflow.training.constants import constants
 
 
 # Representation for the Training Runtime.
@@ -57,11 +59,26 @@ class LoraConfig:
     lora_dropout: Optional[int] = field(default=None, metadata={"help": "Lora dropout"})
 
 
-# Configuration for the LLM Trainer.
+@dataclass
+class FineTuningConfig:
+    lora_config: Optional[LoraConfig] = None
+
+
+# Configuration for the Trainer.
 # TODO (andreyvelich): Discuss what values should be on the Trainer.
 @dataclass
-class TrainerConfig:
-    lora_config: LoraConfig
+class Trainer:
+    """Trainer configuration.
+    TODO: Add the description
+    """
+
+    func: Optional[Callable] = None
+    func_args: Optional[Dict] = None
+    packages_to_install: Optional[List[str]] = None
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL
+    fine_tuning_config: Optional[FineTuningConfig] = None
+    num_nodes: Optional[int] = None
+    resources_per_node: Optional[dict] = None
 
 
 # Configuration for the HuggingFace dataset provider.

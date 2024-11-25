@@ -18,7 +18,7 @@ import queue
 import random
 import string
 import uuid
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from kubeflow.training import models
 from kubeflow.training.api_client import ApiClient
@@ -161,13 +161,7 @@ class TrainingClient:
     def train(
         self,
         runtime_ref: str,
-        train_func: Optional[Callable] = None,
-        num_nodes: Optional[int] = None,
-        resources_per_node: Optional[dict] = None,
-        packages_to_install: Optional[List[str]] = None,
-        pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL,
-        # TODO (andreyvelich): Add num_nodes, func, resources to the Trainer or TrainerConfig ?
-        trainer_config: Optional[types.TrainerConfig] = None,
+        trainer: Optional[types.Trainer] = None,
         dataset_config: Optional[types.HuggingFaceDatasetConfig] = None,
         model_config: Optional[types.HuggingFaceModelInputConfig] = None,
     ) -> str:
@@ -182,37 +176,46 @@ class TrainingClient:
             RuntimeError: Failed to create TrainJobs.
         """
 
+        if trainer:
+            utils.validate_trainer(trainer)
+
         # Generate unique name for the TrainJob.
         # TODO (andreyvelich): Discuss this TrainJob name generation.
         train_job_name = random.choice(string.ascii_lowercase) + uuid.uuid4().hex[:11]
 
         # Build the Trainer.
-        trainer = models.KubeflowOrgV2alpha1Trainer()
+        trainer_crd = models.KubeflowOrgV2alpha1Trainer()
 
         # Add number of nodes to the Trainer.
-        if num_nodes is not None:
-            trainer.num_nodes = num_nodes
+        if trainer and trainer.num_nodes:
+            trainer_crd.num_nodes = trainer.num_nodes
 
         # Add resources per node to the Trainer.
-        if resources_per_node is not None:
-            trainer.resources_per_node = utils.get_resources_per_node(
-                resources_per_node
+        if trainer and trainer.resources_per_node:
+            trainer_crd.resources_per_node = utils.get_resources_per_node(
+                trainer.resources_per_node
             )
 
         # Add command and args to the Trainer if training function is set.
-        if train_func is not None:
-            trainer.command = constants.DEFAULT_COMMAND
+        if trainer and trainer.func:
+            trainer_crd.command = constants.DEFAULT_COMMAND
             # TODO: Support train function parameters.
-            trainer.args = utils.get_args_using_train_func(
-                train_func,
-                None,
-                packages_to_install,
-                pip_index_url,
+            trainer_crd.args = utils.get_args_using_train_func(
+                trainer.func,
+                trainer.func_args,
+                trainer.packages_to_install,
+                trainer.pip_index_url,
             )
 
         # Add the Lora config to the Trainer envs.
-        if trainer_config and trainer_config.lora_config:
-            trainer.env = utils.get_lora_config(trainer_config.lora_config)
+        if (
+            trainer
+            and trainer.fine_tuning_config
+            and trainer.fine_tuning_config.lora_config
+        ):
+            trainer_crd.env = utils.get_lora_config(
+                trainer.fine_tuning_config.lora_config
+            )
 
         train_job = models.KubeflowOrgV2alpha1TrainJob(
             api_version=constants.API_VERSION,
@@ -221,7 +224,9 @@ class TrainingClient:
             spec=models.KubeflowOrgV2alpha1TrainJobSpec(
                 runtime_ref=models.KubeflowOrgV2alpha1RuntimeRef(name=runtime_ref),
                 trainer=(
-                    trainer if trainer != models.KubeflowOrgV2alpha1Trainer() else None
+                    trainer_crd
+                    if trainer_crd != models.KubeflowOrgV2alpha1Trainer()
+                    else None
                 ),
                 dataset_config=utils.get_dataset_config(dataset_config),
                 model_config=utils.get_model_config(model_config),
