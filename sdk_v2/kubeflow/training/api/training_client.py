@@ -211,10 +211,10 @@ class TrainingClient:
         if (
             trainer
             and trainer.fine_tuning_config
-            and trainer.fine_tuning_config.lora_config
+            and trainer.fine_tuning_config.peft_config
         ):
             trainer_crd.env = utils.get_lora_config(
-                trainer.fine_tuning_config.lora_config
+                trainer.fine_tuning_config.peft_config
             )
 
         train_job = models.KubeflowOrgV2alpha1TrainJob(

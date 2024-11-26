@@ -61,7 +61,8 @@ class LoraConfig:
 
 @dataclass
 class FineTuningConfig:
-    lora_config: Optional[LoraConfig] = None
+    # TODO (andreyvelich): Add more configs once we support them, e.g. QLoRA.
+    peft_config: Optional[LoraConfig] = None
 
 
 # Configuration for the Trainer.
