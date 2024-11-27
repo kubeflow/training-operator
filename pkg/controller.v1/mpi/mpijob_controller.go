@@ -194,45 +194,41 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 	if err != nil {
 		return err
 	}
-
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind[*kubeflowv1.MPIJob](mgr.GetCache(), &kubeflowv1.MPIJob{}, &handler.TypedEnqueueRequestForObject[*kubeflowv1.MPIJob]{},
+	if err = c.Watch(source.Kind[*kubeflowv1.MPIJob](mgr.GetCache(), &kubeflowv1.MPIJob{},
+		&handler.TypedEnqueueRequestForObject[*kubeflowv1.MPIJob]{},
 		predicate.TypedFuncs[*kubeflowv1.MPIJob]{CreateFunc: jc.onOwnerCreateFunc()}),
 	); err != nil {
 		return err
 	}
-
-	// eventHandler for owned objects
-	eventHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner())
-	predicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFunc(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFunc(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFunc(jc.Expectations),
-	}
-	// Create generic predicates
-	genericPredicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(jc.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&jc.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(jc.Expectations),
-	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &corev1.Pod{}, eventHandler, predicates)); err != nil {
+	if err = c.Watch(source.Kind[*corev1.Pod](mgr.GetCache(), &corev1.Pod{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Pod](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.Pod](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related ConfigMap
-	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &corev1.ConfigMap{}, eventHandler, genericPredicates)); err != nil {
+	if err = c.Watch(source.Kind[*corev1.ConfigMap](mgr.GetCache(), &corev1.ConfigMap{},
+		handler.TypedEnqueueRequestForOwner[*corev1.ConfigMap](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.ConfigMap](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related Role
-	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &rbacv1.Role{}, eventHandler, genericPredicates)); err != nil {
+	if err = c.Watch(source.Kind[*rbacv1.Role](mgr.GetCache(), &rbacv1.Role{},
+		handler.TypedEnqueueRequestForOwner[*rbacv1.Role](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*rbacv1.Role](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related RoleBinding
-	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &rbacv1.RoleBinding{}, eventHandler, genericPredicates)); err != nil {
+	if err = c.Watch(source.Kind[*rbacv1.RoleBinding](mgr.GetCache(), &rbacv1.RoleBinding{},
+		handler.TypedEnqueueRequestForOwner[*rbacv1.RoleBinding](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*rbacv1.RoleBinding](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related ServiceAccount
-	if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &corev1.ServiceAccount{}, eventHandler, genericPredicates)); err != nil {
+	if err = c.Watch(source.Kind[*corev1.ServiceAccount](mgr.GetCache(), &corev1.ServiceAccount{},
+		handler.TypedEnqueueRequestForOwner[*corev1.ServiceAccount](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.ServiceAccount](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
@@ -240,7 +236,9 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		v1beta1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &v1beta1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
+		if err = c.Watch(source.Kind[*v1beta1.PodGroup](mgr.GetCache(), &v1beta1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*v1beta1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*v1beta1.PodGroup](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 			return err
 		}
 	}
@@ -250,7 +248,9 @@ func (jc *MPIJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version,
 	); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind[client.Object](mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}, eventHandler, genericPredicates)); err != nil {
+		if err = c.Watch(source.Kind[*schedulerpluginsv1alpha1.PodGroup](mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*schedulerpluginsv1alpha1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.MPIJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*schedulerpluginsv1alpha1.PodGroup](jc.Scheme, jc.Expectations, &jc.JobController))); err != nil {
 			return err
 		}
 	}

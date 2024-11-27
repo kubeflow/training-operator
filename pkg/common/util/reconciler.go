@@ -15,17 +15,10 @@
 package util
 
 import (
-	"fmt"
-	"reflect"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
-	commonutil "github.com/kubeflow/training-operator/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SatisfiedExpectations returns true if the required adds/dels for the given job have been observed.
@@ -43,82 +36,6 @@ func SatisfiedExpectations(exp expectation.ControllerExpectationsInterface, jobK
 	}
 
 	return satisfied
-}
-
-// OnDependentCreateFunc modify expectations when dependent (pod/service) creation observed.
-func OnDependentCreateFunc(exp expectation.ControllerExpectationsInterface) func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
-		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
-		if len(rtype) == 0 {
-			return false
-		}
-
-		//logrus.Info("Update on create function ", ptjr.ControllerName(), " create object ", e.Object.GetName())
-		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
-			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
-			var expectKey string
-			switch e.Object.(type) {
-			case *corev1.Pod:
-				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
-			case *corev1.Service:
-				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
-			default:
-				return false
-			}
-			exp.CreationObserved(expectKey)
-			return true
-		}
-
-		return true
-	}
-}
-
-// OnDependentUpdateFunc modify expectations when dependent (pod/service) update observed.
-func OnDependentUpdateFunc(jc *common.JobController) func(updateEvent event.UpdateEvent) bool {
-	return func(e event.UpdateEvent) bool {
-		newObj := e.ObjectNew
-		oldObj := e.ObjectOld
-		if newObj.GetResourceVersion() == oldObj.GetResourceVersion() {
-			// Periodic resync will send update events for all known pods.
-			// Two different versions of the same pod will always have different RVs.
-			return false
-		}
-
-		kind := jc.Controller.GetAPIGroupVersionKind().Kind
-		var logger = LoggerForGenericKind(newObj, kind)
-
-		switch obj := newObj.(type) {
-		case *corev1.Pod:
-			logger = commonutil.LoggerForPod(obj, jc.Controller.GetAPIGroupVersionKind().Kind)
-		case *corev1.Service:
-			logger = commonutil.LoggerForService(newObj.(*corev1.Service), jc.Controller.GetAPIGroupVersionKind().Kind)
-		default:
-			return false
-		}
-
-		newControllerRef := metav1.GetControllerOf(newObj)
-		oldControllerRef := metav1.GetControllerOf(oldObj)
-		controllerRefChanged := !reflect.DeepEqual(newControllerRef, oldControllerRef)
-
-		if controllerRefChanged && oldControllerRef != nil {
-			// The ControllerRef was changed. Sync the old controller, if any.
-			if job := resolveControllerRef(jc, oldObj.GetNamespace(), oldControllerRef); job != nil {
-				logger.Infof("pod/service controller ref updated: %v, %v", newObj, oldObj)
-				return true
-			}
-		}
-
-		// If it has a controller ref, that's all that matters.
-		if newControllerRef != nil {
-			job := resolveControllerRef(jc, newObj.GetNamespace(), newControllerRef)
-			if job == nil {
-				return false
-			}
-			logger.Debugf("pod/service has a controller ref: %v, %v", newObj, oldObj)
-			return true
-		}
-		return false
-	}
 }
 
 // resolveControllerRef returns the job referenced by a ControllerRef,
@@ -140,33 +57,4 @@ func resolveControllerRef(jc *common.JobController, namespace string, controller
 		return nil
 	}
 	return job
-}
-
-// OnDependentDeleteFunc modify expectations when dependent (pod/service) deletion observed.
-func OnDependentDeleteFunc(exp expectation.ControllerExpectationsInterface) func(event.DeleteEvent) bool {
-	return func(e event.DeleteEvent) bool {
-
-		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
-		if len(rtype) == 0 {
-			return false
-		}
-
-		// logrus.Info("Update on deleting function ", xgbr.ControllerName(), " delete object ", e.Object.GetName())
-		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
-			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
-			var expectKey string
-			switch e.Object.(type) {
-			case *corev1.Pod:
-				expectKey = expectation.GenExpectationPodsKey(jobKey, rtype)
-			case *corev1.Service:
-				expectKey = expectation.GenExpectationServicesKey(jobKey, rtype)
-			default:
-				return false
-			}
-			exp.DeletionObserved(expectKey)
-			return true
-		}
-
-		return true
-	}
 }

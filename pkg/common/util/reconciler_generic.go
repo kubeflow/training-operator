@@ -19,13 +19,16 @@ import (
 	"reflect"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	kubeflowv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/common"
 	"github.com/kubeflow/training-operator/pkg/controller.v1/expectation"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // GenExpectationGenericKey generates an expectation key for {Kind} of a job
@@ -50,9 +53,27 @@ func LoggerForGenericKind(obj metav1.Object, kind string) *log.Entry {
 	})
 }
 
+func objectKind(s *runtime.Scheme, obj client.Object) schema.GroupVersionKind {
+	gkvs, _, err := s.ObjectKinds(obj)
+	if err != nil {
+		var logger = LoggerForGenericKind(obj, "")
+		logger.Errorf("unknown kind for %v", obj)
+		return schema.GroupVersionKind{}
+	}
+	return gkvs[0]
+}
+
+func OnDependentFuncs[T client.Object](s *runtime.Scheme, expectations expectation.ControllerExpectationsInterface, jobController *common.JobController) predicate.TypedFuncs[T] {
+	return predicate.TypedFuncs[T]{
+		CreateFunc: OnDependentCreateFuncGeneric[T](s, expectations),
+		UpdateFunc: OnDependentUpdateFuncGeneric[T](s, jobController),
+		DeleteFunc: OnDependentDeleteFuncGeneric[T](s, expectations),
+	}
+}
+
 // OnDependentCreateFuncGeneric modify expectations when dependent (pod/service) creation observed.
-func OnDependentCreateFuncGeneric(exp expectation.ControllerExpectationsInterface) func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
+func OnDependentCreateFuncGeneric[T client.Object](s *runtime.Scheme, exp expectation.ControllerExpectationsInterface) func(createEvent event.TypedCreateEvent[T]) bool {
+	return func(e event.TypedCreateEvent[T]) bool {
 		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
@@ -60,9 +81,12 @@ func OnDependentCreateFuncGeneric(exp expectation.ControllerExpectationsInterfac
 
 		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
-			var expectKey string
-			pl := strings.ToLower(e.Object.GetObjectKind().GroupVersionKind().Kind) + "s"
-			expectKey = GenExpectationGenericKey(jobKey, rtype, pl)
+			kind := e.Object.GetObjectKind().GroupVersionKind().Kind
+			if kind == "" {
+				kind = objectKind(s, e.Object).Kind
+			}
+			pl := strings.ToLower(kind) + "s"
+			expectKey := GenExpectationGenericKey(jobKey, rtype, pl)
 			exp.CreationObserved(expectKey)
 			return true
 		}
@@ -71,9 +95,9 @@ func OnDependentCreateFuncGeneric(exp expectation.ControllerExpectationsInterfac
 	}
 }
 
-// OnDependentUpdateFuncGeneric modify expectations when dependent (pod/service) update observed.
-func OnDependentUpdateFuncGeneric(jc *common.JobController) func(updateEvent event.UpdateEvent) bool {
-	return func(e event.UpdateEvent) bool {
+// OnDependentUpdateFuncGeneric modify expectations when dependent update observed.
+func OnDependentUpdateFuncGeneric[T client.Object](_ *runtime.Scheme, jc *common.JobController) func(updateEvent event.TypedUpdateEvent[T]) bool {
+	return func(e event.TypedUpdateEvent[T]) bool {
 		newObj := e.ObjectNew
 		oldObj := e.ObjectOld
 		if newObj.GetResourceVersion() == oldObj.GetResourceVersion() {
@@ -110,10 +134,9 @@ func OnDependentUpdateFuncGeneric(jc *common.JobController) func(updateEvent eve
 	}
 }
 
-// OnDependentDeleteFuncGeneric modify expectations when dependent (pod/service) deletion observed.
-func OnDependentDeleteFuncGeneric(exp expectation.ControllerExpectationsInterface) func(event.DeleteEvent) bool {
-	return func(e event.DeleteEvent) bool {
-
+// OnDependentDeleteFuncGeneric modify expectations when dependent deletion observed.
+func OnDependentDeleteFuncGeneric[T client.Object](s *runtime.Scheme, exp expectation.ControllerExpectationsInterface) func(event.TypedDeleteEvent[T]) bool {
+	return func(e event.TypedDeleteEvent[T]) bool {
 		rtype := e.Object.GetLabels()[kubeflowv1.ReplicaTypeLabel]
 		if len(rtype) == 0 {
 			return false
@@ -121,9 +144,12 @@ func OnDependentDeleteFuncGeneric(exp expectation.ControllerExpectationsInterfac
 
 		if controllerRef := metav1.GetControllerOf(e.Object); controllerRef != nil {
 			jobKey := fmt.Sprintf("%s/%s", e.Object.GetNamespace(), controllerRef.Name)
-			pl := strings.ToLower(e.Object.GetObjectKind().GroupVersionKind().Kind) + "s"
-			var expectKey = GenExpectationGenericKey(jobKey, rtype, pl)
-
+			kind := e.Object.GetObjectKind().GroupVersionKind().Kind
+			if kind == "" {
+				kind = objectKind(s, e.Object).Kind
+			}
+			pl := strings.ToLower(kind) + "s"
+			expectKey := GenExpectationGenericKey(jobKey, rtype, pl)
 			exp.DeletionObserved(expectKey)
 			return true
 		}
