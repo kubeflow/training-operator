@@ -18,8 +18,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -131,6 +134,51 @@ func (c *FakeXGBoostJobs) DeleteCollection(ctx context.Context, opts metav1.Dele
 func (c *FakeXGBoostJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.XGBoostJob, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, name, pt, data, subresources...), &v1.XGBoostJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.XGBoostJob), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied xGBoostJob.
+func (c *FakeXGBoostJobs) Apply(ctx context.Context, xGBoostJob *kubefloworgv1.XGBoostJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.XGBoostJob, err error) {
+	if xGBoostJob == nil {
+		return nil, fmt.Errorf("xGBoostJob provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(xGBoostJob)
+	if err != nil {
+		return nil, err
+	}
+	name := xGBoostJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("xGBoostJob.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data), &v1.XGBoostJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.XGBoostJob), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeXGBoostJobs) ApplyStatus(ctx context.Context, xGBoostJob *kubefloworgv1.XGBoostJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.XGBoostJob, err error) {
+	if xGBoostJob == nil {
+		return nil, fmt.Errorf("xGBoostJob provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(xGBoostJob)
+	if err != nil {
+		return nil, err
+	}
+	name := xGBoostJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("xGBoostJob.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.XGBoostJob{})
 
 	if obj == nil {
 		return nil, err
