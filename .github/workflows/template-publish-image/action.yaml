@@ -53,4 +53,4 @@ runs:
         push: ${{ inputs.push }}
         tags: ${{ steps.meta.outputs.tags }}
         cache-from: type=gha
-        cache-to: type=gha
+        cache-to: type=gha,ignore-error=true
