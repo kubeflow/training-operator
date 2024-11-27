@@ -20,19 +20,20 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=trainingruntimes,verbs=get;list;watch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=clustertrainingruntimes,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=trainingruntimes,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=clustertrainingruntimes,verbs=get;list;watch
 
-func New(ctx context.Context, client client.Client, indexer client.FieldIndexer) (map[string]runtime.Runtime, error) {
+func New(ctx context.Context, client client.Client, cache cache.Cache, indexer client.FieldIndexer) (map[string]runtime.Runtime, error) {
 	registry := NewRuntimeRegistry()
 	runtimes := make(map[string]runtime.Runtime, len(registry))
 	for name, factory := range registry {
-		r, err := factory(ctx, client, indexer)
+		r, err := factory(ctx, client, cache, indexer)
 		if err != nil {
 			return nil, fmt.Errorf("initializing runtime %q: %w", name, err)
 		}

@@ -55,6 +55,7 @@ from kubeflow.training.models.v1_apply_options import V1ApplyOptions
 from kubeflow.training.models.v1_condition import V1Condition
 from kubeflow.training.models.v1_create_options import V1CreateOptions
 from kubeflow.training.models.v1_delete_options import V1DeleteOptions
+from kubeflow.training.models.v1_field_selector_requirement import V1FieldSelectorRequirement
 from kubeflow.training.models.v1_get_options import V1GetOptions
 from kubeflow.training.models.v1_group_kind import V1GroupKind
 from kubeflow.training.models.v1_group_resource import V1GroupResource

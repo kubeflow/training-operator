@@ -21,7 +21,7 @@ import (
 	resource "k8s.io/apimachinery/pkg/api/resource"
 )
 
-// SchedulingPolicyApplyConfiguration represents an declarative configuration of the SchedulingPolicy type for use
+// SchedulingPolicyApplyConfiguration represents a declarative configuration of the SchedulingPolicy type for use
 // with apply.
 type SchedulingPolicyApplyConfiguration struct {
 	MinAvailable           *int32                                 `json:"minAvailable,omitempty"`
@@ -31,7 +31,7 @@ type SchedulingPolicyApplyConfiguration struct {
 	ScheduleTimeoutSeconds *int32                                 `json:"scheduleTimeoutSeconds,omitempty"`
 }
 
-// SchedulingPolicyApplyConfiguration constructs an declarative configuration of the SchedulingPolicy type for use with
+// SchedulingPolicyApplyConfiguration constructs a declarative configuration of the SchedulingPolicy type for use with
 // apply.
 func SchedulingPolicy() *SchedulingPolicyApplyConfiguration {
 	return &SchedulingPolicyApplyConfiguration{}

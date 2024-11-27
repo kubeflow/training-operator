@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// PyTorchJobApplyConfiguration represents an declarative configuration of the PyTorchJob type for use
+// PyTorchJobApplyConfiguration represents a declarative configuration of the PyTorchJob type for use
 // with apply.
 type PyTorchJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type PyTorchJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration      `json:"status,omitempty"`
 }
 
-// PyTorchJob constructs an declarative configuration of the PyTorchJob type for use with
+// PyTorchJob constructs a declarative configuration of the PyTorchJob type for use with
 // apply.
 func PyTorchJob(name, namespace string) *PyTorchJobApplyConfiguration {
 	b := &PyTorchJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *PyTorchJobApplyConfiguration) WithSpec(value *PyTorchJobSpecApplyConfig
 func (b *PyTorchJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *PyTorchJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *PyTorchJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

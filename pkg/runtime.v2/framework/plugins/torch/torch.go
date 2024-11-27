@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -40,7 +41,7 @@ var _ framework.CustomValidationPlugin = (*Torch)(nil)
 
 const Name = "Torch"
 
-func New(context.Context, client.Client, client.FieldIndexer) (framework.Plugin, error) {
+func New(context.Context, client.Client, cache.Cache, client.FieldIndexer) (framework.Plugin, error) {
 	return &Torch{}, nil
 }
 

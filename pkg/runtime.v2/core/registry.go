@@ -19,12 +19,13 @@ package core
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-type Registry map[string]func(ctx context.Context, client client.Client, indexer client.FieldIndexer) (runtime.Runtime, error)
+type Registry map[string]func(ctx context.Context, client client.Client, cache cache.Cache, indexer client.FieldIndexer) (runtime.Runtime, error)
 
 func NewRuntimeRegistry() Registry {
 	return Registry{

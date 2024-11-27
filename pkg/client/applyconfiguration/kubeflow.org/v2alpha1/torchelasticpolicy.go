@@ -20,7 +20,7 @@ import (
 	v2 "k8s.io/api/autoscaling/v2"
 )
 
-// TorchElasticPolicyApplyConfiguration represents an declarative configuration of the TorchElasticPolicy type for use
+// TorchElasticPolicyApplyConfiguration represents a declarative configuration of the TorchElasticPolicy type for use
 // with apply.
 type TorchElasticPolicyApplyConfiguration struct {
 	MaxRestarts *int32          `json:"maxRestarts,omitempty"`
@@ -29,7 +29,7 @@ type TorchElasticPolicyApplyConfiguration struct {
 	Metrics     []v2.MetricSpec `json:"metrics,omitempty"`
 }
 
-// TorchElasticPolicyApplyConfiguration constructs an declarative configuration of the TorchElasticPolicy type for use with
+// TorchElasticPolicyApplyConfiguration constructs a declarative configuration of the TorchElasticPolicy type for use with
 // apply.
 func TorchElasticPolicy() *TorchElasticPolicyApplyConfiguration {
 	return &TorchElasticPolicyApplyConfiguration{}

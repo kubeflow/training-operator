@@ -16,13 +16,13 @@
 
 package v2alpha1
 
-// PodGroupPolicyApplyConfiguration represents an declarative configuration of the PodGroupPolicy type for use
+// PodGroupPolicyApplyConfiguration represents a declarative configuration of the PodGroupPolicy type for use
 // with apply.
 type PodGroupPolicyApplyConfiguration struct {
 	PodGroupPolicySourceApplyConfiguration `json:",inline"`
 }
 
-// PodGroupPolicyApplyConfiguration constructs an declarative configuration of the PodGroupPolicy type for use with
+// PodGroupPolicyApplyConfiguration constructs a declarative configuration of the PodGroupPolicy type for use with
 // apply.
 func PodGroupPolicy() *PodGroupPolicyApplyConfiguration {
 	return &PodGroupPolicyApplyConfiguration{}

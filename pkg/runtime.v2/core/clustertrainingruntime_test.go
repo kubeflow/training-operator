@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
@@ -110,7 +111,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 				clientBuilder.WithObjects(tc.clusterTrainingRuntime)
 			}
 
-			trainingRuntime, err := NewTrainingRuntime(ctx, clientBuilder.Build(), testingutil.AsIndex(clientBuilder))
+			trainingRuntime, err := NewTrainingRuntime(ctx, clientBuilder.Build(), &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -120,7 +121,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 				t.Fatal("Failed type assertion from Runtime interface to TrainingRuntime")
 			}
 
-			clTrainingRuntime, err := NewClusterTrainingRuntime(ctx, clientBuilder.Build(), testingutil.AsIndex(clientBuilder))
+			clTrainingRuntime, err := NewClusterTrainingRuntime(ctx, clientBuilder.Build(), &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}

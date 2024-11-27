@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// TFJobApplyConfiguration represents an declarative configuration of the TFJob type for use
+// TFJobApplyConfiguration represents a declarative configuration of the TFJob type for use
 // with apply.
 type TFJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type TFJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// TFJob constructs an declarative configuration of the TFJob type for use with
+// TFJob constructs a declarative configuration of the TFJob type for use with
 // apply.
 func TFJob(name, namespace string) *TFJobApplyConfiguration {
 	b := &TFJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *TFJobApplyConfiguration) WithSpec(value *TFJobSpecApplyConfiguration) *
 func (b *TFJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *TFJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *TFJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

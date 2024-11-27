@@ -18,9 +18,6 @@ package v1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
@@ -28,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // PyTorchJobsGetter has a method to return a PyTorchJobInterface.
@@ -41,6 +38,7 @@ type PyTorchJobsGetter interface {
 type PyTorchJobInterface interface {
 	Create(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.CreateOptions) (*v1.PyTorchJob, error)
 	Update(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.UpdateOptions) (*v1.PyTorchJob, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.UpdateOptions) (*v1.PyTorchJob, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -49,206 +47,25 @@ type PyTorchJobInterface interface {
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PyTorchJob, err error)
 	Apply(ctx context.Context, pyTorchJob *kubefloworgv1.PyTorchJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PyTorchJob, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
 	ApplyStatus(ctx context.Context, pyTorchJob *kubefloworgv1.PyTorchJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PyTorchJob, err error)
 	PyTorchJobExpansion
 }
 
 // pyTorchJobs implements PyTorchJobInterface
 type pyTorchJobs struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*v1.PyTorchJob, *v1.PyTorchJobList, *kubefloworgv1.PyTorchJobApplyConfiguration]
 }
 
 // newPyTorchJobs returns a PyTorchJobs
 func newPyTorchJobs(c *KubeflowV1Client, namespace string) *pyTorchJobs {
 	return &pyTorchJobs{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*v1.PyTorchJob, *v1.PyTorchJobList, *kubefloworgv1.PyTorchJobApplyConfiguration](
+			"pytorchjobs",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.PyTorchJob { return &v1.PyTorchJob{} },
+			func() *v1.PyTorchJobList { return &v1.PyTorchJobList{} }),
 	}
-}
-
-// Get takes name of the pyTorchJob, and returns the corresponding pyTorchJob object, and an error if there is any.
-func (c *pyTorchJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.PyTorchJob, err error) {
-	result = &v1.PyTorchJob{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of PyTorchJobs that match those selectors.
-func (c *pyTorchJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.PyTorchJobList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.PyTorchJobList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested pyTorchJobs.
-func (c *pyTorchJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a pyTorchJob and creates it.  Returns the server's representation of the pyTorchJob, and an error, if there is any.
-func (c *pyTorchJobs) Create(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.CreateOptions) (result *v1.PyTorchJob, err error) {
-	result = &v1.PyTorchJob{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(pyTorchJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a pyTorchJob and updates it. Returns the server's representation of the pyTorchJob, and an error, if there is any.
-func (c *pyTorchJobs) Update(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.UpdateOptions) (result *v1.PyTorchJob, err error) {
-	result = &v1.PyTorchJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(pyTorchJob.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(pyTorchJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *pyTorchJobs) UpdateStatus(ctx context.Context, pyTorchJob *v1.PyTorchJob, opts metav1.UpdateOptions) (result *v1.PyTorchJob, err error) {
-	result = &v1.PyTorchJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(pyTorchJob.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(pyTorchJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the pyTorchJob and deletes it. Returns an error if one occurs.
-func (c *pyTorchJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *pyTorchJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched pyTorchJob.
-func (c *pyTorchJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PyTorchJob, err error) {
-	result = &v1.PyTorchJob{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied pyTorchJob.
-func (c *pyTorchJobs) Apply(ctx context.Context, pyTorchJob *kubefloworgv1.PyTorchJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PyTorchJob, err error) {
-	if pyTorchJob == nil {
-		return nil, fmt.Errorf("pyTorchJob provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(pyTorchJob)
-	if err != nil {
-		return nil, err
-	}
-	name := pyTorchJob.Name
-	if name == nil {
-		return nil, fmt.Errorf("pyTorchJob.Name must be provided to Apply")
-	}
-	result = &v1.PyTorchJob{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *pyTorchJobs) ApplyStatus(ctx context.Context, pyTorchJob *kubefloworgv1.PyTorchJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PyTorchJob, err error) {
-	if pyTorchJob == nil {
-		return nil, fmt.Errorf("pyTorchJob provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(pyTorchJob)
-	if err != nil {
-		return nil, err
-	}
-
-	name := pyTorchJob.Name
-	if name == nil {
-		return nil, fmt.Errorf("pyTorchJob.Name must be provided to Apply")
-	}
-
-	result = &v1.PyTorchJob{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("pytorchjobs").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

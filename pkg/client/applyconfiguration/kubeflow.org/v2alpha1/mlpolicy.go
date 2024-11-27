@@ -16,14 +16,14 @@
 
 package v2alpha1
 
-// MLPolicyApplyConfiguration represents an declarative configuration of the MLPolicy type for use
+// MLPolicyApplyConfiguration represents a declarative configuration of the MLPolicy type for use
 // with apply.
 type MLPolicyApplyConfiguration struct {
 	NumNodes                         *int32 `json:"numNodes,omitempty"`
 	MLPolicySourceApplyConfiguration `json:",inline"`
 }
 
-// MLPolicyApplyConfiguration constructs an declarative configuration of the MLPolicy type for use with
+// MLPolicyApplyConfiguration constructs a declarative configuration of the MLPolicy type for use with
 // apply.
 func MLPolicy() *MLPolicyApplyConfiguration {
 	return &MLPolicyApplyConfiguration{}

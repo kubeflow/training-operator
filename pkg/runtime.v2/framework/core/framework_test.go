@@ -29,6 +29,8 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -140,7 +142,7 @@ func TestNew(t *testing.T) {
 				})
 			}
 			clientBuilder := testingutil.NewClientBuilder()
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected errors (-want,+got):\n%s", diff)
 			}
@@ -258,7 +260,7 @@ func TestRunEnforceMLPolicyPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 			clientBuilder := testingutil.NewClientBuilder()
 
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -325,7 +327,7 @@ func TestRunEnforcePodGroupPolicyPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 			clientBuilder := testingutil.NewClientBuilder()
 
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -365,7 +367,7 @@ func TestRunCustomValidationPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 			clientBuildr := testingutil.NewClientBuilder()
 
-			fwk, err := New(ctx, clientBuildr.Build(), tc.registry, testingutil.AsIndex(clientBuildr))
+			fwk, err := New(ctx, clientBuildr.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuildr))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -498,7 +500,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 			clientBuilder := testingutil.NewClientBuilder()
 
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -549,7 +551,7 @@ func TestWatchExtensionPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 			clientBuilder := testingutil.NewClientBuilder()
 
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -565,7 +567,7 @@ type fakeTerminalConditionPlugin struct{}
 
 var _ framework.TerminalConditionPlugin = (*fakeTerminalConditionPlugin)(nil)
 
-func newFakeTerminalConditionPlugin(context.Context, client.Client, client.FieldIndexer) (framework.Plugin, error) {
+func newFakeTerminalConditionPlugin(context.Context, client.Client, cache.Cache, client.FieldIndexer) (framework.Plugin, error) {
 	return &fakeTerminalConditionPlugin{}, nil
 }
 
@@ -651,7 +653,7 @@ func TestTerminalConditionPlugins(t *testing.T) {
 			if tc.jobSet != nil {
 				clientBuilder = clientBuilder.WithObjects(tc.jobSet)
 			}
-			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder))
+			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}

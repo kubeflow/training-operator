@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// TrainJobApplyConfiguration represents an declarative configuration of the TrainJob type for use
+// TrainJobApplyConfiguration represents a declarative configuration of the TrainJob type for use
 // with apply.
 type TrainJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type TrainJobApplyConfiguration struct {
 	Status                           *TrainJobStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// TrainJob constructs an declarative configuration of the TrainJob type for use with
+// TrainJob constructs a declarative configuration of the TrainJob type for use with
 // apply.
 func TrainJob(name, namespace string) *TrainJobApplyConfiguration {
 	b := &TrainJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *TrainJobApplyConfiguration) WithSpec(value *TrainJobSpecApplyConfigurat
 func (b *TrainJobApplyConfiguration) WithStatus(value *TrainJobStatusApplyConfiguration) *TrainJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *TrainJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// TrainerApplyConfiguration represents an declarative configuration of the Trainer type for use
+// TrainerApplyConfiguration represents a declarative configuration of the Trainer type for use
 // with apply.
 type TrainerApplyConfiguration struct {
 	Image            *string                  `json:"image,omitempty"`
@@ -32,7 +32,7 @@ type TrainerApplyConfiguration struct {
 	NumProcPerNode   *string                  `json:"numProcPerNode,omitempty"`
 }
 
-// TrainerApplyConfiguration constructs an declarative configuration of the Trainer type for use with
+// TrainerApplyConfiguration constructs a declarative configuration of the Trainer type for use with
 // apply.
 func Trainer() *TrainerApplyConfiguration {
 	return &TrainerApplyConfiguration{}

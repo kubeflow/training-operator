@@ -147,7 +147,7 @@ type JobController struct {
 	// means we can ensure we only process a fixed amount of resources at a
 	// time, and makes it easy to ensure we are never processing the same item
 	// simultaneously in two different workers.
-	WorkQueue workqueue.RateLimitingInterface
+	WorkQueue workqueue.TypedRateLimitingInterface[string]
 
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
@@ -208,8 +208,9 @@ func NewJobController(
 		ServiceControl: serviceControl,
 		KubeClientSet:  kubeClientSet,
 		Expectations:   expectation.NewControllerExpectations(),
-		WorkQueue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), workQueueName),
-		Recorder:       recorder,
+		WorkQueue: workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](),
+			workqueue.TypedRateLimitingQueueConfig[string]{Name: workQueueName}),
+		Recorder: recorder,
 	}
 
 	setupPodGroup(&jc)

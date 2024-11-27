@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -53,14 +54,14 @@ var _ runtime.Runtime = (*TrainingRuntime)(nil)
 
 var trainingRuntimeFactory *TrainingRuntime
 
-func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.FieldIndexer) (runtime.Runtime, error) {
+func NewTrainingRuntime(ctx context.Context, c client.Client, cache cache.Cache, indexer client.FieldIndexer) (runtime.Runtime, error) {
 	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobRuntimeRefKey, idxer.IndexTrainJobTrainingRuntime); err != nil {
 		return nil, fmt.Errorf("setting index on TrainingRuntime for TrainJob: %w", err)
 	}
 	if err := indexer.IndexField(ctx, &kubeflowv2.TrainJob{}, idxer.TrainJobClusterRuntimeRefKey, idxer.IndexTrainJobClusterTrainingRuntime); err != nil {
 		return nil, fmt.Errorf("setting index on ClusterTrainingRuntime for TrainJob: %w", err)
 	}
-	fwk, err := fwkcore.New(ctx, c, fwkplugins.NewRegistry(), indexer)
+	fwk, err := fwkcore.New(ctx, c, fwkplugins.NewRegistry(), cache, indexer)
 	if err != nil {
 		return nil, err
 	}

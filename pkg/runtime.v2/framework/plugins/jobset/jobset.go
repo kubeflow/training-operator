@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -54,9 +55,9 @@ var _ framework.TerminalConditionPlugin = (*JobSet)(nil)
 
 const Name = constants.JobSetKind
 
-//+kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
+// +kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
 
-func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, c client.Client, _ cache.Cache, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &JobSet{
 		client:     c,
 		restMapper: c.RESTMapper(),
