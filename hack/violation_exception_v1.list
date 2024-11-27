@@ -4,3 +4,12 @@ API rule violation: list_type_missing,github.com/kubeflow/training-operator/pkg/
 API rule violation: list_type_missing,github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1,PaddleElasticPolicy,Metrics
 API rule violation: names_match,github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1,ElasticPolicy,RDZVID
 API rule violation: names_match,github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1,PyTorchJobSpec,PyTorchReplicaSpecs
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,APIResourceList,APIResources
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Duration,Duration
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Object
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Type
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,MicroTime,Time
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,StatusCause,Type
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Time,Time
+API rule violation: names_match,k8s.io/apimachinery/pkg/runtime,Unknown,ContentEncoding
+API rule violation: names_match,k8s.io/apimachinery/pkg/runtime,Unknown,ContentType

@@ -35,13 +35,13 @@ for the detailed instructions on how to install Training Operator.
 Run the following command to install the latest stable release of the Training Operator control plane: `v1.8.0`.
 
 ```bash
-kubectl apply -k "github.com/kubeflow/training-operator.git/manifests/overlays/standalone?ref=v1.8.0"
+kubectl apply --server-side=true -k "github.com/kubeflow/training-operator.git/manifests/overlays/standalone?ref=v1.8.0"
 ```
 
 Run the following command to install the latest changes of the Training Operator control plane:
 
 ```bash
-kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
+kubectl apply --server-side=true -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
 ```
 
 ### Installing the Python SDK

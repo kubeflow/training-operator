@@ -18,8 +18,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -131,6 +134,51 @@ func (c *FakeTrainJobs) DeleteCollection(ctx context.Context, opts v1.DeleteOpti
 func (c *FakeTrainJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.TrainJob, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(trainjobsResource, c.ns, name, pt, data, subresources...), &v2alpha1.TrainJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v2alpha1.TrainJob), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied trainJob.
+func (c *FakeTrainJobs) Apply(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error) {
+	if trainJob == nil {
+		return nil, fmt.Errorf("trainJob provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(trainJob)
+	if err != nil {
+		return nil, err
+	}
+	name := trainJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainJob.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(trainjobsResource, c.ns, *name, types.ApplyPatchType, data), &v2alpha1.TrainJob{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v2alpha1.TrainJob), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeTrainJobs) ApplyStatus(ctx context.Context, trainJob *kubefloworgv2alpha1.TrainJobApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.TrainJob, err error) {
+	if trainJob == nil {
+		return nil, fmt.Errorf("trainJob provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(trainJob)
+	if err != nil {
+		return nil, err
+	}
+	name := trainJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("trainJob.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(trainjobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v2alpha1.TrainJob{})
 
 	if obj == nil {
 		return nil, err

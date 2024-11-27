@@ -102,14 +102,14 @@ type JAXJobReconciler struct {
 	apiReader client.Reader
 }
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
-//+kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=jaxjobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -120,7 +120,6 @@ type JAXJobReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *JAXJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
 	jaxjob := &kubeflowv1.JAXJob{}
 	err := r.client.Get(ctx, req.NamespacedName, jaxjob)
 	if err != nil {
@@ -176,40 +175,32 @@ func (r *JAXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads 
 	if err != nil {
 		return err
 	}
-
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.JAXJob{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
+	if err = c.Watch(source.Kind[*kubeflowv1.JAXJob](mgr.GetCache(), &kubeflowv1.JAXJob{},
+		&handler.TypedEnqueueRequestForObject[*kubeflowv1.JAXJob]{},
+		predicate.TypedFuncs[*kubeflowv1.JAXJob]{CreateFunc: r.onOwnerCreateFunc()}),
 	); err != nil {
 		return err
 	}
-
-	// eventHandler for owned object
-	eventHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner())
-	predicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
-	}
-	// Create generic predicates
-	genericPredicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
-	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[*corev1.Pod](mgr.GetCache(), &corev1.Pod{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Pod](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.Pod](r.scheme, r.Expectations, &r.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related service
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Service{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[*corev1.Service](mgr.GetCache(), &corev1.Service{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Service](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.Service](r.scheme, r.Expectations, &r.JobController))); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.GroupName, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[*v1beta1.PodGroup](mgr.GetCache(), &v1beta1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*v1beta1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*v1beta1.PodGroup](r.scheme, r.Expectations, &r.JobController))); err != nil {
 			return err
 		}
 	}
@@ -217,7 +208,9 @@ func (r *JAXJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThreads 
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[*schedulerpluginsv1alpha1.PodGroup](mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*schedulerpluginsv1alpha1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.JAXJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*schedulerpluginsv1alpha1.PodGroup](r.scheme, r.Expectations, &r.JobController))); err != nil {
 			return err
 		}
 	}
@@ -472,12 +465,9 @@ func (r *JAXJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]*kub
 }
 
 // onOwnerCreateFunc modify creation condition.
-func (r *JAXJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
-		jaxjob, ok := e.Object.(*kubeflowv1.JAXJob)
-		if !ok {
-			return true
-		}
+func (r *JAXJobReconciler) onOwnerCreateFunc() func(createEvent event.TypedCreateEvent[*kubeflowv1.JAXJob]) bool {
+	return func(e event.TypedCreateEvent[*kubeflowv1.JAXJob]) bool {
+		jaxjob := e.Object
 		r.scheme.Default(jaxjob)
 		msg := fmt.Sprintf("JAXJob %s is created.", e.Object.GetName())
 		logrus.Info(msg)
