@@ -6,7 +6,6 @@ resources:
   - ../../base/manager
   - ../../base/rbac
   - ../../base/webhook
-  - ../../base/runtimes/pre-training
   # TODO (andreyvelich): JobSet should support kubeflow-system namespace.
   - https://github.com/kubernetes-sigs/jobset/releases/download/v0.6.0/manifests.yaml
 images:
