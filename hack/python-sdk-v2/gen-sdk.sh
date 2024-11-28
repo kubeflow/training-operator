@@ -35,7 +35,11 @@ if [[ ! -f "$SWAGGER_CODEGEN_JAR" ]]; then
 fi
 
 echo "Generating Python SDK for Training Operator V2 ..."
-java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${SWAGGER_CODEGEN_FILE}" -g python -o "${SDK_OUTPUT_PATH}" -c "${SWAGGER_CODEGEN_CONF}" -p=packageVersion="${SDK_VERSION}"
+java -jar "${SWAGGER_CODEGEN_JAR}" generate -i "${SWAGGER_CODEGEN_FILE}" -g python \
+  -o "${SDK_OUTPUT_PATH}" \
+  -c "${SWAGGER_CODEGEN_CONF}" \
+  -p=packageVersion="${SDK_VERSION}" \
+  --global-property apiTests=false,modelTests=false # TODO (andreyvelich): Discuss if we should use these test files.
 
 echo "Removing unused files for the Python SDK"
 git clean -f ${SDK_OUTPUT_PATH}/.openapi-generator
@@ -49,9 +53,6 @@ git clean -f ${SDK_OUTPUT_PATH}/setup.cfg
 git clean -f ${SDK_OUTPUT_PATH}/setup.py
 git clean -f ${SDK_OUTPUT_PATH}/test-requirements.txt
 git clean -f ${SDK_OUTPUT_PATH}/tox.ini
-
-# TODO (andreyvelich): Discuss if we should use these test files.
-git clean -f ${SDK_OUTPUT_PATH}/test
 
 # Revert the README since it is manually created.
 git checkout ${SDK_OUTPUT_PATH}/README.md
