@@ -56,7 +56,9 @@ class LoraConfig:
         default=None, metadata={"help": "Lora attention dimension"}
     )
     lora_alpha: Optional[int] = field(default=None, metadata={"help": "Lora alpha"})
-    lora_dropout: Optional[int] = field(default=None, metadata={"help": "Lora dropout"})
+    lora_dropout: Optional[float] = field(
+        default=None, metadata={"help": "Lora dropout"}
+    )
 
 
 @dataclass

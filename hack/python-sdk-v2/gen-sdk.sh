@@ -54,11 +54,7 @@ git clean -f ${SDK_OUTPUT_PATH}/setup.py
 git clean -f ${SDK_OUTPUT_PATH}/test-requirements.txt
 git clean -f ${SDK_OUTPUT_PATH}/tox.ini
 
-<<<<<<< HEAD
 # Revert the README since it is manually created.
-=======
-# Revert files that are manually created.
->>>>>>> f921bbe5 (Using global prop to remove SDK tests)
 git checkout ${SDK_OUTPUT_PATH}/README.md
 git checkout ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
 
