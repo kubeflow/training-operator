@@ -110,7 +110,7 @@ docker-push: ## Push docker image with the manager.
 ##@ Deployment
 
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build manifests/base/crds | kubectl apply --server-side=true -f -
+	$(KUSTOMIZE) build manifests/base/crds | kubectl apply --server-side -f -
 
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build manifests/base/crds | kubectl delete -f -
