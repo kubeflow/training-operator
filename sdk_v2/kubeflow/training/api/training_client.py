@@ -100,6 +100,12 @@ class TrainingClient:
             # For that, we need to import the JobSet models.
             response = thread.get(constants.DEFAULT_TIMEOUT)
             for item in response["items"]:
+
+                runtime = self.api_client.deserialize(
+                    utils.FakeResponse(item),
+                    models.KubeflowOrgV2alpha1ClusterTrainingRuntime,
+                )
+                print(runtime)
                 # TODO (andreyvelich): Currently, the labels must be presented.
                 if "labels" in item["metadata"]:
                     # Get the Trainer container resources.
