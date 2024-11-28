@@ -37,7 +37,7 @@ cd manifests/overlays/standalone
 kustomize edit set image kubeflow/training-operator=${REGISTRY}:${VERSION}
 
 echo "Installing training operator manifests"
-kustomize build . | kubectl apply --server-side=true -f -
+kustomize build . | kubectl apply --server-side -f -
 
 TIMEOUT=30
 until kubectl get pods -n kubeflow | grep training-operator | grep 1/1 || [[ $TIMEOUT -eq 1 ]]; do
