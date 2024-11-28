@@ -18,16 +18,17 @@ package controllerv2
 
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-func SetupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
+func SetupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, options controller.Options) (string, error) {
 	if err := NewTrainJobReconciler(
 		mgr.GetClient(),
 		mgr.GetEventRecorderFor("training-operator-trainjob-controller"),
 		runtimes,
-	).SetupWithManager(mgr); err != nil {
+	).SetupWithManager(mgr, options); err != nil {
 		return "TrainJob", err
 	}
 	return "", nil

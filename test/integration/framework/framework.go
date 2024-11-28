@@ -29,8 +29,10 @@ import (
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -100,7 +102,15 @@ func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
 	gomega.ExpectWithOffset(1, runtimes).NotTo(gomega.BeNil())
 
-	failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes)
+	failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes, controller.Options{
+		// controller-runtime v0.19+ validates controller names are unique, to make sure
+		// exported Prometheus metrics for each controller do not conflict. The current check
+		// relies on static state that's not compatible with testing execution model.
+		// See the following resources for more context:
+		// https://github.com/kubernetes-sigs/controller-runtime/pull/2902#issuecomment-2284194683
+		// https://github.com/kubernetes-sigs/controller-runtime/issues/2994
+		SkipNameValidation: ptr.To(true),
+	})
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
 	gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
 
