@@ -34,7 +34,7 @@ class KubeflowOrgV2alpha1JobSetTemplateSpec(object):
     """
     openapi_types = {
         'metadata': 'V1ObjectMeta',
-        'spec': 'SigsK8sIoJobsetApiJobsetV1alpha2JobSetSpec'
+        'spec': 'JobsetV1alpha2JobSetSpec'
     }
 
     attribute_map = {
@@ -84,7 +84,7 @@ class KubeflowOrgV2alpha1JobSetTemplateSpec(object):
 
 
         :return: The spec of this KubeflowOrgV2alpha1JobSetTemplateSpec.  # noqa: E501
-        :rtype: SigsK8sIoJobsetApiJobsetV1alpha2JobSetSpec
+        :rtype: JobsetV1alpha2JobSetSpec
         """
         return self._spec
 
@@ -94,7 +94,7 @@ class KubeflowOrgV2alpha1JobSetTemplateSpec(object):
 
 
         :param spec: The spec of this KubeflowOrgV2alpha1JobSetTemplateSpec.  # noqa: E501
-        :type: SigsK8sIoJobsetApiJobsetV1alpha2JobSetSpec
+        :type: JobsetV1alpha2JobSetSpec
         """
 
         self._spec = spec

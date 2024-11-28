@@ -43,5 +43,5 @@ from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime import Kube
 from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime_list import KubeflowOrgV2alpha1TrainingRuntimeList
 from kubeflow.training.models.kubeflow_org_v2alpha1_training_runtime_spec import KubeflowOrgV2alpha1TrainingRuntimeSpec
 
-# Import Kubernetes models for the serialization
-from kubernetes.client import *
+# Import JobSet models for the serialization. It imports the Kubernetes models.
+from jobset.models import *
