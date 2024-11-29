@@ -54,8 +54,8 @@ CPU_DEVICE_LABEL = "cpu"
 # The default type for CPU.
 CPU_DEVICE_TYPE = "cpu"
 
-# The label for GPU device in the container resources.
-GPU_DEVICE_LABEL = "nvidia.com/gpu"
+# The label for NVIDIA GPU device in the container resources.
+NVIDIA_GPU_DEVICE_LABEL = "nvidia.com/gpu"
 
 # The default type for GPU
 GPU_DEVICE_TYPE = "gpu"
