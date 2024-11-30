@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/klog/v2"
@@ -31,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	"github.com/kubeflow/training-operator/pkg/webhooks/utils"
 )
 
 var (
@@ -71,8 +70,9 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 
 func validateJAXJob(job *trainingoperator.JAXJob) field.ErrorList {
 	var allErrs field.ErrorList
-	if errors := apimachineryvalidation.NameIsDNS1035Label(job.ObjectMeta.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), job.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	err := utils.ValidateJobName(job.ObjectMeta.Name)
+	if err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	allErrs = append(allErrs, validateSpec(job.Spec)...)
