@@ -33,4 +33,5 @@ jobs:
           -i ./examples/pytorch/image-classification/create-pytorchjob.ipynb \
           -o ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb \
           -p "namespace default" \
+          -d jupyter==1.1.1 -d ipykernel==6.29.5 -d papermill==2.6.0 \
           -k ./sdk/python
