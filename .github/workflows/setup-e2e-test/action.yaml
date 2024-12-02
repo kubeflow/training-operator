@@ -12,9 +12,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
     - name: Free-Up Disk Space
       uses: ./.github/workflows/free-up-disk-space
 

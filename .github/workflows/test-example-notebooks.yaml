@@ -17,6 +17,9 @@ jobs:
         kubernetes-version: ["v1.28.7"]
         python-version: ["3.9", "3.10", "3.11"]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup E2E Tests
         uses: ./.github/workflows/setup-e2e-test
         with:
