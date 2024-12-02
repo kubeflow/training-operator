@@ -26,6 +26,10 @@ jobs:
           kubernetes-version: ${{ matrix.kubernetes-version }}
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Python Dependencies
+        run: |
+          pip install papermill==2.6.0 jupyter==1.1.1 ipykernel==6.29.5
+
       - name: Run Jupyter Notebook with Papermill
         shell: bash
         run: |
@@ -33,5 +37,4 @@ jobs:
           -i ./examples/pytorch/image-classification/create-pytorchjob.ipynb \
           -o ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb \
           -p "namespace default" \
-          -d jupyter==1.1.1 -d ipykernel==6.29.5 -d papermill==2.6.0 \
           -k ./sdk/python
