@@ -25,7 +25,7 @@ PYTHON_DEPENDENCIES=()
 PYTHON_REQUIREMENTS_FILE=""
 
 usage() {
-  echo "Usage: $0 -i <input_notebook> -o <output_notebook> [-p \"<param> <value>\"...] [-y <params.yaml>]"
+  echo "Usage: $0 -i <input_notebook> -o <output_notebook> [-p \"<param> <value>\"...] [-y <params.yaml>] [-d <package>==<version>...] [-r <requirements.txt>]"
   echo "Options:"
   echo "  -i  Input notebook (required)"
   echo "  -o  Output notebook (required)"
@@ -47,7 +47,7 @@ while getopts "i:o:y:p:k:r:d:h:" opt; do
     y) PAPERMILL_PARAM_YAML="$OPTARG" ;;      # -y for papermill parameter yaml path
     k) TRAINING_PYTHON_SDK="$OPTARG" ;;       # -k for training operator python sdk
     d) PYTHON_DEPENDENCIES+=("$OPTARG") ;;    # -d for passing python dependencies as args
-    r) PYTHON_REQUIREMENTS_FILE="$OPTARG" ;;  # -k for passing python dependencies as requirements file
+    r) PYTHON_REQUIREMENTS_FILE="$OPTARG" ;;  # -r for passing python dependencies as requirements file
     h) usage ;;                               # -h for help (usage)
     *) usage; exit 1 ;;
   esac
