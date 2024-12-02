@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes-version: ["v1.28.7"]
+        kubernetes-version: ["v1.28.7", "v1.29.2", "v1.30.6"]
         python-version: ["3.9", "3.10", "3.11"]
     steps:
       - name: Checkout
@@ -35,6 +35,5 @@ jobs:
         run: |
           ./scripts/run-notebook.sh \
           -i ./examples/pytorch/image-classification/create-pytorchjob.ipynb \
-          -o ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb \
-          -p "namespace default" \
+          -n default \
           -k ./sdk/python

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2021 The Kubernetes Authors.
+# Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ set -o nounset
 set -o pipefail
 
 NOTEBOOK_INPUT=""
-NOTEBOOK_OUTPUT=""
+NOTEBOOK_OUTPUT="-" # outputs to console
 PAPERMILL_PARAMS=()
-PAPERMILL_PARAM_YAML=""
-TRAINING_PYTHON_SDK="git+https://github.com/kubeflow/training-operator.git#subdirectory=sdk/python"
+NAMESPACE="default"
+TRAINING_PYTHON_SDK="./sdk/python"
 
 usage() {
   echo "Usage: $0 -i <input_notebook> -o <output_notebook> [-p \"<param> <value>\"...] [-y <params.yaml>]"
@@ -32,39 +32,35 @@ usage() {
   echo "  -i  Input notebook (required)"
   echo "  -o  Output notebook (required)"
   echo "  -p  Papermill parameters (optional), pass param name and value pair (in quotes whitespace separated)"
-  echo "  -y  Papermill parameters YAML file (optional)"
   echo "  -k  Kubeflow Training Operator Python SDK (optional)"
+  echo "  -n  Kubernetes namespace used by tests"
   echo "  -h  Show this help message"
   echo "NOTE: papermill, jupyter and ipykernel are required Python dependencies to run Notebooks"
   exit 1
 }
 
-while getopts "i:o:y:p:k:r:d:h:" opt; do
+while getopts "i:o:p:k:n:r:d:h:" opt; do
   case "$opt" in
     i) NOTEBOOK_INPUT="$OPTARG" ;;            # -i for notebook input path
     o) NOTEBOOK_OUTPUT="$OPTARG" ;;           # -o for notebook output path
     p) PAPERMILL_PARAMS+=("$OPTARG") ;;       # -p for papermill parameters
-    y) PAPERMILL_PARAM_YAML="$OPTARG" ;;      # -y for papermill parameter yaml path
     k) TRAINING_PYTHON_SDK="$OPTARG" ;;       # -k for training operator python sdk
+    n) NAMESPACE="$OPTARG" ;;                 # -n for kubernetes namespace used by tests
     h) usage ;;                               # -h for help (usage)
     *) usage; exit 1 ;;
   esac
 done
 
-if [ -z "$NOTEBOOK_INPUT" ] || [ -z "$NOTEBOOK_OUTPUT" ]; then
-  echo "Error: -i notebook input path and -o notebook output path are required."
+if [ -z "$NOTEBOOK_INPUT" ]; then
+  echo "Error: -i notebook input path is required."
   exit 1
 fi
 
-papermill_cmd="papermill $NOTEBOOK_INPUT $NOTEBOOK_OUTPUT -p training_python_sdk $TRAINING_PYTHON_SDK"
+papermill_cmd="papermill $NOTEBOOK_INPUT $NOTEBOOK_OUTPUT -p training_python_sdk $TRAINING_PYTHON_SDK -p namespace $NAMESPACE"
 # Add papermill parameters (param name and value)
 for param in "${PAPERMILL_PARAMS[@]}"; do
   papermill_cmd="$papermill_cmd -p $param"
 done
-
-if [ -n "$PAPERMILL_PARAM_YAML" ]; then
-  papermill_cmd="$papermill_cmd -y $PAPERMILL_PARAM_YAML"
-fi
 
 if ! command -v papermill &> /dev/null; then
   echo "Error: papermill is not installed. Please install papermill to proceed."
@@ -79,4 +75,4 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Notebook execution completed successfully. Output saved to $NOTEBOOK_OUTPUT"
+echo "Notebook execution completed successfully"
