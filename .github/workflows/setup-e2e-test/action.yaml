@@ -1,29 +1,20 @@
-name: Notebook test template
-description: A composite action to setup and run example notebooks using Papermill
+name: Setup E2E test template
+description: A composite action to setup e2e tests
 
 inputs:
   kubernetes-version:
     required: true
     description: kubernetes version
   python-version:
-    required: false
+    required: true
     description: Python version
-    # Most latest supporting version
-    default: "3.10"
-  papermill-args-yaml:
-    description: 'Additional arguments to pass to Papermill in yaml format'
-    required: false
-    default: ""
-  notebook-input:
-    description: 'Path to the input notebook'
-    required: true
-  notebook-output:
-    description: 'Path to save the output notebook'
-    required: true
 
 runs:
   using: composite
   steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: Free-Up Disk Space
       uses: ./.github/workflows/free-up-disk-space
 
@@ -32,13 +23,8 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Install Python dependencies
-      shell: bash
-      run: |
-        pip install jupyter ipykernel papermill==2.2.0
-
     - name: Create k8s Kind Cluster
-      uses: helm/kind-action@v1.10.0
+      uses: helm/kind-action@9fdad0686e6f19fcd572f62516f5e0436f562ee7
       with:
         node_image: kindest/node:${{ inputs.kubernetes-version }}
         cluster_name: training-operator-cluster
@@ -63,8 +49,3 @@ runs:
         TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
         GANG_SCHEDULER_NAME: "none"
         KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}
-
-    - name: Run Jupyter Notebook with Papermill
-      shell: bash
-      run: |
-        papermill ${{ inputs.notebook-input }} ${{ inputs.notebook-output }} -p kubeflow_python_sdk "./sdk/python" --parameters_yaml "${{ inputs.papermill-args-yaml }}"

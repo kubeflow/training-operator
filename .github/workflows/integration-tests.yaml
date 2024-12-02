@@ -55,43 +55,16 @@ jobs:
             python-version: "3.10"
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Free-Up Disk Space
-        uses: ./.github/workflows/free-up-disk-space
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup E2E Tests
+        uses: ./.github/workflows/setup-e2e-test
         with:
+          kubernetes-version: ${{ matrix.kubernetes-version }}
           python-version: ${{ matrix.python-version }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-
-      - name: Create k8s Kind Cluster
-        uses: helm/kind-action@9fdad0686e6f19fcd572f62516f5e0436f562ee7
-        with:
-          node_image: kindest/node:${{ matrix.kubernetes-version }}
-          cluster_name: training-operator-cluster
-          kubectl_version: ${{ matrix.kubernetes-version }}
-
-      - name: Build training-operator
-        run: |
-          ./scripts/gha/build-image.sh
-        env:
-          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
-
-      - name: Deploy training operator
-        run: |
-          ./scripts/gha/setup-training-operator.sh
-        env:
-          KIND_CLUSTER: training-operator-cluster
-          TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
-          GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
-          KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
 
       - name: Run tests
         run: |

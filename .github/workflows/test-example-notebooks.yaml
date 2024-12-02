@@ -17,15 +17,17 @@ jobs:
         kubernetes-version: ["v1.28.7"]
         python-version: ["3.9", "3.10", "3.11"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Test Notebook
-        uses: ./.github/workflows/template-notebook-test
+      - name: Setup E2E Tests
+        uses: ./.github/workflows/setup-e2e-test
         with:
           kubernetes-version: ${{ matrix.kubernetes-version }}
           python-version: ${{ matrix.python-version }}
-          notebook-input: ./examples/pytorch/image-classification/create-pytorchjob.ipynb
-          notebook-output: ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb
-          papermill-args-yaml: |
-            namespace: default
+
+      - name: Run Jupyter Notebook with Papermill
+        shell: bash
+        run: |
+          ./scripts/run-notebook.sh \
+          -i ./examples/pytorch/image-classification/create-pytorchjob.ipynb \
+          -o ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb \
+          -p "namespace default"
+          -k ./sdk/python
