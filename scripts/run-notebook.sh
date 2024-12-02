@@ -16,6 +16,10 @@
 
 # This bash script is used to run the example notebooks
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 NOTEBOOK_INPUT=""
 NOTEBOOK_OUTPUT=""
 PAPERMILL_PARAMS=()
