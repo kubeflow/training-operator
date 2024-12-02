@@ -29,5 +29,5 @@ jobs:
           ./scripts/run-notebook.sh \
           -i ./examples/pytorch/image-classification/create-pytorchjob.ipynb \
           -o ./examples/pytorch/image-classification/create-pytorchjob-output.ipynb \
-          -p "namespace default"
+          -p "namespace default" \
           -k ./sdk/python
