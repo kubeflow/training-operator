@@ -4,10 +4,14 @@ description: A composite action to setup e2e tests
 inputs:
   kubernetes-version:
     required: true
-    description: kubernetes version
+    description: Kubernetes version
   python-version:
     required: true
     description: Python version
+  gang-scheduler-name:
+    required: false
+    default: "none"
+    description: Gang scheduler name
 
 runs:
   using: composite
@@ -44,5 +48,5 @@ runs:
       env:
         KIND_CLUSTER: training-operator-cluster
         TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
-        GANG_SCHEDULER_NAME: "none"
+        GANG_SCHEDULER_NAME: ${{ inputs.gang-scheduler-name }}
         KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}

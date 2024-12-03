@@ -63,6 +63,7 @@ jobs:
         with:
           kubernetes-version: ${{ matrix.kubernetes-version }}
           python-version: ${{ matrix.python-version }}
+          gang-scheduler-name: ${{ matrix.gang-scheduler-name }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
