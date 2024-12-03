@@ -24,6 +24,11 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@9fdad0686e6f19fcd572f62516f5e0436f562ee7
       with:
