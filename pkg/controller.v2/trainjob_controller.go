@@ -227,7 +227,7 @@ func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager, options controll
 	for _, runtime := range r.runtimes {
 		for _, registrar := range runtime.EventHandlerRegistrars() {
 			if registrar != nil {
-				b = registrar(b, mgr.GetClient())
+				b = registrar(b, mgr.GetClient(), mgr.GetCache())
 			}
 		}
 	}

@@ -57,7 +57,7 @@ const Name = constants.JobSetKind
 
 // +kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
 
-func New(ctx context.Context, c client.Client, _ cache.Cache, _ client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &JobSet{
 		client:     c,
 		restMapper: c.RESTMapper(),
@@ -153,7 +153,7 @@ func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 		j.logger.Error(err, "JobSet CRDs must be installed in advance")
 	}
 	return []runtime.ReconcilerBuilder{
-		func(b *builder.Builder, c client.Client) *builder.Builder {
+		func(b *builder.Builder, c client.Client, cache cache.Cache) *builder.Builder {
 			return b.Owns(&jobsetv1alpha2.JobSet{})
 		},
 	}

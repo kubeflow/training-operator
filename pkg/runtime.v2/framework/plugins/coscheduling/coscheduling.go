@@ -53,7 +53,6 @@ import (
 )
 
 type CoScheduling struct {
-	cache      cache.Cache
 	client     client.Client
 	restMapper meta.RESTMapper
 	scheme     *apiruntime.Scheme
@@ -72,7 +71,7 @@ const Name = "CoScheduling"
 
 // +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create
 
-func New(ctx context.Context, c client.Client, cache cache.Cache, indexer client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, c client.Client, indexer client.FieldIndexer) (framework.Plugin, error) {
 	if err := indexer.IndexField(ctx, &kubeflowv2.TrainingRuntime{}, TrainingRuntimeContainerRuntimeClassKey,
 		IndexTrainingRuntimeContainerRuntimeClass); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupTrainingRuntimeRuntimeClassIndexer, err)
@@ -82,7 +81,6 @@ func New(ctx context.Context, c client.Client, cache cache.Cache, indexer client
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupClusterTrainingRuntimeRuntimeClassIndexer, err)
 	}
 	return &CoScheduling{
-		cache:      cache,
 		client:     c,
 		restMapper: c.RESTMapper(),
 		scheme:     c.Scheme(),
@@ -282,16 +280,16 @@ func (c *CoScheduling) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 		return nil
 	}
 	return []runtime.ReconcilerBuilder{
-		func(b *builder.Builder, cl client.Client) *builder.Builder {
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
 			return b.Owns(&schedulerpluginsv1alpha1.PodGroup{})
 		},
-		func(b *builder.Builder, cl client.Client) *builder.Builder {
-			return b.WatchesRawSource(source.TypedKind[*corev1.LimitRange, reconcile.Request](c.cache, &corev1.LimitRange{}, &PodGroupLimitRangeHandler{
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
+			return b.WatchesRawSource(source.TypedKind[*corev1.LimitRange, reconcile.Request](cache, &corev1.LimitRange{}, &PodGroupLimitRangeHandler{
 				client: cl,
 			}))
 		},
-		func(b *builder.Builder, cl client.Client) *builder.Builder {
-			return b.WatchesRawSource(source.TypedKind[*nodev1.RuntimeClass, reconcile.Request](c.cache, &nodev1.RuntimeClass{}, &PodGroupRuntimeClassHandler{
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
+			return b.WatchesRawSource(source.TypedKind[*nodev1.RuntimeClass, reconcile.Request](cache, &nodev1.RuntimeClass{}, &PodGroupRuntimeClassHandler{
 				client: cl,
 			}))
 		},

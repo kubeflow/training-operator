@@ -22,7 +22,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -45,14 +44,14 @@ type Framework struct {
 	terminalConditionPlugins     []framework.TerminalConditionPlugin
 }
 
-func New(ctx context.Context, c client.Client, r fwkplugins.Registry, cache cache.Cache, indexer client.FieldIndexer) (*Framework, error) {
+func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer client.FieldIndexer) (*Framework, error) {
 	f := &Framework{
 		registry: r,
 	}
 	plugins := make(map[string]framework.Plugin, len(r))
 
 	for name, factory := range r {
-		plugin, err := factory(ctx, c, cache, indexer)
+		plugin, err := factory(ctx, c, indexer)
 		if err != nil {
 			return nil, err
 		}

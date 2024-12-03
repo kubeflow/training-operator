@@ -24,7 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -47,7 +46,7 @@ var ClusterTrainingRuntimeGroupKind = schema.GroupKind{
 	Kind:  kubeflowv2.ClusterTrainingRuntimeKind,
 }.String()
 
-func NewClusterTrainingRuntime(context.Context, client.Client, cache.Cache, client.FieldIndexer) (runtime.Runtime, error) {
+func NewClusterTrainingRuntime(context.Context, client.Client, client.FieldIndexer) (runtime.Runtime, error) {
 	return &ClusterTrainingRuntime{
 		TrainingRuntime: trainingRuntimeFactory,
 	}, nil

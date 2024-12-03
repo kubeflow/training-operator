@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -38,7 +37,7 @@ var _ framework.CustomValidationPlugin = (*MPI)(nil)
 
 const Name = "MPI"
 
-func New(_ context.Context, client client.Client, _ cache.Cache, _ client.FieldIndexer) (framework.Plugin, error) {
+func New(_ context.Context, client client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &MPI{
 		client: client,
 	}, nil

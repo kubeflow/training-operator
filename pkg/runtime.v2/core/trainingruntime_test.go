@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/cache/informertest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
@@ -433,7 +432,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				clientBuilder.WithObjects(tc.trainingRuntime)
 			}
 
-			trainingRuntime, err := NewTrainingRuntime(ctx, clientBuilder.Build(), &informertest.FakeInformers{}, testingutil.AsIndex(clientBuilder))
+			trainingRuntime, err := NewTrainingRuntime(ctx, clientBuilder.Build(), testingutil.AsIndex(clientBuilder))
 			if err != nil {
 				t.Fatal(err)
 			}

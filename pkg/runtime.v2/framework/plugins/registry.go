@@ -19,7 +19,6 @@ package plugins
 import (
 	"context"
 
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework"
@@ -30,7 +29,7 @@ import (
 	"github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/torch"
 )
 
-type Registry map[string]func(ctx context.Context, client client.Client, cache cache.Cache, indexer client.FieldIndexer) (framework.Plugin, error)
+type Registry map[string]func(ctx context.Context, client client.Client, indexer client.FieldIndexer) (framework.Plugin, error)
 
 func NewRegistry() Registry {
 	return Registry{
