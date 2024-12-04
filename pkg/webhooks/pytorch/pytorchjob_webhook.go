@@ -100,7 +100,7 @@ func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, fie
 			allErrs = append(allErrs, field.Required(workerPath, "must be configured if elastic policy is used"))
 		} else if workerReplicaSpec.Replicas != nil && int(*workerReplicaSpec.Replicas) < 1 {
 			workerReplicasPath := workerPath.Child("replicas")
-			allErrs = append(allErrs, field.Forbidden(workerReplicasPath, "must be at least 1 if elastic policy is used"))
+			allErrs = append(allErrs, field.Forbidden(workerReplicasPath, "must be at least 1 worker if elastic policy is used"))
 		}
 		if spec.ElasticPolicy.NProcPerNode != nil {
 			elasticNProcPerNodePath := specPath.Child("elasticPolicy").Child("nProcPerNode")
