@@ -31,7 +31,7 @@ func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error
 		return kubeflowv2.TrainingRuntimeKind, err
 	}
 	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
-		return "TrainJob", err
+		return kubeflowv2.TrainJobKind, err
 	}
 	return "", nil
 }

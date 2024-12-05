@@ -19,6 +19,9 @@ package torch
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -134,7 +137,30 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv2.TrainJo
 	return nil
 }
 
-// TODO: Need to implement validateions for TorchJob.
-func (t *Torch) Validate(oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
+func (t *Torch) Validate(runtimeJobTemplate client.Object, runtimeInfo *runtime.Info, oldObj, newObj *kubeflowv2.TrainJob) (admission.Warnings, field.ErrorList) {
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+
+	if newObj.Spec.Trainer != nil {
+		numProcPerNodePath := specPath.Child("trainer").Child("numProcPerNode")
+		if runtimeInfo.RuntimePolicy.MLPolicy != nil &&
+			runtimeInfo.RuntimePolicy.MLPolicy.Torch != nil && newObj.Spec.Trainer.NumProcPerNode != nil {
+			allowedStringValList := []string{"auto", "cpu", "gpu"}
+			numProcPerNode := *newObj.Spec.Trainer.NumProcPerNode
+			if !slices.Contains(allowedStringValList, numProcPerNode) {
+				if _, err := strconv.Atoi(numProcPerNode); err != nil {
+					allErrs = append(allErrs, field.Invalid(numProcPerNodePath, newObj.Spec.Trainer.NumProcPerNode, "should have an int value or auto/cpu/gpu"))
+				}
+			}
+		}
+
+		if slices.ContainsFunc(newObj.Spec.Trainer.Env, func(x corev1.EnvVar) bool {
+			return strings.HasPrefix(x.Name, constants.TorchEnvNamePrefix)
+		}) {
+			trainerEnvsPath := specPath.Child("trainer").Child("env")
+			allErrs = append(allErrs, field.Invalid(trainerEnvsPath, newObj.Spec.Trainer.Env, fmt.Sprintf("should not have envs with name having prefix %s", constants.TorchEnvNamePrefix)))
+		}
+	}
+
+	return nil, allErrs
 }
