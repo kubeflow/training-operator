@@ -17,37 +17,40 @@ package util
 import "time"
 
 // FakeWorkQueue implements RateLimitingInterface but actually does nothing.
-type FakeWorkQueue struct{}
+type FakeWorkQueue[T any] struct{}
 
 // Add WorkQueue Add method
-func (f *FakeWorkQueue) Add(item interface{}) {}
+func (f *FakeWorkQueue[T]) Add(item T) {}
 
 // Len WorkQueue Len method
-func (f *FakeWorkQueue) Len() int { return 0 }
+func (f *FakeWorkQueue[T]) Len() int { return 0 }
 
 // Get WorkQueue Get method
-func (f *FakeWorkQueue) Get() (item interface{}, shutdown bool) { return nil, false }
+func (f *FakeWorkQueue[T]) Get() (item T, shutdown bool) {
+	var empty T
+	return empty, false
+}
 
 // Done WorkQueue Done method
-func (f *FakeWorkQueue) Done(item interface{}) {}
+func (f *FakeWorkQueue[T]) Done(item T) {}
 
 // ShutDown WorkQueue ShutDown method
-func (f *FakeWorkQueue) ShutDown() {}
+func (f *FakeWorkQueue[T]) ShutDown() {}
 
-// ShutDown WorkQueue ShutDownWithDrain method
-func (f *FakeWorkQueue) ShutDownWithDrain() {}
+// ShutDownWithDrain WorkQueue ShutDownWithDrain method
+func (f *FakeWorkQueue[T]) ShutDownWithDrain() {}
 
 // ShuttingDown WorkQueue ShuttingDown method
-func (f *FakeWorkQueue) ShuttingDown() bool { return true }
+func (f *FakeWorkQueue[T]) ShuttingDown() bool { return true }
 
 // AddAfter WorkQueue AddAfter method
-func (f *FakeWorkQueue) AddAfter(item interface{}, duration time.Duration) {}
+func (f *FakeWorkQueue[T]) AddAfter(item T, duration time.Duration) {}
 
 // AddRateLimited WorkQueue AddRateLimited method
-func (f *FakeWorkQueue) AddRateLimited(item interface{}) {}
+func (f *FakeWorkQueue[T]) AddRateLimited(item T) {}
 
 // Forget WorkQueue Forget method
-func (f *FakeWorkQueue) Forget(item interface{}) {}
+func (f *FakeWorkQueue[T]) Forget(item T) {}
 
 // NumRequeues WorkQueue NumRequeues method
-func (f *FakeWorkQueue) NumRequeues(item interface{}) int { return 0 }
+func (f *FakeWorkQueue[T]) NumRequeues(item T) int { return 0 }

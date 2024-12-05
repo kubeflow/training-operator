@@ -16,7 +16,7 @@
 
 package v2alpha1
 
-// TrainJobSpecApplyConfiguration represents an declarative configuration of the TrainJobSpec type for use
+// TrainJobSpecApplyConfiguration represents a declarative configuration of the TrainJobSpec type for use
 // with apply.
 type TrainJobSpecApplyConfiguration struct {
 	RuntimeRef       *RuntimeRefApplyConfiguration       `json:"runtimeRef,omitempty"`
@@ -30,7 +30,7 @@ type TrainJobSpecApplyConfiguration struct {
 	ManagedBy        *string                             `json:"managedBy,omitempty"`
 }
 
-// TrainJobSpecApplyConfiguration constructs an declarative configuration of the TrainJobSpec type for use with
+// TrainJobSpecApplyConfiguration constructs a declarative configuration of the TrainJobSpec type for use with
 // apply.
 func TrainJobSpec() *TrainJobSpecApplyConfiguration {
 	return &TrainJobSpecApplyConfiguration{}

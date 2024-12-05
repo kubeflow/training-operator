@@ -20,14 +20,14 @@ import (
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// XGBoostJobSpecApplyConfiguration represents an declarative configuration of the XGBoostJobSpec type for use
+// XGBoostJobSpecApplyConfiguration represents a declarative configuration of the XGBoostJobSpec type for use
 // with apply.
 type XGBoostJobSpecApplyConfiguration struct {
 	RunPolicy       *RunPolicyApplyConfiguration                             `json:"runPolicy,omitempty"`
 	XGBReplicaSpecs map[kubefloworgv1.ReplicaType]*kubefloworgv1.ReplicaSpec `json:"xgbReplicaSpecs,omitempty"`
 }
 
-// XGBoostJobSpecApplyConfiguration constructs an declarative configuration of the XGBoostJobSpec type for use with
+// XGBoostJobSpecApplyConfiguration constructs a declarative configuration of the XGBoostJobSpec type for use with
 // apply.
 func XGBoostJobSpec() *XGBoostJobSpecApplyConfiguration {
 	return &XGBoostJobSpecApplyConfiguration{}

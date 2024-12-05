@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// ReplicaSpecApplyConfiguration represents an declarative configuration of the ReplicaSpec type for use
+// ReplicaSpecApplyConfiguration represents a declarative configuration of the ReplicaSpec type for use
 // with apply.
 type ReplicaSpecApplyConfiguration struct {
 	Replicas      *int32                       `json:"replicas,omitempty"`
@@ -29,7 +29,7 @@ type ReplicaSpecApplyConfiguration struct {
 	RestartPolicy *kubefloworgv1.RestartPolicy `json:"restartPolicy,omitempty"`
 }
 
-// ReplicaSpecApplyConfiguration constructs an declarative configuration of the ReplicaSpec type for use with
+// ReplicaSpecApplyConfiguration constructs a declarative configuration of the ReplicaSpec type for use with
 // apply.
 func ReplicaSpec() *ReplicaSpecApplyConfiguration {
 	return &ReplicaSpecApplyConfiguration{}

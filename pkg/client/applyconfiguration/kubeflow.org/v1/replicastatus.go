@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// ReplicaStatusApplyConfiguration represents an declarative configuration of the ReplicaStatus type for use
+// ReplicaStatusApplyConfiguration represents a declarative configuration of the ReplicaStatus type for use
 // with apply.
 type ReplicaStatusApplyConfiguration struct {
 	Active        *int32                              `json:"active,omitempty"`
@@ -30,7 +30,7 @@ type ReplicaStatusApplyConfiguration struct {
 	Selector      *string                             `json:"selector,omitempty"`
 }
 
-// ReplicaStatusApplyConfiguration constructs an declarative configuration of the ReplicaStatus type for use with
+// ReplicaStatusApplyConfiguration constructs a declarative configuration of the ReplicaStatus type for use with
 // apply.
 func ReplicaStatus() *ReplicaStatusApplyConfiguration {
 	return &ReplicaStatusApplyConfiguration{}

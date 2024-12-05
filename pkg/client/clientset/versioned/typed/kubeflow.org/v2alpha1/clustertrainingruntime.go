@@ -18,9 +18,6 @@ package v2alpha1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
@@ -28,7 +25,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // ClusterTrainingRuntimesGetter has a method to return a ClusterTrainingRuntimeInterface.
@@ -53,143 +50,18 @@ type ClusterTrainingRuntimeInterface interface {
 
 // clusterTrainingRuntimes implements ClusterTrainingRuntimeInterface
 type clusterTrainingRuntimes struct {
-	client rest.Interface
+	*gentype.ClientWithListAndApply[*v2alpha1.ClusterTrainingRuntime, *v2alpha1.ClusterTrainingRuntimeList, *kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration]
 }
 
 // newClusterTrainingRuntimes returns a ClusterTrainingRuntimes
 func newClusterTrainingRuntimes(c *KubeflowV2alpha1Client) *clusterTrainingRuntimes {
 	return &clusterTrainingRuntimes{
-		client: c.RESTClient(),
+		gentype.NewClientWithListAndApply[*v2alpha1.ClusterTrainingRuntime, *v2alpha1.ClusterTrainingRuntimeList, *kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration](
+			"clustertrainingruntimes",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			"",
+			func() *v2alpha1.ClusterTrainingRuntime { return &v2alpha1.ClusterTrainingRuntime{} },
+			func() *v2alpha1.ClusterTrainingRuntimeList { return &v2alpha1.ClusterTrainingRuntimeList{} }),
 	}
-}
-
-// Get takes name of the clusterTrainingRuntime, and returns the corresponding clusterTrainingRuntime object, and an error if there is any.
-func (c *clusterTrainingRuntimes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2alpha1.ClusterTrainingRuntime, err error) {
-	result = &v2alpha1.ClusterTrainingRuntime{}
-	err = c.client.Get().
-		Resource("clustertrainingruntimes").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of ClusterTrainingRuntimes that match those selectors.
-func (c *clusterTrainingRuntimes) List(ctx context.Context, opts v1.ListOptions) (result *v2alpha1.ClusterTrainingRuntimeList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v2alpha1.ClusterTrainingRuntimeList{}
-	err = c.client.Get().
-		Resource("clustertrainingruntimes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested clusterTrainingRuntimes.
-func (c *clusterTrainingRuntimes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Resource("clustertrainingruntimes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a clusterTrainingRuntime and creates it.  Returns the server's representation of the clusterTrainingRuntime, and an error, if there is any.
-func (c *clusterTrainingRuntimes) Create(ctx context.Context, clusterTrainingRuntime *v2alpha1.ClusterTrainingRuntime, opts v1.CreateOptions) (result *v2alpha1.ClusterTrainingRuntime, err error) {
-	result = &v2alpha1.ClusterTrainingRuntime{}
-	err = c.client.Post().
-		Resource("clustertrainingruntimes").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterTrainingRuntime).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a clusterTrainingRuntime and updates it. Returns the server's representation of the clusterTrainingRuntime, and an error, if there is any.
-func (c *clusterTrainingRuntimes) Update(ctx context.Context, clusterTrainingRuntime *v2alpha1.ClusterTrainingRuntime, opts v1.UpdateOptions) (result *v2alpha1.ClusterTrainingRuntime, err error) {
-	result = &v2alpha1.ClusterTrainingRuntime{}
-	err = c.client.Put().
-		Resource("clustertrainingruntimes").
-		Name(clusterTrainingRuntime.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(clusterTrainingRuntime).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the clusterTrainingRuntime and deletes it. Returns an error if one occurs.
-func (c *clusterTrainingRuntimes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Resource("clustertrainingruntimes").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *clusterTrainingRuntimes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Resource("clustertrainingruntimes").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched clusterTrainingRuntime.
-func (c *clusterTrainingRuntimes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v2alpha1.ClusterTrainingRuntime, err error) {
-	result = &v2alpha1.ClusterTrainingRuntime{}
-	err = c.client.Patch(pt).
-		Resource("clustertrainingruntimes").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied clusterTrainingRuntime.
-func (c *clusterTrainingRuntimes) Apply(ctx context.Context, clusterTrainingRuntime *kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration, opts v1.ApplyOptions) (result *v2alpha1.ClusterTrainingRuntime, err error) {
-	if clusterTrainingRuntime == nil {
-		return nil, fmt.Errorf("clusterTrainingRuntime provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(clusterTrainingRuntime)
-	if err != nil {
-		return nil, err
-	}
-	name := clusterTrainingRuntime.Name
-	if name == nil {
-		return nil, fmt.Errorf("clusterTrainingRuntime.Name must be provided to Apply")
-	}
-	result = &v2alpha1.ClusterTrainingRuntime{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Resource("clustertrainingruntimes").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

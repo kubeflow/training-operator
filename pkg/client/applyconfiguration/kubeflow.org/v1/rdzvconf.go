@@ -16,14 +16,14 @@
 
 package v1
 
-// RDZVConfApplyConfiguration represents an declarative configuration of the RDZVConf type for use
+// RDZVConfApplyConfiguration represents a declarative configuration of the RDZVConf type for use
 // with apply.
 type RDZVConfApplyConfiguration struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
 }
 
-// RDZVConfApplyConfiguration constructs an declarative configuration of the RDZVConf type for use with
+// RDZVConfApplyConfiguration constructs a declarative configuration of the RDZVConf type for use with
 // apply.
 func RDZVConf() *RDZVConfApplyConfiguration {
 	return &RDZVConfApplyConfiguration{}

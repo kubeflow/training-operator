@@ -18,9 +18,6 @@ package v1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
@@ -28,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // MPIJobsGetter has a method to return a MPIJobInterface.
@@ -41,6 +38,7 @@ type MPIJobsGetter interface {
 type MPIJobInterface interface {
 	Create(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.CreateOptions) (*v1.MPIJob, error)
 	Update(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.UpdateOptions) (*v1.MPIJob, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.UpdateOptions) (*v1.MPIJob, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -49,206 +47,25 @@ type MPIJobInterface interface {
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MPIJob, err error)
 	Apply(ctx context.Context, mPIJob *kubefloworgv1.MPIJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MPIJob, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
 	ApplyStatus(ctx context.Context, mPIJob *kubefloworgv1.MPIJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MPIJob, err error)
 	MPIJobExpansion
 }
 
 // mPIJobs implements MPIJobInterface
 type mPIJobs struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*v1.MPIJob, *v1.MPIJobList, *kubefloworgv1.MPIJobApplyConfiguration]
 }
 
 // newMPIJobs returns a MPIJobs
 func newMPIJobs(c *KubeflowV1Client, namespace string) *mPIJobs {
 	return &mPIJobs{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*v1.MPIJob, *v1.MPIJobList, *kubefloworgv1.MPIJobApplyConfiguration](
+			"mpijobs",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.MPIJob { return &v1.MPIJob{} },
+			func() *v1.MPIJobList { return &v1.MPIJobList{} }),
 	}
-}
-
-// Get takes name of the mPIJob, and returns the corresponding mPIJob object, and an error if there is any.
-func (c *mPIJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.MPIJob, err error) {
-	result = &v1.MPIJob{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of MPIJobs that match those selectors.
-func (c *mPIJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.MPIJobList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.MPIJobList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested mPIJobs.
-func (c *mPIJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a mPIJob and creates it.  Returns the server's representation of the mPIJob, and an error, if there is any.
-func (c *mPIJobs) Create(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.CreateOptions) (result *v1.MPIJob, err error) {
-	result = &v1.MPIJob{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(mPIJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a mPIJob and updates it. Returns the server's representation of the mPIJob, and an error, if there is any.
-func (c *mPIJobs) Update(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.UpdateOptions) (result *v1.MPIJob, err error) {
-	result = &v1.MPIJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(mPIJob.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(mPIJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *mPIJobs) UpdateStatus(ctx context.Context, mPIJob *v1.MPIJob, opts metav1.UpdateOptions) (result *v1.MPIJob, err error) {
-	result = &v1.MPIJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(mPIJob.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(mPIJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the mPIJob and deletes it. Returns an error if one occurs.
-func (c *mPIJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *mPIJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("mpijobs").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched mPIJob.
-func (c *mPIJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MPIJob, err error) {
-	result = &v1.MPIJob{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied mPIJob.
-func (c *mPIJobs) Apply(ctx context.Context, mPIJob *kubefloworgv1.MPIJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MPIJob, err error) {
-	if mPIJob == nil {
-		return nil, fmt.Errorf("mPIJob provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(mPIJob)
-	if err != nil {
-		return nil, err
-	}
-	name := mPIJob.Name
-	if name == nil {
-		return nil, fmt.Errorf("mPIJob.Name must be provided to Apply")
-	}
-	result = &v1.MPIJob{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *mPIJobs) ApplyStatus(ctx context.Context, mPIJob *kubefloworgv1.MPIJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MPIJob, err error) {
-	if mPIJob == nil {
-		return nil, fmt.Errorf("mPIJob provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(mPIJob)
-	if err != nil {
-		return nil, err
-	}
-
-	name := mPIJob.Name
-	if name == nil {
-		return nil, fmt.Errorf("mPIJob.Name must be provided to Apply")
-	}
-
-	result = &v1.MPIJob{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("mpijobs").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

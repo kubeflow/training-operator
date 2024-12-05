@@ -20,7 +20,7 @@ import (
 	v2 "k8s.io/api/autoscaling/v2"
 )
 
-// PaddleElasticPolicyApplyConfiguration represents an declarative configuration of the PaddleElasticPolicy type for use
+// PaddleElasticPolicyApplyConfiguration represents a declarative configuration of the PaddleElasticPolicy type for use
 // with apply.
 type PaddleElasticPolicyApplyConfiguration struct {
 	MinReplicas *int32          `json:"minReplicas,omitempty"`
@@ -29,7 +29,7 @@ type PaddleElasticPolicyApplyConfiguration struct {
 	Metrics     []v2.MetricSpec `json:"metrics,omitempty"`
 }
 
-// PaddleElasticPolicyApplyConfiguration constructs an declarative configuration of the PaddleElasticPolicy type for use with
+// PaddleElasticPolicyApplyConfiguration constructs a declarative configuration of the PaddleElasticPolicy type for use with
 // apply.
 func PaddleElasticPolicy() *PaddleElasticPolicyApplyConfiguration {
 	return &PaddleElasticPolicyApplyConfiguration{}

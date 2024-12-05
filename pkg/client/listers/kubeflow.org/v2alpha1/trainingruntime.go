@@ -18,8 +18,8 @@ package v2alpha1
 
 import (
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -36,25 +36,17 @@ type TrainingRuntimeLister interface {
 
 // trainingRuntimeLister implements the TrainingRuntimeLister interface.
 type trainingRuntimeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v2alpha1.TrainingRuntime]
 }
 
 // NewTrainingRuntimeLister returns a new TrainingRuntimeLister.
 func NewTrainingRuntimeLister(indexer cache.Indexer) TrainingRuntimeLister {
-	return &trainingRuntimeLister{indexer: indexer}
-}
-
-// List lists all TrainingRuntimes in the indexer.
-func (s *trainingRuntimeLister) List(selector labels.Selector) (ret []*v2alpha1.TrainingRuntime, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.TrainingRuntime))
-	})
-	return ret, err
+	return &trainingRuntimeLister{listers.New[*v2alpha1.TrainingRuntime](indexer, v2alpha1.Resource("trainingruntime"))}
 }
 
 // TrainingRuntimes returns an object that can list and get TrainingRuntimes.
 func (s *trainingRuntimeLister) TrainingRuntimes(namespace string) TrainingRuntimeNamespaceLister {
-	return trainingRuntimeNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return trainingRuntimeNamespaceLister{listers.NewNamespaced[*v2alpha1.TrainingRuntime](s.ResourceIndexer, namespace)}
 }
 
 // TrainingRuntimeNamespaceLister helps list and get TrainingRuntimes.
@@ -72,26 +64,5 @@ type TrainingRuntimeNamespaceLister interface {
 // trainingRuntimeNamespaceLister implements the TrainingRuntimeNamespaceLister
 // interface.
 type trainingRuntimeNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all TrainingRuntimes in the indexer for a given namespace.
-func (s trainingRuntimeNamespaceLister) List(selector labels.Selector) (ret []*v2alpha1.TrainingRuntime, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.TrainingRuntime))
-	})
-	return ret, err
-}
-
-// Get retrieves the TrainingRuntime from the indexer for a given namespace and name.
-func (s trainingRuntimeNamespaceLister) Get(name string) (*v2alpha1.TrainingRuntime, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2alpha1.Resource("trainingruntime"), name)
-	}
-	return obj.(*v2alpha1.TrainingRuntime), nil
+	listers.ResourceIndexer[*v2alpha1.TrainingRuntime]
 }

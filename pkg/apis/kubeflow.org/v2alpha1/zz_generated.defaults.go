@@ -20,6 +20,7 @@
 package v2alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -29,6 +30,8 @@ import (
 func RegisterDefaults(scheme *runtime.Scheme) error {
 	scheme.AddTypeDefaultingFunc(&ClusterTrainingRuntime{}, func(obj interface{}) { SetObjectDefaults_ClusterTrainingRuntime(obj.(*ClusterTrainingRuntime)) })
 	scheme.AddTypeDefaultingFunc(&ClusterTrainingRuntimeList{}, func(obj interface{}) { SetObjectDefaults_ClusterTrainingRuntimeList(obj.(*ClusterTrainingRuntimeList)) })
+	scheme.AddTypeDefaultingFunc(&TrainJob{}, func(obj interface{}) { SetObjectDefaults_TrainJob(obj.(*TrainJob)) })
+	scheme.AddTypeDefaultingFunc(&TrainJobList{}, func(obj interface{}) { SetObjectDefaults_TrainJobList(obj.(*TrainJobList)) })
 	scheme.AddTypeDefaultingFunc(&TrainingRuntime{}, func(obj interface{}) { SetObjectDefaults_TrainingRuntime(obj.(*TrainingRuntime)) })
 	scheme.AddTypeDefaultingFunc(&TrainingRuntimeList{}, func(obj interface{}) { SetObjectDefaults_TrainingRuntimeList(obj.(*TrainingRuntimeList)) })
 	return nil
@@ -37,6 +40,51 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 func SetObjectDefaults_ClusterTrainingRuntime(in *ClusterTrainingRuntime) {
 	for i := range in.Spec.Template.Spec.ReplicatedJobs {
 		a := &in.Spec.Template.Spec.ReplicatedJobs[i]
+		for j := range a.Template.Spec.Template.Spec.Volumes {
+			b := &a.Template.Spec.Template.Spec.Volumes[j]
+			if b.VolumeSource.ISCSI != nil {
+				if b.VolumeSource.ISCSI.ISCSIInterface == "" {
+					b.VolumeSource.ISCSI.ISCSIInterface = "default"
+				}
+			}
+			if b.VolumeSource.RBD != nil {
+				if b.VolumeSource.RBD.RBDPool == "" {
+					b.VolumeSource.RBD.RBDPool = "rbd"
+				}
+				if b.VolumeSource.RBD.RadosUser == "" {
+					b.VolumeSource.RBD.RadosUser = "admin"
+				}
+				if b.VolumeSource.RBD.Keyring == "" {
+					b.VolumeSource.RBD.Keyring = "/etc/ceph/keyring"
+				}
+			}
+			if b.VolumeSource.AzureDisk != nil {
+				if b.VolumeSource.AzureDisk.CachingMode == nil {
+					ptrVar1 := v1.AzureDataDiskCachingMode(v1.AzureDataDiskCachingReadWrite)
+					b.VolumeSource.AzureDisk.CachingMode = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.FSType == nil {
+					var ptrVar1 string = "ext4"
+					b.VolumeSource.AzureDisk.FSType = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.ReadOnly == nil {
+					var ptrVar1 bool = false
+					b.VolumeSource.AzureDisk.ReadOnly = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.Kind == nil {
+					ptrVar1 := v1.AzureDataDiskKind(v1.AzureSharedBlobDisk)
+					b.VolumeSource.AzureDisk.Kind = &ptrVar1
+				}
+			}
+			if b.VolumeSource.ScaleIO != nil {
+				if b.VolumeSource.ScaleIO.StorageMode == "" {
+					b.VolumeSource.ScaleIO.StorageMode = "ThinProvisioned"
+				}
+				if b.VolumeSource.ScaleIO.FSType == "" {
+					b.VolumeSource.ScaleIO.FSType = "xfs"
+				}
+			}
+		}
 		for j := range a.Template.Spec.Template.Spec.InitContainers {
 			b := &a.Template.Spec.Template.Spec.InitContainers[j]
 			for k := range b.Ports {
@@ -146,9 +194,112 @@ func SetObjectDefaults_ClusterTrainingRuntimeList(in *ClusterTrainingRuntimeList
 	}
 }
 
+func SetObjectDefaults_TrainJob(in *TrainJob) {
+	for i := range in.Spec.PodSpecOverrides {
+		a := &in.Spec.PodSpecOverrides[i]
+		for j := range a.Volumes {
+			b := &a.Volumes[j]
+			if b.VolumeSource.ISCSI != nil {
+				if b.VolumeSource.ISCSI.ISCSIInterface == "" {
+					b.VolumeSource.ISCSI.ISCSIInterface = "default"
+				}
+			}
+			if b.VolumeSource.RBD != nil {
+				if b.VolumeSource.RBD.RBDPool == "" {
+					b.VolumeSource.RBD.RBDPool = "rbd"
+				}
+				if b.VolumeSource.RBD.RadosUser == "" {
+					b.VolumeSource.RBD.RadosUser = "admin"
+				}
+				if b.VolumeSource.RBD.Keyring == "" {
+					b.VolumeSource.RBD.Keyring = "/etc/ceph/keyring"
+				}
+			}
+			if b.VolumeSource.AzureDisk != nil {
+				if b.VolumeSource.AzureDisk.CachingMode == nil {
+					ptrVar1 := v1.AzureDataDiskCachingMode(v1.AzureDataDiskCachingReadWrite)
+					b.VolumeSource.AzureDisk.CachingMode = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.FSType == nil {
+					var ptrVar1 string = "ext4"
+					b.VolumeSource.AzureDisk.FSType = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.ReadOnly == nil {
+					var ptrVar1 bool = false
+					b.VolumeSource.AzureDisk.ReadOnly = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.Kind == nil {
+					ptrVar1 := v1.AzureDataDiskKind(v1.AzureSharedBlobDisk)
+					b.VolumeSource.AzureDisk.Kind = &ptrVar1
+				}
+			}
+			if b.VolumeSource.ScaleIO != nil {
+				if b.VolumeSource.ScaleIO.StorageMode == "" {
+					b.VolumeSource.ScaleIO.StorageMode = "ThinProvisioned"
+				}
+				if b.VolumeSource.ScaleIO.FSType == "" {
+					b.VolumeSource.ScaleIO.FSType = "xfs"
+				}
+			}
+		}
+	}
+}
+
+func SetObjectDefaults_TrainJobList(in *TrainJobList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_TrainJob(a)
+	}
+}
+
 func SetObjectDefaults_TrainingRuntime(in *TrainingRuntime) {
 	for i := range in.Spec.Template.Spec.ReplicatedJobs {
 		a := &in.Spec.Template.Spec.ReplicatedJobs[i]
+		for j := range a.Template.Spec.Template.Spec.Volumes {
+			b := &a.Template.Spec.Template.Spec.Volumes[j]
+			if b.VolumeSource.ISCSI != nil {
+				if b.VolumeSource.ISCSI.ISCSIInterface == "" {
+					b.VolumeSource.ISCSI.ISCSIInterface = "default"
+				}
+			}
+			if b.VolumeSource.RBD != nil {
+				if b.VolumeSource.RBD.RBDPool == "" {
+					b.VolumeSource.RBD.RBDPool = "rbd"
+				}
+				if b.VolumeSource.RBD.RadosUser == "" {
+					b.VolumeSource.RBD.RadosUser = "admin"
+				}
+				if b.VolumeSource.RBD.Keyring == "" {
+					b.VolumeSource.RBD.Keyring = "/etc/ceph/keyring"
+				}
+			}
+			if b.VolumeSource.AzureDisk != nil {
+				if b.VolumeSource.AzureDisk.CachingMode == nil {
+					ptrVar1 := v1.AzureDataDiskCachingMode(v1.AzureDataDiskCachingReadWrite)
+					b.VolumeSource.AzureDisk.CachingMode = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.FSType == nil {
+					var ptrVar1 string = "ext4"
+					b.VolumeSource.AzureDisk.FSType = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.ReadOnly == nil {
+					var ptrVar1 bool = false
+					b.VolumeSource.AzureDisk.ReadOnly = &ptrVar1
+				}
+				if b.VolumeSource.AzureDisk.Kind == nil {
+					ptrVar1 := v1.AzureDataDiskKind(v1.AzureSharedBlobDisk)
+					b.VolumeSource.AzureDisk.Kind = &ptrVar1
+				}
+			}
+			if b.VolumeSource.ScaleIO != nil {
+				if b.VolumeSource.ScaleIO.StorageMode == "" {
+					b.VolumeSource.ScaleIO.StorageMode = "ThinProvisioned"
+				}
+				if b.VolumeSource.ScaleIO.FSType == "" {
+					b.VolumeSource.ScaleIO.FSType = "xfs"
+				}
+			}
+		}
 		for j := range a.Template.Spec.Template.Spec.InitContainers {
 			b := &a.Template.Spec.Template.Spec.InitContainers[j]
 			for k := range b.Ports {

@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// InputModelApplyConfiguration represents an declarative configuration of the InputModel type for use
+// InputModelApplyConfiguration represents a declarative configuration of the InputModel type for use
 // with apply.
 type InputModelApplyConfiguration struct {
 	StorageUri *string                  `json:"storageUri,omitempty"`
@@ -28,7 +28,7 @@ type InputModelApplyConfiguration struct {
 	SecretRef  *v1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
-// InputModelApplyConfiguration constructs an declarative configuration of the InputModel type for use with
+// InputModelApplyConfiguration constructs a declarative configuration of the InputModel type for use with
 // apply.
 func InputModel() *InputModelApplyConfiguration {
 	return &InputModelApplyConfiguration{}

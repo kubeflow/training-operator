@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// XGBoostJobApplyConfiguration represents an declarative configuration of the XGBoostJob type for use
+// XGBoostJobApplyConfiguration represents a declarative configuration of the XGBoostJob type for use
 // with apply.
 type XGBoostJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type XGBoostJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration      `json:"status,omitempty"`
 }
 
-// XGBoostJob constructs an declarative configuration of the XGBoostJob type for use with
+// XGBoostJob constructs a declarative configuration of the XGBoostJob type for use with
 // apply.
 func XGBoostJob(name, namespace string) *XGBoostJobApplyConfiguration {
 	b := &XGBoostJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *XGBoostJobApplyConfiguration) WithSpec(value *XGBoostJobSpecApplyConfig
 func (b *XGBoostJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *XGBoostJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *XGBoostJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

@@ -16,13 +16,13 @@
 
 package v2alpha1
 
-// PodSpecOverrideTargetJobApplyConfiguration represents an declarative configuration of the PodSpecOverrideTargetJob type for use
+// PodSpecOverrideTargetJobApplyConfiguration represents a declarative configuration of the PodSpecOverrideTargetJob type for use
 // with apply.
 type PodSpecOverrideTargetJobApplyConfiguration struct {
 	Name *string `json:"name,omitempty"`
 }
 
-// PodSpecOverrideTargetJobApplyConfiguration constructs an declarative configuration of the PodSpecOverrideTargetJob type for use with
+// PodSpecOverrideTargetJobApplyConfiguration constructs a declarative configuration of the PodSpecOverrideTargetJob type for use with
 // apply.
 func PodSpecOverrideTargetJob() *PodSpecOverrideTargetJobApplyConfiguration {
 	return &PodSpecOverrideTargetJobApplyConfiguration{}

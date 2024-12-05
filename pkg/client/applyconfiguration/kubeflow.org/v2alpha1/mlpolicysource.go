@@ -16,14 +16,14 @@
 
 package v2alpha1
 
-// MLPolicySourceApplyConfiguration represents an declarative configuration of the MLPolicySource type for use
+// MLPolicySourceApplyConfiguration represents a declarative configuration of the MLPolicySource type for use
 // with apply.
 type MLPolicySourceApplyConfiguration struct {
 	Torch *TorchMLPolicySourceApplyConfiguration `json:"torch,omitempty"`
 	MPI   *MPIMLPolicySourceApplyConfiguration   `json:"mpi,omitempty"`
 }
 
-// MLPolicySourceApplyConfiguration constructs an declarative configuration of the MLPolicySource type for use with
+// MLPolicySourceApplyConfiguration constructs a declarative configuration of the MLPolicySource type for use with
 // apply.
 func MLPolicySource() *MLPolicySourceApplyConfiguration {
 	return &MLPolicySourceApplyConfiguration{}

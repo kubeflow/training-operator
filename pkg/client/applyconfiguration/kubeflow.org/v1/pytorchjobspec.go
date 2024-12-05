@@ -20,7 +20,7 @@ import (
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// PyTorchJobSpecApplyConfiguration represents an declarative configuration of the PyTorchJobSpec type for use
+// PyTorchJobSpecApplyConfiguration represents a declarative configuration of the PyTorchJobSpec type for use
 // with apply.
 type PyTorchJobSpecApplyConfiguration struct {
 	RunPolicy           *RunPolicyApplyConfiguration                             `json:"runPolicy,omitempty"`
@@ -29,7 +29,7 @@ type PyTorchJobSpecApplyConfiguration struct {
 	NprocPerNode        *string                                                  `json:"nprocPerNode,omitempty"`
 }
 
-// PyTorchJobSpecApplyConfiguration constructs an declarative configuration of the PyTorchJobSpec type for use with
+// PyTorchJobSpecApplyConfiguration constructs a declarative configuration of the PyTorchJobSpec type for use with
 // apply.
 func PyTorchJobSpec() *PyTorchJobSpecApplyConfiguration {
 	return &PyTorchJobSpecApplyConfiguration{}

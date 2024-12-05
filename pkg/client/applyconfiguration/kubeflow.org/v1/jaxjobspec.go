@@ -20,14 +20,14 @@ import (
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// JAXJobSpecApplyConfiguration represents an declarative configuration of the JAXJobSpec type for use
+// JAXJobSpecApplyConfiguration represents a declarative configuration of the JAXJobSpec type for use
 // with apply.
 type JAXJobSpecApplyConfiguration struct {
 	RunPolicy       *RunPolicyApplyConfiguration                             `json:"runPolicy,omitempty"`
 	JAXReplicaSpecs map[kubefloworgv1.ReplicaType]*kubefloworgv1.ReplicaSpec `json:"jaxReplicaSpecs,omitempty"`
 }
 
-// JAXJobSpecApplyConfiguration constructs an declarative configuration of the JAXJobSpec type for use with
+// JAXJobSpecApplyConfiguration constructs a declarative configuration of the JAXJobSpec type for use with
 // apply.
 func JAXJobSpec() *JAXJobSpecApplyConfiguration {
 	return &JAXJobSpecApplyConfiguration{}

@@ -78,7 +78,7 @@ func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSched
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		WorkQueue:                   &util.FakeWorkQueue{},
+		WorkQueue:                   &util.FakeWorkQueue[string]{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),

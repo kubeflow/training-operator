@@ -18,8 +18,8 @@ package v2alpha1
 
 import (
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -37,30 +37,10 @@ type ClusterTrainingRuntimeLister interface {
 
 // clusterTrainingRuntimeLister implements the ClusterTrainingRuntimeLister interface.
 type clusterTrainingRuntimeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v2alpha1.ClusterTrainingRuntime]
 }
 
 // NewClusterTrainingRuntimeLister returns a new ClusterTrainingRuntimeLister.
 func NewClusterTrainingRuntimeLister(indexer cache.Indexer) ClusterTrainingRuntimeLister {
-	return &clusterTrainingRuntimeLister{indexer: indexer}
-}
-
-// List lists all ClusterTrainingRuntimes in the indexer.
-func (s *clusterTrainingRuntimeLister) List(selector labels.Selector) (ret []*v2alpha1.ClusterTrainingRuntime, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v2alpha1.ClusterTrainingRuntime))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterTrainingRuntime from the index for a given name.
-func (s *clusterTrainingRuntimeLister) Get(name string) (*v2alpha1.ClusterTrainingRuntime, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v2alpha1.Resource("clustertrainingruntime"), name)
-	}
-	return obj.(*v2alpha1.ClusterTrainingRuntime), nil
+	return &clusterTrainingRuntimeLister{listers.New[*v2alpha1.ClusterTrainingRuntime](indexer, v2alpha1.Resource("clustertrainingruntime"))}
 }

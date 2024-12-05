@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// PaddleJobApplyConfiguration represents an declarative configuration of the PaddleJob type for use
+// PaddleJobApplyConfiguration represents a declarative configuration of the PaddleJob type for use
 // with apply.
 type PaddleJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type PaddleJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration     `json:"status,omitempty"`
 }
 
-// PaddleJob constructs an declarative configuration of the PaddleJob type for use with
+// PaddleJob constructs a declarative configuration of the PaddleJob type for use with
 // apply.
 func PaddleJob(name, namespace string) *PaddleJobApplyConfiguration {
 	b := &PaddleJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *PaddleJobApplyConfiguration) WithSpec(value *PaddleJobSpecApplyConfigur
 func (b *PaddleJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *PaddleJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *PaddleJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

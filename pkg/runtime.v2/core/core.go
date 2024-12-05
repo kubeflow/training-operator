@@ -25,8 +25,8 @@ import (
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=trainingruntimes,verbs=get;list;watch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=clustertrainingruntimes,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=trainingruntimes,verbs=get;list;watch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=clustertrainingruntimes,verbs=get;list;watch
 
 func New(ctx context.Context, client client.Client, indexer client.FieldIndexer) (map[string]runtime.Runtime, error) {
 	registry := NewRuntimeRegistry()

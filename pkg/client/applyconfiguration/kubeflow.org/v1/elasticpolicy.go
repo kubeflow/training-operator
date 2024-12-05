@@ -21,7 +21,7 @@ import (
 	v2 "k8s.io/api/autoscaling/v2"
 )
 
-// ElasticPolicyApplyConfiguration represents an declarative configuration of the ElasticPolicy type for use
+// ElasticPolicyApplyConfiguration represents a declarative configuration of the ElasticPolicy type for use
 // with apply.
 type ElasticPolicyApplyConfiguration struct {
 	MinReplicas  *int32                       `json:"minReplicas,omitempty"`
@@ -37,7 +37,7 @@ type ElasticPolicyApplyConfiguration struct {
 	Metrics      []v2.MetricSpec              `json:"metrics,omitempty"`
 }
 
-// ElasticPolicyApplyConfiguration constructs an declarative configuration of the ElasticPolicy type for use with
+// ElasticPolicyApplyConfiguration constructs a declarative configuration of the ElasticPolicy type for use with
 // apply.
 func ElasticPolicy() *ElasticPolicyApplyConfiguration {
 	return &ElasticPolicyApplyConfiguration{}

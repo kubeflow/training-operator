@@ -18,8 +18,8 @@ package v1
 
 import (
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -36,25 +36,17 @@ type XGBoostJobLister interface {
 
 // xGBoostJobLister implements the XGBoostJobLister interface.
 type xGBoostJobLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.XGBoostJob]
 }
 
 // NewXGBoostJobLister returns a new XGBoostJobLister.
 func NewXGBoostJobLister(indexer cache.Indexer) XGBoostJobLister {
-	return &xGBoostJobLister{indexer: indexer}
-}
-
-// List lists all XGBoostJobs in the indexer.
-func (s *xGBoostJobLister) List(selector labels.Selector) (ret []*v1.XGBoostJob, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.XGBoostJob))
-	})
-	return ret, err
+	return &xGBoostJobLister{listers.New[*v1.XGBoostJob](indexer, v1.Resource("xgboostjob"))}
 }
 
 // XGBoostJobs returns an object that can list and get XGBoostJobs.
 func (s *xGBoostJobLister) XGBoostJobs(namespace string) XGBoostJobNamespaceLister {
-	return xGBoostJobNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return xGBoostJobNamespaceLister{listers.NewNamespaced[*v1.XGBoostJob](s.ResourceIndexer, namespace)}
 }
 
 // XGBoostJobNamespaceLister helps list and get XGBoostJobs.
@@ -72,26 +64,5 @@ type XGBoostJobNamespaceLister interface {
 // xGBoostJobNamespaceLister implements the XGBoostJobNamespaceLister
 // interface.
 type xGBoostJobNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all XGBoostJobs in the indexer for a given namespace.
-func (s xGBoostJobNamespaceLister) List(selector labels.Selector) (ret []*v1.XGBoostJob, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.XGBoostJob))
-	})
-	return ret, err
-}
-
-// Get retrieves the XGBoostJob from the indexer for a given namespace and name.
-func (s xGBoostJobNamespaceLister) Get(name string) (*v1.XGBoostJob, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("xgboostjob"), name)
-	}
-	return obj.(*v1.XGBoostJob), nil
+	listers.ResourceIndexer[*v1.XGBoostJob]
 }

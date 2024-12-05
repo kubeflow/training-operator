@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// MPIJobApplyConfiguration represents an declarative configuration of the MPIJob type for use
+// MPIJobApplyConfiguration represents a declarative configuration of the MPIJob type for use
 // with apply.
 type MPIJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type MPIJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration  `json:"status,omitempty"`
 }
 
-// MPIJob constructs an declarative configuration of the MPIJob type for use with
+// MPIJob constructs a declarative configuration of the MPIJob type for use with
 // apply.
 func MPIJob(name, namespace string) *MPIJobApplyConfiguration {
 	b := &MPIJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *MPIJobApplyConfiguration) WithSpec(value *MPIJobSpecApplyConfiguration)
 func (b *MPIJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *MPIJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *MPIJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

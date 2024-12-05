@@ -42,22 +42,24 @@ var paddlejobsKind = v1.SchemeGroupVersion.WithKind("PaddleJob")
 
 // Get takes name of the paddleJob, and returns the corresponding paddleJob object, and an error if there is any.
 func (c *FakePaddleJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.PaddleJob, err error) {
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(paddlejobsResource, c.ns, name), &v1.PaddleJob{})
+		Invokes(testing.NewGetActionWithOptions(paddlejobsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
 
 // List takes label and field selectors, and returns the list of PaddleJobs that match those selectors.
 func (c *FakePaddleJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.PaddleJobList, err error) {
+	emptyResult := &v1.PaddleJobList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(paddlejobsResource, paddlejobsKind, c.ns, opts), &v1.PaddleJobList{})
+		Invokes(testing.NewListActionWithOptions(paddlejobsResource, paddlejobsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -76,40 +78,43 @@ func (c *FakePaddleJobs) List(ctx context.Context, opts metav1.ListOptions) (res
 // Watch returns a watch.Interface that watches the requested paddleJobs.
 func (c *FakePaddleJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(paddlejobsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(paddlejobsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a paddleJob and creates it.  Returns the server's representation of the paddleJob, and an error, if there is any.
 func (c *FakePaddleJobs) Create(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.CreateOptions) (result *v1.PaddleJob, err error) {
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(paddlejobsResource, c.ns, paddleJob), &v1.PaddleJob{})
+		Invokes(testing.NewCreateActionWithOptions(paddlejobsResource, c.ns, paddleJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
 
 // Update takes the representation of a paddleJob and updates it. Returns the server's representation of the paddleJob, and an error, if there is any.
 func (c *FakePaddleJobs) Update(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (result *v1.PaddleJob, err error) {
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(paddlejobsResource, c.ns, paddleJob), &v1.PaddleJob{})
+		Invokes(testing.NewUpdateActionWithOptions(paddlejobsResource, c.ns, paddleJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePaddleJobs) UpdateStatus(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (*v1.PaddleJob, error) {
+func (c *FakePaddleJobs) UpdateStatus(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (result *v1.PaddleJob, err error) {
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(paddlejobsResource, "status", c.ns, paddleJob), &v1.PaddleJob{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(paddlejobsResource, "status", c.ns, paddleJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
@@ -124,7 +129,7 @@ func (c *FakePaddleJobs) Delete(ctx context.Context, name string, opts metav1.De
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakePaddleJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(paddlejobsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(paddlejobsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.PaddleJobList{})
 	return err
@@ -132,11 +137,12 @@ func (c *FakePaddleJobs) DeleteCollection(ctx context.Context, opts metav1.Delet
 
 // Patch applies the patch and returns the patched paddleJob.
 func (c *FakePaddleJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PaddleJob, err error) {
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(paddlejobsResource, c.ns, name, pt, data, subresources...), &v1.PaddleJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(paddlejobsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
@@ -154,11 +160,12 @@ func (c *FakePaddleJobs) Apply(ctx context.Context, paddleJob *kubefloworgv1.Pad
 	if name == nil {
 		return nil, fmt.Errorf("paddleJob.Name must be provided to Apply")
 	}
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(paddlejobsResource, c.ns, *name, types.ApplyPatchType, data), &v1.PaddleJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(paddlejobsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }
@@ -177,11 +184,12 @@ func (c *FakePaddleJobs) ApplyStatus(ctx context.Context, paddleJob *kubefloworg
 	if name == nil {
 		return nil, fmt.Errorf("paddleJob.Name must be provided to Apply")
 	}
+	emptyResult := &v1.PaddleJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(paddlejobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.PaddleJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(paddlejobsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions(), "status"), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.PaddleJob), err
 }

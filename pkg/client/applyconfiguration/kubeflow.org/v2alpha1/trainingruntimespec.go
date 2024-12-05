@@ -16,7 +16,7 @@
 
 package v2alpha1
 
-// TrainingRuntimeSpecApplyConfiguration represents an declarative configuration of the TrainingRuntimeSpec type for use
+// TrainingRuntimeSpecApplyConfiguration represents a declarative configuration of the TrainingRuntimeSpec type for use
 // with apply.
 type TrainingRuntimeSpecApplyConfiguration struct {
 	MLPolicy       *MLPolicyApplyConfiguration           `json:"mlPolicy,omitempty"`
@@ -24,7 +24,7 @@ type TrainingRuntimeSpecApplyConfiguration struct {
 	Template       *JobSetTemplateSpecApplyConfiguration `json:"template,omitempty"`
 }
 
-// TrainingRuntimeSpecApplyConfiguration constructs an declarative configuration of the TrainingRuntimeSpec type for use with
+// TrainingRuntimeSpecApplyConfiguration constructs a declarative configuration of the TrainingRuntimeSpec type for use with
 // apply.
 func TrainingRuntimeSpec() *TrainingRuntimeSpecApplyConfiguration {
 	return &TrainingRuntimeSpecApplyConfiguration{}

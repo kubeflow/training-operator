@@ -16,7 +16,7 @@
 
 package v2alpha1
 
-// RuntimeRefApplyConfiguration represents an declarative configuration of the RuntimeRef type for use
+// RuntimeRefApplyConfiguration represents a declarative configuration of the RuntimeRef type for use
 // with apply.
 type RuntimeRefApplyConfiguration struct {
 	Name     *string `json:"name,omitempty"`
@@ -24,7 +24,7 @@ type RuntimeRefApplyConfiguration struct {
 	Kind     *string `json:"kind,omitempty"`
 }
 
-// RuntimeRefApplyConfiguration constructs an declarative configuration of the RuntimeRef type for use with
+// RuntimeRefApplyConfiguration constructs a declarative configuration of the RuntimeRef type for use with
 // apply.
 func RuntimeRef() *RuntimeRefApplyConfiguration {
 	return &RuntimeRefApplyConfiguration{}

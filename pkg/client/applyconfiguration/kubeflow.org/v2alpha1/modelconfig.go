@@ -16,14 +16,14 @@
 
 package v2alpha1
 
-// ModelConfigApplyConfiguration represents an declarative configuration of the ModelConfig type for use
+// ModelConfigApplyConfiguration represents a declarative configuration of the ModelConfig type for use
 // with apply.
 type ModelConfigApplyConfiguration struct {
 	Input  *InputModelApplyConfiguration  `json:"input,omitempty"`
 	Output *OutputModelApplyConfiguration `json:"output,omitempty"`
 }
 
-// ModelConfigApplyConfiguration constructs an declarative configuration of the ModelConfig type for use with
+// ModelConfigApplyConfiguration constructs a declarative configuration of the ModelConfig type for use with
 // apply.
 func ModelConfig() *ModelConfigApplyConfiguration {
 	return &ModelConfigApplyConfiguration{}

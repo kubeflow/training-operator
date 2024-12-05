@@ -20,7 +20,7 @@ import (
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// PaddleJobSpecApplyConfiguration represents an declarative configuration of the PaddleJobSpec type for use
+// PaddleJobSpecApplyConfiguration represents a declarative configuration of the PaddleJobSpec type for use
 // with apply.
 type PaddleJobSpecApplyConfiguration struct {
 	RunPolicy          *RunPolicyApplyConfiguration                             `json:"runPolicy,omitempty"`
@@ -28,7 +28,7 @@ type PaddleJobSpecApplyConfiguration struct {
 	PaddleReplicaSpecs map[kubefloworgv1.ReplicaType]*kubefloworgv1.ReplicaSpec `json:"paddleReplicaSpecs,omitempty"`
 }
 
-// PaddleJobSpecApplyConfiguration constructs an declarative configuration of the PaddleJobSpec type for use with
+// PaddleJobSpecApplyConfiguration constructs a declarative configuration of the PaddleJobSpec type for use with
 // apply.
 func PaddleJobSpec() *PaddleJobSpecApplyConfiguration {
 	return &PaddleJobSpecApplyConfiguration{}

@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// PodSpecOverrideApplyConfiguration represents an declarative configuration of the PodSpecOverride type for use
+// PodSpecOverrideApplyConfiguration represents a declarative configuration of the PodSpecOverride type for use
 // with apply.
 type PodSpecOverrideApplyConfiguration struct {
 	TargetJobs         []PodSpecOverrideTargetJobApplyConfiguration `json:"targetJobs,omitempty"`
@@ -32,7 +32,7 @@ type PodSpecOverrideApplyConfiguration struct {
 	Tolerations        []v1.Toleration                              `json:"tolerations,omitempty"`
 }
 
-// PodSpecOverrideApplyConfiguration constructs an declarative configuration of the PodSpecOverride type for use with
+// PodSpecOverrideApplyConfiguration constructs a declarative configuration of the PodSpecOverride type for use with
 // apply.
 func PodSpecOverride() *PodSpecOverrideApplyConfiguration {
 	return &PodSpecOverrideApplyConfiguration{}

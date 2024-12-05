@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// ContainerOverrideApplyConfiguration represents an declarative configuration of the ContainerOverride type for use
+// ContainerOverrideApplyConfiguration represents a declarative configuration of the ContainerOverride type for use
 // with apply.
 type ContainerOverrideApplyConfiguration struct {
 	Name         *string            `json:"name,omitempty"`
@@ -31,7 +31,7 @@ type ContainerOverrideApplyConfiguration struct {
 	VolumeMounts []v1.VolumeMount   `json:"volumeMounts,omitempty"`
 }
 
-// ContainerOverrideApplyConfiguration constructs an declarative configuration of the ContainerOverride type for use with
+// ContainerOverrideApplyConfiguration constructs a declarative configuration of the ContainerOverride type for use with
 // apply.
 func ContainerOverride() *ContainerOverrideApplyConfiguration {
 	return &ContainerOverrideApplyConfiguration{}

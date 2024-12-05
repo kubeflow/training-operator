@@ -16,13 +16,13 @@
 
 package v2alpha1
 
-// PodGroupPolicySourceApplyConfiguration represents an declarative configuration of the PodGroupPolicySource type for use
+// PodGroupPolicySourceApplyConfiguration represents a declarative configuration of the PodGroupPolicySource type for use
 // with apply.
 type PodGroupPolicySourceApplyConfiguration struct {
 	Coscheduling *CoschedulingPodGroupPolicySourceApplyConfiguration `json:"coscheduling,omitempty"`
 }
 
-// PodGroupPolicySourceApplyConfiguration constructs an declarative configuration of the PodGroupPolicySource type for use with
+// PodGroupPolicySourceApplyConfiguration constructs a declarative configuration of the PodGroupPolicySource type for use with
 // apply.
 func PodGroupPolicySource() *PodGroupPolicySourceApplyConfiguration {
 	return &PodGroupPolicySourceApplyConfiguration{}
