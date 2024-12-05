@@ -94,13 +94,10 @@ func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, fie
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 	if spec.ElasticPolicy != nil {
-		workerReplicaSpec, ok := spec.PyTorchReplicaSpecs[trainingoperator.PyTorchJobReplicaTypeWorker]
-		workerPath := specPath.Child("pytorchReplicaSpecs").Child("Worker")
+		_, ok := spec.PyTorchReplicaSpecs[trainingoperator.PyTorchJobReplicaTypeWorker]
+		workerPath := pytorchReplicaSpecPath.Key(string(trainingoperator.PyTorchJobReplicaTypeWorker))
 		if !ok {
 			allErrs = append(allErrs, field.Required(workerPath, "must be configured if elastic policy is used"))
-		} else if workerReplicaSpec.Replicas != nil && int(*workerReplicaSpec.Replicas) < 1 {
-			workerReplicasPath := workerPath.Child("replicas")
-			allErrs = append(allErrs, field.Forbidden(workerReplicasPath, "must be at least 1 worker if elastic policy is used"))
 		}
 		if spec.ElasticPolicy.NProcPerNode != nil {
 			elasticNProcPerNodePath := specPath.Child("elasticPolicy").Child("nProcPerNode")
@@ -156,6 +153,8 @@ func validatePyTorchReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*traini
 			if rSpec.Replicas == nil || int(*rSpec.Replicas) != 1 {
 				allErrs = append(allErrs, field.Forbidden(rolePath.Child("replicas"), "must be 1"))
 			}
+		} else if rSpec.Replicas != nil && int(*rSpec.Replicas) < 1 {
+			allErrs = append(allErrs, field.Forbidden(rolePath.Child("replicas"), "must be at least 1"))
 		}
 	}
 	return allErrs

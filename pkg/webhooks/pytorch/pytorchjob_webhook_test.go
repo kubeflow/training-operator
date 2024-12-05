@@ -389,10 +389,10 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Required(field.NewPath("spec", "pytorchReplicaSpecs", "Worker"), "must be configured if elastic policy is used"),
+				field.Required(pytorchReplicaSpecPath.Key(string(trainingoperator.PyTorchJobReplicaTypeWorker)), ""),
 			},
 		},
-		"attempt to configure elasticPolicy when worker replicas is 0": {
+		"attempt to configure worker with 0 replicas": {
 			pytorchJob: &trainingoperator.PyTorchJob{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
@@ -417,7 +417,7 @@ func TestValidateV1PyTorchJob(t *testing.T) {
 				},
 			},
 			wantErr: field.ErrorList{
-				field.Forbidden(field.NewPath("spec", "pytorchReplicaSpecs", "Worker", "replicas"), "must be at least 1 if elastic policy is used"),
+				field.Forbidden(pytorchReplicaSpecPath.Key(string(trainingoperator.PyTorchJobReplicaTypeWorker)).Child("replicas"), ""),
 			},
 		},
 	}
