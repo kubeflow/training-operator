@@ -199,7 +199,7 @@
         "spec": {
           "description": "Specification of the desired JobSet which will be created from TrainJob.",
           "default": {},
-          "$ref": "#/definitions/sigs.k8s.io.jobset.api.jobset.v1alpha2.JobSetSpec"
+          "$ref": "#/definitions/jobset.v1alpha2.JobSetSpec"
         }
       }
     },

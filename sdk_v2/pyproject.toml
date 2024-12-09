@@ -30,7 +30,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = ["kubernetes>=27.2.0"]
+dependencies = [
+    "kubernetes>=27.2.0",
+    "jobset @ git+https://github.com/kubernetes-sigs/jobset.git@v0.6.0#subdirectory=sdk/python",
+]
 
 [project.urls]
 Homepage = "https://github.com/kubeflow/training-operator"
@@ -42,3 +45,6 @@ packages = ["kubeflow"]
 
 [tool.hatch.version]
 path = "kubeflow/training/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true

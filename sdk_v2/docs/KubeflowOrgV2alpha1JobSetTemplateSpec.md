@@ -5,7 +5,7 @@ JobSetTemplateSpec represents a template of the desired JobSet.
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **metadata** | [**V1ObjectMeta**](V1ObjectMeta.md) |  | [optional] 
-**spec** | [**SigsK8sIoJobsetApiJobsetV1alpha2JobSetSpec**](SigsK8sIoJobsetApiJobsetV1alpha2JobSetSpec.md) |  | [optional] 
+**spec** | [**JobsetV1alpha2JobSetSpec**](JobsetV1alpha2JobSetSpec.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
