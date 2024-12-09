@@ -23,14 +23,14 @@ import (
 	v1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
-// JobSetTemplateSpecApplyConfiguration represents an declarative configuration of the JobSetTemplateSpec type for use
+// JobSetTemplateSpecApplyConfiguration represents a declarative configuration of the JobSetTemplateSpec type for use
 // with apply.
 type JobSetTemplateSpecApplyConfiguration struct {
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *v1alpha2.JobSetSpec `json:"spec,omitempty"`
 }
 
-// JobSetTemplateSpecApplyConfiguration constructs an declarative configuration of the JobSetTemplateSpec type for use with
+// JobSetTemplateSpecApplyConfiguration constructs a declarative configuration of the JobSetTemplateSpec type for use with
 // apply.
 func JobSetTemplateSpec() *JobSetTemplateSpecApplyConfiguration {
 	return &JobSetTemplateSpecApplyConfiguration{}
@@ -184,4 +184,10 @@ func (b *JobSetTemplateSpecApplyConfiguration) ensureObjectMetaApplyConfiguratio
 func (b *JobSetTemplateSpecApplyConfiguration) WithSpec(value v1alpha2.JobSetSpec) *JobSetTemplateSpecApplyConfiguration {
 	b.Spec = &value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *JobSetTemplateSpecApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

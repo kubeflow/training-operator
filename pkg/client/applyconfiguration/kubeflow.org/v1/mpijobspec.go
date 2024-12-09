@@ -20,7 +20,7 @@ import (
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// MPIJobSpecApplyConfiguration represents an declarative configuration of the MPIJobSpec type for use
+// MPIJobSpecApplyConfiguration represents a declarative configuration of the MPIJobSpec type for use
 // with apply.
 type MPIJobSpecApplyConfiguration struct {
 	SlotsPerWorker  *int32                             `json:"slotsPerWorker,omitempty"`
@@ -30,7 +30,7 @@ type MPIJobSpecApplyConfiguration struct {
 	RunPolicy       *RunPolicyApplyConfiguration       `json:"runPolicy,omitempty"`
 }
 
-// MPIJobSpecApplyConfiguration constructs an declarative configuration of the MPIJobSpec type for use with
+// MPIJobSpecApplyConfiguration constructs a declarative configuration of the MPIJobSpec type for use with
 // apply.
 func MPIJobSpec() *MPIJobSpecApplyConfiguration {
 	return &MPIJobSpecApplyConfiguration{}

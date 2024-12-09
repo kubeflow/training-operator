@@ -20,14 +20,14 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// TrainJobStatusApplyConfiguration represents an declarative configuration of the TrainJobStatus type for use
+// TrainJobStatusApplyConfiguration represents a declarative configuration of the TrainJobStatus type for use
 // with apply.
 type TrainJobStatusApplyConfiguration struct {
 	Conditions []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 	JobsStatus []JobStatusApplyConfiguration    `json:"jobsStatus,omitempty"`
 }
 
-// TrainJobStatusApplyConfiguration constructs an declarative configuration of the TrainJobStatus type for use with
+// TrainJobStatusApplyConfiguration constructs a declarative configuration of the TrainJobStatus type for use with
 // apply.
 func TrainJobStatus() *TrainJobStatusApplyConfiguration {
 	return &TrainJobStatusApplyConfiguration{}

@@ -16,14 +16,14 @@
 
 package v2alpha1
 
-// TorchMLPolicySourceApplyConfiguration represents an declarative configuration of the TorchMLPolicySource type for use
+// TorchMLPolicySourceApplyConfiguration represents a declarative configuration of the TorchMLPolicySource type for use
 // with apply.
 type TorchMLPolicySourceApplyConfiguration struct {
 	NumProcPerNode *string                               `json:"numProcPerNode,omitempty"`
 	ElasticPolicy  *TorchElasticPolicyApplyConfiguration `json:"elasticPolicy,omitempty"`
 }
 
-// TorchMLPolicySourceApplyConfiguration constructs an declarative configuration of the TorchMLPolicySource type for use with
+// TorchMLPolicySourceApplyConfiguration constructs a declarative configuration of the TorchMLPolicySource type for use with
 // apply.
 func TorchMLPolicySource() *TorchMLPolicySourceApplyConfiguration {
 	return &TorchMLPolicySourceApplyConfiguration{}

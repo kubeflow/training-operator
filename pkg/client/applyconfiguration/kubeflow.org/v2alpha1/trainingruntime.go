@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// TrainingRuntimeApplyConfiguration represents an declarative configuration of the TrainingRuntime type for use
+// TrainingRuntimeApplyConfiguration represents a declarative configuration of the TrainingRuntime type for use
 // with apply.
 type TrainingRuntimeApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -30,7 +30,7 @@ type TrainingRuntimeApplyConfiguration struct {
 	Spec                             *TrainingRuntimeSpecApplyConfiguration `json:"spec,omitempty"`
 }
 
-// TrainingRuntime constructs an declarative configuration of the TrainingRuntime type for use with
+// TrainingRuntime constructs a declarative configuration of the TrainingRuntime type for use with
 // apply.
 func TrainingRuntime(name, namespace string) *TrainingRuntimeApplyConfiguration {
 	b := &TrainingRuntimeApplyConfiguration{}
@@ -205,4 +205,10 @@ func (b *TrainingRuntimeApplyConfiguration) ensureObjectMetaApplyConfigurationEx
 func (b *TrainingRuntimeApplyConfiguration) WithSpec(value *TrainingRuntimeSpecApplyConfiguration) *TrainingRuntimeApplyConfiguration {
 	b.Spec = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *TrainingRuntimeApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

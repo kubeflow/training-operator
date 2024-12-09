@@ -71,7 +71,7 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	${GOBIN}/golangci-lint run --timeout 5m --go 1.22 ./...
 
-ENVTEST_K8S_VERSION ?= 1.30
+ENVTEST_K8S_VERSION ?= 1.31
 HAS_SETUP_ENVTEST := $(shell command -v setup-envtest;)
 
 testall: manifests generate fmt vet golangci-lint test ## Run tests.
@@ -90,7 +90,7 @@ testv2:
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
-	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.18
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19
 	@echo "setup-envtest has been installed"
 endif
 	@echo "setup-envtest has already installed"

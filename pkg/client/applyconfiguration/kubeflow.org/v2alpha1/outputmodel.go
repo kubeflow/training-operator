@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// OutputModelApplyConfiguration represents an declarative configuration of the OutputModel type for use
+// OutputModelApplyConfiguration represents a declarative configuration of the OutputModel type for use
 // with apply.
 type OutputModelApplyConfiguration struct {
 	StorageUri *string                  `json:"storageUri,omitempty"`
@@ -28,7 +28,7 @@ type OutputModelApplyConfiguration struct {
 	SecretRef  *v1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
-// OutputModelApplyConfiguration constructs an declarative configuration of the OutputModel type for use with
+// OutputModelApplyConfiguration constructs a declarative configuration of the OutputModel type for use with
 // apply.
 func OutputModel() *OutputModelApplyConfiguration {
 	return &OutputModelApplyConfiguration{}

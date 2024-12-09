@@ -16,13 +16,13 @@
 
 package v2alpha1
 
-// CoschedulingPodGroupPolicySourceApplyConfiguration represents an declarative configuration of the CoschedulingPodGroupPolicySource type for use
+// CoschedulingPodGroupPolicySourceApplyConfiguration represents a declarative configuration of the CoschedulingPodGroupPolicySource type for use
 // with apply.
 type CoschedulingPodGroupPolicySourceApplyConfiguration struct {
 	ScheduleTimeoutSeconds *int32 `json:"scheduleTimeoutSeconds,omitempty"`
 }
 
-// CoschedulingPodGroupPolicySourceApplyConfiguration constructs an declarative configuration of the CoschedulingPodGroupPolicySource type for use with
+// CoschedulingPodGroupPolicySourceApplyConfiguration constructs a declarative configuration of the CoschedulingPodGroupPolicySource type for use with
 // apply.
 func CoschedulingPodGroupPolicySource() *CoschedulingPodGroupPolicySourceApplyConfiguration {
 	return &CoschedulingPodGroupPolicySourceApplyConfiguration{}

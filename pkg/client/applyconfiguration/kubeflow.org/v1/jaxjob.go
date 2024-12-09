@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// JAXJobApplyConfiguration represents an declarative configuration of the JAXJob type for use
+// JAXJobApplyConfiguration represents a declarative configuration of the JAXJob type for use
 // with apply.
 type JAXJobApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -31,7 +31,7 @@ type JAXJobApplyConfiguration struct {
 	Status                           *JobStatusApplyConfiguration  `json:"status,omitempty"`
 }
 
-// JAXJob constructs an declarative configuration of the JAXJob type for use with
+// JAXJob constructs a declarative configuration of the JAXJob type for use with
 // apply.
 func JAXJob(name, namespace string) *JAXJobApplyConfiguration {
 	b := &JAXJobApplyConfiguration{}
@@ -214,4 +214,10 @@ func (b *JAXJobApplyConfiguration) WithSpec(value *JAXJobSpecApplyConfiguration)
 func (b *JAXJobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *JAXJobApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *JAXJobApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

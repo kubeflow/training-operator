@@ -20,7 +20,7 @@ import (
 	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 )
 
-// TFJobSpecApplyConfiguration represents an declarative configuration of the TFJobSpec type for use
+// TFJobSpecApplyConfiguration represents a declarative configuration of the TFJobSpec type for use
 // with apply.
 type TFJobSpecApplyConfiguration struct {
 	RunPolicy           *RunPolicyApplyConfiguration                             `json:"runPolicy,omitempty"`
@@ -29,7 +29,7 @@ type TFJobSpecApplyConfiguration struct {
 	EnableDynamicWorker *bool                                                    `json:"enableDynamicWorker,omitempty"`
 }
 
-// TFJobSpecApplyConfiguration constructs an declarative configuration of the TFJobSpec type for use with
+// TFJobSpecApplyConfiguration constructs a declarative configuration of the TFJobSpec type for use with
 // apply.
 func TFJobSpec() *TFJobSpecApplyConfiguration {
 	return &TFJobSpecApplyConfiguration{}

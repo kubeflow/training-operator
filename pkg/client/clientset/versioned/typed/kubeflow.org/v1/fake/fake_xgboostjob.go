@@ -42,22 +42,24 @@ var xgboostjobsKind = v1.SchemeGroupVersion.WithKind("XGBoostJob")
 
 // Get takes name of the xGBoostJob, and returns the corresponding xGBoostJob object, and an error if there is any.
 func (c *FakeXGBoostJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.XGBoostJob, err error) {
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(xgboostjobsResource, c.ns, name), &v1.XGBoostJob{})
+		Invokes(testing.NewGetActionWithOptions(xgboostjobsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
 
 // List takes label and field selectors, and returns the list of XGBoostJobs that match those selectors.
 func (c *FakeXGBoostJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.XGBoostJobList, err error) {
+	emptyResult := &v1.XGBoostJobList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(xgboostjobsResource, xgboostjobsKind, c.ns, opts), &v1.XGBoostJobList{})
+		Invokes(testing.NewListActionWithOptions(xgboostjobsResource, xgboostjobsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -76,40 +78,43 @@ func (c *FakeXGBoostJobs) List(ctx context.Context, opts metav1.ListOptions) (re
 // Watch returns a watch.Interface that watches the requested xGBoostJobs.
 func (c *FakeXGBoostJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(xgboostjobsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(xgboostjobsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a xGBoostJob and creates it.  Returns the server's representation of the xGBoostJob, and an error, if there is any.
 func (c *FakeXGBoostJobs) Create(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.CreateOptions) (result *v1.XGBoostJob, err error) {
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(xgboostjobsResource, c.ns, xGBoostJob), &v1.XGBoostJob{})
+		Invokes(testing.NewCreateActionWithOptions(xgboostjobsResource, c.ns, xGBoostJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
 
 // Update takes the representation of a xGBoostJob and updates it. Returns the server's representation of the xGBoostJob, and an error, if there is any.
 func (c *FakeXGBoostJobs) Update(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.UpdateOptions) (result *v1.XGBoostJob, err error) {
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(xgboostjobsResource, c.ns, xGBoostJob), &v1.XGBoostJob{})
+		Invokes(testing.NewUpdateActionWithOptions(xgboostjobsResource, c.ns, xGBoostJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeXGBoostJobs) UpdateStatus(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.UpdateOptions) (*v1.XGBoostJob, error) {
+func (c *FakeXGBoostJobs) UpdateStatus(ctx context.Context, xGBoostJob *v1.XGBoostJob, opts metav1.UpdateOptions) (result *v1.XGBoostJob, err error) {
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(xgboostjobsResource, "status", c.ns, xGBoostJob), &v1.XGBoostJob{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(xgboostjobsResource, "status", c.ns, xGBoostJob, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
@@ -124,7 +129,7 @@ func (c *FakeXGBoostJobs) Delete(ctx context.Context, name string, opts metav1.D
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeXGBoostJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(xgboostjobsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(xgboostjobsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.XGBoostJobList{})
 	return err
@@ -132,11 +137,12 @@ func (c *FakeXGBoostJobs) DeleteCollection(ctx context.Context, opts metav1.Dele
 
 // Patch applies the patch and returns the patched xGBoostJob.
 func (c *FakeXGBoostJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.XGBoostJob, err error) {
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, name, pt, data, subresources...), &v1.XGBoostJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(xgboostjobsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
@@ -154,11 +160,12 @@ func (c *FakeXGBoostJobs) Apply(ctx context.Context, xGBoostJob *kubefloworgv1.X
 	if name == nil {
 		return nil, fmt.Errorf("xGBoostJob.Name must be provided to Apply")
 	}
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data), &v1.XGBoostJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }
@@ -177,11 +184,12 @@ func (c *FakeXGBoostJobs) ApplyStatus(ctx context.Context, xGBoostJob *kubeflowo
 	if name == nil {
 		return nil, fmt.Errorf("xGBoostJob.Name must be provided to Apply")
 	}
+	emptyResult := &v1.XGBoostJob{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.XGBoostJob{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(xgboostjobsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions(), "status"), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.XGBoostJob), err
 }

@@ -20,7 +20,7 @@ import (
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 )
 
-// MPIMLPolicySourceApplyConfiguration represents an declarative configuration of the MPIMLPolicySource type for use
+// MPIMLPolicySourceApplyConfiguration represents a declarative configuration of the MPIMLPolicySource type for use
 // with apply.
 type MPIMLPolicySourceApplyConfiguration struct {
 	NumProcPerNode    *int32                      `json:"numProcPerNode,omitempty"`
@@ -29,7 +29,7 @@ type MPIMLPolicySourceApplyConfiguration struct {
 	RunLauncherAsNode *bool                       `json:"runLauncherAsNode,omitempty"`
 }
 
-// MPIMLPolicySourceApplyConfiguration constructs an declarative configuration of the MPIMLPolicySource type for use with
+// MPIMLPolicySourceApplyConfiguration constructs a declarative configuration of the MPIMLPolicySource type for use with
 // apply.
 func MPIMLPolicySource() *MPIMLPolicySourceApplyConfiguration {
 	return &MPIMLPolicySourceApplyConfiguration{}

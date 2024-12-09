@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	jobruntimes "github.com/kubeflow/training-operator/pkg/runtime.v2"
@@ -65,8 +66,8 @@ func NewTrainJobReconciler(client client.Client, recorder record.EventRecorder, 
 	}
 }
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs/status,verbs=get;update;patch
 
 func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var trainJob kubeflowv2.TrainJob
@@ -219,13 +220,14 @@ func runtimeRefToGroupKind(runtimeRef kubeflowv2.RuntimeRef) schema.GroupKind {
 	}
 }
 
-func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	b := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&kubeflowv2.TrainJob{})
 	for _, runtime := range r.runtimes {
 		for _, registrar := range runtime.EventHandlerRegistrars() {
 			if registrar != nil {
-				b = registrar(b, mgr.GetClient())
+				b = registrar(b, mgr.GetClient(), mgr.GetCache())
 			}
 		}
 	}

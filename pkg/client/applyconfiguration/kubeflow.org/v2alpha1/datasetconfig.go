@@ -20,7 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// DatasetConfigApplyConfiguration represents an declarative configuration of the DatasetConfig type for use
+// DatasetConfigApplyConfiguration represents a declarative configuration of the DatasetConfig type for use
 // with apply.
 type DatasetConfigApplyConfiguration struct {
 	StorageUri *string                  `json:"storageUri,omitempty"`
@@ -28,7 +28,7 @@ type DatasetConfigApplyConfiguration struct {
 	SecretRef  *v1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
-// DatasetConfigApplyConfiguration constructs an declarative configuration of the DatasetConfig type for use with
+// DatasetConfigApplyConfiguration constructs a declarative configuration of the DatasetConfig type for use with
 // apply.
 func DatasetConfig() *DatasetConfigApplyConfiguration {
 	return &DatasetConfigApplyConfiguration{}

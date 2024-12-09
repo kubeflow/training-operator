@@ -36,10 +36,13 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
@@ -156,49 +159,36 @@ type PodGroupRuntimeClassHandler struct {
 	client client.Client
 }
 
-var _ handler.EventHandler = (*PodGroupRuntimeClassHandler)(nil)
+var _ handler.TypedEventHandler[*nodev1.RuntimeClass, reconcile.Request] = (*PodGroupRuntimeClassHandler)(nil)
 
-func (h *PodGroupRuntimeClassHandler) Create(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
-	containerRuntimeClass, ok := e.Object.(*nodev1.RuntimeClass)
-	if !ok {
-		return
-	}
+func (h *PodGroupRuntimeClassHandler) Create(ctx context.Context, e event.TypedCreateEvent[*nodev1.RuntimeClass], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	containerRuntimeClass := e.Object
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(containerRuntimeClass))
 	if err := h.queueSuspendedTrainJobs(ctx, containerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupRuntimeClassHandler) Update(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	_, ok := e.ObjectOld.(*nodev1.RuntimeClass)
-	if !ok {
-		return
-	}
-	newContainerRuntimeClass, ok := e.ObjectNew.(*nodev1.RuntimeClass)
-	if !ok {
-		return
-	}
+func (h *PodGroupRuntimeClassHandler) Update(ctx context.Context, e event.TypedUpdateEvent[*nodev1.RuntimeClass], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	newContainerRuntimeClass := e.ObjectNew
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(newContainerRuntimeClass))
 	if err := h.queueSuspendedTrainJobs(ctx, newContainerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupRuntimeClassHandler) Delete(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	containerRuntimeClass, ok := e.Object.(*nodev1.RuntimeClass)
-	if !ok {
-		return
-	}
+func (h *PodGroupRuntimeClassHandler) Delete(ctx context.Context, e event.TypedDeleteEvent[*nodev1.RuntimeClass], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	containerRuntimeClass := e.Object
 	log := ctrl.LoggerFrom(ctx).WithValues("runtimeClass", klog.KObj(containerRuntimeClass))
 	if err := h.queueSuspendedTrainJobs(ctx, containerRuntimeClass, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupRuntimeClassHandler) Generic(context.Context, event.GenericEvent, workqueue.RateLimitingInterface) {
+func (h *PodGroupRuntimeClassHandler) Generic(context.Context, event.TypedGenericEvent[*nodev1.RuntimeClass], workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 }
 
-func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Context, runtimeClass *nodev1.RuntimeClass, q workqueue.RateLimitingInterface) error {
+func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Context, runtimeClass *nodev1.RuntimeClass, q workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
 	var trainingRuntimes kubeflowv2.TrainingRuntimeList
 	if err := h.client.List(ctx, &trainingRuntimes, client.MatchingFields{TrainingRuntimeContainerRuntimeClassKey: runtimeClass.Name}); err != nil {
 		return err
@@ -230,7 +220,7 @@ func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Contex
 	})
 	for _, trainJob := range trainJobs {
 		if ptr.Deref(trainJob.Spec.Suspend, false) {
-			q.Add(client.ObjectKeyFromObject(&trainJob))
+			q.Add(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&trainJob)})
 		}
 	}
 	return nil
@@ -240,56 +230,43 @@ type PodGroupLimitRangeHandler struct {
 	client client.Client
 }
 
-var _ handler.EventHandler = (*PodGroupLimitRangeHandler)(nil)
+var _ handler.TypedEventHandler[*corev1.LimitRange, reconcile.Request] = (*PodGroupLimitRangeHandler)(nil)
 
-func (h *PodGroupLimitRangeHandler) Create(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
-	limitRange, ok := e.Object.(*corev1.LimitRange)
-	if !ok {
-		return
-	}
+func (h *PodGroupLimitRangeHandler) Create(ctx context.Context, e event.TypedCreateEvent[*corev1.LimitRange], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	limitRange := e.Object
 	log := ctrl.LoggerFrom(ctx).WithValues("limitRange", klog.KObj(limitRange))
 	if err := h.queueSuspendedTrainJob(ctx, limitRange.Namespace, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupLimitRangeHandler) Update(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	_, ok := e.ObjectOld.(*corev1.LimitRange)
-	if !ok {
-		return
-	}
-	newLimitRange, ok := e.ObjectNew.(*corev1.LimitRange)
-	if !ok {
-		return
-	}
+func (h *PodGroupLimitRangeHandler) Update(ctx context.Context, e event.TypedUpdateEvent[*corev1.LimitRange], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	newLimitRange := e.ObjectNew
 	log := ctrl.LoggerFrom(ctx).WithValues("limitRange", klog.KObj(newLimitRange))
 	if err := h.queueSuspendedTrainJob(ctx, newLimitRange.Namespace, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupLimitRangeHandler) Delete(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	limitRange, ok := e.Object.(*corev1.LimitRange)
-	if !ok {
-		return
-	}
+func (h *PodGroupLimitRangeHandler) Delete(ctx context.Context, e event.TypedDeleteEvent[*corev1.LimitRange], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	limitRange := e.Object
 	log := ctrl.LoggerFrom(ctx).WithValues("limitRange", klog.KObj(limitRange))
 	if err := h.queueSuspendedTrainJob(ctx, limitRange.Namespace, q); err != nil {
 		log.Error(err, "could not queue suspended TrainJob to reconcile queue")
 	}
 }
 
-func (h *PodGroupLimitRangeHandler) Generic(context.Context, event.GenericEvent, workqueue.RateLimitingInterface) {
+func (h *PodGroupLimitRangeHandler) Generic(context.Context, event.TypedGenericEvent[*corev1.LimitRange], workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 }
 
-func (h *PodGroupLimitRangeHandler) queueSuspendedTrainJob(ctx context.Context, ns string, q workqueue.RateLimitingInterface) error {
+func (h *PodGroupLimitRangeHandler) queueSuspendedTrainJob(ctx context.Context, ns string, q workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
 	var trainJobs kubeflowv2.TrainJobList
 	if err := h.client.List(ctx, &trainJobs, client.InNamespace(ns)); err != nil {
 		return err
 	}
 	for _, trainJob := range trainJobs.Items {
 		if ptr.Deref(trainJob.Spec.Suspend, false) {
-			q.Add(client.ObjectKeyFromObject(&trainJob))
+			q.Add(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&trainJob)})
 		}
 	}
 	return nil
@@ -303,18 +280,18 @@ func (c *CoScheduling) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 		return nil
 	}
 	return []runtime.ReconcilerBuilder{
-		func(b *builder.Builder, c client.Client) *builder.Builder {
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
 			return b.Owns(&schedulerpluginsv1alpha1.PodGroup{})
 		},
-		func(b *builder.Builder, c client.Client) *builder.Builder {
-			return b.Watches(&corev1.LimitRange{}, &PodGroupLimitRangeHandler{
-				client: c,
-			})
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
+			return b.WatchesRawSource(source.TypedKind[*corev1.LimitRange, reconcile.Request](cache, &corev1.LimitRange{}, &PodGroupLimitRangeHandler{
+				client: cl,
+			}))
 		},
-		func(b *builder.Builder, c client.Client) *builder.Builder {
-			return b.Watches(&nodev1.RuntimeClass{}, &PodGroupRuntimeClassHandler{
-				client: c,
-			})
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
+			return b.WatchesRawSource(source.TypedKind[*nodev1.RuntimeClass, reconcile.Request](cache, &nodev1.RuntimeClass{}, &PodGroupRuntimeClassHandler{
+				client: cl,
+			}))
 		},
 	}
 }
