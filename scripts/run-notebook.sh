@@ -22,7 +22,6 @@ set -o pipefail
 
 NOTEBOOK_INPUT=""
 NOTEBOOK_OUTPUT="-" # outputs to console
-PAPERMILL_PARAMS=()
 NAMESPACE="default"
 TRAINING_PYTHON_SDK="./sdk/python"
 
@@ -31,9 +30,8 @@ usage() {
   echo "Options:"
   echo "  -i  Input notebook (required)"
   echo "  -o  Output notebook (required)"
-  echo "  -p  Papermill parameters (optional), pass param name and value pair (in quotes whitespace separated)"
   echo "  -k  Kubeflow Training Operator Python SDK (optional)"
-  echo "  -n  Kubernetes namespace used by tests"
+  echo "  -n  Kubernetes namespace used by tests (optional)"
   echo "  -h  Show this help message"
   echo "NOTE: papermill, jupyter and ipykernel are required Python dependencies to run Notebooks"
   exit 1
@@ -43,7 +41,6 @@ while getopts "i:o:p:k:n:r:d:h:" opt; do
   case "$opt" in
     i) NOTEBOOK_INPUT="$OPTARG" ;;            # -i for notebook input path
     o) NOTEBOOK_OUTPUT="$OPTARG" ;;           # -o for notebook output path
-    p) PAPERMILL_PARAMS+=("$OPTARG") ;;       # -p for papermill parameters
     k) TRAINING_PYTHON_SDK="$OPTARG" ;;       # -k for training operator python sdk
     n) NAMESPACE="$OPTARG" ;;                 # -n for kubernetes namespace used by tests
     h) usage ;;                               # -h for help (usage)
@@ -57,10 +54,6 @@ if [ -z "$NOTEBOOK_INPUT" ]; then
 fi
 
 papermill_cmd="papermill $NOTEBOOK_INPUT $NOTEBOOK_OUTPUT -p training_python_sdk $TRAINING_PYTHON_SDK -p namespace $NAMESPACE"
-# Add papermill parameters (param name and value)
-for param in "${PAPERMILL_PARAMS[@]}"; do
-  papermill_cmd="$papermill_cmd -p $param"
-done
 
 if ! command -v papermill &> /dev/null; then
   echo "Error: papermill is not installed. Please install papermill to proceed."
