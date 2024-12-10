@@ -1,0 +1,19 @@
+apiVersion: "kubeflow.org/v1"
+kind: JAXJob
+metadata:
+  name: jaxjob-mnist
+  namespace: kubeflow
+spec:
+  jaxReplicaSpecs:
+    Worker:
+      replicas: 2
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+            - name: jax
+              image: docker.io/sandipanify/jaxjob-spmd-mnist:latest
+              command:
+                - "python3"
+                - "spmd_mnist_classifier_fromscratch.py"
+              imagePullPolicy: Always
