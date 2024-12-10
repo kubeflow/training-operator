@@ -9,6 +9,9 @@ COPY pkg/initializer_v2 pkg/initializer_v2
 # Install the needed packages.
 RUN pip install -r requirements.txt
 
+# Git is needed for the Kubeflow Training SDK to download JobSet Python models.
+RUN apk update && apk add --no-cache git
+
 # Copy and install the Kubeflow Training SDK for the configs.
 COPY sdk_v2 sdk_v2
 COPY LICENSE LICENSE
