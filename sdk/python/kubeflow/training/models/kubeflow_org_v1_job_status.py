@@ -76,7 +76,6 @@ class KubeflowOrgV1JobStatus(object):
     def completion_time(self):
         """Gets the completion_time of this KubeflowOrgV1JobStatus.  # noqa: E501
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :return: The completion_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :rtype: datetime
@@ -87,7 +86,6 @@ class KubeflowOrgV1JobStatus(object):
     def completion_time(self, completion_time):
         """Sets the completion_time of this KubeflowOrgV1JobStatus.
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :param completion_time: The completion_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :type: datetime
@@ -122,7 +120,6 @@ class KubeflowOrgV1JobStatus(object):
     def last_reconcile_time(self):
         """Gets the last_reconcile_time of this KubeflowOrgV1JobStatus.  # noqa: E501
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :return: The last_reconcile_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :rtype: datetime
@@ -133,7 +130,6 @@ class KubeflowOrgV1JobStatus(object):
     def last_reconcile_time(self, last_reconcile_time):
         """Sets the last_reconcile_time of this KubeflowOrgV1JobStatus.
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :param last_reconcile_time: The last_reconcile_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :type: datetime
@@ -168,7 +164,6 @@ class KubeflowOrgV1JobStatus(object):
     def start_time(self):
         """Gets the start_time of this KubeflowOrgV1JobStatus.  # noqa: E501
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :return: The start_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :rtype: datetime
@@ -179,7 +174,6 @@ class KubeflowOrgV1JobStatus(object):
     def start_time(self, start_time):
         """Sets the start_time of this KubeflowOrgV1JobStatus.
 
-        Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.  # noqa: E501
 
         :param start_time: The start_time of this KubeflowOrgV1JobStatus.  # noqa: E501
         :type: datetime

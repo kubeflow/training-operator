@@ -56,3 +56,15 @@ git clean -f ${SDK_OUTPUT_PATH}/tox.ini
 
 # Revert the README since it is manually created.
 git checkout ${SDK_OUTPUT_PATH}/README.md
+git checkout ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
+
+# Manually modify the SDK version in the __init__.py file.
+if [[ $(uname) == "Darwin" ]]; then
+  sed -i '' -e "s/__version__.*/__version__ = \"${SDK_VERSION}\"/" ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
+else
+  sed -i -e "s/__version__.*/__version__ = \"${SDK_VERSION}\"/" ${SDK_OUTPUT_PATH}/kubeflow/training/__init__.py
+fi
+
+# Kubeflow models must have Kubernetes models to perform serialization.
+printf "\n# Import JobSet models for the serialization. It imports the Kubernetes models.\n" >>${SDK_OUTPUT_PATH}/kubeflow/training/models/__init__.py
+printf "from jobset.models import *\n" >>${SDK_OUTPUT_PATH}/kubeflow/training/models/__init__.py
