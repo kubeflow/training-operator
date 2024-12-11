@@ -123,12 +123,16 @@ class TrainingClient:
                         ml_policy.torch.num_proc_per_node if ml_policy.torch else None
                     )
 
-                    # Get the device count per Trainer node.
-                    # TODO (andreyvelich): Currently, we get the device type from
+                    # Get the accelerator for the Trainer nodes.
+                    # TODO (andreyvelich): Currently, we get the accelerator type from
                     # the runtime labels.
-                    _, device_count = utils.get_container_devices(resources, num_procs)
-                    if device_count != constants.UNKNOWN:
-                        device_count = str(int(device_count) * int(ml_policy.num_nodes))
+                    _, accelerator_count = utils.get_container_devices(
+                        resources, num_procs
+                    )
+                    if accelerator_count != constants.UNKNOWN:
+                        accelerator_count = str(
+                            int(accelerator_count) * int(ml_policy.num_nodes)
+                        )
 
                     result.append(
                         types.Runtime(
@@ -138,12 +142,12 @@ class TrainingClient:
                                 if constants.PHASE_KEY in metadata.labels
                                 else constants.UNKNOWN
                             ),
-                            device=(
-                                metadata.labels[constants.DEVICE_KEY]
-                                if constants.DEVICE_KEY in metadata.labels
+                            accelerator=(
+                                metadata.labels[constants.ACCELERATOR_KEY]
+                                if constants.ACCELERATOR_KEY in metadata.labels
                                 else constants.UNKNOWN
                             ),
-                            device_count=device_count,
+                            accelerator_count=accelerator_count,
                         )
                     )
 

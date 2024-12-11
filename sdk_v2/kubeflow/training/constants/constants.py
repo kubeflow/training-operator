@@ -41,29 +41,29 @@ PHASE_PRE_TRAINING = "pre-training"
 # The value indicates that runtime can be used for the model post-training.
 PHASE_POST_TRAINING = "post-training"
 
-# The label key to identify the device (e.g. GPU, TPU) that is used for training.
-# TODO: Potentially, we should get this data from the Node selectors.
-DEVICE_KEY = "training.kubeflow.org/device"
+# The label key to identify the accelerator type for model training (e.g. GPU-Tesla-V100-16GB).
+# TODO: Potentially, we should take this from the Node selectors.
+ACCELERATOR_KEY = "training.kubeflow.org/accelerator"
 
 # Unknown indicates that the value can't be identified.
 UNKNOWN = "Unknown"
 
-# The label for CPU device in the container resources.
-CPU_DEVICE_LABEL = "cpu"
+# The label for CPU in the container resources.
+CPU_LABEL = "cpu"
 
-# The default type for CPU.
+# The default type for CPU device.
 CPU_DEVICE_TYPE = "cpu"
 
-# The label for NVIDIA GPU device in the container resources.
-NVIDIA_GPU_DEVICE_LABEL = "nvidia.com/gpu"
+# The label for NVIDIA GPU in the container resources.
+NVIDIA_GPU_LABEL = "nvidia.com/gpu"
 
-# The default type for GPU
+# The default type for GPU device.
 GPU_DEVICE_TYPE = "gpu"
 
-# The label for TPU device in the container resources.
-TPU_DEVICE_LABEL = "google.com/tpu"
+# The label for TPU in the container resources.
+TPU_LABEL = "google.com/tpu"
 
-# The default type for TPU.
+# The default type for TPU device.
 TPU_DEVICE_TYPE = "tpu"
 
 # The Kind name for the TrainJob.

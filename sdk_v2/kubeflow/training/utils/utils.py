@@ -69,15 +69,15 @@ def get_container_devices(
         return device, device_count
 
     # TODO (andreyvelich): Support other resource labels (e.g. NPUs).
-    if constants.NVIDIA_GPU_DEVICE_LABEL in resources.limits:
+    if constants.NVIDIA_GPU_LABEL in resources.limits:
         device = constants.GPU_DEVICE_TYPE
-        device_count = resources.limits[constants.NVIDIA_GPU_DEVICE_LABEL]
-    elif constants.TPU_DEVICE_LABEL in resources.limits:
+        device_count = resources.limits[constants.NVIDIA_GPU_LABEL]
+    elif constants.TPU_LABEL in resources.limits:
         device = constants.TPU_DEVICE_TYPE
-        device_count = resources.limits[constants.TPU_DEVICE_LABEL]
-    elif constants.CPU_DEVICE_LABEL in resources.limits:
+        device_count = resources.limits[constants.TPU_LABEL]
+    elif constants.CPU_LABEL in resources.limits:
         device = constants.CPU_DEVICE_TYPE
-        device_count = resources.limits[constants.CPU_DEVICE_LABEL]
+        device_count = resources.limits[constants.CPU_LABEL]
     else:
         raise Exception(
             f"Unknown device type in the container resources: {resources.limits}"

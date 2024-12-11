@@ -24,8 +24,8 @@ from kubeflow.training.constants import constants
 class Runtime:
     name: str
     phase: str
-    device: str
-    device_count: str
+    accelerator: str
+    accelerator_count: str
 
 
 # Representation for the TrainJob component.
