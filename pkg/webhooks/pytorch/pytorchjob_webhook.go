@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/klog/v2"
@@ -32,6 +30,7 @@ import (
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/common/util"
+	"github.com/kubeflow/training-operator/pkg/webhooks/utils"
 )
 
 var (
@@ -77,8 +76,9 @@ func validatePyTorchJob(oldJob, newJob *trainingoperator.PyTorchJob) (admission.
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
 
-	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.ObjectMeta.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	jobNameErr := utils.ValidateJobName(newJob.ObjectMeta.Name)
+	if jobNameErr != nil {
+		allErrs = append(allErrs, jobNameErr)
 	}
 	if oldJob != nil {
 		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
