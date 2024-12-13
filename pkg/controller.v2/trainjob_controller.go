@@ -68,6 +68,7 @@ func NewTrainJobReconciler(client client.Client, recorder record.EventRecorder, 
 
 // +kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=trainjobs/finalizers,verbs=get;update;patch
 
 func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var trainJob kubeflowv2.TrainJob

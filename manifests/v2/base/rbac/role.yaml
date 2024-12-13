@@ -55,6 +55,7 @@ rules:
 - apiGroups:
   - kubeflow.org
   resources:
+  - trainjobs/finalizers
   - trainjobs/status
   verbs:
   - get
