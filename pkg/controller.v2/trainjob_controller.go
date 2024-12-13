@@ -94,7 +94,7 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	setSuspendedCondition(&trainJob)
 	setCreatedCondition(&trainJob, opState)
 	if terminalCondErr := setTerminalCondition(ctx, runtime, &trainJob); terminalCondErr != nil {
-		return ctrl.Result{}, errors.Join(err, terminalCondErr)
+		err = errors.Join(err, terminalCondErr)
 	}
 	if !equality.Semantic.DeepEqual(&trainJob.Status, originStatus) {
 		return ctrl.Result{}, errors.Join(err, r.client.Status().Update(ctx, &trainJob))
