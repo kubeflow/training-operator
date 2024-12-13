@@ -1,6 +1,6 @@
 module github.com/kubeflow/training-operator/hack/swagger
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/kubeflow/training-operator v0.0.0-00010101000000-000000000000
@@ -12,6 +12,7 @@ replace github.com/kubeflow/training-operator => ../../
 
 require (
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
+	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
@@ -26,6 +27,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
