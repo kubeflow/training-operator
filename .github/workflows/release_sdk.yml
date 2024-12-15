@@ -1,11 +1,10 @@
 name: Release Training SDK
 
 on:
-  workflow_run:
-    workflows:
-      - Create Release Branch
-    types:
-      - completed
+  push:
+    branches:
+      - "v*-branch"
+  workflow_dispatch:
 
 jobs:
   release-sdk:
@@ -19,24 +18,11 @@ jobs:
         run: |
           pip install PyGithub==1.55 twine==3.4.1
 
-      - name: Extract version from branch name
-        id: extract_version
-        run: |
-          # Extract version from branch name
-          BRANCH_NAME=${GITHUB_REF_NAME}
-          if [[ "$BRANCH_NAME" =~ ^v([0-9]+\.[0-9]+)-branch$ ]]; then
-            VERSION="${BASH_REMATCH[1]}.0"
-            echo "VERSION=$VERSION" >> $GITHUB_ENV
-          else
-            echo "Invalid branch name format. Expected 'vX.Y-branch'."
-            exit 1
-          fi
-
       - name: Update version in SDK files
         run: |
-          sed -i "s/VERSION=.*/VERSION=${VERSION}/" hack/python-sdk/gen-sdk.sh
-          sed -i "s/packageVersion:.*/packageVersion: ${VERSION}/" hack/python-sdk/swagger_config.json
-          sed -i "s/version=.*/version='${VERSION}'/" sdk/python/setup.py
+          sed -i "s/VERSION=.*/VERSION=${{ github.ref_name }}/" hack/python-sdk/gen-sdk.sh
+          sed -i "s/packageVersion:.*/packageVersion: ${{ github.ref_name }}/" hack/python-sdk/swagger_config.json
+          sed -i "s/version=.*/version='${{ github.ref_name }}'/" sdk/python/setup.py
 
       - name: Generate Training SDK
         run: make generate
