@@ -1,0 +1,39 @@
+name: Release Training SDK
+
+on:
+  push:
+    branches:
+      - "v*-branch"
+  workflow_dispatch:
+
+jobs:
+  release-sdk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          pip install PyGithub==1.55 twine==3.4.1
+
+      - name: Update version in SDK files
+        run: |
+          sed -i "s/VERSION=.*/VERSION=${{ github.ref_name }}/" hack/python-sdk/gen-sdk.sh
+          sed -i "s/packageVersion:.*/packageVersion: ${{ github.ref_name }}/" hack/python-sdk/swagger_config.json
+          sed -i "s/version=.*/version='${{ github.ref_name }}'/" sdk/python/setup.py
+
+      - name: Generate Training SDK
+        run: make generate
+
+      - name: Package SDK
+        working-directory: sdk/python
+        run: python3 setup.py sdist bdist_wheel
+
+      - name: Upload SDK to PyPI
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        working-directory: sdk/python
+        run: twine upload dist/*
