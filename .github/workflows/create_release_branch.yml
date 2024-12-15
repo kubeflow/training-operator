@@ -1,0 +1,27 @@
+name: Create Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: "Name of the release branch (e.g., v1.8-branch)"
+        required: true
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Create and push release branch
+        run: |
+          git fetch origin
+          git checkout -b ${{ github.event.inputs.release_branch }}
+          git push origin ${{ github.event.inputs.release_branch }}
