@@ -178,11 +178,11 @@ the following table explains the naming that each framework or technology uses:
    </td>
    <td>Slot
 <p>
-<code>(--np)</code>
+<code>(-n)</code>
    </td>
    <td>Node
 <p>
-<code>(--host)</code>
+<code>(-host)</code>
    </td>
    <td><code>mpirun</code>
    </td>
@@ -1604,7 +1604,36 @@ spec:
 
 #### MPI Runtime
 
-For MPI, we can add support for the `DeepSpeed` runtimes.
+We will re-use [the MPI Operator V2](https://github.com/kubeflow/mpi-operator/blob/master/proposals/scalable-robust-operator.md)
+functionality as part of this MPI Runtime. Which means we will use the SSH-based approach to
+initialize the MPI Job.
+
+The MPI Plugin in Training Operator will be responsible to:
+
+- Build the Secret with the SSH keys.
+- Build the ConfigMap with the appropriate hostfile for OpenMPI, IntelMPI, or MPICH. We will support
+  only **OpenMPI** in the first implementation.
+
+The Secret and ConfigMap will be added to the corresponding JobSet.
+
+The hostfile default location is `/etc/mpi/hostfile`. For example, for OpenMPI we configure this
+env variable:
+
+```bash
+OMPI_MCA_orte_default_hostfile=/etc/mpi/hostfile
+```
+
+The `numProcPerNode` is equal to the number of slots in the MPI hostfile.
+
+Example of hostfile:
+
+```
+deepspeed-trainer-node-0-0.default.svc slots=5
+deepspeed-trainer-node-0-1.default.svc slots=5
+```
+
+Initially, we will introduce support for [distributed MLX](https://ml-explore.github.io/mlx/build/html/usage/distributed.html)
+and [DeepSpeed](https://www.deepspeed.ai/training/) using the MPI Runtime.
 
 Example of simple OpenMPI runtime:
 
@@ -1612,16 +1641,19 @@ Example of simple OpenMPI runtime:
 apiVersion: kubeflow.org/v2alpha1
 kind: ClusterTrainingRuntime
 metadata:
-  name: mpi-simple
+  name: deepspeed
+  namespace: default
 spec:
   mlPolicy:
-    numNodes: 5
+    numNodes: 2
     mpi:
       mpiImplementation: OpenMPI
       numProcPerNode: 5
   template:
+      startupPolicy:
+        startupPolicyOrder: InOrder
     replicatedJobs:
-      - name: Launcher
+      - name: launcher
         template:
           spec:
             template:
@@ -1630,17 +1662,18 @@ spec:
                   - name: mpi-launcher
                     image: docker.io/mpi-launch
                     command:
-                      - mpirun -np 5 --host mpi-simple.default.svc
-      - name: Node
+                      - mpirun launch-job
+      - name: trainer-node
         template:
           spec:
             template:
               spec:
                 containers:
                   - name: trainer
-                    image: docker.io/mpi-training
-                    command:
-                      - mpirun -np 2 train.py
+                    image: docker.io/deepspeed-trainer
+                    resources:
+                      limits:
+                        nvidia.com/gpu: 5
 ```
 
 #### TensorFlow Runtime
