@@ -1,5 +1,5 @@
 # Use an official Pytorch runtime as a parent image
-FROM nvcr.io/nvidia/pytorch:24.11-py3-igpu
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 
 # Set the working directory in the container
 WORKDIR /app
