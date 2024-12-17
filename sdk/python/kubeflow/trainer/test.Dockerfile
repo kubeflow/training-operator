@@ -1,5 +1,5 @@
-# Use an official Pytorch runtime as a parent image
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+# Use an official Python runtime as a parent image
+FROM python:3.11
 
 # Set the working directory in the container
 WORKDIR /app
@@ -8,6 +8,7 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 
 # Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir torch==2.5.1
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python package and its source code into the container
