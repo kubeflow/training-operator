@@ -93,13 +93,19 @@ func validatePyTorchJob(oldJob, newJob *trainingoperator.PyTorchJob) (admission.
 func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 	var warnings admission.Warnings
-
-	if spec.ElasticPolicy != nil && spec.ElasticPolicy.NProcPerNode != nil {
-		elasticNProcPerNodePath := specPath.Child("elasticPolicy").Child("nProcPerNode")
-		nprocPerNodePath := specPath.Child("nprocPerNode")
-		warnings = append(warnings, fmt.Sprintf("%s is deprecated, use %s instead", elasticNProcPerNodePath.String(), nprocPerNodePath.String()))
-		if spec.NprocPerNode != nil {
-			allErrs = append(allErrs, field.Forbidden(elasticNProcPerNodePath, fmt.Sprintf("must not be used with %s", nprocPerNodePath)))
+	if spec.ElasticPolicy != nil {
+		_, ok := spec.PyTorchReplicaSpecs[trainingoperator.PyTorchJobReplicaTypeWorker]
+		workerPath := pytorchReplicaSpecPath.Key(string(trainingoperator.PyTorchJobReplicaTypeWorker))
+		if !ok {
+			allErrs = append(allErrs, field.Required(workerPath, "must be configured if elastic policy is used"))
+		}
+		if spec.ElasticPolicy.NProcPerNode != nil {
+			elasticNProcPerNodePath := specPath.Child("elasticPolicy").Child("nProcPerNode")
+			nprocPerNodePath := specPath.Child("nprocPerNode")
+			warnings = append(warnings, fmt.Sprintf("%s is deprecated, use %s instead", elasticNProcPerNodePath.String(), nprocPerNodePath.String()))
+			if spec.NprocPerNode != nil {
+				allErrs = append(allErrs, field.Forbidden(elasticNProcPerNodePath, fmt.Sprintf("must not be used with %s", nprocPerNodePath)))
+			}
 		}
 	}
 	allErrs = append(allErrs, validatePyTorchReplicaSpecs(spec.PyTorchReplicaSpecs)...)
@@ -147,6 +153,8 @@ func validatePyTorchReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*traini
 			if rSpec.Replicas == nil || int(*rSpec.Replicas) != 1 {
 				allErrs = append(allErrs, field.Forbidden(rolePath.Child("replicas"), "must be 1"))
 			}
+		} else if rSpec.Replicas != nil && int(*rSpec.Replicas) < 1 {
+			allErrs = append(allErrs, field.Forbidden(rolePath.Child("replicas"), "must be at least 1"))
 		}
 	}
 	return allErrs

@@ -52,6 +52,8 @@ import (
 const (
 	// EnvKubeflowNamespace is an environment variable for namespace when deployed on kubernetes
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
+
+	webhookConfigurationName = "validator.training-operator.kubeflow.org"
 )
 
 var (
@@ -150,8 +152,9 @@ func main() {
 	certsReady := make(chan struct{})
 	defer close(certsReady)
 	certGenerationConfig := cert.Config{
-		WebhookSecretName:  webhookSecretName,
-		WebhookServiceName: webhookServiceName,
+		WebhookSecretName:        webhookSecretName,
+		WebhookServiceName:       webhookServiceName,
+		WebhookConfigurationName: webhookConfigurationName,
 	}
 	if err = cert.ManageCerts(mgr, certGenerationConfig, certsReady); err != nil {
 		setupLog.Error(err, "Unable to set up cert rotation")

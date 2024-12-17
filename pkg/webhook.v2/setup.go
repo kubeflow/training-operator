@@ -16,16 +16,21 @@ limitations under the License.
 
 package webhookv2
 
-import ctrl "sigs.k8s.io/controller-runtime"
+import (
+	ctrl "sigs.k8s.io/controller-runtime"
 
-func Setup(mgr ctrl.Manager) (string, error) {
-	if err := setupWebhookForClusterTrainingRuntime(mgr); err != nil {
-		return "ClusterTrainingRuntime", err
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+)
+
+func Setup(mgr ctrl.Manager, runtimes map[string]runtime.Runtime) (string, error) {
+	if err := setupWebhookForClusterTrainingRuntime(mgr, runtimes); err != nil {
+		return kubeflowv2.ClusterTrainingRuntimeKind, err
 	}
-	if err := setupWebhookForTrainingRuntime(mgr); err != nil {
-		return "TrainingRuntime", err
+	if err := setupWebhookForTrainingRuntime(mgr, runtimes); err != nil {
+		return kubeflowv2.TrainingRuntimeKind, err
 	}
-	if err := setupWebhookForTrainJob(mgr); err != nil {
+	if err := setupWebhookForTrainJob(mgr, runtimes); err != nil {
 		return "TrainJob", err
 	}
 	return "", nil

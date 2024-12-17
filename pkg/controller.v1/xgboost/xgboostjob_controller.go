@@ -82,7 +82,7 @@ func NewReconciler(mgr manager.Manager, gangSchedulingSetupFunc common.GangSched
 	r.JobController = common.JobController{
 		Controller:                  r,
 		Expectations:                expectation.NewControllerExpectations(),
-		WorkQueue:                   &util.FakeWorkQueue{},
+		WorkQueue:                   &util.FakeWorkQueue[string]{},
 		Recorder:                    r.recorder,
 		KubeClientSet:               kubeClientSet,
 		PriorityClassLister:         priorityClassInformer.Lister(),
@@ -106,14 +106,14 @@ type XGBoostJobReconciler struct {
 	apiReader client.Reader
 }
 
-//+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
-//+kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=scheduling.volcano.sh,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile reads that state of the cluster for a XGBoostJob object and makes changes based on the state read
 // and what is in the XGBoostJob.Spec
@@ -181,40 +181,32 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThre
 	if err != nil {
 		return err
 	}
-
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &kubeflowv1.XGBoostJob{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
+	if err = c.Watch(source.Kind[*kubeflowv1.XGBoostJob](mgr.GetCache(), &kubeflowv1.XGBoostJob{},
+		&handler.TypedEnqueueRequestForObject[*kubeflowv1.XGBoostJob]{},
+		predicate.TypedFuncs[*kubeflowv1.XGBoostJob]{CreateFunc: r.onOwnerCreateFunc()}),
 	); err != nil {
 		return err
 	}
-
-	// eventHandler for owned objects
-	eventHandler := handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.XGBoostJob{}, handler.OnlyControllerOwner())
-	predicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFunc(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFunc(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFunc(r.Expectations),
-	}
-	// Create generic predicates
-	genericPredicates := predicate.Funcs{
-		CreateFunc: util.OnDependentCreateFuncGeneric(r.Expectations),
-		UpdateFunc: util.OnDependentUpdateFuncGeneric(&r.JobController),
-		DeleteFunc: util.OnDependentDeleteFuncGeneric(r.Expectations),
-	}
 	// inject watching for job related pod
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[*corev1.Pod](mgr.GetCache(), &corev1.Pod{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Pod](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.XGBoostJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.Pod](r.Scheme, r.Expectations, &r.JobController))); err != nil {
 		return err
 	}
 	// inject watching for job related service
-	if err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Service{}), eventHandler, predicates); err != nil {
+	if err = c.Watch(source.Kind[*corev1.Service](mgr.GetCache(), &corev1.Service{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Service](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.XGBoostJob{}, handler.OnlyControllerOwner()),
+		util.OnDependentFuncs[*corev1.Service](r.Scheme, r.Expectations, &r.JobController))); err != nil {
 		return err
 	}
 	// skip watching volcano PodGroup if volcano PodGroup is not installed
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: v1beta1.GroupName, Kind: "PodGroup"},
 		v1beta1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related volcano PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &v1beta1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[*v1beta1.PodGroup](mgr.GetCache(), &v1beta1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*v1beta1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.XGBoostJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*v1beta1.PodGroup](r.Scheme, r.Expectations, &r.JobController))); err != nil {
 			return err
 		}
 	}
@@ -222,7 +214,9 @@ func (r *XGBoostJobReconciler) SetupWithManager(mgr ctrl.Manager, controllerThre
 	if _, err = mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version); err == nil {
 		// inject watching for job related scheduler-plugins PodGroup
-		if err = c.Watch(source.Kind(mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{}), eventHandler, genericPredicates); err != nil {
+		if err = c.Watch(source.Kind[*schedulerpluginsv1alpha1.PodGroup](mgr.GetCache(), &schedulerpluginsv1alpha1.PodGroup{},
+			handler.TypedEnqueueRequestForOwner[*schedulerpluginsv1alpha1.PodGroup](mgr.GetScheme(), mgr.GetRESTMapper(), &kubeflowv1.XGBoostJob{}, handler.OnlyControllerOwner()),
+			util.OnDependentFuncs[*schedulerpluginsv1alpha1.PodGroup](r.Scheme, r.Expectations, &r.JobController))); err != nil {
 			return err
 		}
 	}
@@ -460,12 +454,9 @@ func (r *XGBoostJobReconciler) IsMasterRole(replicas map[kubeflowv1.ReplicaType]
 }
 
 // onOwnerCreateFunc modify creation condition.
-func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
-		xgboostJob, ok := e.Object.(*kubeflowv1.XGBoostJob)
-		if !ok {
-			return true
-		}
+func (r *XGBoostJobReconciler) onOwnerCreateFunc() func(createEvent event.TypedCreateEvent[*kubeflowv1.XGBoostJob]) bool {
+	return func(e event.TypedCreateEvent[*kubeflowv1.XGBoostJob]) bool {
+		xgboostJob := e.Object
 		r.Scheme.Default(xgboostJob)
 		msg := fmt.Sprintf("XGBoostJob %s is created.", e.Object.GetName())
 		logrus.Info()

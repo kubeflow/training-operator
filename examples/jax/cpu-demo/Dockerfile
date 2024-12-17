@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/facebookincubator/gloo.git \
     && cd gloo \
+    && git checkout 43b7acbf372cdce14075f3526e39153b7e433b53 \
     && mkdir build \
     && cd build \
     && cmake ../ \

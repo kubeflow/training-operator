@@ -11,8 +11,6 @@
 [id="{anchor_prefix}-kubeflow-org-v1"]
 == kubeflow.org/v1
 
-Package v1 is the v1 version of the API.
-
 Package v1 contains API Schema definitions for the kubeflow.org v1 API group
 
 .Resource Types
@@ -704,7 +702,7 @@ job, for example `minAvailable` for gang-scheduling.
 | Field | Description
 | *`minAvailable`* __integer__ | 
 | *`queue`* __string__ | 
-| *`minResources`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-api-resource-quantity[$$Quantity$$]__ | 
+| *`minResources`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#quantity-resource-api[$$Quantity$$]__ | 
 | *`priorityClass`* __string__ | 
 | *`scheduleTimeoutSeconds`* __integer__ | 
 |===

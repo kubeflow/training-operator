@@ -5,7 +5,8 @@ approvers:
   - johnugeorge
   - tenzen-y
   - terrytangyuan
-  - zw0610
 reviewers:
   - jinchihe
   - kuizhiqing
+emeritus_approvers:
+  - zw0610

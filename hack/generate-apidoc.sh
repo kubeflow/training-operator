@@ -25,10 +25,11 @@ SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
 
 cd ${SCRIPT_ROOT}
 
-CRD_REF_GEN_VERSION=v0.0.11
+CRD_REF_DOCS_PATH=$(go env GOPATH)/bin
+CRD_REF_GEN_VERSION=v0.1.0
 go install github.com/elastic/crd-ref-docs@${CRD_REF_GEN_VERSION}
 
-crd-ref-docs --log-level DEBUG\
+${CRD_REF_DOCS_PATH}/crd-ref-docs --log-level DEBUG\
     --source-path ./pkg/apis/kubeflow.org/v1 \
 		--config ./docs/api/autogen/config.yaml \
 		--templates-dir ./docs/api/autogen/templates \

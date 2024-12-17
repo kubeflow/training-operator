@@ -22,12 +22,23 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
+const (
+	// TrainingRuntimeKind is the Kind name for the TrainingRuntime.
+	TrainingRuntimeKind string = "TrainingRuntime"
+	// ClusterTrainingRuntimeKind is the Kind name for the ClusterTrainingRuntime.
+	ClusterTrainingRuntimeKind string = "ClusterTrainingRuntime"
+)
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=clustertrainingruntime
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:resource:scope=Cluster
 
 // ClusterTrainingRuntime represents a training runtime which can be referenced as part of
-// `trainingRuntimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
+// `runtimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
 // by TrainJob that created in *any* namespace.
 type ClusterTrainingRuntime struct {
 	metav1.TypeMeta `json:",inline"`
@@ -39,6 +50,8 @@ type ClusterTrainingRuntime struct {
 	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=clustertrainingruntimes
 // +kubebuilder:object:root=true
 
 // ClusterTrainingRuntimeList is a collection of cluster training runtimes.
@@ -52,11 +65,14 @@ type ClusterTrainingRuntimeList struct {
 	Items []ClusterTrainingRuntime `json:"items"`
 }
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=trainingruntime
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 
 // TrainingRuntime represents a training runtime which can be referenced as part of
-// `trainingRuntimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
+// `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
 // by TrainJob that created in the *same* namespace as the TrainingRuntime.
 type TrainingRuntime struct {
 	metav1.TypeMeta `json:",inline"`
@@ -68,6 +84,8 @@ type TrainingRuntime struct {
 	Spec TrainingRuntimeSpec `json:"spec,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=trainingruntimes
 // +kubebuilder:object:root=true
 
 // TrainingRuntimeList is a collection of training runtimes.
@@ -180,6 +198,7 @@ type TorchElasticPolicy struct {
 	// Specification which are used to calculate the desired number of nodes. See the individual
 	// metric source types for more information about how each type of metric must respond.
 	// The HPA will be created to perform auto-scaling.
+	// +listType=atomic
 	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 }
 
@@ -194,7 +213,7 @@ type MPIMLPolicySource struct {
 	MPIImplementation *MPIImplementation `json:"mpiImplementation,omitempty"`
 
 	// Directory where SSH keys are mounted.
-	SSHAuthMountPath *string `json:"SSHAuthMountPath,omitempty"`
+	SSHAuthMountPath *string `json:"sshAuthMountPath,omitempty"`
 
 	// Whether to run training process on the launcher Job.
 	// Defaults to false.

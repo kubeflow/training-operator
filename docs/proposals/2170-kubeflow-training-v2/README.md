@@ -178,11 +178,11 @@ the following table explains the naming that each framework or technology uses:
    </td>
    <td>Slot
 <p>
-<code>(--np)</code>
+<code>(-n)</code>
    </td>
    <td>Node
 <p>
-<code>(--host)</code>
+<code>(-host)</code>
    </td>
    <td><code>mpirun</code>
    </td>
@@ -279,9 +279,48 @@ type TrainJob struct {
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
+const (
+	// TrainJobSuspended means the TrainJob is suspended.
+	TrainJobSuspended string = "Suspended"
+
+	// TrainJobComplete means that the TrainJob has completed its execution.
+	TrainJobComplete string = "Complete"
+
+	// TrainJobFailed means that the actual jobs have failed its execution.
+	TrainJobFailed string = "Failed"
+
+	// TrainJobCreated means that the actual jobs creation has succeeded.
+	TrainJobCreated string = "Created"
+)
+
+const (
+	// TrainJobSuspendedReason is the "Suspended" condition reason.
+	// When the TrainJob is suspended, this is added.
+	TrainJobSuspendedReason string = "Suspended"
+
+	// TrainJobResumedReason is the "Suspended" condition reason.
+	// When the TrainJob suspension is changed from True to False, this is added.
+	TrainJobResumedReason string = "Resumed"
+
+	// TrainJobJobsCreationSucceededReason is the "Created" condition reason.
+	// When the creating objects succeeded after building succeeded, this is added.
+	TrainJobJobsCreationSucceededReason string = "JobsCreationSucceeded"
+
+	// TrainJobJobsBuildFailedReason is the "Created" condition reason.
+	// When the building objects based on the TrainJob and the specified runtime failed,
+	// this is added.
+	TrainJobJobsBuildFailedReason string = "JobsBuildFailed"
+
+	// TrainJobJobsCreationFailedReason is "Created" condition reason.
+	// When the creating objects failed even though building succeeded, this is added.
+	TrainJobJobsCreationFailedReason string = "JobsCreationFailed"
+)
+
 type TrainJobSpec struct {
 	// Reference to the training runtime.
-	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
+	// The field is immutable.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="runtimeRef is immutable"
+	RuntimeRef RuntimeRef `json:"runtimeRef"`
 
 	// Configuration of the desired trainer.
 	Trainer *Trainer `json:"trainer,omitempty"`
@@ -317,7 +356,7 @@ type TrainJobSpec struct {
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
-type TrainingRuntimeRef struct {
+type RuntimeRef struct {
 	// Name of the runtime being referenced.
 	// When namespaced-scoped TrainingRuntime is used, the TrainJob must have
 	// the same namespace as the deployed runtime.
@@ -337,17 +376,16 @@ type TrainJobStatus struct {
 	// Conditions for the TrainJob.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.
-	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// JobsStatus tracks the child Jobs in TrainJob.
+	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`
 }
 
-type ReplicatedJobStatus struct {
-	// Name of the ReplicatedJob.
+type JobStatus struct {
+	// Name of the child Job.
 	Name string `json:"name"`
 
 	// Ready is the number of child Jobs where the number of ready pods and completed pods
-	// is greater than or equal to the total expected pod count for the Job (i.e., the minimum
-	// of job.spec.parallelism and job.spec.completions).
+	// is greater than or equal to the total expected pod count for the child Job.
 	Ready int32 `json:"ready"`
 
 	// Succeeded is the number of successfully completed child Jobs.
@@ -375,7 +413,7 @@ This table explains the rationale for each `TrainJob` parameter:
    </td>
   </tr>
   <tr>
-   <td><code>TrainingRuntimeRef</code>
+   <td><code>RuntimeRef</code>
    </td>
    <td>Reference to the existing <code>TrainingRuntime</code> that is pre-deployed by platform engineers
    </td>
@@ -430,7 +468,7 @@ metadata:
   name: torch-ddp
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-distributed-multi-node
   trainer:
     image: docker.io/custom-training
@@ -488,7 +526,7 @@ metadata:
   name: tune-llama-with-yelp
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-tune-llama-7b
   datasetConfig:
     storageUri: s3://dataset/custom-dataset/yelp-review
@@ -596,7 +634,7 @@ type DatasetConfig struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download dataset.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -664,7 +702,7 @@ type InputModel struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to download model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 type OutputModel struct {
@@ -676,7 +714,7 @@ type OutputModel struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Reference to the TrainJob's secrets to export model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 ```
 
@@ -831,8 +869,8 @@ In the future, we can add more parameters if we find use-cases when it is requir
 
 ```golang
 type PodSpecOverride struct {
-	// Names of the training job replicas in the training runtime template to apply the overrides.
-	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
+	// TrainJobs is the training job replicas in the training runtime template to apply the overrides.
+	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
 	// Overrides for the containers in the desired job templates.
 	Containers []ContainerOverride `json:"containers,omitempty"`
@@ -851,6 +889,11 @@ type PodSpecOverride struct {
 
 	// Override for the Pod's tolerations.
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+type PodSpecOverrideTargetJob struct {
+	// Name is the target training job name for which the PodSpec is overridden.
+	Name string `json:"name"`
 }
 
 // ContainerOverride represents parameters that can be overridden using PodSpecOverride.
@@ -890,13 +933,13 @@ metadata:
   name: pytorch-distributed
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: pytorch-distributed-gpu
   trainer:
     image: docker.io/custom-training
   podSpecOverrides:
-    - targetReplicatedJobs:
-        - node
+    - targetJobs:
+        - name: node
       containers:
         - name: user-identity
           value: 123
@@ -909,6 +952,52 @@ spec:
           persistentVolumeClaim:
             claimName: user-123-volume
 ```
+
+### State Transition
+
+In this section, we're explaining the TrainJob state transition (`.status.conditions`).
+The basic TrainJob state machine is the below.
+Especially, if we specify the TrainingRuntime or ClusterTrainingRuntime as a runtime,
+the TrainJob terminal condition (`Failed` or `Complete`) is decided based on the JobSet terminal state (`status.terminalState`)
+instead of computing from JobSet conditions.
+
+```mermaid
+stateDiagram-v2
+    #CREATION
+    state created_choice <<choice>>
+    [*] --> created_choice: TrainJob is submitted.
+    created_choice --> Created=True: Succeeded to build and deploy Jobs.
+    created_choice --> Created=False: Failed to build and deploy Jobs.
+    Created=False --> Created=False: Wait for updated appropriate TrainJob.
+    Created=False --> Created=True: Succeeded to build and deploy Jobs.
+
+    #SUSPENSION
+    state suspended_choice <<choice>>
+    Created=True --> suspended_choice: Handle TrainJob suspension.
+    suspended_choice --> Suspended=True: TrainJob is suspended.
+    Suspended=True --> Suspended=True: Wait for unsuspending.
+    Suspended=True --> Suspended=False: TrainJob is unsuspended.
+    suspended_choice --> Suspended=False: TrainJob is not suspended.
+
+    #FAILURE
+    state terminal_choice <<choice>>
+    Suspended=False --> terminal_choice: Actual Jobs go to terminal phase.
+    terminal_choice --> Failed=True: Actual Jobs (e.g., JobSet) failed.
+    Failed=True --> [*]
+
+    #COMPLETION
+    terminal_choice --> Complete=True: Actual Jobs (e.g., JobSet) completed.
+    Complete=True --> [*]
+```
+
+In the above state transition, the `Created=False` will happen in the following situations and
+those different situations can be identified by the condition reasons (`.status.conditions.[type="Created"].reason`).
+
+- `JobsBuildFailed`: When the TrainJob controller failed to construct objects (resources) using the [runtime framework interfaces](../../../pkg/runtime.v2/framework/interface.go)
+- `JobsCreationFailed`: When the TrainJob controller succeeded to construct objects, but it failed to deploy objects to the cluster.
+
+Additionally, we extend the [runtime framework interfaces](../../../pkg/runtime.v2/framework/interface.go)
+to allow each plugin to propagate the arbitrary conditions to the TrainJob.
 
 ## The Training Runtime API
 
@@ -939,7 +1028,7 @@ to control versions of `TrainingRuntime` and enable rolling updates.
 
 We are going to create two CRDs: `TrainingRuntime` and `ClusterTrainingRuntime`. These runtimes have
 exactly the same APIs, but the first one is the namespace-scoped, the second is the cluster-scoped.
-User can set the `kind` and `apiGroup` parameters in the `trainingRuntimeRef` to use
+User can set the `kind` and `apiGroup` parameters in the `runtimeRef` to use
 the `TrainingRuntime` from the `TrainJob's` namespace, otherwise the `ClusterTrainingRuntime` will
 be used.
 
@@ -1228,7 +1317,7 @@ metadata:
   name: torch-test
   namespace: tenant-alpha
 spec:
-  trainingRuntimeRef:
+  runtimeRef:
     name: torch-distributed-multi-node
   trainer:
     resourcesPerNode:
@@ -1515,7 +1604,36 @@ spec:
 
 #### MPI Runtime
 
-For MPI, we can add support for the `DeepSpeed` runtimes.
+We will re-use [the MPI Operator V2](https://github.com/kubeflow/mpi-operator/blob/master/proposals/scalable-robust-operator.md)
+functionality as part of this MPI Runtime. Which means we will use the SSH-based approach to
+initialize the MPI Job.
+
+The MPI Plugin in Training Operator will be responsible to:
+
+- Build the Secret with the SSH keys.
+- Build the ConfigMap with the appropriate hostfile for OpenMPI, IntelMPI, or MPICH. We will support
+  only **OpenMPI** in the first implementation.
+
+The Secret and ConfigMap will be added to the corresponding JobSet.
+
+The hostfile default location is `/etc/mpi/hostfile`. For example, for OpenMPI we configure this
+env variable:
+
+```bash
+OMPI_MCA_orte_default_hostfile=/etc/mpi/hostfile
+```
+
+The `numProcPerNode` is equal to the number of slots in the MPI hostfile.
+
+Example of hostfile:
+
+```
+deepspeed-trainer-node-0-0.default.svc slots=5
+deepspeed-trainer-node-0-1.default.svc slots=5
+```
+
+Initially, we will introduce support for [distributed MLX](https://ml-explore.github.io/mlx/build/html/usage/distributed.html)
+and [DeepSpeed](https://www.deepspeed.ai/training/) using the MPI Runtime.
 
 Example of simple OpenMPI runtime:
 
@@ -1523,16 +1641,19 @@ Example of simple OpenMPI runtime:
 apiVersion: kubeflow.org/v2alpha1
 kind: ClusterTrainingRuntime
 metadata:
-  name: mpi-simple
+  name: deepspeed
+  namespace: default
 spec:
   mlPolicy:
-    numNodes: 5
+    numNodes: 2
     mpi:
       mpiImplementation: OpenMPI
       numProcPerNode: 5
   template:
+      startupPolicy:
+        startupPolicyOrder: InOrder
     replicatedJobs:
-      - name: Launcher
+      - name: launcher
         template:
           spec:
             template:
@@ -1541,17 +1662,18 @@ spec:
                   - name: mpi-launcher
                     image: docker.io/mpi-launch
                     command:
-                      - mpirun -np 5 --host mpi-simple.default.svc
-      - name: Node
+                      - mpirun launch-job
+      - name: trainer-node
         template:
           spec:
             template:
               spec:
                 containers:
                   - name: trainer
-                    image: docker.io/mpi-training
-                    command:
-                      - mpirun -np 2 train.py
+                    image: docker.io/deepspeed-trainer
+                    resources:
+                      limits:
+                        nvidia.com/gpu: 5
 ```
 
 #### TensorFlow Runtime
@@ -1698,7 +1820,7 @@ Note that we should implement the status transitions validations to once we supp
 
 ### Support Multiple API Versions of TrainingRuntime
 
-We can consider to introduce the `version` field for runtime API version to the `.spec.trainingRuntimeRef`
+We can consider to introduce the `version` field for runtime API version to the `.spec.runtimeRef`
 so that we can support multiple API versions of TrainingRuntime.
 
 It could mitigate the pain points when users upgrade the older API Version to newer API Version like alpha to beta.
@@ -1706,7 +1828,7 @@ But, we do not aim to support both Alpha and Beta versions or both first Alpha a
 Hence, the `version` field was not introduced.
 
 ```go
-type TrainingRuntimeRef struct {
+type RuntimeRef struct {
 	[...]
 
 	// APIVersion is the apiVersion for the runtime.

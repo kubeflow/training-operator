@@ -1,4 +1,4 @@
-// Copyright 2023 The Kubeflow Authors
+// Copyright 2024 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package v1
 
 import (
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -36,25 +36,17 @@ type PaddleJobLister interface {
 
 // paddleJobLister implements the PaddleJobLister interface.
 type paddleJobLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.PaddleJob]
 }
 
 // NewPaddleJobLister returns a new PaddleJobLister.
 func NewPaddleJobLister(indexer cache.Indexer) PaddleJobLister {
-	return &paddleJobLister{indexer: indexer}
-}
-
-// List lists all PaddleJobs in the indexer.
-func (s *paddleJobLister) List(selector labels.Selector) (ret []*v1.PaddleJob, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PaddleJob))
-	})
-	return ret, err
+	return &paddleJobLister{listers.New[*v1.PaddleJob](indexer, v1.Resource("paddlejob"))}
 }
 
 // PaddleJobs returns an object that can list and get PaddleJobs.
 func (s *paddleJobLister) PaddleJobs(namespace string) PaddleJobNamespaceLister {
-	return paddleJobNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return paddleJobNamespaceLister{listers.NewNamespaced[*v1.PaddleJob](s.ResourceIndexer, namespace)}
 }
 
 // PaddleJobNamespaceLister helps list and get PaddleJobs.
@@ -72,26 +64,5 @@ type PaddleJobNamespaceLister interface {
 // paddleJobNamespaceLister implements the PaddleJobNamespaceLister
 // interface.
 type paddleJobNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all PaddleJobs in the indexer for a given namespace.
-func (s paddleJobNamespaceLister) List(selector labels.Selector) (ret []*v1.PaddleJob, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PaddleJob))
-	})
-	return ret, err
-}
-
-// Get retrieves the PaddleJob from the indexer for a given namespace and name.
-func (s paddleJobNamespaceLister) Get(name string) (*v1.PaddleJob, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("paddlejob"), name)
-	}
-	return obj.(*v1.PaddleJob), nil
+	listers.ResourceIndexer[*v1.PaddleJob]
 }

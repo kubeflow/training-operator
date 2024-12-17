@@ -32,7 +32,7 @@ func GetMasterEnvVarGenerator() EnvVarGenerator {
 
 func (e MasterEnvVarGenerator) Generate(
 	job *kubeflowv1.PyTorchJob) ([]corev1.EnvVar, error) {
-	envVars := []corev1.EnvVar{}
+	var envVars []corev1.EnvVar
 	if job.Spec.PyTorchReplicaSpecs[kubeflowv1.PyTorchJobReplicaTypeMaster] != nil {
 		masterPort, err := getPortFromPyTorchJob(job, kubeflowv1.PyTorchJobReplicaTypeMaster)
 		if err != nil {

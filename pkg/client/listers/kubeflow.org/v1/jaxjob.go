@@ -1,4 +1,4 @@
-// Copyright 2023 The Kubeflow Authors
+// Copyright 2024 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package v1
 
 import (
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -36,25 +36,17 @@ type JAXJobLister interface {
 
 // jAXJobLister implements the JAXJobLister interface.
 type jAXJobLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.JAXJob]
 }
 
 // NewJAXJobLister returns a new JAXJobLister.
 func NewJAXJobLister(indexer cache.Indexer) JAXJobLister {
-	return &jAXJobLister{indexer: indexer}
-}
-
-// List lists all JAXJobs in the indexer.
-func (s *jAXJobLister) List(selector labels.Selector) (ret []*v1.JAXJob, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.JAXJob))
-	})
-	return ret, err
+	return &jAXJobLister{listers.New[*v1.JAXJob](indexer, v1.Resource("jaxjob"))}
 }
 
 // JAXJobs returns an object that can list and get JAXJobs.
 func (s *jAXJobLister) JAXJobs(namespace string) JAXJobNamespaceLister {
-	return jAXJobNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return jAXJobNamespaceLister{listers.NewNamespaced[*v1.JAXJob](s.ResourceIndexer, namespace)}
 }
 
 // JAXJobNamespaceLister helps list and get JAXJobs.
@@ -72,26 +64,5 @@ type JAXJobNamespaceLister interface {
 // jAXJobNamespaceLister implements the JAXJobNamespaceLister
 // interface.
 type jAXJobNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all JAXJobs in the indexer for a given namespace.
-func (s jAXJobNamespaceLister) List(selector labels.Selector) (ret []*v1.JAXJob, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.JAXJob))
-	})
-	return ret, err
-}
-
-// Get retrieves the JAXJob from the indexer for a given namespace and name.
-func (s jAXJobNamespaceLister) Get(name string) (*v1.JAXJob, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("jaxjob"), name)
-	}
-	return obj.(*v1.JAXJob), nil
+	listers.ResourceIndexer[*v1.JAXJob]
 }

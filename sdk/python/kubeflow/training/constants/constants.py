@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from typing import Union
 
 from kubeflow.storage_initializer.constants import INIT_CONTAINER_MOUNT_PATH
@@ -82,14 +83,18 @@ PVC_DEFAULT_ACCESS_MODES = ["ReadWriteOnce", "ReadOnlyMany"]
 
 
 # TODO (andreyvelich): We should add image tag for Storage Initializer and Trainer.
-STORAGE_INITIALIZER_IMAGE_DEFAULT = "docker.io/kubeflow/storage-initializer"
+STORAGE_INITIALIZER_IMAGE = os.getenv(
+    "STORAGE_INITIALIZER_IMAGE", "docker.io/kubeflow/storage-initializer"
+)
 
 STORAGE_INITIALIZER_VOLUME_MOUNT = models.V1VolumeMount(
     name=STORAGE_INITIALIZER,
     mount_path=INIT_CONTAINER_MOUNT_PATH,
 )
 
-TRAINER_TRANSFORMER_IMAGE_DEFAULT = "docker.io/kubeflow/trainer-huggingface"
+TRAINER_TRANSFORMER_IMAGE = os.getenv(
+    "TRAINER_TRANSFORMER_IMAGE", "docker.io/kubeflow/trainer-huggingface"
+)
 
 # TFJob constants.
 TFJOB_KIND = "TFJob"
@@ -112,6 +117,10 @@ PYTORCHJOB_PLURAL = "pytorchjobs"
 PYTORCHJOB_CONTAINER = "pytorch"
 PYTORCHJOB_REPLICA_TYPES = (REPLICA_TYPE_MASTER.lower(), REPLICA_TYPE_WORKER.lower())
 PYTORCHJOB_BASE_IMAGE = "docker.io/pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime"
+
+ENTRYPOINT_TORCH = "torchrun"
+ENTRYPOINT_PYTHON = "python -u"
+DEFAULT_COMMAND = ["bash", "-c"]
 
 # XGBoostJob constants
 XGBOOSTJOB_KIND = "XGBoostJob"

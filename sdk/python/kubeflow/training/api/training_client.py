@@ -15,7 +15,6 @@
 import json
 import logging
 import multiprocessing
-import os
 import queue
 import time
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
@@ -129,8 +128,8 @@ class TrainingClient(object):
             namespace: Namespace for the PyTorchJob. By default namespace is taken from
                 `TrainingClient` object.
             num_workers: Number of PyTorchJob workers.
-            num_procs_per_worker: Number of processes per PyTorchJob worker for `torchrun` CLI.
-                You can use this parameter if you want to use more than 1 GPU per PyTorchJob worker.
+            num_procs_per_worker: Number of processes per PyTorchJob worker for `torchrun` CLI. You
+                should use this parameter if you want to use more than 1 GPU per PyTorchJob worker.
             resources_per_worker: A parameter that lets you specify how much
                 resources each PyTorchJob worker container should have. You can either specify a
                 kubernetes.client.V1ResourceRequirements object (documented here:
@@ -243,9 +242,7 @@ class TrainingClient(object):
         # create init container spec
         init_container_spec = utils.get_container_spec(
             name=constants.STORAGE_INITIALIZER,
-            base_image=os.getenv(
-                "STORAGE_INITIALIZER_IMAGE", constants.STORAGE_INITIALIZER_IMAGE_DEFAULT
-            ),
+            base_image=constants.STORAGE_INITIALIZER_IMAGE,
             args=[
                 "--model_provider",
                 mp,
@@ -262,10 +259,7 @@ class TrainingClient(object):
         # create app container spec
         container_spec = utils.get_container_spec(
             name=constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["container"],
-            base_image=os.getenv(
-                "TRAINER_TRANSFORMER_IMAGE_DEFAULT",
-                constants.TRAINER_TRANSFORMER_IMAGE_DEFAULT,
-            ),
+            base_image=constants.TRAINER_TRANSFORMER_IMAGE,
             args=[
                 "--model_uri",
                 model_provider_parameters.model_uri,
@@ -328,7 +322,8 @@ class TrainingClient(object):
         base_image: Optional[str] = None,
         train_func: Optional[Callable] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        num_workers: Optional[int] = None,
+        num_workers: Optional[int] = 1,
+        num_procs_per_worker: Optional[Union[int, str]] = None,
         resources_per_worker: Union[dict, models.V1ResourceRequirements, None] = None,
         num_chief_replicas: Optional[int] = None,
         num_ps_replicas: Optional[int] = None,
@@ -361,6 +356,9 @@ class TrainingClient(object):
                 set, Base Image must support `bash` CLI to execute the training script.
             parameters: Dict of input parameters that training function might receive.
             num_workers: Number of Worker replicas for the Job.
+            num_procs_per_worker: Number of processes per PyTorchJob worker for `torchrun` CLI. You
+                should use this parameter if you want to use more than 1 GPU per PyTorchJob worker.
+                Set to "auto" to automatically use available GPU/CPU PyTorch resources.
             resources_per_worker: A parameter that lets you specify how much
                 resources each Worker container should have. You can either specify a
                 kubernetes.client.V1ResourceRequirements object (documented here:
@@ -399,7 +397,8 @@ class TrainingClient(object):
         if job is not None:
             for key, value in locals().items():
                 if (
-                    key not in ["self", "job", "namespace", "pip_index_url"]
+                    key
+                    not in ["self", "job", "namespace", "pip_index_url", "num_workers"]
                     and value is not None
                 ):
                     raise ValueError(
@@ -425,19 +424,44 @@ class TrainingClient(object):
                     "Job name must be set to configure Job from function or image"
                 )
 
+            # Check if at least one Worker is set.
+            # TODO (andreyvelich): Remove this check once we have CEL validation.
+            # Ref: https://github.com/kubeflow/training-operator/issues/1708
+            if num_workers is None or num_workers < 1:
+                raise ValueError(f"At least one Worker for {job_kind} must be set")
+
             # Assign the default base image.
             # TODO (andreyvelich): Add base image for other Job kinds.
             if base_image is None:
                 base_image = constants.JOB_PARAMETERS[job_kind]["base_image"]
 
+            # By default we don't set command and args for the training container.
+            command, args = None, None
+
+            # If training function is set get the command and args.
+            if train_func is not None:
+                # Use `torchrun` for distributed PyTorch training, otherwise use `python`
+                if job_kind == constants.PYTORCHJOB_KIND and (
+                    num_workers > 1 or num_procs_per_worker is not None
+                ):
+                    entrypoint = constants.ENTRYPOINT_TORCH
+                else:
+                    entrypoint = constants.ENTRYPOINT_PYTHON
+
+                command, args = utils.get_command_using_train_func(
+                    train_func=train_func,
+                    entrypoint=entrypoint,
+                    train_func_parameters=parameters,
+                    packages_to_install=packages_to_install,
+                    pip_index_url=pip_index_url,
+                )
+
             # Get Training Container template.
             container_spec = utils.get_container_spec(
                 name=constants.JOB_PARAMETERS[job_kind]["container"],
                 base_image=base_image,
-                train_func=train_func,
-                train_func_parameters=parameters,
-                packages_to_install=packages_to_install,
-                pip_index_url=pip_index_url,
+                command=command,
+                args=args,
                 resources=resources_per_worker,
             )
 
@@ -449,6 +473,10 @@ class TrainingClient(object):
             # Configure template for different Jobs.
             # TODO (andreyvelich): Add support for other kinds (e.g. MPIJob).
             if job_kind == constants.TFJOB_KIND:
+                if num_procs_per_worker is not None:
+                    raise ValueError(
+                        f"num_procs_per_worker can't be set for {constants.TFJOB_KIND}"
+                    )
                 job = utils.get_tfjob_template(
                     name=name,
                     namespace=namespace,
@@ -457,12 +485,18 @@ class TrainingClient(object):
                     num_chief_replicas=num_chief_replicas,
                     num_ps_replicas=num_ps_replicas,
                 )
-            elif job_kind == constants.PYTORCHJOB_KIND and num_workers:
+            elif job_kind == constants.PYTORCHJOB_KIND:
+                if num_chief_replicas is not None or num_ps_replicas is not None:
+                    raise ValueError(
+                        "num_chief_replicas and num_ps_replicas can't be set for "
+                        f"{constants.PYTORCHJOB_KIND}"
+                    )
                 job = utils.get_pytorchjob_template(
                     name=name,
                     namespace=namespace,
                     worker_pod_template_spec=pod_template_spec,
                     num_workers=num_workers,
+                    num_procs_per_worker=num_procs_per_worker,
                 )
             else:
                 raise ValueError(
@@ -909,7 +943,9 @@ class TrainingClient(object):
             )
 
             # Get Job conditions.
-            conditions = self.get_job_conditions(job=job, timeout=timeout)
+            conditions = self.get_job_conditions(
+                job=job, timeout=timeout, job_kind=job_kind
+            )
             if len(conditions) > 0:
                 status_logger(
                     name,
