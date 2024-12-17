@@ -21,4 +21,4 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-docker build sdk/python/kubeflow/trainer -t ${TRAINER_CI_IMAGE} -f sdk/python/kubeflow/trainer/Dockerfile
+docker build sdk/python/kubeflow/trainer -t ${TRAINER_CI_IMAGE} -f sdk/python/kubeflow/trainer/test.Dockerfile
