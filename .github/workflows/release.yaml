@@ -43,7 +43,7 @@ jobs:
           VERSION=${VERSION#v}
           SCRIPT_VERSION=$(grep 'VERSION=' hack/python-sdk/gen-sdk.sh | cut -d'=' -f2)
           SWAGGER_VERSION=$(grep 'packageVersion' hack/python-sdk/swagger_config.json | cut -d'"' -f4)
-          SETUP_VERSION=$(grep 'version=' sdk/python/setup.py | cut -d'=' -f2 | tr -d "'")
+          SETUP_VERSION=$(grep 'version=' sdk/python/setup.py | cut -d'=' -f2 | tr -d "'\"," | xargs)
           
           if [[ ${SCRIPT_VERSION} == ${VERSION} ]]; then
             echo "Script version '${SCRIPT_VERSION}' matches version '${VERSION}'."
