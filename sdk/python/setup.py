@@ -33,7 +33,7 @@ REQUIRES = [
 
 setuptools.setup(
     name="kubeflow-training",
-    version="1.8.0-rc.2",
+    version="1.8.0-rc.3",
     author="Kubeflow Authors",
     author_email="hejinchi@cn.ibm.com",
     license="Apache License Version 2.0",
