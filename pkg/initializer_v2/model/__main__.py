@@ -11,7 +11,8 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-if __name__ == "__main__":
+
+def main():
     logging.info("Starting pre-trained model initialization")
 
     try:
@@ -31,3 +32,7 @@ if __name__ == "__main__":
                 f"STORAGE_URI must have the valid model provider. STORAGE_URI: {storage_uri}"
             )
             raise Exception
+
+
+if __name__ == "__main__":
+    main()
