@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import logging
-import test.e2e.utils as utils
+import pytest
 
 import transformers
 from kubeflow.storage_initializer.hugging_face import (
@@ -24,12 +25,21 @@ from kubeflow.storage_initializer.hugging_face import (
 from kubeflow.training import TrainingClient, constants
 from peft import LoraConfig
 
+import test.e2e.utils as utils
+from test.e2e.constants import TEST_GANG_SCHEDULER_NAME_ENV_KEY
+from test.e2e.constants import GANG_SCHEDULERS
+
 logging.basicConfig(format="%(message)s")
 logging.getLogger("kubeflow.training.api.training_client").setLevel(logging.DEBUG)
 
 TRAINING_CLIENT = TrainingClient(job_kind=constants.PYTORCHJOB_KIND)
+GANG_SCHEDULER_NAME = os.getenv(TEST_GANG_SCHEDULER_NAME_ENV_KEY, "")
 
 
+@pytest.mark.skipif(
+    GANG_SCHEDULER_NAME in GANG_SCHEDULERS,
+    reason="For plain scheduling",
+)
 def test_sdk_e2e_create_from_train_api(job_namespace="default"):
     JOB_NAME = "pytorchjob-from-train-api"
 
