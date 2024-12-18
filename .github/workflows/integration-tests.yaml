@@ -86,7 +86,6 @@ jobs:
           ./scripts/gha/build-storage-initializer.sh
         env:
           STORAGE_INITIALIZER_CI_IMAGE: kubeflowtraining/storage-initializer:test
-          TRAINER_CI_IMAGE: kubeflowtraining/trainer:test
   
       - name: Load storage initializer
         run: |
