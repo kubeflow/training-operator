@@ -74,7 +74,7 @@ jobs:
             platforms: linux/amd64
             dockerfile: examples/pytorch/deepspeed-demo/Dockerfile
             context: examples/pytorch/deepspeed-demo
-          - component-name: jaxjob-mnist
+          - component-name: jaxjob-dist-spmd-mnist
             platforms: linux/amd64,linux/arm64
             dockerfile: examples/jax/jax-dist-spmd-mnist/Dockerfile
             context: examples/jax/jax-dist-spmd-mnist/
