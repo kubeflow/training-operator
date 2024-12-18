@@ -88,7 +88,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace="default"):
         utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
-        #TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
+        TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
         raise Exception(f"PyTorchJob create from API E2E fails. Exception: {e}")
 
     utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
