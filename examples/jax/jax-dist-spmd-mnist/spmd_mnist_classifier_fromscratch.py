@@ -1,3 +1,17 @@
+# Copyright 2024 kubeflow.org.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """An MNIST example with single-program multiple-data (SPMD) data parallelism.
 
 The aim here is to illustrate how to use JAX's `pmap` to express and execute
@@ -34,9 +48,9 @@ jax.config.update("jax_cpu_collectives_implementation", "gloo")
 
 process_id = int(os.getenv("PROCESS_ID"))
 num_processes = int(os.getenv("NUM_PROCESSES"))
-coordinator_address = os.getenv("COORDINATOR_ADDRESS")
-coordinator_port = int(os.getenv("COORDINATOR_PORT"))
-coordinator_address = f"{coordinator_address}:{coordinator_port}"
+coordinator_address = (
+    f"{os.getenv('COORDINATOR_ADDRESS')}:{int(os.getenv('COORDINATOR_PORT'))}"
+)
 
 jax.distributed.initialize(
     coordinator_address=coordinator_address,
@@ -138,6 +152,7 @@ if __name__ == "__main__":
 
     print(f"JAX device count:{jax.device_count()}")
     print(f"JAX local device count:{jax.local_device_count()}")
+    print(f"JAX process count:{jax.process_count()}")
 
     for epoch in range(num_epochs):
         start_time = time.time()

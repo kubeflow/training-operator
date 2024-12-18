@@ -155,7 +155,6 @@ def generate_jaxjob(
 def generate_container() -> V1Container:
     return V1Container(
         name=CONTAINER_NAME,
-        image="docker.io/kubeflow/jaxjob-simple:latest",
-        command=["python", "train.py"],
+        image="docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest",
         resources=V1ResourceRequirements(limits={"memory": "2Gi", "cpu": "0.8"}),
     )

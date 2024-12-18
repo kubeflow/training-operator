@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.13
 
 RUN pip install --upgrade pip
 RUN pip install --upgrade jax absl-py
@@ -25,3 +25,5 @@ RUN git clone https://github.com/facebookincubator/gloo.git \
 WORKDIR /app
 
 ADD datasets.py spmd_mnist_classifier_fromscratch.py /app
+
+ENTRYPOINT ["python3", "spmd_mnist_classifier_fromscratch.py"]
