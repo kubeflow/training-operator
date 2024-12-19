@@ -61,7 +61,7 @@ def test_sdk_e2e_create_from_train_api(job_namespace="default"):
                 log_level="info",
                 num_train_epochs=1,
             ),
-            # Set LoRA config to reduce number of trainable model parameters.
+            # Set LoRA config to reduce number of trainable parameters.
             lora_config=LoraConfig(
                 r=8,
                 lora_alpha=8,
