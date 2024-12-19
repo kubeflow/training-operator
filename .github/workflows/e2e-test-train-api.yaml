@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup E2E Tests
         uses: ./.github/workflows/setup-e2e-test
         with:
