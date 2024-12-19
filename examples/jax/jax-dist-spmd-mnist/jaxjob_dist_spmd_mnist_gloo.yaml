@@ -12,5 +12,5 @@ spec:
         spec:
           containers:
             - name: jax
-              image: docker.io/sandipanify/jaxjob-spmd-mnist:latest
+              image: docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest
               imagePullPolicy: Always
