@@ -14,7 +14,7 @@ concurrency:
 env:
   SEMVER_PATTERN: '^v([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$'
   IMAGE_REGISTRY: docker.io
-  IMAGE_REPOSITORY: kubeflow/training-operator
+  IMAGE_REPOSITORY: veer0x1/training-operator
 
 jobs:
   check-release:
