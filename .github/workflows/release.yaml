@@ -14,7 +14,7 @@ concurrency:
 env:
   SEMVER_PATTERN: '^v([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$'
   IMAGE_REGISTRY: docker.io
-  IMAGE_REPOSITORY: veer0x1/training-operator
+  IMAGE_REPOSITORY: kubeflow/training-operator
 
 jobs:
   check-release:
@@ -48,6 +48,8 @@ jobs:
           fi
 
   build-images:
+    needs: check-release
+
     runs-on: ubuntu-latest
 
     strategy:
@@ -78,7 +80,7 @@ jobs:
           images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }}
           tags: |
             type=semver,pattern={{version}},value=${{ env.VERSION }}
-        
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -101,7 +103,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
-      
+
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
@@ -129,7 +131,7 @@ jobs:
         run: |
           VERSION=$(cat VERSION)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-      
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -193,7 +195,7 @@ jobs:
 
   draft-release:
     needs: push-tags
-    
+
     permissions:
       contents: write
 
@@ -218,7 +220,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: "Training Operator ${{ env.VERSION }}"
+          name: "${{ env.VERSION }}"
           tag_name: ${{ env.VERSION }}
           prerelease: ${{ contains(env.VERSION, 'rc') }}
           target_commitish: ${{ github.sha }}
