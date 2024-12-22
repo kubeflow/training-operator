@@ -96,6 +96,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
+          context: .
+          file: build/images/training-operator/Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
