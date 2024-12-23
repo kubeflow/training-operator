@@ -18,10 +18,10 @@ from kubeflow.training.models import V1DeleteOptions
 from kubernetes.client import (
     ApiClient,
     V1Container,
+    V1EnvVar,
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
-    V1EnvVar,
 )
 
 TEST_NAME = "test"

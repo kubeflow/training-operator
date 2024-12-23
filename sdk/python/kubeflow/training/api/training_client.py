@@ -274,7 +274,7 @@ class TrainingClient(object):
                 json.dumps(dataset_provider_parameters.__dict__),
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
-            env=init_env_vars,
+            env_vars=init_env_vars,
         )
 
         # create app container spec
@@ -301,7 +301,7 @@ class TrainingClient(object):
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
             resources=resources_per_worker,
-            env=env_vars,
+            env_vars=env_vars,
         )
 
         storage_initializer_volume = models.V1Volume(
@@ -495,7 +495,7 @@ class TrainingClient(object):
                 command=command,
                 args=args,
                 resources=resources_per_worker,
-                env=env_vars,
+                env_vars=env_vars,
             )
 
             # Get Pod template spec using the above container.

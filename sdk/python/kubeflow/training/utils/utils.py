@@ -206,6 +206,16 @@ def get_container_spec(
     if name is None or base_image is None:
         raise ValueError("Container name or base image cannot be none")
 
+    # Handle env_vars as either a dict or a list
+    if env_vars:
+        if isinstance(env_vars, dict):
+            env_vars = [models.V1EnvVar(name=k, value=v) for k, v in env_vars.items()]
+        elif isinstance(env_vars, list):
+            env_vars = [
+                v if isinstance(v, models.V1EnvVar) else models.V1EnvVar(**v)
+                for v in env_vars
+            ]
+
     # Create initial container spec.
     container_spec = models.V1Container(
         name=name,
@@ -213,10 +223,7 @@ def get_container_spec(
         command=command,
         args=args,
         volume_mounts=volume_mounts,
-        env=[
-            models.V1EnvVar(name=str(k), value=str(v))
-            for k, v in (env_vars or {}).items()
-        ],
+        env=env_vars,
     )
 
     # Convert dict to the Kubernetes container resources if that is required.
