@@ -21,6 +21,7 @@ from kubernetes.client import (
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
+    V1EnvVar,
 )
 
 TEST_NAME = "test"
@@ -491,6 +492,30 @@ test_data_create_job = [
         {"job": create_job(), "namespace": RUNTIME},
         RuntimeError,
         None,
+    ),
+    (
+        "valid flow with env_vars as dict",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "env_vars": {"ENV_VAR": "env_value"},
+            "base_image": TEST_IMAGE,
+            "num_workers": 1,
+        },
+        SUCCESS,
+        create_job(),
+    ),
+    (
+        "valid flow with env_vars as list",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "env_vars": [V1EnvVar(name="ENV_VAR", value="env_value")],
+            "base_image": TEST_IMAGE,
+            "num_workers": 2,
+        },
+        SUCCESS,
+        create_job(),
     ),
 ]
 
@@ -1736,4 +1761,41 @@ def test_get_job_logs(
     except Exception as e:
         assert type(e) is expected_output
 
+    print("test execution complete")
+
+
+@pytest.mark.parametrize(
+    "test_name,kwargs,expected_output,expected_job", test_data_create_job
+)
+def test_create_job_with_env_vars(
+    training_client, test_name, kwargs, expected_output, expected_job
+):
+    """
+    test create_job function of training client with env_vars
+    """
+    print("Executing test:", test_name)
+    try:
+        training_client.create_job(**kwargs)
+
+        assert expected_output == SUCCESS
+
+        training_client.custom_api.create_namespaced_custom_object.assert_called_with(
+            constants.GROUP,
+            constants.VERSION,
+            kwargs["namespace"],
+            constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["plural"],
+            expected_job,
+        )
+
+        # Check if env_vars are handled correctly
+        if "env_vars" in kwargs:
+            if isinstance(kwargs["env_vars"], dict):
+                assert kwargs["env_vars"] == {"ENV_VAR": "env_value"}
+            elif isinstance(kwargs["env_vars"], list):
+                assert kwargs["env_vars"] == [
+                    V1EnvVar(name="ENV_VAR", value="env_value")
+                ]
+    except Exception as e:
+        print(f"Exception: {e}")
+        assert type(e) is expected_output
     print("test execution complete")

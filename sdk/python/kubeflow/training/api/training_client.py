@@ -105,7 +105,7 @@ class TrainingClient(object):
         init_env_vars: Optional[
             Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
         ] = None,
-        worker_env_vars: Optional[
+        env_vars: Optional[
             Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
         ] = None,
         storage_config: Dict[str, Optional[Union[str, List[str]]]] = {
@@ -177,7 +177,7 @@ class TrainingClient(object):
                 https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVar.md)
                 or a kubernetes.client.models.V1EnvFromSource (documented here:
                 https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvFromSource.md)
-            worker_env_vars: Environment variable(s) to be attached to training container.
+            env_vars: Environment variable(s) to be attached to training container.
                 You can specify a dictionary as a mapping object representing the environment
                 variables. Otherwise, you can specify a list, in which the element can either
                 be a kubernetes.client.models.V1EnvVar (documented here:
@@ -301,7 +301,7 @@ class TrainingClient(object):
             ],
             volume_mounts=[constants.STORAGE_INITIALIZER_VOLUME_MOUNT],
             resources=resources_per_worker,
-            env=worker_env_vars,
+            env=env_vars,
         )
 
         storage_initializer_volume = models.V1Volume(
