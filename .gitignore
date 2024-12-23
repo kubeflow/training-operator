@@ -4,14 +4,15 @@ bin/
 /tf-operator
 vendor/
 testbin/*
+manifests/external-crds/
 cover.out
 
 # IDEs
 .vscode/
 __debug_bin
 
-# Compiled python files.
-*.pyc
+# Python cache files
+__pycache__/
 
 # Emacs temporary files
 *~
@@ -41,6 +42,7 @@ examples/.ipynb_checkpoints/
 
 # openapi-codegen tools and auto generated files but useless
 hack/python-sdk/openapi-generator-cli.jar
+hack/python-sdk-v2/openapi-generator-cli.jar
 
 # Coverage
 cover.out

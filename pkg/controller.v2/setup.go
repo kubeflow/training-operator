@@ -16,13 +16,19 @@ limitations under the License.
 
 package controllerv2
 
-import ctrl "sigs.k8s.io/controller-runtime"
+import (
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-func SetupControllers(mgr ctrl.Manager) (string, error) {
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+)
+
+func SetupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, options controller.Options) (string, error) {
 	if err := NewTrainJobReconciler(
 		mgr.GetClient(),
 		mgr.GetEventRecorderFor("training-operator-trainjob-controller"),
-	).SetupWithManager(mgr); err != nil {
+		runtimes,
+	).SetupWithManager(mgr, options); err != nil {
 		return "TrainJob", err
 	}
 	return "", nil

@@ -29,14 +29,10 @@ jobs:
         run: |
           go mod tidy && pushd hack/swagger && go mod tidy && popd && git add go.* &&
           git diff --cached --exit-code || (echo 'Please run "go mod tidy" to sync Go modules' && exit 1);
-      - name: Check manifests
+      - name: Check auto-generated assets
         run: |
-          make manifests && git add manifests &&
-          git diff --cached --exit-code || (echo 'Please run "make manifests" to generate manifests' && exit 1);
-      - name: Check auto-generated codes
-        run: |
-          make generate && git add pkg sdk &&
-          git diff --cached --exit-code || (echo 'Please run "make generate" to generate Go codes' && exit 1);
+          make generate && git add pkg sdk manifests &&
+          git diff --cached --exit-code || (echo 'Please run "make generate" to generate assets' && exit 1);
       - name: Verify gofmt
         run: |
           make fmt && git add pkg cmd &&

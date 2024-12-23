@@ -67,7 +67,7 @@ func GetElasticEnvVarGenerator() EnvVarGenerator {
 
 func (e ElasticEnvVarGenerator) Generate(
 	job *kubeflowv1.PyTorchJob) ([]corev1.EnvVar, error) {
-	envVars := []corev1.EnvVar{}
+	var envVars []corev1.EnvVar
 
 	elasticPolicy := job.Spec.ElasticPolicy
 	if elasticPolicy == nil {

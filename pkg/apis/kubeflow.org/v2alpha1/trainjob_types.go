@@ -19,7 +19,11 @@ package v2alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+)
+
+const (
+	// TrainJobKind is the Kind name for the TrainJob.
+	TrainJobKind string = "TrainJob"
 )
 
 // +genclient
@@ -44,9 +48,45 @@ type TrainJob struct {
 	Status TrainJobStatus `json:"status,omitempty"`
 }
 
+const (
+	// TrainJobSuspended means that TrainJob is suspended.
+	TrainJobSuspended string = "Suspended"
+
+	// TrainJobComplete means that the TrainJob has completed its execution.
+	TrainJobComplete string = "Complete"
+
+	// TrainJobFailed means that the actual jobs have failed its execution.
+	TrainJobFailed string = "Failed"
+
+	// TrainJobCreated means that the actual jobs creation has succeeded.
+	TrainJobCreated string = "Created"
+)
+
+const (
+	// TrainJobSuspendedReason is the "Suspended" condition reason.
+	// When the TrainJob is suspended, this is added.
+	TrainJobSuspendedReason string = "Suspended"
+
+	// TrainJobResumedReason is the "Suspended" condition reason.
+	// When the TrainJob suspension is changed from True to False, this is added.
+	TrainJobResumedReason string = "Resumed"
+
+	// TrainJobJobsCreationSucceededReason is the "Created" condition reason.
+	// When the creating objects succeeded after building succeeded, this is added.
+	TrainJobJobsCreationSucceededReason string = "JobsCreationSucceeded"
+
+	// TrainJobJobsBuildFailedReason is the "Created" condition reason.
+	// When the building objects based on the TrainJob and the specified runtime failed,
+	// this is added.
+	TrainJobJobsBuildFailedReason string = "JobsBuildFailed"
+
+	// TrainJobJobsCreationFailedReason is the "Created" condition reason.
+	// When the creating objects failed even though building succeeded, this is added.
+	TrainJobJobsCreationFailedReason string = "JobsCreationFailed"
+)
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=trainjobs
-
 // +kubebuilder:object:root=true
 
 // TrainJobList is a collection of training jobs.
@@ -63,7 +103,9 @@ type TrainJobList struct {
 // TrainJobSpec represents specification of the desired TrainJob.
 type TrainJobSpec struct {
 	// Reference to the training runtime.
-	TrainingRuntimeRef TrainingRuntimeRef `json:"trainingRuntimeRef"`
+	// The field is immutable.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="runtimeRef is immutable"
+	RuntimeRef RuntimeRef `json:"runtimeRef"`
 
 	// Configuration of the desired trainer.
 	Trainer *Trainer `json:"trainer,omitempty"`
@@ -83,10 +125,12 @@ type TrainJobSpec struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// Custom overrides for the training runtime.
+	// +listType=atomic
 	PodSpecOverrides []PodSpecOverride `json:"podSpecOverrides,omitempty"`
 
 	// Whether the controller should suspend the running TrainJob.
 	// Defaults to false.
+	// +kubebuilder:default=false
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// ManagedBy is used to indicate the controller or entity that manages a TrainJob.
@@ -96,11 +140,14 @@ type TrainJobSpec struct {
 	// `kubeflow.org/trainjob-controller`, but delegates reconciling TrainJobs
 	// with a 'kueue.x-k8s.io/multikueue' to the Kueue. The field is immutable.
 	// Defaults to `kubeflow.org/trainjob-controller`
+	// +kubebuilder:default="kubeflow.org/trainjob-controller"
+	// +kubebuilder:validation:XValidation:rule="self in ['kubeflow.org/trainjob-controller', 'kueue.x-k8s.io/multikueue']", message="ManagedBy must be kubeflow.org/trainjob-controller or kueue.x-k8s.io/multikueue if set"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf", message="ManagedBy value is immutable"
 	ManagedBy *string `json:"managedBy,omitempty"`
 }
 
-// TrainingRuntimeRef represents the reference to the existing training runtime.
-type TrainingRuntimeRef struct {
+// RuntimeRef represents the reference to the existing training runtime.
+type RuntimeRef struct {
 	// Name of the runtime being referenced.
 	// When namespaced-scoped TrainingRuntime is used, the TrainJob must have
 	// the same namespace as the deployed runtime.
@@ -108,11 +155,12 @@ type TrainingRuntimeRef struct {
 
 	// APIGroup of the runtime being referenced.
 	// Defaults to `kubeflow.org`.
+	// +kubebuilder:default="kubeflow.org"
 	APIGroup *string `json:"apiGroup,omitempty"`
 
 	// Kind of the runtime being referenced.
-	// It must be one of TrainingRuntime or ClusterTrainingRuntime.
 	// Defaults to ClusterTrainingRuntime.
+	// +kubebuilder:default="ClusterTrainingRuntime"
 	Kind *string `json:"kind,omitempty"`
 }
 
@@ -123,13 +171,17 @@ type Trainer struct {
 	Image *string `json:"image,omitempty"`
 
 	// Entrypoint commands for the training container.
+	// +listType=atomic
 	Command []string `json:"command,omitempty"`
 
 	// Arguments to the entrypoint for the training container.
+	// +listType=atomic
 	Args []string `json:"args,omitempty"`
 
 	// List of environment variables to set in the training container.
 	// These values will be merged with the TrainingRuntime's trainer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Number of training nodes.
@@ -154,10 +206,13 @@ type DatasetConfig struct {
 
 	// List of environment variables to set in the dataset initializer container.
 	// These values will be merged with the TrainingRuntime's dataset initializer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to download dataset.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to download dataset.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // ModelConfig represents the desired model configuration.
@@ -180,10 +235,13 @@ type InputModel struct {
 
 	// List of environment variables to set in the model initializer container.
 	// These values will be merged with the TrainingRuntime's model initializer environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to download model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to download model.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // OutputModel represents the desired trained model configuration.
@@ -193,24 +251,34 @@ type OutputModel struct {
 
 	// List of environment variables to set in the model exporter container.
 	// These values will be merged with the TrainingRuntime's model exporter environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// Reference to the TrainJob's secrets to export model.
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Reference to the secret with credentials to export model.
+	// Secret must be created in the TrainJob's namespace.
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 // PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.
 type PodSpecOverride struct {
-	// Names of the training job replicas in the training runtime template to apply the overrides.
-	TargetReplicatedJobs []string `json:"targetReplicatedJobs"`
+	// TrainJobs is the training job replicas in the training runtime template to apply the overrides.
+	// +listType=atomic
+	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
 	// Overrides for the containers in the desired job templates.
+	// +listType=map
+	// +listMapKey=name
 	Containers []ContainerOverride `json:"containers,omitempty"`
 
 	// Overrides for the init container in the desired job templates.
+	// +listType=map
+	// +listMapKey=name
 	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
 
 	// Overrides for the Pod volume configuration.
+	// +listType=map
+	// +listMapKey=name
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// Override for the service account.
@@ -220,40 +288,83 @@ type PodSpecOverride struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Override for the Pod's tolerations.
+	// +listType=atomic
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
-// ContainerOverrides represents parameters that can be overridden using PodSpecOverrides.
+type PodSpecOverrideTargetJob struct {
+	// Name is the target training job name for which the PodSpec is overridden.
+	Name string `json:"name"`
+}
+
+// ContainerOverride represents parameters that can be overridden using PodSpecOverrides.
 // Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
 type ContainerOverride struct {
 	// Name for the container. TrainingRuntime must have this container.
 	Name string `json:"name"`
 
 	// Entrypoint commands for the training container.
+	// +listType=atomic
 	Command []string `json:"command,omitempty"`
 
 	// Arguments to the entrypoint for the training container.
+	// +listType=atomic
 	Args []string `json:"args,omitempty"`
 
 	// List of environment variables to set in the container.
 	// These values will be merged with the TrainingRuntime's environments.
+	// +listType=map
+	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// List of sources to populate environment variables in the container.
 	// These   values will be merged with the TrainingRuntime's environments.
+	// +listType=atomic
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Pod volumes to mount into the container's filesystem.
+	// +listType=map
+	// +listMapKey=name
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // TrainJobStatus represents the current status of TrainJob.
 type TrainJobStatus struct {
 	// Conditions for the TrainJob.
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
-	// ReplicatedJobsStatus tracks the number of Jobs for each replicatedJob in TrainJob.
-	ReplicatedJobsStatus []jobsetv1alpha2.ReplicatedJobStatus `json:"replicatedJobsStatus,omitempty"`
+	// JobsStatus tracks the child Jobs in TrainJob.
+	// +listType=map
+	// +listMapKey=name
+	JobsStatus []JobStatus `json:"jobsStatus,omitempty"`
+}
+
+type JobStatus struct {
+	// Name of the child Job.
+	Name string `json:"name"`
+
+	// Ready is the number of child Jobs where the number of ready pods and completed pods
+	// is greater than or equal to the total expected pod count for the child Job.
+	Ready int32 `json:"ready"`
+
+	// Succeeded is the number of successfully completed child Jobs.
+	Succeeded int32 `json:"succeeded"`
+
+	// Failed is the number of failed child Jobs.
+	Failed int32 `json:"failed"`
+
+	// Active is the number of child Jobs with at least 1 pod in a running or pending state
+	// which are not marked for deletion.
+	Active int32 `json:"active"`
+
+	// Suspended is the number of child Jobs which are in a suspended state.
+	Suspended int32 `json:"suspended"`
 }
 
 func init() {

@@ -25,24 +25,32 @@ import (
 
 	zaplog "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"k8s.io/apimachinery/pkg/runtime"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/cert"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
+	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
+	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
 )
 
+const (
+	webhookConfigurationName = "validator.training-operator-v2.kubeflow.org"
+)
+
 var (
-	scheme   = runtime.NewScheme()
+	scheme   = apiruntime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
 
@@ -50,6 +58,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(kubeflowv2.AddToScheme(scheme))
 	utilruntime.Must(jobsetv1alpha2.AddToScheme(scheme))
+	utilruntime.Must(schedulerpluginsv1alpha1.AddToScheme(scheme))
 }
 
 func main() {
@@ -120,34 +129,42 @@ func main() {
 
 	certsReady := make(chan struct{})
 	if err = cert.ManageCerts(mgr, cert.Config{
-		WebhookSecretName:  webhookSecretName,
-		WebhookServiceName: webhookServiceName,
+		WebhookSecretName:        webhookSecretName,
+		WebhookServiceName:       webhookServiceName,
+		WebhookConfigurationName: webhookConfigurationName,
 	}, certsReady); err != nil {
 		setupLog.Error(err, "unable to set up cert rotation")
 		os.Exit(1)
 	}
 
+	ctx := ctrl.SetupSignalHandler()
+
 	setupProbeEndpoints(mgr, certsReady)
+	runtimes, err := runtimecore.New(ctx, mgr.GetClient(), mgr.GetFieldIndexer())
+	if err != nil {
+		setupLog.Error(err, "Could not initialize runtimes")
+		os.Exit(1)
+	}
 	// Set up controllers using goroutines to start the manager quickly.
-	go setupControllers(mgr, certsReady)
+	go setupControllers(mgr, runtimes, certsReady)
 
 	setupLog.Info("Starting manager")
-	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err = mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "Could not run manager")
 		os.Exit(1)
 	}
 }
 
-func setupControllers(mgr ctrl.Manager, certsReady <-chan struct{}) {
+func setupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, certsReady <-chan struct{}) {
 	setupLog.Info("Waiting for certificate generation to complete")
 	<-certsReady
 	setupLog.Info("Certs ready")
 
-	if failedCtrlName, err := controllerv2.SetupControllers(mgr); err != nil {
+	if failedCtrlName, err := controllerv2.SetupControllers(mgr, runtimes, controller.Options{}); err != nil {
 		setupLog.Error(err, "Could not create controller", "controller", failedCtrlName)
 		os.Exit(1)
 	}
-	if failedWebhook, err := webhookv2.Setup(mgr); err != nil {
+	if failedWebhook, err := webhookv2.Setup(mgr, runtimes); err != nil {
 		setupLog.Error(err, "Could not create webhook", "webhook", failedWebhook)
 		os.Exit(1)
 	}

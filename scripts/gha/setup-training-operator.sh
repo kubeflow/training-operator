@@ -27,7 +27,7 @@ cd manifests/overlays/standalone
 kustomize edit set image kubeflow/training-operator=${TRAINING_CI_IMAGE}
 
 echo "Installing training operator manifests"
-kustomize build . | kubectl apply -f -
+kustomize build . | kubectl apply --server-side -f -
 
 if [ "${GANG_SCHEDULER_NAME}" = "scheduler-plugins" ]; then
   SCHEDULER_PLUGINS_VERSION=$(go list -m -f "{{.Version}}" sigs.k8s.io/scheduler-plugins)

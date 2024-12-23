@@ -18,14 +18,14 @@ package v1
 
 import (
 	"context"
-	"time"
 
 	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
+	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
 	scheme "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // PaddleJobsGetter has a method to return a PaddleJobInterface.
@@ -38,6 +38,7 @@ type PaddleJobsGetter interface {
 type PaddleJobInterface interface {
 	Create(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.CreateOptions) (*v1.PaddleJob, error)
 	Update(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (*v1.PaddleJob, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (*v1.PaddleJob, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -45,149 +46,26 @@ type PaddleJobInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.PaddleJobList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PaddleJob, err error)
+	Apply(ctx context.Context, paddleJob *kubefloworgv1.PaddleJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PaddleJob, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, paddleJob *kubefloworgv1.PaddleJobApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PaddleJob, err error)
 	PaddleJobExpansion
 }
 
 // paddleJobs implements PaddleJobInterface
 type paddleJobs struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*v1.PaddleJob, *v1.PaddleJobList, *kubefloworgv1.PaddleJobApplyConfiguration]
 }
 
 // newPaddleJobs returns a PaddleJobs
 func newPaddleJobs(c *KubeflowV1Client, namespace string) *paddleJobs {
 	return &paddleJobs{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*v1.PaddleJob, *v1.PaddleJobList, *kubefloworgv1.PaddleJobApplyConfiguration](
+			"paddlejobs",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.PaddleJob { return &v1.PaddleJob{} },
+			func() *v1.PaddleJobList { return &v1.PaddleJobList{} }),
 	}
-}
-
-// Get takes name of the paddleJob, and returns the corresponding paddleJob object, and an error if there is any.
-func (c *paddleJobs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.PaddleJob, err error) {
-	result = &v1.PaddleJob{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of PaddleJobs that match those selectors.
-func (c *paddleJobs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.PaddleJobList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.PaddleJobList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested paddleJobs.
-func (c *paddleJobs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a paddleJob and creates it.  Returns the server's representation of the paddleJob, and an error, if there is any.
-func (c *paddleJobs) Create(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.CreateOptions) (result *v1.PaddleJob, err error) {
-	result = &v1.PaddleJob{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(paddleJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a paddleJob and updates it. Returns the server's representation of the paddleJob, and an error, if there is any.
-func (c *paddleJobs) Update(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (result *v1.PaddleJob, err error) {
-	result = &v1.PaddleJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		Name(paddleJob.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(paddleJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *paddleJobs) UpdateStatus(ctx context.Context, paddleJob *v1.PaddleJob, opts metav1.UpdateOptions) (result *v1.PaddleJob, err error) {
-	result = &v1.PaddleJob{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		Name(paddleJob.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(paddleJob).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the paddleJob and deletes it. Returns an error if one occurs.
-func (c *paddleJobs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *paddleJobs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched paddleJob.
-func (c *paddleJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PaddleJob, err error) {
-	result = &v1.PaddleJob{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("paddlejobs").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }
