@@ -19,9 +19,7 @@ package tensorflow
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/klog/v2"
@@ -31,6 +29,7 @@ import (
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/common/util"
+	"github.com/kubeflow/training-operator/pkg/webhooks/utils"
 )
 
 var (
@@ -72,8 +71,9 @@ func (w *Webhook) ValidateDelete(context.Context, runtime.Object) (admission.War
 
 func validateTFJob(oldJob, newJob *trainingoperator.TFJob) field.ErrorList {
 	var allErrs field.ErrorList
-	if errors := apimachineryvalidation.NameIsDNS1035Label(newJob.Name, false); len(errors) != 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata").Child("name"), newJob.Name, fmt.Sprintf("should match: %v", strings.Join(errors, ","))))
+	err := utils.ValidateJobName(newJob.Name)
+	if err != nil {
+		allErrs = append(allErrs, err)
 	}
 	if oldJob != nil {
 		allErrs = append(allErrs, util.ValidateRunPolicyUpdate(&oldJob.Spec.RunPolicy, &newJob.Spec.RunPolicy)...)
