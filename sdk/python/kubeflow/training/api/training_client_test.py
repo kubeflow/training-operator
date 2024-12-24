@@ -141,12 +141,23 @@ def create_job(
     command=None,
     args=None,
     num_workers=2,
+    env_vars=None,
 ):
+    # Handle env_vars as either a dict or a list
+    if env_vars:
+        if isinstance(env_vars, dict):
+            env_vars = [V1EnvVar(name=k, value=v) for k, v in env_vars.items()]
+        elif isinstance(env_vars, list):
+            env_vars = [
+                v if isinstance(v, V1EnvVar) else V1EnvVar(**v) for v in env_vars
+            ]
+
     container = V1Container(
         name=constants.PYTORCHJOB_CONTAINER,
         image=TEST_IMAGE,
         command=command,
         args=args,
+        env=env_vars,
     )
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -503,7 +514,7 @@ test_data_create_job = [
             "num_workers": 1,
         },
         SUCCESS,
-        create_job(),
+        create_job(env_vars={"ENV_VAR": "env_value"}, num_workers=1),
     ),
     (
         "valid flow with env_vars as list",
@@ -515,7 +526,9 @@ test_data_create_job = [
             "num_workers": 2,
         },
         SUCCESS,
-        create_job(),
+        create_job(
+            env_vars=[V1EnvVar(name="ENV_VAR", value="env_value")], num_workers=2
+        ),
     ),
 ]
 
@@ -1761,41 +1774,4 @@ def test_get_job_logs(
     except Exception as e:
         assert type(e) is expected_output
 
-    print("test execution complete")
-
-
-@pytest.mark.parametrize(
-    "test_name,kwargs,expected_output,expected_job", test_data_create_job
-)
-def test_create_job_with_env_vars(
-    training_client, test_name, kwargs, expected_output, expected_job
-):
-    """
-    test create_job function of training client with env_vars
-    """
-    print("Executing test:", test_name)
-    try:
-        training_client.create_job(**kwargs)
-
-        assert expected_output == SUCCESS
-
-        training_client.custom_api.create_namespaced_custom_object.assert_called_with(
-            constants.GROUP,
-            constants.VERSION,
-            kwargs["namespace"],
-            constants.JOB_PARAMETERS[constants.PYTORCHJOB_KIND]["plural"],
-            expected_job,
-        )
-
-        # Check if env_vars are handled correctly
-        if "env_vars" in kwargs:
-            if isinstance(kwargs["env_vars"], dict):
-                assert kwargs["env_vars"] == {"ENV_VAR": "env_value"}
-            elif isinstance(kwargs["env_vars"], list):
-                assert kwargs["env_vars"] == [
-                    V1EnvVar(name="ENV_VAR", value="env_value")
-                ]
-    except Exception as e:
-        print(f"Exception: {e}")
-        assert type(e) is expected_output
     print("test execution complete")
