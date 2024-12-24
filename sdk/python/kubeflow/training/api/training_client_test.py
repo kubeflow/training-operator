@@ -18,6 +18,7 @@ from kubeflow.training.models import V1DeleteOptions
 from kubernetes.client import (
     ApiClient,
     V1Container,
+    V1EnvVar,
     V1ObjectMeta,
     V1PodSpec,
     V1PodTemplateSpec,
@@ -140,12 +141,23 @@ def create_job(
     command=None,
     args=None,
     num_workers=2,
+    env_vars=None,
 ):
+    # Handle env_vars as either a dict or a list
+    if env_vars:
+        if isinstance(env_vars, dict):
+            env_vars = [V1EnvVar(name=k, value=v) for k, v in env_vars.items()]
+        elif isinstance(env_vars, list):
+            env_vars = [
+                v if isinstance(v, V1EnvVar) else V1EnvVar(**v) for v in env_vars
+            ]
+
     container = V1Container(
         name=constants.PYTORCHJOB_CONTAINER,
         image=TEST_IMAGE,
         command=command,
         args=args,
+        env=env_vars,
     )
 
     master = KubeflowOrgV1ReplicaSpec(
@@ -491,6 +503,32 @@ test_data_create_job = [
         {"job": create_job(), "namespace": RUNTIME},
         RuntimeError,
         None,
+    ),
+    (
+        "valid flow with env_vars as dict",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "env_vars": {"ENV_VAR": "env_value"},
+            "base_image": TEST_IMAGE,
+            "num_workers": 1,
+        },
+        SUCCESS,
+        create_job(env_vars={"ENV_VAR": "env_value"}, num_workers=1),
+    ),
+    (
+        "valid flow with env_vars as list",
+        {
+            "name": TEST_NAME,
+            "namespace": TEST_NAME,
+            "env_vars": [V1EnvVar(name="ENV_VAR", value="env_value")],
+            "base_image": TEST_IMAGE,
+            "num_workers": 2,
+        },
+        SUCCESS,
+        create_job(
+            env_vars=[V1EnvVar(name="ENV_VAR", value="env_value")], num_workers=2
+        ),
     ),
 ]
 
