@@ -72,6 +72,13 @@ jobs:
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
 
+      - name: Run initializer_v2 e2e for Python 3.11+
+        if: ${{ matrix.python-version == '3.11' }}
+        run: |
+          pip install urllib3 huggingface_hub
+          pip install -U './sdk_v2'
+          pytest ./test/e2e/initializer_v2
+
       - name: Collect volcano logs
         if: ${{ failure() &&  matrix.gang-scheduler-name == 'volcano' }}
         run: |
