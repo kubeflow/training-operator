@@ -96,16 +96,15 @@ if __name__ == "__main__":
     param_scale = 0.1
     step_size = 0.001
     num_epochs = 10
-    batch_size = 128
+    # For this manual SPMD example, we get the number of devices (e.g. CPU,
+    # GPUs or TPU cores) that we're using, and use it to reshape data minibatches.
+    num_devices = jax.local_device_count()
+    batch_size = num_devices * 5
 
     train_images, train_labels, test_images, test_labels = datasets.mnist()
     num_train = train_images.shape[0]
     num_complete_batches, leftover = divmod(num_train, batch_size)
     num_batches = num_complete_batches + bool(leftover)
-
-    # For this manual SPMD example, we get the number of devices (e.g. CPU,
-    # GPUs or TPU cores) that we're using, and use it to reshape data minibatches.
-    num_devices = jax.local_device_count()
 
     def data_stream():
         rng = npr.RandomState(0)

@@ -25,8 +25,7 @@ jaxjob-mnist-worker-1   0/1     Completed   0          108m
 
 ---
 ```bash
-$ PODNAME=$(kubectl get pods -l training.kubeflow.org/job-name=jaxjob-mnist,training.kubeflow.org/replica-type=worker,training.kubeflow.org/replica-index=0 -o
-name -n kubeflow)
+$ PODNAME=$(kubectl get pods -l training.kubeflow.org/job-name=jaxjob-simple,training.kubeflow.org/replica-type=worker,training.kubeflow.org/replica-index=0 -o name -n kubeflow)
 $ kubectl logs -f ${PODNAME} -n kubeflow
 ```
 
