@@ -30,7 +30,7 @@ func TestSetPodEnv(t *testing.T) {
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{{
 								Name:  "jax",
-								Image: "docker.io/kubeflow/jaxjob-simple:latest",
+								Image: "docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest",
 								Ports: []corev1.ContainerPort{{
 									Name:          kubeflowv1.JAXJobDefaultPortName,
 									ContainerPort: validPort,

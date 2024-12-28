@@ -153,7 +153,7 @@ JAXJOB_MODEL = "KubeflowOrgV1JAXJob"
 JAXJOB_PLURAL = "jaxjobs"
 JAXJOB_CONTAINER = "jax"
 JAXJOB_REPLICA_TYPES = REPLICA_TYPE_WORKER.lower()
-JAXJOB_BASE_IMAGE = "docker.io/kubeflow/jaxjob-simple:latest"
+JAXJOB_BASE_IMAGE = "docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest"
 
 # Dictionary to get plural, model, and container for each Job kind.
 JOB_PARAMETERS = {

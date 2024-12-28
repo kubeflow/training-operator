@@ -156,7 +156,7 @@ func TestValidateV1JAXJob(t *testing.T) {
 									Containers: []corev1.Container{
 										{
 											Name:  "",
-											Image: "gcr.io/kubeflow-ci/jaxjob-simple_test:1.0",
+											Image: "gcr.io/kubeflow-ci/jaxjob-dist-spmd-mnist_test:1.0",
 										},
 									},
 								},
