@@ -19,7 +19,6 @@ package xgboost
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -32,6 +31,7 @@ import (
 
 	trainingoperator "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	"github.com/kubeflow/training-operator/pkg/common/util"
+	"github.com/kubeflow/training-operator/pkg/webhooks/utils"
 )
 
 var (
@@ -89,47 +89,23 @@ func validateSpec(spec trainingoperator.XGBoostJobSpec) field.ErrorList {
 }
 
 func validateXGBReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	var allErrs field.ErrorList
-
-	if rSpecs == nil {
-		allErrs = append(allErrs, field.Required(xgbReplicaSpecPath, "must be required"))
+	// Make sure the replica type is valid.
+	validReplicaTypes := []trainingoperator.ReplicaType{
+		trainingoperator.XGBoostJobReplicaTypeMaster,
+		trainingoperator.XGBoostJobReplicaTypeWorker,
 	}
+
+	allErrs := utils.ValidateReplicaSpecs(rSpecs,
+		trainingoperator.XGBoostJobDefaultContainerName,
+		validReplicaTypes,
+		xgbReplicaSpecPath)
+
 	masterExists := false
 	for rType, rSpec := range rSpecs {
-		rolePath := xgbReplicaSpecPath.Key(string(rType))
-		containersPath := rolePath.Child("template").Child("spec").Child("containers")
-
-		// Make sure the replica type is valid.
-		validReplicaTypes := []trainingoperator.ReplicaType{
-			trainingoperator.XGBoostJobReplicaTypeMaster,
-			trainingoperator.XGBoostJobReplicaTypeWorker,
-		}
-		if !slices.Contains(validReplicaTypes, rType) {
-			allErrs = append(allErrs, field.NotSupported(rolePath, rType, validReplicaTypes))
-		}
-
-		if rSpec == nil || len(rSpec.Template.Spec.Containers) == 0 {
-			allErrs = append(allErrs, field.Required(containersPath, "must be specified"))
-		}
-
-		// Make sure the image is defined in the container
-		defaultContainerPresent := false
-		for idx, container := range rSpec.Template.Spec.Containers {
-			if container.Image == "" {
-				allErrs = append(allErrs, field.Required(containersPath.Index(idx).Child("image"), "must be required"))
-			}
-			if container.Name == trainingoperator.XGBoostJobDefaultContainerName {
-				defaultContainerPresent = true
-			}
-		}
-		// Make sure there has at least one container named "xgboost"
-		if !defaultContainerPresent {
-			allErrs = append(allErrs, field.Required(containersPath, fmt.Sprintf("must have at least one container with name %s", trainingoperator.XGBoostJobDefaultContainerName)))
-		}
 		if rType == trainingoperator.XGBoostJobReplicaTypeMaster {
 			masterExists = true
 			if rSpec.Replicas == nil || int(*rSpec.Replicas) != 1 {
-				allErrs = append(allErrs, field.Forbidden(rolePath.Child("replicas"), "must be 1"))
+				allErrs = append(allErrs, field.Forbidden(xgbReplicaSpecPath.Key(string(rType)).Child("replicas"), "must be 1"))
 			}
 		}
 	}
