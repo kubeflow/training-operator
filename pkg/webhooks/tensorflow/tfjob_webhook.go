@@ -18,7 +18,6 @@ package tensorflow
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -88,36 +87,15 @@ func validateSpec(spec trainingoperator.TFJobSpec) field.ErrorList {
 }
 
 func validateTFReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	var allErrs field.ErrorList
-
-	if rSpecs == nil {
-		allErrs = append(allErrs, field.Required(tfReplicaSpecPath, "must be required"))
-	}
+	allErrs := utils.ValidateReplicaSpecs(rSpecs,
+		trainingoperator.TFJobDefaultContainerName,
+		nil,
+		tfReplicaSpecPath)
 
 	chiefOrMaster := 0
-	for rType, rSpec := range rSpecs {
-		rolePath := tfReplicaSpecPath.Key(string(rType))
-		containerPath := rolePath.Child("template").Child("spec").Child("containers")
-
-		if rSpec == nil || len(rSpec.Template.Spec.Containers) == 0 {
-			allErrs = append(allErrs, field.Required(containerPath, "must be specified"))
-		}
+	for rType := range rSpecs {
 		if trainingoperator.IsChiefOrMaster(rType) {
 			chiefOrMaster++
-		}
-		// Make sure the image is defined in the container.
-		defaultContainerPresent := false
-		for idx, container := range rSpec.Template.Spec.Containers {
-			if container.Image == "" {
-				allErrs = append(allErrs, field.Required(containerPath.Index(idx).Child("image"), "must be required"))
-			}
-			if container.Name == trainingoperator.TFJobDefaultContainerName {
-				defaultContainerPresent = true
-			}
-		}
-		// Make sure there has at least one container named "tensorflow".
-		if !defaultContainerPresent {
-			allErrs = append(allErrs, field.Required(containerPath, fmt.Sprintf("must have at least one container with name %s", trainingoperator.TFJobDefaultContainerName)))
 		}
 	}
 	if chiefOrMaster > 1 {

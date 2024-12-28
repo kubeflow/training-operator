@@ -18,8 +18,6 @@ package paddlepaddle
 
 import (
 	"context"
-	"fmt"
-	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -85,42 +83,13 @@ func validatePaddleJob(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorLi
 }
 
 func validateSpec(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	var allErrs field.ErrorList
-
-	if rSpecs == nil {
-		allErrs = append(allErrs, field.Required(paddleReplicaSpecPath, "must be required"))
+	validRoleTypes := []trainingoperator.ReplicaType{
+		trainingoperator.PaddleJobReplicaTypeMaster,
+		trainingoperator.PaddleJobReplicaTypeWorker,
 	}
-	for rType, rSpec := range rSpecs {
-		rolePath := paddleReplicaSpecPath.Key(string(rType))
-		containersPath := rolePath.Child("template").Child("spec").Child("containers")
 
-		// Make sure the replica type is valid.
-		validReplicaTypes := []trainingoperator.ReplicaType{
-			trainingoperator.PaddleJobReplicaTypeMaster,
-			trainingoperator.PaddleJobReplicaTypeWorker,
-		}
-		if !slices.Contains(validReplicaTypes, rType) {
-			allErrs = append(allErrs, field.NotSupported(rolePath, rType, validReplicaTypes))
-		}
-
-		if rSpec == nil || len(rSpec.Template.Spec.Containers) == 0 {
-			allErrs = append(allErrs, field.Required(containersPath, "must be specified"))
-		}
-
-		// Make sure the image is defined in the container
-		defaultContainerPresent := false
-		for idx, container := range rSpec.Template.Spec.Containers {
-			if container.Image == "" {
-				allErrs = append(allErrs, field.Required(containersPath.Index(idx).Child("image"), "must be required"))
-			}
-			if container.Name == trainingoperator.PaddleJobDefaultContainerName {
-				defaultContainerPresent = true
-			}
-		}
-		// Make sure there has at least one container named "paddle"
-		if !defaultContainerPresent {
-			allErrs = append(allErrs, field.Required(containersPath, fmt.Sprintf("must have at least one container with name %q", trainingoperator.PaddleJobDefaultContainerName)))
-		}
-	}
-	return allErrs
+	return utils.ValidateReplicaSpecs(rSpecs,
+		trainingoperator.PaddleJobDefaultContainerName,
+		validRoleTypes,
+		paddleReplicaSpecPath)
 }
