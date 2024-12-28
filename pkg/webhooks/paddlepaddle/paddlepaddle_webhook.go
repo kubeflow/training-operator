@@ -85,13 +85,14 @@ func validatePaddleJob(oldJob, newJob *trainingoperator.PaddleJob) field.ErrorLi
 }
 
 func validateSpec(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	validRoleTypes := []trainingoperator.ReplicaType{
+	// Make sure the replica type is valid.
+	validReplicaTypes := []trainingoperator.ReplicaType{
 		trainingoperator.PaddleJobReplicaTypeMaster,
 		trainingoperator.PaddleJobReplicaTypeWorker,
 	}
 
 	return utils.ValidateReplicaSpecs(rSpecs,
 		trainingoperator.PaddleJobDefaultContainerName,
-		validRoleTypes,
+		validReplicaTypes,
 		paddleReplicaSpecPath)
 }

@@ -11,7 +11,7 @@ import (
 
 func ValidateReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec,
 	defaultContainerName string,
-	validRoleTypes []trainingoperator.ReplicaType,
+	validReplicaTypes []trainingoperator.ReplicaType,
 	replicaSpecPath *field.Path) field.ErrorList {
 
 	var allErrs field.ErrorList
@@ -24,9 +24,9 @@ func ValidateReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingopera
 		rolePath := replicaSpecPath.Key(string(rType))
 		containersPath := rolePath.Child("template").Child("spec").Child("containers")
 
-		if len(validRoleTypes) > 0 {
-			if !slices.Contains(validRoleTypes, rType) {
-				allErrs = append(allErrs, field.NotSupported(rolePath, rType, validRoleTypes))
+		if len(validReplicaTypes) > 0 {
+			if !slices.Contains(validReplicaTypes, rType) {
+				allErrs = append(allErrs, field.NotSupported(rolePath, rType, validReplicaTypes))
 			}
 		}
 
@@ -34,6 +34,7 @@ func ValidateReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingopera
 			allErrs = append(allErrs, field.Required(containersPath, "must be specified"))
 		}
 
+		// Make sure the image is defined in the container
 		defaultContainerPresent := false
 		for idx, container := range rSpec.Template.Spec.Containers {
 			if container.Image == "" {

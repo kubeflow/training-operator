@@ -89,14 +89,15 @@ func validateSpec(spec trainingoperator.XGBoostJobSpec) field.ErrorList {
 }
 
 func validateXGBReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	validRoleTypes := []trainingoperator.ReplicaType{
+	// Make sure the replica type is valid.
+	validReplicaTypes := []trainingoperator.ReplicaType{
 		trainingoperator.XGBoostJobReplicaTypeMaster,
 		trainingoperator.XGBoostJobReplicaTypeWorker,
 	}
 
 	allErrs := utils.ValidateReplicaSpecs(rSpecs,
 		trainingoperator.XGBoostJobDefaultContainerName,
-		validRoleTypes,
+		validReplicaTypes,
 		xgbReplicaSpecPath)
 
 	masterExists := false

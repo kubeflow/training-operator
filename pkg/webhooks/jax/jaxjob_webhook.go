@@ -84,12 +84,13 @@ func validateSpec(spec trainingoperator.JAXJobSpec) field.ErrorList {
 }
 
 func validateJAXReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	validRoleTypes := []trainingoperator.ReplicaType{
+	// Make sure the replica type is valid.
+	validReplicaTypes := []trainingoperator.ReplicaType{
 		trainingoperator.JAXJobReplicaTypeWorker,
 	}
 
 	return utils.ValidateReplicaSpecs(rSpecs,
 		trainingoperator.JAXJobDefaultContainerName,
-		validRoleTypes,
+		validReplicaTypes,
 		jaxReplicaSpecPath)
 }

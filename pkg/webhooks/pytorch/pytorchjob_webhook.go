@@ -107,14 +107,15 @@ func validateSpec(spec trainingoperator.PyTorchJobSpec) (admission.Warnings, fie
 }
 
 func validatePyTorchReplicaSpecs(rSpecs map[trainingoperator.ReplicaType]*trainingoperator.ReplicaSpec) field.ErrorList {
-	validRoleTypes := []trainingoperator.ReplicaType{
+	// Make sure the replica type is valid.
+	validReplicaTypes := []trainingoperator.ReplicaType{
 		trainingoperator.PyTorchJobReplicaTypeMaster,
 		trainingoperator.PyTorchJobReplicaTypeWorker,
 	}
 
 	allErrs := utils.ValidateReplicaSpecs(rSpecs,
 		trainingoperator.PyTorchJobDefaultContainerName,
-		validRoleTypes,
+		validReplicaTypes,
 		pytorchReplicaSpecPath)
 
 	for rType, rSpec := range rSpecs {
