@@ -31,7 +31,7 @@ func TestInitContainer(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	defer ginkgo.GinkgoRecover()
 
-	config.Config.PyTorchInitContainerImage = config.PyTorchInitContainerImageDefault
+	config.Config.PyTorchInitContainerImage = config.GetPytorchInitContainerImage()
 	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
 	config.Config.PyTorchInitContainerMaxTries = config.PyTorchInitContainerMaxTriesDefault
 

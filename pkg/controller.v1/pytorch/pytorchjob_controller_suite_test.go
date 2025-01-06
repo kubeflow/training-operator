@@ -82,7 +82,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set default config.
-	config.Config.PyTorchInitContainerImage = config.PyTorchInitContainerImageDefault
+	config.Config.PyTorchInitContainerImage = config.GetPytorchInitContainerImage()
 	config.Config.PyTorchInitContainerTemplateFile = config.PyTorchInitContainerTemplateFileDefault
 
 	//+kubebuilder:scaffold:scheme

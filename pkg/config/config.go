@@ -14,6 +14,10 @@
 
 package config
 
+import (
+	"os"
+)
+
 // Config is the global configuration for the training operator.
 var Config struct {
 	PyTorchInitContainerTemplateFile string
@@ -26,6 +30,8 @@ const (
 	// PyTorchInitContainerImageDefault is the default image for the pytorch
 	// init container.
 	PyTorchInitContainerImageDefault = "alpine:3.10"
+	// PyTorchInitContainerImageEnvVar is the environment variable to provide init container image explicitly for the pytorch
+	PyTorchInitContainerImageEnvVar = "PYTORCH_INIT_CONTAINER_IMAGE"
 	// PyTorchInitContainerTemplateFileDefault is the default template file for
 	// the pytorch init container.
 	PyTorchInitContainerTemplateFileDefault = "/etc/config/initContainer.yaml"
@@ -34,3 +40,11 @@ const (
 	// MPIKubectlDeliveryImageDefault is the default image for launcher pod in MPIJob init container.
 	MPIKubectlDeliveryImageDefault = "kubeflow/kubectl-delivery:latest"
 )
+
+func GetPytorchInitContainerImage() string {
+	// Use image specified in the PYTORCH_INIT_CONTAINER_IMAGE environment variable if provided, otherwise use default PyTorchInitContainerImageDefault
+	if v, ok := os.LookupEnv(PyTorchInitContainerImageEnvVar); ok {
+		return v
+	}
+	return PyTorchInitContainerImageDefault
+}
