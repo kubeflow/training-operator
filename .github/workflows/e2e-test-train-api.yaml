@@ -58,4 +58,4 @@ jobs:
           pytest -s sdk/python/test/e2e-fine-tune-llm/test_e2e_pytorch_fine_tune_llm.py --log-cli-level=debug
         env:
           STORAGE_INITIALIZER_IMAGE: kubeflowtraining/storage-initializer:test
-          TRAINER_TRANSFORMER_IMAGE_DEFAULT: kubeflowtraining/trainer:test
+          TRAINER_TRANSFORMER_IMAGE: kubeflowtraining/trainer:test
