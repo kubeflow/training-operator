@@ -8,7 +8,6 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir torch==2.5.1
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python package and its source code into the container
