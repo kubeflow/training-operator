@@ -67,7 +67,7 @@ jobs:
 
       - name: Build JAX Job Example Image
         run: |
-          ./scripts/gha/build-e2e-test-images.sh
+          ./scripts/gha/build-jax-mnist-image.sh
         env:
           JAX_JOB_CI_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
 
