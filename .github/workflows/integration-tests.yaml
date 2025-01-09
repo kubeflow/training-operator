@@ -75,6 +75,7 @@ jobs:
         run: |
           kind load docker-image ${{ env.JAX_JOB_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
         env:
+          KIND_CLUSTER: training-operator-cluster
           JAX_JOB_CI_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
 
       - name: Run tests
