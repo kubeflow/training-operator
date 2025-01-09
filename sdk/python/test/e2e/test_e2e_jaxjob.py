@@ -88,7 +88,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     try:
-        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=6000)
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=3000)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
@@ -123,7 +123,7 @@ def test_sdk_e2e(job_namespace):
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     try:
-        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=3000)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
