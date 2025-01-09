@@ -149,13 +149,17 @@ def get_args_using_train_func(
 
     # Wrap function code to execute it from the file. For example:
     # TODO (andreyvelich): Find a better way to run users' scripts.
-    # def train(parameters):
+    # def train(lr=0.001):
     #     print('Start Training...')
     # train({'lr': 0.01})
     if train_func_parameters is None:
         func_code = f"{func_code}\n{train_func.__name__}()\n"
     else:
-        func_code = f"{func_code}\n{train_func.__name__}({train_func_parameters})\n"
+        func_code = (
+            f"{func_code}\n"
+            f"kwargs={train_func_parameters}\n"
+            f"{train_func.__name__}(**kwargs)\n"
+        )
 
     # Prepare the template to execute script.
     # Currently, we override the file where the training function is defined.
