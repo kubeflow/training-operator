@@ -156,5 +156,5 @@ def generate_container() -> V1Container:
     return V1Container(
         name=CONTAINER_NAME,
         image=os.getenv("JAX_JOB_IMAGE", "docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest"),
-        resources=V1ResourceRequirements(limits={"memory": "2Gi", "cpu": "0.8"}),
+        resources=V1ResourceRequirements(limits={"memory": "4Gi", "cpu": "1.6"}),
     )
