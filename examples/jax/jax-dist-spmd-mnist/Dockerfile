@@ -1,7 +1,7 @@
 FROM python:3.13
 
 RUN pip install --upgrade pip
-RUN pip install --upgrade jax absl-py
+RUN pip install --upgrade jax[k8s] absl-py
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -24,6 +24,6 @@ RUN git clone https://github.com/facebookincubator/gloo.git \
 
 WORKDIR /app
 
-ADD datasets.py spmd_mnist_classifier_fromscratch.py /app
+ADD datasets.py spmd_mnist_classifier_fromscratch.py /app/
 
 ENTRYPOINT ["python3", "spmd_mnist_classifier_fromscratch.py"]
