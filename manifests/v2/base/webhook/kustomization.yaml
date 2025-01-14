@@ -10,5 +10,3 @@ patches:
       kind: ValidatingWebhookConfiguration
 configurations:
   - kustomizeconfig.yaml
-# TODO (andreyvelich): Move it to overlays once we copy the JobSet manifests.
-namespace: kubeflow-system
