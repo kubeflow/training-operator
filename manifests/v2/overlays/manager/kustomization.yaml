@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace where all resources are deployed.
+namespace: kubeflow-system
+
+resources:
+  - namespace.yaml
+  - ../../base/crds
+  - ../../base/manager
+  - ../../base/rbac
+  - ../../base/webhook
+  - https://github.com/kubernetes-sigs/jobset/releases/download/v0.7.2/manifests.yaml
+
+# Update the Kubeflow Training manager image tag.
+images:
+  - name: kubeflow/training-operator-v2
+    newTag: latest
+
+# Disable postfix for Secret and ConfigMap
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Secret for the Kubeflow Training webhook.
+secretGenerator:
+  - name: training-operator-v2-webhook-cert
+    namespace: kubeflow-system
+
+# Config for the JobSet manager.
+# TODO (andreyvelich): Remove this when this is released: https://github.com/kubernetes-sigs/jobset/issues/720
+configMapGenerator:
+  - files:
+      - jobset_manager_config.yaml
+    name: jobset-manager-config
+
+# Add required patches.
+patchesStrategicMerge:
+  - patches/jobset_remove_namespace.yaml # Remove namespace from the JobSet release manifests.
+  - patches/jobset_config_patch.yaml # Add custom manager config to the JobSet.
