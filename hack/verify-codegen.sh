@@ -16,35 +16,7 @@
 
 set -o errexit
 set -o nounset
-set -o pipefail
 
-CURRENT_DIR=$(dirname "${BASH_SOURCE[0]}")
-DIFFROOT="${CURRENT_DIR}"
-TMP_DIFFROOT="$(mktemp -d -t "$(basename "$0").XXXXXX")"
-
-cleanup() {
-  rm -rf "${TMP_DIFFROOT}"
-}
-trap "cleanup" EXIT SIGINT
-
-cleanup
-
-mkdir -p "${TMP_DIFFROOT}"
-cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
-
-echo $TMP_DIFFROOT
-echo $DIFFROOT
-
-# Generate files.
 make generate
 
-echo "diffing ${DIFFROOT} against freshly generated codegen"
-ret=0
-diff -Naupr -x.gitignore "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
-
-if [[ $ret -eq 0 ]]; then
-  echo "${DIFFROOT} up to date."
-else
-  echo "${DIFFROOT} is out of date. Please run make generate"
-  exit 1
-fi
+git diff --exit-code || echo -e "\n\nPlease run make generate to update files" && exit 1
