@@ -1,4 +1,4 @@
-name: Python Test
+name: Unit and Integration Test - Python
 
 on:
   - push
@@ -12,9 +12,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO (tenzen-y): Once we resolve this compatibility issue, we will test against all Python versions.
-        # REF: https://github.com/kubeflow/training-operator/issues/2096
-        # python-version: ["3.8", "3.9", "3.10", "3.11"]
         python-version: ["3.10", "3.11"]
 
     steps:
