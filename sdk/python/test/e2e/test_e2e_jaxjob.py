@@ -88,7 +88,7 @@ def test_sdk_e2e_with_gang_scheduling(job_namespace):
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     try:
-        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=9000)
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
@@ -123,7 +123,7 @@ def test_sdk_e2e(job_namespace):
     logging.info(TRAINING_CLIENT.list_jobs(job_namespace))
 
     try:
-        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=9000)
+        utils.verify_job_e2e(TRAINING_CLIENT, JOB_NAME, job_namespace, wait_timeout=900)
     except Exception as e:
         utils.print_job_results(TRAINING_CLIENT, JOB_NAME, job_namespace)
         TRAINING_CLIENT.delete_job(JOB_NAME, job_namespace)
@@ -156,5 +156,5 @@ def generate_container() -> V1Container:
     return V1Container(
         name=CONTAINER_NAME,
         image=os.getenv("JAX_JOB_IMAGE", "docker.io/kubeflow/jaxjob-dist-spmd-mnist:latest"),
-        # resources=V1ResourceRequirements(limits={"memory": "4Gi", "cpu": "1.6"}),
+        resources=V1ResourceRequirements(limits={"memory": "3Gi", "cpu": "1.2"}),
     )

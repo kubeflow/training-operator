@@ -104,7 +104,9 @@ if __name__ == "__main__":
     train_images, train_labels, test_images, test_labels = datasets.mnist()
     num_train = train_images.shape[0]
     num_complete_batches, leftover = divmod(num_train, batch_size)
-    num_batches = num_complete_batches + bool(leftover)
+
+    # Increasing number of batches requires more resources.
+    num_batches = 10
 
     def data_stream():
         rng = npr.RandomState(0)
@@ -155,7 +157,6 @@ if __name__ == "__main__":
 
     for epoch in range(num_epochs):
         start_time = time.time()
-        num_batches = 5
         for _ in range(num_batches):
             replicated_params = spmd_update(replicated_params, next(batches))
         epoch_time = time.time() - start_time
