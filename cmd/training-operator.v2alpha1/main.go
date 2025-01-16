@@ -42,7 +42,7 @@ import (
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
-	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
+	webhooksv2 "github.com/kubeflow/training-operator/pkg/webhooks.v2"
 )
 
 const (
@@ -164,7 +164,7 @@ func setupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, cer
 		setupLog.Error(err, "Could not create controller", "controller", failedCtrlName)
 		os.Exit(1)
 	}
-	if failedWebhook, err := webhookv2.Setup(mgr, runtimes); err != nil {
+	if failedWebhook, err := webhooksv2.Setup(mgr, runtimes); err != nil {
 		setupLog.Error(err, "Could not create webhook", "webhook", failedWebhook)
 		os.Exit(1)
 	}

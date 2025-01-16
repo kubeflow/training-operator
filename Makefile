@@ -36,26 +36,17 @@ help: ## Display this help.
 
 ##@ Development
 
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=training-operator webhook paths="./pkg/apis/kubeflow.org/v1/..." \
-		output:crd:artifacts:config=manifests/base/crds \
-		output:rbac:artifacts:config=manifests/base/rbac \
-		output:webhook:artifacts:config=manifests/base/webhook
+manifests: controller-gen ## Generate manifests.
 	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=training-operator-v2 webhook \
-		paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhook.v2/...;./pkg/cert/..." \
+		paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhooks.v2/...;./pkg/cert/..." \
 		output:crd:artifacts:config=manifests/v2/base/crds \
 		output:rbac:artifacts:config=manifests/v2/base/rbac \
 		output:webhook:artifacts:config=manifests/v2/base/webhook
 
-generate: go-mod-download manifests ## Generate apidoc, sdk and code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: go-mod-download manifests ## Generate APIs and SDK.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
 	hack/update-codegen.sh
-	hack/python-sdk/gen-sdk.sh
 	hack/python-sdk-v2/gen-sdk.sh
-	$(MAKE) apidoc
-
-apidoc:
-	hack/generate-apidoc.sh
 
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -86,7 +77,7 @@ test-integrationv2: envtest jobset-operator-crd scheduler-plugins-crd
 
 .PHONY: testv2
 testv2:
-	go test ./pkg/apis/kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhook.v2/... ./pkg/util.v2/... -coverprofile cover.out
+	go test ./pkg/apis/kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhooks.v2/... ./pkg/util.v2/... -coverprofile cover.out
 
 envtest:
 ifndef HAS_SETUP_ENVTEST
