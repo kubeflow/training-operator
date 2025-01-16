@@ -99,8 +99,7 @@ if __name__ == "__main__":
     # For this manual SPMD example, we get the number of devices (e.g. CPU,
     # GPUs or TPU cores) that we're using, and use it to reshape data minibatches.
     num_devices = jax.local_device_count()
-    # batch_size = num_devices * 5
-    batch_size = 5 # testing
+    batch_size = num_devices * 5
 
     train_images, train_labels, test_images, test_labels = datasets.mnist()
     num_train = train_images.shape[0]
@@ -156,6 +155,7 @@ if __name__ == "__main__":
 
     for epoch in range(num_epochs):
         start_time = time.time()
+        num_batches = 5
         for _ in range(num_batches):
             replicated_params = spmd_update(replicated_params, next(batches))
         epoch_time = time.time() - start_time
