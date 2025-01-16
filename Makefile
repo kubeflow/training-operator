@@ -103,4 +103,5 @@ test: ## Run Go unit test.
 
 .PHONY: test-integration
 test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
+	echo "Run tests for Kubernetes $(ENVTEST_K8S_VERSION)"
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
