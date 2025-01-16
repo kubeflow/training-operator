@@ -1,10 +1,8 @@
 import os
 import runpy
-import shutil
-import tempfile
+from test.integration.initializer_v2.utils import verify_downloaded_files
 
 import pytest
-from kubeflow.training import MODEL_PATH
 
 import pkg.initializer_v2.utils.utils as utils
 
@@ -13,34 +11,8 @@ class TestModelIntegration:
     """Integration tests for model initialization"""
 
     @pytest.fixture(autouse=True)
-    def setup_teardown(self, monkeypatch):
-        """Setup and teardown for each test"""
-        # Create temporary directory for model downloads
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.temp_dir = tempfile.mkdtemp(dir=current_dir)
-        os.environ[MODEL_PATH] = self.temp_dir
-
-        # Store original environment
-        self.original_env = dict(os.environ)
-
-        # Monkeypatch the constant in the module
-        import kubeflow.training as training
-
-        monkeypatch.setattr(training, "MODEL_PATH", self.temp_dir)
-
-        yield
-
-        # Cleanup
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-        os.environ.clear()
-        os.environ.update(self.original_env)
-
-    def verify_model_files(self, expected_files):
-        """Verify downloaded model files"""
-        if expected_files:
-            actual_files = set(os.listdir(self.temp_dir))
-            missing_files = set(expected_files) - actual_files
-            assert not missing_files, f"Missing expected files: {missing_files}"
+    def setup_teardown(self, setup_temp_path):
+        self.temp_dir = setup_temp_path("MODEL_PATH")
 
     @pytest.mark.parametrize(
         "test_name, provider, test_case",
@@ -103,6 +75,6 @@ class TestModelIntegration:
                 )
         else:
             runpy.run_module("pkg.initializer_v2.model.__main__", run_name="__main__")
-            self.verify_model_files(expected_files)
+            verify_downloaded_files(self.temp_dir, expected_files)
 
         print("Test execution completed")

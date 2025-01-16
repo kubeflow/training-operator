@@ -89,7 +89,7 @@ jobs:
       - name: Run initializer_v2 integration tests for Python 3.11+
         if: ${{ matrix.python-version == '3.11' }}
         run: |
-          pip install urllib3 huggingface_hub
+          pip install -r ./cmd/initializer_v2/dataset/requirements.txt
           pip install -U './sdk_v2'
           pytest ./test/integration/initializer_v2
 

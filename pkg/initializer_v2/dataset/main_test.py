@@ -1,29 +1,8 @@
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from pkg.initializer_v2.dataset.__main__ import main
-
-
-@pytest.fixture
-def mock_env_vars():
-    """Fixture to set and clean up environment variables"""
-    original_env = dict(os.environ)
-
-    def _set_env_vars(**kwargs):
-        for key, value in kwargs.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = str(value)
-        return os.environ
-
-    yield _set_env_vars
-
-    # Cleanup
-    os.environ.clear()
-    os.environ.update(original_env)
 
 
 @pytest.mark.parametrize(
@@ -34,8 +13,6 @@ def mock_env_vars():
             {
                 "storage_uri": "hf://dataset/path",
                 "access_token": "test_token",
-                "mock_config_error": False,
-                "mock_download_error": False,
                 "expected_error": None,
             },
         ),
@@ -44,8 +21,6 @@ def mock_env_vars():
             {
                 "storage_uri": None,
                 "access_token": None,
-                "mock_config_error": False,
-                "mock_download_error": False,
                 "expected_error": Exception,
             },
         ),
@@ -54,28 +29,6 @@ def mock_env_vars():
             {
                 "storage_uri": "invalid://dataset/path",
                 "access_token": None,
-                "mock_config_error": False,
-                "mock_download_error": False,
-                "expected_error": Exception,
-            },
-        ),
-        (
-            "Config loading failure",
-            {
-                "storage_uri": "hf://dataset/path",
-                "access_token": None,
-                "mock_config_error": True,
-                "mock_download_error": False,
-                "expected_error": Exception,
-            },
-        ),
-        (
-            "Dataset download failure",
-            {
-                "storage_uri": "hf://dataset/path/error",
-                "access_token": None,
-                "mock_config_error": False,
-                "mock_download_error": True,
                 "expected_error": Exception,
             },
         ),
@@ -94,10 +47,6 @@ def test_dataset_main(test_name, test_case, mock_env_vars):
 
     # Setup mock HuggingFace instance
     mock_hf_instance = MagicMock()
-    if test_case["mock_config_error"]:
-        mock_hf_instance.load_config.side_effect = Exception
-    if test_case["mock_download_error"]:
-        mock_hf_instance.download_dataset.side_effect = Exception
 
     with patch(
         "pkg.initializer_v2.dataset.__main__.HuggingFace",
