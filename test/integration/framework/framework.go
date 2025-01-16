@@ -44,7 +44,7 @@ import (
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
 	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
-	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
+	webhooksv2 "github.com/kubeflow/training-operator/pkg/webhooks.v2"
 )
 
 type Framework struct {
@@ -114,7 +114,7 @@ func (f *Framework) RunManager(cfg *rest.Config) (context.Context, client.Client
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
 	gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
 
-	failedWebhookName, err := webhookv2.Setup(mgr, runtimes)
+	failedWebhookName, err := webhooksv2.Setup(mgr, runtimes)
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "webhook", failedWebhookName)
 	gomega.ExpectWithOffset(1, failedWebhookName).To(gomega.BeEmpty())
 
