@@ -21,7 +21,7 @@ inputs:
     description: whether to push container images or not
   tag-prefix:
     required: false
-    default: v1
+    default: v2alpha1
     description: Prefix for the image tag, e.g. v2alpha1
 
 runs:

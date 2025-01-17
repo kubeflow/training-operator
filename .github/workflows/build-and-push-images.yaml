@@ -1,4 +1,4 @@
-name: Publish Kubeflow Trainer Images
+name: Build and Publish Images
 
 on:
   - push
