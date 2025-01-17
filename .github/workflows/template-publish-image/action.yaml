@@ -1,4 +1,4 @@
-# Composite action to publish Training Operator images.
+# Composite action to publish Kubeflow Trainer images.
 name: Build And Publish Container Images
 description: Build Multiplatform Supporting Container Images
 
