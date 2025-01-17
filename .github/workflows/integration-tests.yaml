@@ -65,12 +65,26 @@ jobs:
           python-version: ${{ matrix.python-version }}
           gang-scheduler-name: ${{ matrix.gang-scheduler-name }}
 
+      - name: Build JAX Job Example Image
+        run: |
+          ./scripts/gha/build-jax-mnist-image.sh
+        env:
+          JAX_JOB_CI_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
+
+      - name: Load JAX Job Example Image
+        run: |
+          kind load docker-image ${{ env.JAX_JOB_CI_IMAGE }} --name ${{ env.KIND_CLUSTER }}
+        env:
+          KIND_CLUSTER: training-operator-cluster
+          JAX_JOB_CI_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
+
       - name: Run tests
         run: |
           pip install pytest
           python3 -m pip install -e sdk/python; pytest -s sdk/python/test/e2e --log-cli-level=debug --namespace=default
         env:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
+          JAX_JOB_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
 
       - name: Collect volcano logs
         if: ${{ failure() &&  matrix.gang-scheduler-name == 'volcano' }}
