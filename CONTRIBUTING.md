@@ -66,7 +66,7 @@ Note, that for the example job below, the PyTorchJob uses the `kubeflow` namespa
 
 From here we can apply the manifests to the cluster.
 ```sh
-kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
+kubectl apply --server-side -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
 ```
 
 Then we can patch it with the latest operator image.
