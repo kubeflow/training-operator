@@ -29,7 +29,7 @@ The following KubeCon + CloudNativeCon 2024 talk provides an overview of Kubeflo
 
 ## Getting Started
 
-Please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/training/getting-started)
+Please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/trainer/getting-started)
 to install and get started with Kubeflow Trainer.
 
 ## Community
@@ -38,7 +38,7 @@ The following links provide information on how to get involved in the community:
 
 - Join our [`#kubeflow-training` Slack channel](https://www.kubeflow.org/docs/about/community/#kubeflow-slack).
 - Attend [the bi-weekly AutoML and Training Working Group](https://bit.ly/2PWVCkV) community meeting.
-- Check out [who is using the Training Operator](ADOPTERS.md).
+- Check out [who is using Kubeflow Trainer](ADOPTERS.md).
 
 ## Contributing
 
@@ -51,12 +51,12 @@ Please refer to the [CHANGELOG](CHANGELOG.md).
 ## Kubeflow Training Operator V1
 
 Kubeflow Trainer project is currently in <strong>alpha</strong> status, and APIs may change.
-If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/training/operator-guides/migration).
+If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/trainer/operator-guides/migration).
 
 Kubeflow Community will maintain the Training Operator V1 source code at
 [the `release-1.9` branch](https://github.com/kubeflow/training-operator/tree/release-1.9).
 
-You can find the documentation for Kubeflow Training V1 in [these guides](https://www.kubeflow.org/docs/components/training/legacy-v1).
+You can find the documentation for Kubeflow Training Operator V1 in [these guides](https://www.kubeflow.org/docs/components/trainer/legacy-v1).
 
 ## Acknowledgement
 
