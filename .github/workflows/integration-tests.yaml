@@ -86,6 +86,13 @@ jobs:
           GANG_SCHEDULER_NAME: ${{ matrix.gang-scheduler-name }}
           JAX_JOB_IMAGE: kubeflow/jaxjob-dist-spmd-mnist:test
 
+      - name: Run initializer_v2 integration tests for Python 3.11+
+        if: ${{ matrix.python-version == '3.11' }}
+        run: |
+          pip install -r ./cmd/initializer_v2/dataset/requirements.txt
+          pip install -U './sdk_v2'
+          pytest ./test/integration/initializer_v2
+
       - name: Collect volcano logs
         if: ${{ failure() &&  matrix.gang-scheduler-name == 'volcano' }}
         run: |
