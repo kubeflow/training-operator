@@ -31,14 +31,14 @@ help: ## Display this help.
 
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
-
-## Tool Binaries
+# Tool Binaries
 LOCALBIN ?= $(PROJECT_DIR)/bin
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 ENVTEST_K8S_VERSION ?= 1.31
 
+# Instructions to download tools for development.
 .PHONY: envtest
 envtest: ## Download the setup-envtest binary if required.
 	test -s $(ENVTEST) || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19
@@ -47,7 +47,7 @@ envtest: ## Download the setup-envtest binary if required.
 controller-gen: ## Download the controller-gen binary if required.
 	test -s $(CONTROLLER_GEN) || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
 
-# Download external CRDs for the integration testings.
+# Download external CRDs for Go integration testings.
 EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/manifests/external-crds
 
 JOBSET_ROOT = $(shell go list -m -mod=readonly -f "{{.Dir}}" sigs.k8s.io/jobset)
@@ -62,6 +62,7 @@ scheduler-plugins-crd: ## Copy the CRDs from the Scheduler Plugins repository to
 	mkdir -p $(EXTERNAL_CRDS_DIR)/scheduler-plugins/
 	cp -f $(SCHEDULER_PLUGINS_ROOT)/manifests/coscheduling/* $(EXTERNAL_CRDS_DIR)/scheduler-plugins
 
+# Instructions for code generation.
 .PHONY: manifests
 manifests: controller-gen ## Generate manifests.
 	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=training-operator-v2 webhook \
@@ -80,6 +81,7 @@ generate: go-mod-download manifests ## Generate APIs and SDK.
 go-mod-download: ## Run go mod download to download modules.
 	go mod download
 
+# Instructions for code formatting.
 .PHONY: fmt
 fmt: ## Run go fmt against the code.
 	go fmt ./...
@@ -97,6 +99,7 @@ ifeq ($(GOLANGCI_LINT),)
 endif
 	golangci-lint run --timeout 5m --go 1.23 ./...
 
+# Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
 	go test ./pkg/apis/kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhooks.v2/... ./pkg/util.v2/... -coverprofile cover.out
@@ -104,3 +107,19 @@ test: ## Run Go unit test.
 .PHONY: test-integration
 test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
+
+test-python: ## Run Python unit test.
+	export PYTHONPATH=$(PROJECT_DIR)
+	pip install pytest
+	pip install -r ./cmd/initializer_v2/dataset/requirements.txt
+
+	pytest ./pkg/initializer_v2/dataset
+	pytest ./pkg/initializer_v2/model
+	pytest ./pkg/initializer_v2/utils
+
+test-python-integration: ## Run Python integration test.
+	export PYTHONPATH=$(PROJECT_DIR)
+	pip install pytest
+	pip install -r ./cmd/initializer_v2/dataset/requirements.txt
+
+	pytest ./test/integration/initializer_v2
