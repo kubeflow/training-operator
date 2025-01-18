@@ -112,6 +112,7 @@ test-python: ## Run Python unit test.
 	export PYTHONPATH=$(PROJECT_DIR)
 	pip install pytest
 	pip install -r ./cmd/initializer_v2/dataset/requirements.txt
+	pip install ./sdk_v2
 
 	pytest ./pkg/initializer_v2/dataset
 	pytest ./pkg/initializer_v2/model
