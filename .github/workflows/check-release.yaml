@@ -1,0 +1,74 @@
+name: Check Release
+
+on:
+  pull_request:
+    branches:
+      - v*-branch
+    paths:
+      - VERSION
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SEMVER_PATTERN: '^v([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whether version matches semver pattern
+        run: |
+          VERSION=$(cat VERSION)
+          if [[ ${VERSION} =~ ${{ env.SEMVER_PATTERN }} ]]; then
+            echo "Version '${VERSION}' matches semver pattern."
+          else
+            echo "Version '${VERSION}' does not match semver pattern."
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Check whether SDK versions match
+        run: |
+          VERSION=${VERSION#v}
+          SCRIPT_VERSION=$(grep 'VERSION=' hack/python-sdk/gen-sdk.sh | cut -d'=' -f2)
+          SWAGGER_VERSION=$(grep 'packageVersion' hack/python-sdk/swagger_config.json | cut -d'"' -f4)
+          SETUP_VERSION=$(grep 'version=' sdk/python/setup.py | cut -d'=' -f2 | tr -d "', ")
+          
+          if [[ ${SCRIPT_VERSION} == ${VERSION} ]]; then
+            echo "Script version '${SCRIPT_VERSION}' matches version '${VERSION}'."
+          else
+            echo "Script version '${SCRIPT_VERSION}' does not match version '${VERSION}'."
+            exit 1
+          fi
+          
+          if [[ ${SWAGGER_VERSION} == ${VERSION} ]]; then
+            echo "Swagger version '${SWAGGER_VERSION}' matches version '${VERSION}'."
+          else
+            echo "Swagger version '${SWAGGER_VERSION}' does not match version '${VERSION}'."
+            exit 1
+          fi
+          
+          if [[ ${SETUP_VERSION} == ${VERSION} ]]; then
+            echo "Setup version '${SETUP_VERSION}' matches version '${VERSION}'."
+          else
+            echo "Setup version '${SETUP_VERSION}' does not match version '${VERSION}'."
+            exit 1
+          fi
+
+      - name: Check if tag exists
+        run: |
+          git fetch --tags
+          if git tag -l | grep -q "^${VERSION}$"; then
+            echo "Tag '${VERSION}' already exists."
+            exit 1
+          else
+            echo "Tag '${VERSION}' does not exist."
+          fi
