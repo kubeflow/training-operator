@@ -30,9 +30,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Free-Up Disk Space
-        uses: ./.github/workflows/free-up-disk-space
-
       - name: Docker Login
         # Trigger workflow only for kubeflow/training-operator repository with specific branch (master, release-*) or tag (v.*).
         if: >-
