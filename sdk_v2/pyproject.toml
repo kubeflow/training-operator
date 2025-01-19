@@ -37,7 +37,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/kubeflow/training-operator"
-Documentation = "https://www.kubeflow.org/docs/components/training/"
+Documentation = "https://www.kubeflow.org/docs/components/trainer/"
 Source = "https://github.com/kubeflow/training-operator"
 
 [tool.hatch.build.targets.wheel]

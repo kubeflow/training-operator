@@ -17,10 +17,8 @@
 package applyconfiguration
 
 import (
-	v1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v1"
 	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
 	internal "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/internal"
-	kubefloworgv1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v1"
 	kubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/kubeflow.org/v2alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,51 +29,7 @@ import (
 // apply configuration type exists for the given GroupVersionKind.
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
-	// Group=kubeflow.org, Version=v1
-	case v1.SchemeGroupVersion.WithKind("ElasticPolicy"):
-		return &kubefloworgv1.ElasticPolicyApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("JAXJob"):
-		return &kubefloworgv1.JAXJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("JAXJobSpec"):
-		return &kubefloworgv1.JAXJobSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("JobCondition"):
-		return &kubefloworgv1.JobConditionApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("JobStatus"):
-		return &kubefloworgv1.JobStatusApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("MPIJob"):
-		return &kubefloworgv1.MPIJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("MPIJobSpec"):
-		return &kubefloworgv1.MPIJobSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("PaddleElasticPolicy"):
-		return &kubefloworgv1.PaddleElasticPolicyApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("PaddleJob"):
-		return &kubefloworgv1.PaddleJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("PaddleJobSpec"):
-		return &kubefloworgv1.PaddleJobSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("PyTorchJob"):
-		return &kubefloworgv1.PyTorchJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("PyTorchJobSpec"):
-		return &kubefloworgv1.PyTorchJobSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("RDZVConf"):
-		return &kubefloworgv1.RDZVConfApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ReplicaSpec"):
-		return &kubefloworgv1.ReplicaSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ReplicaStatus"):
-		return &kubefloworgv1.ReplicaStatusApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("RunPolicy"):
-		return &kubefloworgv1.RunPolicyApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("SchedulingPolicy"):
-		return &kubefloworgv1.SchedulingPolicyApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("TFJob"):
-		return &kubefloworgv1.TFJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("TFJobSpec"):
-		return &kubefloworgv1.TFJobSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("XGBoostJob"):
-		return &kubefloworgv1.XGBoostJobApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("XGBoostJobSpec"):
-		return &kubefloworgv1.XGBoostJobSpecApplyConfiguration{}
-
-		// Group=kubeflow.org, Version=v2alpha1
+	// Group=kubeflow.org, Version=v2alpha1
 	case v2alpha1.SchemeGroupVersion.WithKind("ClusterTrainingRuntime"):
 		return &kubefloworgv2alpha1.ClusterTrainingRuntimeApplyConfiguration{}
 	case v2alpha1.SchemeGroupVersion.WithKind("ContainerOverride"):

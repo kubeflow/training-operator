@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 
-	kubeflowv1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v1"
 	kubeflowv2alpha1 "github.com/kubeflow/training-operator/pkg/client/clientset/versioned/typed/kubeflow.org/v2alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -29,20 +28,13 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	KubeflowV1() kubeflowv1.KubeflowV1Interface
 	KubeflowV2alpha1() kubeflowv2alpha1.KubeflowV2alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	kubeflowV1       *kubeflowv1.KubeflowV1Client
 	kubeflowV2alpha1 *kubeflowv2alpha1.KubeflowV2alpha1Client
-}
-
-// KubeflowV1 retrieves the KubeflowV1Client
-func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
-	return c.kubeflowV1
 }
 
 // KubeflowV2alpha1 retrieves the KubeflowV2alpha1Client
@@ -94,10 +86,6 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.kubeflowV1, err = kubeflowv1.NewForConfigAndClient(&configShallowCopy, httpClient)
-	if err != nil {
-		return nil, err
-	}
 	cs.kubeflowV2alpha1, err = kubeflowv2alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -123,7 +111,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.kubeflowV1 = kubeflowv1.New(c)
 	cs.kubeflowV2alpha1 = kubeflowv2alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
