@@ -162,7 +162,6 @@ def get_args_using_train_func(
     # That allows to execute the training script with the entrypoint.
     exec_script = textwrap.dedent(
         """
-                program_path=$(mktemp -d)
                 read -r -d '' SCRIPT << EOM\n
                 {func_code}
                 EOM

@@ -31,3 +31,9 @@ spec:
                           env | grep PET_
 
                           pip list
+                      volumeMounts:
+                        - name: workspace
+                          mountPath: /workspace
+                  volumes:
+                    - name: workspace
+                      emptyDir: {}
