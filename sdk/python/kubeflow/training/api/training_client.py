@@ -354,6 +354,7 @@ class TrainingClient(object):
         env_vars: Optional[
             Union[Dict[str, str], List[Union[models.V1EnvVar, models.V1EnvVar]]]
         ] = None,
+        pip_args: Optional[List[str]] = None,
     ):
         """Create the Training Job.
         Job can be created using one of the following options:
@@ -418,7 +419,9 @@ class TrainingClient(object):
                 https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVar.md)
                 or a kubernetes.client.models.V1EnvFromSource (documented here:
                 https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvFromSource.md)
-
+            pip_args: List of args to pass to pip install that applies to all packages specified in
+                packages_to_install. For a full list of args, see the pip documentation
+                https://pip.pypa.io/en/stable/cli/pip_install/
         Raises:
             ValueError: Invalid input parameters.
             TimeoutError: Timeout to create Job.
@@ -486,6 +489,7 @@ class TrainingClient(object):
                     train_func_parameters=parameters,
                     packages_to_install=packages_to_install,
                     pip_index_url=pip_index_url,
+                    pip_args=pip_args,
                 )
 
             # Get Training Container template.
