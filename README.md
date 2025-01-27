@@ -4,9 +4,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubeflow/training-operator/badge.svg?branch=master)](https://coveralls.io/github/kubeflow/training-operator?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/training-operator)](https://goreportcard.com/report/github.com/kubeflow/training-operator)
 
-TODO (andreyvelich): Add logo
-
-TODO (andreyvelich): Add diagram
+<h1 align="center">
+    <img src="./docs/images/trainer-logo.svg" alt="logo" width="200">
+  <br>
+</h1>
 
 ## Overview
 
