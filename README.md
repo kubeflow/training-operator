@@ -22,6 +22,11 @@ with Kubeflow Training to orchestrate their ML training on Kubernetes.
 Kubeflow Trainer allows you effortlessly develop your LLMs with the Kubeflow Python SDK and
 build Kubernetes-native Training Runtimes with Kubernetes Custom Resources APIs.
 
+<h1 align="center">
+    <img src="./docs/images/trainer-tech-stack.drawio.svg" alt="logo" width="500">
+  <br>
+</h1>
+
 ## Kubeflow Trainer Introduction
 
 The following KubeCon + CloudNativeCon 2024 talk provides an overview of Kubeflow Trainer capabilities:
