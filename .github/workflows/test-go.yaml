@@ -27,20 +27,20 @@ jobs:
 
       - name: Check Go modules
         run: |
-          go mod tidy &&
-          git diff --cached --exit-code || (echo 'Please run "go mod tidy" to sync Go modules' && exit 1);
+          go mod tidy
+          git diff --exit-code || (echo 'Please run "go mod tidy" to sync Go modules' && exit 1);
       - name: Check auto-generated assets
         run: |
-          make generate &&
-          git diff --cached --exit-code || (echo 'Please run "make generate" to generate assets' && exit 1);
+          make generate
+          git diff --exit-code || (echo 'Please run "make generate" to generate assets' && exit 1);
       - name: Check go fmt
         run: |
-          make fmt &&
-          git diff --cached --exit-code || (echo 'Please run "make fmt" to verify gofmt' && exit 1);
+          make fmt
+          git diff --exit-code || (echo 'Please run "make fmt" to verify gofmt' && exit 1);
       - name: Check go fmt
         run: |
           make vet
-          git diff --cached --exit-code || (echo 'Please run "make vet" to verify govet' && exit 1);
+          git diff --exit-code || (echo 'Please run "make vet" to verify govet' && exit 1);
       - name: Check golangci lint
         run: |
           make golangci-lint
