@@ -13,6 +13,16 @@ configMapGenerator:
       disableNameSuffixHash: true
 
 # Add required patches.
-patchesStrategicMerge:
-  - patches/jobset_remove_namespace.yaml # Remove namespace from the JobSet release manifests.
-  - patches/jobset_config_patch.yaml # Add custom manager config to the JobSet.
+patches:
+  # Remove namespace from the JobSet release manifests.
+  - path: patches/jobset_remove_namespace.yaml
+    target:
+      group: ""
+      version: v1
+      kind: Namespace
+  # Add custom manager config to the JobSet.
+  - path: patches/jobset_config_patch.yaml
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
