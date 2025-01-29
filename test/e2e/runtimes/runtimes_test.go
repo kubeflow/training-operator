@@ -18,91 +18,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func getTrainingClient(t *testing.T, namespace string) (*versioned.Clientset, *kubernetes.Clientset) {
-	var config *rest.Config
-	var err error
-
-	// Try in-cluster config first
-	config, err = rest.InClusterConfig()
-	if err != nil {
-		// Fall back to kubeconfig
-		config, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-		if err != nil {
-			t.Fatalf("Failed to load kubeconfig: %v", err)
-		}
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		t.Fatalf("Failed to create Kubernetes client: %v", err)
-	}
-
-	// Create a test namespace
-	_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
-	if errors.IsNotFound(err) {
-		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			t.Fatalf("Failed to create namespace: %v", err)
-		}
-	}
-
-	trainingClient, err := versioned.NewForConfig(config)
-	if err != nil {
-		t.Fatalf("Failed to create TrainingRuntimes client: %v", err)
-	}
-	return trainingClient, clientset
-
-}
-func TestRuntime(t *testing.T) {
-	namespace := "test-namespace"
-	runtime := &kubeflowv2.TrainingRuntime{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apiextensions.k8s.io/v1",
-			Kind:       "CustomResourceDefinition",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-runtime",
-			Namespace: namespace,
-			Labels: map[string]string{
-				"app": "training-runtime",
-			},
-			Annotations: map[string]string{
-				"kubeflow.org/runtime": "test",
-			},
-		},
-		Spec: kubeflowv2.TrainingRuntimeSpec{
-			MLPolicy: &kubeflowv2.MLPolicy{
-				NumNodes: &[]int32{1}[0],
-				MLPolicySource: kubeflowv2.MLPolicySource{
-					Torch: &kubeflowv2.TorchMLPolicySource{
-						ElasticPolicy: &kubeflowv2.TorchElasticPolicy{
-							MaxRestarts: &[]int32{1}[0],
-							MaxNodes:    &[]int32{1}[0],
-							MinNodes:    &[]int32{1}[0],
-						},
-					},
-				},
-			},
-		},
-	}
-
-	trainingClient, clientset := getTrainingClient(t, namespace)
-	defer clientset.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
-	defer trainingClient.KubeflowV2alpha1().TrainingRuntimes(namespace).Delete(context.TODO(), "test-runtime", metav1.DeleteOptions{})
-
-	// Create the TrainingRuntime
-	_, err := trainingClient.KubeflowV2alpha1().TrainingRuntimes(namespace).Create(context.TODO(), runtime, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to create TrainingRuntime: %v", err)
-	}
-	defer trainingClient.KubeflowV2alpha1().TrainingRuntimes(namespace).Delete(context.TODO(), "test-runtime", metav1.DeleteOptions{})
-
-}
-
 func TestCreateTrainingRuntime(t *testing.T) {
 	namespace := "test-namespace-1"
 	runtime := &kubeflowv2.TrainingRuntime{
@@ -194,7 +109,7 @@ func TestInvalidTrainingRuntime(t *testing.T) {
 	namespace := "test-namespace-4"
 	runtime := &kubeflowv2.TrainingRuntime{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-runtime",
+			Name:      "invalid-runtime",
 			Namespace: "invalid-namespace",
 		},
 		Spec: kubeflowv2.TrainingRuntimeSpec{
@@ -234,4 +149,44 @@ func TestScalingTrainingRuntimes(t *testing.T) {
 			t.Fatalf("Failed to create TrainingRuntime %d: %v", i, err)
 		}
 	}
+}
+
+func getTrainingClient(t *testing.T, namespace string) (*versioned.Clientset, *kubernetes.Clientset) {
+	var config *rest.Config
+	var err error
+
+	// Try in-cluster config first
+	config, err = rest.InClusterConfig()
+	if err != nil {
+		// Fall back to kubeconfig
+		config, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+		if err != nil {
+			t.Fatalf("Failed to load kubeconfig: %v", err)
+		}
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		t.Fatalf("Failed to create Kubernetes client: %v", err)
+	}
+
+	// Create a test namespace
+	_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("Failed to create namespace: %v", err)
+		}
+	}
+
+	trainingClient, err := versioned.NewForConfig(config)
+	if err != nil {
+		t.Fatalf("Failed to create TrainingRuntimes client: %v", err)
+	}
+	return trainingClient, clientset
+
 }
