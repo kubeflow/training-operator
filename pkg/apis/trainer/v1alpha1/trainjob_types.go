@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -194,7 +195,7 @@ type Trainer struct {
 	// Number of processes/workers/slots on every training node.
 	// For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set.
 	// For the MPI runtime only int value can be set.
-	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
+	NumProcPerNode *intstr.IntOrString `json:"numProcPerNode,omitempty"`
 }
 
 // DatasetConfig represents the desired dataset configuration.

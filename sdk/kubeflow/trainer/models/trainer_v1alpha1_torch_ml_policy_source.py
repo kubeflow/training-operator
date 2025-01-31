@@ -34,7 +34,7 @@ class TrainerV1alpha1TorchMLPolicySource(object):
     """
     openapi_types = {
         'elastic_policy': 'TrainerV1alpha1TorchElasticPolicy',
-        'num_proc_per_node': 'str'
+        'num_proc_per_node': 'K8sIoApimachineryPkgUtilIntstrIntOrString'
     }
 
     attribute_map = {
@@ -82,10 +82,9 @@ class TrainerV1alpha1TorchMLPolicySource(object):
     def num_proc_per_node(self):
         """Gets the num_proc_per_node of this TrainerV1alpha1TorchMLPolicySource.  # noqa: E501
 
-        Number of processes per node. This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI. Supported values: `auto`, `cpu`, `gpu`, or int value. Defaults to `auto`.  # noqa: E501
 
         :return: The num_proc_per_node of this TrainerV1alpha1TorchMLPolicySource.  # noqa: E501
-        :rtype: str
+        :rtype: K8sIoApimachineryPkgUtilIntstrIntOrString
         """
         return self._num_proc_per_node
 
@@ -93,10 +92,9 @@ class TrainerV1alpha1TorchMLPolicySource(object):
     def num_proc_per_node(self, num_proc_per_node):
         """Sets the num_proc_per_node of this TrainerV1alpha1TorchMLPolicySource.
 
-        Number of processes per node. This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI. Supported values: `auto`, `cpu`, `gpu`, or int value. Defaults to `auto`.  # noqa: E501
 
         :param num_proc_per_node: The num_proc_per_node of this TrainerV1alpha1TorchMLPolicySource.  # noqa: E501
-        :type: str
+        :type: K8sIoApimachineryPkgUtilIntstrIntOrString
         """
 
         self._num_proc_per_node = num_proc_per_node

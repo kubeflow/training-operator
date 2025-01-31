@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 )
 
@@ -174,11 +175,10 @@ type TorchMLPolicySource struct {
 	// Number of processes per node.
 	// This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI.
 	// Supported values: `auto`, `cpu`, `gpu`, or int value.
-	// TODO (andreyvelich): Add kubebuilder validation.
 	// Defaults to `auto`.
 	// +kubebuilder:default="auto"
-	// +kubebuilder:validation:XValidation:rule="self in ['auto', 'cpu', 'gpu'] || type(self) == int", message="NumProcPerNode must be equal to auto, cpu, gpu, or int value"
-	NumProcPerNode *string `json:"numProcPerNode,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self > 0 || self in ['auto', 'cpu', 'gpu']", message="NumProcPerNode must be equal to auto, cpu, gpu, or int value"
+	NumProcPerNode *intstr.IntOrString `json:"numProcPerNode,omitempty"`
 
 	// Elastic policy for the PyTorch training.
 	ElasticPolicy *TorchElasticPolicy `json:"elasticPolicy,omitempty"`

@@ -38,7 +38,7 @@ class TrainerV1alpha1Trainer(object):
         'env': 'list[V1EnvVar]',
         'image': 'str',
         'num_nodes': 'int',
-        'num_proc_per_node': 'str',
+        'num_proc_per_node': 'K8sIoApimachineryPkgUtilIntstrIntOrString',
         'resources_per_node': 'V1ResourceRequirements'
     }
 
@@ -201,10 +201,9 @@ class TrainerV1alpha1Trainer(object):
     def num_proc_per_node(self):
         """Gets the num_proc_per_node of this TrainerV1alpha1Trainer.  # noqa: E501
 
-        Number of processes/workers/slots on every training node. For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set. For the MPI runtime only int value can be set.  # noqa: E501
 
         :return: The num_proc_per_node of this TrainerV1alpha1Trainer.  # noqa: E501
-        :rtype: str
+        :rtype: K8sIoApimachineryPkgUtilIntstrIntOrString
         """
         return self._num_proc_per_node
 
@@ -212,10 +211,9 @@ class TrainerV1alpha1Trainer(object):
     def num_proc_per_node(self, num_proc_per_node):
         """Sets the num_proc_per_node of this TrainerV1alpha1Trainer.
 
-        Number of processes/workers/slots on every training node. For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set. For the MPI runtime only int value can be set.  # noqa: E501
 
         :param num_proc_per_node: The num_proc_per_node of this TrainerV1alpha1Trainer.  # noqa: E501
-        :type: str
+        :type: K8sIoApimachineryPkgUtilIntstrIntOrString
         """
 
         self._num_proc_per_node = num_proc_per_node

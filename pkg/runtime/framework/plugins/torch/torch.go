@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
@@ -66,9 +67,9 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) 
 	}
 	info.Trainer.NumNodes = numNodes
 
-	numProcPerNode := info.RuntimePolicy.MLPolicy.Torch.NumProcPerNode
+	numProcPerNode := ptr.Deref(info.RuntimePolicy.MLPolicy.Torch.NumProcPerNode, intstr.FromString("auto"))
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumProcPerNode != nil {
-		numProcPerNode = trainJob.Spec.Trainer.NumProcPerNode
+		numProcPerNode = ptr.Deref(trainJob.Spec.Trainer.NumProcPerNode, intstr.FromString("auto"))
 	}
 
 	// Update envs for Info object.
@@ -84,7 +85,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) 
 		},
 		{
 			Name:  constants.TorchEnvNumProcPerNode,
-			Value: ptr.Deref(numProcPerNode, "auto"),
+			Value: numProcPerNode.String(),
 		},
 		{
 			Name: constants.TorchEnvNodeRank,

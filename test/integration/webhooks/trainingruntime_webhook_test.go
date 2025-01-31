@@ -21,6 +21,7 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -164,7 +165,7 @@ var _ = ginkgo.Describe("TrainingRuntime marker validations and defaulting", gin
 					runtime.Spec.MLPolicy = &trainer.MLPolicy{
 						MLPolicySource: trainer.MLPolicySource{
 							Torch: &trainer.TorchMLPolicySource{
-								NumProcPerNode: ptr.To("auto"),
+								NumProcPerNode: ptr.To(intstr.FromString("auto")),
 							},
 						},
 					}

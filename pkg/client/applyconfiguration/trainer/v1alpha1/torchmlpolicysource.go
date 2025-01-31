@@ -16,10 +16,14 @@
 
 package v1alpha1
 
+import (
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
+)
+
 // TorchMLPolicySourceApplyConfiguration represents a declarative configuration of the TorchMLPolicySource type for use
 // with apply.
 type TorchMLPolicySourceApplyConfiguration struct {
-	NumProcPerNode *string                               `json:"numProcPerNode,omitempty"`
+	NumProcPerNode *intstr.IntOrString                   `json:"numProcPerNode,omitempty"`
 	ElasticPolicy  *TorchElasticPolicyApplyConfiguration `json:"elasticPolicy,omitempty"`
 }
 
@@ -32,7 +36,7 @@ func TorchMLPolicySource() *TorchMLPolicySourceApplyConfiguration {
 // WithNumProcPerNode sets the NumProcPerNode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NumProcPerNode field is set to the value of the last call.
-func (b *TorchMLPolicySourceApplyConfiguration) WithNumProcPerNode(value string) *TorchMLPolicySourceApplyConfiguration {
+func (b *TorchMLPolicySourceApplyConfiguration) WithNumProcPerNode(value intstr.IntOrString) *TorchMLPolicySourceApplyConfiguration {
 	b.NumProcPerNode = &value
 	return b
 }

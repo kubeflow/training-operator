@@ -94,7 +94,7 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 
 	numProcPerNode := strconv.Itoa(int(*info.RuntimePolicy.MLPolicy.MPI.NumProcPerNode))
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumProcPerNode != nil {
-		numProcPerNode = *trainJob.Spec.Trainer.NumProcPerNode
+		numProcPerNode = (*trainJob.Spec.Trainer.NumProcPerNode).String()
 	}
 	info.Trainer.NumProcPerNode = numProcPerNode
 

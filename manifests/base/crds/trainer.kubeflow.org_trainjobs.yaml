@@ -3138,11 +3138,14 @@ spec:
                     format: int32
                     type: integer
                   numProcPerNode:
+                    anyOf:
+                    - type: integer
+                    - type: string
                     description: |-
                       Number of processes/workers/slots on every training node.
                       For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set.
                       For the MPI runtime only int value can be set.
-                    type: string
+                    x-kubernetes-int-or-string: true
                   resourcesPerNode:
                     description: Compute resources for each training node.
                     properties:

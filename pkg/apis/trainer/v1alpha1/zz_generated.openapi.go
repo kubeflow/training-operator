@@ -974,8 +974,7 @@ func schema_pkg_apis_trainer_v1alpha1_TorchMLPolicySource(ref common.ReferenceCa
 					"numProcPerNode": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Number of processes per node. This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI. Supported values: `auto`, `cpu`, `gpu`, or int value. Defaults to `auto`.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"elasticPolicy": {
@@ -988,7 +987,7 @@ func schema_pkg_apis_trainer_v1alpha1_TorchMLPolicySource(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1.TorchElasticPolicy"},
+			"github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1.TorchElasticPolicy", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -1352,15 +1351,14 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 					"numProcPerNode": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Number of processes/workers/slots on every training node. For the Torch runtime: `auto`, `cpu`, `gpu`, or int value can be set. For the MPI runtime only int value can be set.",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 

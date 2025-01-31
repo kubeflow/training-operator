@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
@@ -29,7 +30,7 @@ type TrainerApplyConfiguration struct {
 	Env              []v1.EnvVarApplyConfiguration              `json:"env,omitempty"`
 	NumNodes         *int32                                     `json:"numNodes,omitempty"`
 	ResourcesPerNode *v1.ResourceRequirementsApplyConfiguration `json:"resourcesPerNode,omitempty"`
-	NumProcPerNode   *string                                    `json:"numProcPerNode,omitempty"`
+	NumProcPerNode   *intstr.IntOrString                        `json:"numProcPerNode,omitempty"`
 }
 
 // TrainerApplyConfiguration constructs a declarative configuration of the Trainer type for use with
@@ -98,7 +99,7 @@ func (b *TrainerApplyConfiguration) WithResourcesPerNode(value *v1.ResourceRequi
 // WithNumProcPerNode sets the NumProcPerNode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NumProcPerNode field is set to the value of the last call.
-func (b *TrainerApplyConfiguration) WithNumProcPerNode(value string) *TrainerApplyConfiguration {
+func (b *TrainerApplyConfiguration) WithNumProcPerNode(value intstr.IntOrString) *TrainerApplyConfiguration {
 	b.NumProcPerNode = &value
 	return b
 }
