@@ -67,8 +67,7 @@ TrainingClient().train(
     trainer=Trainer(
         fine_tuning_config=FineTuningConfig(
             backend="huggingface",
-            launch="torchrun",
-            dataset_class="InstructionDataset",
+            dataset_class="Instruction",
             peft_config=LoraConfig(r=4), 
             sharding_config=FsdpConfig(...),
             kwargs={},
@@ -146,6 +145,42 @@ def fine_tune(model_name, dataset, backend, **kwargs):
     if backend not in BACKEND_HANDLERS:
         raise ValueError(f"Unsupported backend: {backend}")
     BACKEND_HANDLERS[backend].fine_tune(model_name, dataset, **kwargs)
+
+```
+
+### Data Preprocess
+
+Different datasets have vastly different keys and usage. For example, instruction datasets (e.g. [tatsu-lab/alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca)) always include keys like `instruction`, `input`, `output` and `text`. However, question answering datasets (e.g. [openai/gsm8k](https://huggingface.co/datasets/openai/gsm8k)) contain columns like `question` and `answer`. It’s impossible to implement a unified dataset class suitable for every datasets on HuggingFace. **Different types of tasks need different implementations** so that they can preprocess data in a specific way.
+
+Based on the reasons above, we decide to **provide multiple built-in dataset classes** for data processing. They can be used directly by specifying the `dataset_class` parameter in Python SDK (e.g. `dataset_class="instruction"`). Meanwhile, we also **allow users to define customized dataset classes with specified methods implemented** and pass it to the `dataset_class` parameter in Python SDK (e.g. `dataset_class=CustomDatasetClass`). 
+
+```python
+from torch.utils.data import Dataset
+
+DATASET_REGISTRY = {}
+
+def register_dataset(name):
+    def decorator(cls):
+        DATASET_REGISTRY[name] = cls
+        return cls
+    return decorator
+
+# Abstract Dataset Class
+class InitMethod(ABC):
+    @abstractmethod
+    def __init__(self, dataset_config, tokenizer, partition="train"):
+        raise NotImplementedError()
+
+@register_dataset("instruction")
+class InstructionDataset(Dataset, InitMethod):
+    def __init__(self, dataset_config, tokenizer, partition="train"):
+        # Some code here
+    
+    def __len__(self):
+        # Some code here
+    
+    def __getitem__(self, index):
+        # Some code here
 
 ```
 
