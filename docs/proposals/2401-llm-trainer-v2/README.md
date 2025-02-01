@@ -37,7 +37,7 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 
 ## Proposal
 
-We decide to adopt `torchrun` as the launcher of LLM Trainer V2, and support multiple frameworks and fine-tuning techniques. 
+We decide to adopt `torchrun` as the launcher of LLM Trainer V2, and support multiple frameworks and fine-tuning techniques.
 
 Supported frameworks:
 
@@ -68,7 +68,7 @@ TrainingClient().train(
         fine_tuning_config=FineTuningConfig(
             framework="huggingface",
             dataset_class="Instruction",
-            peft_config=LoraConfig(r=4), 
+            peft_config=LoraConfig(r=4),
             sharding_config=FsdpConfig(...),
             kwargs={},
         ),
@@ -152,7 +152,7 @@ def fine_tune(model_name, dataset, backend, **kwargs):
 
 Different datasets have vastly different keys and usage. For example, instruction datasets (e.g. [tatsu-lab/alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca)) always include keys like `instruction`, `input`, `output` and `text`. However, question answering datasets (e.g. [openai/gsm8k](https://huggingface.co/datasets/openai/gsm8k)) contain columns like `question` and `answer`. It’s impossible to implement a unified dataset class suitable for every datasets on HuggingFace. **Different types of tasks need different implementations** so that they can preprocess data in a specific way.
 
-Based on the reasons above, we decide to **provide multiple built-in dataset classes** for data processing. They can be used directly by specifying the `dataset_class` parameter in Python SDK (e.g. `dataset_class="instruction"`). Meanwhile, we also **allow users to define customized dataset classes with specified methods implemented** and pass it to the `dataset_class` parameter in Python SDK (e.g. `dataset_class=CustomDatasetClass`). 
+Based on the reasons above, we decide to **provide multiple built-in dataset classes** for data processing. They can be used directly by specifying the `dataset_class` parameter in Python SDK (e.g. `dataset_class="instruction"`). Meanwhile, we also **allow users to define customized dataset classes with specified methods implemented** and pass it to the `dataset_class` parameter in Python SDK (e.g. `dataset_class=CustomDatasetClass`).
 
 ```python
 from torch.utils.data import Dataset
@@ -175,10 +175,10 @@ class InitMethod(ABC):
 class InstructionDataset(Dataset, InitMethod):
     def __init__(self, dataset_config, tokenizer, partition="train"):
         # Some code here
-    
+
     def __len__(self):
         # Some code here
-    
+
     def __getitem__(self, index):
         # Some code here
 
@@ -219,7 +219,7 @@ job_id = TrainingClient().train(
         fine_tuning_config=FineTuningConfig(
             framework="huggingface",
             dataset_class="InstructionDataset",
-            peft_config=LoraConfig(r=4), 
+            peft_config=LoraConfig(r=4),
             sharding_config=FsdpConfig(...),
             kwargs={},
         ),
@@ -326,10 +326,10 @@ class FsdpConfig:
     use_fp16: bool = False
     fsdp_cpu_offload: bool=False
     sharding_strategy: ShardingStrategy = ShardingStrategy.FULL_SHARD
-    hsdp: bool = False 
-    sharding_group_size: int = 0 # requires hsdp to be set. 
-    replica_group_size: int = 0 #requires hsdp to be set. 
-    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT        
+    hsdp: bool = False
+    sharding_group_size: int = 0 # requires hsdp to be set.
+    replica_group_size: int = 0 #requires hsdp to be set.
+    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
     fsdp_activation_checkpointing: bool = True
 
 ```
@@ -352,7 +352,7 @@ The *ZeroConfig* represents the config of DeepSeed ZeRO we use to fine-tune the 
 class ZeroConfig:
     stage: int = 0
     zero_cpu_offload: bool = False
-    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT        
+    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
     mixed_precision: bool = True
     use_fp16 : bool = False
 
@@ -453,27 +453,27 @@ import torch
 ```
 
 ```bash
-$ accelerate config                              
+$ accelerate config
 -------------------------------------------------------------------------------------------------------------------------------------In which compute environment are you running?
-This machine                                                                                                                         
--------------------------------------------------------------------------------------------------------------------------------------Which type of machine are you using?                                                                                                 
-multi-CPU                                                                                                                            
-How many different machines will you use (use more than 1 for multi-node training)? [1]:                                             
-Should distributed operations be checked while running for errors? This can avoid timeout issues but will be slower. [yes/NO]: yes   
-Do you want to use Intel PyTorch Extension (IPEX) to speed up training on CPU? [yes/NO]:yes                                          
-Do you want accelerate to launch mpirun? [yes/NO]: no                                                                                
-Do you wish to optimize your script with torch dynamo?[yes/NO]:yes                                                                   
--------------------------------------------------------------------------------------------------------------------------------------Which dynamo backend would you like to use?                                                                                          
-Please select a choice using the arrow or number keys, and selecting with enter                                                      
-inductor                                                                                                                             
-Do you want to customize the defaults sent to torch.compile? [yes/NO]: yes                                                           
--------------------------------------------------------------------------------------------------------------------------------------Which mode do you want to use?                                                                                                       
-default                                                                                                                              
-Do you want the fullgraph mode or it is ok to break model into several subgraphs? [yes/NO]: yes                                      
-Do you want to enable dynamic shape tracing? [yes/NO]: yes                                                                           
-How many processes should be used for distributed training? [1]:1                                                                    
--------------------------------------------------------------------------------------------------------------------------------------Do you wish to use mixed precision?                                                                                                  
-fp16                                                                                                                                 
+This machine
+-------------------------------------------------------------------------------------------------------------------------------------Which type of machine are you using?
+multi-CPU
+How many different machines will you use (use more than 1 for multi-node training)? [1]:
+Should distributed operations be checked while running for errors? This can avoid timeout issues but will be slower. [yes/NO]: yes
+Do you want to use Intel PyTorch Extension (IPEX) to speed up training on CPU? [yes/NO]:yes
+Do you want accelerate to launch mpirun? [yes/NO]: no
+Do you wish to optimize your script with torch dynamo?[yes/NO]:yes
+-------------------------------------------------------------------------------------------------------------------------------------Which dynamo backend would you like to use?
+Please select a choice using the arrow or number keys, and selecting with enter
+inductor
+Do you want to customize the defaults sent to torch.compile? [yes/NO]: yes
+-------------------------------------------------------------------------------------------------------------------------------------Which mode do you want to use?
+default
+Do you want the fullgraph mode or it is ok to break model into several subgraphs? [yes/NO]: yes
+Do you want to enable dynamic shape tracing? [yes/NO]: yes
+How many processes should be used for distributed training? [1]:1
+-------------------------------------------------------------------------------------------------------------------------------------Do you wish to use mixed precision?
+fp16
 accelerate configuration saved at /home/xxx/.cache/huggingface/accelerate/default_config.yaml
 
 $ accelerate launch {my_script.py}
