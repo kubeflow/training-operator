@@ -1,7 +1,7 @@
 {
   "packageName": "kubeflow.training",
   "projectName": "training",
-  "packageVersion": "1.7.0",
+  "packageVersion": "1.8.1",
   "typeMappings": {
     "V1Time": "datetime"
   }
