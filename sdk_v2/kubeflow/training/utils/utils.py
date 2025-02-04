@@ -224,7 +224,7 @@ def get_lora_config(lora_config: types.LoraConfig) -> List[client.V1EnvVar]:
 
 def get_dataset_config(
     dataset_config: Optional[types.HuggingFaceDatasetConfig] = None,
-) -> Optional[models.KubeflowOrgV2alpha1DatasetConfig]:
+) -> Optional[models.TrainerKubeflowOrgV2alpha1DatasetConfig]:
     """
     Get the TrainJob DatasetConfig from the given config.
     """
@@ -232,7 +232,7 @@ def get_dataset_config(
         return None
 
     # TODO (andreyvelich): Support more parameters.
-    ds_config = models.KubeflowOrgV2alpha1DatasetConfig(
+    ds_config = models.TrainerKubeflowOrgV2alpha1DatasetConfig(
         storage_uri=(
             dataset_config.storage_uri
             if dataset_config.storage_uri.startswith("hf://")
@@ -245,7 +245,7 @@ def get_dataset_config(
 
 def get_model_config(
     model_config: Optional[types.HuggingFaceModelInputConfig] = None,
-) -> Optional[models.KubeflowOrgV2alpha1ModelConfig]:
+) -> Optional[models.TrainerKubeflowOrgV2alpha1ModelConfig]:
     """
     Get the TrainJob ModelConfig from the given config.
     """
@@ -253,8 +253,10 @@ def get_model_config(
         return None
 
     # TODO (andreyvelich): Support more parameters.
-    m_config = models.KubeflowOrgV2alpha1ModelConfig(
-        input=models.KubeflowOrgV2alpha1InputModel(storage_uri=model_config.storage_uri)
+    m_config = models.TrainerKubeflowOrgV2alpha1ModelConfig(
+        input=models.TrainerKubeflowOrgV2alpha1InputModel(
+            storage_uri=model_config.storage_uri
+        )
     )
 
     return m_config

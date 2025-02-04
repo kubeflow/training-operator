@@ -102,7 +102,7 @@ class TrainingClient:
 
                 runtime = self.api_client.deserialize(
                     utils.FakeResponse(item),
-                    models.KubeflowOrgV2alpha1ClusterTrainingRuntime,
+                    models.TrainerKubeflowOrgV2alpha1ClusterTrainingRuntime,
                 )
                 ml_policy = runtime.spec.ml_policy  # type: ignore
                 metadata = runtime.metadata  # type: ignore
@@ -190,7 +190,7 @@ class TrainingClient:
         train_job_name = random.choice(string.ascii_lowercase) + uuid.uuid4().hex[:11]
 
         # Build the Trainer.
-        trainer_crd = models.KubeflowOrgV2alpha1Trainer()
+        trainer_crd = models.TrainerKubeflowOrgV2alpha1Trainer()
 
         # Add number of nodes to the Trainer.
         if trainer and trainer.num_nodes:
@@ -223,15 +223,17 @@ class TrainingClient:
                 trainer.fine_tuning_config.peft_config
             )
 
-        train_job = models.KubeflowOrgV2alpha1TrainJob(
+        train_job = models.TrainerKubeflowOrgV2alpha1TrainJob(
             api_version=constants.API_VERSION,
             kind=constants.TRAINJOB_KIND,
             metadata=client.V1ObjectMeta(name=train_job_name),
-            spec=models.KubeflowOrgV2alpha1TrainJobSpec(
-                runtime_ref=models.KubeflowOrgV2alpha1RuntimeRef(name=runtime_ref),
+            spec=models.TrainerKubeflowOrgV2alpha1TrainJobSpec(
+                runtime_ref=models.TrainerKubeflowOrgV2alpha1RuntimeRef(
+                    name=runtime_ref
+                ),
                 trainer=(
                     trainer_crd
-                    if trainer_crd != models.KubeflowOrgV2alpha1Trainer()
+                    if trainer_crd != models.TrainerKubeflowOrgV2alpha1Trainer()
                     else None
                 ),
                 dataset_config=utils.get_dataset_config(dataset_config),
@@ -267,8 +269,8 @@ class TrainingClient:
         """List of all TrainJobs.
 
         Returns:
-            List[KubeflowOrgV2alpha1TrainJob]: List of created TrainJobs. It returns an empty list
-                if TrainJobs don't exist.
+            List[TrainerKubeflowOrgV2alpha1TrainJob]: List of created TrainJobs.
+                It returns an empty list if TrainJobs don't exist.
 
         Raises:
             TimeoutError: Timeout to list TrainJobs.
@@ -295,7 +297,7 @@ class TrainingClient:
                     continue
                 trainjob = self.api_client.deserialize(
                     utils.FakeResponse(item),
-                    models.KubeflowOrgV2alpha1TrainJob,
+                    models.TrainerKubeflowOrgV2alpha1TrainJob,
                 )
                 result.append(self.__get_trainjob_from_crd(trainjob))  # type: ignore
 
@@ -325,7 +327,7 @@ class TrainingClient:
 
             trainjob = self.api_client.deserialize(
                 utils.FakeResponse(thread.get(constants.DEFAULT_TIMEOUT)),  # type: ignore
-                models.KubeflowOrgV2alpha1TrainJob,
+                models.TrainerKubeflowOrgV2alpha1TrainJob,
             )
 
         except multiprocessing.TimeoutError:
@@ -475,7 +477,7 @@ class TrainingClient:
 
     def __get_trainjob_from_crd(
         self,
-        trainjob_crd: models.KubeflowOrgV2alpha1TrainJob,
+        trainjob_crd: models.TrainerKubeflowOrgV2alpha1TrainJob,
     ) -> types.TrainJob:
 
         name = trainjob_crd.metadata.name  # type: ignore
