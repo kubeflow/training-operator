@@ -613,7 +613,10 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 		ginkgo.DescribeTable("Validate TrainJob on update", func(old func() *kubeflowv2.TrainJob, new func(*kubeflowv2.TrainJob) *kubeflowv2.TrainJob, errorMatcher gomega.OmegaMatcher) {
 			oldTrainJob := old()
 			gomega.Expect(k8sClient.Create(ctx, oldTrainJob)).Should(gomega.Succeed())
-			gomega.Expect(k8sClient.Update(ctx, new(oldTrainJob))).Should(errorMatcher)
+			gomega.Eventually(func(g gomega.Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(oldTrainJob), oldTrainJob)).Should(gomega.Succeed())
+				g.Expect(k8sClient.Update(ctx, new(oldTrainJob))).Should(errorMatcher)
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 		},
 			ginkgo.Entry("Should fail to update TrainJob managedBy",
 				func() *kubeflowv2.TrainJob {
