@@ -14,29 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhooksv2
+package tools
 
 import (
-	"context"
-	"testing"
-
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kubeflow/training-operator/test/integration/framework"
+	_ "k8s.io/code-generator"
 )
-
-var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	ctx       context.Context
-	fwk       *framework.Framework
-)
-
-func TestAPIs(t *testing.T) {
-	gomega.RegisterFailHandler(ginkgo.Fail)
-
-	ginkgo.RunSpecs(t, "v2 Webhooks Suite")
-}

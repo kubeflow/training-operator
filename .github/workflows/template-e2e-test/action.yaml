@@ -1,28 +1,18 @@
-# Composite action to publish Kubeflow Trainer images.
-name: Build And Publish Container Images
-description: Build Multiplatform Supporting Container Images
+# TODO (andreyvelich): Refactor this once we have e2e test for Kubeflow Trainer.
+name: Setup E2E test template
+description: A composite action to setup e2e tests
 
 inputs:
-  image:
+  kubernetes-version:
     required: true
-    description: image tag
-  dockerfile:
+    description: Kubernetes version
+  python-version:
     required: true
-    description: path for Dockerfile
-  platforms:
-    required: true
-    description: e.g, linux/amd64
-  context:
+    description: Python version
+  gang-scheduler-name:
     required: false
-    default: .
-    description: e.g, examples/xgboost/xgboost-dist
-  push:
-    required: true
-    description: whether to push container images or not
-  tag-prefix:
-    required: false
-    default: v2alpha1
-    description: Prefix for the image tag, e.g. v2alpha1
+    default: "none"
+    description: Gang scheduler name
 
 runs:
   using: composite
@@ -71,30 +61,39 @@ runs:
         echo "Docker service status:"
         sudo systemctl --no-pager -l -o short status docker
 
-    - name: Setup QEMU
-      uses: docker/setup-qemu-action@v3
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with:
-        platforms: amd64,ppc64le,arm64
+        python-version: ${{ inputs.python-version }}
 
-    - name: Set Up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Add Docker Tags
-      id: meta
-      uses: docker/metadata-action@v5
+    - name: Setup Go
+      uses: actions/setup-go@v5
       with:
-        images: ${{ inputs.image }}
-        tags: |
-          type=raw,latest
-          type=sha,prefix=${{ inputs.tag-prefix }}-
+        go-version-file: go.mod
 
-    - name: Build and Push
-      uses: docker/build-push-action@v5
+    - name: Create k8s Kind Cluster
+      uses: helm/kind-action@v1.11.0
       with:
-        platforms: ${{ inputs.platforms }}
-        context: ${{ inputs.context }}
-        file: ${{ inputs.dockerfile }}
-        push: ${{ inputs.push }}
-        tags: ${{ steps.meta.outputs.tags }}
-        cache-from: type=gha
-        cache-to: type=gha,ignore-error=true
+        node_image: kindest/node:${{ inputs.kubernetes-version }}
+        cluster_name: training-operator-cluster
+        kubectl_version: ${{ inputs.kubernetes-version }}
+
+    - name: Build training-operator
+      shell: bash
+      run: |
+        ./scripts/gha/build-image.sh
+      env:
+        TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+
+    - name: Deploy training operator
+      shell: bash
+      run: |
+        ./scripts/gha/setup-training-operator.sh
+        docker system prune -a -f
+        docker system df
+        df -h
+      env:
+        KIND_CLUSTER: training-operator-cluster
+        TRAINING_CI_IMAGE: kubeflowtraining/training-operator:test
+        GANG_SCHEDULER_NAME: ${{ inputs.gang-scheduler-name }}
+        KUBERNETES_VERSION: ${{ inputs.kubernetes-version }}

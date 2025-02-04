@@ -1,8 +1,8 @@
 import os
 import runpy
-from test.integration.initializer_v2.utils import verify_downloaded_files
 
 import pytest
+from conftest import verify_downloaded_files
 
 import pkg.initializer_v2.utils.utils as utils
 
