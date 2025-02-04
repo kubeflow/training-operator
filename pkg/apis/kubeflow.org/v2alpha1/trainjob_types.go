@@ -154,8 +154,8 @@ type RuntimeRef struct {
 	Name string `json:"name"`
 
 	// APIGroup of the runtime being referenced.
-	// Defaults to `kubeflow.org`.
-	// +kubebuilder:default="kubeflow.org"
+	// Defaults to `trainer.kubeflow.org`.
+	// +kubebuilder:default="trainer.kubeflow.org"
 	APIGroup *string `json:"apiGroup,omitempty"`
 
 	// Kind of the runtime being referenced.
