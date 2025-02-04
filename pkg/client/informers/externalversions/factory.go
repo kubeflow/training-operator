@@ -23,7 +23,7 @@ import (
 
 	versioned "github.com/kubeflow/training-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/internalinterfaces"
-	kubefloworg "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/kubeflow.org"
+	trainerkubefloworg "github.com/kubeflow/training-operator/pkg/client/informers/externalversions/trainer.kubeflow.org"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -252,9 +252,9 @@ type SharedInformerFactory interface {
 	// client.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
-	Kubeflow() kubefloworg.Interface
+	Trainer() trainerkubefloworg.Interface
 }
 
-func (f *sharedInformerFactory) Kubeflow() kubefloworg.Interface {
-	return kubefloworg.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Trainer() trainerkubefloworg.Interface {
+	return trainerkubefloworg.New(f, f.namespace, f.tweakListOptions)
 }

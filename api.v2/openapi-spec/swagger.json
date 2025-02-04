@@ -5,7 +5,7 @@
   },
   "paths": {},
   "definitions": {
-    "kubeflow.org.v2alpha1.ClusterTrainingRuntime": {
+    "trainer.kubeflow.org.v2alpha1.ClusterTrainingRuntime": {
       "description": "ClusterTrainingRuntime represents a training runtime which can be referenced as part of `runtimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced by TrainJob that created in *any* namespace.",
       "type": "object",
       "properties": {
@@ -25,11 +25,11 @@
         "spec": {
           "description": "Specification of the desired ClusterTrainingRuntime.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainingRuntimeSpec"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainingRuntimeSpec"
         }
       }
     },
-    "kubeflow.org.v2alpha1.ClusterTrainingRuntimeList": {
+    "trainer.kubeflow.org.v2alpha1.ClusterTrainingRuntimeList": {
       "description": "ClusterTrainingRuntimeList is a collection of cluster training runtimes.",
       "type": "object",
       "required": [
@@ -45,7 +45,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.ClusterTrainingRuntime"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.ClusterTrainingRuntime"
           }
         },
         "kind": {
@@ -59,7 +59,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.ContainerOverride": {
+    "trainer.kubeflow.org.v2alpha1.ContainerOverride": {
       "description": "ContainerOverride represents parameters that can be overridden using PodSpecOverrides. Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.",
       "type": "object",
       "required": [
@@ -124,7 +124,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource": {
+    "trainer.kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource": {
       "description": "CoschedulingPodGroupPolicySource represents configuration for coscheduling plugin. The number of min members in the PodGroupSpec is always equal to the number of nodes.",
       "type": "object",
       "properties": {
@@ -135,7 +135,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.DatasetConfig": {
+    "trainer.kubeflow.org.v2alpha1.DatasetConfig": {
       "description": "DatasetConfig represents the desired dataset configuration. When this API is used, the training runtime must have the `dataset-initializer` container in the `Initializer` Job.",
       "type": "object",
       "properties": {
@@ -161,7 +161,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.InputModel": {
+    "trainer.kubeflow.org.v2alpha1.InputModel": {
       "description": "InputModel represents the desired pre-trained model configuration.",
       "type": "object",
       "properties": {
@@ -187,7 +187,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.JobSetTemplateSpec": {
+    "trainer.kubeflow.org.v2alpha1.JobSetTemplateSpec": {
       "description": "JobSetTemplateSpec represents a template of the desired JobSet.",
       "type": "object",
       "properties": {
@@ -203,7 +203,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.JobStatus": {
+    "trainer.kubeflow.org.v2alpha1.JobStatus": {
       "type": "object",
       "required": [
         "name",
@@ -251,13 +251,13 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.MLPolicy": {
+    "trainer.kubeflow.org.v2alpha1.MLPolicy": {
       "description": "MLPolicy represents configuration for the model trining with ML-specific parameters.",
       "type": "object",
       "properties": {
         "mpi": {
           "description": "Configuration for the MPI Runtime.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.MPIMLPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.MPIMLPolicySource"
         },
         "numNodes": {
           "description": "Number of training nodes. Defaults to 1.",
@@ -266,25 +266,25 @@
         },
         "torch": {
           "description": "Configuration for the PyTorch runtime.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TorchMLPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TorchMLPolicySource"
         }
       }
     },
-    "kubeflow.org.v2alpha1.MLPolicySource": {
+    "trainer.kubeflow.org.v2alpha1.MLPolicySource": {
       "description": "MLPolicySource represents the runtime-specific configuration for various technologies. One of the following specs can be set.",
       "type": "object",
       "properties": {
         "mpi": {
           "description": "Configuration for the MPI Runtime.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.MPIMLPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.MPIMLPolicySource"
         },
         "torch": {
           "description": "Configuration for the PyTorch runtime.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TorchMLPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TorchMLPolicySource"
         }
       }
     },
-    "kubeflow.org.v2alpha1.MPIMLPolicySource": {
+    "trainer.kubeflow.org.v2alpha1.MPIMLPolicySource": {
       "description": "MPIMLPolicySource represents a MPI runtime configuration.",
       "type": "object",
       "properties": {
@@ -307,21 +307,21 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.ModelConfig": {
+    "trainer.kubeflow.org.v2alpha1.ModelConfig": {
       "description": "ModelConfig represents the desired model configuration.",
       "type": "object",
       "properties": {
         "input": {
           "description": "Configuration of the pre-trained model. When this API is used, the training runtime must have the `model-initializer` container in the `Initializer` Job.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.InputModel"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.InputModel"
         },
         "output": {
           "description": "Configuration of the trained model. When this API is used, the training runtime must have the `model-exporter` container in the `Exporter` Job.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.OutputModel"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.OutputModel"
         }
       }
     },
-    "kubeflow.org.v2alpha1.OutputModel": {
+    "trainer.kubeflow.org.v2alpha1.OutputModel": {
       "description": "OutputModel represents the desired trained model configuration.",
       "type": "object",
       "properties": {
@@ -347,27 +347,27 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.PodGroupPolicy": {
+    "trainer.kubeflow.org.v2alpha1.PodGroupPolicy": {
       "description": "PodGroupPolicy represents a PodGroup configuration for gang-scheduling.",
       "type": "object",
       "properties": {
         "coscheduling": {
           "description": "Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource"
         }
       }
     },
-    "kubeflow.org.v2alpha1.PodGroupPolicySource": {
+    "trainer.kubeflow.org.v2alpha1.PodGroupPolicySource": {
       "description": "PodGroupPolicySource represents supported plugins for gang-scheduling. Only one of its members may be specified.",
       "type": "object",
       "properties": {
         "coscheduling": {
           "description": "Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.CoschedulingPodGroupPolicySource"
         }
       }
     },
-    "kubeflow.org.v2alpha1.PodSpecOverride": {
+    "trainer.kubeflow.org.v2alpha1.PodSpecOverride": {
       "description": "PodSpecOverride represents the custom overrides that will be applied for the TrainJob's resources.",
       "type": "object",
       "required": [
@@ -379,7 +379,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.ContainerOverride"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.ContainerOverride"
           },
           "x-kubernetes-list-map-keys": [
             "name"
@@ -391,7 +391,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.ContainerOverride"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.ContainerOverride"
           },
           "x-kubernetes-list-map-keys": [
             "name"
@@ -415,7 +415,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.PodSpecOverrideTargetJob"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.PodSpecOverrideTargetJob"
           },
           "x-kubernetes-list-type": "atomic"
         },
@@ -442,7 +442,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.PodSpecOverrideTargetJob": {
+    "trainer.kubeflow.org.v2alpha1.PodSpecOverrideTargetJob": {
       "type": "object",
       "required": [
         "name"
@@ -455,7 +455,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.RuntimeRef": {
+    "trainer.kubeflow.org.v2alpha1.RuntimeRef": {
       "description": "RuntimeRef represents the reference to the existing training runtime.",
       "type": "object",
       "required": [
@@ -463,7 +463,7 @@
       ],
       "properties": {
         "apiGroup": {
-          "description": "APIGroup of the runtime being referenced. Defaults to `kubeflow.org`.",
+          "description": "APIGroup of the runtime being referenced. Defaults to `trainer.kubeflow.org`.",
           "type": "string"
         },
         "kind": {
@@ -477,7 +477,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TorchElasticPolicy": {
+    "trainer.kubeflow.org.v2alpha1.TorchElasticPolicy": {
       "description": "TorchElasticPolicy represents a configuration for the PyTorch elastic training. If this policy is set, the `.spec.numNodes` parameter must be omitted, since min and max node is used to configure the `torchrun` CLI argument: `--nnodes=minNodes:maxNodes`. Only `c10d` backend is supported for the Rendezvous communication.",
       "type": "object",
       "properties": {
@@ -507,13 +507,13 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TorchMLPolicySource": {
+    "trainer.kubeflow.org.v2alpha1.TorchMLPolicySource": {
       "description": "TorchMLPolicySource represents a PyTorch runtime configuration.",
       "type": "object",
       "properties": {
         "elasticPolicy": {
           "description": "Elastic policy for the PyTorch training.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TorchElasticPolicy"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TorchElasticPolicy"
         },
         "numProcPerNode": {
           "description": "Number of processes per node. This value is inserted into the `--nproc-per-node` argument of the `torchrun` CLI. Supported values: `auto`, `cpu`, `gpu`, or int value. Defaults to `auto`.",
@@ -521,7 +521,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainJob": {
+    "trainer.kubeflow.org.v2alpha1.TrainJob": {
       "description": "TrainJob represents configuration of a training job.",
       "type": "object",
       "properties": {
@@ -541,16 +541,16 @@
         "spec": {
           "description": "Specification of the desired TrainJob.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainJobSpec"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainJobSpec"
         },
         "status": {
           "description": "Current status of TrainJob.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainJobStatus"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainJobStatus"
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainJobList": {
+    "trainer.kubeflow.org.v2alpha1.TrainJobList": {
       "description": "TrainJobList is a collection of training jobs.",
       "type": "object",
       "required": [
@@ -566,7 +566,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainJob"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainJob"
           }
         },
         "kind": {
@@ -580,7 +580,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainJobSpec": {
+    "trainer.kubeflow.org.v2alpha1.TrainJobSpec": {
       "description": "TrainJobSpec represents specification of the desired TrainJob.",
       "type": "object",
       "required": [
@@ -597,7 +597,7 @@
         },
         "datasetConfig": {
           "description": "Configuration of the training dataset.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.DatasetConfig"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.DatasetConfig"
         },
         "labels": {
           "description": "Labels to apply for the derivative JobSet and Jobs. They will be merged with the TrainingRuntime values.",
@@ -613,21 +613,21 @@
         },
         "modelConfig": {
           "description": "Configuration of the pre-trained and trained model.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.ModelConfig"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.ModelConfig"
         },
         "podSpecOverrides": {
           "description": "Custom overrides for the training runtime.",
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.PodSpecOverride"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.PodSpecOverride"
           },
           "x-kubernetes-list-type": "atomic"
         },
         "runtimeRef": {
           "description": "Reference to the training runtime. The field is immutable.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.RuntimeRef"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.RuntimeRef"
         },
         "suspend": {
           "description": "Whether the controller should suspend the running TrainJob. Defaults to false.",
@@ -635,11 +635,11 @@
         },
         "trainer": {
           "description": "Configuration of the desired trainer.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.Trainer"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.Trainer"
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainJobStatus": {
+    "trainer.kubeflow.org.v2alpha1.TrainJobStatus": {
       "description": "TrainJobStatus represents the current status of TrainJob.",
       "type": "object",
       "properties": {
@@ -662,7 +662,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.JobStatus"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.JobStatus"
           },
           "x-kubernetes-list-map-keys": [
             "name"
@@ -671,7 +671,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.Trainer": {
+    "trainer.kubeflow.org.v2alpha1.Trainer": {
       "description": "Trainer represents the desired trainer configuration. Every training runtime contains `trainer` container which represents Trainer.",
       "type": "object",
       "properties": {
@@ -724,7 +724,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainingRuntime": {
+    "trainer.kubeflow.org.v2alpha1.TrainingRuntime": {
       "description": "TrainingRuntime represents a training runtime which can be referenced as part of `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced by TrainJob that created in the *same* namespace as the TrainingRuntime.",
       "type": "object",
       "properties": {
@@ -744,11 +744,11 @@
         "spec": {
           "description": "Specification of the desired TrainingRuntime.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainingRuntimeSpec"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainingRuntimeSpec"
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainingRuntimeList": {
+    "trainer.kubeflow.org.v2alpha1.TrainingRuntimeList": {
       "description": "TrainingRuntimeList is a collection of training runtimes.",
       "type": "object",
       "required": [
@@ -764,7 +764,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/kubeflow.org.v2alpha1.TrainingRuntime"
+            "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.TrainingRuntime"
           }
         },
         "kind": {
@@ -778,7 +778,7 @@
         }
       }
     },
-    "kubeflow.org.v2alpha1.TrainingRuntimeSpec": {
+    "trainer.kubeflow.org.v2alpha1.TrainingRuntimeSpec": {
       "description": "TrainingRuntimeSpec represents a specification of the desired training runtime.",
       "type": "object",
       "required": [
@@ -787,16 +787,16 @@
       "properties": {
         "mlPolicy": {
           "description": "Configuration for the model training with ML-specific parameters.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.MLPolicy"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.MLPolicy"
         },
         "podGroupPolicy": {
           "description": "Configuration for the PodGroup to enable gang-scheduling via supported plugins.",
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.PodGroupPolicy"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.PodGroupPolicy"
         },
         "template": {
           "description": "JobSet template which will be used by TrainJob.",
           "default": {},
-          "$ref": "#/definitions/kubeflow.org.v2alpha1.JobSetTemplateSpec"
+          "$ref": "#/definitions/trainer.kubeflow.org.v2alpha1.JobSetTemplateSpec"
         }
       }
     }
