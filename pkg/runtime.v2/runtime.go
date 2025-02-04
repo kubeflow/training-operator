@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
 )
 
 type Info struct {

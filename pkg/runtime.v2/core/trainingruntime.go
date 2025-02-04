@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	fwkcore "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/core"
 	fwkplugins "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins"

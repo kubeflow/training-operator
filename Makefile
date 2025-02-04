@@ -66,7 +66,7 @@ scheduler-plugins-crd: ## Copy the CRDs from the Scheduler Plugins repository to
 .PHONY: manifests
 manifests: controller-gen ## Generate manifests.
 	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=training-operator-v2 webhook \
-		paths="./pkg/apis/kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhooks.v2/...;./pkg/cert/..." \
+		paths="./pkg/apis/trainer.kubeflow.org/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhooks.v2/...;./pkg/cert/..." \
 		output:crd:artifacts:config=manifests/v2/base/crds \
 		output:rbac:artifacts:config=manifests/v2/base/rbac \
 		output:webhook:artifacts:config=manifests/v2/base/webhook
@@ -102,7 +102,7 @@ endif
 # Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
-	go test ./pkg/apis/kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhooks.v2/... ./pkg/util.v2/... -coverprofile cover.out
+	go test ./pkg/apis/trainer.kubeflow.org/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhooks.v2/... ./pkg/util.v2/... -coverprofile cover.out
 
 .PHONY: test-integration
 test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
