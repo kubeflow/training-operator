@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: trainjobs.kubeflow.org
+  name: trainjobs.trainer.kubeflow.org
 spec:
-  group: kubeflow.org
+  group: trainer.kubeflow.org
   names:
     kind: TrainJob
     listKind: TrainJobList
@@ -2961,10 +2961,10 @@ spec:
                   The field is immutable.
                 properties:
                   apiGroup:
-                    default: kubeflow.org
+                    default: trainer.kubeflow.org
                     description: |-
                       APIGroup of the runtime being referenced.
-                      Defaults to `kubeflow.org`.
+                      Defaults to `trainer.kubeflow.org`.
                     type: string
                   kind:
                     default: ClusterTrainingRuntime

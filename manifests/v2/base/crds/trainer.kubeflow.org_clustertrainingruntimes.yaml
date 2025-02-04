@@ -4,23 +4,23 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: trainingruntimes.kubeflow.org
+  name: clustertrainingruntimes.trainer.kubeflow.org
 spec:
-  group: kubeflow.org
+  group: trainer.kubeflow.org
   names:
-    kind: TrainingRuntime
-    listKind: TrainingRuntimeList
-    plural: trainingruntimes
-    singular: trainingruntime
-  scope: Namespaced
+    kind: ClusterTrainingRuntime
+    listKind: ClusterTrainingRuntimeList
+    plural: clustertrainingruntimes
+    singular: clustertrainingruntime
+  scope: Cluster
   versions:
   - name: v2alpha1
     schema:
       openAPIV3Schema:
         description: |-
-          TrainingRuntime represents a training runtime which can be referenced as part of
-          `runtimeRef` API in TrainJob. This resource is a namespaced-scoped and can be referenced
-          by TrainJob that created in the *same* namespace as the TrainingRuntime.
+          ClusterTrainingRuntime represents a training runtime which can be referenced as part of
+          `runtimeRef` API in TrainJob. This resource is a cluster-scoped and can be referenced
+          by TrainJob that created in *any* namespace.
         properties:
           apiVersion:
             description: |-
@@ -40,7 +40,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Specification of the desired TrainingRuntime.
+            description: Specification of the desired ClusterTrainingRuntime.
             properties:
               mlPolicy:
                 description: Configuration for the model training with ML-specific
