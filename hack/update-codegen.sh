@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2024 The Kubeflow Authors.
 #
@@ -63,4 +63,4 @@ go run ${OPENAPI_PKG}/cmd/openapi-gen \
 
 # Generating OpenAPI Swagger for Kubeflow Trainer V2.
 echo "Generate OpenAPI Swagger for kubeflow.org/v2alpha1"
-go run hack/swagger-v2/main.go >api.v2/openapi-spec/swagger.json
+go run hack/swagger-v2/tools.go >api.v2/openapi-spec/swagger.json
