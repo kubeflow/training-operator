@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 	"github.com/kubeflow/training-operator/test/integration/framework"
 )

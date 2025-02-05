@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	testingutil "github.com/kubeflow/training-operator/pkg/util.v2/testing"
 )
 

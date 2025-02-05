@@ -26,7 +26,7 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/constants"
 	jobsetplugin "github.com/kubeflow/training-operator/pkg/runtime.v2/framework/plugins/jobset"
 )

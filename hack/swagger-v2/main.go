@@ -25,7 +25,7 @@ import (
 	"k8s.io/kube-openapi/pkg/common"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 )
 
 // Generate Kubeflow Training OpenAPI specification.

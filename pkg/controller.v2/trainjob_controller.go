@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	jobruntimes "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 

@@ -17,7 +17,7 @@
 package applyconfiguration
 
 import (
-	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	internal "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/internal"
 	trainerkubefloworgv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/trainer.kubeflow.org/v2alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
