@@ -12,18 +12,18 @@ jobs:
       GOPATH: ${{ github.workspace }}/go
     defaults:
       run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+        working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+          path: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator/go.mod
+          go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer/go.mod
 
       - name: Check Go modules
         run: |
@@ -51,7 +51,7 @@ jobs:
       GOPATH: ${{ github.workspace }}/go
     defaults:
       run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+        working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer
 
     strategy:
       fail-fast: false
@@ -63,12 +63,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+          path: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator/go.mod
+          go-version-file: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer/go.mod
 
       - name: Run Go unit tests
         run: |
@@ -82,5 +82,5 @@ jobs:
         uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: cover.out
-          working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/training-operator
+          working-directory: ${{ env.GOPATH }}/src/github.com/kubeflow/trainer
           parallel: true

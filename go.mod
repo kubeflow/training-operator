@@ -1,4 +1,4 @@
-module github.com/kubeflow/training-operator
+module github.com/kubeflow/trainer
 
 go 1.23
 

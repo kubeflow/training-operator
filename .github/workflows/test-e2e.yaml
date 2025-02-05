@@ -26,4 +26,4 @@ jobs:
       - name: Install dependencies
         run: |
           echo "TODO (andreyvelich): Implement E2E Tests"
-          # pip install -U './sdk_v2'
+          # pip install -U './sdk'

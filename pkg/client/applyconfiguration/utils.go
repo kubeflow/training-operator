@@ -17,9 +17,9 @@
 package applyconfiguration
 
 import (
-	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
-	internal "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/internal"
-	trainerv2alpha1 "github.com/kubeflow/training-operator/pkg/client/applyconfiguration/trainer/v2alpha1"
+	v1alpha1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	internal "github.com/kubeflow/trainer/pkg/client/applyconfiguration/internal"
+	trainerv1alpha1 "github.com/kubeflow/trainer/pkg/client/applyconfiguration/trainer/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	testing "k8s.io/client-go/testing"
@@ -29,57 +29,57 @@ import (
 // apply configuration type exists for the given GroupVersionKind.
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
-	// Group=trainer.kubeflow.org, Version=v2alpha1
-	case v2alpha1.SchemeGroupVersion.WithKind("ClusterTrainingRuntime"):
-		return &trainerv2alpha1.ClusterTrainingRuntimeApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("ContainerOverride"):
-		return &trainerv2alpha1.ContainerOverrideApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("CoschedulingPodGroupPolicySource"):
-		return &trainerv2alpha1.CoschedulingPodGroupPolicySourceApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("DatasetConfig"):
-		return &trainerv2alpha1.DatasetConfigApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("InputModel"):
-		return &trainerv2alpha1.InputModelApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("JobSetTemplateSpec"):
-		return &trainerv2alpha1.JobSetTemplateSpecApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("JobStatus"):
-		return &trainerv2alpha1.JobStatusApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("MLPolicy"):
-		return &trainerv2alpha1.MLPolicyApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("MLPolicySource"):
-		return &trainerv2alpha1.MLPolicySourceApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("ModelConfig"):
-		return &trainerv2alpha1.ModelConfigApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("MPIMLPolicySource"):
-		return &trainerv2alpha1.MPIMLPolicySourceApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("OutputModel"):
-		return &trainerv2alpha1.OutputModelApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("PodGroupPolicy"):
-		return &trainerv2alpha1.PodGroupPolicyApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("PodGroupPolicySource"):
-		return &trainerv2alpha1.PodGroupPolicySourceApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("PodSpecOverride"):
-		return &trainerv2alpha1.PodSpecOverrideApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("PodSpecOverrideTargetJob"):
-		return &trainerv2alpha1.PodSpecOverrideTargetJobApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("RuntimeRef"):
-		return &trainerv2alpha1.RuntimeRefApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TorchElasticPolicy"):
-		return &trainerv2alpha1.TorchElasticPolicyApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TorchMLPolicySource"):
-		return &trainerv2alpha1.TorchMLPolicySourceApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("Trainer"):
-		return &trainerv2alpha1.TrainerApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TrainingRuntime"):
-		return &trainerv2alpha1.TrainingRuntimeApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TrainingRuntimeSpec"):
-		return &trainerv2alpha1.TrainingRuntimeSpecApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TrainJob"):
-		return &trainerv2alpha1.TrainJobApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TrainJobSpec"):
-		return &trainerv2alpha1.TrainJobSpecApplyConfiguration{}
-	case v2alpha1.SchemeGroupVersion.WithKind("TrainJobStatus"):
-		return &trainerv2alpha1.TrainJobStatusApplyConfiguration{}
+	// Group=trainer.kubeflow.org, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithKind("ClusterTrainingRuntime"):
+		return &trainerv1alpha1.ClusterTrainingRuntimeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ContainerOverride"):
+		return &trainerv1alpha1.ContainerOverrideApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CoschedulingPodGroupPolicySource"):
+		return &trainerv1alpha1.CoschedulingPodGroupPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DatasetConfig"):
+		return &trainerv1alpha1.DatasetConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("InputModel"):
+		return &trainerv1alpha1.InputModelApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("JobSetTemplateSpec"):
+		return &trainerv1alpha1.JobSetTemplateSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("JobStatus"):
+		return &trainerv1alpha1.JobStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MLPolicy"):
+		return &trainerv1alpha1.MLPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MLPolicySource"):
+		return &trainerv1alpha1.MLPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ModelConfig"):
+		return &trainerv1alpha1.ModelConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPIMLPolicySource"):
+		return &trainerv1alpha1.MPIMLPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OutputModel"):
+		return &trainerv1alpha1.OutputModelApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PodGroupPolicy"):
+		return &trainerv1alpha1.PodGroupPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PodGroupPolicySource"):
+		return &trainerv1alpha1.PodGroupPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PodSpecOverride"):
+		return &trainerv1alpha1.PodSpecOverrideApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PodSpecOverrideTargetJob"):
+		return &trainerv1alpha1.PodSpecOverrideTargetJobApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RuntimeRef"):
+		return &trainerv1alpha1.RuntimeRefApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TorchElasticPolicy"):
+		return &trainerv1alpha1.TorchElasticPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TorchMLPolicySource"):
+		return &trainerv1alpha1.TorchMLPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Trainer"):
+		return &trainerv1alpha1.TrainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrainingRuntime"):
+		return &trainerv1alpha1.TrainingRuntimeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrainingRuntimeSpec"):
+		return &trainerv1alpha1.TrainingRuntimeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrainJob"):
+		return &trainerv1alpha1.TrainJobApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrainJobSpec"):
+		return &trainerv1alpha1.TrainJobSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrainJobStatus"):
+		return &trainerv1alpha1.TrainJobStatusApplyConfiguration{}
 
 	}
 	return nil

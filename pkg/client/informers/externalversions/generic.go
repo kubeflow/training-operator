@@ -19,7 +19,7 @@ package externalversions
 import (
 	"fmt"
 
-	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
+	v1alpha1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -50,13 +50,13 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=trainer.kubeflow.org, Version=v2alpha1
-	case v2alpha1.SchemeGroupVersion.WithResource("clustertrainingruntimes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V2alpha1().ClusterTrainingRuntimes().Informer()}, nil
-	case v2alpha1.SchemeGroupVersion.WithResource("trainjobs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V2alpha1().TrainJobs().Informer()}, nil
-	case v2alpha1.SchemeGroupVersion.WithResource("trainingruntimes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V2alpha1().TrainingRuntimes().Informer()}, nil
+	// Group=trainer.kubeflow.org, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("clustertrainingruntimes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V1alpha1().ClusterTrainingRuntimes().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("trainjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V1alpha1().TrainJobs().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("trainingruntimes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Trainer().V1alpha1().TrainingRuntimes().Informer()}, nil
 
 	}
 

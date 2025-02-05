@@ -19,10 +19,6 @@ inputs:
   push:
     required: true
     description: whether to push container images or not
-  tag-prefix:
-    required: false
-    default: v2alpha1
-    description: Prefix for the image tag, e.g. v2alpha1
 
 runs:
   using: composite
@@ -86,7 +82,7 @@ runs:
         images: ${{ inputs.image }}
         tags: |
           type=raw,latest
-          type=sha,prefix=${{ inputs.tag-prefix }}-
+          type=sha
 
     - name: Build and Push
       uses: docker/build-push-action@v5

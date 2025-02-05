@@ -65,17 +65,17 @@ scheduler-plugins-crd: ## Copy the CRDs from the Scheduler Plugins repository to
 # Instructions for code generation.
 .PHONY: manifests
 manifests: controller-gen ## Generate manifests.
-	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=training-operator-v2 webhook \
-		paths="./pkg/apis/trainer/v2alpha1/...;./pkg/controller.v2/...;./pkg/runtime.v2/...;./pkg/webhooks.v2/...;./pkg/cert/..." \
-		output:crd:artifacts:config=manifests/v2/base/crds \
-		output:rbac:artifacts:config=manifests/v2/base/rbac \
-		output:webhook:artifacts:config=manifests/v2/base/webhook
+	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=kubeflow-trainer-controller-manager webhook \
+		paths="./pkg/apis/trainer/v1alpha1/...;./pkg/controller/...;./pkg/runtime/...;./pkg/webhooks/...;./pkg/util/cert/..." \
+		output:crd:artifacts:config=manifests/base/crds \
+		output:rbac:artifacts:config=manifests/base/rbac \
+		output:webhook:artifacts:config=manifests/base/webhook
 
 .PHONY: generate
 generate: go-mod-download manifests ## Generate APIs and SDK.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
 	hack/update-codegen.sh
-	hack/python-sdk-v2/gen-sdk.sh
+	hack/python-sdk/gen-sdk.sh
 
 .PHONY: go-mod-download
 go-mod-download: ## Run go mod download to download modules.
@@ -102,7 +102,7 @@ endif
 # Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
-	go test ./pkg/apis/trainer/v2alpha1/... ./pkg/controller.v2/... ./pkg/runtime.v2/... ./pkg/webhooks.v2/... ./pkg/util.v2/... -coverprofile cover.out
+	go test ./pkg/apis/trainer/v1alpha1/... ./pkg/controller/... ./pkg/runtime/... ./pkg/webhooks/... ./pkg/util/... -coverprofile cover.out
 
 .PHONY: test-integration
 test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
@@ -111,16 +111,16 @@ test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go in
 test-python: ## Run Python unit test.
 	export PYTHONPATH=$(PROJECT_DIR)
 	pip install pytest
-	pip install -r ./cmd/initializer_v2/dataset/requirements.txt
-	pip install ./sdk_v2
+	pip install -r ./cmd/initializer/dataset/requirements.txt
+	pip install ./sdk
 
-	pytest ./pkg/initializer_v2/dataset
-	pytest ./pkg/initializer_v2/model
-	pytest ./pkg/initializer_v2/utils
+	pytest ./pkg/initializer/dataset
+	pytest ./pkg/initializer/model
+	pytest ./pkg/initializer/utils
 
 test-python-integration: ## Run Python integration test.
 	export PYTHONPATH=$(PROJECT_DIR)
 	pip install pytest
-	pip install -r ./cmd/initializer_v2/dataset/requirements.txt
+	pip install -r ./cmd/initializer/dataset/requirements.txt
 
-	pytest ./test/integration/initializer_v2
+	pytest ./test/integration/initializer
