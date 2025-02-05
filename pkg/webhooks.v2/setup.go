@@ -19,7 +19,7 @@ package webhooksv2
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 )
 

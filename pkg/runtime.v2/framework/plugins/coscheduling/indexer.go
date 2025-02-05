@@ -19,7 +19,7 @@ package coscheduling
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
+	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 )
 
 var (

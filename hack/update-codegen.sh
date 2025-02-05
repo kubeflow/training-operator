@@ -55,11 +55,11 @@ echo ">> Using ${OPENAPI_PKG}"
 echo "Generating OpenAPI specification for kubeflow.org/v2alpha1"
 go run ${OPENAPI_PKG}/cmd/openapi-gen \
   --go-header-file "${TRAINING_OPERATOR_ROOT}/hack/boilerplate/boilerplate.go.txt" \
-  --output-pkg "${TRAINING_OPERATOR_PKG}/pkg/apis/kubeflow.org/v2alpha1" \
-  --output-dir "${TRAINING_OPERATOR_ROOT}/pkg/apis/kubeflow.org/v2alpha1" \
+  --output-pkg "${TRAINING_OPERATOR_PKG}/pkg/apis/trainer/v2alpha1" \
+  --output-dir "${TRAINING_OPERATOR_ROOT}/pkg/apis/trainer/v2alpha1" \
   --output-file "zz_generated.openapi.go" \
   --report-filename "${TRAINING_OPERATOR_ROOT}/hack/violation_exception_v2alpha1.list" \
-  "${TRAINING_OPERATOR_ROOT}/pkg/apis/kubeflow.org/v2alpha1"
+  "${TRAINING_OPERATOR_ROOT}/pkg/apis/trainer/v2alpha1"
 
 # Generating OpenAPI Swagger for Kubeflow Trainer V2.
 echo "Generate OpenAPI Swagger for kubeflow.org/v2alpha1"
