@@ -42,7 +42,7 @@ func setupWebhookForTrainingRuntime(mgr ctrl.Manager, run map[string]runtime.Run
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-trainer-v1alpha1-trainingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=trainingruntimes,verbs=create;update,versions=v1alpha1,name=validator.trainingruntime.kubeflow.org,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-trainer-kubeflow-org-v1alpha1-trainingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=trainingruntimes,verbs=create;update,versions=v1alpha1,name=validator.trainingruntime.trainer.kubeflow.org,admissionReviewVersions=v1
 
 var _ webhook.CustomValidator = (*TrainingRuntimeWebhook)(nil)
 

@@ -40,7 +40,7 @@ func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager, run map[string]runt
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-trainer-v1alpha1-clustertrainingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=clustertrainingruntimes,verbs=create;update,versions=v1alpha1,name=validator.clustertrainingruntime.kubeflow.org,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-trainer-kubeflow-org-v1alpha1-clustertrainingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=clustertrainingruntimes,verbs=create;update,versions=v1alpha1,name=validator.clustertrainingruntime.trainer.kubeflow.org,admissionReviewVersions=v1
 
 var _ webhook.CustomValidator = (*ClusterTrainingRuntimeWebhook)(nil)
 

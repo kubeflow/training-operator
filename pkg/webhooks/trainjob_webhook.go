@@ -39,7 +39,7 @@ func setupWebhookForTrainJob(mgr ctrl.Manager, run map[string]runtime.Runtime) e
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-trainer-v1alpha1-trainjob,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=trainjobs,verbs=create;update,versions=v1alpha1,name=validator.trainjob.kubeflow.org,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-trainer-kubeflow-org-v1alpha1-trainjob,mutating=false,failurePolicy=fail,sideEffects=None,groups=trainer.kubeflow.org,resources=trainjobs,verbs=create;update,versions=v1alpha1,name=validator.trainjob.trainer.kubeflow.org,admissionReviewVersions=v1
 
 var _ webhook.CustomValidator = (*TrainJobWebhook)(nil)
 
