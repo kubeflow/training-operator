@@ -10,9 +10,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubeflow-org-v1alpha1-clustertrainingruntime
+      path: /validate-trainer-v1alpha1-clustertrainingruntime
   failurePolicy: Fail
-  name: validator.clustertrainingruntime.trainer.kubeflow.org
+  name: validator.clustertrainingruntime.kubeflow.org
   rules:
   - apiGroups:
     - trainer.kubeflow.org
@@ -30,9 +30,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubeflow-org-v1alpha1-trainingruntime
+      path: /validate-trainer-v1alpha1-trainingruntime
   failurePolicy: Fail
-  name: validator.trainingruntime.trainer.kubeflow.org
+  name: validator.trainingruntime.kubeflow.org
   rules:
   - apiGroups:
     - trainer.kubeflow.org
@@ -50,9 +50,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-kubeflow-org-v1alpha1-trainjob
+      path: /validate-trainer-v1alpha1-trainjob
   failurePolicy: Fail
-  name: validator.trainjob.trainer.kubeflow.org
+  name: validator.trainjob.kubeflow.org
   rules:
   - apiGroups:
     - trainer.kubeflow.org

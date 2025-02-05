@@ -38,5 +38,5 @@ var (
 func TestAPIs(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
-	ginkgo.RunSpecs(t, "v2 Webhooks Suite")
+	ginkgo.RunSpecs(t, "Kubeflow Trainer Webhooks Suite")
 }
