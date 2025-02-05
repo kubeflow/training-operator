@@ -19,7 +19,7 @@ package externalversions
 import (
 	"fmt"
 
-	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1"
+	v2alpha1 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

@@ -26,38 +26,38 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ClusterTrainingRuntime":           schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntime(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ClusterTrainingRuntimeList":       schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntimeList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ContainerOverride":                schema_pkg_apis_trainerkubefloworg_v2alpha1_ContainerOverride(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.CoschedulingPodGroupPolicySource": schema_pkg_apis_trainerkubefloworg_v2alpha1_CoschedulingPodGroupPolicySource(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.DatasetConfig":                    schema_pkg_apis_trainerkubefloworg_v2alpha1_DatasetConfig(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.InputModel":                       schema_pkg_apis_trainerkubefloworg_v2alpha1_InputModel(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobSetTemplateSpec":               schema_pkg_apis_trainerkubefloworg_v2alpha1_JobSetTemplateSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobStatus":                        schema_pkg_apis_trainerkubefloworg_v2alpha1_JobStatus(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MLPolicy":                         schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicy(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MLPolicySource":                   schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicySource(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MPIMLPolicySource":                schema_pkg_apis_trainerkubefloworg_v2alpha1_MPIMLPolicySource(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ModelConfig":                      schema_pkg_apis_trainerkubefloworg_v2alpha1_ModelConfig(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.OutputModel":                      schema_pkg_apis_trainerkubefloworg_v2alpha1_OutputModel(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodGroupPolicy":                   schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicy(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodGroupPolicySource":             schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicySource(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverride":                  schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverrideTargetJob":         schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverrideTargetJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.RuntimeRef":                       schema_pkg_apis_trainerkubefloworg_v2alpha1_RuntimeRef(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchElasticPolicy":               schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchElasticPolicy(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchMLPolicySource":              schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchMLPolicySource(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJob":                         schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJob(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobList":                     schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobSpec":                     schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobSpec(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobStatus":                   schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobStatus(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.Trainer":                          schema_pkg_apis_trainerkubefloworg_v2alpha1_Trainer(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntime":                  schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntime(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeList":              schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeList(ref),
-		"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeSpec":              schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ClusterTrainingRuntime":           schema_pkg_apis_trainer_v2alpha1_ClusterTrainingRuntime(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ClusterTrainingRuntimeList":       schema_pkg_apis_trainer_v2alpha1_ClusterTrainingRuntimeList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ContainerOverride":                schema_pkg_apis_trainer_v2alpha1_ContainerOverride(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.CoschedulingPodGroupPolicySource": schema_pkg_apis_trainer_v2alpha1_CoschedulingPodGroupPolicySource(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.DatasetConfig":                    schema_pkg_apis_trainer_v2alpha1_DatasetConfig(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.InputModel":                       schema_pkg_apis_trainer_v2alpha1_InputModel(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobSetTemplateSpec":               schema_pkg_apis_trainer_v2alpha1_JobSetTemplateSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobStatus":                        schema_pkg_apis_trainer_v2alpha1_JobStatus(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MLPolicy":                         schema_pkg_apis_trainer_v2alpha1_MLPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MLPolicySource":                   schema_pkg_apis_trainer_v2alpha1_MLPolicySource(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MPIMLPolicySource":                schema_pkg_apis_trainer_v2alpha1_MPIMLPolicySource(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ModelConfig":                      schema_pkg_apis_trainer_v2alpha1_ModelConfig(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.OutputModel":                      schema_pkg_apis_trainer_v2alpha1_OutputModel(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodGroupPolicy":                   schema_pkg_apis_trainer_v2alpha1_PodGroupPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodGroupPolicySource":             schema_pkg_apis_trainer_v2alpha1_PodGroupPolicySource(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverride":                  schema_pkg_apis_trainer_v2alpha1_PodSpecOverride(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverrideTargetJob":         schema_pkg_apis_trainer_v2alpha1_PodSpecOverrideTargetJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.RuntimeRef":                       schema_pkg_apis_trainer_v2alpha1_RuntimeRef(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchElasticPolicy":               schema_pkg_apis_trainer_v2alpha1_TorchElasticPolicy(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchMLPolicySource":              schema_pkg_apis_trainer_v2alpha1_TorchMLPolicySource(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJob":                         schema_pkg_apis_trainer_v2alpha1_TrainJob(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobList":                     schema_pkg_apis_trainer_v2alpha1_TrainJobList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobSpec":                     schema_pkg_apis_trainer_v2alpha1_TrainJobSpec(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobStatus":                   schema_pkg_apis_trainer_v2alpha1_TrainJobStatus(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.Trainer":                          schema_pkg_apis_trainer_v2alpha1_Trainer(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntime":                  schema_pkg_apis_trainer_v2alpha1_TrainingRuntime(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeList":              schema_pkg_apis_trainer_v2alpha1_TrainingRuntimeList(ref),
+		"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeSpec":              schema_pkg_apis_trainer_v2alpha1_TrainingRuntimeSpec(ref),
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntime(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_ClusterTrainingRuntime(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -89,18 +89,18 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntime(ref comm
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired ClusterTrainingRuntime.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeSpec"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntimeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_ClusterTrainingRuntimeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -136,7 +136,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntimeList(ref 
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ClusterTrainingRuntime"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ClusterTrainingRuntime"),
 									},
 								},
 							},
@@ -147,11 +147,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_ClusterTrainingRuntimeList(ref 
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ClusterTrainingRuntime", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ClusterTrainingRuntime", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_ContainerOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_ContainerOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -278,7 +278,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_ContainerOverride(ref common.Re
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_CoschedulingPodGroupPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_CoschedulingPodGroupPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -298,7 +298,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_CoschedulingPodGroupPolicySourc
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_DatasetConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_DatasetConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -348,7 +348,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_DatasetConfig(ref common.Refere
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_InputModel(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_InputModel(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -398,7 +398,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_InputModel(ref common.Reference
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_JobSetTemplateSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_JobSetTemplateSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -427,7 +427,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_JobSetTemplateSpec(ref common.R
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_JobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_JobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -488,7 +488,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_JobStatus(ref common.ReferenceC
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_MLPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -505,24 +505,24 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicy(ref common.ReferenceCa
 					"torch": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the PyTorch runtime.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchMLPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchMLPolicySource"),
 						},
 					},
 					"mpi": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the MPI Runtime.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MPIMLPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MPIMLPolicySource"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MPIMLPolicySource", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchMLPolicySource"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MPIMLPolicySource", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchMLPolicySource"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_MLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -532,24 +532,24 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_MLPolicySource(ref common.Refer
 					"torch": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the PyTorch runtime.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchMLPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchMLPolicySource"),
 						},
 					},
 					"mpi": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the MPI Runtime.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MPIMLPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MPIMLPolicySource"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MPIMLPolicySource", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchMLPolicySource"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MPIMLPolicySource", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchMLPolicySource"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_MPIMLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_MPIMLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -590,7 +590,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_MPIMLPolicySource(ref common.Re
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_ModelConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_ModelConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -600,24 +600,24 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_ModelConfig(ref common.Referenc
 					"input": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration of the pre-trained model. When this API is used, the training runtime must have the `model-initializer` container in the `Initializer` Job.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.InputModel"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.InputModel"),
 						},
 					},
 					"output": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration of the trained model. When this API is used, the training runtime must have the `model-exporter` container in the `Exporter` Job.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.OutputModel"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.OutputModel"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.InputModel", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.OutputModel"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.InputModel", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.OutputModel"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_OutputModel(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_OutputModel(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -667,7 +667,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_OutputModel(ref common.Referenc
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_PodGroupPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -677,18 +677,18 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicy(ref common.Refer
 					"coscheduling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.CoschedulingPodGroupPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.CoschedulingPodGroupPolicySource"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.CoschedulingPodGroupPolicySource"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.CoschedulingPodGroupPolicySource"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_PodGroupPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -698,18 +698,18 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodGroupPolicySource(ref common
 					"coscheduling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Coscheduling plugin from the Kubernetes scheduler-plugins for gang-scheduling.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.CoschedulingPodGroupPolicySource"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.CoschedulingPodGroupPolicySource"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.CoschedulingPodGroupPolicySource"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.CoschedulingPodGroupPolicySource"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_PodSpecOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -729,7 +729,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverrideTargetJob"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverrideTargetJob"),
 									},
 								},
 							},
@@ -751,7 +751,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ContainerOverride"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ContainerOverride"),
 									},
 								},
 							},
@@ -773,7 +773,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ContainerOverride"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ContainerOverride"),
 									},
 								},
 							},
@@ -848,11 +848,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverride(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ContainerOverride", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverrideTargetJob", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ContainerOverride", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverrideTargetJob", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverrideTargetJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_PodSpecOverrideTargetJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -873,7 +873,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_PodSpecOverrideTargetJob(ref co
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_RuntimeRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_RuntimeRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -909,7 +909,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_RuntimeRef(ref common.Reference
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchElasticPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TorchElasticPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -964,7 +964,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchElasticPolicy(ref common.R
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchMLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TorchMLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -981,18 +981,18 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TorchMLPolicySource(ref common.
 					"elasticPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Elastic policy for the PyTorch training.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchElasticPolicy"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchElasticPolicy"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TorchElasticPolicy"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TorchElasticPolicy"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainJob(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1024,25 +1024,25 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJob(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired TrainJob.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Current status of TrainJob.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobStatus"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobSpec", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobSpec", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainJobList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1078,7 +1078,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobList(ref common.Referen
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJob"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJob"),
 									},
 								},
 							},
@@ -1089,11 +1089,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobList(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainJob", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1104,25 +1104,25 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobSpec(ref common.Referen
 						SchemaProps: spec.SchemaProps{
 							Description: "Reference to the training runtime. The field is immutable.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.RuntimeRef"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.RuntimeRef"),
 						},
 					},
 					"trainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration of the desired trainer.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.Trainer"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.Trainer"),
 						},
 					},
 					"datasetConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration of the training dataset.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.DatasetConfig"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.DatasetConfig"),
 						},
 					},
 					"modelConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration of the pre-trained and trained model.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ModelConfig"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ModelConfig"),
 						},
 					},
 					"labels": {
@@ -1170,7 +1170,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobSpec(ref common.Referen
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverride"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverride"),
 									},
 								},
 							},
@@ -1195,11 +1195,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobSpec(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.DatasetConfig", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.ModelConfig", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodSpecOverride", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.RuntimeRef", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.Trainer"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.DatasetConfig", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.ModelConfig", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodSpecOverride", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.RuntimeRef", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.Trainer"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainJobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1246,7 +1246,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobStatus(ref common.Refer
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobStatus"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobStatus"),
 									},
 								},
 							},
@@ -1256,11 +1256,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainJobStatus(ref common.Refer
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_Trainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_Trainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1364,7 +1364,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_Trainer(ref common.ReferenceCal
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntime(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainingRuntime(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1396,18 +1396,18 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntime(ref common.Refe
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired TrainingRuntime.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeSpec"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntimeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntimeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainingRuntimeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1443,7 +1443,7 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeList(ref common.
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntime"),
+										Ref:     ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntime"),
 									},
 								},
 							},
@@ -1454,11 +1454,11 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeList(ref common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.TrainingRuntime", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.TrainingRuntime", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_trainer_v2alpha1_TrainingRuntimeSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1468,20 +1468,20 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeSpec(ref common.
 					"mlPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the model training with ML-specific parameters.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MLPolicy"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MLPolicy"),
 						},
 					},
 					"podGroupPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the PodGroup to enable gang-scheduling via supported plugins.",
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodGroupPolicy"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodGroupPolicy"),
 						},
 					},
 					"template": {
 						SchemaProps: spec.SchemaProps{
 							Description: "JobSet template which will be used by TrainJob.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobSetTemplateSpec"),
+							Ref:         ref("github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobSetTemplateSpec"),
 						},
 					},
 				},
@@ -1489,6 +1489,6 @@ func schema_pkg_apis_trainerkubefloworg_v2alpha1_TrainingRuntimeSpec(ref common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.JobSetTemplateSpec", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.MLPolicy", "github.com/kubeflow/training-operator/pkg/apis/trainer.kubeflow.org/v2alpha1.PodGroupPolicy"},
+			"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.JobSetTemplateSpec", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.MLPolicy", "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1.PodGroupPolicy"},
 	}
 }
