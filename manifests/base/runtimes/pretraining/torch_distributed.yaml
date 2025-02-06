@@ -1,4 +1,4 @@
-apiVersion: kubeflow.org/v1alpha1
+apiVersion: trainer.kubeflow.org/v1alpha1
 kind: ClusterTrainingRuntime
 metadata:
   name: torch-distributed
