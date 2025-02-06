@@ -448,6 +448,26 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 				g.Expect(k8sClient.Update(ctx, gotTrainJob)).Should(gomega.Succeed())
 			}, util.Timeout, util.Interval).Should(gomega.Succeed())
 
+			ginkgo.By("Waiting for TrainJob Created=True and Suspended=False condition")
+			gomega.Eventually(func(g gomega.Gomega) {
+				gotTrainJob := &trainer.TrainJob{}
+				g.Expect(k8sClient.Get(ctx, trainJobKey, gotTrainJob)).Should(gomega.Succeed())
+				g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+					{
+						Type:    trainer.TrainJobSuspended,
+						Status:  metav1.ConditionFalse,
+						Reason:  trainer.TrainJobResumedReason,
+						Message: constants.TrainJobResumedMessage,
+					},
+					{
+						Type:    trainer.TrainJobCreated,
+						Status:  metav1.ConditionTrue,
+						Reason:  trainer.TrainJobJobsCreationSucceededReason,
+						Message: constants.TrainJobJobsCreationSucceededMessage,
+					},
+				}, util.IgnoreConditions))
+			}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
 			ginkgo.By("Updating the JobSet condition with Failed")
 			gomega.Eventually(func(g gomega.Gomega) {
 				jobSet := &jobsetv1alpha2.JobSet{}
