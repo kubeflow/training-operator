@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	jobruntimes "github.com/kubeflow/trainer/pkg/runtime"
 )
 
@@ -71,7 +71,7 @@ func NewTrainJobReconciler(client client.Client, recorder record.EventRecorder, 
 // +kubebuilder:rbac:groups=trainer.kubeflow.org,resources=trainjobs/finalizers,verbs=get;update;patch
 
 func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	var trainJob kubeflowv1.TrainJob
+	var trainJob trainer.TrainJob
 	if err := r.client.Get(ctx, req.NamespacedName, &trainJob); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -102,7 +102,7 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, err
 }
 
-func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobruntimes.Runtime, trainJob *kubeflowv1.TrainJob) (objsOpState, error) {
+func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobruntimes.Runtime, trainJob *trainer.TrainJob) (objsOpState, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	objs, err := runtime.NewObjects(ctx, trainJob)
@@ -144,30 +144,30 @@ func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobru
 	return creationSucceeded, nil
 }
 
-func setCreatedCondition(trainJob *kubeflowv1.TrainJob, opState objsOpState) {
+func setCreatedCondition(trainJob *trainer.TrainJob, opState objsOpState) {
 	var newCond metav1.Condition
 	switch opState {
 	case creationSucceeded:
 		newCond = metav1.Condition{
-			Type:    kubeflowv1.TrainJobCreated,
+			Type:    trainer.TrainJobCreated,
 			Status:  metav1.ConditionTrue,
 			Message: constants.TrainJobJobsCreationSucceededMessage,
-			Reason:  kubeflowv1.TrainJobJobsCreationSucceededReason,
+			Reason:  trainer.TrainJobJobsCreationSucceededReason,
 		}
 	case buildFailed:
 		newCond = metav1.Condition{
-			Type:    kubeflowv1.TrainJobCreated,
+			Type:    trainer.TrainJobCreated,
 			Status:  metav1.ConditionFalse,
 			Message: constants.TrainJobJobsBuildFailedMessage,
-			Reason:  kubeflowv1.TrainJobJobsBuildFailedReason,
+			Reason:  trainer.TrainJobJobsBuildFailedReason,
 		}
 	// TODO (tenzen-y): Provide more granular message based on creation or update failure.
 	case creationFailed, updateFailed:
 		newCond = metav1.Condition{
-			Type:    kubeflowv1.TrainJobCreated,
+			Type:    trainer.TrainJobCreated,
 			Status:  metav1.ConditionFalse,
 			Message: constants.TrainJobJobsCreationFailedMessage,
-			Reason:  kubeflowv1.TrainJobJobsCreationFailedReason,
+			Reason:  trainer.TrainJobJobsCreationFailedReason,
 		}
 	default:
 		return
@@ -175,22 +175,22 @@ func setCreatedCondition(trainJob *kubeflowv1.TrainJob, opState objsOpState) {
 	meta.SetStatusCondition(&trainJob.Status.Conditions, newCond)
 }
 
-func setSuspendedCondition(trainJob *kubeflowv1.TrainJob) {
+func setSuspendedCondition(trainJob *trainer.TrainJob) {
 	var newCond metav1.Condition
 	switch {
 	case ptr.Deref(trainJob.Spec.Suspend, false):
 		newCond = metav1.Condition{
-			Type:    kubeflowv1.TrainJobSuspended,
+			Type:    trainer.TrainJobSuspended,
 			Status:  metav1.ConditionTrue,
 			Message: constants.TrainJobSuspendedMessage,
-			Reason:  kubeflowv1.TrainJobSuspendedReason,
+			Reason:  trainer.TrainJobSuspendedReason,
 		}
-	case meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv1.TrainJobSuspended):
+	case meta.IsStatusConditionTrue(trainJob.Status.Conditions, trainer.TrainJobSuspended):
 		newCond = metav1.Condition{
-			Type:    kubeflowv1.TrainJobSuspended,
+			Type:    trainer.TrainJobSuspended,
 			Status:  metav1.ConditionFalse,
 			Message: constants.TrainJobResumedMessage,
-			Reason:  kubeflowv1.TrainJobResumedReason,
+			Reason:  trainer.TrainJobResumedReason,
 		}
 	default:
 		return
@@ -198,7 +198,7 @@ func setSuspendedCondition(trainJob *kubeflowv1.TrainJob) {
 	meta.SetStatusCondition(&trainJob.Status.Conditions, newCond)
 }
 
-func setTerminalCondition(ctx context.Context, runtime jobruntimes.Runtime, trainJob *kubeflowv1.TrainJob) error {
+func setTerminalCondition(ctx context.Context, runtime jobruntimes.Runtime, trainJob *trainer.TrainJob) error {
 	terminalCond, err := runtime.TerminalCondition(ctx, trainJob)
 	if err != nil {
 		return err
@@ -209,12 +209,12 @@ func setTerminalCondition(ctx context.Context, runtime jobruntimes.Runtime, trai
 	return nil
 }
 
-func isTrainJobFinished(trainJob *kubeflowv1.TrainJob) bool {
-	return meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv1.TrainJobComplete) ||
-		meta.IsStatusConditionTrue(trainJob.Status.Conditions, kubeflowv1.TrainJobFailed)
+func isTrainJobFinished(trainJob *trainer.TrainJob) bool {
+	return meta.IsStatusConditionTrue(trainJob.Status.Conditions, trainer.TrainJobComplete) ||
+		meta.IsStatusConditionTrue(trainJob.Status.Conditions, trainer.TrainJobFailed)
 }
 
-func runtimeRefToGroupKind(runtimeRef kubeflowv1.RuntimeRef) schema.GroupKind {
+func runtimeRefToGroupKind(runtimeRef trainer.RuntimeRef) schema.GroupKind {
 	return schema.GroupKind{
 		Group: ptr.Deref(runtimeRef.APIGroup, ""),
 		Kind:  ptr.Deref(runtimeRef.Kind, ""),
@@ -224,7 +224,7 @@ func runtimeRefToGroupKind(runtimeRef kubeflowv1.RuntimeRef) schema.GroupKind {
 func (r *TrainJobReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	b := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(&kubeflowv1.TrainJob{})
+		For(&trainer.TrainJob{})
 	for _, runtime := range r.runtimes {
 		for _, registrar := range runtime.EventHandlerRegistrars() {
 			if registrar != nil {

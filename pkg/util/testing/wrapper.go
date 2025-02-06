@@ -26,7 +26,7 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	jobsetplugin "github.com/kubeflow/trainer/pkg/runtime/framework/plugins/jobset"
 )
@@ -294,21 +294,21 @@ func (j *JobSetWrapper) Obj() *jobsetv1alpha2.JobSet {
 }
 
 type TrainJobWrapper struct {
-	kubeflowv1.TrainJob
+	trainer.TrainJob
 }
 
 func MakeTrainJobWrapper(namespace, name string) *TrainJobWrapper {
 	return &TrainJobWrapper{
-		TrainJob: kubeflowv1.TrainJob{
+		TrainJob: trainer.TrainJob{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeflowv1.SchemeGroupVersion.Version,
-				Kind:       kubeflowv1.TrainJobKind,
+				APIVersion: trainer.SchemeGroupVersion.Version,
+				Kind:       trainer.TrainJobKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      name,
 			},
-			Spec: kubeflowv1.TrainJobSpec{},
+			Spec: trainer.TrainJobSpec{},
 		},
 	}
 }
@@ -340,7 +340,7 @@ func (t *TrainJobWrapper) SpecAnnotation(key, value string) *TrainJobWrapper {
 }
 
 func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *TrainJobWrapper {
-	runtimeRef := kubeflowv1.RuntimeRef{
+	runtimeRef := trainer.RuntimeRef{
 		Name: name,
 	}
 	if gvk.Group != "" {
@@ -353,17 +353,17 @@ func (t *TrainJobWrapper) RuntimeRef(gvk schema.GroupVersionKind, name string) *
 	return t
 }
 
-func (t *TrainJobWrapper) Trainer(trainer *kubeflowv1.Trainer) *TrainJobWrapper {
+func (t *TrainJobWrapper) Trainer(trainer *trainer.Trainer) *TrainJobWrapper {
 	t.Spec.Trainer = trainer
 	return t
 }
 
-func (t *TrainJobWrapper) DatasetConfig(datasetConfig *kubeflowv1.DatasetConfig) *TrainJobWrapper {
+func (t *TrainJobWrapper) DatasetConfig(datasetConfig *trainer.DatasetConfig) *TrainJobWrapper {
 	t.Spec.DatasetConfig = datasetConfig
 	return t
 }
 
-func (t *TrainJobWrapper) ModelConfig(modelConfig *kubeflowv1.ModelConfig) *TrainJobWrapper {
+func (t *TrainJobWrapper) ModelConfig(modelConfig *trainer.ModelConfig) *TrainJobWrapper {
 	t.Spec.ModelConfig = modelConfig
 	return t
 }
@@ -373,17 +373,17 @@ func (t *TrainJobWrapper) ManagedBy(m string) *TrainJobWrapper {
 	return t
 }
 
-func (t *TrainJobWrapper) Obj() *kubeflowv1.TrainJob {
+func (t *TrainJobWrapper) Obj() *trainer.TrainJob {
 	return &t.TrainJob
 }
 
 type TrainJobTrainerWrapper struct {
-	kubeflowv1.Trainer
+	trainer.Trainer
 }
 
 func MakeTrainJobTrainerWrapper() *TrainJobTrainerWrapper {
 	return &TrainJobTrainerWrapper{
-		Trainer: kubeflowv1.Trainer{},
+		Trainer: trainer.Trainer{},
 	}
 }
 
@@ -412,17 +412,17 @@ func (t *TrainJobTrainerWrapper) ContainerEnv(env []corev1.EnvVar) *TrainJobTrai
 	return t
 }
 
-func (t *TrainJobTrainerWrapper) Obj() *kubeflowv1.Trainer {
+func (t *TrainJobTrainerWrapper) Obj() *trainer.Trainer {
 	return &t.Trainer
 }
 
 type TrainJobDatasetConfigWrapper struct {
-	kubeflowv1.DatasetConfig
+	trainer.DatasetConfig
 }
 
 func MakeTrainJobDatasetConfigWrapper() *TrainJobDatasetConfigWrapper {
 	return &TrainJobDatasetConfigWrapper{
-		DatasetConfig: kubeflowv1.DatasetConfig{},
+		DatasetConfig: trainer.DatasetConfig{},
 	}
 }
 
@@ -441,19 +441,19 @@ func (t *TrainJobDatasetConfigWrapper) SecretRef(secretRef corev1.LocalObjectRef
 	return t
 }
 
-func (t *TrainJobDatasetConfigWrapper) Obj() *kubeflowv1.DatasetConfig {
+func (t *TrainJobDatasetConfigWrapper) Obj() *trainer.DatasetConfig {
 	return &t.DatasetConfig
 }
 
 type TrainJobModelConfigWrapper struct {
-	kubeflowv1.ModelConfig
+	trainer.ModelConfig
 }
 
 func MakeTrainJobModelConfigWrapper() *TrainJobModelConfigWrapper {
 	return &TrainJobModelConfigWrapper{
-		ModelConfig: kubeflowv1.ModelConfig{
+		ModelConfig: trainer.ModelConfig{
 			// TODO (andreyvelich): Add support for output model when implemented.
-			Input: &kubeflowv1.InputModel{},
+			Input: &trainer.InputModel{},
 		},
 	}
 }
@@ -473,27 +473,27 @@ func (t *TrainJobModelConfigWrapper) SecretRef(secretRef corev1.LocalObjectRefer
 	return t
 }
 
-func (t *TrainJobModelConfigWrapper) Obj() *kubeflowv1.ModelConfig {
+func (t *TrainJobModelConfigWrapper) Obj() *trainer.ModelConfig {
 	return &t.ModelConfig
 }
 
 type TrainingRuntimeWrapper struct {
-	kubeflowv1.TrainingRuntime
+	trainer.TrainingRuntime
 }
 
 func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper {
 	return &TrainingRuntimeWrapper{
-		TrainingRuntime: kubeflowv1.TrainingRuntime{
+		TrainingRuntime: trainer.TrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeflowv1.SchemeGroupVersion.String(),
-				Kind:       kubeflowv1.TrainingRuntimeKind,
+				APIVersion: trainer.SchemeGroupVersion.String(),
+				Kind:       trainer.TrainingRuntimeKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      name,
 			},
-			Spec: kubeflowv1.TrainingRuntimeSpec{
-				Template: kubeflowv1.JobSetTemplateSpec{
+			Spec: trainer.TrainingRuntimeSpec{
+				Template: trainer.JobSetTemplateSpec{
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
@@ -574,31 +574,31 @@ func (r *TrainingRuntimeWrapper) Annotation(key, value string) *TrainingRuntimeW
 	return r
 }
 
-func (r *TrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv1.TrainingRuntimeSpec) *TrainingRuntimeWrapper {
+func (r *TrainingRuntimeWrapper) RuntimeSpec(spec trainer.TrainingRuntimeSpec) *TrainingRuntimeWrapper {
 	r.Spec = spec
 	return r
 }
 
-func (r *TrainingRuntimeWrapper) Obj() *kubeflowv1.TrainingRuntime {
+func (r *TrainingRuntimeWrapper) Obj() *trainer.TrainingRuntime {
 	return &r.TrainingRuntime
 }
 
 type ClusterTrainingRuntimeWrapper struct {
-	kubeflowv1.ClusterTrainingRuntime
+	trainer.ClusterTrainingRuntime
 }
 
 func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapper {
 	return &ClusterTrainingRuntimeWrapper{
-		ClusterTrainingRuntime: kubeflowv1.ClusterTrainingRuntime{
+		ClusterTrainingRuntime: trainer.ClusterTrainingRuntime{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeflowv1.SchemeGroupVersion.String(),
-				Kind:       kubeflowv1.ClusterTrainingRuntimeKind,
+				APIVersion: trainer.SchemeGroupVersion.String(),
+				Kind:       trainer.ClusterTrainingRuntimeKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
-			Spec: kubeflowv1.TrainingRuntimeSpec{
-				Template: kubeflowv1.JobSetTemplateSpec{
+			Spec: trainer.TrainingRuntimeSpec{
+				Template: trainer.JobSetTemplateSpec{
 					Spec: jobsetv1alpha2.JobSetSpec{
 						ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
 							{
@@ -663,37 +663,37 @@ func MakeClusterTrainingRuntimeWrapper(name string) *ClusterTrainingRuntimeWrapp
 	}
 }
 
-func (r *ClusterTrainingRuntimeWrapper) RuntimeSpec(spec kubeflowv1.TrainingRuntimeSpec) *ClusterTrainingRuntimeWrapper {
+func (r *ClusterTrainingRuntimeWrapper) RuntimeSpec(spec trainer.TrainingRuntimeSpec) *ClusterTrainingRuntimeWrapper {
 	r.Spec = spec
 	return r
 }
 
-func (r *ClusterTrainingRuntimeWrapper) Obj() *kubeflowv1.ClusterTrainingRuntime {
+func (r *ClusterTrainingRuntimeWrapper) Obj() *trainer.ClusterTrainingRuntime {
 	return &r.ClusterTrainingRuntime
 }
 
 type TrainingRuntimeSpecWrapper struct {
-	kubeflowv1.TrainingRuntimeSpec
+	trainer.TrainingRuntimeSpec
 }
 
-func MakeTrainingRuntimeSpecWrapper(spec kubeflowv1.TrainingRuntimeSpec) *TrainingRuntimeSpecWrapper {
+func MakeTrainingRuntimeSpecWrapper(spec trainer.TrainingRuntimeSpec) *TrainingRuntimeSpecWrapper {
 	return &TrainingRuntimeSpecWrapper{
 		TrainingRuntimeSpec: spec,
 	}
 }
 
 func (s *TrainingRuntimeSpecWrapper) NumNodes(numNodes int32) *TrainingRuntimeSpecWrapper {
-	s.MLPolicy = &kubeflowv1.MLPolicy{
+	s.MLPolicy = &trainer.MLPolicy{
 		NumNodes: &numNodes,
 	}
 	return s
 }
 
 func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode string) *TrainingRuntimeSpecWrapper {
-	s.MLPolicy = &kubeflowv1.MLPolicy{
+	s.MLPolicy = &trainer.MLPolicy{
 		NumNodes: &numNodes,
-		MLPolicySource: kubeflowv1.MLPolicySource{
-			Torch: &kubeflowv1.TorchMLPolicySource{
+		MLPolicySource: trainer.MLPolicySource{
+			Torch: &trainer.TorchMLPolicySource{
 				NumProcPerNode: &numProcPerNode,
 			},
 		},
@@ -746,9 +746,9 @@ func (s *TrainingRuntimeSpecWrapper) InitContainerDatasetModelInitializer(image 
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoscheduling(src *kubeflowv1.CoschedulingPodGroupPolicySource) *TrainingRuntimeSpecWrapper {
-	s.PodGroupPolicy = &kubeflowv1.PodGroupPolicy{
-		PodGroupPolicySource: kubeflowv1.PodGroupPolicySource{
+func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoscheduling(src *trainer.CoschedulingPodGroupPolicySource) *TrainingRuntimeSpecWrapper {
+	s.PodGroupPolicy = &trainer.PodGroupPolicy{
+		PodGroupPolicySource: trainer.PodGroupPolicySource{
 			Coscheduling: src,
 		},
 	}
@@ -757,7 +757,7 @@ func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoscheduling(src *kubeflowv1.
 
 func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout(timeout int32) *TrainingRuntimeSpecWrapper {
 	if s.PodGroupPolicy == nil || s.PodGroupPolicy.Coscheduling == nil {
-		return s.PodGroupPolicyCoscheduling(&kubeflowv1.CoschedulingPodGroupPolicySource{
+		return s.PodGroupPolicyCoscheduling(&trainer.CoschedulingPodGroupPolicySource{
 			ScheduleTimeoutSeconds: &timeout,
 		})
 	}
@@ -765,7 +765,7 @@ func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) Obj() kubeflowv1.TrainingRuntimeSpec {
+func (s *TrainingRuntimeSpecWrapper) Obj() trainer.TrainingRuntimeSpec {
 	return s.TrainingRuntimeSpec
 }
 

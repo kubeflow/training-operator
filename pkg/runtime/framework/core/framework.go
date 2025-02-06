@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
 	fwkplugins "github.com/kubeflow/trainer/pkg/runtime/framework/plugins"
@@ -79,7 +79,7 @@ func New(ctx context.Context, c client.Client, r fwkplugins.Registry, indexer cl
 	return f, nil
 }
 
-func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	for _, plugin := range f.enforceMLPlugins {
 		if err := plugin.EnforceMLPolicy(info, trainJob); err != nil {
 			return err
@@ -88,7 +88,7 @@ func (f *Framework) RunEnforceMLPolicyPlugins(info *runtime.Info, trainJob *kube
 	return nil
 }
 
-func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	for _, plugin := range f.enforcePodGroupPolicyPlugins {
 		if err := plugin.EnforcePodGroupPolicy(info, trainJob); err != nil {
 			return err
@@ -97,7 +97,7 @@ func (f *Framework) RunEnforcePodGroupPolicyPlugins(info *runtime.Info, trainJob
 	return nil
 }
 
-func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *kubeflowv1.TrainJob) (admission.Warnings, field.ErrorList) {
+func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
 	var aggregatedWarnings admission.Warnings
 	var aggregatedErrors field.ErrorList
 	for _, plugin := range f.customValidationPlugins {
@@ -112,7 +112,7 @@ func (f *Framework) RunCustomValidationPlugins(oldObj, newObj *kubeflowv1.TrainJ
 	return aggregatedWarnings, aggregatedErrors
 }
 
-func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv1.TrainJob) ([]client.Object, error) {
+func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	var objs []client.Object
 	for _, plugin := range f.componentBuilderPlugins {
 		obj, err := plugin.Build(ctx, runtimeJobTemplate, info, trainJob)
@@ -126,7 +126,7 @@ func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTe
 	return objs, nil
 }
 
-func (f *Framework) RunTerminalConditionPlugins(ctx context.Context, trainJob *kubeflowv1.TrainJob) (*metav1.Condition, error) {
+func (f *Framework) RunTerminalConditionPlugins(ctx context.Context, trainJob *trainer.TrainJob) (*metav1.Condition, error) {
 	// TODO (tenzen-y): Once we provide the Configuration API, we should validate which plugin should have terminalCondition execution points.
 	if len(f.terminalConditionPlugins) > 1 {
 		return nil, errorTooManyTerminalConditionPlugin

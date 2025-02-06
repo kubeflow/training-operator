@@ -22,7 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
@@ -42,7 +42,7 @@ func (p *PlainML) Name() string {
 	return Name
 }
 
-func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (p *PlainML) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.Torch != nil || info.RuntimePolicy.MLPolicy.MPI != nil {
 		return nil
 	}

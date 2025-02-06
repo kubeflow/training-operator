@@ -29,7 +29,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlpkg "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -37,8 +37,8 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
-	kubeflowcontroller "github.com/kubeflow/trainer/pkg/controller"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	"github.com/kubeflow/trainer/pkg/controller"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	runtimecore "github.com/kubeflow/trainer/pkg/runtime/core"
 	"github.com/kubeflow/trainer/pkg/util/cert"
@@ -56,7 +56,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(kubeflowv1.AddToScheme(scheme))
+	utilruntime.Must(trainer.AddToScheme(scheme))
 	utilruntime.Must(jobsetv1alpha2.AddToScheme(scheme))
 	utilruntime.Must(schedulerpluginsv1alpha1.AddToScheme(scheme))
 }
@@ -160,7 +160,7 @@ func setupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, cer
 	<-certsReady
 	setupLog.Info("Certs ready")
 
-	if failedCtrlName, err := kubeflowcontroller.SetupControllers(mgr, runtimes, controller.Options{}); err != nil {
+	if failedCtrlName, err := controller.SetupControllers(mgr, runtimes, ctrlpkg.Options{}); err != nil {
 		setupLog.Error(err, "Could not create controller", "controller", failedCtrlName)
 		os.Exit(1)
 	}

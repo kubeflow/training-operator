@@ -28,13 +28,13 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 func NewClientBuilder(addToSchemes ...func(s *runtime.Scheme) error) *fake.ClientBuilder {
 	scm := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scm))
-	utilruntime.Must(kubeflowv1.AddToScheme(scm))
+	utilruntime.Must(trainer.AddToScheme(scm))
 	utilruntime.Must(jobsetv1alpha2.AddToScheme(scm))
 	utilruntime.Must(schedulerpluginsv1alpha1.AddToScheme(scm))
 	for i := range addToSchemes {

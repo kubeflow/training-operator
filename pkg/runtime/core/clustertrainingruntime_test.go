@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	testingutil "github.com/kubeflow/trainer/pkg/util/testing"
 )
 
@@ -39,8 +39,8 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		trainJob               *kubeflowv1.TrainJob
-		clusterTrainingRuntime *kubeflowv1.ClusterTrainingRuntime
+		trainJob               *trainer.TrainJob
+		clusterTrainingRuntime *trainer.ClusterTrainingRuntime
 		wantObjs               []client.Object
 		wantError              error
 	}{
@@ -56,7 +56,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				Suspend(true).
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.ClusterTrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
@@ -70,10 +70,10 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 					Suspend(true).
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("101"), // Every replica has 1 CPU = 101 CPUs in total.
@@ -85,7 +85,7 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 		"missing trainingRuntime resource": {
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.ClusterTrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Obj(),

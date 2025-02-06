@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/runtime"
 )
 
@@ -35,7 +35,7 @@ type ClusterTrainingRuntimeWebhook struct {
 
 func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager, run map[string]runtime.Runtime) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&kubeflowv1.ClusterTrainingRuntime{}).
+		For(&trainer.ClusterTrainingRuntime{}).
 		WithValidator(&ClusterTrainingRuntimeWebhook{runtimes: run}).
 		Complete()
 }
@@ -45,7 +45,7 @@ func setupWebhookForClusterTrainingRuntime(mgr ctrl.Manager, run map[string]runt
 var _ webhook.CustomValidator = (*ClusterTrainingRuntimeWebhook)(nil)
 
 func (w *ClusterTrainingRuntimeWebhook) ValidateCreate(ctx context.Context, obj apiruntime.Object) (admission.Warnings, error) {
-	clTrainingRuntime := obj.(*kubeflowv1.ClusterTrainingRuntime)
+	clTrainingRuntime := obj.(*trainer.ClusterTrainingRuntime)
 	log := ctrl.LoggerFrom(ctx).WithName("clustertrainingruntime-webhook")
 	log.V(5).Info("Validating create", "clusterTrainingRuntime", klog.KObj(clTrainingRuntime))
 	return nil, validateReplicatedJobs(clTrainingRuntime.Spec.Template.Spec.ReplicatedJobs).ToAggregate()

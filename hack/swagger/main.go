@@ -25,7 +25,7 @@ import (
 	"k8s.io/kube-openapi/pkg/common"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 // Generate Kubeflow Training OpenAPI specification.
@@ -38,7 +38,7 @@ func main() {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	}
 
-	for k, v := range kubeflowv1.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range trainer.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 

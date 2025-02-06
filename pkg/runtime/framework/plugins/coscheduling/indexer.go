@@ -19,7 +19,7 @@ package coscheduling
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 )
 
 func IndexTrainingRuntimeContainerRuntimeClass(obj client.Object) []string {
-	runtime, ok := obj.(*kubeflowv1.TrainingRuntime)
+	runtime, ok := obj.(*trainer.TrainingRuntime)
 	if !ok {
 		return nil
 	}
@@ -42,7 +42,7 @@ func IndexTrainingRuntimeContainerRuntimeClass(obj client.Object) []string {
 }
 
 func IndexClusterTrainingRuntimeContainerRuntimeClass(obj client.Object) []string {
-	clRuntime, ok := obj.(*kubeflowv1.ClusterTrainingRuntime)
+	clRuntime, ok := obj.(*trainer.ClusterTrainingRuntime)
 	if !ok {
 		return nil
 	}

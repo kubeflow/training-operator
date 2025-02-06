@@ -20,7 +20,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 const (
@@ -29,24 +29,24 @@ const (
 )
 
 func IndexTrainJobTrainingRuntime(obj client.Object) []string {
-	trainJob, ok := obj.(*kubeflowv1.TrainJob)
+	trainJob, ok := obj.(*trainer.TrainJob)
 	if !ok {
 		return nil
 	}
-	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == kubeflowv1.GroupVersion.Group &&
-		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == kubeflowv1.TrainingRuntimeKind {
+	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == trainer.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == trainer.TrainingRuntimeKind {
 		return []string{trainJob.Spec.RuntimeRef.Name}
 	}
 	return nil
 }
 
 func IndexTrainJobClusterTrainingRuntime(obj client.Object) []string {
-	trainJob, ok := obj.(*kubeflowv1.TrainJob)
+	trainJob, ok := obj.(*trainer.TrainJob)
 	if !ok {
 		return nil
 	}
-	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == kubeflowv1.GroupVersion.Group &&
-		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == kubeflowv1.ClusterTrainingRuntimeKind {
+	if ptr.Deref(trainJob.Spec.RuntimeRef.APIGroup, "") == trainer.GroupVersion.Group &&
+		ptr.Deref(trainJob.Spec.RuntimeRef.Kind, "") == trainer.ClusterTrainingRuntimeKind {
 		return []string{trainJob.Spec.RuntimeRef.Name}
 	}
 	return nil

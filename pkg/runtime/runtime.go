@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 type Info struct {
@@ -38,8 +38,8 @@ type Info struct {
 }
 
 type RuntimePolicy struct {
-	MLPolicy       *kubeflowv1.MLPolicy
-	PodGroupPolicy *kubeflowv1.PodGroupPolicy
+	MLPolicy       *trainer.MLPolicy
+	PodGroupPolicy *trainer.PodGroupPolicy
 }
 
 type Trainer struct {
@@ -90,13 +90,13 @@ func WithAnnotations(annotations map[string]string) InfoOption {
 	}
 }
 
-func WithMLPolicy(mlPolicy *kubeflowv1.MLPolicy) InfoOption {
+func WithMLPolicy(mlPolicy *trainer.MLPolicy) InfoOption {
 	return func(o *InfoOptions) {
 		o.runtimePolicy.MLPolicy = mlPolicy
 	}
 }
 
-func WithPodGroupPolicy(pgPolicy *kubeflowv1.PodGroupPolicy) InfoOption {
+func WithPodGroupPolicy(pgPolicy *trainer.PodGroupPolicy) InfoOption {
 	return func(o *InfoOptions) {
 		o.runtimePolicy.PodGroupPolicy = pgPolicy
 	}

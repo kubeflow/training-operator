@@ -26,14 +26,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 )
 
 type ReconcilerBuilder func(*builder.Builder, client.Client, cache.Cache) *builder.Builder
 
 type Runtime interface {
-	NewObjects(ctx context.Context, trainJob *kubeflowv1.TrainJob) ([]client.Object, error)
-	TerminalCondition(ctx context.Context, trainJob *kubeflowv1.TrainJob) (*metav1.Condition, error)
+	NewObjects(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error)
+	TerminalCondition(ctx context.Context, trainJob *trainer.TrainJob) (*metav1.Condition, error)
 	EventHandlerRegistrars() []ReconcilerBuilder
-	ValidateObjects(ctx context.Context, old, new *kubeflowv1.TrainJob) (admission.Warnings, field.ErrorList)
+	ValidateObjects(ctx context.Context, old, new *trainer.TrainJob) (admission.Warnings, field.ErrorList)
 }

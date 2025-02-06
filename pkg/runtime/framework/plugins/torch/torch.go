@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
@@ -49,7 +49,7 @@ func (t *Torch) Name() string {
 }
 
 // TODO (andreyvelich): Add support for PyTorch elastic when JobSet supports Elastic Jobs.
-func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.Torch == nil {
 		return nil
 	}
@@ -135,6 +135,6 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJo
 }
 
 // TODO: Need to implement validateions for TorchJob.
-func (t *Torch) Validate(oldObj, newObj *kubeflowv1.TrainJob) (admission.Warnings, field.ErrorList) {
+func (t *Torch) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
 	return nil, nil
 }

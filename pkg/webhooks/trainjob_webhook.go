@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/runtime"
 )
 
@@ -34,7 +34,7 @@ type TrainJobWebhook struct {
 
 func setupWebhookForTrainJob(mgr ctrl.Manager, run map[string]runtime.Runtime) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&kubeflowv1.TrainJob{}).
+		For(&trainer.TrainJob{}).
 		WithValidator(&TrainJobWebhook{runtimes: run}).
 		Complete()
 }

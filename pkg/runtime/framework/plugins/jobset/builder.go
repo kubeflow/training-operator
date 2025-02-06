@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	"github.com/kubeflow/trainer/pkg/runtime"
 )
@@ -34,7 +34,7 @@ type Builder struct {
 	jobsetv1alpha2.JobSet
 }
 
-func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec kubeflowv1.JobSetTemplateSpec) *Builder {
+func NewBuilder(objectKey client.ObjectKey, jobSetTemplateSpec trainer.JobSetTemplateSpec) *Builder {
 	return &Builder{
 		JobSet: jobsetv1alpha2.JobSet{
 			TypeMeta: metav1.TypeMeta{
@@ -81,7 +81,7 @@ func mergeInitializerEnvs(storageUri *string, trainJobEnvs, containerEnv []corev
 }
 
 // Initializer updates JobSet values for the initializer Job.
-func (b *Builder) Initializer(trainJob *kubeflowv1.TrainJob) *Builder {
+func (b *Builder) Initializer(trainJob *trainer.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobInitializer {
 			// TODO (andreyvelich): Currently, we use initContainers for the initializers.
@@ -137,7 +137,7 @@ func (b *Builder) Initializer(trainJob *kubeflowv1.TrainJob) *Builder {
 }
 
 // Trainer updates JobSet values for the trainer Job.
-func (b *Builder) Trainer(info *runtime.Info, trainJob *kubeflowv1.TrainJob) *Builder {
+func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobTrainerNode {
 			// Update the Parallelism and Completions values for the Trainer Job.

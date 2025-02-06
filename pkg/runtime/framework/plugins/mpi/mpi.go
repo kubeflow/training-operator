@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
 )
@@ -47,7 +47,7 @@ func (m *MPI) Name() string {
 	return Name
 }
 
-func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.MPI == nil {
 		return nil
 	}
@@ -56,6 +56,6 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob)
 }
 
 // TODO: Need to implement validations for MPIJob.
-func (m *MPI) Validate(oldObj, newObj *kubeflowv1.TrainJob) (admission.Warnings, field.ErrorList) {
+func (m *MPI) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
 	return nil, nil
 }

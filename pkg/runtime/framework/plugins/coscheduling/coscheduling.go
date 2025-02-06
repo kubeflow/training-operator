@@ -45,7 +45,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
@@ -72,11 +72,11 @@ const Name = "CoScheduling"
 // +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create
 
 func New(ctx context.Context, c client.Client, indexer client.FieldIndexer) (framework.Plugin, error) {
-	if err := indexer.IndexField(ctx, &kubeflowv1.TrainingRuntime{}, TrainingRuntimeContainerRuntimeClassKey,
+	if err := indexer.IndexField(ctx, &trainer.TrainingRuntime{}, TrainingRuntimeContainerRuntimeClassKey,
 		IndexTrainingRuntimeContainerRuntimeClass); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupTrainingRuntimeRuntimeClassIndexer, err)
 	}
-	if err := indexer.IndexField(ctx, &kubeflowv1.ClusterTrainingRuntime{}, ClusterTrainingRuntimeContainerRuntimeClassKey,
+	if err := indexer.IndexField(ctx, &trainer.ClusterTrainingRuntime{}, ClusterTrainingRuntimeContainerRuntimeClassKey,
 		IndexClusterTrainingRuntimeContainerRuntimeClass); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupClusterTrainingRuntimeRuntimeClassIndexer, err)
 	}
@@ -91,7 +91,7 @@ func (c *CoScheduling) Name() string {
 	return Name
 }
 
-func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error {
+func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || trainJob == nil {
 		return nil
 	}
@@ -103,7 +103,7 @@ func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubef
 	return nil
 }
 
-func (c *CoScheduling) Build(ctx context.Context, _ client.Object, info *runtime.Info, trainJob *kubeflowv1.TrainJob) (client.Object, error) {
+func (c *CoScheduling) Build(ctx context.Context, _ client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error) {
 	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || info.RuntimePolicy.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
 		return nil, nil
 	}
@@ -189,18 +189,18 @@ func (h *PodGroupRuntimeClassHandler) Generic(context.Context, event.TypedGeneri
 }
 
 func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Context, runtimeClass *nodev1.RuntimeClass, q workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
-	var trainingRuntimes kubeflowv1.TrainingRuntimeList
+	var trainingRuntimes trainer.TrainingRuntimeList
 	if err := h.client.List(ctx, &trainingRuntimes, client.MatchingFields{TrainingRuntimeContainerRuntimeClassKey: runtimeClass.Name}); err != nil {
 		return err
 	}
-	var clusterTrainingRuntimes kubeflowv1.ClusterTrainingRuntimeList
+	var clusterTrainingRuntimes trainer.ClusterTrainingRuntimeList
 	if err := h.client.List(ctx, &clusterTrainingRuntimes, client.MatchingFields{ClusterTrainingRuntimeContainerRuntimeClassKey: runtimeClass.Name}); err != nil {
 		return err
 	}
 
-	var trainJobs []kubeflowv1.TrainJob
+	var trainJobs []trainer.TrainJob
 	for _, trainingRuntime := range trainingRuntimes.Items {
-		var trainJobsWithTrainingRuntime kubeflowv1.TrainJobList
+		var trainJobsWithTrainingRuntime trainer.TrainJobList
 		err := h.client.List(ctx, &trainJobsWithTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobRuntimeRefKey: trainingRuntime.Name})
 		if err != nil {
 			return err
@@ -208,14 +208,14 @@ func (h *PodGroupRuntimeClassHandler) queueSuspendedTrainJobs(ctx context.Contex
 		trainJobs = append(trainJobs, trainJobsWithTrainingRuntime.Items...)
 	}
 	for _, clusterTrainingRuntime := range clusterTrainingRuntimes.Items {
-		var trainJobsWithClTrainingRuntime kubeflowv1.TrainJobList
+		var trainJobsWithClTrainingRuntime trainer.TrainJobList
 		err := h.client.List(ctx, &trainJobsWithClTrainingRuntime, client.MatchingFields{runtimeindexer.TrainJobClusterRuntimeRefKey: clusterTrainingRuntime.Name})
 		if err != nil {
 			return err
 		}
 		trainJobs = append(trainJobs, trainJobsWithClTrainingRuntime.Items...)
 	}
-	trainJobs = slices.CompactFunc(trainJobs, func(a, b kubeflowv1.TrainJob) bool {
+	trainJobs = slices.CompactFunc(trainJobs, func(a, b trainer.TrainJob) bool {
 		return a.Name == b.Name
 	})
 	for _, trainJob := range trainJobs {
@@ -260,7 +260,7 @@ func (h *PodGroupLimitRangeHandler) Generic(context.Context, event.TypedGenericE
 }
 
 func (h *PodGroupLimitRangeHandler) queueSuspendedTrainJob(ctx context.Context, ns string, q workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
-	var trainJobs kubeflowv1.TrainJobList
+	var trainJobs trainer.TrainJobList
 	if err := h.client.List(ctx, &trainJobs, client.InNamespace(ns)); err != nil {
 		return err
 	}

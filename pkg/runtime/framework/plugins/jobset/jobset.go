@@ -36,7 +36,7 @@ import (
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	"github.com/kubeflow/trainer/pkg/runtime"
 	"github.com/kubeflow/trainer/pkg/runtime/framework"
@@ -70,7 +70,7 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv1.TrainJob) (client.Object, error) {
+func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error) {
 	if runtimeJobTemplate == nil || info == nil || trainJob == nil {
 		return nil, fmt.Errorf("runtime info or object is missing")
 	}
@@ -86,7 +86,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, in
 		if !apierrors.IsNotFound(err) {
 			return nil, err
 		}
-		jobSetBuilder = NewBuilder(client.ObjectKeyFromObject(trainJob), kubeflowv1.JobSetTemplateSpec{
+		jobSetBuilder = NewBuilder(client.ObjectKeyFromObject(trainJob), trainer.JobSetTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels:      info.Labels,
 				Annotations: info.Annotations,
@@ -128,17 +128,17 @@ func jobSetIsSuspended(jobSet *jobsetv1alpha2.JobSet) bool {
 	return ptr.Deref(jobSet.Spec.Suspend, false)
 }
 
-func (j *JobSet) TerminalCondition(ctx context.Context, trainJob *kubeflowv1.TrainJob) (*metav1.Condition, error) {
+func (j *JobSet) TerminalCondition(ctx context.Context, trainJob *trainer.TrainJob) (*metav1.Condition, error) {
 	jobSet := &jobsetv1alpha2.JobSet{}
 	if err := j.client.Get(ctx, client.ObjectKeyFromObject(trainJob), jobSet); err != nil {
 		return nil, err
 	}
 	if completed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetCompleted)); completed != nil && completed.Status == metav1.ConditionTrue {
-		completed.Type = kubeflowv1.TrainJobComplete
+		completed.Type = trainer.TrainJobComplete
 		return completed, nil
 	}
 	if failed := meta.FindStatusCondition(jobSet.Status.Conditions, string(jobsetv1alpha2.JobSetFailed)); failed != nil && failed.Status == metav1.ConditionTrue {
-		failed.Type = kubeflowv1.TrainJobFailed
+		failed.Type = trainer.TrainJobFailed
 		return failed, nil
 	}
 	return nil, nil

@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/constants"
 	jobsetplugin "github.com/kubeflow/trainer/pkg/runtime/framework/plugins/jobset"
 	testingutil "github.com/kubeflow/trainer/pkg/util/testing"
@@ -42,8 +42,8 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 
 	// TODO (andreyvelich): Add more test cases.
 	cases := map[string]struct {
-		trainingRuntime *kubeflowv1.TrainingRuntime
-		trainJob        *kubeflowv1.TrainJob
+		trainingRuntime *trainer.TrainingRuntime
+		trainJob        *trainer.TrainJob
 		wantObjs        []client.Object
 		wantError       error
 	}{
@@ -63,7 +63,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				Suspend(true).
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
 				SpecLabel("conflictLabel", "override").
 				SpecAnnotation("conflictAnnotation", "override").
 				Trainer(
@@ -81,10 +81,10 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					Label("conflictLabel", "override").
 					Annotation("conflictAnnotation", "override").
 					PodLabel(schedulerpluginsv1alpha1.PodGroupLabel, "test-job").
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					MinMember(31). // 31 replicas = 30 Trainer nodes + 1 Initializer.
 					MinResources(corev1.ResourceList{
 						// Every replica has 1 CPU = 31 CPUs in total.
@@ -117,7 +117,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			).Obj(),
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
@@ -156,7 +156,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 						},
 					).
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 			},
 		},
@@ -170,7 +170,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			).Obj(),
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Obj(),
@@ -255,7 +255,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 						},
 					).
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 			},
 		},
@@ -269,7 +269,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			).Obj(),
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						NumNodes(30).
@@ -310,7 +310,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 						},
 					).
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 			},
 		},
@@ -335,7 +335,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			).Obj(),
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
@@ -399,7 +399,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							},
 						},
 					).
-					ControllerReference(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainJobKind), "test-job", "uid").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
 					Obj(),
 			},
 		},
@@ -407,7 +407,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		"missing trainingRuntime resource": {
 			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job-3").
 				UID("uid").
-				RuntimeRef(kubeflowv1.SchemeGroupVersion.WithKind(kubeflowv1.TrainingRuntimeKind), "test-runtime-3").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime-3").
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						Obj(),

@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/pkg/runtime"
 )
 
@@ -39,25 +39,25 @@ type WatchExtensionPlugin interface {
 
 type EnforcePodGroupPolicyPlugin interface {
 	Plugin
-	EnforcePodGroupPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error
+	EnforcePodGroupPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error
 }
 
 type EnforceMLPolicyPlugin interface {
 	Plugin
-	EnforceMLPolicy(info *runtime.Info, trainJob *kubeflowv1.TrainJob) error
+	EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error
 }
 
 type CustomValidationPlugin interface {
 	Plugin
-	Validate(oldObj, newObj *kubeflowv1.TrainJob) (admission.Warnings, field.ErrorList)
+	Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList)
 }
 
 type ComponentBuilderPlugin interface {
 	Plugin
-	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *kubeflowv1.TrainJob) (client.Object, error)
+	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error)
 }
 
 type TerminalConditionPlugin interface {
 	Plugin
-	TerminalCondition(ctx context.Context, trainJob *kubeflowv1.TrainJob) (*metav1.Condition, error)
+	TerminalCondition(ctx context.Context, trainJob *trainer.TrainJob) (*metav1.Condition, error)
 }
