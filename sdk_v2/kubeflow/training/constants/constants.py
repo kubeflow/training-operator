@@ -18,7 +18,7 @@ import os
 DEFAULT_TIMEOUT = 120
 
 # Common constants.
-GROUP = "kubeflow.org"
+GROUP = "trainer.kubeflow.org"
 VERSION = "v2alpha1"
 API_VERSION = f"{GROUP}/{VERSION}"
 
