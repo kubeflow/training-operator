@@ -28,7 +28,7 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
-	runtime "github.com/kubeflow/trainer/pkg/runtime"
+	"github.com/kubeflow/trainer/pkg/runtime"
 )
 
 type TrainingRuntimeWebhook struct {

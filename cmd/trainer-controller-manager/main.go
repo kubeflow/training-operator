@@ -39,7 +39,7 @@ import (
 
 	kubeflowv1 "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
 	kubeflowcontroller "github.com/kubeflow/trainer/pkg/controller"
-	runtime "github.com/kubeflow/trainer/pkg/runtime"
+	"github.com/kubeflow/trainer/pkg/runtime"
 	runtimecore "github.com/kubeflow/trainer/pkg/runtime/core"
 	"github.com/kubeflow/trainer/pkg/util/cert"
 	webhooks "github.com/kubeflow/trainer/pkg/webhooks"

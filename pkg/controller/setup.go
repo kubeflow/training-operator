@@ -20,7 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	runtime "github.com/kubeflow/trainer/pkg/runtime"
+	"github.com/kubeflow/trainer/pkg/runtime"
 )
 
 func SetupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, options controller.Options) (string, error) {

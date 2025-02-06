@@ -102,7 +102,7 @@ endif
 # Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
-	go test ./pkg/apis/trainer/v1alpha1/... ./pkg/controller/... ./pkg/runtime/... ./pkg/webhooks/... ./pkg/util/... -coverprofile cover.out
+	go test $(shell go list ./... | grep -v '/test/') -coverprofile cover.out
 
 .PHONY: test-integration
 test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
