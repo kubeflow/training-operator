@@ -25,7 +25,7 @@ exclude: |
   (?x)^(
     docs/images/.*|
     pkg/client/.*|
-    sdk_v2/kubeflow/training/[^/]*.py|
-    sdk_v2/kubeflow/training/models/.*|
-    sdk_v2/docs/.*
+    sdk/kubeflow/trainer/[^/]*.py|
+    sdk/kubeflow/trainer/models/.*|
+    sdk/docs/.*
   )$

@@ -1,0 +1,6 @@
+{
+  "packageName": "kubeflow.trainer",
+  "typeMappings": {
+    "V1Time": "datetime"
+  }
+}
