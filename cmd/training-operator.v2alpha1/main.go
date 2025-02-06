@@ -17,18 +17,24 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	zaplog "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -38,15 +44,10 @@ import (
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/kubeflow.org/v2alpha1"
-	"github.com/kubeflow/training-operator/pkg/cert"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
 	runtime "github.com/kubeflow/training-operator/pkg/runtime.v2"
 	runtimecore "github.com/kubeflow/training-operator/pkg/runtime.v2/core"
 	webhookv2 "github.com/kubeflow/training-operator/pkg/webhook.v2"
-)
-
-const (
-	webhookConfigurationName = "validator.training-operator-v2.kubeflow.org"
 )
 
 var (
@@ -67,6 +68,7 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+	var namespace string
 	var webhookServerPort int
 	var webhookServiceName string
 	var webhookSecretName string
@@ -128,12 +130,8 @@ func main() {
 	}
 
 	certsReady := make(chan struct{})
-	if err = cert.ManageCerts(mgr, cert.Config{
-		WebhookSecretName:        webhookSecretName,
-		WebhookServiceName:       webhookServiceName,
-		WebhookConfigurationName: webhookConfigurationName,
-	}, certsReady); err != nil {
-		setupLog.Error(err, "unable to set up cert rotation")
+	if err := createCertificate(mgr.GetClient(), namespace, webhookSecretName, webhookServiceName); err != nil {
+		setupLog.Error(err, "Unable to create CertManager certificate")
 		os.Exit(1)
 	}
 
@@ -153,6 +151,34 @@ func main() {
 		setupLog.Error(err, "Could not run manager")
 		os.Exit(1)
 	}
+}
+
+// Cert generation Using cert-manager
+func createCertificate(client client.Client, namespace, secretName, serviceName string) error {
+	cert := &cmapi.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Spec: cmapi.CertificateSpec{
+			SecretName: secretName,
+			IssuerRef: cmmeta.ObjectReference{
+				Name: "letsencrypt-prod",
+				Kind: "ClusterIssuer",
+			},
+			CommonName: serviceName,
+			DNSNames:   []string{serviceName},
+			Usages: []cmapi.KeyUsage{
+				cmapi.UsageServerAuth,
+				cmapi.UsageClientAuth,
+			},
+		},
+	}
+
+	if err := client.Create(context.Background(), cert); err != nil {
+		return fmt.Errorf("failed to create certificate: %v", err)
+	}
+	return nil
 }
 
 func setupControllers(mgr ctrl.Manager, runtimes map[string]runtime.Runtime, certsReady <-chan struct{}) {
