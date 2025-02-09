@@ -37,6 +37,7 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
+	"github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	kubeflowv2 "github.com/kubeflow/training-operator/pkg/apis/trainer/v2alpha1"
 	"github.com/kubeflow/training-operator/pkg/cert"
 	controllerv2 "github.com/kubeflow/training-operator/pkg/controller.v2"
@@ -62,31 +63,25 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var secureMetrics bool
-	var enableHTTP2 bool
-	var webhookServerPort int
-	var webhookServiceName string
-	var webhookSecretName string
 	var tlsOpts []func(*tls.Config)
 
-	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
+	trainerCfg := &v2alpha1.TrainerControllerConfig{}
+
+	flag.StringVar(&trainerCfg.ControllerManager.MetricsBindAddress, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	flag.StringVar(&trainerCfg.ControllerManager.HealthProbeBindAddress, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&trainerCfg.ControllerManager.LeaderElect, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&secureMetrics, "metrics-secure", true,
+	flag.BoolVar(&trainerCfg.ControllerManager.MetricsSecure, "metrics-secure", true,
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
-	flag.BoolVar(&enableHTTP2, "enable-http2", false,
+	flag.BoolVar(&trainerCfg.ControllerManager.EnableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 
 	// Cert generation flags
-	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
-	flag.StringVar(&webhookServiceName, "webhook-service-name", "training-operator-v2", "Name of the Service used as part of the DNSName")
-	flag.StringVar(&webhookSecretName, "webhook-secret-name", "training-operator-v2-webhook-cert", "Name of the Secret to store CA  and server certs")
+	flag.IntVar(&trainerCfg.CertGeneration.WebhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
+	flag.StringVar(&trainerCfg.CertGeneration.WebhookServiceName, "webhook-service-name", "training-operator-v2", "Name of the Service used as part of the DNSName")
+	flag.StringVar(&trainerCfg.CertGeneration.WebhookSecretName, "webhook-secret-name", "training-operator-v2-webhook-cert", "Name of the Secret to store CA  and server certs")
 
 	opts := zap.Options{
 		TimeEncoder: zapcore.RFC3339NanoTimeEncoder,
@@ -97,7 +92,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	if !enableHTTP2 {
+	if !trainerCfg.ControllerManager.EnableHTTP2 {
 		// if the enable-http2 flag is false (the default), http/2 should be disabled
 		// due to its vulnerabilities. More specifically, disabling http/2 will
 		// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
@@ -112,15 +107,15 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
-			BindAddress:   metricsAddr,
-			SecureServing: secureMetrics,
+			BindAddress:   trainerCfg.ControllerManager.MetricsBindAddress,
+			SecureServing: trainerCfg.ControllerManager.MetricsSecure,
 			TLSOpts:       tlsOpts,
 		},
 		WebhookServer: webhook.NewServer(webhook.Options{
-			Port:    webhookServerPort,
+			Port:    trainerCfg.CertGeneration.WebhookServerPort,
 			TLSOpts: tlsOpts,
 		}),
-		HealthProbeBindAddress: probeAddr,
+		HealthProbeBindAddress: trainerCfg.ControllerManager.HealthProbeBindAddress,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -129,8 +124,8 @@ func main() {
 
 	certsReady := make(chan struct{})
 	if err = cert.ManageCerts(mgr, cert.Config{
-		WebhookSecretName:        webhookSecretName,
-		WebhookServiceName:       webhookServiceName,
+		WebhookSecretName:        trainerCfg.CertGeneration.WebhookSecretName,
+		WebhookServiceName:       trainerCfg.CertGeneration.WebhookServiceName,
 		WebhookConfigurationName: webhookConfigurationName,
 	}, certsReady); err != nil {
 		setupLog.Error(err, "unable to set up cert rotation")
