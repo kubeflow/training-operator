@@ -203,8 +203,8 @@ sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMm
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/kueue v0.6.3 h1:PmccdKPDFQIaAboyuSG6M0w6hXtxVA51RV+DjCUtBtQ=
 sigs.k8s.io/kueue v0.6.3/go.mod h1:rliYfK/K7pJ7CT4ReV1szzciNkAo3sBn5Bmr5Sn6uCY=
-sigs.k8s.io/scheduler-plugins v0.28.9 h1:1/bXRoXuSUFr1FLqxrzScdyZMl/G1psuDJcDKYxTo+Q=
-sigs.k8s.io/scheduler-plugins v0.28.9/go.mod h1:32+kIPGT0aTRsEDzKNga7zCbcCHK0dSk5UFCY+gzCLE=
+sigs.k8s.io/scheduler-plugins v0.30.6 h1:P4pViMVoyVNHWmkG96UtJ4LvxkUIeenIUKLZd09vDyw=
+sigs.k8s.io/scheduler-plugins v0.30.6/go.mod h1:EDYYqHmpHR//VYKAeud1TTQbTFSvpdGFeyEg9ejOmnI=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1 h1:150L+0vs/8DA78h1u02ooW1/fFq/Lwr+sGiqlzvrtq4=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1/go.mod h1:N8hJocpFajUSSeSJ9bOZ77VzejKZaXsTtZo4/u7Io08=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=

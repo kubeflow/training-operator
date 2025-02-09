@@ -20,7 +20,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.19.1
 	sigs.k8s.io/jobset v0.5.2
 	sigs.k8s.io/kueue v0.6.3
-	sigs.k8s.io/scheduler-plugins v0.28.9
+	sigs.k8s.io/scheduler-plugins v0.30.6
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
 
