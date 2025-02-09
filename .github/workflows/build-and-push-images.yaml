@@ -13,27 +13,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - component-name: training-operator-v2
-            dockerfile: cmd/training-operator.v2alpha1/Dockerfile
+          - component-name: trainer-controller-manager
+            dockerfile: cmd/trainer-controller-manager/Dockerfile
             platforms: linux/amd64,linux/arm64,linux/ppc64le
-            tag-prefix: v2alpha1
-          - component-name: model-initializer-v2
-            dockerfile: cmd/initializer_v2/model/Dockerfile
+          - component-name: model-initializer
+            dockerfile: cmd/initializer/model/Dockerfile
             platforms: linux/amd64,linux/arm64
-            tag-prefix: v2
-          - component-name: dataset-initializer-v2
-            dockerfile: cmd/initializer_v2/dataset/Dockerfile
+          - component-name: dataset-initializer
+            dockerfile: cmd/initializer/dataset/Dockerfile
             platforms: linux/amd64,linux/arm64
-            tag-prefix: v2
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Docker Login
-        # Trigger workflow only for kubeflow/training-operator repository with specific branch (master, release-*) or tag (v.*).
+        # Trigger workflow only for kubeflow/trainer repository with specific branch (master, release-*) or tag (v.*).
         if: >-
-          github.repository == 'kubeflow/training-operator' &&
+          github.repository == 'kubeflow/trainer' &&
           (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-') || startsWith(github.ref, 'refs/tags/v'))
         uses: docker/login-action@v3
         with:
@@ -41,9 +38,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish Component ${{ matrix.component-name }}
-        # Trigger workflow only for kubeflow/training-operator repository with specific branch (master, release-*) or tag (v.*).
+        # Trigger workflow only for kubeflow/trainer repository with specific branch (master, release-*) or tag (v.*).
         if: >-
-          github.repository == 'kubeflow/training-operator' &&
+          github.repository == 'kubeflow/trainer' &&
           (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release-') || startsWith(github.ref, 'refs/tags/v'))
         id: publish
         uses: ./.github/workflows/template-publish-image
@@ -52,7 +49,6 @@ jobs:
           dockerfile: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
           context: ${{ matrix.context }}
-          tag-prefix: ${{ matrix.tag-prefix }}
           push: true
 
       - name: Test Build For Component ${{ matrix.component-name }}
@@ -63,5 +59,4 @@ jobs:
           dockerfile: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
           context: ${{ matrix.context }}
-          tag-prefix: ${{ matrix.tag-prefix }}
           push: false

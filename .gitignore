@@ -19,7 +19,7 @@ __pycache__/
 *.egg-info/
 
 # OpenAPI Generator CLI JAR file
-hack/python-sdk-v2/openapi-generator-cli.jar
+hack/python-sdk/openapi-generator-cli.jar
 
 # Coverage
 cover.out

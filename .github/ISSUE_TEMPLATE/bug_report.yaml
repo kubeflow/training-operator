@@ -31,14 +31,14 @@ body:
         $ kubectl version
 
         ```
-        Training Operator version:
+        Kubeflow Trainer version:
         ```bash
-        $ kubectl get pods -n kubeflow -l control-plane=kubeflow-training-operator -o jsonpath="{.items[*].spec.containers[*].image}"
+        $ kubectl get pods -n kubeflow -l app.kubernetes.io/name=trainer -o jsonpath="{.items[*].spec.containers[*].image}"
 
         ```
-        Training Operator Python SDK version:
+        Kubeflow Python SDK version:
         ```bash
-        $ pip show kubeflow-training
+        $ pip show kubeflow
 
         ```
     validations:
