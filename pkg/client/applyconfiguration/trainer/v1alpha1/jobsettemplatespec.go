@@ -20,14 +20,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	v1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	v1alpha2 "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 )
 
 // JobSetTemplateSpecApplyConfiguration represents a declarative configuration of the JobSetTemplateSpec type for use
 // with apply.
 type JobSetTemplateSpecApplyConfiguration struct {
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *v1alpha2.JobSetSpec `json:"spec,omitempty"`
+	Spec                             *v1alpha2.JobSetSpecApplyConfiguration `json:"spec,omitempty"`
 }
 
 // JobSetTemplateSpecApplyConfiguration constructs a declarative configuration of the JobSetTemplateSpec type for use with
@@ -181,8 +181,8 @@ func (b *JobSetTemplateSpecApplyConfiguration) ensureObjectMetaApplyConfiguratio
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *JobSetTemplateSpecApplyConfiguration) WithSpec(value v1alpha2.JobSetSpec) *JobSetTemplateSpecApplyConfiguration {
-	b.Spec = &value
+func (b *JobSetTemplateSpecApplyConfiguration) WithSpec(value *v1alpha2.JobSetSpecApplyConfiguration) *JobSetTemplateSpecApplyConfiguration {
+	b.Spec = value
 	return b
 }
 

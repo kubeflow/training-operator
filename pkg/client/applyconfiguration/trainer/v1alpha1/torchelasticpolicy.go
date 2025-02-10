@@ -17,16 +17,16 @@
 package v1alpha1
 
 import (
-	v2 "k8s.io/api/autoscaling/v2"
+	v2 "k8s.io/client-go/applyconfigurations/autoscaling/v2"
 )
 
 // TorchElasticPolicyApplyConfiguration represents a declarative configuration of the TorchElasticPolicy type for use
 // with apply.
 type TorchElasticPolicyApplyConfiguration struct {
-	MaxRestarts *int32          `json:"maxRestarts,omitempty"`
-	MinNodes    *int32          `json:"minNodes,omitempty"`
-	MaxNodes    *int32          `json:"maxNodes,omitempty"`
-	Metrics     []v2.MetricSpec `json:"metrics,omitempty"`
+	MaxRestarts *int32                            `json:"maxRestarts,omitempty"`
+	MinNodes    *int32                            `json:"minNodes,omitempty"`
+	MaxNodes    *int32                            `json:"maxNodes,omitempty"`
+	Metrics     []v2.MetricSpecApplyConfiguration `json:"metrics,omitempty"`
 }
 
 // TorchElasticPolicyApplyConfiguration constructs a declarative configuration of the TorchElasticPolicy type for use with
@@ -62,9 +62,12 @@ func (b *TorchElasticPolicyApplyConfiguration) WithMaxNodes(value int32) *TorchE
 // WithMetrics adds the given value to the Metrics field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Metrics field.
-func (b *TorchElasticPolicyApplyConfiguration) WithMetrics(values ...v2.MetricSpec) *TorchElasticPolicyApplyConfiguration {
+func (b *TorchElasticPolicyApplyConfiguration) WithMetrics(values ...*v2.MetricSpecApplyConfiguration) *TorchElasticPolicyApplyConfiguration {
 	for i := range values {
-		b.Metrics = append(b.Metrics, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithMetrics")
+		}
+		b.Metrics = append(b.Metrics, *values[i])
 	}
 	return b
 }

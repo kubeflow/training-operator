@@ -17,19 +17,19 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 // TrainerApplyConfiguration represents a declarative configuration of the Trainer type for use
 // with apply.
 type TrainerApplyConfiguration struct {
-	Image            *string                  `json:"image,omitempty"`
-	Command          []string                 `json:"command,omitempty"`
-	Args             []string                 `json:"args,omitempty"`
-	Env              []v1.EnvVar              `json:"env,omitempty"`
-	NumNodes         *int32                   `json:"numNodes,omitempty"`
-	ResourcesPerNode *v1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
-	NumProcPerNode   *string                  `json:"numProcPerNode,omitempty"`
+	Image            *string                                    `json:"image,omitempty"`
+	Command          []string                                   `json:"command,omitempty"`
+	Args             []string                                   `json:"args,omitempty"`
+	Env              []v1.EnvVarApplyConfiguration              `json:"env,omitempty"`
+	NumNodes         *int32                                     `json:"numNodes,omitempty"`
+	ResourcesPerNode *v1.ResourceRequirementsApplyConfiguration `json:"resourcesPerNode,omitempty"`
+	NumProcPerNode   *string                                    `json:"numProcPerNode,omitempty"`
 }
 
 // TrainerApplyConfiguration constructs a declarative configuration of the Trainer type for use with
@@ -69,9 +69,12 @@ func (b *TrainerApplyConfiguration) WithArgs(values ...string) *TrainerApplyConf
 // WithEnv adds the given value to the Env field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Env field.
-func (b *TrainerApplyConfiguration) WithEnv(values ...v1.EnvVar) *TrainerApplyConfiguration {
+func (b *TrainerApplyConfiguration) WithEnv(values ...*v1.EnvVarApplyConfiguration) *TrainerApplyConfiguration {
 	for i := range values {
-		b.Env = append(b.Env, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithEnv")
+		}
+		b.Env = append(b.Env, *values[i])
 	}
 	return b
 }
@@ -87,8 +90,8 @@ func (b *TrainerApplyConfiguration) WithNumNodes(value int32) *TrainerApplyConfi
 // WithResourcesPerNode sets the ResourcesPerNode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourcesPerNode field is set to the value of the last call.
-func (b *TrainerApplyConfiguration) WithResourcesPerNode(value v1.ResourceRequirements) *TrainerApplyConfiguration {
-	b.ResourcesPerNode = &value
+func (b *TrainerApplyConfiguration) WithResourcesPerNode(value *v1.ResourceRequirementsApplyConfiguration) *TrainerApplyConfiguration {
+	b.ResourcesPerNode = value
 	return b
 }
 
