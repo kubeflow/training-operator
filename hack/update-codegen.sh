@@ -39,6 +39,22 @@ kube::codegen::gen_helpers \
   "${TRAINER_ROOT}/pkg/apis"
 
 # Generate clients.
+externals=(
+  "sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetSpec:sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
+  "k8s.io/api/core/v1.EnvVar:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/core/v1.EnvFromSource:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/core/v1.ResourceRequirements:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/core/v1.Toleration:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/core/v1.Volume:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/core/v1.VolumeMount:k8s.io/client-go/applyconfigurations/core/v1"
+  "k8s.io/api/autoscaling/v2.MetricSpec:k8s.io/client-go/applyconfigurations/autoscaling/v2"
+)
+
+apply_config_externals="${externals[0]}"
+for external in "${externals[@]:1}"; do
+  apply_config_externals="${apply_config_externals},${external}"
+done
+
 echo "Generating clients for Kubeflow Trainer"
 kube::codegen::gen_client \
   --boilerplate "${TRAINER_ROOT}/hack/boilerplate/boilerplate.go.txt" \
@@ -46,6 +62,7 @@ kube::codegen::gen_client \
   --output-pkg "${TRAINER_PKG}/pkg/client" \
   --with-watch \
   --with-applyconfig \
+  --applyconfig-externals "${apply_config_externals}" \
   "${TRAINER_ROOT}/pkg/apis"
 
 # Get the kube-openapi binary to generate OpenAPI spec.

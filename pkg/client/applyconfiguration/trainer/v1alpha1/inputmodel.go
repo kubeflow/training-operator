@@ -17,15 +17,16 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 // InputModelApplyConfiguration represents a declarative configuration of the InputModel type for use
 // with apply.
 type InputModelApplyConfiguration struct {
-	StorageUri *string                  `json:"storageUri,omitempty"`
-	Env        []v1.EnvVar              `json:"env,omitempty"`
-	SecretRef  *v1.LocalObjectReference `json:"secretRef,omitempty"`
+	StorageUri *string                       `json:"storageUri,omitempty"`
+	Env        []v1.EnvVarApplyConfiguration `json:"env,omitempty"`
+	SecretRef  *corev1.LocalObjectReference  `json:"secretRef,omitempty"`
 }
 
 // InputModelApplyConfiguration constructs a declarative configuration of the InputModel type for use with
@@ -45,9 +46,12 @@ func (b *InputModelApplyConfiguration) WithStorageUri(value string) *InputModelA
 // WithEnv adds the given value to the Env field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Env field.
-func (b *InputModelApplyConfiguration) WithEnv(values ...v1.EnvVar) *InputModelApplyConfiguration {
+func (b *InputModelApplyConfiguration) WithEnv(values ...*v1.EnvVarApplyConfiguration) *InputModelApplyConfiguration {
 	for i := range values {
-		b.Env = append(b.Env, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithEnv")
+		}
+		b.Env = append(b.Env, *values[i])
 	}
 	return b
 }
@@ -55,7 +59,7 @@ func (b *InputModelApplyConfiguration) WithEnv(values ...v1.EnvVar) *InputModelA
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *InputModelApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *InputModelApplyConfiguration {
+func (b *InputModelApplyConfiguration) WithSecretRef(value corev1.LocalObjectReference) *InputModelApplyConfiguration {
 	b.SecretRef = &value
 	return b
 }

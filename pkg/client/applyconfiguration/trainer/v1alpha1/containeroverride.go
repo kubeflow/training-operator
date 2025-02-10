@@ -17,18 +17,18 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 // ContainerOverrideApplyConfiguration represents a declarative configuration of the ContainerOverride type for use
 // with apply.
 type ContainerOverrideApplyConfiguration struct {
-	Name         *string            `json:"name,omitempty"`
-	Command      []string           `json:"command,omitempty"`
-	Args         []string           `json:"args,omitempty"`
-	Env          []v1.EnvVar        `json:"env,omitempty"`
-	EnvFrom      []v1.EnvFromSource `json:"envFrom,omitempty"`
-	VolumeMounts []v1.VolumeMount   `json:"volumeMounts,omitempty"`
+	Name         *string                              `json:"name,omitempty"`
+	Command      []string                             `json:"command,omitempty"`
+	Args         []string                             `json:"args,omitempty"`
+	Env          []v1.EnvVarApplyConfiguration        `json:"env,omitempty"`
+	EnvFrom      []v1.EnvFromSourceApplyConfiguration `json:"envFrom,omitempty"`
+	VolumeMounts []v1.VolumeMountApplyConfiguration   `json:"volumeMounts,omitempty"`
 }
 
 // ContainerOverrideApplyConfiguration constructs a declarative configuration of the ContainerOverride type for use with
@@ -68,9 +68,12 @@ func (b *ContainerOverrideApplyConfiguration) WithArgs(values ...string) *Contai
 // WithEnv adds the given value to the Env field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Env field.
-func (b *ContainerOverrideApplyConfiguration) WithEnv(values ...v1.EnvVar) *ContainerOverrideApplyConfiguration {
+func (b *ContainerOverrideApplyConfiguration) WithEnv(values ...*v1.EnvVarApplyConfiguration) *ContainerOverrideApplyConfiguration {
 	for i := range values {
-		b.Env = append(b.Env, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithEnv")
+		}
+		b.Env = append(b.Env, *values[i])
 	}
 	return b
 }
@@ -78,9 +81,12 @@ func (b *ContainerOverrideApplyConfiguration) WithEnv(values ...v1.EnvVar) *Cont
 // WithEnvFrom adds the given value to the EnvFrom field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the EnvFrom field.
-func (b *ContainerOverrideApplyConfiguration) WithEnvFrom(values ...v1.EnvFromSource) *ContainerOverrideApplyConfiguration {
+func (b *ContainerOverrideApplyConfiguration) WithEnvFrom(values ...*v1.EnvFromSourceApplyConfiguration) *ContainerOverrideApplyConfiguration {
 	for i := range values {
-		b.EnvFrom = append(b.EnvFrom, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithEnvFrom")
+		}
+		b.EnvFrom = append(b.EnvFrom, *values[i])
 	}
 	return b
 }
@@ -88,9 +94,12 @@ func (b *ContainerOverrideApplyConfiguration) WithEnvFrom(values ...v1.EnvFromSo
 // WithVolumeMounts adds the given value to the VolumeMounts field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the VolumeMounts field.
-func (b *ContainerOverrideApplyConfiguration) WithVolumeMounts(values ...v1.VolumeMount) *ContainerOverrideApplyConfiguration {
+func (b *ContainerOverrideApplyConfiguration) WithVolumeMounts(values ...*v1.VolumeMountApplyConfiguration) *ContainerOverrideApplyConfiguration {
 	for i := range values {
-		b.VolumeMounts = append(b.VolumeMounts, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithVolumeMounts")
+		}
+		b.VolumeMounts = append(b.VolumeMounts, *values[i])
 	}
 	return b
 }

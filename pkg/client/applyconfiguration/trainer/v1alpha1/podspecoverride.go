@@ -17,7 +17,7 @@
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 // PodSpecOverrideApplyConfiguration represents a declarative configuration of the PodSpecOverride type for use
@@ -26,10 +26,10 @@ type PodSpecOverrideApplyConfiguration struct {
 	TargetJobs         []PodSpecOverrideTargetJobApplyConfiguration `json:"targetJobs,omitempty"`
 	Containers         []ContainerOverrideApplyConfiguration        `json:"containers,omitempty"`
 	InitContainers     []ContainerOverrideApplyConfiguration        `json:"initContainers,omitempty"`
-	Volumes            []v1.Volume                                  `json:"volumes,omitempty"`
+	Volumes            []v1.VolumeApplyConfiguration                `json:"volumes,omitempty"`
 	ServiceAccountName *string                                      `json:"serviceAccountName,omitempty"`
 	NodeSelector       map[string]string                            `json:"nodeSelector,omitempty"`
-	Tolerations        []v1.Toleration                              `json:"tolerations,omitempty"`
+	Tolerations        []v1.TolerationApplyConfiguration            `json:"tolerations,omitempty"`
 }
 
 // PodSpecOverrideApplyConfiguration constructs a declarative configuration of the PodSpecOverride type for use with
@@ -80,9 +80,12 @@ func (b *PodSpecOverrideApplyConfiguration) WithInitContainers(values ...*Contai
 // WithVolumes adds the given value to the Volumes field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Volumes field.
-func (b *PodSpecOverrideApplyConfiguration) WithVolumes(values ...v1.Volume) *PodSpecOverrideApplyConfiguration {
+func (b *PodSpecOverrideApplyConfiguration) WithVolumes(values ...*v1.VolumeApplyConfiguration) *PodSpecOverrideApplyConfiguration {
 	for i := range values {
-		b.Volumes = append(b.Volumes, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithVolumes")
+		}
+		b.Volumes = append(b.Volumes, *values[i])
 	}
 	return b
 }
@@ -112,9 +115,12 @@ func (b *PodSpecOverrideApplyConfiguration) WithNodeSelector(entries map[string]
 // WithTolerations adds the given value to the Tolerations field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Tolerations field.
-func (b *PodSpecOverrideApplyConfiguration) WithTolerations(values ...v1.Toleration) *PodSpecOverrideApplyConfiguration {
+func (b *PodSpecOverrideApplyConfiguration) WithTolerations(values ...*v1.TolerationApplyConfiguration) *PodSpecOverrideApplyConfiguration {
 	for i := range values {
-		b.Tolerations = append(b.Tolerations, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithTolerations")
+		}
+		b.Tolerations = append(b.Tolerations, *values[i])
 	}
 	return b
 }
