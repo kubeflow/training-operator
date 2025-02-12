@@ -1,0 +1,7 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: validatingwebhookconfiguration
+metadata:
+  name: trainer.kubeflow.org
+  annotations:
+    cert-manager.io/inject-ca-from: $(TRAINER_NAMESPACE)/$(TRAINER_CERT_NAME)

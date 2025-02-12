@@ -1,0 +1,17 @@
+---
+varReference:
+  - path: spec/commanName
+    kind: Certificate
+  - path: spec/dnsNames
+    kind: Certificate
+  - path: spec/issuerRef/name
+    kind: Certificate
+  - path: metadata/annotations
+    kind: validatingwebhookconfiguration
+nameReference:
+  - kind: issuer
+    group: cert-manager.io
+    fieldSpecs:
+      - kind: Certificate
+        group: cert-manager.io
+        path: spec/issuerRef/name

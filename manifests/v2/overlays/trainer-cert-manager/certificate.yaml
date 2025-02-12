@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: training-operator-webhook-cert
+  namespace: kubeflow
+spec:
+  isCA: true
+  secretName: training-operator-webhook-cert
+  issuerRef:
+    kind: Issuer
+    name: trainer-cert-issuer
+  commonName: ${TRAINER_SERVICE_NAME}.${TRAINER_NAMESPACE}.svc
+  dnsNames:
+    - ${TRAINER_SERVICE_NAME}.${TRAINER_NAMESPACE}.svc
+    - ${TRAINER_SERVICE_NAME}.${TRAINER_NAMESPACE}.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: issuer
+metadata:
+  name: trainer-cert-issuer
+spec:
+  selfSigned: {}

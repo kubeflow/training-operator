@@ -73,6 +73,7 @@ func main() {
 	var webhookServiceName string
 	var webhookSecretName string
 	var tlsOpts []func(*tls.Config)
+	var enableCertController bool
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -84,6 +85,7 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.BoolVar(&enableCertController, "enable-cert-controller", false, "Enable the internal certificate controller.")
 
 	// Cert generation flags
 	flag.IntVar(&webhookServerPort, "webhook-server-port", 9443, "Endpoint port for the webhook server.")
