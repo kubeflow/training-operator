@@ -19,6 +19,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"k8s.io/client-go/util/flowcontrol"
 	"net/http"
 	"os"
 	"strings"
@@ -135,8 +136,7 @@ func main() {
 	}
 
 	cfg := ctrl.GetConfigOrDie()
-	cfg.QPS = float32(clientQps)
-	cfg.Burst = clientBurst
+	cfg.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(clientQps), clientBurst)
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
