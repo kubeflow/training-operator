@@ -57,11 +57,11 @@ const Name = constants.JobSetKind
 
 // +kubebuilder:rbac:groups=jobset.x-k8s.io,resources=jobsets,verbs=get;list;watch;create
 
-func New(ctx context.Context, c client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, client client.Client, _ client.FieldIndexer) (framework.Plugin, error) {
 	return &JobSet{
-		client:     c,
-		restMapper: c.RESTMapper(),
-		scheme:     c.Scheme(),
+		client:     client,
+		restMapper: client.RESTMapper(),
+		scheme:     client.Scheme(),
 		logger:     ctrl.LoggerFrom(ctx).WithValues("pluginName", constants.JobSetKind),
 	}, nil
 }
@@ -70,7 +70,22 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error) {
+func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
+	if _, err := j.restMapper.RESTMapping(
+		schema.GroupKind{Group: jobsetv1alpha2.GroupVersion.Group, Kind: constants.JobSetKind},
+		jobsetv1alpha2.SchemeGroupVersion.Version,
+	); err != nil {
+		// TODO (tenzen-y): After we provide the Configuration API, we should return errors based on the enabled plugins.
+		j.logger.Error(err, "JobSet CRDs must be installed in advance")
+	}
+	return []runtime.ReconcilerBuilder{
+		func(b *builder.Builder, cl client.Client, cache cache.Cache) *builder.Builder {
+			return b.Owns(&jobsetv1alpha2.JobSet{})
+		},
+	}
+}
+
+func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	if runtimeJobTemplate == nil || info == nil || trainJob == nil {
 		return nil, fmt.Errorf("runtime info or object is missing")
 	}
@@ -104,6 +119,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, in
 	// TODO (andreyvelich): Refactor the builder with wrappers for PodSpec.
 	jobSet := jobSetBuilder.
 		Initializer(trainJob).
+		Launcher(info, trainJob).
 		Trainer(info, trainJob).
 		PodLabels(info.PodLabels).
 		Suspend(trainJob.Spec.Suspend).
@@ -113,7 +129,7 @@ func (j *JobSet) Build(ctx context.Context, runtimeJobTemplate client.Object, in
 	}
 
 	if needsCreateOrUpdate(oldJobSet, jobSet, ptr.Deref(trainJob.Spec.Suspend, false)) {
-		return jobSet, nil
+		return []client.Object{jobSet}, nil
 	}
 	return nil, nil
 }
@@ -142,19 +158,4 @@ func (j *JobSet) TerminalCondition(ctx context.Context, trainJob *trainer.TrainJ
 		return failed, nil
 	}
 	return nil, nil
-}
-
-func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
-	if _, err := j.restMapper.RESTMapping(
-		schema.GroupKind{Group: jobsetv1alpha2.GroupVersion.Group, Kind: constants.JobSetKind},
-		jobsetv1alpha2.SchemeGroupVersion.Version,
-	); err != nil {
-		// TODO (tenzen-y): After we provide the Configuration API, we should return errors based on the enabled plugins.
-		j.logger.Error(err, "JobSet CRDs must be installed in advance")
-	}
-	return []runtime.ReconcilerBuilder{
-		func(b *builder.Builder, c client.Client, cache cache.Cache) *builder.Builder {
-			return b.Owns(&jobsetv1alpha2.JobSet{})
-		},
-	}
 }

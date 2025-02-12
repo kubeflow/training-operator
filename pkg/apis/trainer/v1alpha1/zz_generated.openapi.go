@@ -572,7 +572,7 @@ func schema_pkg_apis_trainer_v1alpha1_MPIMLPolicySource(ref common.ReferenceCall
 					},
 					"sshAuthMountPath": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Directory where SSH keys are mounted.",
+							Description: "Directory where SSH keys are mounted. Defaults to /root/.ssh.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

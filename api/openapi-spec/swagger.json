@@ -302,7 +302,7 @@
           "type": "boolean"
         },
         "sshAuthMountPath": {
-          "description": "Directory where SSH keys are mounted.",
+          "description": "Directory where SSH keys are mounted. Defaults to /root/.ssh.",
           "type": "string"
         }
       }

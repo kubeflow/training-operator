@@ -9,6 +9,7 @@ require (
 	github.com/onsi/gomega v1.35.1
 	github.com/open-policy-agent/cert-controller v0.12.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.31.0
 	k8s.io/api v0.31.3
 	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v0.31.3

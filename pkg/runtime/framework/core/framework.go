@@ -120,7 +120,7 @@ func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, runtimeJobTe
 			return nil, err
 		}
 		if obj != nil {
-			objs = append(objs, obj)
+			objs = append(objs, obj...)
 		}
 	}
 	return objs, nil

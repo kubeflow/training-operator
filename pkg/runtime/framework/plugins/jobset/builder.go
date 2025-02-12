@@ -136,6 +136,52 @@ func (b *Builder) Initializer(trainJob *trainer.TrainJob) *Builder {
 	return b
 }
 
+// Launcher updates JobSet values for the launcher Job.
+func (b *Builder) Launcher(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
+	for i, rJob := range b.Spec.ReplicatedJobs {
+		if rJob.Name == constants.JobLauncher {
+
+			// Update the volumes for the launcher Job.
+			b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Volumes = append(
+				b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Volumes, info.Trainer.Volumes...)
+
+			// Update values for the launcher container.
+			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if container.Name == constants.ContainerLauncher {
+					// Update values from the Info object.
+					// Update the env variables.
+					if info.Trainer.Env != nil {
+						// Update JobSet envs from the Info.
+						envNames := sets.New[string]()
+						for _, env := range info.Trainer.Env {
+							envNames.Insert(env.Name)
+						}
+						trainerEnvs := info.Trainer.Env
+						// Info envs take precedence over the TrainingRuntime envs.
+						for _, env := range container.Env {
+							if !envNames.Has(env.Name) {
+								trainerEnvs = append(trainerEnvs, env)
+							}
+						}
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Env = trainerEnvs
+					}
+					// Update the launcher container port.
+					if info.Trainer.ContainerPort != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports, *info.Trainer.ContainerPort)
+					}
+					// Update the launcher container volume mounts.
+					if info.Trainer.VolumeMounts != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].VolumeMounts = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].VolumeMounts, info.Trainer.VolumeMounts...)
+					}
+				}
+			}
+		}
+	}
+	return b
+}
+
 // Trainer updates JobSet values for the trainer Job.
 func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
@@ -143,6 +189,10 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 			// Update the Parallelism and Completions values for the Trainer Job.
 			b.Spec.ReplicatedJobs[i].Template.Spec.Parallelism = info.Trainer.NumNodes
 			b.Spec.ReplicatedJobs[i].Template.Spec.Completions = info.Trainer.NumNodes
+
+			// Update the volumes for the Trainer Job.
+			b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Volumes = append(
+				b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Volumes, info.Trainer.Volumes...)
 
 			// Update values for the Trainer container.
 			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
@@ -163,6 +213,7 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 						}
 					}
 					// Update values from the Info object.
+					// Update the env variables.
 					if info.Trainer.Env != nil {
 						// Update JobSet envs from the Info.
 						envNames := sets.New[string]()
@@ -182,6 +233,11 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 					if info.Trainer.ContainerPort != nil {
 						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports = append(
 							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Ports, *info.Trainer.ContainerPort)
+					}
+					// Update the Trainer container volume mounts.
+					if info.Trainer.VolumeMounts != nil {
+						b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].VolumeMounts = append(
+							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].VolumeMounts, info.Trainer.VolumeMounts...)
 					}
 				}
 			}

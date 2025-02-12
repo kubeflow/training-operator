@@ -23,6 +23,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	nodev1 "k8s.io/api/node/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -56,6 +57,7 @@ type CoScheduling struct {
 	client     client.Client
 	restMapper meta.RESTMapper
 	scheme     *apiruntime.Scheme
+	logger     logr.Logger
 }
 
 var _ framework.EnforcePodGroupPolicyPlugin = (*CoScheduling)(nil)
@@ -71,7 +73,7 @@ const Name = "CoScheduling"
 
 // +kubebuilder:rbac:groups=scheduling.x-k8s.io,resources=podgroups,verbs=get;list;watch;create
 
-func New(ctx context.Context, c client.Client, indexer client.FieldIndexer) (framework.Plugin, error) {
+func New(ctx context.Context, client client.Client, indexer client.FieldIndexer) (framework.Plugin, error) {
 	if err := indexer.IndexField(ctx, &trainer.TrainingRuntime{}, TrainingRuntimeContainerRuntimeClassKey,
 		IndexTrainingRuntimeContainerRuntimeClass); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupTrainingRuntimeRuntimeClassIndexer, err)
@@ -81,9 +83,9 @@ func New(ctx context.Context, c client.Client, indexer client.FieldIndexer) (fra
 		return nil, fmt.Errorf("%w: %w", ErrorCanNotSetupClusterTrainingRuntimeRuntimeClassIndexer, err)
 	}
 	return &CoScheduling{
-		client:     c,
-		restMapper: c.RESTMapper(),
-		scheme:     c.Scheme(),
+		client:     client,
+		restMapper: client.RESTMapper(),
+		scheme:     client.Scheme(),
 	}, nil
 }
 
@@ -103,7 +105,7 @@ func (c *CoScheduling) EnforcePodGroupPolicy(info *runtime.Info, trainJob *train
 	return nil
 }
 
-func (c *CoScheduling) Build(ctx context.Context, _ client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error) {
+func (c *CoScheduling) Build(ctx context.Context, _ client.Object, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || info.RuntimePolicy.PodGroupPolicy.Coscheduling == nil || trainJob == nil {
 		return nil, nil
 	}
@@ -145,14 +147,15 @@ func (c *CoScheduling) Build(ctx context.Context, _ client.Object, info *runtime
 		oldPG = nil
 	}
 	if needsCreateOrUpdate(oldPG, newPG, ptr.Deref(trainJob.Spec.Suspend, false)) {
-		return newPG, nil
+		return []client.Object{newPG}, nil
 	}
 	return nil, nil
 }
 
-func needsCreateOrUpdate(old, new *schedulerpluginsv1alpha1.PodGroup, suspended bool) bool {
+func needsCreateOrUpdate(old, new *schedulerpluginsv1alpha1.PodGroup, trainJobIsSuspended bool) bool {
 	return old == nil ||
-		suspended && (!equality.Semantic.DeepEqual(old.Spec, new.Spec) || !maps.Equal(old.Labels, new.Labels) || !maps.Equal(old.Annotations, new.Annotations))
+		trainJobIsSuspended &&
+			(!equality.Semantic.DeepEqual(old.Spec, new.Spec) || !maps.Equal(old.Labels, new.Labels) || !maps.Equal(old.Annotations, new.Annotations))
 }
 
 type PodGroupRuntimeClassHandler struct {
@@ -277,6 +280,7 @@ func (c *CoScheduling) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 		schema.GroupKind{Group: schedulerpluginsv1alpha1.SchemeGroupVersion.Group, Kind: "PodGroup"},
 		schedulerpluginsv1alpha1.SchemeGroupVersion.Version,
 	); err != nil {
+		c.logger.Error(err, "PodGroup CRDs must be installed in advance")
 		return nil
 	}
 	return []runtime.ReconcilerBuilder{
