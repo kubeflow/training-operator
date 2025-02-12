@@ -86,10 +86,12 @@ func TestNew(t *testing.T) {
 				watchExtensionPlugins: []framework.WatchExtensionPlugin{
 					&coscheduling.CoScheduling{},
 					&jobset.JobSet{},
+					&mpi.MPI{},
 				},
 				componentBuilderPlugins: []framework.ComponentBuilderPlugin{
 					&coscheduling.CoScheduling{},
 					&jobset.JobSet{},
+					&mpi.MPI{},
 				},
 				terminalConditionPlugins: []framework.TerminalConditionPlugin{
 					&jobset.JobSet{},
@@ -528,11 +530,12 @@ func TestWatchExtensionPlugins(t *testing.T) {
 		registry    fwkplugins.Registry
 		wantPlugins []framework.WatchExtensionPlugin
 	}{
-		"coscheding and jobset are performed": {
+		"coscheding, jobset, and mpi are performed": {
 			registry: fwkplugins.NewRegistry(),
 			wantPlugins: []framework.WatchExtensionPlugin{
 				&coscheduling.CoScheduling{},
 				&jobset.JobSet{},
+				&mpi.MPI{},
 			},
 		},
 		"an empty registry": {
@@ -541,7 +544,7 @@ func TestWatchExtensionPlugins(t *testing.T) {
 	}
 	cmpOpts := []cmp.Option{
 		cmpopts.SortSlices(func(a, b framework.Plugin) bool { return a.Name() < b.Name() }),
-		cmpopts.IgnoreUnexported(coscheduling.CoScheduling{}, jobset.JobSet{}),
+		cmpopts.IgnoreUnexported(coscheduling.CoScheduling{}, jobset.JobSet{}, mpi.MPI{}),
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

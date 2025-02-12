@@ -137,7 +137,7 @@ func (b *Builder) Initializer(trainJob *trainer.TrainJob) *Builder {
 }
 
 // Launcher updates JobSet values for the launcher Job.
-func (b *Builder) Launcher(info *runtime.Info, trainJob *kubeflowv2.TrainJob) *Builder {
+func (b *Builder) Launcher(info *runtime.Info, trainJob *trainer.TrainJob) *Builder {
 	for i, rJob := range b.Spec.ReplicatedJobs {
 		if rJob.Name == constants.JobLauncher {
 
