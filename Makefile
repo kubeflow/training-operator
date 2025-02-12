@@ -11,6 +11,21 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+REPO := github.com/kubeflow/trainer
+TRAINER_CHART_PATH := charts/trainer
+
+## Location to install binaries
+LOCALBIN ?= $(shell pwd)/bin
+
+## Versions
+HELM_VERSION ?= v3.15.3
+HELM_UNITTEST_VERSION ?= 0.5.1
+HELM_DOCS_VERSION ?= v1.14.2
+
+## Binaries
+HELM ?= $(LOCALBIN)/helm-$(HELM_VERSION)
+HELM_DOCS ?= $(LOCALBIN)/helm-docs-$(HELM_DOCS_VERSION)
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -124,3 +139,50 @@ test-python-integration: ## Run Python integration test.
 	pip install -r ./cmd/initializer/dataset/requirements.txt
 
 	pytest ./test/integration/initializer
+
+##@ Helm
+
+.PHONY: helm-unittest
+helm-unittest: helm-unittest-plugin ## Run Helm chart unittests.
+	$(HELM) unittest $(TRAINER_CHART_PATH) --strict --file "tests/**/*_test.yaml"
+
+.PHONY: helm-lint
+helm-lint: ## Run Helm chart lint test.
+	docker run --rm --workdir /workspace --volume "$$(pwd):/workspace" quay.io/helmpack/chart-testing:latest ct lint --target-branch master --validate-maintainers=false
+
+.PHONY: helm-docs
+helm-docs: helm-docs-plugin ## Generates markdown documentation for helm charts from requirements and values files.
+	$(HELM_DOCS) --sort-values-order=file
+
+##@ Dependencies
+
+.PHONY: helm
+helm: $(HELM) ## Download helm locally if necessary.
+$(HELM): $(LOCALBIN)
+	$(call go-install-tool,$(HELM),helm.sh/helm/v3/cmd/helm,$(HELM_VERSION))
+
+.PHONY: helm-unittest-plugin
+helm-unittest-plugin: helm ## Download helm unittest plugin locally if necessary.
+	if [ -z "$(shell $(HELM) plugin list | grep unittest)" ]; then \
+		echo "Installing helm unittest plugin"; \
+		$(HELM) plugin install https://github.com/helm-unittest/helm-unittest.git --version $(HELM_UNITTEST_VERSION); \
+	fi
+
+.PHONY: helm-docs-plugin
+helm-docs-plugin: $(HELM_DOCS) ## Download helm-docs plugin locally if necessary.
+$(HELM_DOCS): $(LOCALBIN)
+	$(call go-install-tool,$(HELM_DOCS),github.com/norwoodj/helm-docs/cmd/helm-docs,$(HELM_DOCS_VERSION))
+
+# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
+# $1 - target path with name of binary (ideally with version)
+# $2 - package url which can be installed
+# $3 - specific version of package
+define go-install-tool
+@[ -f $(1) ] || { \
+set -e; \
+package=$(2)@$(3) ;\
+echo "Downloading $${package}" ;\
+GOBIN=$(LOCALBIN) go install $${package} ;\
+mv "$$(echo "$(1)" | sed "s/-$(3)$$//")" $(1) ;\
+}
+endef
