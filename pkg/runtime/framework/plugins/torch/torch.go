@@ -48,6 +48,11 @@ func (t *Torch) Name() string {
 	return Name
 }
 
+// TODO: Need to implement validations for Torch policy.
+func (t *Torch) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
+	return nil, nil
+}
+
 // TODO (andreyvelich): Add support for PyTorch elastic when JobSet supports Elastic Jobs.
 func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || info.RuntimePolicy.MLPolicy == nil || info.RuntimePolicy.MLPolicy.Torch == nil {
@@ -132,9 +137,4 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) 
 	}
 
 	return nil
-}
-
-// TODO: Need to implement validateions for TorchJob.
-func (t *Torch) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
 }

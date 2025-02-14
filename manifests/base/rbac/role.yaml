@@ -7,8 +7,10 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - secrets
   verbs:
+  - create
   - get
   - list
   - update

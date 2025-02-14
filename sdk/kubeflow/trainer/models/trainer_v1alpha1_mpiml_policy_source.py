@@ -140,7 +140,7 @@ class TrainerV1alpha1MPIMLPolicySource(object):
     def ssh_auth_mount_path(self):
         """Gets the ssh_auth_mount_path of this TrainerV1alpha1MPIMLPolicySource.  # noqa: E501
 
-        Directory where SSH keys are mounted.  # noqa: E501
+        Directory where SSH keys are mounted. Defaults to /root/.ssh.  # noqa: E501
 
         :return: The ssh_auth_mount_path of this TrainerV1alpha1MPIMLPolicySource.  # noqa: E501
         :rtype: str
@@ -151,7 +151,7 @@ class TrainerV1alpha1MPIMLPolicySource(object):
     def ssh_auth_mount_path(self, ssh_auth_mount_path):
         """Sets the ssh_auth_mount_path of this TrainerV1alpha1MPIMLPolicySource.
 
-        Directory where SSH keys are mounted.  # noqa: E501
+        Directory where SSH keys are mounted. Defaults to /root/.ssh.  # noqa: E501
 
         :param ssh_auth_mount_path: The ssh_auth_mount_path of this TrainerV1alpha1MPIMLPolicySource.  # noqa: E501
         :type: str

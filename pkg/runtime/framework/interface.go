@@ -32,6 +32,11 @@ type Plugin interface {
 	Name() string
 }
 
+type CustomValidationPlugin interface {
+	Plugin
+	Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList)
+}
+
 type WatchExtensionPlugin interface {
 	Plugin
 	ReconcilerBuilders() []runtime.ReconcilerBuilder
@@ -47,14 +52,9 @@ type EnforceMLPolicyPlugin interface {
 	EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error
 }
 
-type CustomValidationPlugin interface {
-	Plugin
-	Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList)
-}
-
 type ComponentBuilderPlugin interface {
 	Plugin
-	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) (client.Object, error)
+	Build(ctx context.Context, runtimeJobTemplate client.Object, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error)
 }
 
 type TerminalConditionPlugin interface {
