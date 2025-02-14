@@ -57,7 +57,7 @@ Please refer to the [CHANGELOG](CHANGELOG.md).
 ## Kubeflow Training Operator V1
 
 Kubeflow Trainer project is currently in <strong>alpha</strong> status, and APIs may change.
-If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/trainer/operator-guides/migration).
+If you are using Kubeflow Training Operator V1, please refer [to this migration document](https://www.kubeflow.org/docs/components/trainer/operator-guides/migration/).
 
 Kubeflow Community will maintain the Training Operator V1 source code at
 [the `release-1.9` branch](https://github.com/kubeflow/training-operator/tree/release-1.9).
