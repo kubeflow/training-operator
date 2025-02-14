@@ -22,7 +22,7 @@ This chart bootstraps a [Kubernetes Trainer]({{template "chart.homepage" . }}) d
 ### Add Helm Repo
 
 ```bash
-helm repo add trainer https://kubeflow.github.io/trainer
+helm repo add kubeflow-trainer https://kubeflow.github.io/trainer
 
 helm repo update
 ```
@@ -32,13 +32,13 @@ See [helm repo](https://helm.sh/docs/helm/helm_repo) for command documentation.
 ### Install the chart
 
 ```bash
-helm install [RELEASE_NAME] trainer/trainer
+helm install [RELEASE_NAME] kubeflow-trainer/kubeflow-trainer
 ```
 
-For example, if you want to create a release with name `trainer` in the `kubeflow-system` namespace:
+For example, if you want to create a release with name `kubeflow-trainer` in the `kubeflow-system` namespace:
 
 ```shell
-helm install trainer trainer/trainer \
+helm install kubeflow-trainer kubeflow-trainer/kubeflow-trainer \
     --namespace kubeflow-system \
     --create-namespace
 ```
@@ -50,7 +50,7 @@ See [helm install](https://helm.sh/docs/helm/helm_install) for command documenta
 ### Upgrade the chart
 
 ```shell
-helm upgrade [RELEASE_NAME] trainer/trainer [flags]
+helm upgrade [RELEASE_NAME] kubeflow-trainer/kubeflow-trainer [flags]
 ```
 
 See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade) for command documentation.

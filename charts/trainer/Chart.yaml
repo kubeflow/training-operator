@@ -16,7 +16,7 @@
 
 apiVersion: v2
 
-name: trainer
+name: kubeflow-trainer
 
 description: A Helm chart for deploying Kubeflow trainer on Kubernetes.
 
