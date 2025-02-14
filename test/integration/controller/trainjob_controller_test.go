@@ -278,7 +278,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 			trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
 				RuntimeSpec(
 					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "alpha").Spec).
-						TorchPolicy(100, "auto").
+						TorchPolicy(100, ptr.To("auto")).
 						ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 						Obj()).
 				Obj()
