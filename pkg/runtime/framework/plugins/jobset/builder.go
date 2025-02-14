@@ -149,7 +149,6 @@ func (b *Builder) Launcher(info *runtime.Info, trainJob *trainer.TrainJob) *Buil
 			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
 				if container.Name == constants.ContainerLauncher {
 					// Update values from the Info object.
-					// Update the env variables.
 					if info.Trainer.Env != nil {
 						// Update JobSet envs from the Info.
 						envNames := sets.New[string]()
@@ -213,7 +212,6 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 						}
 					}
 					// Update values from the Info object.
-					// Update the env variables.
 					if info.Trainer.Env != nil {
 						// Update JobSet envs from the Info.
 						envNames := sets.New[string]()

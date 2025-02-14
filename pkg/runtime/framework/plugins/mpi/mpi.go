@@ -147,7 +147,7 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 	// Update envs for Info object.
 	// TODO (andreyvelich): Add validation to check that TrainJob doesn't have MPI envs.
 	// TODO (andreyvelich): We should validate that envs from different plugins don't conflict with each other.
-	// Ref: https://github.com/kubeflow/training-operator/pull/2308#discussion_r1823229940
+	// Ref: https://github.com/kubeflow/trainer/pull/2308#discussion_r1823229940
 	// TODO (andreyvelich): Support other MPI implementations.
 	infoEnvs := []corev1.EnvVar{}
 	switch info.RuntimePolicy.MLPolicy.MPI.MPIImplementation {

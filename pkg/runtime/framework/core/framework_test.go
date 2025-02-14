@@ -530,7 +530,7 @@ func TestWatchExtensionPlugins(t *testing.T) {
 		registry    fwkplugins.Registry
 		wantPlugins []framework.WatchExtensionPlugin
 	}{
-		"coscheding, jobset, and mpi are performed": {
+		"coscheduling, jobset, and mpi are performed": {
 			registry: fwkplugins.NewRegistry(),
 			wantPlugins: []framework.WatchExtensionPlugin{
 				&coscheduling.CoScheduling{},
