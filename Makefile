@@ -11,18 +11,24 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 REPO := github.com/kubeflow/trainer
-TRAINER_CHART_PATH := charts/trainer
+TRAINER_CHART_DIR := charts/trainer
 
-## Location to install binaries
-LOCALBIN ?= $(shell pwd)/bin
+# Location to install tool binaries
+LOCALBIN ?= $(PROJECT_DIR)/bin
 
-## Versions
+# Tool versions
+CONTROLLER_GEN_VERSION ?= v0.16.5
+ENVTEST_VERSION ?= release-0.19
+ENVTEST_K8S_VERSION ?= 1.31
 HELM_VERSION ?= v3.15.3
 HELM_UNITTEST_VERSION ?= 0.5.1
 HELM_DOCS_VERSION ?= v1.14.2
 
-## Binaries
+# Tool binaries
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen-$(CONTROLLER_GEN_VERSION)
+ENVTEST ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
 HELM ?= $(LOCALBIN)/helm-$(HELM_VERSION)
 HELM_DOCS ?= $(LOCALBIN)/helm-docs-$(HELM_DOCS_VERSION)
 
@@ -44,24 +50,6 @@ help: ## Display this help.
 
 ##@ Development
 
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-
-# Tool Binaries
-LOCALBIN ?= $(PROJECT_DIR)/bin
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
-
-ENVTEST_K8S_VERSION ?= 1.31
-
-# Instructions to download tools for development.
-.PHONY: envtest
-envtest: ## Download the setup-envtest binary if required.
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19
-
-.PHONY: controller-gen
-controller-gen: ## Download the controller-gen binary if required.
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
-
 # Download external CRDs for Go integration testings.
 EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/manifests/external-crds
 
@@ -80,11 +68,14 @@ scheduler-plugins-crd: ## Copy the CRDs from the Scheduler Plugins repository to
 # Instructions for code generation.
 .PHONY: manifests
 manifests: controller-gen ## Generate manifests.
+	# Skip outputing the RBAC and webhook manifests as we will sync them from the manifests templated by the Helm chart.
 	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=kubeflow-trainer-controller-manager webhook \
 		paths="./pkg/apis/trainer/v1alpha1/...;./pkg/controller/...;./pkg/runtime/...;./pkg/webhooks/...;./pkg/util/cert/..." \
 		output:crd:artifacts:config=manifests/base/crds \
 		output:rbac:artifacts:config=manifests/base/rbac \
-		output:webhook:artifacts:config=manifests/base/webhook
+		output:rbac:none \
+		output:webhook:artifacts:config=manifests/base/webhook \
+		output:webhook:none
 
 .PHONY: generate
 generate: go-mod-download manifests ## Generate APIs and SDK.
@@ -147,7 +138,7 @@ sync-manifests: ## Sync Kustomize manifests from manifests templated from Helm c
 
 .PHONY: helm-unittest
 helm-unittest: helm-unittest-plugin ## Run Helm chart unittests.
-	$(HELM) unittest $(TRAINER_CHART_PATH) --strict --file "tests/**/*_test.yaml"
+	$(HELM) unittest $(TRAINER_CHART_DIR) --strict --file "tests/**/*_test.yaml"
 
 .PHONY: helm-lint
 helm-lint: ## Run Helm chart lint test.
@@ -158,6 +149,14 @@ helm-docs: helm-docs-plugin ## Generates markdown documentation for helm charts 
 	$(HELM_DOCS) --sort-values-order=file
 
 ##@ Dependencies
+
+.PHONY: envtest
+envtest: ## Download the setup-envtest binary if necessary.
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
+
+.PHONY: controller-gen
+controller-gen: ## Download the controller-gen binary if necessary.
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_GEN_VERSION))
 
 .PHONY: helm
 helm: $(HELM) ## Download helm locally if necessary.
