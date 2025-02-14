@@ -19,7 +19,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/ptr"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
@@ -264,7 +264,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		"succeeded to build JobSet with Torch values from the TrainJob": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
 				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
-					TorchPolicy(100, ptr.To("auto")).
+					TorchPolicy(100, intstr.FromString("auto")).
 					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					Obj(),
 			).Obj(),
@@ -274,7 +274,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 				Trainer(
 					testingutil.MakeTrainJobTrainerWrapper().
 						NumNodes(30).
-						NumProcPerNode(ptr.To("3")).
+						NumProcPerNode(intstr.FromInt32(3)).
 						Obj(),
 				).
 				Obj(),
@@ -318,7 +318,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 		"succeeded to build JobSet with Torch values from the Runtime and envs.": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
 				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
-					TorchPolicy(100, ptr.To("auto")).
+					TorchPolicy(100, intstr.FromString("auto")).
 					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					ContainerTrainerEnv(
 						[]corev1.EnvVar{

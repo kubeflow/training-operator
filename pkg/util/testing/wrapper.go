@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
@@ -392,8 +393,8 @@ func (t *TrainJobTrainerWrapper) NumNodes(numNodes int32) *TrainJobTrainerWrappe
 	return t
 }
 
-func (t *TrainJobTrainerWrapper) NumProcPerNode(numProcPerNode *string) *TrainJobTrainerWrapper {
-	t.Trainer.NumProcPerNode = numProcPerNode
+func (t *TrainJobTrainerWrapper) NumProcPerNode(numProcPerNode intstr.IntOrString) *TrainJobTrainerWrapper {
+	t.Trainer.NumProcPerNode = &numProcPerNode
 	return t
 }
 
@@ -689,12 +690,12 @@ func (s *TrainingRuntimeSpecWrapper) NumNodes(numNodes int32) *TrainingRuntimeSp
 	return s
 }
 
-func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode *string) *TrainingRuntimeSpecWrapper {
+func (s *TrainingRuntimeSpecWrapper) TorchPolicy(numNodes int32, numProcPerNode intstr.IntOrString) *TrainingRuntimeSpecWrapper {
 	s.MLPolicy = &trainer.MLPolicy{
 		NumNodes: &numNodes,
 		MLPolicySource: trainer.MLPolicySource{
 			Torch: &trainer.TorchMLPolicySource{
-				NumProcPerNode: numProcPerNode,
+				NumProcPerNode: &numProcPerNode,
 			},
 		},
 	}
