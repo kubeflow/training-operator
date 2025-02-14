@@ -141,6 +141,9 @@ test-python-integration: ## Run Python integration test.
 	pytest ./test/integration/initializer
 
 ##@ Helm
+.PHONY: sync-manifests
+sync-manifests: ## Sync Kustomize manifests from manifests templated from Helm chart.
+	hack/sync-manifests.sh
 
 .PHONY: helm-unittest
 helm-unittest: helm-unittest-plugin ## Run Helm chart unittests.

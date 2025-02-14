@@ -31,7 +31,7 @@ image:
   # -- Image registry.
   registry: docker.io
   # -- Image repository.
-  repository: kubeflow/trainer-controller-controller
+  repository: kubeflow/trainer-controller-manager
   # -- Image tag.
   # @default -- If not set, the chart appVersion will be used.
   tag: latest

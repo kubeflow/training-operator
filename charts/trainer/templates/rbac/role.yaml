@@ -14,15 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.webhook.enable }}
-apiVersion: v1
-kind: Secret
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
 metadata:
-  name: {{ include "trainer.webhook.secretName" . }}
+  name: {{ include "trainer.controller.roleName" . }}
   namespace: {{ .Release.Namespace }}
-data:
-  ca.crt: ""
-  ca.key: ""
-  tls.crt: ""
-  tls.key: ""
-{{- end }}
+  labels:
+    {{- include "trainer.controller.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - update

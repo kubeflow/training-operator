@@ -1,0 +1,28 @@
+# Source: kubeflow-trainer/templates/controller/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeflow-trainer-controller-service
+  namespace: kubeflow-system
+  labels:
+    helm.sh/chart: kubeflow-trainer-2.0.0
+    app.kubernetes.io/name: kubeflow-trainer
+    app.kubernetes.io/instance: kubeflow-trainer
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubeflow
+    app.kubernetes.io/component: controller
+spec:
+  ports:
+    - name: monitoring-port
+      port: 8080
+      targetPort: 8080
+    - name: webhook-server
+      port: 443
+      protocol: TCP
+      targetPort: 9443
+  selector:
+    app.kubernetes.io/name: kubeflow-trainer
+    app.kubernetes.io/instance: kubeflow-trainer
+    app.kubernetes.io/part-of: kubeflow
+    app.kubernetes.io/component: controller

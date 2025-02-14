@@ -1,4 +1,6 @@
 resources:
+  - serviceaccount.yaml
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
   - role.yaml
-  - role_binding.yaml
-  - service_account.yaml
+  - rolebinding.yaml

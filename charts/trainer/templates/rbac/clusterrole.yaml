@@ -18,6 +18,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "trainer.controller.clusterRoleName" . }}
+  labels:
+    {{- include "trainer.controller.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - ""
@@ -92,49 +94,3 @@ rules:
   - get
   - update
   - patch
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ include "trainer.controller.clusterRoleBindingName" . }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "trainer.controller.clusterRoleName" . }}
-subjects:
-- kind: ServiceAccount
-  name: {{ include "trainer.controller.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: {{ include "trainer.controller.roleName" . }}
-  namespace: {{ .Release.Namespace }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "trainer.controller.roleBindingName" . }}
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: {{ include "trainer.controller.roleName" . }}
-subjects:
-- kind: ServiceAccount
-  name: {{ include "trainer.controller.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}

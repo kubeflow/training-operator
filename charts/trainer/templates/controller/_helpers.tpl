@@ -46,41 +46,6 @@ app.kubernetes.io/component: controller
 {{- end -}}
 
 {{/*
-Create the name of the controller service account.
-*/}}
-{{- define "trainer.controller.serviceAccountName" -}}
-{{ include "trainer.controller.name" . }}
-{{- end -}}
-
-{{/*
-Create the name of the controller cluster role.
-*/}}
-{{- define "trainer.controller.clusterRoleName" -}}
-{{ include "trainer.controller.name" . }}
-{{- end -}}
-
-{{/*
-Create the name of the controller cluster role binding.
-*/}}
-{{- define "trainer.controller.clusterRoleBindingName" -}}
-{{ include "trainer.controller.name" . }}
-{{- end -}}
-
-{{/*
-Create the name of the controller role.
-*/}}
-{{- define "trainer.controller.roleName" -}}
-{{ include "trainer.controller.name" . }}
-{{- end -}}
-
-{{/*
-Create the name of the controller role binding.
-*/}}
-{{- define "trainer.controller.roleBindingName" -}}
-{{ include "trainer.controller.name" . }}
-{{- end -}}
-
-{{/*
 Create the name of the controller deployment.
 */}}
 {{- define "trainer.controller.deploymentName" -}}
@@ -89,25 +54,4 @@ Create the name of the controller deployment.
 
 {{- define "trainer.controller.serviceName" -}}
 {{ include "trainer.controller.name" . }}-service
-{{- end -}}
-
-{{/*
-Create the name of the webhook.
-*/}}
-{{- define "trainer.webhook.name" -}}
-{{ include "trainer.name" . }}-webhook
-{{- end -}}
-
-{{/*
-Create the name of the webhook secret.
-*/}}
-{{- define "trainer.webhook.secretName" -}}
-{{ include "trainer.webhook.name" . }}-cert
-{{- end -}}
-
-{{/*
-Create the name of the validating webhook configuration.
-*/}}
-{{- define "trainer.validatingWebhookConfigurationName" -}}
-validator.trainer.kubeflow.org
 {{- end -}}

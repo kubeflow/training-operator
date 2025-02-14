@@ -1,9 +1,8 @@
-# Source: kubeflow-trainer/templates/rbac/role.yaml
+# Source: kubeflow-trainer/templates/rbac/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRoleBinding
 metadata:
   name: kubeflow-trainer-controller
-  namespace: kubeflow-system
   labels:
     app.kubernetes.io/name: kubeflow-trainer
     app.kubernetes.io/instance: kubeflow-trainer
@@ -11,13 +10,11 @@ metadata:
     app.kubernetes.io/managed-by: Kustomize
     app.kubernetes.io/part-of: kubeflow
     app.kubernetes.io/component: controller
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-      - list
-      - watch
-      - update
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeflow-trainer-controller
+subjects:
+  - kind: ServiceAccount
+    name: kubeflow-trainer-controller
+    namespace: kubeflow-system
