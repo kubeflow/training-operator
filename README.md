@@ -47,6 +47,8 @@ kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifest
 For more details, please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/trainer/getting-started)
 to install and get started with Kubeflow Trainer.
 
+If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/trainer/operator-guides/migration).
+
 ## Community
 
 The following links provide information on how to get involved in the community:
@@ -65,12 +67,16 @@ Please refer to the [CHANGELOG](CHANGELOG.md).
 
 ## Kubeflow Training Operator V1
 
-Kubeflow Trainer project is currently in <strong>alpha</strong> status, and APIs may change.
-If you are using Kubeflow Training Operator V1, please refer [to this migration document](https://www.kubeflow.org/docs/components/trainer/operator-guides/migration/).
+Kubeflow Trainer project is currently in <strong>alpha</strong> status, and APIs may change. You can install the stable release of the Kubeflow Training Operator V1 with:
+
+```bash
+kubectl apply --server-side -k "github.com/kubeflow/training-operator.git/manifests/overlays/standalone?ref=v1.9.0"
+```
+
+For more details, please check [this guide](https://www.kubeflow.org/docs/components/trainer/legacy-v1/installation/) to install and get started with Kubeflow Training Operator V1.
 
 Kubeflow Community will maintain the Training Operator V1 source code at
 [the `release-1.9` branch](https://github.com/kubeflow/training-operator/tree/release-1.9).
-
 You can find the documentation for Kubeflow Training Operator V1 in [these guides](https://www.kubeflow.org/docs/components/trainer/legacy-v1).
 
 ## Acknowledgement
