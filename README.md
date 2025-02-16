@@ -11,6 +11,8 @@
 
 ## Overview
 
+> **Warning**: Kubeflow Trainer is currently in **alpha** status, and APIs may change.
+
 Kubeflow Trainer is a Kubernetes-native project designed for large language models (LLMs)
 fine-tuning and enabling scalable, distributed training of machine learning (ML) models across
 various frameworks, including PyTorch, JAX, TensorFlow, and others.
@@ -35,7 +37,14 @@ The following KubeCon + CloudNativeCon 2024 talk provides an overview of Kubeflo
 
 ## Getting Started
 
-Please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/trainer/getting-started)
+You can simply run these commands to install Kubeflow Trainer if your Kubernetes cluster is ready:
+
+```bash
+kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/manager?ref=master"
+kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/runtimes?ref=master"
+```
+
+For more details, please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/trainer/getting-started)
 to install and get started with Kubeflow Trainer.
 
 ## Community
