@@ -45,8 +45,9 @@ kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifest
 kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/runtimes?ref=master"
 ```
 
-For more details, please check [the official Kubeflow documentation](https://www.kubeflow.org/docs/components/trainer/getting-started)
-to install and get started with Kubeflow Trainer.
+Please check [the installation guide](https://www.kubeflow.org/docs/components/trainer/operator-guides/installation/) for more information.
+
+To get started with Kubeflow Trainer, see our [Getting Started Tutorial](https://www.kubeflow.org/docs/components/trainer/getting-started).
 
 If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/trainer/operator-guides/migration).
 
