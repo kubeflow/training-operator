@@ -38,7 +38,7 @@ The following KubeCon + CloudNativeCon 2024 talk provides an overview of Kubeflo
 
 ## Getting Started
 
-You can simply run these commands to install Kubeflow Trainer if your Kubernetes cluster is ready:
+You can simply run these commands to install the latest Kubeflow Trainer if your Kubernetes cluster is ready:
 
 ```bash
 kubectl apply --server-side -k "https://github.com/kubeflow/trainer.git/manifests/overlays/manager?ref=master"
