@@ -49,7 +49,7 @@ Please check [the installation guide](https://www.kubeflow.org/docs/components/t
 
 To get started with Kubeflow Trainer, see our [Getting Started Tutorial](https://www.kubeflow.org/docs/components/trainer/getting-started).
 
-If you are using Kubeflow Training Operator V1, please refer [to this migration document](/docs/components/trainer/operator-guides/migration).
+If you are using Kubeflow Training Operator V1, please refer to this [migration document](/docs/components/trainer/operator-guides/migration).
 
 ## Community
 
