@@ -11,7 +11,8 @@
 
 ## Overview
 
-> **Warning**: Kubeflow Trainer is currently in **alpha** status, and APIs may change. If you want to use stable release of Kubeflow Training Operator V1, please check [this section](#kubeflow-training-operator-v1).
+> [!Warning]
+> Kubeflow Trainer is currently in **alpha** status, and APIs may change. If you want to use stable release of Kubeflow Training Operator V1, please check [this section](#kubeflow-training-operator-v1).
 
 Kubeflow Trainer is a Kubernetes-native project designed for large language models (LLMs)
 fine-tuning and enabling scalable, distributed training of machine learning (ML) models across
