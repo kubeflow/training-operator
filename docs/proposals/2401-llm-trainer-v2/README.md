@@ -38,50 +38,7 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 
 ## Proposal
 
-We decide to adopt `torchrun` as the launcher of LLM Trainer V2, and support multiple frameworks and fine-tuning techniques.
 
-Supported frameworks:
-
-1. HuggingFace Transformers: HuggingFace Transformers provides unified trainers class `Trainer` for model training, and `SFTTrainer` for supervised fine-tuning. It has rich in-box support for features like PEFT (`huggingface.peft`), FSDP (`huggingface.accelerate`), and model quantization (`huggingface.optimum`). These libraries are fully compatible with `torchrun` CLI. Since most well-known open-source LLMs lie in Huggingface and support the Transformer library, it’s convenient and acceptable to implement our LLM Trainer with the Transformer library. Our LLM Trainer V1 is also implemented in this way.
-
-2. Native PyTorch: A backend that does not use the Trainer or SFTTrainer library in HF Transformers. This will provide users who don’t want to rely on the HF Transformers library with an alternative for fine-tuning.
-
-3. Nvidia NeMo: To be added.
-
-Supported fine-tuning techniques:
-
-1. PEFT(Parameter Efficient Fine Tuning): Including LoRA, QLoRA, Adapter Prompt and Prefix Tuning.
-
-2. Sharding Policies: Including FSDP and DeepSeed ZeRO.
-
-The workflow of LLM Trainer V2 is shown in the graph below:
-
-![](./llm-trainer-v2-workflow.png)
-
-To hide users from complex Kubernetes configuations, we will provide a simple yet flexible Python SDK wrapping all specifications of models, datasets, training runtime and fine-tuning configs. Like this:
-
-```python
-TrainingClient().train(
-    dataset_config=HuggingFaceDatasetConfig(
-        storage_uri="tatsu-lab/alpaca",
-    ),
-    trainer=Trainer(
-        fine_tuning_config=FineTuningConfig(
-            framework="huggingface",
-            dataset_class="Instruction",
-            peft_config=LoraConfig(r=4),
-            sharding_config=FsdpConfig(...),
-            kwargs={},
-        ),
-        num_nodes=5,
-    ),
-    runtime_ref=llm_runtime,
-)
-```
-
-And it's worthwhile to notice that we'll preprocess dataset for users with builtin dataset classes or a customized one. If users want to preprocess datasets by themselves, they need to implement a customized data class with specified methods implemented and pass it to the Python SDK.
-
-In the future, we'll provide users with more options on launchers (`torchtune`, `accelerate`), frameworks (TensorFlow, Jax, etc.) and fine-tuning techniques (RLHF, Distilation, etc.).
 
 ## Design Details
 
@@ -364,6 +321,53 @@ class ZeroConfig:
 - 2025-01-31: Create KEP-2401 doc
 
 ## Alternatives
+
+### Native PyTorch Launcher - `torchrun`
+
+We decide to adopt `torchrun` as the launcher of LLM Trainer V2, and support multiple frameworks and fine-tuning techniques.
+
+Supported frameworks:
+
+1. HuggingFace Transformers: HuggingFace Transformers provides unified trainers class `Trainer` for model training, and `SFTTrainer` for supervised fine-tuning. It has rich in-box support for features like PEFT (`huggingface.peft`), FSDP (`huggingface.accelerate`), and model quantization (`huggingface.optimum`). These libraries are fully compatible with `torchrun` CLI. Since most well-known open-source LLMs lie in Huggingface and support the Transformer library, it’s convenient and acceptable to implement our LLM Trainer with the Transformer library. Our LLM Trainer V1 is also implemented in this way.
+
+2. Native PyTorch: A backend that does not use the Trainer or SFTTrainer library in HF Transformers. This will provide users who don’t want to rely on the HF Transformers library with an alternative for fine-tuning.
+
+3. Nvidia NeMo: To be added.
+
+Supported fine-tuning techniques:
+
+1. PEFT(Parameter Efficient Fine Tuning): Including LoRA, QLoRA, Adapter Prompt and Prefix Tuning.
+
+2. Sharding Policies: Including FSDP and DeepSeed ZeRO.
+
+The workflow of LLM Trainer V2 is shown in the graph below:
+
+![](./llm-trainer-v2-workflow.png)
+
+To hide users from complex Kubernetes configuations, we will provide a simple yet flexible Python SDK wrapping all specifications of models, datasets, training runtime and fine-tuning configs. Like this:
+
+```python
+TrainingClient().train(
+    dataset_config=HuggingFaceDatasetConfig(
+        storage_uri="tatsu-lab/alpaca",
+    ),
+    trainer=Trainer(
+        fine_tuning_config=FineTuningConfig(
+            framework="huggingface",
+            dataset_class="Instruction",
+            peft_config=LoraConfig(r=4),
+            sharding_config=FsdpConfig(...),
+            kwargs={},
+        ),
+        num_nodes=5,
+    ),
+    runtime_ref=llm_runtime,
+)
+```
+
+And it's worthwhile to notice that we'll preprocess dataset for users with builtin dataset classes or a customized one. If users want to preprocess datasets by themselves, they need to implement a customized data class with specified methods implemented and pass it to the Python SDK.
+
+In the future, we'll provide users with more options on launchers (`torchtune`, `accelerate`), frameworks (TensorFlow, Jax, etc.) and fine-tuning techniques (RLHF, Distilation, etc.).
 
 ### Native PyTorch Launcher - `torchtune`
 
