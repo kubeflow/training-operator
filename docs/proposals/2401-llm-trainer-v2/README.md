@@ -127,40 +127,6 @@ class QLoraConfig:
 
 ```
 
-#### AdapterPrompt Config(TBD)
-
-The *AdapterConfig* represents the config of AdapterPrompt we use to fine-tune the model.
-
-| Parameters | What is it? |
-| - | - |
-| adapter_len | The length of adapter |
-| adapter_layers | The number of layers that we insert adapter |
-
-```python
-# AdapterConfig DataClass
-@dataclass
-class AdapterConfig:
-    adapter_len: int = 10
-    adapter_layers: int = 30
-
-```
-
-#### PrefixTuning Config
-
-The *PrefixConfig* represents the config of PrefixTuning we use to fine-tune the model.
-
-| Parameters | What is it? |
-| - | - |
-| num_virtual_tokens | The number of virtual tokens |
-
-```python
-# PrefixConfig DataClass
-@dataclass
-class PrefixConfig:
-    num_virtual_tokens: int = 30
-
-```
-
 #### FSDP Config
 
 The *FsdpConfig* represents the config of FSDP we use to fine-tune the model.
@@ -190,30 +156,6 @@ class FsdpConfig:
     replica_group_size: int = 0 #requires hsdp to be set.
     checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
     fsdp_activation_checkpointing: bool = True
-
-```
-
-#### ZeRO Config
-
-The *ZeroConfig* represents the config of DeepSeed ZeRO we use to fine-tune the model.
-
-| Parameters | What is it? |
-| - | - |
-| stage | The stage of DeepSeed ZeRO. |
-| zero_cpu_offload | Whether to offload some weights and optimizer states to cpu |
-| checkpoint_type | Specify the type of model checkpoints |
-| mixed_precision | Whether to enable mixed precision training |
-| use_fp16 | Whether to use FP16 during the mixed precision training |
-
-```python
-# ZeroConfig DataClass
-@dataclass
-class ZeroConfig:
-    stage: int = 0
-    zero_cpu_offload: bool = False
-    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
-    mixed_precision: bool = True
-    use_fp16 : bool = False
 
 ```
 
@@ -484,6 +426,66 @@ class InstructionDataset(Dataset, InitMethod):
 
     def __getitem__(self, index):
         # Some code here
+
+```
+
+### Fine-Tuning Config
+
+**AdapterPrompt Config(TBD)**
+
+The *AdapterConfig* represents the config of AdapterPrompt we use to fine-tune the model.
+
+| Parameters | What is it? |
+| - | - |
+| adapter_len | The length of adapter |
+| adapter_layers | The number of layers that we insert adapter |
+
+```python
+# AdapterConfig DataClass
+@dataclass
+class AdapterConfig:
+    adapter_len: int = 10
+    adapter_layers: int = 30
+
+```
+
+**PrefixTuning Config(TBD)**
+
+The *PrefixConfig* represents the config of PrefixTuning we use to fine-tune the model.
+
+| Parameters | What is it? |
+| - | - |
+| num_virtual_tokens | The number of virtual tokens |
+
+```python
+# PrefixConfig DataClass
+@dataclass
+class PrefixConfig:
+    num_virtual_tokens: int = 30
+
+```
+
+**ZeRO Config(TBD)**
+
+The *ZeroConfig* represents the config of DeepSeed ZeRO we use to fine-tune the model.
+
+| Parameters | What is it? |
+| - | - |
+| stage | The stage of DeepSeed ZeRO. |
+| zero_cpu_offload | Whether to offload some weights and optimizer states to cpu |
+| checkpoint_type | Specify the type of model checkpoints |
+| mixed_precision | Whether to enable mixed precision training |
+| use_fp16 | Whether to use FP16 during the mixed precision training |
+
+```python
+# ZeroConfig DataClass
+@dataclass
+class ZeroConfig:
+    stage: int = 0
+    zero_cpu_offload: bool = False
+    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
+    mixed_precision: bool = True
+    use_fp16 : bool = False
 
 ```
 
