@@ -26,14 +26,15 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 
 ### Goals
 
-- Introduce LLM Trainer V2 that supports some important PEFT mechanisms(e.g LoRA, QLoRA, AdapterPrompt, PrefixTuning), allows users to specify sharding strategies for distributed training like FSDP and ZeRO, and provides multiple fine-tuning frameworks including HuggingFace Transformers, Native PyTorch and Nvidia NeMo.
-- Update Kubeflow Training SDK to allow users to pass their custom data preprocessing logic as a parameter and fine-tune LLMs with LLM Trainer V2 flexibly.
-- Create community-supported `ClusterTrainingRuntime` for LLM fine-tuning for various foundational models (e.g. Mistral, LLama-70b, Gemma-7b).
+- Build LLM Trainer V2 based on `torchtune`.
+- Update Kubeflow Training SDK to fine-tune LLMs flexibly.
+- Create community-supported `ClusterTrainingRuntime` for fine-tuning various foundational models (e.g. Mistral, LLama-70b, Gemma-7b).
 
 ### Non-Goals
 
 - Upgrade LLM Trainer V1.
-- Support training launchers besides `torchrun` (we can add more launchers after the initial implementation).
+- Support training launchers besides `torchtune` (we can add more launchers after the initial implementation).
+- Support frameworks like HuggingFace Transformers, Nvidia NeMo.
 
 ## Proposal
 
