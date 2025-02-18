@@ -38,10 +38,52 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 
 ## Proposal
 
+`torchtune` is a PyTorch-native library for easily authoring, fine-tuning and experimenting with LLMs. It provides rich support for LLM fine-tuning:
 
+1. Modular native-PyTorch implementations of popular LLMs
+2. Training recipes for a variety of fine-tuning techniques
+3. Support for distributed training using [FSDP2](https://github.com/pytorch/torchtitan/blob/main/docs/fsdp.md)
+4. YAML configs for easily configuring training runs
+
+`torchtune` is something like our LLM Trainer, because its [core concepts](https://pytorch.org/torchtune/main/overview.html#key-concepts) "recipes" and "configs" can be easily corresponded to our “LLM Trainer Script” and “[Trainer field in TrainJob](https://github.com/kubeflow/training-operator/blob/cf741267f8f8ec96592178532b6787bab3f11110/pkg/apis/kubeflow.org/v2alpha1/trainjob_types.go#L110-L111)”. **It’s the easiest way for us to implement the LLM Trainer**.
+
+An example for using `torchtune`:
+
+```bash
+$ tune ls
+RECIPE                                   CONFIG
+full_finetune_single_device              llama2/7B_full_low_memory
+                                         mistral/7B_full_low_memory
+full_finetune_distributed                llama2/7B_full
+                                         llama2/13B_full
+                                         mistral/7B_full
+lora_finetune_single_device              llama2/7B_lora_single_device
+                                         llama2/7B_qlora_single_device
+                                         mistral/7B_lora_single_device
+
+$ tune run lora_finetune_single_device --config llama2/7B_lora_single_device epochs=1
+INFO:torchtune.utils.logging:Running LoRAFinetuneRecipeSingleDevice with resolved config:
+Writing logs to /tmp/lora_finetune_output/log_1713194212.txt
+INFO:torchtune.utils.logging:Model is initialized with precision torch.bfloat16.
+INFO:torchtune.utils.logging:Tokenizer is initialized from file.
+INFO:torchtune.utils.logging:Optimizer and loss are initialized.
+INFO:torchtune.utils.logging:Loss is initialized.
+INFO:torchtune.utils.logging:Dataset and Sampler are initialized.
+INFO:torchtune.utils.logging:Learning rate scheduler is initialized.
+1|52|Loss: 2.3697006702423096:   0%|▏                     | 52/25880 [00:24<3:55:01,  1.83it/s]
+```
 
 ## Design Details
 
+### `torchtune` Plugin
+
+As is shown in the [torchtune official document](https://pytorch.org/torchtune/main/tune_cli.html#run-a-recipe) and [source code](https://github.com/pytorch/torchtune/blob/75965d4281b9b76c454630d015221b9933c77bf3/torchtune/_cli/run.py#L113-L118), the distributed training arguments like `--nnodes` and `--nproc_per_node` should be passed ahead of the recipe argument in the command line, and **cannot be passed by the environment variables** in the `PET_XXX` convention. And also, `torchtune` is extremely different from the fine-tuning paradigm of `torchrun` because it is **recipe and config-based**, which may need more mutation operations in the config file. Here is an [example](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
+
+Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `torchtune` as a launcher for LLM fine-tuning on Kubernetes. And the new plugin should have these abilities:
+
+1. Parse distributed training arguments in TrainJob and TrainingRuntime API, and integrate them with the `tune run` command.
+2. Handle overrides in the `torchtune` fine-tuning configuration file.
+3. Validate some requirements.
 
 ### Fine-Tuning Config
 
@@ -211,47 +253,6 @@ TrainingClient().train(
 And it's worthwhile to notice that we'll preprocess dataset for users with builtin dataset classes or a customized one. If users want to preprocess datasets by themselves, they need to implement a customized data class with specified methods implemented and pass it to the Python SDK.
 
 In the future, we'll provide users with more options on launchers (`torchtune`, `accelerate`), frameworks (TensorFlow, Jax, etc.) and fine-tuning techniques (RLHF, Distilation, etc.).
-
-### Native PyTorch Launcher - `torchtune`
-
-`torchtune` is a PyTorch-native library for easily authoring, fine-tuning and experimenting with LLMs. It provides rich support for LLM fine-tuning:
-
-1. Modular native-PyTorch implementations of popular LLMs
-2. Training recipes for a variety of fine-tuning techniques
-3. Support for distributed training using [FSDP2](https://github.com/pytorch/torchtitan/blob/main/docs/fsdp.md)
-4. YAML configs for easily configuring training runs
-
-`torchtune` is something like our LLM Trainer, because its [core concepts](https://pytorch.org/torchtune/main/overview.html#key-concepts) "recipes" and "configs" can be easily corresponded to our “LLM Trainer Script” and “[Trainer field in TrainJob](https://github.com/kubeflow/training-operator/blob/cf741267f8f8ec96592178532b6787bab3f11110/pkg/apis/kubeflow.org/v2alpha1/trainjob_types.go#L110-L111)”. **It’s the easiest way for us to implement the LLM Trainer**.
-
-**However, `torchtune` only supports single-node training**, which means that we can only have 1 pod in the training phase (`--nnodes=1`, [related issue](https://github.com/pytorch/torchtune/issues/2018)). This would put a strong restriction for us on scaling training pods on Kubernetes. And also, **it only supports some popular LLMs** and will bring inflexibility for us to fine-tune other models.
-
-An example for using `torchtune`:
-
-```bash
-$ tune ls
-RECIPE                                   CONFIG
-full_finetune_single_device              llama2/7B_full_low_memory
-                                         mistral/7B_full_low_memory
-full_finetune_distributed                llama2/7B_full
-                                         llama2/13B_full
-                                         mistral/7B_full
-lora_finetune_single_device              llama2/7B_lora_single_device
-                                         llama2/7B_qlora_single_device
-                                         mistral/7B_lora_single_device
-
-$ tune run lora_finetune_single_device --config llama2/7B_lora_single_device epochs=1
-INFO:torchtune.utils.logging:Running LoRAFinetuneRecipeSingleDevice with resolved config:
-Writing logs to /tmp/lora_finetune_output/log_1713194212.txt
-INFO:torchtune.utils.logging:Model is initialized with precision torch.bfloat16.
-INFO:torchtune.utils.logging:Tokenizer is initialized from file.
-INFO:torchtune.utils.logging:Optimizer and loss are initialized.
-INFO:torchtune.utils.logging:Loss is initialized.
-INFO:torchtune.utils.logging:Dataset and Sampler are initialized.
-INFO:torchtune.utils.logging:Learning rate scheduler is initialized.
-1|52|Loss: 2.3697006702423096:   0%|▏                     | 52/25880 [00:24<3:55:01,  1.83it/s]
-```
-
-(**Note**: We need to create a new plugin for `torchtune`, so that it can fit in the yaml-based fine-tuning configurations. And also we may need to explore how to integrate the recipes provided by `torchtune`.)
 
 ### HF Accelerate CLI - `accelerate`
 
@@ -488,17 +489,5 @@ class ZeroConfig:
     use_fp16 : bool = False
 
 ```
-
-### Backend Design - `torchtune`
-
-#### New Runtime Plugin
-
-As is shown in the [torchtune official document](https://pytorch.org/torchtune/main/tune_cli.html#run-a-recipe) and [source code](https://github.com/pytorch/torchtune/blob/75965d4281b9b76c454630d015221b9933c77bf3/torchtune/_cli/run.py#L113-L118), the distributed training arguments like `--nnodes` and `--nproc_per_node` should be passed ahead of the recipe argument in the command line, and **cannot be passed by the environment variables** in the `PET_XXX` convention. And also, `torchtune` is extremely different from the fine-tuning paradigm of `torchrun` because it is **recipe and config-based**, which may need more mutation operations in the config file. Here is an [example](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
-
-Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `torchtune` as a launcher for LLM fine-tuning on Kubernetes. And the new plugin should have these abilities:
-
-1. Parse distributed training arguments in TrainJob and TrainingRuntime API, and integrate them with the `tune run` command.
-2. Handle overrides in the `torchtune` fine-tuning configuration file.
-3. Validate some requirements, such as `--nnodes` should be equal to 1.
 
 \# WIP
