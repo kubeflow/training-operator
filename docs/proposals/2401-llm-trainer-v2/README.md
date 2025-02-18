@@ -42,105 +42,6 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 
 ## Design Details
 
-### Multiple Frameworks Support
-
-We decide to implement multiple backends for LLM Trainer launched by `torchrun`, which would be friendly with users of different fine-tuning frameworks, such as HuggingFace Transformers, Nvidia NeMo, Native PyTorch etc.
-
-p.s. This idea comes from [Deepanker Gupta](https://github.com/deepanker13): [Support multiple backends](https://docs.google.com/document/d/1KCNqE66vc1lkecsX_Bcpz3l3d0M-jDYrwVq2nUq_5dc/edit?usp=sharing)
-
-```python
-# Registry to map backends to their respective handlers
-BACKEND_HANDLERS = {}
-
-def register_backend(name):
-    def decorator(cls):
-        BACKEND_HANDLERS[name] = cls()
-        return cls
-    return decorator
-
-# Abstract base class for all backends
-class BaseFineTuner:
-    def fine_tune(self, model_name, dataset, **kwargs):
-        raise NotImplementedError
-
-# Native PyTorch Implementation
-@register_backend('pytorch')
-class NativePyTorchFineTuner(BaseFineTuner):
-    def fine_tune(self, model_name, dataset, **kwargs):
-        from torch.nn.parallel import DistributedDataParallel as DDP
-        # Implement training logic here
-        print(f"Training HuggingFace model {model_name}...")
-
-
-
-# HuggingFace Implementation
-@register_backend('huggingface')
-class HuggingFaceFineTuner(BaseFineTuner):
-    def fine_tune(self, model_name, dataset, **kwargs):
-        from transformers import Trainer, TrainingArguments
-        # Example: Parse Hugging Face-specific parameters
-        training_args = TrainingArguments(
-            output_dir=kwargs.get("output_dir", "./results"),
-            learning_rate=kwargs.get("learning_rate", 5e-5),
-            num_train_epochs=kwargs.get("epochs", 3),
-            per_device_train_batch_size=kwargs.get("batch_size", 16),
-        )
-        # Implement training logic here
-        print(f"Training HuggingFace model {model_name}...")
-
-# NVIDIA NeMo Implementation
-@register_backend('nemo')
-class NeMoFineTuner(BaseFineTuner):
-    def fine_tune(self, model_name, dataset, **kwargs):
-        import nemo.collections.asr as nemo_asr
-        # Example: Parse NeMo-specific parameters
-        asr_model = nemo_asr.models.EncDecCTCModel.from_pretrained(model_name)
-        # Implement NeMo fine-tuning logic here
-        print(f"Fine-tuning NVIDIA NeMo model {model_name}...")
-
-# Unified function
-def fine_tune(model_name, dataset, backend, **kwargs):
-    if backend not in BACKEND_HANDLERS:
-        raise ValueError(f"Unsupported backend: {backend}")
-    BACKEND_HANDLERS[backend].fine_tune(model_name, dataset, **kwargs)
-
-```
-
-### Data Preprocess
-
-Different datasets have vastly different keys and usage. For example, instruction datasets (e.g. [tatsu-lab/alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca)) always include keys like `instruction`, `input`, `output` and `text`. However, question answering datasets (e.g. [openai/gsm8k](https://huggingface.co/datasets/openai/gsm8k)) contain columns like `question` and `answer`. It’s impossible to implement a unified dataset class suitable for every datasets on HuggingFace. **Different types of tasks need different implementations** so that they can preprocess data in a specific way.
-
-Based on the reasons above, we decide to **provide multiple built-in dataset classes** for data processing. They can be used directly by specifying the `dataset_class` parameter in Python SDK (e.g. `dataset_class="instruction"`). Meanwhile, we also **allow users to define customized dataset classes with specified methods implemented** and pass it to the `dataset_class` parameter in Python SDK (e.g. `dataset_class=CustomDatasetClass`).
-
-```python
-from torch.utils.data import Dataset
-
-DATASET_REGISTRY = {}
-
-def register_dataset(name):
-    def decorator(cls):
-        DATASET_REGISTRY[name] = cls
-        return cls
-    return decorator
-
-# Abstract Dataset Class
-class InitMethod(ABC):
-    @abstractmethod
-    def __init__(self, dataset_config, tokenizer, partition="train"):
-        raise NotImplementedError()
-
-@register_dataset("instruction")
-class InstructionDataset(Dataset, InitMethod):
-    def __init__(self, dataset_config, tokenizer, partition="train"):
-        # Some code here
-
-    def __len__(self):
-        # Some code here
-
-    def __getitem__(self, index):
-        # Some code here
-
-```
 
 ### Fine-Tuning Config
 
@@ -482,6 +383,108 @@ fp16
 accelerate configuration saved at /home/xxx/.cache/huggingface/accelerate/default_config.yaml
 
 $ accelerate launch {my_script.py}
+```
+
+### Backend Design - `torchrun`
+
+#### Multiple Frameworks Support
+
+We decide to implement multiple backends for LLM Trainer launched by `torchrun`, which would be friendly with users of different fine-tuning frameworks, such as HuggingFace Transformers, Nvidia NeMo, Native PyTorch etc.
+
+p.s. This idea comes from [Deepanker Gupta](https://github.com/deepanker13): [Support multiple backends](https://docs.google.com/document/d/1KCNqE66vc1lkecsX_Bcpz3l3d0M-jDYrwVq2nUq_5dc/edit?usp=sharing)
+
+```python
+# Registry to map backends to their respective handlers
+BACKEND_HANDLERS = {}
+
+def register_backend(name):
+    def decorator(cls):
+        BACKEND_HANDLERS[name] = cls()
+        return cls
+    return decorator
+
+# Abstract base class for all backends
+class BaseFineTuner:
+    def fine_tune(self, model_name, dataset, **kwargs):
+        raise NotImplementedError
+
+# Native PyTorch Implementation
+@register_backend('pytorch')
+class NativePyTorchFineTuner(BaseFineTuner):
+    def fine_tune(self, model_name, dataset, **kwargs):
+        from torch.nn.parallel import DistributedDataParallel as DDP
+        # Implement training logic here
+        print(f"Training HuggingFace model {model_name}...")
+
+
+
+# HuggingFace Implementation
+@register_backend('huggingface')
+class HuggingFaceFineTuner(BaseFineTuner):
+    def fine_tune(self, model_name, dataset, **kwargs):
+        from transformers import Trainer, TrainingArguments
+        # Example: Parse Hugging Face-specific parameters
+        training_args = TrainingArguments(
+            output_dir=kwargs.get("output_dir", "./results"),
+            learning_rate=kwargs.get("learning_rate", 5e-5),
+            num_train_epochs=kwargs.get("epochs", 3),
+            per_device_train_batch_size=kwargs.get("batch_size", 16),
+        )
+        # Implement training logic here
+        print(f"Training HuggingFace model {model_name}...")
+
+# NVIDIA NeMo Implementation
+@register_backend('nemo')
+class NeMoFineTuner(BaseFineTuner):
+    def fine_tune(self, model_name, dataset, **kwargs):
+        import nemo.collections.asr as nemo_asr
+        # Example: Parse NeMo-specific parameters
+        asr_model = nemo_asr.models.EncDecCTCModel.from_pretrained(model_name)
+        # Implement NeMo fine-tuning logic here
+        print(f"Fine-tuning NVIDIA NeMo model {model_name}...")
+
+# Unified function
+def fine_tune(model_name, dataset, backend, **kwargs):
+    if backend not in BACKEND_HANDLERS:
+        raise ValueError(f"Unsupported backend: {backend}")
+    BACKEND_HANDLERS[backend].fine_tune(model_name, dataset, **kwargs)
+
+```
+
+#### Data Preprocess
+
+Different datasets have vastly different keys and usage. For example, instruction datasets (e.g. [tatsu-lab/alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca)) always include keys like `instruction`, `input`, `output` and `text`. However, question answering datasets (e.g. [openai/gsm8k](https://huggingface.co/datasets/openai/gsm8k)) contain columns like `question` and `answer`. It’s impossible to implement a unified dataset class suitable for every datasets on HuggingFace. **Different types of tasks need different implementations** so that they can preprocess data in a specific way.
+
+Based on the reasons above, we decide to **provide multiple built-in dataset classes** for data processing. They can be used directly by specifying the `dataset_class` parameter in Python SDK (e.g. `dataset_class="instruction"`). Meanwhile, we also **allow users to define customized dataset classes with specified methods implemented** and pass it to the `dataset_class` parameter in Python SDK (e.g. `dataset_class=CustomDatasetClass`).
+
+```python
+from torch.utils.data import Dataset
+
+DATASET_REGISTRY = {}
+
+def register_dataset(name):
+    def decorator(cls):
+        DATASET_REGISTRY[name] = cls
+        return cls
+    return decorator
+
+# Abstract Dataset Class
+class InitMethod(ABC):
+    @abstractmethod
+    def __init__(self, dataset_config, tokenizer, partition="train"):
+        raise NotImplementedError()
+
+@register_dataset("instruction")
+class InstructionDataset(Dataset, InitMethod):
+    def __init__(self, dataset_config, tokenizer, partition="train"):
+        # Some code here
+
+    def __len__(self):
+        # Some code here
+
+    def __getitem__(self, index):
+        # Some code here
+
 ```
 
 ### Backend Design - `torchtune`
