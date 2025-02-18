@@ -1,5 +1,5 @@
 # TODO (andreyvelich): Change this to DeepSpeed or MLX runtime.
-apiVersion: kubeflow.org/v1alpha1
+apiVersion: trainer.kubeflow.org/v1alpha1
 kind: ClusterTrainingRuntime
 metadata:
   name: mpi-distributed
