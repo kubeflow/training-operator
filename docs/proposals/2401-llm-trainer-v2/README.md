@@ -121,7 +121,7 @@ tune run --nnodes=1 --nproc-per-node=4 lora_finetune_distributed \
 
 This provides us with a chance to mutate these parameters by overriding the `commands` and `args` fields in the Trainer Node, like [this](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
 
-And also, we need to create another runtime plugins to handle config override for `torchtune`, since PyTorch Plugin passes the distributed arguments by environment variables that begins with `PET_`, which is not allowed by `torchtune`. However, they can share the same ML Policy because `torchtune` is fully compatible with these distributed parameters.
+And also, we need to create another runtime plugin to handle config override for `torchtune`, since `torchrun` plugin passes the distributed arguments by environment variables that begins with `PET_`, which is not allowed by `torchtune`. However, `torchtune` can share the same ML Policy with `torchrun` because `torchtune` is fully compatible with these distributed parameters.
 
 ```golang
 // MLPolicySource represents the runtime-specific configuration for various technologies.
