@@ -114,18 +114,18 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 
 We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclass.
 
-| Parameters | What is it? |
-| - | - |
-| recipe | The name of recipe in `torchtune` we choose |
-| config | The name of config in `torchtune` we chooose |
-| dtype | The underlying data type used to represent the model and optimizer parameters. Currently, we only support `bf16` and `fp32`. |
-| batch_size | The number of samples processed before updating model weights. |
-| epochs | The number of samples processed before updating model weights. |
-| gradient_accumulation_steps | The number of batches accumulated before updating model weights. |
-| enable_activation_checkpointing | Whether to enable activation checkpointing. |
-| enable_activation_offloading | Whether to enable activation offloading. |
-| peft_config | Configuration for the PEFT(Parameter-Efficient Fine-Tuning), including Lora, AdapterPrompt, PrefixTuning, etc. |
-| dataset_preprocess_config | Configuration for dataset preprocessing. |
+| Parameters | Type | What is it? |
+| - | - | - |
+| recipe | str | The name of recipe in `torchtune` we choose |
+| config | str | The name of config in `torchtune` we chooose |
+| dtype | Optional[str] | The underlying data type used to represent the model and optimizer parameters. Currently, we only support `bf16` and `fp32`. |
+| batch_size | Optional[int] | The number of samples processed before updating model weights. |
+| epochs | Optional[int] | The number of samples processed before updating model weights. |
+| gradient_accumulation_steps | Optional[int] | The number of batches accumulated before updating model weights. |
+| enable_activation_checkpointing | Optional[bool] | Whether to enable activation checkpointing. |
+| enable_activation_offloading | Optional[bool] | Whether to enable activation offloading. |
+| peft_config | Optional[Union[LoraConfig]] | Configuration for the PEFT(Parameter-Efficient Fine-Tuning), including Lora, AdapterPrompt, PrefixTuning, etc. |
+| dataset_preprocess_config | Optional[Union[TorchtuneInstructDataset, TorchtuneChatDataset, TorchtuneMultimodalDataset]] | Configuration for dataset preprocessing. |
 
 ```python
 @dataclass
@@ -160,16 +160,16 @@ class TorchtuneConfig:
 
 The *LoraConfig* represents the config of LoRA we use to fine-tune the model.
 
-| Parameters | What is it? |
-| - | - |
-| apply_lora_to_mlp | Whether to apply LoRA to the MLP in each transformer layer |
-| apply_lora_to_output | Whether to apply LoRA to the model’s final output projection |
-| lora_attn_modules | A list of strings specifying which layers of the model to apply LoRA: 1. `q_proj` applies LoRA to the query projection layer. 2. `k_proj` applies LoRA to the key projection layer. 3. `v_proj` applies LoRA to the value projection layer. 4. `output_proj` applies LoRA to the attention output projection layer. |
-| lora_rank | The rank of the low rank decomposition. |
-| lora_alpha | The scaling factor that adjusts the magnitude of the low-rank matrices’ output |
-| lora_dropout | The probability of applying Dropout to the low rank updates |
-| quantize_base | Whether to enable model quantization |
-| use_dora | Whether to enable DoRA |
+| Parameters | Type | What is it? |
+| - | - | - |
+| apply_lora_to_mlp | Optional[bool] | Whether to apply LoRA to the MLP in each transformer layer |
+| apply_lora_to_output | Optional[bool] | Whether to apply LoRA to the model’s final output projection |
+| lora_attn_modules | Optional[List[str]] | A list of strings specifying which layers of the model to apply LoRA: 1. `q_proj` applies LoRA to the query projection layer. 2. `k_proj` applies LoRA to the key projection layer. 3. `v_proj` applies LoRA to the value projection layer. 4. `output_proj` applies LoRA to the attention output projection layer. |
+| lora_rank | Optional[int] | The rank of the low rank decomposition. |
+| lora_alpha | Optional[int] | The scaling factor that adjusts the magnitude of the low-rank matrices’ output |
+| lora_dropout | Optional[float] | The probability of applying Dropout to the low rank updates |
+| quantize_base | Optional[bool] | Whether to enable model quantization |
+| use_dora | Optional[bool] | Whether to enable DoRA |
 
 ```python
 @dataclass
