@@ -182,6 +182,59 @@ class LoraConfig:
 
 ```
 
+### Model & Dataset Initialization / Model Exporting
+
+For model and dataset initialization, we'll reuse the existing [Kubeflow Trainer Initializers](https://github.com/kubeflow/trainer/tree/master/pkg/initializer). For example:
+
+```yaml
+# Dataset Initialization
+containers:
+  - name: dataset-initializer
+    image: docker.io/kubeflow/dataset-initializer
+    env:
+      - name: STORAGE_URI
+        value: hf://tatsu-lab/alpaca
+    volumeMounts:
+      - mountPath: /workspace/dataset
+        name: dataset-initializer
+volumes:
+  - name: dataset-initializer
+    persistentVolumeClaim:
+      claimName: dataset-initializer
+```
+
+```yaml
+# Model Initialization
+containers:
+  - name: model-initializer
+    image: docker.io/kubeflow/model-initializer
+    env:
+      - name: STORAGE_URI
+        value: hf://meta-llama/Llama-2-7b
+    volumeMounts:
+      - mountPath: /workspace/model
+        name: model-initializer
+volumes:
+  - name: model-initializer
+    persistentVolumeClaim:
+      claimName: model-initializer
+```
+
+As for the [model exporter](https://github.com/kubeflow/trainer/issues/2245), we haven't implemented it yet in Kubeflow Trainer. But we'll use it as the exporter of our fine-tuned LLMs. For example:
+
+```yaml
+# Model Exporting
+containers:
+  - name: model-exporter
+    image: docker.io/kubeflow/model-exporter
+    volumeMounts:
+      - mountPath: /workspace/adapters
+        name: model-exporter
+volumes:
+  - name: model-exporter
+    persistentVolumeClaim:
+      claimName: model-exporter
+```
 
 ## Implementation History
 
