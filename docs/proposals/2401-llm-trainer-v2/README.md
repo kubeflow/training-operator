@@ -102,14 +102,6 @@ job_id = TrainingClient().train(
 
 ### `torchtune` Plugin
 
-As is shown in the [torchtune official document](https://pytorch.org/torchtune/main/tune_cli.html#run-a-recipe) and [source code](https://github.com/pytorch/torchtune/blob/75965d4281b9b76c454630d015221b9933c77bf3/torchtune/_cli/run.py#L113-L118), the distributed training arguments like `--nnodes` and `--nproc_per_node` should be passed ahead of the recipe argument in the command line, and **cannot be passed by the environment variables** in the `PET_XXX` convention. And also, `torchtune` is extremely different from the fine-tuning paradigm of `torchrun` because it is **recipe and config-based**, which may need more mutation operations in the config file. Here is an [example](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
-
-Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `torchtune` as a launcher for LLM fine-tuning on Kubernetes. And the new plugin should have these abilities:
-
-1. Parse distributed training arguments in TrainJob and TrainingRuntime API, and integrate them with the `tune run` command.
-2. Handle overrides in the `torchtune` fine-tuning configuration file.
-3. Validate some requirements.
-
 **How to Handle Override in Configs**
 
 As is shown in the official guides, we can pass distributed arguments to `torchtune` and override some parameters in the config, like:
@@ -129,26 +121,27 @@ tune run --nnodes=1 --nproc-per-node=4 lora_finetune_distributed \
 
 This provides us with a chance to mutate these parameters by overriding the `commands` and `args` fields in the Trainer Node, like [this](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
 
-And also, we need to create another MLPoicy and runtime plugins to handle config override, since PyTorch Plugin passes the distributed arguments by environment variables which begins with `PET_`, which is not allowed by `torchtune`. But they share the same framework-specific parameters.
+And also, we need to create another runtime plugins to handle config override for `torchtune`, since PyTorch Plugin passes the distributed arguments by environment variables that begins with `PET_`, which is not allowed by `torchtune`. However, they can share the same ML Policy because `torchtune` is fully compatible with these distributed parameters.
 
 ```golang
 // MLPolicySource represents the runtime-specific configuration for various technologies.
 // One of the following specs can be set.
 type MLPolicySource struct {
-	// Configuration for the PyTorch runtime.
-	Torch *TorchMLPolicySource `json:"torch,omitempty"`
+    // Configuration for the PyTorch runtime.
+    Torch *TorchMLPolicySource `json:"torch,omitempty"`
 
     // Configuration for the Torchtune runtime.
     Torchtune *TorchtuneMLPolicySource `json:"torchtune,omitempty"`
 
-	// Configuration for the MPI Runtime.
-	MPI *MPIMLPolicySource `json:"mpi,omitempty"`
+    // Configuration for the MPI Runtime.
+    MPI *MPIMLPolicySource `json:"mpi,omitempty"`
 }
 
-// TorchtuneMLPolicySource represents a PyTorch runtime configuration.
+// TorchtuneMLPolicySource represents a Torchtune runtime configuration.
+// Indicate to use Torchtune runtime plugin instead of PyTorch Plugin.
 type TorchtuneMLPolicySource struct {
-	// Configuration for the PyTorch runtime
-	*TorchMLPolicySource `json:",inline"`
+    // Configuration for the PyTorch runtime
+    *TorchMLPolicySource `json:",inline"`
 }
 
 ```
