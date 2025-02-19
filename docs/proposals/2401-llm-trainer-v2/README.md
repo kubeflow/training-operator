@@ -110,22 +110,29 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 2. Handle overrides in the `torchtune` fine-tuning configuration file.
 3. Validate some requirements.
 
+**How to Handle Override**
+
+
+
 ### `torchtune` Config in SDK
 
 We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclass.
 
 | Parameters | Type | What is it? |
 | - | - | - |
-| recipe | str | The name of recipe in `torchtune` we choose |
-| config | str | The name of config in `torchtune` we chooose |
+| recipe | str | The name of recipe in `torchtune` we choose. |
+| config | str | The name of config in `torchtune` we chooose. |
 | dtype | Optional[str] | The underlying data type used to represent the model and optimizer parameters. Currently, we only support `bf16` and `fp32`. |
 | batch_size | Optional[int] | The number of samples processed before updating model weights. |
 | epochs | Optional[int] | The number of samples processed before updating model weights. |
 | gradient_accumulation_steps | Optional[int] | The number of batches accumulated before updating model weights. |
+| loss | Optional[str] | The loss algorithm we use to fine-tune the LLM, e.g. `torchtune.modules.loss.CEWithChunkedOutputLoss` |
+| optimizer_config | Optional[OptimizerConfig] | Configuration for the optimizer. |
+| scheduler_config | Optional[SchedulerConfig] | Configuration for the scheduler. |
 | enable_activation_checkpointing | Optional[bool] | Whether to enable activation checkpointing. |
 | enable_activation_offloading | Optional[bool] | Whether to enable activation offloading. |
 | peft_config | Optional[Union[LoraConfig]] | Configuration for the PEFT(Parameter-Efficient Fine-Tuning), including Lora, AdapterPrompt, PrefixTuning, etc. |
-| dataset_preprocess_config | Optional[Union[TorchtuneInstructDataset, TorchtuneChatDataset, TorchtuneMultimodalDataset]] | Configuration for dataset preprocessing. |
+| dataset_preprocess_config | Optional[Union[InstructDataset, ChatDataset, eMultimodalDataset]] | Configuration for dataset preprocessing. |
 
 ```python
 @dataclass
@@ -146,6 +153,9 @@ class TorchtuneConfig:
     dtype: Optional[str] = None
     batch_size: Optional[int] = None
     epochs: Optional[int] = None
+    loss: Optional[str] = None
+    optimizer_config: Optional[OptimizerConfig] = None
+    scheduler_config: Optional[SchedulerConfig] = None
     gradient_accumulation_steps: Optional[int] = None
     enable_activation_checkpointing: Optional[bool] = False
     enable_activation_offloading: Optional[bool] = False
@@ -155,6 +165,36 @@ class TorchtuneConfig:
     ] = None
 
 ```
+
+**Optimizer Config**
+
+The *OptimizerConfig* represents the config of Optimizer we use to fine-tune the model.
+
+| Parameters | Type | What is it? |
+| - | - | - |
+| component | Optional[str] | The optimizer we use, e.g. `torch.optim.AdmW`. |
+| fused | Optional[bool] | Whether to fuse optimizer step into backward pass. |
+| weight_decay | Optional[float] | The rate for weight decay. |
+| lr | Optional[float] | The learning rate. |
+
+```python
+@dataclass
+class OptimizerConfig:
+    component: Optional[str] = None,
+    fused: Optional[bool] = None,
+    weight_decay: Optional[float] = None,
+    lr: Optional[float] = None,
+
+```
+
+**Scheduler Config**
+
+The *SchedulerConfig* represents the config of Scheduler we use to fine-tune the model.
+
+ Parameters | Type | What is it? |
+| - | - | - |
+| component | Optional[str] | The scheduler we use, e.g. `torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup`. |
+| num_warmup_steps | The number of warnup steps for the scheduler. |
 
 **LoRA Config**
 
@@ -250,7 +290,7 @@ volumes:
 
 ```python
 @datasetclass
-class TorchtuneInstructDataset:
+class InstructDataset:
     source: Optional[str] = None
     data_files: Optional[str] = None
     split: Optional[str] = None
@@ -264,7 +304,7 @@ class TorchtuneInstructDataset:
 
 ```python
 @datasetclass
-class TorchtuneChatDataset:
+class ChatDataset:
     source: Optional[str] = None
     data_files: Optional[str] = None
     split: Optional[str] = None
@@ -279,7 +319,7 @@ class TorchtuneChatDataset:
 
 ```python
 @datasetclass
-class TorchtuneMultimodalDataset:
+class MultimodalDataset:
     source: Optional[str] = None
     data_files: Optional[str] = None
     split: Optional[str] = None
@@ -520,7 +560,7 @@ class InstructionDataset(Dataset, InitMethod):
 
 ```
 
-### Fine-Tuning Config
+### Fine-Tuning Config - `torchrun`
 
 **AdapterPrompt Config(TBD)**
 
