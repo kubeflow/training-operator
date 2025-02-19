@@ -82,14 +82,14 @@ job_id = TrainingClient().train(
     trainer=Trainer(
         fine_tuning_config=TorchTuneConfig(
             recipe="lora_finetune_single_device",
-            config="llama3_2/1B_qlora_single_device",
+            config="llama3_2/1B_lora_single_device",
+            device="cuda",
             dtype="bf16",
             batch_size=1,
             epochs=1,
             peft_config=LoraConfig(
-                lora_rank=4,
-                lora_alpha=8,
-                quant_base=True,
+                lora_rank=64,
+                lora_alpha=128,
             ),
         ),
         num_nodes=5,
@@ -122,6 +122,7 @@ We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclas
 | - | - | - |
 | recipe | str | The name of recipe in `torchtune` we choose. |
 | config | str | The name of config in `torchtune` we chooose. |
+| device | Optional[str] | The device type, e.g. `cuda`. |
 | dtype | Optional[str] | The underlying data type used to represent the model and optimizer parameters. Currently, we only support `bf16` and `fp32`. |
 | batch_size | Optional[int] | The number of samples processed before updating model weights. |
 | epochs | Optional[int] | The number of samples processed before updating model weights. |
@@ -150,6 +151,7 @@ class Trainer:
 class TorchtuneConfig:
     recipe: str
     config: str
+    device: Optional[str] = None
     dtype: Optional[str] = None
     batch_size: Optional[int] = None
     epochs: Optional[int] = None
@@ -194,7 +196,15 @@ The *SchedulerConfig* represents the config of Scheduler we use to fine-tune the
  Parameters | Type | What is it? |
 | - | - | - |
 | component | Optional[str] | The scheduler we use, e.g. `torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup`. |
-| num_warmup_steps | The number of warnup steps for the scheduler. |
+| num_warmup_steps | Optional[int] | The number of warnup steps for the scheduler. |
+
+```python
+@dataclass
+class SchedulerConfig
+    component: Optional[str] = None
+    num_warmup_steps: Optional[int] = None
+
+```
 
 **LoRA Config**
 
