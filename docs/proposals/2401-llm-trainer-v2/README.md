@@ -10,7 +10,7 @@ Google doc: http://bit.ly/4gp8JGd
 
 ## Overview
 
-This document discusses the design of LLM Trainer for [Kubeflow Training v2](../2170-kubeflow-training-v2/README.md), tracked by [this issue](https://github.com/kubeflow/training-operator/issues/2401).
+This document discusses the design of LLM Trainer for [Kubeflow Trainer v2](../2170-kubeflow-training-v2/README.md), tracked by [this issue](https://github.com/kubeflow/training-operator/issues/2401).
 
 **We decided to implement a custom Trainer to fine-tune LLMs, which will be supported officially via TrainingRuntimes in Kubeflow upstream**. This will greatly ease the workload of writing fine-tuning scripts, and provide an in-box toolkit to fine-tune the LLMs with custom datasets and models for Data Scientists.
 
@@ -22,13 +22,12 @@ This document discusses the design of LLM Trainer for [Kubeflow Training v2](../
 
 Fine-tuning LLMs on Kubernetes is challenging for Data Scientists due to the complex Kubernetes configurations, diverse fine-tuning techniques, and different distributed strategies like data and model-parallelism. It’s crucial to hide the complex infrastructure configurations from users, and allow them to gracefully shift among diverse fine-tuning techniques and distributed strategies.
 
-By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-api/README.md) based on the HuggingFace library. However, it is **integrated with data and model initialization**, which are separated in Kubeflow Training V2, and has **limited fine-tuning mechanism support**. We need to migrate it to V2 and support more fine-tuning configurations and distributed strategies in accordance with the growing needs in custom LLM fine-tuning.
+By now, Kubeflow Training Operator V1 has implemented a [Trainer for LLM](../2003-train-api/README.md) based on the HuggingFace library. However, it is **integrated with data and model initialization**, which are separated in Kubeflow Trainer V2, and has **limited fine-tuning mechanism support**. We need to migrate it to V2 and support more fine-tuning configurations and distributed strategies in accordance with the growing needs in custom LLM fine-tuning.
 
 ### Goals
 
-- Build LLM Trainer V2 based on `torchtune`.
-- Update Kubeflow Training SDK to fine-tune LLMs flexibly.
-- Create community-supported `ClusterTrainingRuntime` for fine-tuning various foundational models (e.g. Mistral, LLama-70b, Gemma-7b).
+- Build LLM fine-tuning recipes with `torchtune` and Kubeflow Trainer ClusterTrainingRuntime.
+- Update the Kubeflow Python SDK to support flexible LLM fine-tuning with configurable parameters.
 
 ### Non-Goals
 
@@ -81,9 +80,20 @@ job_id = TrainingClient().train(
         storage_uri="tatsu-lab/alpaca",
     ),
     trainer=Trainer(
-        fine_tuning_config=FineTuningConfig(
-            peft_config=LoraConfig(r=4),
+        fine_tuning_config=TorchTuneConfig(
+            recipe="lora_finetune_single_device",
+            config="llama3_2/1B_qlora_single_device",
             dtype="bf16",
+            batch_size=1,
+            epochs=1,
+            gradient_accumulation_steps=8,
+            enable_activation_checkpointing=True,
+            enable_activation_offloading=True,
+            peft_config=LoraConfig(
+                lora_rank=4,
+                lora_alpha=8,
+                quant_base=True,
+            ),
         ),
         num_nodes=5,
     ),
@@ -105,23 +115,43 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 
 ### Fine-Tuning Config
 
-We will add the fine-tuning configurations in the `fine_tuning_config` field in `Trainer` dataclass.
+We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclass.
 
 | Parameters | What is it? |
 | - | - |
-| dtype | The underlying data type used to represent the model and optimizer parameters. Currently, we support `bf16` and `fp32`. |
+| recipe | The name of recipe in `torchtune` we choose |
+| config | The name of config in `torchtune` we chooose |
+| dtype | The underlying data type used to represent the model and optimizer parameters. Currently, we only support `bf16` and `fp32`. |
+| batch_size | The number of samples processed before updating model weights. |
+| epochs | The number of samples processed before updating model weights. |
+| gradient_accumulation_steps | The number of batches accumulated before updating model weights. |
+| enable_activation_checkpointing | Whether to enable activation checkpointing. |
+| enable_activation_offloading | Whether to enable activation offloading. |
 | peft_config | Configuration for the PEFT(Parameter-Efficient Fine-Tuning), including Lora, AdapterPrompt, PrefixTuning, etc. |
 
 ```python
-# FineTuningConfig DataClass
 @dataclass
-class FineTuningConfig:
-    dtype: string = "bf16"
-    peft_config: Optional[Union[LoraConfig]] = None
+class Trainer:
+    func: Optional[Callable] = None
+    func_args: Optional[Dict] = None
+    packages_to_install: Optional[List[str]] = None
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL
+    fine_tuning_config: Optional[Union[TorchTuneConfig]] = None
+    num_nodes: Optional[int] = None
+    resources_per_node: Optional[dict] = None
+
+# TorchTuneConfig DataClass
+@dataclass
+class TorchTuneConfig:
+    batch_size: Optional[int] = None,
+    epochs: Optional[int] = None,
+    gradient_accumulation_steps: Optional[int] = None,
+    dtype: Optional[string] = None,
+    enable_activation_checkpointing: Optional[bool] = False,
+    enable_activation_offloading: Optional[bool] = False,
+    peft_config: Optional[Union[LoraConfig]] = None,
 
 ```
-
-The Python SDK will look like:
 
 **LoRA Config**
 
@@ -137,6 +167,20 @@ The *LoraConfig* represents the config of LoRA we use to fine-tune the model.
 | lora_dropout | The probability of applying Dropout to the low rank updates |
 | quantize_base | Whether to enable model quantization |
 | use_dora | Whether to enable DoRA |
+
+```python
+@dataclass
+class LoraConfig:
+    apply_lora_to_mlp: Optional[bool] = None,
+    apply_lora_to_output: Optional[bool] = None,
+    lora_attn_modules: Optional[List[str]] = None,
+    lora_rank: Optional[int] = None,
+    lora_alpha: Optional[int] = None,
+    lora_dropout: optional[float] = None,
+    quantize_base: optional[bool] = None,
+    use_dora: Optional[bool] = None,
+
+```
 
 
 ## Implementation History
