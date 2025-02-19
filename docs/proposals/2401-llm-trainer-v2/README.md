@@ -41,11 +41,9 @@ By now, Kubeflow Training V1 has implemented a [Trainer for LLM](../2003-train-a
 `torchtune` is a PyTorch-native library for easily authoring, fine-tuning and experimenting with LLMs. It provides rich support for LLM fine-tuning:
 
 1. Modular native-PyTorch implementations of popular LLMs
-2. Training recipes for a variety of fine-tuning techniques
+2. Training [recipes](https://pytorch.org/torchtune/main/overview.html#key-concepts) for a variety of fine-tuning techniques
 3. Support for distributed training using [FSDP2](https://github.com/pytorch/torchtitan/blob/main/docs/fsdp.md)
-4. YAML configs for easily configuring training runs
-
-`torchtune` is something like our LLM Trainer, because its [core concepts](https://pytorch.org/torchtune/main/overview.html#key-concepts) "recipes" and "configs" can be easily corresponded to our “LLM Trainer Script” and “[Trainer field in TrainJob](https://github.com/kubeflow/training-operator/blob/cf741267f8f8ec96592178532b6787bab3f11110/pkg/apis/kubeflow.org/v2alpha1/trainjob_types.go#L110-L111)”. **It’s the easiest way for us to implement the LLM Trainer**.
+4. YAML [configs](https://pytorch.org/torchtune/main/overview.html#key-concepts) for easily configuring training runs
 
 An example for using `torchtune`:
 
@@ -72,6 +70,8 @@ INFO:torchtune.utils.logging:Dataset and Sampler are initialized.
 INFO:torchtune.utils.logging:Learning rate scheduler is initialized.
 1|52|Loss: 2.3697006702423096:   0%|▏                     | 52/25880 [00:24<3:55:01,  1.83it/s]
 ```
+
+By adopting `torchtune` as the low-level runtime for LLM fine-tuning, we can easily obtain the flexibility, efficiency and scalability brought by its unique "recipe-config" design, which will surely streamline and scale LLM fine-tuning on Kubernetes.
 
 ## Design Details
 
@@ -166,38 +166,6 @@ class QLoraConfig:
     use_double_quant: bool = False
     compute_dtype: torch.dtype = torch.bfloat16
     quant_storage: torch.dtype = torch.bfloat16
-
-```
-
-#### FSDP Config
-
-The *FsdpConfig* represents the config of FSDP we use to fine-tune the model.
-
-| Parameters | What is it? |
-| - | - |
-| mixed_precision | Whether to enable mixed precision training |
-| use_fp16 | Whether to use FP16 during the mixed precision training |
-| fsdp_cpu_offload | Whether to offload some weights and optimizer states to cpu |
-| sharding_strategy | The sharding strategy for FSDP, e.g. FULL_SHARD (default), HYBRID_SHARD, SHARD_GRAD_OP, NO_SHARD. |
-| hsdp | Whether to enable Hybrid Shard Data Parallel (HSDP) |
-| sharding_group_size | Specify the GPU num in the sharding group when hsdp set to true |
-| replica_group_size | The number of sharding groups |
-| checkpoint_type | Specify the type of model checkpoints |
-| fsdp_activation_checkpointing | Whether to enable Activation Checkpointing |
-
-```python
-# FsdpConfig DataClass
-@dataclass
-class FsdpConfig:
-    mixed_precision: bool = True
-    use_fp16: bool = False
-    fsdp_cpu_offload: bool=False
-    sharding_strategy: ShardingStrategy = ShardingStrategy.FULL_SHARD
-    hsdp: bool = False
-    sharding_group_size: int = 0 # requires hsdp to be set.
-    replica_group_size: int = 0 #requires hsdp to be set.
-    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
-    fsdp_activation_checkpointing: bool = True
 
 ```
 
@@ -463,6 +431,38 @@ The *PrefixConfig* represents the config of PrefixTuning we use to fine-tune the
 @dataclass
 class PrefixConfig:
     num_virtual_tokens: int = 30
+
+```
+
+**FSDP Config(TBD)**
+
+The *FsdpConfig* represents the config of FSDP we use to fine-tune the model.
+
+| Parameters | What is it? |
+| - | - |
+| mixed_precision | Whether to enable mixed precision training |
+| use_fp16 | Whether to use FP16 during the mixed precision training |
+| fsdp_cpu_offload | Whether to offload some weights and optimizer states to cpu |
+| sharding_strategy | The sharding strategy for FSDP, e.g. FULL_SHARD (default), HYBRID_SHARD, SHARD_GRAD_OP, NO_SHARD. |
+| hsdp | Whether to enable Hybrid Shard Data Parallel (HSDP) |
+| sharding_group_size | Specify the GPU num in the sharding group when hsdp set to true |
+| replica_group_size | The number of sharding groups |
+| checkpoint_type | Specify the type of model checkpoints |
+| fsdp_activation_checkpointing | Whether to enable Activation Checkpointing |
+
+```python
+# FsdpConfig DataClass
+@dataclass
+class FsdpConfig:
+    mixed_precision: bool = True
+    use_fp16: bool = False
+    fsdp_cpu_offload: bool=False
+    sharding_strategy: ShardingStrategy = ShardingStrategy.FULL_SHARD
+    hsdp: bool = False
+    sharding_group_size: int = 0 # requires hsdp to be set.
+    replica_group_size: int = 0 #requires hsdp to be set.
+    checkpoint_type: StateDictType = StateDictType.SHARDED_STATE_DICT
+    fsdp_activation_checkpointing: bool = True
 
 ```
 
