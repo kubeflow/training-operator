@@ -113,7 +113,7 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 2. Handle overrides in the `torchtune` fine-tuning configuration file.
 3. Validate some requirements.
 
-### Fine-Tuning Config
+### Torchtune Config
 
 We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclass.
 
@@ -136,13 +136,13 @@ class Trainer:
     func_args: Optional[Dict] = None
     packages_to_install: Optional[List[str]] = None
     pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL
-    fine_tuning_config: Optional[Union[TorchTuneConfig]] = None
+    fine_tuning_config: Optional[Union[TorchtuneConfig]] = None
     num_nodes: Optional[int] = None
     resources_per_node: Optional[dict] = None
 
-# TorchTuneConfig DataClass
+# TorchtuneConfig DataClass
 @dataclass
-class TorchTuneConfig:
+class TorchtuneConfig:
     batch_size: Optional[int] = None,
     epochs: Optional[int] = None,
     gradient_accumulation_steps: Optional[int] = None,
@@ -150,6 +150,9 @@ class TorchTuneConfig:
     enable_activation_checkpointing: Optional[bool] = False,
     enable_activation_offloading: Optional[bool] = False,
     peft_config: Optional[Union[LoraConfig]] = None,
+    dataset_preprocess_config: Optional[
+        Union[TorchtuneInstructDataset, TorchtuneChatDataset, TorchtuneMultimodalDataset],
+    ] = None,
 
 ```
 
@@ -201,6 +204,7 @@ volumes:
   - name: dataset-initializer
     persistentVolumeClaim:
       claimName: dataset-initializer
+
 ```
 
 ```yaml
@@ -218,6 +222,7 @@ volumes:
   - name: model-initializer
     persistentVolumeClaim:
       claimName: model-initializer
+
 ```
 
 As for the [model exporter](https://github.com/kubeflow/trainer/issues/2245), we haven't implemented it yet in Kubeflow Trainer. But we'll use it as the exporter of our fine-tuned LLMs. For example:
@@ -234,7 +239,57 @@ volumes:
   - name: model-exporter
     persistentVolumeClaim:
       claimName: model-exporter
+
 ```
+
+### Dataset Preprocess / Tokenizer
+
+`torchtune` has supported several types of [dataset classes](https://pytorch.org/torchtune/main/basics/datasets_overview.html), including Instruct, Chat, Multimodal, which will preprocess dataest for us automatically. We just need to configure it in the SDK:
+
+**Instruct Dataset**
+
+```python
+@datasetclass
+class TorchtuneInstructDataset:
+    source: Optional[str] = None,
+    data_files: Optional[str] = None,
+    split: Optional[str] = None,
+    train_on_input: Optional[bool] = None,
+    new_system_prompt: Optional[str] = None,
+    column_map: Optional[Dict[str, str]] = None,
+
+```
+
+**Chat Dataset**
+
+```python
+@datasetclass
+class TorchtuneChatDataset:
+    source: Optional[str] = None,
+    data_files: Optional[str] = None,
+    split: Optional[str] = None,
+    conversation_column: Optional[str] = None,
+    conversation_style: Optional[str] = None,
+    train_on_input: Optional[bool] = None,
+    new_system_prompt: Optional[str] = None,
+
+```
+
+**Multimodal Dataset**
+
+```python
+@datasetclass
+class TorchtuneMultimodalDataset:
+    source: Optional[str] = None,
+    data_files: Optional[str] = None,
+    split: Optional[str] = None,
+    column_map: Optional[Dict[str, str]] = None,
+    image_dir: Optional[str] = None,
+    image_tag: Optional[str] = None,
+
+```
+
+As for the tokenzier, `torchtune` has specified it in every training configs, such as [this](https://github.com/pytorch/torchtune/blob/e6cba2532d51a53936c7646bd4cdaa6b2b57ed66/recipes/configs/llama3_2/1B_lora_single_device.yaml#L29-L33). We're going to gracefully add custom tokenizer support in the future, once users request it.
 
 ## Implementation History
 
