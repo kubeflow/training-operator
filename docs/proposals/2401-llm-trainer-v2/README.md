@@ -86,9 +86,6 @@ job_id = TrainingClient().train(
             dtype="bf16",
             batch_size=1,
             epochs=1,
-            gradient_accumulation_steps=8,
-            enable_activation_checkpointing=True,
-            enable_activation_offloading=True,
             peft_config=LoraConfig(
                 lora_rank=4,
                 lora_alpha=8,
@@ -128,6 +125,7 @@ We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclas
 | enable_activation_checkpointing | Whether to enable activation checkpointing. |
 | enable_activation_offloading | Whether to enable activation offloading. |
 | peft_config | Configuration for the PEFT(Parameter-Efficient Fine-Tuning), including Lora, AdapterPrompt, PrefixTuning, etc. |
+| dataset_preprocess_config | Configuration for dataset preprocessing. |
 
 ```python
 @dataclass
@@ -143,16 +141,18 @@ class Trainer:
 # TorchtuneConfig DataClass
 @dataclass
 class TorchtuneConfig:
-    batch_size: Optional[int] = None,
-    epochs: Optional[int] = None,
-    gradient_accumulation_steps: Optional[int] = None,
-    dtype: Optional[string] = None,
-    enable_activation_checkpointing: Optional[bool] = False,
-    enable_activation_offloading: Optional[bool] = False,
-    peft_config: Optional[Union[LoraConfig]] = None,
+    recipe: str
+    config: str
+    dtype: Optional[str] = None
+    batch_size: Optional[int] = None
+    epochs: Optional[int] = None
+    gradient_accumulation_steps: Optional[int] = None
+    enable_activation_checkpointing: Optional[bool] = False
+    enable_activation_offloading: Optional[bool] = False
+    peft_config: Optional[Union[LoraConfig]] = None
     dataset_preprocess_config: Optional[
         Union[TorchtuneInstructDataset, TorchtuneChatDataset, TorchtuneMultimodalDataset],
-    ] = None,
+    ] = None
 
 ```
 
@@ -174,14 +174,14 @@ The *LoraConfig* represents the config of LoRA we use to fine-tune the model.
 ```python
 @dataclass
 class LoraConfig:
-    apply_lora_to_mlp: Optional[bool] = None,
-    apply_lora_to_output: Optional[bool] = None,
-    lora_attn_modules: Optional[List[str]] = None,
-    lora_rank: Optional[int] = None,
-    lora_alpha: Optional[int] = None,
-    lora_dropout: optional[float] = None,
-    quantize_base: optional[bool] = None,
-    use_dora: Optional[bool] = None,
+    apply_lora_to_mlp: Optional[bool] = None
+    apply_lora_to_output: Optional[bool] = None
+    lora_attn_modules: Optional[List[str]] = None
+    lora_rank: Optional[int] = None
+    lora_alpha: Optional[int] = None
+    lora_dropout: optional[float] = None
+    quantize_base: optional[bool] = None
+    use_dora: Optional[bool] = None
 
 ```
 
@@ -225,7 +225,7 @@ volumes:
 
 ```
 
-As for the [model exporter](https://github.com/kubeflow/trainer/issues/2245), we haven't implemented it yet in Kubeflow Trainer. But we'll use it as the exporter of our fine-tuned LLMs. For example:
+As for the [model exporter](https://github.com/kubeflow/trainer/issues/2245), we haven't implemented it yet in Kubeflow Trainer. But we'll use it as the exporter for our fine-tuned LLMs once it's ready. For example:
 
 ```yaml
 # Model Exporting
@@ -244,19 +244,19 @@ volumes:
 
 ### Dataset Preprocess / Tokenizer
 
-`torchtune` has supported several types of [dataset classes](https://pytorch.org/torchtune/main/basics/datasets_overview.html), including Instruct, Chat, Multimodal, which will preprocess dataest for us automatically. We just need to configure it in the SDK:
+`torchtune` has supported several types of [dataset classes](https://pytorch.org/torchtune/main/basics/datasets_overview.html), including Instruct, Chat, Multimodal, which will preprocess dataests for us automatically. We just need to configure it in the SDK and override it to the config:
 
 **Instruct Dataset**
 
 ```python
 @datasetclass
 class TorchtuneInstructDataset:
-    source: Optional[str] = None,
-    data_files: Optional[str] = None,
-    split: Optional[str] = None,
-    train_on_input: Optional[bool] = None,
-    new_system_prompt: Optional[str] = None,
-    column_map: Optional[Dict[str, str]] = None,
+    source: Optional[str] = None
+    data_files: Optional[str] = None
+    split: Optional[str] = None
+    train_on_input: Optional[bool] = None
+    new_system_prompt: Optional[str] = None
+    column_map: Optional[Dict[str, str]] = None
 
 ```
 
@@ -265,13 +265,13 @@ class TorchtuneInstructDataset:
 ```python
 @datasetclass
 class TorchtuneChatDataset:
-    source: Optional[str] = None,
-    data_files: Optional[str] = None,
-    split: Optional[str] = None,
-    conversation_column: Optional[str] = None,
-    conversation_style: Optional[str] = None,
-    train_on_input: Optional[bool] = None,
-    new_system_prompt: Optional[str] = None,
+    source: Optional[str] = None
+    data_files: Optional[str] = None
+    split: Optional[str] = None
+    conversation_column: Optional[str] = None
+    conversation_style: Optional[str] = None
+    train_on_input: Optional[bool] = None
+    new_system_prompt: Optional[str] = None
 
 ```
 
@@ -280,12 +280,12 @@ class TorchtuneChatDataset:
 ```python
 @datasetclass
 class TorchtuneMultimodalDataset:
-    source: Optional[str] = None,
-    data_files: Optional[str] = None,
-    split: Optional[str] = None,
-    column_map: Optional[Dict[str, str]] = None,
-    image_dir: Optional[str] = None,
-    image_tag: Optional[str] = None,
+    source: Optional[str] = None
+    data_files: Optional[str] = None
+    split: Optional[str] = None
+    column_map: Optional[Dict[str, str]] = None
+    image_dir: Optional[str] = None
+    image_tag: Optional[str] = None
 
 ```
 
