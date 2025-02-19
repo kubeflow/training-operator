@@ -110,9 +110,52 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 2. Handle overrides in the `torchtune` fine-tuning configuration file.
 3. Validate some requirements.
 
-**How to Handle Override**
+**How to Handle Override in Configs**
 
+As is shown in the official guides, we can pass distributed arguments to `torchtune` and override some parameters in the config, like:
 
+```bash
+# Note that tune run only supports launching distributed runs by passing through arguments preceding the recipe directly to torchrun.
+# Official document: https://pytorch.org/torchtune/main/tune_cli.html#run-a-recipe
+# Proof from source code: https://github.com/pytorch/torchtune/blob/75965d4281b9b76c454630d015221b9933c77bf3/torchtune/_cli/run.py#L113-L118
+tune run --nnodes=1 --nproc-per-node=4 lora_finetune_distributed \
+    --config llama3/8B_lora \
+    model.lora_attn_modules=[q_proj,k_proj,v_proj] \
+    model.apply_lora_to_mlp=True \
+    model.lora_rank=64 \
+    model.lora_alpha=128
+
+```
+
+This provides us with a chance to mutate these parameters by overriding the `commands` and `args` fields in the Trainer Node, like [this](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
+
+And also, we need to create another MLPoicy and runtime plugins to handle config override, since PyTorch Plugin passes the distributed arguments by environment variables which begins with `PET_`, which is not allowed by `torchtune`. But they share the same framework-specific parameters.
+
+```golang
+// MLPolicySource represents the runtime-specific configuration for various technologies.
+// One of the following specs can be set.
+type MLPolicySource struct {
+	// Configuration for the PyTorch runtime.
+	Torch *TorchMLPolicySource `json:"torch,omitempty"`
+
+    // Configuration for the Torchtune runtime.
+    Torchtune *TorchtuneMLPolicySource `json:"torchtune,omitempty"`
+
+	// Configuration for the MPI Runtime.
+	MPI *MPIMLPolicySource `json:"mpi,omitempty"`
+}
+
+// TorchtuneMLPolicySource represents a PyTorch runtime configuration.
+type TorchtuneMLPolicySource struct {
+	// Configuration for the PyTorch runtime
+	*TorchMLPolicySource `json:",inline"`
+}
+
+```
+
+**How to Determine Default Resources**
+
+Currently, `torchtune` has limited support for multi-node training (but will coming soon).So, I would propose that we use 1 PyTorch Nodes and 1 GPU by default. Users can specify `num_nodes` to increase PyTorch Nodes and `resource_per_node` to increase the GPU number in the `Trainer` field.
 
 ### `torchtune` Config in SDK
 
