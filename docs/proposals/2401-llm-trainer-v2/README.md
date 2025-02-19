@@ -110,7 +110,7 @@ Thus, we need to implement a new plugin for `torchtune` if we decide to adopt `t
 2. Handle overrides in the `torchtune` fine-tuning configuration file.
 3. Validate some requirements.
 
-### Torchtune Config
+### `torchtune` Config in SDK
 
 We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclass.
 
