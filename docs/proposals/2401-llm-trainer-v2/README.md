@@ -148,7 +148,7 @@ type TorchtuneMLPolicySource struct {
 
 **How to Determine Default Resources**
 
-Currently, `torchtune` has limited support for multi-node training (but will coming soon).So, I would propose that we use 1 PyTorch Nodes and 1 GPU by default. Users can specify `num_nodes` to increase PyTorch Nodes and `resource_per_node` to increase the GPU number in the `Trainer` field.
+Currently, `torchtune` has limited support for multi-node training (but will coming soon). So, I would propose that we use 1 PyTorch Nodes and 1 GPU by default. Users can specify `num_nodes` to increase PyTorch Nodes and `resource_per_node` to increase the GPU number in the `Trainer` field.
 
 ### `torchtune` Config in SDK
 
@@ -174,10 +174,7 @@ We will add the fine-tuning configurations for `torchtune` in `Trainer` dataclas
 ```python
 @dataclass
 class Trainer:
-    func: Optional[Callable] = None
-    func_args: Optional[Dict] = None
-    packages_to_install: Optional[List[str]] = None
-    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL
+    custom_training_config: Optional[CustomTrainingConfig] = None
     fine_tuning_config: Optional[Union[TorchtuneConfig]] = None
     num_nodes: Optional[int] = None
     resources_per_node: Optional[dict] = None
@@ -201,6 +198,14 @@ class TorchtuneConfig:
     dataset_preprocess_config: Optional[
         Union[TorchtuneInstructDataset, TorchtuneChatDataset, TorchtuneMultimodalDataset],
     ] = None
+
+# CustomTrainingConfig dataclass
+@dataclass
+class CustomTrainingConfig:
+    func: Optional[Callable] = None
+    func_args: Optional[Dict] = None
+    packages_to_install: Optional[List[str]] = None
+    pip_index_url: str = constants.DEFAULT_PIP_INDEX_URL
 
 ```
 
