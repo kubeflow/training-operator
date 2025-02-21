@@ -121,30 +121,7 @@ tune run --nnodes=1 --nproc-per-node=4 lora_finetune_distributed \
 
 This provides us with a chance to mutate these parameters by overriding the `commands` and `args` fields in the Trainer Node, like [this](https://github.com/Electronic-Waste/kubeflow-llm-trainer/blob/main/torchtune-llm-finetuning.yaml).
 
-And also, we need to create another runtime plugin to handle config override for `torchtune`, since `torchrun` plugin passes the distributed arguments by environment variables that begins with `PET_`, which is not allowed by `torchtune`. However, `torchtune` can share the same ML Policy with `torchrun` because `torchtune` is fully compatible with these distributed parameters.
-
-```golang
-// MLPolicySource represents the runtime-specific configuration for various technologies.
-// One of the following specs can be set.
-type MLPolicySource struct {
-    // Configuration for the PyTorch runtime.
-    Torch *TorchMLPolicySource `json:"torch,omitempty"`
-
-    // Configuration for the Torchtune runtime.
-    Torchtune *TorchtuneMLPolicySource `json:"torchtune,omitempty"`
-
-    // Configuration for the MPI Runtime.
-    MPI *MPIMLPolicySource `json:"mpi,omitempty"`
-}
-
-// TorchtuneMLPolicySource represents a Torchtune runtime configuration.
-// Indicate to use Torchtune runtime plugin instead of PyTorch Plugin.
-type TorchtuneMLPolicySource struct {
-    // Configuration for the PyTorch runtime
-    *TorchMLPolicySource `json:",inline"`
-}
-
-```
+And also, we need to modify the exsiting torch plugin to handle config override for `torchtune`, since currently torch plugin passes the distributed arguments by environment variables that begins with `PET_`, which is not allowed by `torchtune`. However, `torchtune` can share the same ML Policy with `torchrun` because `torchtune` is fully compatible with these distributed parameters.
 
 **How to Determine Default Resources**
 
