@@ -31,7 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "kubernetes>=27.2.0",
-    "jobset @ git+https://github.com/kubernetes-sigs/jobset.git@v0.6.0#subdirectory=sdk/python",
+    "jobset @ git+https://github.com/kubernetes-sigs/jobset.git@v0.7.3#subdirectory=sdk/python",
 ]
 
 [project.urls]
