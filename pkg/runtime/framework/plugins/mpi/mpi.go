@@ -25,6 +25,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"maps"
 	"strconv"
 
@@ -75,9 +76,19 @@ func (m *MPI) Name() string {
 	return Name
 }
 
-// TODO: Need to implement validations for MPI Policy.
-func (m *MPI) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
+func (m *MPI) Validate(runtimeJobTemplate client.Object, runtimeInfo *runtime.Info, oldJobObj, newJobObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+	if newJobObj.Spec.Trainer != nil {
+		numProcPerNodePath := specPath.Child("trainer").Child("numProcPerNode")
+		if runtimeInfo.RuntimePolicy.MLPolicy != nil && runtimeInfo.RuntimePolicy.MLPolicy.MPI != nil {
+			numProcPerNode := *newJobObj.Spec.Trainer.NumProcPerNode
+			if numProcPerNode.Type != intstr.Int {
+				allErrs = append(allErrs, field.Invalid(numProcPerNodePath, newJobObj.Spec.Trainer.NumProcPerNode, "should have an int value"))
+			}
+		}
+	}
+	return nil, allErrs
 }
 
 func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) error {

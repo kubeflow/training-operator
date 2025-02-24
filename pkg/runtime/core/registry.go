@@ -18,7 +18,6 @@ package core
 
 import (
 	"context"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubeflow/trainer/pkg/runtime"

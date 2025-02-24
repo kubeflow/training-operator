@@ -83,6 +83,26 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 func (r *TrainingRuntime) buildObjects(
 	ctx context.Context, trainJob *trainer.TrainJob, jobSetTemplateSpec trainer.JobSetTemplateSpec, mlPolicy *trainer.MLPolicy, podGroupPolicy *trainer.PodGroupPolicy,
 ) ([]client.Object, error) {
+
+	info := r.runtimeInfo(ctx, trainJob, jobSetTemplateSpec, mlPolicy, podGroupPolicy)
+	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
+		return nil, err
+	}
+
+	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
+		return nil, err
+	}
+
+	jobSetTemplate := jobsetv1alpha2.JobSet{
+		Spec: jobSetTemplateSpec.Spec,
+	}
+
+	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
+}
+
+func (r *TrainingRuntime) runtimeInfo(
+	ctx context.Context, trainJob *trainer.TrainJob, jobSetTemplateSpec trainer.JobSetTemplateSpec, mlPolicy *trainer.MLPolicy, podGroupPolicy *trainer.PodGroupPolicy) *runtime.Info {
+
 	propagationLabels := jobSetTemplateSpec.Labels
 	if propagationLabels == nil && trainJob.Spec.Labels != nil {
 		propagationLabels = make(map[string]string, len(trainJob.Spec.Labels))
@@ -113,19 +133,7 @@ func (r *TrainingRuntime) buildObjects(
 
 	info := runtime.NewInfo(opts...)
 
-	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
-		return nil, err
-	}
-
-	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
-		return nil, err
-	}
-
-	jobSetTemplate := jobsetv1alpha2.JobSet{
-		Spec: jobSetTemplateSpec.Spec,
-	}
-
-	return r.framework.RunComponentBuilderPlugins(ctx, jobSetTemplate.DeepCopy(), info, trainJob)
+	return info
 }
 
 func (r *TrainingRuntime) TerminalCondition(ctx context.Context, trainJob *trainer.TrainJob) (*metav1.Condition, error) {
@@ -141,14 +149,19 @@ func (r *TrainingRuntime) EventHandlerRegistrars() []runtime.ReconcilerBuilder {
 }
 
 func (r *TrainingRuntime) ValidateObjects(ctx context.Context, old, new *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
+	trainingRuntime := &trainer.TrainingRuntime{}
 	if err := r.client.Get(ctx, client.ObjectKey{
-		Namespace: old.Namespace,
-		Name:      old.Spec.RuntimeRef.Name,
-	}, &trainer.TrainingRuntime{}); err != nil {
+		Namespace: new.Namespace,
+		Name:      new.Spec.RuntimeRef.Name,
+	}, trainingRuntime); err != nil {
 		return nil, field.ErrorList{
-			field.Invalid(field.NewPath("spec", "runtimeRef"), old.Spec.RuntimeRef,
+			field.Invalid(field.NewPath("spec", "runtimeRef"), new.Spec.RuntimeRef,
 				fmt.Sprintf("%v: specified trainingRuntime must be created before the TrainJob is created", err)),
 		}
 	}
-	return r.framework.RunCustomValidationPlugins(old, new)
+	info := r.runtimeInfo(ctx, new, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
+	jobSetTemplate := jobsetv1alpha2.JobSet{
+		Spec: trainingRuntime.Spec.Template.Spec,
+	}
+	return r.framework.RunCustomValidationPlugins(jobSetTemplate.DeepCopy(), info, old, new)
 }

@@ -72,6 +72,9 @@ const (
 	// TorchEnvMasterPort is the env name for the master node port.
 	TorchEnvMasterPort string = "PET_MASTER_PORT"
 
+	// TorchEnvNamePrefix is the env name prefix for the distributed envs for torchrun.
+	TorchEnvNamePrefix = "PET_"
+
 	// JobLauncher is the Job name for the launcher.
 	JobLauncher string = "launcher"
 
@@ -111,6 +114,8 @@ const (
 	// Distributed envs for mpirun.
 	// Values for OpenMPI implementation.
 	OpenMPIEnvHostFileLocation string = "OMPI_MCA_orte_default_hostfile"
+
+	UnsupportedRuntimeErrMsg string = "the specified runtime is not supported"
 )
 
 var (

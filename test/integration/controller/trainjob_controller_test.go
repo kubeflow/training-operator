@@ -52,7 +52,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
 		cfg = fwk.Init()
-		ctx, k8sClient = fwk.RunManager(cfg)
+		ctx, k8sClient = fwk.RunManager(cfg, true)
 	})
 	ginkgo.AfterAll(func() {
 		fwk.Teardown()
@@ -513,11 +513,11 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 
 var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
-
+	runtimeName := "training-runtime"
 	ginkgo.BeforeAll(func() {
 		fwk = &framework.Framework{}
 		cfg = fwk.Init()
-		ctx, k8sClient = fwk.RunManager(cfg)
+		ctx, k8sClient = fwk.RunManager(cfg, false)
 	})
 	ginkgo.AfterAll(func() {
 		fwk.Teardown()
@@ -534,8 +534,36 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
+
+		baseRuntimeWrapper := testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName)
+		baseClusterRuntimeWrapper := testingutil.MakeClusterTrainingRuntimeWrapper(runtimeName)
+		trainingRuntime := baseRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(
+				testingutil.MakeTrainingRuntimeWrapper(ns.Name, runtimeName).Spec).Obj()).Obj()
+		clusterTrainingRuntime := baseClusterRuntimeWrapper.RuntimeSpec(
+			testingutil.MakeTrainingRuntimeSpecWrapper(
+				testingutil.MakeClusterTrainingRuntimeWrapper(runtimeName).Spec).Obj()).Obj()
+		gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
+		gomega.Expect(k8sClient.Create(ctx, clusterTrainingRuntime)).To(gomega.Succeed())
+
+		gomega.Eventually(func() error {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, util.Timeout, util.Interval).Should(gomega.Succeed())
+		gomega.Eventually(func() error {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(clusterTrainingRuntime), clusterTrainingRuntime)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, util.Timeout, util.Interval).Should(gomega.Succeed())
 	})
 	ginkgo.AfterEach(func() {
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.TrainingRuntime{}, client.InNamespace(ns.Name))).Should(gomega.Succeed())
+		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.ClusterTrainingRuntime{})).Should(gomega.Succeed())
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.TrainJob{}, client.InNamespace(ns.Name))).Should(gomega.Succeed())
 	})
 
@@ -547,7 +575,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
 						ManagedBy("trainer.kubeflow.org/trainjob-controller").
-						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				gomega.Succeed()),
@@ -555,7 +583,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "managed-by-trainjob-controller").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				gomega.Succeed()),
@@ -563,7 +591,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "invalid-managed-by").
 						ManagedBy("invalid").
-						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				testingutil.BeInvalidError()),
@@ -577,53 +605,53 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-suspend").
 						ManagedBy("kueue.x-k8s.io/multikueue").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default managedBy=trainer.kubeflow.org/trainjob-controller",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Suspend(true).
 						Obj()
 				},
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "null-managed-by").
 						ManagedBy("trainer.kubeflow.org/trainjob-controller").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Suspend(true).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default runtimeRef.apiGroup",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
-						RuntimeRef(schema.GroupVersionKind{Group: "", Version: "", Kind: trainer.TrainingRuntimeKind}, "testing").
+						RuntimeRef(schema.GroupVersionKind{Group: "", Version: "", Kind: trainer.TrainingRuntimeKind}, runtimeName).
 						Obj()
 				},
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-api-group").
 						ManagedBy("trainer.kubeflow.org/trainjob-controller").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
 			ginkgo.Entry("Should succeed to default runtimeRef.kind",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(""), "testing").
+						RuntimeRef(trainer.SchemeGroupVersion.WithKind(""), runtimeName).
 						Obj()
 				},
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "empty-kind").
 						ManagedBy("trainer.kubeflow.org/trainjob-controller").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), runtimeName).
 						Suspend(false).
 						Obj()
 				}),
@@ -643,7 +671,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-managed-by").
 						ManagedBy("trainer.kubeflow.org/trainjob-controller").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func(job *trainer.TrainJob) *trainer.TrainJob {
@@ -654,7 +682,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 			ginkgo.Entry("Should fail to update runtimeRef",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "valid-runtimeref").
-						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "testing").
+						RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Obj()
 				},
 				func(job *trainer.TrainJob) *trainer.TrainJob {

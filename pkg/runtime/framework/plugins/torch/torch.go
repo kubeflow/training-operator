@@ -19,6 +19,8 @@ package torch
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -47,11 +49,6 @@ func New(context.Context, client.Client, client.FieldIndexer) (framework.Plugin,
 
 func (t *Torch) Name() string {
 	return Name
-}
-
-// TODO: Need to implement validations for Torch policy.
-func (t *Torch) Validate(oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
 }
 
 // TODO (andreyvelich): Add support for PyTorch elastic when JobSet supports Elastic Jobs.
@@ -139,4 +136,32 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) 
 	}
 
 	return nil
+}
+
+func (t *Torch) Validate(runtimeJobTemplate client.Object, runtimeInfo *runtime.Info, oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
+	var allErrs field.ErrorList
+	specPath := field.NewPath("spec")
+
+	if newObj.Spec.Trainer != nil {
+		numProcPerNodePath := specPath.Child("trainer").Child("numProcPerNode")
+		if runtimeInfo.RuntimePolicy.MLPolicy != nil &&
+			runtimeInfo.RuntimePolicy.MLPolicy.Torch != nil && newObj.Spec.Trainer.NumProcPerNode != nil {
+			numProcPerNode := *newObj.Spec.Trainer.NumProcPerNode
+			if numProcPerNode.Type == intstr.String {
+				allowedStringValList := []string{"auto", "cpu", "gpu"}
+				if !slices.Contains(allowedStringValList, numProcPerNode.StrVal) {
+					allErrs = append(allErrs, field.Invalid(numProcPerNodePath, newObj.Spec.Trainer.NumProcPerNode, "should have an int value or auto/cpu/gpu"))
+				}
+			}
+		}
+
+		if slices.ContainsFunc(newObj.Spec.Trainer.Env, func(x corev1.EnvVar) bool {
+			return strings.HasPrefix(x.Name, constants.TorchEnvNamePrefix)
+		}) {
+			trainerEnvsPath := specPath.Child("trainer").Child("env")
+			allErrs = append(allErrs, field.Invalid(trainerEnvsPath, newObj.Spec.Trainer.Env, fmt.Sprintf("should not have envs with name having prefix %s", constants.TorchEnvNamePrefix)))
+		}
+	}
+
+	return nil, allErrs
 }
