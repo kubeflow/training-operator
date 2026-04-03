@@ -472,7 +472,7 @@ func TestBuilderTrainer(t *testing.T) {
 								},
 							},
 							Name:     ptr.To(constants.Node),
-							Replicas: ptr.To[int32](1),
+							Replicas: ptr.To[int32](4),
 						},
 					},
 				},
@@ -559,7 +559,7 @@ func TestBuilderTrainer(t *testing.T) {
 								},
 							},
 							Name:     ptr.To(constants.Node),
-							Replicas: ptr.To[int32](1),
+							Replicas: ptr.To[int32](4),
 						},
 					},
 				},
@@ -584,9 +584,9 @@ func TestBuilderTrainer(t *testing.T) {
 				},
 			},
 			info:       &runtime.Info{},
-			wantJobSet: makeJobSet(constants.AncestorTrainer, constants.Node, 1, constants.Node),
+			wantJobSet: makeJobSet(constants.AncestorTrainer, constants.Node, 2, constants.Node),
 		},
-		"trainer ancestor with nil Trainer spec sets replicas to 1": {
+		"trainer ancestor with nil Trainer spec preserves replicas from template": {
 			jobSet: makeJobSet(constants.AncestorTrainer, constants.Node, 5, constants.Node),
 			trainJob: &trainer.TrainJob{
 				Spec: trainer.TrainJobSpec{
@@ -617,7 +617,7 @@ func TestBuilderTrainer(t *testing.T) {
 								},
 							},
 							Name:     ptr.To(constants.Node),
-							Replicas: ptr.To[int32](1),
+							Replicas: ptr.To[int32](5),
 						},
 					},
 				},
@@ -721,7 +721,7 @@ func TestBuilderTrainer(t *testing.T) {
 								},
 							},
 							Name:     ptr.To(constants.Node),
-							Replicas: ptr.To[int32](1),
+							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
