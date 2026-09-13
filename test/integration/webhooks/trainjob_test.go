@@ -757,7 +757,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 						Obj()
 				},
 				testingutil.BeInvalidError()),
-			ginkgo.Entry("Should fail to create TrainJob with a container claim that has no Pod-level resourceClaim",
+			ginkgo.Entry("Rejects creating a TrainJob with a runtimePatches container resources.claim that does not exist in the pod resourceClaims",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "dangling-container-claim").
 						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
@@ -791,7 +791,7 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 						}).
 						Obj()
 				},
-				testingutil.BeForbiddenError()),
+				gomega.MatchError(gomega.ContainSubstring("references resourceClaim \"dangling\" which is not defined in the Pod's resourceClaims"))),
 			ginkgo.Entry("Should succeed to create TrainJob with resourceClaimsPerNode",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, "resource-claims-per-node").

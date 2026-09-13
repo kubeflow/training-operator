@@ -28,15 +28,17 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
+	"github.com/kubeflow/trainer/v2/pkg/features"
 	jobsetplgconsts "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins/jobset/constants"
 	testingutil "github.com/kubeflow/trainer/v2/pkg/util/testing"
 )
@@ -76,8 +78,8 @@ func wantJobSetWithMergedGPU(ns, name, uid string, requests corev1.ResourceList,
 	return jobSet
 }
 
-// draTorchRuntimeSpec builds a Torch runtime whose node container requests CPU only, so the
-// PET_NPROC_PER_NODE value shows whether a DRA GPU count was resolved ("auto") or not ("1").
+// draTorchRuntimeSpec builds a Torch runtime whose node container requests CPU only, so
+// PET_NPROC_PER_NODE falls back to the CPU count ("1").
 func draTorchRuntimeSpec(requests corev1.ResourceList) *testingutil.TrainingRuntimeSpecWrapper {
 	return testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
 		WithMLPolicy(
@@ -133,6 +135,8 @@ func wantDRATorchJobSet(requests corev1.ResourceList, numProcPerNode string) *te
 }
 
 func TestTrainingRuntimeNewObjects(t *testing.T) {
+	// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.DynamicResourceAllocation, true)
 	resRequests := corev1.ResourceList{
 		corev1.ResourceCPU: resource.MustParse("1"),
 	}
@@ -141,7 +145,6 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 	cases := map[string]struct {
 		trainingRuntime *trainer.TrainingRuntime
 		trainJob        *trainer.TrainJob
-		objs            []client.Object
 		ObjCmpOpts      []cmp.Option
 		wantObjs        []runtime.Object
 		wantError       error
@@ -2328,7 +2331,7 @@ test-job-node-0-1.test-job slots=8
 					Obj(),
 			},
 		},
-		"resourceClaimsPerNode preserves the container claim request and keeps its claim first": {
+		"resourceClaimsPerNode keeps the request of a runtime container claim with the same name": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
 				draTorchRuntimeSpec(resRequests).
 					PodResourceClaims(constants.Node,
@@ -2351,8 +2354,8 @@ test-job-node-0-1.test-job slots=8
 				).
 				Obj(),
 			// resourceClaimsPerNode wins on the template name, but the runtime's container-level
-			// request, which restricts the container to a subset of the claim's devices, is kept.
-			// The "gpu" claim also moves ahead of "nic" so the GPU count resolves.
+			// request, which restricts the container to a subset of the claim's devices, is kept
+			// because container claims merge by name.
 			wantObjs: []runtime.Object{
 				wantDRATorchJobSet(resRequests, "1").
 					PodResourceClaims(constants.Node,
@@ -2360,8 +2363,8 @@ test-job-node-0-1.test-job slots=8
 						corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")},
 					).
 					ContainerResourceClaims(constants.Node, constants.Node,
-						corev1.ResourceClaim{Name: "gpu", Request: "gpu-0"},
 						corev1.ResourceClaim{Name: "nic"},
+						corev1.ResourceClaim{Name: "gpu", Request: "gpu-0"},
 					).
 					Obj(),
 			},
@@ -2462,7 +2465,6 @@ test-job-node-0-1.test-job slots=8
 			if tc.trainingRuntime != nil {
 				clientBuilder.WithObjects(tc.trainingRuntime)
 			}
-			clientBuilder.WithObjects(tc.objs...)
 			c := clientBuilder.Build()
 
 			trainingRuntime, err := NewTrainingRuntime(ctx, c, testingutil.AsIndex(clientBuilder), nil)
@@ -2527,7 +2529,19 @@ func TestApplyTrainerPodResourceClaims(t *testing.T) {
 		podSpec *corev1ac.PodSpecApplyConfiguration
 		claims  []trainer.TrainerResourceClaim
 		want    []corev1ac.PodResourceClaimApplyConfiguration
+		// disableDRAGate turns the DynamicResourceAllocation feature gate off for the case.
+		disableDRAGate bool
 	}{
+		"feature gate disabled leaves the pod resourceClaims untouched": {
+			podSpec: corev1ac.PodSpec().WithResourceClaims(
+				corev1ac.PodResourceClaim().WithName("nic").WithResourceClaimTemplateName("nic-tmpl"),
+			),
+			claims: []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "tmpl"}},
+			want: []corev1ac.PodResourceClaimApplyConfiguration{
+				*corev1ac.PodResourceClaim().WithName("nic").WithResourceClaimTemplateName("nic-tmpl"),
+			},
+			disableDRAGate: true,
+		},
 		"no claims leaves the pod resourceClaims untouched": {
 			podSpec: corev1ac.PodSpec().WithResourceClaims(
 				corev1ac.PodResourceClaim().WithName("nic").WithResourceClaimTemplateName("nic-tmpl"),
@@ -2566,6 +2580,8 @@ func TestApplyTrainerPodResourceClaims(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.DynamicResourceAllocation, !tc.disableDRAGate)
 			applyTrainerPodResourceClaims(tc.podSpec, tc.claims)
 			if diff := cmp.Diff(tc.want, tc.podSpec.ResourceClaims); len(diff) != 0 {
 				t.Errorf("Unexpected pod resourceClaims (-want,+got):\n%s", diff)
@@ -2574,23 +2590,39 @@ func TestApplyTrainerPodResourceClaims(t *testing.T) {
 	}
 }
 
-func TestApplyTrainerNodeResources(t *testing.T) {
+func TestMergeTrainerNodeResources(t *testing.T) {
 	cases := map[string]struct {
-		container        *corev1ac.ContainerApplyConfiguration
+		runtimeNode      *corev1ac.ContainerApplyConfiguration
 		resourcesPerNode *corev1.ResourceRequirements
 		claims           []trainer.TrainerResourceClaim
-		wantResources    *corev1ac.ResourceRequirementsApplyConfiguration
-		wantMerged       *corev1.ResourceRequirements
+		want             corev1.ResourceRequirements
+		// disableDRAGate turns the DynamicResourceAllocation feature gate off for the case.
+		disableDRAGate bool
 	}{
-		"nil resourcesPerNode and no claims leaves the container untouched": {
-			container: corev1ac.Container().WithName(constants.Node).WithResources(
+		"feature gate disabled merges resourcesPerNode but ignores the claims": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node).WithResources(
 				corev1ac.ResourceRequirements().WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")}),
 			),
-			wantResources: corev1ac.ResourceRequirements().
-				WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")}),
+			resourcesPerNode: &corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+			},
+			claims: []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "tmpl"}},
+			want: corev1.ResourceRequirements{
+				Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+			},
+			disableDRAGate: true,
 		},
-		"resourcesPerNode merges requests and limits and keeps the existing claims": {
-			container: corev1ac.Container().WithName(constants.Node).WithResources(
+		"nil resourcesPerNode and no claims returns the runtime resources": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node).WithResources(
+				corev1ac.ResourceRequirements().WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")}),
+			),
+			want: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+			},
+		},
+		"resourcesPerNode merges requests and limits per key and keeps the runtime claims": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node).WithResources(
 				corev1ac.ResourceRequirements().
 					WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1"), corev1.ResourceMemory: resource.MustParse("1Gi")}).
 					WithClaims(corev1ac.ResourceClaim().WithName("nic")),
@@ -2599,23 +2631,21 @@ func TestApplyTrainerNodeResources(t *testing.T) {
 				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")},
 				Limits:   corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("2")},
 			},
-			wantResources: corev1ac.ResourceRequirements().
-				WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4"), corev1.ResourceMemory: resource.MustParse("1Gi")}).
-				WithLimits(corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("2")}).
-				WithClaims(corev1ac.ResourceClaim().WithName("nic")),
-			wantMerged: &corev1.ResourceRequirements{
+			want: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4"), corev1.ResourceMemory: resource.MustParse("1Gi")},
 				Limits:   corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("2")},
+				Claims:   []corev1.ResourceClaim{{Name: "nic"}},
 			},
 		},
-		"claims are wired onto a container without resources": {
-			container: corev1ac.Container().WithName(constants.Node),
-			claims:    []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "gpu-tmpl"}},
-			wantResources: corev1ac.ResourceRequirements().
-				WithClaims(corev1ac.ResourceClaim().WithName("gpu")),
+		"claims are added to a container without resources": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node),
+			claims:      []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "gpu-tmpl"}},
+			want: corev1.ResourceRequirements{
+				Claims: []corev1.ResourceClaim{{Name: "gpu"}},
+			},
 		},
-		"claims go first, an existing same-name entry keeps its request, other existing claims follow": {
-			container: corev1ac.Container().WithName(constants.Node).WithResources(
+		"claims merge by name: runtime claims stay, a same-name entry keeps its request, new claims follow": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node).WithResources(
 				corev1ac.ResourceRequirements().WithClaims(
 					corev1ac.ResourceClaim().WithName("nic"),
 					corev1ac.ResourceClaim().WithName("gpu").WithRequest("half"),
@@ -2625,14 +2655,12 @@ func TestApplyTrainerNodeResources(t *testing.T) {
 				{Name: "gpu", ResourceClaimTemplateName: "gpu-tmpl"},
 				{Name: "fpga", ResourceClaimTemplateName: "fpga-tmpl"},
 			},
-			wantResources: corev1ac.ResourceRequirements().WithClaims(
-				corev1ac.ResourceClaim().WithName("gpu").WithRequest("half"),
-				corev1ac.ResourceClaim().WithName("fpga"),
-				corev1ac.ResourceClaim().WithName("nic"),
-			),
+			want: corev1.ResourceRequirements{
+				Claims: []corev1.ResourceClaim{{Name: "nic"}, {Name: "gpu", Request: "half"}, {Name: "fpga"}},
+			},
 		},
-		"resourcesPerNode and claims are applied together": {
-			container: corev1ac.Container().WithName(constants.Node).WithResources(
+		"resourcesPerNode and claims are merged together": {
+			runtimeNode: corev1ac.Container().WithName(constants.Node).WithResources(
 				corev1ac.ResourceRequirements().
 					WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")}).
 					WithClaims(corev1ac.ResourceClaim().WithName("nic")),
@@ -2641,28 +2669,55 @@ func TestApplyTrainerNodeResources(t *testing.T) {
 				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
 			},
 			claims: []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "gpu-tmpl"}},
-			wantResources: corev1ac.ResourceRequirements().
-				WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")}).
-				WithClaims(
-					corev1ac.ResourceClaim().WithName("gpu"),
-					corev1ac.ResourceClaim().WithName("nic"),
-				),
-			wantMerged: &corev1.ResourceRequirements{
+			// A new claim with no match in the runtime list is placed first by strategic merge.
+			want: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
+				Claims:   []corev1.ResourceClaim{{Name: "gpu"}, {Name: "nic"}},
 			},
 		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			gotMerged, err := applyTrainerNodeResources(tc.container, tc.resourcesPerNode, tc.claims)
+			// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.DynamicResourceAllocation, !tc.disableDRAGate)
+			got, err := mergeTrainerNodeResources(tc.runtimeNode, tc.resourcesPerNode, tc.claims)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(tc.wantResources, tc.container.Resources); len(diff) != 0 {
-				t.Errorf("Unexpected container resources (-want,+got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tc.wantMerged, gotMerged); len(diff) != 0 {
+			if diff := cmp.Diff(tc.want, got); len(diff) != 0 {
 				t.Errorf("Unexpected merged resources (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestToApplyConfig(t *testing.T) {
+	cases := map[string]struct {
+		res  corev1.ResourceRequirements
+		want *corev1ac.ResourceRequirementsApplyConfiguration
+	}{
+		"empty resources": {
+			want: corev1ac.ResourceRequirements(),
+		},
+		"requests, limits and claims are converted": {
+			res: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+				Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Claims:   []corev1.ResourceClaim{{Name: "nic"}, {Name: "gpu", Request: "half"}},
+			},
+			want: corev1ac.ResourceRequirements().
+				WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")}).
+				WithLimits(corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")}).
+				WithClaims(
+					corev1ac.ResourceClaim().WithName("nic"),
+					corev1ac.ResourceClaim().WithName("gpu").WithRequest("half"),
+				),
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if diff := cmp.Diff(tc.want, toApplyConfig(tc.res)); len(diff) != 0 {
+				t.Errorf("Unexpected apply configuration (-want,+got):\n%s", diff)
 			}
 		})
 	}

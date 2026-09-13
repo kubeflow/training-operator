@@ -30,6 +30,7 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/component-base/featuregate"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/klog/v2/ktesting"
 	clocktesting "k8s.io/utils/clock/testing"
@@ -322,7 +323,28 @@ func TestValidateCreate(t *testing.T) {
 		trainingRuntime        *trainer.TrainingRuntime
 		wantError              field.ErrorList
 		wantWarnings           admission.Warnings
+		enableFeatureGates     []featuregate.Feature
 	}{
+		"DRA fields are accepted with the DynamicResourceAllocation gate enabled": {
+			obj: testingutil.MakeTrainJobWrapper("default", "test").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{
+							Name:                      "gpu",
+							ResourceClaimTemplateName: "gpu-template",
+						}).
+						Obj(),
+				).
+				Obj(),
+			clusterTrainingRuntime: testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
+				RuntimeSpec(trainer.TrainingRuntimeSpec{
+					Template: trainer.JobSetTemplateSpec{
+						Spec: testingutil.MakeJobSetWrapper("", "").Obj().Spec,
+					},
+				}).Obj(),
+			enableFeatureGates: []featuregate.Feature{features.DynamicResourceAllocation},
+		},
 		"valid trainjob name compliant with RFC 1035": {
 			obj: testingutil.MakeTrainJobWrapper("default", "valid-job-name").
 				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
@@ -450,6 +472,10 @@ func TestValidateCreate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+			for _, gate := range tc.enableFeatureGates {
+				featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, gate, true)
+			}
 			_, ctx := ktesting.NewTestContext(t)
 
 			var cancel func()
@@ -484,47 +510,6 @@ func TestValidateCreate(t *testing.T) {
 	}
 }
 
-func TestValidateCreateDRAEnabled(t *testing.T) {
-	// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
-	featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.DynamicResourceAllocation, true)
-
-	_, ctx := ktesting.NewTestContext(t)
-	var cancel func()
-	ctx, cancel = context.WithCancel(ctx)
-	t.Cleanup(cancel)
-
-	clusterRuntime := testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
-		RuntimeSpec(trainer.TrainingRuntimeSpec{
-			Template: trainer.JobSetTemplateSpec{
-				Spec: testingutil.MakeJobSetWrapper("", "").Obj().Spec,
-			},
-		}).Obj()
-
-	clientBuilder := testingutil.NewClientBuilder().WithObjects(clusterRuntime)
-	runtimes, err := runtimecore.New(context.Background(), clientBuilder.Build(), testingutil.AsIndex(clientBuilder), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	validator := &TrainJobValidator{runtimes: runtimes}
-
-	obj := testingutil.MakeTrainJobWrapper("default", "test").
-		RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
-		Trainer(
-			testingutil.MakeTrainJobTrainerWrapper().
-				ResourceClaimsPerNode(trainer.TrainerResourceClaim{
-					Name:                      "gpu",
-					ResourceClaimTemplateName: "gpu-template",
-				}).
-				Obj(),
-		).
-		Obj()
-
-	_, err = validator.ValidateCreate(ctx, obj)
-	if err != nil {
-		t.Errorf("ValidateCreate with DRA gate enabled returned unexpected error: %v", err)
-	}
-}
-
 func TestValidateUpdate(t *testing.T) {
 	clusterRuntime := testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
 		RuntimeSpec(trainer.TrainingRuntimeSpec{
@@ -533,16 +518,18 @@ func TestValidateUpdate(t *testing.T) {
 			},
 		}).Obj()
 
-	// With the DynamicResourceAllocation gate disabled, an update may not introduce DRA fields
-	// (spec.runtimePatches entries can be appended), but a TrainJob created with them while the
-	// gate was enabled must stay updatable after the gate is disabled.
+	// Feature-gated fields are rejected on create while their gate is disabled. On update they are
+	// rejected only when the update introduces them, so a TrainJob created while the gate was
+	// enabled stays updatable (for example, suspend) after the gate is disabled. The cases below
+	// use DynamicResourceAllocation fields; the same shape works for any gated field.
 	cases := map[string]struct {
-		oldObj       *trainer.TrainJob
-		newObj       *trainer.TrainJob
-		wantError    field.ErrorList
-		wantWarnings admission.Warnings
+		oldObj             *trainer.TrainJob
+		newObj             *trainer.TrainJob
+		wantError          field.ErrorList
+		wantWarnings       admission.Warnings
+		enableFeatureGates []featuregate.Feature
 	}{
-		"gate disabled, new uses DRA, old does not: forbidden": {
+		"update adds a feature-gated field while the gate is disabled: forbidden": {
 			wantError: field.ErrorList{
 				field.Forbidden(field.NewPath("spec", "trainer", "resourceClaimsPerNode"), ""),
 			},
@@ -561,7 +548,7 @@ func TestValidateUpdate(t *testing.T) {
 				).
 				Obj(),
 		},
-		"gate disabled, DRA TrainJob gets suspended: passes": {
+		"update of a TrainJob that already uses a feature-gated field while the gate is disabled: passes": {
 			oldObj: testingutil.MakeTrainJobWrapper("default", "test").
 				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
 				Trainer(
@@ -590,6 +577,10 @@ func TestValidateUpdate(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+			for _, gate := range tc.enableFeatureGates {
+				featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, gate, true)
+			}
 			_, ctx := ktesting.NewTestContext(t)
 			var cancel func()
 			ctx, cancel = context.WithCancel(ctx)

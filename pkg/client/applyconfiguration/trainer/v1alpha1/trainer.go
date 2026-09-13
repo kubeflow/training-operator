@@ -47,6 +47,9 @@ type TrainerApplyConfiguration struct {
 	// These claims are added to the trainer node Pod's resourceClaims and automatically
 	// referenced in the node container's resources.claims. To attach a claim to another
 	// container (sidecar or init), use the runtimePatches API.
+	// Claims are merged by name with strategic merge patch. For a claim of the same name,
+	// this field takes precedence over runtimePatches, which take precedence over the runtime
+	// template, matching how resourcesPerNode overrides patched requests and limits.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/
 	ResourceClaimsPerNode []TrainerResourceClaimApplyConfiguration `json:"resourceClaimsPerNode,omitempty"`
 	// numProcPerNode is the number of processes/workers/slots on every training node.

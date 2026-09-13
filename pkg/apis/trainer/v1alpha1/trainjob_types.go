@@ -287,6 +287,9 @@ type Trainer struct {
 	// These claims are added to the trainer node Pod's resourceClaims and automatically
 	// referenced in the node container's resources.claims. To attach a claim to another
 	// container (sidecar or init), use the runtimePatches API.
+	// Claims are merged by name with strategic merge patch. For a claim of the same name,
+	// this field takes precedence over runtimePatches, which take precedence over the runtime
+	// template, matching how resourcesPerNode overrides patched requests and limits.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/
 	// +listType=map
 	// +listMapKey=name
@@ -435,10 +438,10 @@ type PodSpecPatch struct {
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers.
-	// For the node container, prefer resourceClaimsPerNode on the trainer, which replaces a
-	// same-name Pod claim; use this field there only to reference a pre-created ResourceClaim.
-	// Containers consume a claim by referencing its name in their resources.claims, usually in
-	// the same runtimePatch.
+	// Entries are merged by name with the runtime template using strategic merge patch.
+	// For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over
+	// this field, which takes precedence over the runtime template. Containers consume a claim
+	// by referencing its name in their resources.claims.
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=32
@@ -531,10 +534,11 @@ type ContainerPatch struct {
 	// +optional
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 
-	// resources patches the container's compute resources.
-	// For the node container, resourcesPerNode on the trainer overrides patched requests and
-	// limits per key, and resourceClaimsPerNode on the trainer is placed ahead of patched claims;
-	// prefer those fields over patching the node container.
+	// resources patches the container's compute resources, merged with the runtime template
+	// using strategic merge patch. If setting the resources on the main node container, prefer
+	// the higher level spec.trainer.resourcesPerNode and spec.trainer.resourceClaimsPerNode
+	// fields; they take precedence over this field, which takes precedence over the runtime
+	// template.
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 

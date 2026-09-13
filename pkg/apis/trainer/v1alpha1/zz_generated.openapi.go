@@ -703,7 +703,7 @@ func schema_pkg_apis_trainer_v1alpha1_ContainerPatch(ref common.ReferenceCallbac
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "resources patches the container's compute resources. For the node container, resourcesPerNode on the trainer overrides patched requests and limits per key, and resourceClaimsPerNode on the trainer is placed ahead of patched claims; prefer those fields over patching the node container.",
+							Description: "resources patches the container's compute resources, merged with the runtime template using strategic merge patch. If setting the resources on the main node container, prefer the higher level spec.trainer.resourcesPerNode and spec.trainer.resourceClaimsPerNode fields; they take precedence over this field, which takes precedence over the runtime template.",
 							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
 						},
 					},
@@ -1790,7 +1790,7 @@ func schema_pkg_apis_trainer_v1alpha1_PodSpecPatch(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. For the node container, prefer resourceClaimsPerNode on the trainer, which replaces a same-name Pod claim; use this field there only to reference a pre-created ResourceClaim. Containers consume a claim by referencing its name in their resources.claims, usually in the same runtimePatch.",
+							Description: "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in their resources.claims.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2585,7 +2585,7 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "resourceClaimsPerNode defines the DRA ResourceClaims for each training node. These claims are added to the trainer node Pod's resourceClaims and automatically referenced in the node container's resources.claims. To attach a claim to another container (sidecar or init), use the runtimePatches API. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/",
+							Description: "resourceClaimsPerNode defines the DRA ResourceClaims for each training node. These claims are added to the trainer node Pod's resourceClaims and automatically referenced in the node container's resources.claims. To attach a claim to another container (sidecar or init), use the runtimePatches API. Claims are merged by name with strategic merge patch. For a claim of the same name, this field takes precedence over runtimePatches, which take precedence over the runtime template, matching how resourcesPerNode overrides patched requests and limits. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2922,7 +2922,7 @@ func schema_pkg_apis_trainer_v1alpha1_XGBoostMLPolicySource(ref common.Reference
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "XGBoostMLPolicySource represents an XGBoost runtime configuration. The number of workers per node is automatically derived from container GPU resources:\n  - GPU training: 1 worker per GPU (from resourcesPerNode or the DRA ResourceClaimTemplate\n    referenced by the node container)\n  - CPU training: 1 worker per node (each worker utilizes all available CPU cores\n    via XGBoost's multi-threaded execution, controlled by the nthread parameter)\n\nDMLC_NUM_WORKER = numNodes × workersPerNode (where workersPerNode = GPU count or 1)",
+				Description: "XGBoostMLPolicySource represents an XGBoost runtime configuration. The number of workers per node is automatically derived from container GPU resources:\n  - GPU training: 1 worker per GPU (from resourcesPerNode)\n  - CPU training: 1 worker per node (each worker utilizes all available CPU cores\n    via XGBoost's multi-threaded execution, controlled by the nthread parameter)\n\nDMLC_NUM_WORKER = numNodes × workersPerNode (where workersPerNode = GPU count or 1)",
 				Type:        []string{"object"},
 			},
 		},

@@ -37,7 +37,7 @@ const (
 	// kep: https://github.com/kubeflow/trainer/blob/master/proposals/2782-dra-support/README.md
 	//
 	// Enables Dynamic Resource Allocation (DRA) support: trainer.resourceClaimsPerNode and
-	// resourceClaims / resources.claims in runtimePatches, plus DRA-aware GPU detection.
+	// resourceClaims / resources.claims in runtimePatches.
 	DynamicResourceAllocation featuregate.Feature = "DynamicResourceAllocation"
 )
 

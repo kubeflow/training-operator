@@ -43,6 +43,7 @@ import (
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/apply"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
+	"github.com/kubeflow/trainer/v2/pkg/features"
 	"github.com/kubeflow/trainer/v2/pkg/runtime"
 	fwkcore "github.com/kubeflow/trainer/v2/pkg/runtime/framework/core"
 	fwkplugins "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins"
@@ -212,18 +213,19 @@ func (r *TrainingRuntime) newRuntimeInfo(
 			if applyPodSpec := jobSetSpecApply.ReplicatedJobs[i].Template.Spec.Template.Spec; applyPodSpec != nil {
 				if jobTrainer := trainJob.Spec.Trainer; jobTrainer != nil {
 					applyTrainerPodResourceClaims(applyPodSpec, jobTrainer.ResourceClaimsPerNode)
+					hasNodeResources := jobTrainer.ResourcesPerNode != nil ||
+						(features.Enabled(features.DynamicResourceAllocation) && len(jobTrainer.ResourceClaimsPerNode) > 0)
 					for k := range applyPodSpec.Containers {
-						if ptr.Deref(applyPodSpec.Containers[k].Name, "") != constants.Node {
+						if ptr.Deref(applyPodSpec.Containers[k].Name, "") != constants.Node || !hasNodeResources {
 							continue
 						}
-						mergedRes, mergeErr := applyTrainerNodeResources(&applyPodSpec.Containers[k], jobTrainer.ResourcesPerNode, jobTrainer.ResourceClaimsPerNode)
+						mergedRes, mergeErr := mergeTrainerNodeResources(&applyPodSpec.Containers[k], jobTrainer.ResourcesPerNode, jobTrainer.ResourceClaimsPerNode)
 						if mergeErr != nil {
 							return nil, mergeErr
 						}
 						// Keep the typed template in sync since it feeds PodSet.SinglePodRequests.
-						if mergedRes != nil {
-							jobSetTemplateSpec.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Resources = *mergedRes
-						}
+						jobSetTemplateSpec.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].Resources = mergedRes
+						applyPodSpec.Containers[k].Resources = toApplyConfig(mergedRes)
 						break
 					}
 				}
@@ -337,8 +339,11 @@ func (r *TrainingRuntime) ValidateObjects(ctx context.Context, old, new *trainer
 }
 
 // applyTrainerPodResourceClaims upserts the TrainJob's resourceClaimsPerNode into the Pod's
-// resourceClaims by name.
+// resourceClaims by name. It is a no-op while the DynamicResourceAllocation gate is disabled.
 func applyTrainerPodResourceClaims(podSpec *corev1ac.PodSpecApplyConfiguration, claims []trainer.TrainerResourceClaim) {
+	if !features.Enabled(features.DynamicResourceAllocation) {
+		return
+	}
 	for _, claim := range claims {
 		podClaim := corev1ac.PodResourceClaim().
 			WithName(claim.Name).
@@ -353,75 +358,59 @@ func applyTrainerPodResourceClaims(podSpec *corev1ac.PodSpecApplyConfiguration, 
 	}
 }
 
-// applyTrainerNodeResources merges the TrainJob's resourcesPerNode requests and limits into the
-// node container and references every resourceClaimsPerNode claim from its resources.claims.
-// The TrainJob claims are kept at the front of the list in the order they were declared, since
-// GPU detection reads the first entry and a claim already wired by the runtime must not
-// shadow them; an existing entry with the same name is reused so a container-level request,
-// which restricts the container to a subset of the claim's devices, survives.
-// It returns the merged typed requirements, or nil when resourcesPerNode is nil.
-func applyTrainerNodeResources(
-	container *corev1ac.ContainerApplyConfiguration, resourcesPerNode *corev1.ResourceRequirements, claims []trainer.TrainerResourceClaim,
-) (*corev1.ResourceRequirements, error) {
-	var mergedRes *corev1.ResourceRequirements
+// mergeTrainerNodeResources merges the TrainJob's resourcesPerNode and resourceClaimsPerNode over the
+// runtime node container's resources with strategic merge patch: requests and limits merge per key
+// and claims merge by name, so a claim already wired by the runtime, including its request, is kept.
+// Claims are ignored while the DynamicResourceAllocation gate is disabled.
+func mergeTrainerNodeResources(
+	runtimeNode *corev1ac.ContainerApplyConfiguration, resourcesPerNode *corev1.ResourceRequirements, resourceClaimsPerNode []trainer.TrainerResourceClaim,
+) (corev1.ResourceRequirements, error) {
+	var nodeRes corev1.ResourceRequirements
 	if resourcesPerNode != nil {
-		var baseRes corev1.ResourceRequirements
-		if r := container.Resources; r != nil {
-			if r.Limits != nil {
-				baseRes.Limits = *r.Limits
-			}
-			if r.Requests != nil {
-				baseRes.Requests = *r.Requests
-			}
+		nodeRes.Limits = resourcesPerNode.Limits
+		nodeRes.Requests = resourcesPerNode.Requests
+	}
+	if features.Enabled(features.DynamicResourceAllocation) {
+		// The node container consumes every claim declared in resourceClaimsPerNode.
+		for _, claim := range resourceClaimsPerNode {
+			nodeRes.Claims = append(nodeRes.Claims, corev1.ResourceClaim{Name: claim.Name})
 		}
-		merged, err := trainingruntimeutil.MergeResourceRequirements(baseRes, *resourcesPerNode)
-		if err != nil {
-			return nil, err
-		}
-		applyRes := &corev1ac.ResourceRequirementsApplyConfiguration{}
-		if merged.Limits != nil {
-			limits := maps.Clone(merged.Limits)
-			applyRes.Limits = &limits
-		}
-		if merged.Requests != nil {
-			requests := maps.Clone(merged.Requests)
-			applyRes.Requests = &requests
-		}
-		// Preserve existing DRA claims — resourcesPerNode only overrides requests/limits.
-		if old := container.Resources; old != nil {
-			applyRes.Claims = old.Claims
-		}
-		container.Resources = applyRes
-		mergedRes = &merged
 	}
 
-	if len(claims) == 0 {
-		return mergedRes, nil
-	}
-	if container.Resources == nil {
-		container.Resources = &corev1ac.ResourceRequirementsApplyConfiguration{}
-	}
-	existing := container.Resources.Claims
-	isTrainerClaim := func(c corev1ac.ResourceClaimApplyConfiguration) bool {
-		return slices.ContainsFunc(claims, func(claim trainer.TrainerResourceClaim) bool {
-			return claim.Name == ptr.Deref(c.Name, "")
-		})
-	}
-	mergedClaims := make([]corev1ac.ResourceClaimApplyConfiguration, 0, len(existing)+len(claims))
-	for _, claim := range claims {
-		if idx := slices.IndexFunc(existing, func(c corev1ac.ResourceClaimApplyConfiguration) bool {
-			return ptr.Deref(c.Name, "") == claim.Name
-		}); idx != -1 {
-			mergedClaims = append(mergedClaims, existing[idx])
-			continue
+	var runtimeRes corev1.ResourceRequirements
+	if runtimeNode != nil && runtimeNode.Resources != nil {
+		if runtimeNode.Resources.Limits != nil {
+			runtimeRes.Limits = *runtimeNode.Resources.Limits
 		}
-		mergedClaims = append(mergedClaims, *corev1ac.ResourceClaim().WithName(claim.Name))
-	}
-	for _, c := range existing {
-		if !isTrainerClaim(c) {
-			mergedClaims = append(mergedClaims, c)
+		if runtimeNode.Resources.Requests != nil {
+			runtimeRes.Requests = *runtimeNode.Resources.Requests
+		}
+		for _, claim := range runtimeNode.Resources.Claims {
+			runtimeRes.Claims = append(runtimeRes.Claims, corev1.ResourceClaim{
+				Name:    ptr.Deref(claim.Name, ""),
+				Request: ptr.Deref(claim.Request, ""),
+			})
 		}
 	}
-	container.Resources.Claims = mergedClaims
-	return mergedRes, nil
+
+	return trainingruntimeutil.MergeResourceRequirements(runtimeRes, nodeRes)
+}
+
+// toApplyConfig converts typed ResourceRequirements to the apply configuration used in the JobSet template.
+func toApplyConfig(res corev1.ResourceRequirements) *corev1ac.ResourceRequirementsApplyConfiguration {
+	out := corev1ac.ResourceRequirements()
+	if res.Limits != nil {
+		out.WithLimits(maps.Clone(res.Limits))
+	}
+	if res.Requests != nil {
+		out.WithRequests(maps.Clone(res.Requests))
+	}
+	for _, claim := range res.Claims {
+		c := corev1ac.ResourceClaim().WithName(claim.Name)
+		if claim.Request != "" {
+			c.WithRequest(claim.Request)
+		}
+		out.WithClaims(c)
+	}
+	return out
 }

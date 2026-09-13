@@ -1067,22 +1067,50 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					).
 					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests)
 			}
-			// newTrainJob returns a TrainJob that consumes the "gpu" claim from the given
-			// ResourceClaimTemplate on every training node.
-			newTrainJob := func(templateName string) *trainer.TrainJob {
+			// draPatch returns a runtimePatch that adds Pod-level claims and a container claim to
+			// the given replicated job and container.
+			draPatch := func(rJob, container string, podClaims []corev1.PodResourceClaim, containerClaims []corev1.ResourceClaim) trainer.RuntimePatch {
+				return trainer.RuntimePatch{
+					Manager: "acme.io/manager",
+					TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
+						Template: &trainer.JobSetTemplatePatch{
+							Spec: &trainer.JobSetSpecPatch{
+								ReplicatedJobs: []trainer.ReplicatedJobPatch{{
+									Name: rJob,
+									Template: &trainer.JobTemplatePatch{
+										Spec: &trainer.JobSpecPatch{
+											Template: &trainer.PodTemplatePatch{
+												Spec: &trainer.PodSpecPatch{
+													ResourceClaims: podClaims,
+													Containers: []trainer.ContainerPatch{{
+														Name:      container,
+														Resources: &corev1.ResourceRequirements{Claims: containerClaims},
+													}},
+												},
+											},
+										},
+									},
+								}},
+							},
+						},
+					},
+				}
+			}
+			// newTrainJob returns a TrainJob with the given resourceClaimsPerNode and runtimePatches.
+			newTrainJob := func(claims []trainer.TrainerResourceClaim, patches ...trainer.RuntimePatch) *trainer.TrainJob {
 				return testingutil.MakeTrainJobWrapper(ns.Name, "alpha").
 					RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "alpha").
 					Trainer(
 						testingutil.MakeTrainJobTrainerWrapper().
 							Container("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
-							ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: templateName}).
+							ResourceClaimsPerNode(claims...).
 							Obj()).
+					RuntimePatches(patches).
 					Obj()
 			}
-			// wantJobSet returns the JobSet expected for newTrainJob: the node Pod requests the "gpu"
-			// claim from the given ResourceClaimTemplate and the node container consumes it.
+			// baseJobSet returns the JobSet expected for newTrainJob before any DRA claims are applied.
 			// PET_NPROC_PER_NODE falls back to the CPU count since no GPU resource is requested.
-			wantJobSet := func(templateName string) *jobsetv1alpha2.JobSet {
+			baseJobSet := func() *testingutil.JobSetWrapper {
 				return testingutil.MakeJobSetWrapper(ns.Name, trainJobKey.Name).
 					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), trainJobKey.Name, string(trainJob.UID)).
 					Suspend(false).
@@ -1092,8 +1120,6 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					NumNodes(100).
 					Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 					ContainerTrainerPorts([]corev1.ContainerPort{{ContainerPort: constants.ContainerTrainerPort, Protocol: "TCP"}}).
-					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To(templateName)}).
-					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
 					Env(constants.Node, constants.Node,
 						[]corev1.EnvVar{
 							{
@@ -1121,54 +1147,131 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 								Value: fmt.Sprintf("%d", constants.ContainerTrainerPort),
 							},
 						}...,
-					).
-					Obj()
+					)
 			}
+			gpuTemplateA := corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("template-a")}
+			gpuTemplateB := corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("template-b")}
+			nicTemplate := corev1.PodResourceClaim{Name: "nic", ResourceClaimTemplateName: ptr.To("nic-template")}
+			dataTemplate := corev1.PodResourceClaim{Name: "data", ResourceClaimTemplateName: ptr.To("data-template")}
+			gpuClaim := corev1.ResourceClaim{Name: "gpu"}
+			nicClaim := corev1.ResourceClaim{Name: "nic"}
+			dataClaim := corev1.ResourceClaim{Name: "data"}
+			gpuPerNodeB := []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "template-b"}}
+			gpuPerNodeA := []trainer.TrainerResourceClaim{{Name: "gpu", ResourceClaimTemplateName: "template-a"}}
 
-			ginkgo.It("Should wire resourceClaimsPerNode into the JobSet", func() {
-				ginkgo.By("Creating Torch TrainingRuntime and TrainJob")
-				trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
-					RuntimeSpec(torchRuntimeSpec().Obj()).
-					Obj()
-				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
-				gomega.Eventually(func(g gomega.Gomega) {
-					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)).Should(gomega.Succeed())
-				}, util.Timeout, util.Interval).Should(gomega.Succeed())
-				trainJob = newTrainJob("gpu-template")
-				trainJobKey = client.ObjectKeyFromObject(trainJob)
-				gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+			ginkgo.DescribeTable("Merging DRA claims into the JobSet",
+				func(runtimeSpec func() *testingutil.TrainingRuntimeSpecWrapper, job func() *trainer.TrainJob, want func(*testingutil.JobSetWrapper) *testingutil.JobSetWrapper) {
+					ginkgo.By("Creating Torch TrainingRuntime and TrainJob")
+					trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
+						RuntimeSpec(runtimeSpec().Obj()).
+						Obj()
+					gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+					gomega.Eventually(func(g gomega.Gomega) {
+						g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)).Should(gomega.Succeed())
+					}, util.Timeout, util.Interval).Should(gomega.Succeed())
+					trainJob = job()
+					trainJobKey = client.ObjectKeyFromObject(trainJob)
+					gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
 
-				ginkgo.By("Checking if the JobSet consumes the claim")
-				gomega.Eventually(func(g gomega.Gomega) {
-					jobSet := &jobsetv1alpha2.JobSet{}
-					g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
-					g.Expect(jobSet).Should(gomega.BeComparableTo(wantJobSet("gpu-template"), util.IgnoreObjectMetadata))
-				}, util.Timeout, util.Interval).Should(gomega.Succeed())
-			})
-
-			ginkgo.It("Should replace a runtime resourceClaim with the same name from resourceClaimsPerNode", func() {
-				ginkgo.By("Creating Torch TrainingRuntime with a gpu claim and TrainJob")
-				trainingRuntime = testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha").
-					RuntimeSpec(torchRuntimeSpec().
-						PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("template-a")}).
-						ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
-						Obj()).
-					Obj()
-				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
-				gomega.Eventually(func(g gomega.Gomega) {
-					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)).Should(gomega.Succeed())
-				}, util.Timeout, util.Interval).Should(gomega.Succeed())
-				trainJob = newTrainJob("template-b")
-				trainJobKey = client.ObjectKeyFromObject(trainJob)
-				gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
-
-				ginkgo.By("Checking if the JobSet references template-b with exactly one gpu container claim")
-				gomega.Eventually(func(g gomega.Gomega) {
-					jobSet := &jobsetv1alpha2.JobSet{}
-					g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
-					g.Expect(jobSet).Should(gomega.BeComparableTo(wantJobSet("template-b"), util.IgnoreObjectMetadata))
-				}, util.Timeout, util.Interval).Should(gomega.Succeed())
-			})
+					ginkgo.By("Checking the claims on the JobSet")
+					gomega.Eventually(func(g gomega.Gomega) {
+						jobSet := &jobsetv1alpha2.JobSet{}
+						g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+						g.Expect(jobSet).Should(gomega.BeComparableTo(want(baseJobSet()).Obj(), util.IgnoreObjectMetadata))
+					}, util.Timeout, util.Interval).Should(gomega.Succeed())
+				},
+				ginkgo.Entry("empty resourceClaimsPerNode adds no DRA fields",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob { return newTrainJob(nil) },
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper { return j },
+				),
+				ginkgo.Entry("resourceClaimsPerNode adds the claim to the node Pod and node container only",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob { return newTrainJob(gpuPerNodeA) },
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+				),
+				ginkgo.Entry("runtimePatches add a claim to the patched job and container",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob {
+						return newTrainJob(nil, draPatch(constants.Node, constants.Node, []corev1.PodResourceClaim{nicTemplate}, []corev1.ResourceClaim{nicClaim}))
+					},
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, nicTemplate).
+							ContainerResourceClaims(constants.Node, constants.Node, nicClaim)
+					},
+				),
+				ginkgo.Entry("runtime template claims reach the JobSet",
+					func() *testingutil.TrainingRuntimeSpecWrapper {
+						return torchRuntimeSpec().
+							PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+					func() *trainer.TrainJob { return newTrainJob(nil) },
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+				),
+				ginkgo.Entry("resourceClaimsPerNode and runtimePatches with distinct claims are merged",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob {
+						return newTrainJob(gpuPerNodeA, draPatch(constants.Node, constants.Node, []corev1.PodResourceClaim{nicTemplate}, []corev1.ResourceClaim{nicClaim}))
+					},
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, nicTemplate, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim, nicClaim)
+					},
+				),
+				ginkgo.Entry("resourceClaimsPerNode and runtimePatches on different jobs are merged",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob {
+						return newTrainJob(gpuPerNodeA, draPatch(constants.DatasetInitializer, constants.DatasetInitializer, []corev1.PodResourceClaim{dataTemplate}, []corev1.ResourceClaim{dataClaim}))
+					},
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim).
+							PodResourceClaims(constants.DatasetInitializer, dataTemplate).
+							ContainerResourceClaims(constants.DatasetInitializer, constants.DatasetInitializer, dataClaim)
+					},
+				),
+				ginkgo.Entry("runtimePatches container claim consumes a runtime template Pod claim",
+					func() *testingutil.TrainingRuntimeSpecWrapper {
+						return torchRuntimeSpec().PodResourceClaims(constants.Node, gpuTemplateA)
+					},
+					func() *trainer.TrainJob {
+						return newTrainJob(nil, draPatch(constants.Node, constants.Node, nil, []corev1.ResourceClaim{gpuClaim}))
+					},
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+				),
+				ginkgo.Entry("resourceClaimsPerNode and runtimePatches define the same claim: resourceClaimsPerNode wins",
+					torchRuntimeSpec,
+					func() *trainer.TrainJob {
+						return newTrainJob(gpuPerNodeB, draPatch(constants.Node, constants.Node, []corev1.PodResourceClaim{gpuTemplateA}, []corev1.ResourceClaim{gpuClaim}))
+					},
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateB).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+				),
+				ginkgo.Entry("runtime template and resourceClaimsPerNode define the same claim: resourceClaimsPerNode wins",
+					func() *testingutil.TrainingRuntimeSpecWrapper {
+						return torchRuntimeSpec().
+							PodResourceClaims(constants.Node, gpuTemplateA).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+					func() *trainer.TrainJob { return newTrainJob(gpuPerNodeB) },
+					func(j *testingutil.JobSetWrapper) *testingutil.JobSetWrapper {
+						return j.PodResourceClaims(constants.Node, gpuTemplateB).
+							ContainerResourceClaims(constants.Node, constants.Node, gpuClaim)
+					},
+				),
+			)
 		})
 
 		ginkgo.Context("Integration Tests for the OpenMPI Runtime", func() {

@@ -33,10 +33,10 @@ type PodSpecPatchApplyConfiguration struct {
 	// volumes patches the Pod's volumes.
 	Volumes []v1.VolumeApplyConfiguration `json:"volumes,omitempty"`
 	// resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers.
-	// For the node container, prefer resourceClaimsPerNode on the trainer, which replaces a
-	// same-name Pod claim; use this field there only to reference a pre-created ResourceClaim.
-	// Containers consume a claim by referencing its name in their resources.claims, usually in
-	// the same runtimePatch.
+	// Entries are merged by name with the runtime template using strategic merge patch.
+	// For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over
+	// this field, which takes precedence over the runtime template. Containers consume a claim
+	// by referencing its name in their resources.claims.
 	ResourceClaims []corev1.PodResourceClaim `json:"resourceClaims,omitempty"`
 	// initContainers patches the init containers in the target job templates.
 	InitContainers []ContainerPatchApplyConfiguration `json:"initContainers,omitempty"`

@@ -2218,10 +2218,9 @@ spec:
                                                                       minLength: 1
                                                                       type: string
                                                                     resources:
-                                                                      description: resources
-                                                                        patches the
-                                                                        container's
-                                                                        compute resources.
+                                                                      description: |-
+                                                                        resources patches the container's compute resources, merged with the runtime template
+                                                                        using strategic merge patch.
                                                                       properties:
                                                                         claims:
                                                                           description: |-
@@ -2983,10 +2982,9 @@ spec:
                                                                       minLength: 1
                                                                       type: string
                                                                     resources:
-                                                                      description: resources
-                                                                        patches the
-                                                                        container's
-                                                                        compute resources.
+                                                                      description: |-
+                                                                        resources patches the container's compute resources, merged with the runtime template
+                                                                        using strategic merge patch.
                                                                       properties:
                                                                         claims:
                                                                           description: |-

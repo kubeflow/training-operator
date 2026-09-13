@@ -263,8 +263,7 @@ type JAXMLPolicySource struct{}
 
 // XGBoostMLPolicySource represents an XGBoost runtime configuration.
 // The number of workers per node is automatically derived from container GPU resources:
-//   - GPU training: 1 worker per GPU (from resourcesPerNode or the DRA ResourceClaimTemplate
-//     referenced by the node container)
+//   - GPU training: 1 worker per GPU (from resourcesPerNode)
 //   - CPU training: 1 worker per node (each worker utilizes all available CPU cores
 //     via XGBoost's multi-threaded execution, controlled by the nthread parameter)
 //

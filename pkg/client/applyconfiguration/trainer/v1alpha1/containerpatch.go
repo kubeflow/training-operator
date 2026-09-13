@@ -37,10 +37,11 @@ type ContainerPatchApplyConfiguration struct {
 	Env []v1.EnvVarApplyConfiguration `json:"env,omitempty"`
 	// volumeMounts are the volumes to mount into the container's filesystem.
 	VolumeMounts []v1.VolumeMountApplyConfiguration `json:"volumeMounts,omitempty"`
-	// resources patches the container's compute resources.
-	// For the node container, resourcesPerNode on the trainer overrides patched requests and
-	// limits per key, and resourceClaimsPerNode on the trainer is placed ahead of patched claims;
-	// prefer those fields over patching the node container.
+	// resources patches the container's compute resources, merged with the runtime template
+	// using strategic merge patch. If setting the resources on the main node container, prefer
+	// the higher level spec.trainer.resourcesPerNode and spec.trainer.resourceClaimsPerNode
+	// fields; they take precedence over this field, which takes precedence over the runtime
+	// template.
 	Resources *v1.ResourceRequirementsApplyConfiguration `json:"resources,omitempty"`
 	// securityContext patches the container's security context.
 	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
