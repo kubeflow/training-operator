@@ -1790,7 +1790,7 @@ func schema_pkg_apis_trainer_v1alpha1_PodSpecPatch(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in their resources.claims.",
+							Description: "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in the container's resources.claims of this runtime patch.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

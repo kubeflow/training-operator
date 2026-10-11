@@ -36,7 +36,7 @@ type PodSpecPatchApplyConfiguration struct {
 	// Entries are merged by name with the runtime template using strategic merge patch.
 	// For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over
 	// this field, which takes precedence over the runtime template. Containers consume a claim
-	// by referencing its name in their resources.claims.
+	// by referencing its name in the container's resources.claims of this runtime patch.
 	ResourceClaims []corev1.PodResourceClaim `json:"resourceClaims,omitempty"`
 	// initContainers patches the init containers in the target job templates.
 	InitContainers []ContainerPatchApplyConfiguration `json:"initContainers,omitempty"`

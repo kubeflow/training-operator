@@ -15385,7 +15385,7 @@
             }
           },
           "resourceClaims": {
-            "description": "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in their resources.claims.",
+            "description": "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in the container's resources.claims of this runtime patch.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/io.k8s.api.core.v1.PodResourceClaim"
