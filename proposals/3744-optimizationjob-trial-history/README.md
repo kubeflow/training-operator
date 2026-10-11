@@ -95,7 +95,7 @@ status:
           value: "0.182"
     - trainJobName: "random-tuning-mvp-trial-cd34e"
       state: "Failed"
-      reason: "MetricsUnavailable"
+      reason: "ObjectiveMetricMissing"
       creationTime: "2026-08-05T10:12:00Z"
       completionTime: "2026-08-05T10:39:00Z"
       parameters:
@@ -178,10 +178,16 @@ const (
 	TrialReasonTrainJobFailed string = "TrainJobFailed"
 	// TrialReasonTrainJobDeleted indicates the trial TrainJob was deleted before completing.
 	TrialReasonTrainJobDeleted string = "TrainJobDeleted"
-	// TrialReasonMetricsUnavailable indicates the trial TrainJob completed without
-	// reporting the objective metric (e.g. the TrainJobStatus feature gate is
-	// disabled, or the training code never reported it).
-	TrialReasonMetricsUnavailable string = "MetricsUnavailable"
+	// TrialReasonTrainJobCreationFailed indicates the trial TrainJob could not
+	// be created (e.g. quota exhaustion or webhook rejection) after retries.
+	TrialReasonTrainJobCreationFailed string = "TrainJobCreationFailed"
+	// TrialReasonObjectiveMetricMissing indicates the trial TrainJob completed
+	// without reporting the objective metric (e.g. the TrainJobStatus feature
+	// gate is disabled, or the training code never reported it).
+	TrialReasonObjectiveMetricMissing string = "ObjectiveMetricMissing"
+	// TrialReasonObjectiveMetricInvalid indicates the trial TrainJob reported
+	// an objective metric value that could not be parsed as a number.
+	TrialReasonObjectiveMetricInvalid string = "ObjectiveMetricInvalid"
 )
 
 // TrialResult records a single trial launched by the OptimizationJob.
@@ -224,7 +230,7 @@ type TrialResult struct {
 
 	// reason is the machine-readable explanation for a Failed state,
 	// schema-enforced to the known taxonomy.
-	// +kubebuilder:validation:Enum=TrainJobFailed;TrainJobDeleted;MetricsUnavailable
+	// +kubebuilder:validation:Enum=TrainJobFailed;TrainJobDeleted;TrainJobCreationFailed;ObjectiveMetricMissing;ObjectiveMetricInvalid
 	// +optional
 	Reason *string `json:"reason,omitempty"`
 
@@ -244,17 +250,17 @@ Notes:
 - `ParameterAssignment` is the existing type from the KEP-3562 API, the same one used by `status.result`.
 - `Metric` is the existing `{name, value string}` type introduced by KEP-2779 for `TrainJob.status.trainerStatus.metrics`. Reusing it keeps values consistent end to end: they are copied verbatim at terminal state.
 - `Metrics` is a list so that multi-objective optimization ([#3799](https://github.com/kubeflow/trainer/issues/3799)) needs no structural change; Phase 1 populates only the single configured objective metric.
-- The `Running`/`Succeeded`/`Failed`/`EarlyStopped` states mirror the trial lifecycle, matching the trial states in the [#3950](https://github.com/kubeflow/trainer/pull/3950) gRPC contract so a pruned trial is never conflated with a crashed one; `Reason` carries the failure taxonomy that the KEP-3562 review identified as important (distinguishing bad-hyperparameter failures from infrastructure failures and from misconfiguration). Notably, a trial that *succeeded* as a workload but reported no objective metric is recorded as `Failed` with `Reason: MetricsUnavailable`: suggestion providers must exclude it from sampler input either way, and the reason makes the misconfiguration visible and countable rather than silently discarded.
+- The `Running`/`Succeeded`/`Failed`/`EarlyStopped` states mirror the trial lifecycle, matching the trial states in the [#3950](https://github.com/kubeflow/trainer/pull/3950) gRPC contract so a pruned trial is never conflated with a crashed one; `Reason` carries the failure taxonomy that the KEP-3562 review identified as important (distinguishing bad-hyperparameter failures from infrastructure failures and from misconfiguration). Notably, a trial that *succeeded* as a workload but produced no usable objective metric is recorded as `Failed`, with the reason preserving the distinction the merged controller already makes: `ObjectiveMetricMissing` (never reported, a configuration problem) versus `ObjectiveMetricInvalid` (reported but unparseable, a training-code or numerical problem). Suggestion providers must exclude both from sampler input either way; the split reason makes each failure mode visible and separately countable rather than silently discarded.
 
 ### Controller semantics
 
-1. **On generating a suggestion:** the controller takes the next trial index from `status.nextTrialIndex` (persisted, so a stale-cache reconcile cannot reuse an index and silently overwrite an existing record), appends a `TrialResult` with `State: Running`, the assigned `Parameters`, and `CreationTime`, keyed by the generated trial `TrainJob` name, increments `nextTrialIndex` in the same write, and then creates the trial `TrainJob`. The append happens first, so the parameters are durable before the child exists; a crash between the two converges on the next reconcile by marking the childless record `Failed`/`TrainJobDeleted` (see the reconcile flow for why the controller never re-creates instead).
+1. **On generating a suggestion:** the controller takes the next trial index from `status.nextTrialIndex` (persisted, so a stale-cache reconcile cannot reuse an index and silently overwrite an existing record), appends a `TrialResult` with `State: Running`, the assigned `Parameters`, and `CreationTime`, keyed by the generated trial `TrainJob` name, increments `nextTrialIndex` in the same write, and then creates the trial `TrainJob`. The append happens first, so the parameters are durable before the child exists; a crash between the two converges on the next reconcile by marking the childless record `Failed`/`TrainJobDeleted` (see the reconcile flow for why the controller never re-creates instead). A *synchronous* creation failure (quota exhaustion, webhook rejection) is retried with backoff while the in-memory creation expectation is held, so a transient outage consumes no budget; if the controller gives up or restarts, the record is finalized as `Failed`/`TrainJobCreationFailed`, distinct from deletion, and persistent creation failures additionally surface through the parent KEP's `Created=False`/`TrainJobsCreationFailed` condition.
 2. **On observing a terminal child:** the controller patches the record once, setting `State`, `Metrics` (from `status.trainerStatus.metrics`), `Reason` if failed, and `CompletionTime` (from the terminal condition's `lastTransitionTime`), and updates `status.result` (name, parameters, and metrics, copied from the record) if this trial improves the objective. A record that is already terminal is never modified again.
 3. **On observing a deleted or deleting child whose record is still `Running`:** the record is patched to `Failed` with `Reason: TrainJobDeleted`. No history is lost, because the parameters were recorded at creation.
 4. **Suggestion snapshots:** the history passed to `GetSuggestions` is assembled from `status.trials` (terminal records as completed trials, `Running` records as in-flight trials), replacing the reconstruction from child `TrainJob` objects. Two caveats. First, the Phase 1 pinned Katib Optuna image drops `RUNNING` and `FAILED` trials before the sampler sees them and tracks in-flight suggestions only in process memory, so the in-flight and restart-safety benefits on the *provider* side materialize only with the refactored gRPC contract ([#3796](https://github.com/kubeflow/trainer/issues/3796) / [#3950](https://github.com/kubeflow/trainer/pull/3950)); what this KEP guarantees on its own is that the *controller's* snapshot is complete and deletion-proof. Second, per-trial intermediate metric series for pruning decisions ([#3802](https://github.com/kubeflow/trainer/issues/3802)) stay out of status (see Non-Goals), so pruning reads live child `trainerStatus` in addition to `status.trials`.
-5. **History and size bound:** before launching a trial, the controller checks the trial budget (see point 7) and additionally estimates the serialized size of `status.trials` before every append; the schema cap counts records, not bytes, so the byte check is what actually protects the etcd object limit when parameter counts are large. If either bound is hit, the controller stops launching trials and sets a `Failed` condition with reason `TrialHistoryExhausted`: an explicit, observable outcome rather than a rejected status write wedging the reconcile loop.
-6. **Status writes:** `status.trials` and `status.nextTrialIndex` are written with Server-Side Apply under a dedicated field manager. Because an apply expresses the manager's full intent, every apply carries the complete `trials` list, and it sets `metadata.resourceVersion` as an optimistic-concurrency precondition so an apply built from a stale cache fails with a conflict instead of silently dropping records. `conditions` and `result` stay on the controller's existing status write path (merge-patch in [#3828](https://github.com/kubeflow/trainer/pull/3828)) to avoid cross-manager conflicts between SSA and merge writers on the same fields. Writes are bounded at two per trial; on conflict, the next reconcile re-reads and retries, and since records are keyed by `trainJobName` and terminal patches are idempotent, retries converge.
-7. **Interim trial budget (until [#3743](https://github.com/kubeflow/trainer/issues/3743) defines the real failure policy):** every record counts toward `numTrials` regardless of state. This keeps the record cap equal to the `numTrials` maximum, bounds the object size, and prevents runaway trial creation when every trial is recorded `Failed`/`MetricsUnavailable` (for example, with the `TrainJobStatus` feature gate off). The full failure policy (retries, failure thresholds) supersedes this rule when it lands.
+5. **History and size bound:** before launching a trial, the controller checks the trial budget (see point 7) and additionally estimates the serialized size of `status.trials` before every append; the schema cap counts records, not bytes, so the byte check is what actually protects the etcd object limit when parameter counts are large. If either bound is hit, the controller stops launching trials and sets a `Failed` condition with reason `TrialHistoryExhausted`: an explicit, observable outcome rather than a rejected status write wedging the reconcile loop. Complementing the runtime check, a spec-side CEL rule rejects configurations that can *never* fit at admission time (a conservative worst-case estimate from `numTrials`, the parameter count, and the fields' maximum lengths), so a doomed configuration fails at `kubectl apply` instead of after real GPU time is spent; CEL's per-rule cost budget is why this is an approximation and the runtime byte check remains the authoritative backstop.
+6. **Status writes:** `status.trials` and `status.nextTrialIndex` are written with Server-Side Apply under a dedicated field manager. Because an apply expresses the manager's full intent, every apply carries the complete `trials` list, and it sets `metadata.resourceVersion` as an optimistic-concurrency precondition so an apply built from a stale cache fails with a conflict instead of silently dropping records. `conditions` and `result` stay on the controller's existing status write path (merge-patch in [#3828](https://github.com/kubeflow/trainer/pull/3828)) to avoid cross-manager conflicts between SSA and merge writers on the same fields. Writes are bounded at two per trial; on conflict, the next reconcile re-reads and retries, and since records are keyed by `trainJobName` and terminal patches are idempotent, retries converge. The two writers are ordered: `trials` (the source of truth) is written first, and `conditions`/`result` are pure projections recomputed from `trials` on every reconcile, so if the second write fails the object briefly shows a stale summary over a complete history and converges on the next pass; no failure ordering can lose history or leave a summary the history cannot support.
+7. **Interim trial budget (until [#3743](https://github.com/kubeflow/trainer/issues/3743) defines the real failure policy):** every record counts toward `numTrials` regardless of state. This keeps the record cap equal to the `numTrials` maximum, bounds the object size, and prevents runaway trial creation when every trial is recorded `Failed`/`ObjectiveMetricMissing` (for example, with the `TrainJobStatus` feature gate off). The full failure policy (retries, failure thresholds) supersedes this rule when it lands.
 
 ### Deletion and lifecycle interactions
 
@@ -313,7 +319,7 @@ This KEP deliberately amends two design decisions of KEP-3562: §8.2, where the 
 
 The field is optional and additive on `v1alpha1`: no version bump, no migration. Rollout in two steps aligned with the KEP-3562 phases:
 
-1. The controller populates `status.trials` while keeping the Phase 1 child-derived snapshot as the source (dual-write, child-read).
+1. The controller populates `status.trials` while keeping the Phase 1 child-derived snapshot as the source (dual-write, child-read). This step also **backfills in-flight jobs across the upgrade**: on reconciling an `OptimizationJob` that has child `TrainJob` objects without corresponding records (trials launched by the pre-upgrade controller), the controller synthesizes their records from the still-present children (parameters from the injected environment variables, state and metrics from the child's status) before any counting or launching. Without this, an upgrade mid-optimization would make existing trials invisible to the history, undercount progress, and launch extra trials. The backfill is safe precisely because children only become disposable *after* their records exist; it is a no-op for jobs created after the upgrade.
 2. Everything the controller currently derives from the child `TrainJob` list flips to `status.trials` together: the gRPC adapter's history, the `totalTrials`/`activeTrials` accounting, the completion check, the failure check, and the best-result computation. A partial flip is not safe: if only the adapter switches, deleting a finished child still lowers the trial counts (launching an extra trial) and can change `status.result`, since the best result would still be recomputed from surviving children each reconcile. After the flip, the interaction with deletion and TTL/GC cleanup of trial `TrainJob` objects is documented as supported.
 
 ### Risks and Mitigations
@@ -334,7 +340,7 @@ The field is optional and additive on `v1alpha1`: no version bump, no migration.
 
 - Append idempotency: re-reconciling the same suggestion produces exactly one record; double-observing the same terminal child patches it exactly once.
 - Best-result projection correctness for both `Maximize` and `Minimize` objectives.
-- Terminal patch taxonomy: `TrainJobFailed`, `TrainJobDeleted`, and `MetricsUnavailable` reasons each produced under the corresponding conditions.
+- Terminal patch taxonomy: `TrainJobFailed`, `TrainJobDeleted`, `TrainJobCreationFailed`, `ObjectiveMetricMissing`, and `ObjectiveMetricInvalid` reasons each produced under the corresponding conditions.
 - Snapshot assembly from `status.trials` equals the Phase 1 child-derived snapshot for identical cluster state.
 - History bound: launch refusal and `TrialHistoryExhausted` condition when the record cap or the estimated byte bound is reached.
 - Naming idempotency: a reconcile against stale status does not reuse a trial index (`nextTrialIndex`) or overwrite an existing record.
@@ -350,6 +356,10 @@ The field is optional and additive on `v1alpha1`: no version bump, no migration.
 - Schema validation: `MaxItems`, state and reason enums, CEL rules (`Succeeded` requires metrics; terminal requires `completionTime`; `Failed` requires `reason`; `reason` only on `Failed`), and `listMapKey` uniqueness.
 - Status-update conflict: concurrent terminal observations converge across reconciles.
 - SSA full-intent semantics: every apply carries the complete `trials` list, and an apply built from a stale read fails on the `resourceVersion` precondition (conflict) instead of silently dropping records.
+- Upgrade backfill: an `OptimizationJob` with pre-existing children and no records gets records synthesized from those children, with no extra trials launched and correct counts afterward.
+- Creation-failure handling: a synchronous create failure is retried without consuming budget; a persistent one finalizes the record as `Failed`/`TrainJobCreationFailed` and sets the `Created=False` condition.
+- Partial status write: a failure between the `trials` apply and the `conditions`/`result` update leaves a complete history with a stale summary that converges on the next reconcile.
+- Admission-time size rule: a spec whose worst-case history can never fit is rejected at create time by the CEL estimate.
 
 #### E2E tests
 
