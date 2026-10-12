@@ -298,9 +298,13 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 	}
 
 	ownedPodGroup := func(name string) *volcanov1beta1.PodGroup {
-		return testingutil.MakeVolcanoPodGroup(metav1.NamespaceDefault, name).
+		// No TypeMeta: Delete() returns whatever the fake client's Get() populates,
+		// which (like a real client) leaves TypeMeta unset on a typed object.
+		pg := testingutil.MakeVolcanoPodGroup(metav1.NamespaceDefault, name).
 			ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), name, "uid").
 			Obj()
+		pg.TypeMeta = metav1.TypeMeta{}
+		return pg
 	}
 
 	cases := map[string]struct {

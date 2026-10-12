@@ -140,7 +140,7 @@ func (r *TrainingRuntime) DeleteObjects(ctx context.Context, trainJob *trainer.T
 // errorInvalidRuntimeSnapshot marks an error from getTrainingRuntime as coming from a
 // snapshot that exists but is invalid, as opposed to the TrainingRuntime (snapshotted or
 // live) not existing at all. NewObjects reports these two cases with different messages.
-var errorInvalidRuntimeSnapshot = errors.New("invalid runtime snapshot")
+var errorInvalidRuntimeSnapshot = errors.New("unable to resolve runtime from snapshot")
 
 // getTrainingRuntime resolves the TrainingRuntime a TrainJob references, trying the
 // snapshot first and falling back to the live API object when no snapshot exists yet. The

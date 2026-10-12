@@ -2523,19 +2523,23 @@ func TestTrainingRuntimeDeleteObjects(t *testing.T) {
 			).Obj()
 	}
 
-	failedTrainJob := func(name string) *trainer.TrainJob {
+	failedTrainJob := func(name, runtimeName string) *trainer.TrainJob {
 		return testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, name).
 			UID("uid").
-			RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), name).
+			RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 			Conditions(metav1.Condition{Type: trainer.TrainJobFailed, Status: metav1.ConditionTrue}).
 			Trainer(testingutil.MakeTrainJobTrainerWrapper().Obj()).
 			Obj()
 	}
 
 	ownedPodGroup := func(name string) *volcanov1beta1.PodGroup {
-		return testingutil.MakeVolcanoPodGroup(metav1.NamespaceDefault, name).
+		// No TypeMeta: Delete() returns whatever the fake client's Get() populates,
+		// which (like a real client) leaves TypeMeta unset on a typed object.
+		pg := testingutil.MakeVolcanoPodGroup(metav1.NamespaceDefault, name).
 			ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), name, "uid").
 			Obj()
+		pg.TypeMeta = metav1.TypeMeta{}
+		return pg
 	}
 
 	cases := map[string]struct {
@@ -2549,25 +2553,25 @@ func TestTrainingRuntimeDeleteObjects(t *testing.T) {
 	}{
 		"resolves from an existing snapshot": {
 			trainingRuntime: runtimeWithVolcano("test-runtime"),
-			trainJob:        failedTrainJob("test-job"),
+			trainJob:        failedTrainJob("test-job", "test-runtime"),
 			podGroup:        ownedPodGroup("test-job"),
 			withSnapshot:    true,
 			wantObjs:        []client.Object{ownedPodGroup("test-job")},
 		},
 		"no snapshot falls back to the live TrainingRuntime": {
 			trainingRuntime: runtimeWithVolcano("test-runtime"),
-			trainJob:        failedTrainJob("test-job"),
+			trainJob:        failedTrainJob("test-job", "test-runtime"),
 			podGroup:        ownedPodGroup("test-job"),
 			wantObjs:        []client.Object{ownedPodGroup("test-job")},
 		},
 		"TrainingRuntime no longer exists returns no objects and no error": {
-			trainJob: failedTrainJob("test-job"),
+			trainJob: failedTrainJob("test-job", "test-runtime"),
 			podGroup: ownedPodGroup("test-job"),
 			wantObjs: nil,
 		},
 		"invalid snapshot returns no objects and no error": {
 			trainingRuntime: runtimeWithVolcano("test-runtime"),
-			trainJob:        failedTrainJob("test-job"),
+			trainJob:        failedTrainJob("test-job", "test-runtime"),
 			podGroup:        ownedPodGroup("test-job"),
 			withSnapshot:    true,
 			invalidSnapshot: true,
