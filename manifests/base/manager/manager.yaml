@@ -96,6 +96,7 @@ metadata:
   labels:
     app.kubernetes.io/name: trainer
     app.kubernetes.io/component: manager
+    app.kubernetes.io/part-of: kubeflow
 spec:
   ports:
     - name: monitoring-port
