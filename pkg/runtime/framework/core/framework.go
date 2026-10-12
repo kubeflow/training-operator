@@ -186,11 +186,8 @@ func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, info *runtim
 	return objs, nil
 }
 
-// RunComponentDeleterPlugins asks every registered ComponentDeleterPlugin which
-// previously materialized objects should now be removed for the TrainJob, and
-// aggregates their answers. It performs no deletion itself and must be safe to call on
-// every reconcile, independently of RunComponentBuilderPlugins and of the TrainJob's
-// status.
+// RunComponentDeleterPlugins aggregates the objects returned by all ComponentDeleterPlugins.
+// It performs no deletion itself.
 func (f *Framework) RunComponentDeleterPlugins(ctx context.Context, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	var objs []client.Object
 	for _, plugin := range f.componentDeleterPlugins {

@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -89,19 +90,15 @@ func NewTrainingRuntime(ctx context.Context, c client.Client, indexer client.Fie
 
 func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.TrainJob) ([]apiruntime.ApplyConfiguration, error) {
 	var trainingRuntime trainer.TrainingRuntime
-	// Try to get runtime from snapshot first
-	if err := getRuntimeSnapshot(ctx, r.client, trainJob, &trainingRuntime); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("unable to get runtime snapshot: %w", err)
+	fromSnapshot, err := r.getTrainingRuntime(ctx, trainJob, &trainingRuntime)
+	if err != nil {
+		if errors.Is(err, errorInvalidRuntimeSnapshot) {
+			return nil, err
 		}
-
-		// Snapshot doesn't exist, load runtime from API server
-		err := r.client.Get(ctx, client.ObjectKey{Namespace: trainJob.Namespace, Name: trainJob.Spec.RuntimeRef.Name}, &trainingRuntime)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedTrainingRuntime, err)
-		}
-
-		// Create snapshot for future reconciliations
+		return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedTrainingRuntime, err)
+	}
+	if !fromSnapshot {
+		// Create snapshot for future reconciliations.
 		if err := createRuntimeSnapshot(ctx, r.client, trainJob, &trainingRuntime); err != nil {
 			return nil, fmt.Errorf("creating runtime snapshot: %w", err)
 		}
@@ -116,24 +113,50 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 
 // DeleteObjects returns the previously materialized objects that should now be removed
 // for the TrainJob. If the referenced TrainingRuntime can no longer be resolved (e.g. it
-// was deleted after the TrainJob finished), there is no PodGroupPolicy left to check
-// plugins against, so it returns no objects rather than an error.
+// was deleted after the TrainJob finished, or its snapshot is invalid), there is no
+// PodGroupPolicy left to check plugins against, so it logs and returns no objects rather
+// than an error: unlike NewObjects, this path also runs for finished TrainJobs, where an
+// error here would requeue forever and keep emitting TrainJobResourcesCreationFailed
+// warning events for a TrainJob that is otherwise done.
 func (r *TrainingRuntime) DeleteObjects(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	var trainingRuntime trainer.TrainingRuntime
-	if err := getRuntimeSnapshot(ctx, r.client, trainJob, &trainingRuntime); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("unable to get runtime snapshot: %w", err)
+	if _, err := r.getTrainingRuntime(ctx, trainJob, &trainingRuntime); err != nil {
+		if apierrors.IsNotFound(err) {
+			ctrl.LoggerFrom(ctx).V(2).Info("TrainingRuntime no longer exists, skipping cleanup of its plugins' objects", "trainingRuntime", trainJob.Spec.RuntimeRef.Name)
+			return nil, nil
 		}
-		if err := r.client.Get(ctx, client.ObjectKey{Namespace: trainJob.Namespace, Name: trainJob.Spec.RuntimeRef.Name}, &trainingRuntime); err != nil {
-			return nil, client.IgnoreNotFound(err)
-		}
+		ctrl.LoggerFrom(ctx).Error(err, "Unable to resolve TrainingRuntime for cleanup, skipping")
+		return nil, nil
 	}
 
 	info, err := r.RuntimeInfo(trainJob, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
 	if err != nil {
-		return nil, err
+		ctrl.LoggerFrom(ctx).Error(err, "Unable to build runtime Info for cleanup, skipping")
+		return nil, nil
 	}
 	return r.framework.RunComponentDeleterPlugins(ctx, info, trainJob)
+}
+
+// errorInvalidRuntimeSnapshot marks an error from getTrainingRuntime as coming from a
+// snapshot that exists but is invalid, as opposed to the TrainingRuntime (snapshotted or
+// live) not existing at all. NewObjects reports these two cases with different messages.
+var errorInvalidRuntimeSnapshot = errors.New("invalid runtime snapshot")
+
+// getTrainingRuntime resolves the TrainingRuntime a TrainJob references, trying the
+// snapshot first and falling back to the live API object when no snapshot exists yet. The
+// returned bool reports whether trainingRuntime was populated from the snapshot, so callers
+// that only need to create a snapshot on a cache miss do not have to look it up a second
+// time. Returns a NotFound error when neither the snapshot nor the live TrainingRuntime
+// exist, or an error wrapping errorInvalidRuntimeSnapshot when a snapshot exists but
+// cannot be used.
+func (r *TrainingRuntime) getTrainingRuntime(ctx context.Context, trainJob *trainer.TrainJob, trainingRuntime *trainer.TrainingRuntime) (bool, error) {
+	if err := getRuntimeSnapshot(ctx, r.client, trainJob, trainingRuntime); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return false, fmt.Errorf("%w: %w", errorInvalidRuntimeSnapshot, err)
+		}
+		return false, r.client.Get(ctx, client.ObjectKey{Namespace: trainJob.Namespace, Name: trainJob.Spec.RuntimeRef.Name}, trainingRuntime)
+	}
+	return true, nil
 }
 
 // RuntimeInfo builds the Info object for a TrainJob and consolidates it through the

@@ -1390,6 +1390,15 @@ func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout
 	return s
 }
 
+func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyVolcano(src *trainer.VolcanoPodGroupPolicySource) *TrainingRuntimeSpecWrapper {
+	s.PodGroupPolicy = &trainer.PodGroupPolicy{
+		PodGroupPolicySource: trainer.PodGroupPolicySource{
+			Volcano: src,
+		},
+	}
+	return s
+}
+
 func (s *TrainingRuntimeSpecWrapper) Obj() trainer.TrainingRuntimeSpec {
 	return s.TrainingRuntimeSpec
 }

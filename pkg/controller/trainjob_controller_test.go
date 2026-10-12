@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	clocktesting "k8s.io/utils/clock/testing"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
@@ -271,9 +273,12 @@ func TestReconcileUnsupportedRuntime(t *testing.T) {
 
 // fakeRuntime is a minimal jobruntimes.Runtime stub that records whether NewObjects and
 // DeleteObjects were invoked, without needing a real TrainingRuntime/ClusterTrainingRuntime
-// or plugin registry.
+// or plugin registry. newObjectsErr/deleteObjectsErr let tests exercise error propagation
+// from each without a real plugin returning one.
 type fakeRuntime struct {
-	objsToDelete []client.Object
+	objsToDelete     []client.Object
+	newObjectsErr    error
+	deleteObjectsErr error
 
 	newObjectsCalled    bool
 	deleteObjectsCalled bool
@@ -281,12 +286,12 @@ type fakeRuntime struct {
 
 func (f *fakeRuntime) NewObjects(context.Context, *trainer.TrainJob) ([]apiruntime.ApplyConfiguration, error) {
 	f.newObjectsCalled = true
-	return nil, nil
+	return nil, f.newObjectsErr
 }
 
 func (f *fakeRuntime) DeleteObjects(context.Context, *trainer.TrainJob) ([]client.Object, error) {
 	f.deleteObjectsCalled = true
-	return f.objsToDelete, nil
+	return f.objsToDelete, f.deleteObjectsErr
 }
 
 func (f *fakeRuntime) RuntimeInfo(*trainer.TrainJob, any, *trainer.MLPolicy, *trainer.PodGroupPolicy) (*jobruntimes.Info, error) {
@@ -311,28 +316,52 @@ var _ jobruntimes.Runtime = (*fakeRuntime)(nil)
 // stale ones in isolation, independently of any concrete plugin.
 func TestReconcileObjects(t *testing.T) {
 	runningTrainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-trainjob").Obj()
+	suspendedTrainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-trainjob").
+		Suspend(true).
+		Obj()
 	failedTrainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-trainjob").
 		Conditions(metav1.Condition{Type: trainer.TrainJobFailed, Status: metav1.ConditionTrue}).
 		Obj()
+
+	errNewObjects := errors.New("newObjects failed")
+	errDeleteObjects := errors.New("deleteObjects failed")
+	errClientDelete := errors.New("client delete failed")
+
+	toDeleteObj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "to-delete", Namespace: metav1.NamespaceDefault}}
 
 	cases := map[string]struct {
 		trainJob          *trainer.TrainJob
 		objsToDelete      []client.Object
 		seedObjs          []client.Object
+		newObjectsErr     error
+		deleteObjectsErr  error
+		withDeleteErr     bool
 		wantNewObjsCalled bool
 		wantDeleted       bool
+		wantErr           error
 	}{
 		"running TrainJob still materializes new objects": {
 			trainJob:          runningTrainJob,
 			wantNewObjsCalled: true,
 		},
+		"suspended TrainJob is not finished, so it still materializes new objects alongside cleanup": {
+			trainJob: suspendedTrainJob,
+			objsToDelete: []client.Object{
+				toDeleteObj,
+			},
+			seedObjs: []client.Object{
+				toDeleteObj,
+			},
+			wantNewObjsCalled: true,
+			wantDeleted:       true,
+		},
 		"failed TrainJob skips materializing new objects but still cleans up": {
 			trainJob: failedTrainJob,
 			objsToDelete: []client.Object{
-				&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "to-delete", Namespace: metav1.NamespaceDefault}},
+				toDeleteObj,
 			},
 			seedObjs: []client.Object{
-				&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "to-delete", Namespace: metav1.NamespaceDefault}},
+				toDeleteObj,
 			},
 			wantDeleted: true,
 		},
@@ -342,6 +371,36 @@ func TestReconcileObjects(t *testing.T) {
 				&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "already-gone", Namespace: metav1.NamespaceDefault}},
 			},
 		},
+		"NewObjects error does not block cleanup, and is still returned": {
+			trainJob:      runningTrainJob,
+			newObjectsErr: errNewObjects,
+			objsToDelete: []client.Object{
+				toDeleteObj,
+			},
+			seedObjs: []client.Object{
+				toDeleteObj,
+			},
+			wantNewObjsCalled: true,
+			wantDeleted:       true,
+			wantErr:           errNewObjects,
+		},
+		"DeleteObjects error is propagated": {
+			trainJob:          runningTrainJob,
+			deleteObjectsErr:  errDeleteObjects,
+			wantNewObjsCalled: true,
+			wantErr:           errDeleteObjects,
+		},
+		"client.Delete error is propagated": {
+			trainJob: failedTrainJob,
+			objsToDelete: []client.Object{
+				toDeleteObj,
+			},
+			seedObjs: []client.Object{
+				toDeleteObj,
+			},
+			withDeleteErr: true,
+			wantErr:       errClientDelete,
+		},
 	}
 
 	for name, tc := range cases {
@@ -350,12 +409,27 @@ func TestReconcileObjects(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			t.Cleanup(cancel)
 
-			cli := utiltesting.NewClientBuilder().WithObjects(tc.seedObjs...).Build()
-			fr := &fakeRuntime{objsToDelete: tc.objsToDelete}
+			clientBuilder := utiltesting.NewClientBuilder().WithObjects(tc.seedObjs...)
+			var deleteCalled bool
+			if tc.withDeleteErr {
+				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
+					Delete: func(ctx context.Context, cli client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+						deleteCalled = true
+						return errClientDelete
+					},
+				})
+			}
+			cli := clientBuilder.Build()
+			fr := &fakeRuntime{
+				objsToDelete:     tc.objsToDelete,
+				newObjectsErr:    tc.newObjectsErr,
+				deleteObjectsErr: tc.deleteObjectsErr,
+			}
 			r := &TrainJobReconciler{client: cli}
 
-			if err := r.reconcileObjects(ctx, fr, tc.trainJob); err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			err := r.reconcileObjects(ctx, fr, tc.trainJob)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); len(diff) != 0 {
+				t.Errorf("Unexpected error (-want, +got): %s", diff)
 			}
 
 			// DeleteObjects must run on every call, regardless of the TrainJob's status.
@@ -365,10 +439,13 @@ func TestReconcileObjects(t *testing.T) {
 			if fr.newObjectsCalled != tc.wantNewObjsCalled {
 				t.Errorf("NewObjects called = %v, want %v", fr.newObjectsCalled, tc.wantNewObjsCalled)
 			}
+			if tc.withDeleteErr && !deleteCalled {
+				t.Error("Expected client.Delete to be called")
+			}
 			for _, obj := range tc.objsToDelete {
-				err := cli.Get(ctx, client.ObjectKeyFromObject(obj), &corev1.ConfigMap{})
-				if tc.wantDeleted && !apierrors.IsNotFound(err) {
-					t.Errorf("Expected %s to be deleted, got error: %v", obj.GetName(), err)
+				getErr := cli.Get(ctx, client.ObjectKeyFromObject(obj), &corev1.ConfigMap{})
+				if tc.wantDeleted && !apierrors.IsNotFound(getErr) {
+					t.Errorf("Expected %s to be deleted, got error: %v", obj.GetName(), getErr)
 				}
 			}
 		})

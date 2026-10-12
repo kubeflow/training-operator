@@ -18,6 +18,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
@@ -2406,11 +2408,14 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 		},
 	}
 
+	errGetPodGroup := errors.New("error when getting existing PodGroup")
+
 	cases := map[string]struct {
 		registry  fwkplugins.Registry
 		info      *runtime.Info
 		objs      []client.Object
 		trainJob  *trainer.TrainJob
+		withError bool
 		wantObjs  []client.Object
 		wantError error
 	}{
@@ -2434,6 +2439,15 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 			trainJob: runningTrainJob,
 			wantObjs: nil,
 		},
+		"a plugin's Get error is propagated and no objects are returned": {
+			registry:  fwkplugins.NewRegistry(),
+			info:      volcanoInfo,
+			objs:      []client.Object{ownedPodGroup},
+			trainJob:  failedTrainJob,
+			withError: true,
+			wantObjs:  nil,
+			wantError: errGetPodGroup,
+		},
 	}
 
 	for name, tc := range cases {
@@ -2442,6 +2456,13 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 			t.Cleanup(cancel)
 
 			clientBuilder := testingutil.NewClientBuilder().WithObjects(tc.objs...)
+			if tc.withError {
+				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(ctx context.Context, cli client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						return errGetPodGroup
+					},
+				})
+			}
 			fwk, err := New(ctx, clientBuilder.Build(), tc.registry, testingutil.AsIndex(clientBuilder), nil)
 			if err != nil {
 				t.Fatalf("Failed to create framework: %v", err)

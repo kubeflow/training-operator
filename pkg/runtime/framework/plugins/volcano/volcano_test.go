@@ -319,10 +319,18 @@ func TestVolcano(t *testing.T) {
 			},
 			info: &runtime.Info{
 				TemplateSpec: createBaseInfo.TemplateSpec,
+				Annotations: map[string]string{
+					"scheduling.volcano.sh/queue-name": "q1",
+				},
 				RuntimePolicy: runtime.RuntimePolicy{
 					PodGroupPolicy: &trainer.PodGroupPolicy{
 						PodGroupPolicySource: trainer.PodGroupPolicySource{
-							Volcano: &trainer.VolcanoPodGroupPolicySource{},
+							Volcano: &trainer.VolcanoPodGroupPolicySource{
+								NetworkTopology: &volcanov1beta1.NetworkTopologySpec{
+									Mode:               volcanov1beta1.HardNetworkTopologyMode,
+									HighestTierAllowed: ptr.To(1),
+								},
+							},
 						},
 					},
 				},
@@ -331,10 +339,18 @@ func TestVolcano(t *testing.T) {
 			objs: nil,
 			expectInfo: &runtime.Info{
 				TemplateSpec: createBaseInfo.TemplateSpec,
+				Annotations: map[string]string{
+					"scheduling.volcano.sh/queue-name": "q1",
+				},
 				RuntimePolicy: runtime.RuntimePolicy{
 					PodGroupPolicy: &trainer.PodGroupPolicy{
 						PodGroupPolicySource: trainer.PodGroupPolicySource{
-							Volcano: &trainer.VolcanoPodGroupPolicySource{},
+							Volcano: &trainer.VolcanoPodGroupPolicySource{
+								NetworkTopology: &volcanov1beta1.NetworkTopologySpec{
+									Mode:               volcanov1beta1.HardNetworkTopologyMode,
+									HighestTierAllowed: ptr.To(1),
+								},
+							},
 						},
 					},
 				},
@@ -346,7 +362,8 @@ func TestVolcano(t *testing.T) {
 			},
 			// Once resumed, Build() must recreate the PodGroup exactly as if this were
 			// a first-time create: no state carries over from before it was deleted
-			// while suspended.
+			// while suspended. Queue and NetworkTopology are included here to confirm
+			// they are (re)applied on resume, not just MinMember/MinResources.
 			expectObjs: []apiruntime.Object{
 				&volcanov1beta1.PodGroup{
 					TypeMeta: metav1.TypeMeta{
@@ -373,7 +390,12 @@ func TestVolcano(t *testing.T) {
 							corev1.ResourceCPU:    resource.MustParse("2300m"),
 							corev1.ResourceMemory: resource.MustParse("3Gi"),
 						},
+						Queue:             "q1",
 						PriorityClassName: "high-priority",
+						NetworkTopology: &volcanov1beta1.NetworkTopologySpec{
+							Mode:               volcanov1beta1.HardNetworkTopologyMode,
+							HighestTierAllowed: ptr.To(1),
+						},
 					},
 				},
 			},
@@ -474,7 +496,7 @@ func TestVolcano(t *testing.T) {
 	}
 }
 
-func TestVolcano_Delete(t *testing.T) {
+func TestVolcanoDelete(t *testing.T) {
 	errorGetPodGroup := errors.New("error when getting existing PodGroup")
 
 	ownedPodGroup := &volcanov1beta1.PodGroup{

@@ -23,14 +23,18 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
+	volcanov1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
@@ -264,6 +268,140 @@ func TestClusterTrainingRuntimeValidateObjects(t *testing.T) {
 
 			if diff := cmp.Diff(tc.wantWarnings, warnings); diff != "" {
 				t.Errorf("Unexpected warnings (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU: resource.MustParse("1"),
+	}
+
+	runtimeWithVolcano := func(name string) *trainer.ClusterTrainingRuntime {
+		return testingutil.MakeClusterTrainingRuntimeWrapper(name).
+			RuntimeSpec(
+				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeClusterTrainingRuntimeWrapper(name).Spec).
+					PodGroupPolicyVolcano(&trainer.VolcanoPodGroupPolicySource{}).
+					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Obj(),
+			).Obj()
+	}
+
+	failedTrainJob := func(name, runtimeName string) *trainer.TrainJob {
+		return testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, name).
+			UID("uid").
+			RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), runtimeName).
+			Conditions(metav1.Condition{Type: trainer.TrainJobFailed, Status: metav1.ConditionTrue}).
+			Trainer(testingutil.MakeTrainJobTrainerWrapper().Obj()).
+			Obj()
+	}
+
+	ownedPodGroup := func(name string) *volcanov1beta1.PodGroup {
+		return testingutil.MakeVolcanoPodGroup(metav1.NamespaceDefault, name).
+			ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), name, "uid").
+			Obj()
+	}
+
+	cases := map[string]struct {
+		clusterTrainingRuntime *trainer.ClusterTrainingRuntime
+		trainJob               *trainer.TrainJob
+		podGroup               *volcanov1beta1.PodGroup
+		withSnapshot           bool
+		invalidSnapshot        bool
+		wantObjs               []client.Object
+		wantError              bool
+	}{
+		"resolves from an existing snapshot": {
+			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
+			withSnapshot:           true,
+			wantObjs:               []client.Object{ownedPodGroup("test-job")},
+		},
+		"no snapshot falls back to the live ClusterTrainingRuntime": {
+			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
+			wantObjs:               []client.Object{ownedPodGroup("test-job")},
+		},
+		"ClusterTrainingRuntime no longer exists returns no objects and no error": {
+			trainJob: failedTrainJob("test-job", "test-runtime"),
+			podGroup: ownedPodGroup("test-job"),
+			wantObjs: nil,
+		},
+		"invalid snapshot returns no objects and no error": {
+			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
+			withSnapshot:           true,
+			invalidSnapshot:        true,
+			wantObjs:               nil,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			ctx, cancel := context.WithCancel(ctx)
+			t.Cleanup(cancel)
+
+			clientBuilder := testingutil.NewClientBuilder()
+			if tc.clusterTrainingRuntime != nil {
+				clientBuilder.WithObjects(tc.clusterTrainingRuntime)
+			}
+			if tc.podGroup != nil {
+				clientBuilder.WithObjects(tc.podGroup)
+			}
+			c := clientBuilder.Build()
+
+			if tc.withSnapshot && tc.clusterTrainingRuntime != nil {
+				snapshotRuntime := tc.clusterTrainingRuntime.DeepCopy()
+				if tc.invalidSnapshot {
+					otherTrainJob := tc.trainJob.DeepCopy()
+					otherTrainJob.UID = "some-other-uid"
+					if err := createRuntimeSnapshot(ctx, c, otherTrainJob, snapshotRuntime); err != nil {
+						t.Fatalf("Failed to seed invalid runtime snapshot: %v", err)
+					}
+				} else {
+					if err := createRuntimeSnapshot(ctx, c, tc.trainJob, snapshotRuntime); err != nil {
+						t.Fatalf("Failed to seed runtime snapshot: %v", err)
+					}
+				}
+			}
+
+			trainingRuntime, err := NewTrainingRuntime(ctx, c, testingutil.AsIndex(clientBuilder), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var ok bool
+			trainingRuntimeFactory, ok = trainingRuntime.(*TrainingRuntime)
+			if !ok {
+				t.Fatal("Failed type assertion from Runtime interface to TrainingRuntime")
+			}
+
+			clTrainingRuntime, err := NewClusterTrainingRuntime(ctx, c, testingutil.AsIndex(clientBuilder), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotObjs, err := clTrainingRuntime.DeleteObjects(ctx, tc.trainJob)
+			if tc.wantError != (err != nil) {
+				t.Errorf("Unexpected error presence: got %v, wantError %v", err, tc.wantError)
+			}
+			if diff := cmp.Diff(tc.wantObjs, gotObjs, cmpopts.IgnoreFields(metav1.ObjectMeta{}, "ResourceVersion")); len(diff) != 0 {
+				t.Errorf("Unexpected objects (-want,+got):\n%s", diff)
+			}
+
+			// Unlike NewObjects, DeleteObjects must never create a runtime snapshot.
+			if !tc.withSnapshot {
+				err := c.Get(ctx, client.ObjectKey{
+					Name:      tc.trainJob.Name + runtimeSnapshotSuffix,
+					Namespace: tc.trainJob.Namespace,
+				}, &corev1.ConfigMap{})
+				if !apierrors.IsNotFound(err) {
+					t.Errorf("Expected no runtime snapshot to be created, got error: %v", err)
+				}
 			}
 		})
 	}

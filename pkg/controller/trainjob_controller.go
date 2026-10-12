@@ -140,32 +140,33 @@ func (r *TrainJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 }
 
 func (r *TrainJobReconciler) reconcileObjects(ctx context.Context, runtime jobruntimes.Runtime, trainJob *trainer.TrainJob) error {
+	var applyErr error
 	if !trainjob.IsTrainJobFinished(trainJob) {
 		objects, err := runtime.NewObjects(ctx, trainJob)
 		if err != nil {
-			return err
+			applyErr = err
 		}
 		for _, object := range objects {
 			if err := r.client.Apply(ctx, object, client.FieldOwner("trainer"), client.ForceOwnership); err != nil {
-				return err
+				applyErr = err
+				break
 			}
 		}
 	}
 
-	// Runs regardless of whether the TrainJob is finished, so that plugins can also clean
-	// up objects that outlive a suspension rather than only a terminal condition (e.g. a
-	// gang-scheduling PodGroup, which would otherwise keep reserving scheduler queue
-	// capacity for a suspended TrainJob indefinitely).
+	// Runs even for finished TrainJobs, so plugins can clean up objects of finished or
+	// suspended TrainJobs (e.g. a gang-scheduling PodGroup, which would otherwise keep
+	// reserving scheduler queue capacity indefinitely).
 	toDelete, err := runtime.DeleteObjects(ctx, trainJob)
 	if err != nil {
-		return err
+		return errors.Join(applyErr, fmt.Errorf("resolving objects to delete: %w", err))
 	}
 	for _, object := range toDelete {
 		if err := client.IgnoreNotFound(r.client.Delete(ctx, object)); err != nil {
-			return err
+			return errors.Join(applyErr, fmt.Errorf("deleting %s: %w", klog.KObj(object), err))
 		}
 	}
-	return nil
+	return applyErr
 }
 
 func (r *TrainJobReconciler) reconcileDeadline(ctx context.Context, trainJob *trainer.TrainJob) ctrl.Result {
