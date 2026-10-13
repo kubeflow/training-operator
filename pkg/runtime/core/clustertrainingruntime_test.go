@@ -27,6 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
@@ -212,7 +214,7 @@ func TestClusterTrainingRuntimeValidateObjects(t *testing.T) {
 				Obj(),
 			existingRuntime: nil,
 			wantErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "RuntimeRef"), trainer.RuntimeRef{
+				field.Invalid(field.NewPath("spec", "runtimeRef"), trainer.RuntimeRef{
 					Name:     "nonexistent-runtime",
 					APIGroup: ptr.To(trainer.GroupVersion.Group),
 					Kind:     ptr.To(trainer.ClusterTrainingRuntimeKind),
