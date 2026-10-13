@@ -31,6 +31,7 @@ import pprint
 import re  # noqa: F401
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from kubeflow_trainer_api.models.io_k8s_apimachinery_pkg_apis_meta_v1_condition import IoK8sApimachineryPkgApisMetaV1Condition
@@ -44,12 +45,14 @@ class JobsetV1alpha2JobSetStatus(BaseModel):
     """ # noqa: E501
     conditions: Optional[List[IoK8sApimachineryPkgApisMetaV1Condition]] = Field(default=None, description="conditions track status")
     current_in_place_restart_attempt: Optional[StrictInt] = Field(default=None, description="currentInPlaceRestartAttempt tracks the current in-place restart attempt of the JobSet. It is read by the agent. If the in-place restart attempt of the Pod is equal to currentInPlaceRestartAttempt, the agent should lift its barrier to allow the worker container to start running.", alias="currentInPlaceRestartAttempt")
+    execution_attempts: Optional[StrictInt] = Field(default=None, description="executionAttempts tracks the number of execution lifecycles of the JobSet. A value of nil indicates the JobSet has not yet executed (e.g. created suspended). A value of 0 indicates the initial execution attempt, and values > 0 indicate subsequent execution attempts triggered by failure policy restarts or suspend/resume cycles.", alias="executionAttempts")
     previous_in_place_restart_attempt: Optional[StrictInt] = Field(default=None, description="previousInPlaceRestartAttempt tracks the previous in-place restart attempt of the JobSet. It is read by the agent. If the in-place restart attempt of the Pod is smaller than or equal to previousInPlaceRestartAttempt, the agent should restart its Pod in-place.", alias="previousInPlaceRestartAttempt")
     replicated_jobs_status: Optional[List[JobsetV1alpha2ReplicatedJobStatus]] = Field(default=None, description="replicatedJobsStatus tracks the number of JobsReady for each replicatedJob.", alias="replicatedJobsStatus")
     restarts: Optional[StrictInt] = Field(default=0, description="restarts tracks the number of times the JobSet has been globally restarted. That is, restarts is the number of times the restart action RestartJobSet or RestartJobSetAndIgnoreMaxRestarts have been executed and led to the recreation of all Jobs.")
     restarts_count_towards_max: Optional[StrictInt] = Field(default=None, description="restartsCountTowardsMax tracks the number of times the JobSet has been globally restarted that counts towards the maximum allowed number of restarts. That is, restartsCountTowardsMax is the number of times the restart action RestartJobSet has been executed and led to the recreation of all Jobs.", alias="restartsCountTowardsMax")
+    start_time: Optional[datetime] = Field(default=None, description="startTime is the timestamp from which activeDeadlineSeconds is measured, and also serves as the JobSet's active-start time. It is set when the JobSet first becomes active (unsuspended), cleared when the JobSet is suspended, and reset to the current time when the JobSet resumes, matching batch/v1.Job.status.startTime. It is maintained only while the JobSetActiveDeadlineSeconds feature gate is enabled (and cleared while the gate is off), independent of whether activeDeadlineSeconds is set.", alias="startTime")
     terminal_state: Optional[StrictStr] = Field(default=None, description="terminalState tracks the state of the JobSet when it finishes execution. It can be either Completed or Failed. Otherwise, it is empty by default.", alias="terminalState")
-    __properties: ClassVar[List[str]] = ["conditions", "currentInPlaceRestartAttempt", "previousInPlaceRestartAttempt", "replicatedJobsStatus", "restarts", "restartsCountTowardsMax", "terminalState"]
+    __properties: ClassVar[List[str]] = ["conditions", "currentInPlaceRestartAttempt", "executionAttempts", "previousInPlaceRestartAttempt", "replicatedJobsStatus", "restarts", "restartsCountTowardsMax", "startTime", "terminalState"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -118,10 +121,12 @@ class JobsetV1alpha2JobSetStatus(BaseModel):
         _obj = cls.model_validate({
             "conditions": [IoK8sApimachineryPkgApisMetaV1Condition.from_dict(_item) for _item in obj["conditions"]] if obj.get("conditions") is not None else None,
             "currentInPlaceRestartAttempt": obj.get("currentInPlaceRestartAttempt"),
+            "executionAttempts": obj.get("executionAttempts"),
             "previousInPlaceRestartAttempt": obj.get("previousInPlaceRestartAttempt"),
             "replicatedJobsStatus": [JobsetV1alpha2ReplicatedJobStatus.from_dict(_item) for _item in obj["replicatedJobsStatus"]] if obj.get("replicatedJobsStatus") is not None else None,
             "restarts": obj.get("restarts") if obj.get("restarts") is not None else 0,
             "restartsCountTowardsMax": obj.get("restartsCountTowardsMax"),
+            "startTime": obj.get("startTime"),
             "terminalState": obj.get("terminalState")
         })
         return _obj
