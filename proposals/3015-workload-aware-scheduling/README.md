@@ -1143,12 +1143,28 @@ This feature requires:
 
 - **Kubernetes feature gate `GenericWorkload`** on `kube-apiserver` and `kube-scheduler` to
   enable the `Workload` and `PodGroup` APIs and gang-scheduling integration in the scheduler.
+- **`--runtime-config=scheduling.k8s.io/v1beta1=true`** on `kube-apiserver` to serve the
+  `Workload` and `PodGroup` APIs.
 - **Trainer feature gate `TrainJobWorkloadAwareScheduling`** on `trainer-controller-manager` to
   enable the `spec.scheduling` API and the Workload runtime plugin.
 
+Optional scheduling fields additionally require the following Kubernetes feature gates on
+`kube-apiserver` and `kube-scheduler`:
+
+- **`TopologyAwareWorkloadScheduling`** for `schedulingConstraints`.
+- **`DRAWorkloadResourceClaims`** for `resourceClaims`.
+- **`WorkloadAwarePreemption`** for `disruptionMode`.
+
+When one of these gates is disabled, `kube-apiserver` silently drops the corresponding `PodGroup`
+fields on write. The TrainJob controller would then detect a permanent drift between the desired
+and the actual `PodGroup` spec. To avoid this, cluster administrators must enable the gates
+that match the scheduling fields used by their runtimes.
+
 Gang-of-gangs additionally requires:
 
-- **Kubernetes feature gate `CompositePodGroup`** on `kube-apiserver` and `kube-scheduler`.
+- **Kubernetes feature gate `CompositePodGroup`** on `kube-apiserver` and `kube-scheduler`, and
+  `--runtime-config=scheduling.k8s.io/v1alpha3=true` on `kube-apiserver` to serve the alpha
+  `CompositePodGroup` API.
 - **Trainer feature gate `TrainJobCompositePodGroup`** on `trainer-controller-manager`, which lifts the
   mutual exclusion between levels and makes the controller create the `CompositePodGroup`
   hierarchy.
