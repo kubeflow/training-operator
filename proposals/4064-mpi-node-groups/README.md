@@ -36,7 +36,79 @@ Every group stays a replicatedJob in the runtime template with its full pod temp
 
 ### User Stories (Optional)
 
+#### Story 1
+
 As a user, I submit one TrainJob with one CPU node, two L40S pods and one W7900 node against a runtime that offers all three flavours, and set the slots of each group, without asking an admin for a new runtime.
+
+#### Story 2: CMS event reconstruction on CPU and GPU nodes
+
+CMS physicists preparing the computing farms for the High-Luminosity LHC benchmark the event reconstruction on heterogeneous hardware. In one MPI job, the CPU part of the reconstruction runs on a high core count node and offloads the GPU part over RDMA to a node with four NVIDIA L40S. The node classes, the number of hosts and the ranks per host are the variables of the benchmark, and our clusters mix CPU, NVIDIA and AMD nodes, so these have to be set per job and per group, not fixed by one runtime per combination.
+
+We run this today with a prototype of this KEP built on plain Jobs. It reads a runtime and a TrainJob in the shape proposed here, with older field names (`workers` for `nodeGroups`), and creates the SSH Secret, the hostfile ConfigMap, a headless Service and one Job per group. The runtime offers every node flavour of the cluster, disabled by default. An excerpt with the groups used below:
+
+```yaml
+kind: ClusterTrainingRuntime
+metadata:
+  name: ngt-flavours
+spec:
+  mlPolicy:
+    mpi:
+      launcher:
+        runAsNode: false
+        resources: {requests: {cpu: "1", memory: 2Gi}}
+      workers:
+      - jobName: highcore
+        numNodes: 0
+        numProcPerNode: 382
+        nodeSelector: {node/type: HIGHCORE-384}
+        tolerations: [{key: node/highcore-384, operator: Exists, effect: NoSchedule}]
+      - jobName: l40s
+        numNodes: 0
+        numProcPerNode: 1
+        resources: {limits: {nvidia.com/gpu: 1}}
+        nodeSelector: {nvidia.com/gpu.product: NVIDIA-L40S}
+        tolerations: [{key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}]
+      # one group per flavour of the cluster: other CPU types, H100, RTX 6000, MI300X, W7900
+```
+
+This is the TrainJob of the CMS benchmark. It enables one high core count node with 382 slots and one L40S node with 4 slots, pins both to nodes reserved for the benchmark, and adds the labels that our admission policies turn into storage mounts and RDMA access:
+
+```yaml
+kind: TrainJob
+metadata:
+  name: cms-mixed
+spec:
+  runtimeRef: {name: ngt-flavours}
+  trainer:
+    image: registry.cern.ch/ngt/mpi:multi-1.1
+    launcher:
+      command: ["sleep", "infinity"]
+      resources: {requests: {cpu: "4", memory: 12Gi}}
+      labels: {home: afs, mount-eos: "true", mount-cvmfs: "true", mount-afs: "true"}
+    workers:
+    - jobName: highcore
+      numNodes: 1
+      labels: {home: afs, mount-eos: "true", mount-cvmfs: "true", mount-afs: "true", rdma: "true"}
+      nodeSelector:
+        node/type: HIGHCORE-384
+        kubernetes.io/hostname: highcore-node-0
+      tolerations:
+      - {key: node/highcore-384, operator: Exists, effect: NoSchedule}
+      - {key: node.kubernetes.io/unschedulable, operator: Exists, effect: NoSchedule}
+    - jobName: l40s
+      numNodes: 1
+      numProcPerNode: 4  # runtime override
+      resources: {limits: {nvidia.com/gpu: 4}}
+      labels: {home: afs, mount-eos: "true", mount-cvmfs: "true", mount-afs: "true", rdma: "true"}
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-L40S
+        kubernetes.io/hostname: l40s-node-3
+      tolerations:
+      - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      - {key: node.kubernetes.io/unschedulable, operator: Exists, effect: NoSchedule}
+```
+
+With this KEP, the flavour selectors and tolerations stay in the pod templates of the runtime replicatedJobs, the `workers` entries become `spec.trainer.nodeGroups`, and the pinning and labels move to `runtimePatches`, which can already set `nodeSelector`, `tolerations` and pod labels per replicatedJob.
 
 ### Notes/Constraints/Caveats (Optional)
 
