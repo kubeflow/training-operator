@@ -199,6 +199,31 @@ const (
 
 	// OpenMPIEnvDefaultSlots is the OpenMPI default number of slots env key.
 	OpenMPIEnvDefaultSlots string = "OMPI_MCA_orte_set_default_slots"
+
+	// Values for Intel MPI implementation.
+
+	// IntelMPIEnvHostFileLocation is the Intel MPI Hydra hostfile env key.
+	IntelMPIEnvHostFileLocation string = "I_MPI_HYDRA_HOST_FILE"
+
+	// IntelMPIEnvKeyBootstrapExecExtraArgs is the env key for the Intel MPI Hydra SSH bootstrap arguments.
+	IntelMPIEnvKeyBootstrapExecExtraArgs string = "I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS"
+
+	// IntelMPIEnvDefaultValueBootstrapExecExtraArgs is the default env value for the Intel MPI Hydra SSH bootstrap arguments.
+	IntelMPIEnvDefaultValueBootstrapExecExtraArgs string = "-o ConnectionAttempts=10"
+
+	// IntelMPIEnvDefaultSlots is the Intel MPI default number of processes per host env key.
+	IntelMPIEnvDefaultSlots string = "I_MPI_PERHOST"
+
+	// Values for MPICH implementation.
+
+	// MPICHEnvHostFileLocation is the MPICH Hydra hostfile env key.
+	MPICHEnvHostFileLocation string = "HYDRA_HOST_FILE"
+
+	// MPICHEnvKeyLaunchExtraArgs is the env key for the MPICH Hydra SSH launcher arguments.
+	MPICHEnvKeyLaunchExtraArgs string = "HYDRA_LAUNCH_EXTRA_ARGS"
+
+	// MPICHEnvDefaultValueLaunchExtraArgs is the default env value for the MPICH Hydra SSH launcher arguments.
+	MPICHEnvDefaultValueLaunchExtraArgs string = "-o ConnectionAttempts=10"
 	// Distributed envs for torchrun.
 	// Ref: https://github.com/pytorch/pytorch/blob/3a0d0885171376ed610c8175a19ba40411fc6f3f/torch/distributed/argparse_util.py#L45
 	// TorchEnvNumNodes is the env name for the number of training nodes.
@@ -339,6 +364,12 @@ var (
 
 	// MPIReservedEnvNames is MPI reserved env names that users must not set manually.
 	MPIReservedEnvNames = sets.New(OpenMPIEnvHostFileLocation, OpenMPIEnvKeyRSHArgs, OpenMPIEnvKeepFQDNHostNames, OpenMPIEnvDefaultSlots)
+
+	// IntelMPIReservedEnvNames is Intel MPI reserved env names that users must not set manually.
+	IntelMPIReservedEnvNames = sets.New(IntelMPIEnvHostFileLocation, IntelMPIEnvKeyBootstrapExecExtraArgs, IntelMPIEnvDefaultSlots)
+
+	// MPICHReservedEnvNames is MPICH reserved env names that users must not set manually.
+	MPICHReservedEnvNames = sets.New(MPICHEnvHostFileLocation, MPICHEnvKeyLaunchExtraArgs)
 
 	// ResourceInUseFinalizer is a finalizer for managed resources which is used by other resources.
 	ResourceInUseFinalizer = fmt.Sprintf("%s/resource-in-use", trainer.GroupVersion.Group)

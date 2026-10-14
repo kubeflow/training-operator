@@ -88,3 +88,8 @@ mlPolicy:
     sshAuthMountPath: /home/mpiuser/.ssh
     runLauncherAsNode: true
 ```
+
+The `mpiImplementation` field selects the MPI implementation. Supported values are `OpenMPI`
+(default), `MPICH`, and `Intel`. The training image must ship the matching MPI implementation.
+The plugin writes the hostfile in the format expected by the implementation and sets the launcher
+environment variables that point `mpirun` to it.

@@ -49,8 +49,6 @@ import (
 	"github.com/kubeflow/trainer/v2/pkg/runtime/framework"
 )
 
-// TODO : Support MPICH and IntelMPI implementations.
-
 type MPI struct {
 	client client.Client
 	scheme *apiruntime.Scheme
@@ -96,7 +94,7 @@ func (m *MPI) Validate(_ context.Context, runtimeInfo *runtime.Info, _, newJobOb
 	if trainJobTrainer := newJobObj.Spec.Trainer; trainJobTrainer != nil {
 		mpiEnvs := sets.New[string]()
 		for _, env := range trainJobTrainer.Env {
-			if constants.MPIReservedEnvNames.Has(env.Name) {
+			if reservedEnvNames(mpiImplementation(runtimeInfo)).Has(env.Name) {
 				mpiEnvs.Insert(env.Name)
 			}
 		}
@@ -205,26 +203,14 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 						WithName(constants.MPIHostfileVolumeName).
 						WithMountPath(constants.MPIHostfileDir),
 				)
-				switch ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, trainer.MPIImplementationOpenMPI) {
-				case trainer.MPIImplementationOpenMPI:
-					apply.UpsertEnvVars(
-						&info.TemplateSpec.PodSets[psIdx].Containers[cIdx].Env,
-						*corev1ac.EnvVar().
-							WithName(constants.OpenMPIEnvHostFileLocation).
-							WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
-						*corev1ac.EnvVar().
-							WithName(constants.OpenMPIEnvKeepFQDNHostNames).
-							WithValue("true"),
-						*corev1ac.EnvVar().
-							WithName(constants.OpenMPIEnvDefaultSlots).
-							WithValue(strconv.Itoa(int(ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode, 1)))),
-						*corev1ac.EnvVar().
-							WithName(constants.OpenMPIEnvKeyRSHArgs).
-							WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
-					)
-				default:
-					return fmt.Errorf("MPI implementation for %v doesn't supported", info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation)
+				envs, err := launcherEnvVars(
+					mpiImplementation(info),
+					ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode, 1),
+				)
+				if err != nil {
+					return err
 				}
+				apply.UpsertEnvVars(&info.TemplateSpec.PodSets[psIdx].Containers[cIdx].Env, envs...)
 			}
 		}
 	}
@@ -319,10 +305,12 @@ func (m *MPI) buildHostFileConfigMap(info *runtime.Info, trainJob *trainer.Train
 		if !isNode(runLauncherAsNode, ps) {
 			continue
 		}
-		switch ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, trainer.MPIImplementationOpenMPI) {
-		case trainer.MPIImplementationOpenMPI:
-			for e := range ps.Endpoints {
+		for e := range ps.Endpoints {
+			switch mpiImplementation(info) {
+			case trainer.MPIImplementationOpenMPI:
 				fmt.Fprintf(&hostFile, "%s slots=%d\n", e, slots)
+			case trainer.MPIImplementationIntel, trainer.MPIImplementationMPICH:
+				fmt.Fprintf(&hostFile, "%s:%d\n", e, slots)
 			}
 		}
 	}
@@ -337,6 +325,51 @@ func (m *MPI) buildHostFileConfigMap(info *runtime.Info, trainJob *trainer.Train
 			WithUID(trainJob.UID).
 			WithController(true).
 			WithBlockOwnerDeletion(true))
+}
+
+// mpiImplementation returns the configured MPI implementation, which defaults to OpenMPI.
+func mpiImplementation(info *runtime.Info) trainer.MPIImplementation {
+	return ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, trainer.MPIImplementationOpenMPI)
+}
+
+// reservedEnvNames returns the env names that users must not set for the given MPI implementation.
+func reservedEnvNames(impl trainer.MPIImplementation) sets.Set[string] {
+	switch impl {
+	case trainer.MPIImplementationIntel:
+		return constants.IntelMPIReservedEnvNames
+	case trainer.MPIImplementationMPICH:
+		return constants.MPICHReservedEnvNames
+	default:
+		return constants.MPIReservedEnvNames
+	}
+}
+
+// launcherEnvVars returns the envs that make the launcher of the given MPI implementation
+// discover the hosts from the mounted hostfile.
+func launcherEnvVars(impl trainer.MPIImplementation, slots int32) ([]corev1ac.EnvVarApplyConfiguration, error) {
+	hostfile := fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)
+	switch impl {
+	case trainer.MPIImplementationOpenMPI:
+		return []corev1ac.EnvVarApplyConfiguration{
+			*corev1ac.EnvVar().WithName(constants.OpenMPIEnvHostFileLocation).WithValue(hostfile),
+			*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeepFQDNHostNames).WithValue("true"),
+			*corev1ac.EnvVar().WithName(constants.OpenMPIEnvDefaultSlots).WithValue(strconv.Itoa(int(slots))),
+			*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeyRSHArgs).WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+		}, nil
+	case trainer.MPIImplementationIntel:
+		return []corev1ac.EnvVarApplyConfiguration{
+			*corev1ac.EnvVar().WithName(constants.IntelMPIEnvHostFileLocation).WithValue(hostfile),
+			*corev1ac.EnvVar().WithName(constants.IntelMPIEnvKeyBootstrapExecExtraArgs).WithValue(constants.IntelMPIEnvDefaultValueBootstrapExecExtraArgs),
+			*corev1ac.EnvVar().WithName(constants.IntelMPIEnvDefaultSlots).WithValue(strconv.Itoa(int(slots))),
+		}, nil
+	case trainer.MPIImplementationMPICH:
+		return []corev1ac.EnvVarApplyConfiguration{
+			*corev1ac.EnvVar().WithName(constants.MPICHEnvHostFileLocation).WithValue(hostfile),
+			*corev1ac.EnvVar().WithName(constants.MPICHEnvKeyLaunchExtraArgs).WithValue(constants.MPICHEnvDefaultValueLaunchExtraArgs),
+		}, nil
+	default:
+		return nil, fmt.Errorf("MPI implementation %q is not supported", impl)
+	}
 }
 
 func isNode(runLauncherAsNode bool, ps runtime.PodSet) bool {

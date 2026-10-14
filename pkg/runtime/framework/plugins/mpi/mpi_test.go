@@ -1143,6 +1143,125 @@ trainJob-node-1-0.trainJob slots=1
 	}
 }
 
+func TestMPIImplementations(t *testing.T) {
+	hostfilePath := fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)
+	cases := map[string]struct {
+		mpiImplementation *trainer.MPIImplementation
+		wantLauncherEnvs  []corev1ac.EnvVarApplyConfiguration
+		wantHostfile      string
+		wantErr           bool
+	}{
+		"mpiImplementation is nil and defaults to OpenMPI": {
+			wantLauncherEnvs: []corev1ac.EnvVarApplyConfiguration{
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvHostFileLocation).WithValue(hostfilePath),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeepFQDNHostNames).WithValue("true"),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvDefaultSlots).WithValue("4"),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeyRSHArgs).WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+			},
+			wantHostfile: "trainJob-node-0-0.trainJob slots=4\ntrainJob-node-0-1.trainJob slots=4\n",
+		},
+		"OpenMPI": {
+			mpiImplementation: ptr.To(trainer.MPIImplementationOpenMPI),
+			wantLauncherEnvs: []corev1ac.EnvVarApplyConfiguration{
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvHostFileLocation).WithValue(hostfilePath),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeepFQDNHostNames).WithValue("true"),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvDefaultSlots).WithValue("4"),
+				*corev1ac.EnvVar().WithName(constants.OpenMPIEnvKeyRSHArgs).WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+			},
+			wantHostfile: "trainJob-node-0-0.trainJob slots=4\ntrainJob-node-0-1.trainJob slots=4\n",
+		},
+		"Intel MPI": {
+			mpiImplementation: ptr.To(trainer.MPIImplementationIntel),
+			wantLauncherEnvs: []corev1ac.EnvVarApplyConfiguration{
+				*corev1ac.EnvVar().WithName(constants.IntelMPIEnvHostFileLocation).WithValue(hostfilePath),
+				*corev1ac.EnvVar().WithName(constants.IntelMPIEnvKeyBootstrapExecExtraArgs).WithValue(constants.IntelMPIEnvDefaultValueBootstrapExecExtraArgs),
+				*corev1ac.EnvVar().WithName(constants.IntelMPIEnvDefaultSlots).WithValue("4"),
+			},
+			wantHostfile: "trainJob-node-0-0.trainJob:4\ntrainJob-node-0-1.trainJob:4\n",
+		},
+		"MPICH": {
+			mpiImplementation: ptr.To(trainer.MPIImplementationMPICH),
+			wantLauncherEnvs: []corev1ac.EnvVarApplyConfiguration{
+				*corev1ac.EnvVar().WithName(constants.MPICHEnvHostFileLocation).WithValue(hostfilePath),
+				*corev1ac.EnvVar().WithName(constants.MPICHEnvKeyLaunchExtraArgs).WithValue(constants.MPICHEnvDefaultValueLaunchExtraArgs),
+			},
+			wantHostfile: "trainJob-node-0-0.trainJob:4\ntrainJob-node-0-1.trainJob:4\n",
+		},
+		"unsupported implementation is rejected": {
+			mpiImplementation: ptr.To(trainer.MPIImplementation("SpectrumMPI")),
+			wantErr:           true,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			policy := utiltesting.MakeMLPolicySourceWrapper().
+				MPIPolicy(ptr.To[int32](4), trainer.MPIImplementationOpenMPI, nil, nil).
+				Obj()
+			policy.MPI.MPIImplementation = tc.mpiImplementation
+			info := &runtime.Info{
+				RuntimePolicy: runtime.RuntimePolicy{MLPolicySource: policy},
+				TemplateSpec: runtime.TemplateSpec{
+					PodSets: []runtime.PodSet{
+						{
+							Name:       constants.Launcher,
+							Count:      ptr.To[int32](1),
+							Containers: []runtime.Container{{Name: constants.Node}},
+						},
+						{
+							Name:  constants.Node,
+							Count: ptr.To[int32](2),
+							Endpoints: func(yield func(string) bool) {
+								_ = yield("trainJob-node-0-0.trainJob") && yield("trainJob-node-0-1.trainJob")
+							},
+							Containers: []runtime.Container{{Name: constants.Node}},
+						},
+					},
+				},
+			}
+			trainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "trainJob").UID("trainJob").Obj()
+
+			p, err := New(ctx, utiltesting.NewClientBuilder().Build(), nil, nil)
+			if err != nil {
+				t.Fatalf("Failed to initialize MPI plugin: %v", err)
+			}
+			err = p.(framework.EnforceMLPolicyPlugin).EnforceMLPolicy(info, trainJob)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("Expected error from EnforceMLPolicy, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Unexpected error from EnforceMLPolicy: %v", err)
+			}
+			if diff := gocmp.Diff(tc.wantLauncherEnvs, info.TemplateSpec.PodSets[0].Containers[0].Env); len(diff) != 0 {
+				t.Errorf("Unexpected launcher envs (-want, +got): %s", diff)
+			}
+			if envs := info.TemplateSpec.PodSets[1].Containers[0].Env; len(envs) != 0 {
+				t.Errorf("Unexpected envs on node container: %v", envs)
+			}
+
+			objs, err := p.(framework.ComponentBuilderPlugin).Build(ctx, info, trainJob)
+			if err != nil {
+				t.Fatalf("Unexpected error from Build: %v", err)
+			}
+			var gotHostfile *string
+			for _, obj := range objs {
+				if cm, ok := obj.(*corev1ac.ConfigMapApplyConfiguration); ok {
+					gotHostfile = ptr.To(cm.Data[constants.MPIHostfileName])
+				}
+			}
+			if gotHostfile == nil {
+				t.Fatal("Expected hostfile ConfigMap to be built")
+			}
+			if diff := gocmp.Diff(tc.wantHostfile, *gotHostfile); len(diff) != 0 {
+				t.Errorf("Unexpected hostfile (-want, +got): %s", diff)
+			}
+		})
+	}
+}
+
 func TestValidate(t *testing.T) {
 	cases := map[string]struct {
 		info         *runtime.Info
@@ -1304,6 +1423,83 @@ func TestValidate(t *testing.T) {
 					fmt.Sprintf("must not have reserved envs, invalid envs configured: %v", []string{constants.OpenMPIEnvHostFileLocation, constants.OpenMPIEnvKeyRSHArgs}),
 				),
 			},
+		},
+		"trainer has reserved Intel MPI envs": {
+			info: runtime.NewInfo(
+				runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
+					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
+						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationIntel, nil, nil).
+						Obj(),
+					).
+					Obj(),
+				),
+			),
+			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
+				Trainer(utiltesting.MakeTrainJobTrainerWrapper().
+					Env(
+						corev1.EnvVar{Name: constants.IntelMPIEnvDefaultSlots, Value: "custom"},
+						corev1.EnvVar{Name: constants.IntelMPIEnvHostFileLocation, Value: "custom"},
+					).
+					Obj(),
+				).
+				Obj(),
+			wantError: field.ErrorList{
+				field.Invalid(
+					field.NewPath("spec").Child("trainer").Child("env"),
+					[]corev1.EnvVar{
+						{Name: constants.IntelMPIEnvDefaultSlots, Value: "custom"},
+						{Name: constants.IntelMPIEnvHostFileLocation, Value: "custom"},
+					},
+					fmt.Sprintf("must not have reserved envs, invalid envs configured: %v", []string{constants.IntelMPIEnvHostFileLocation, constants.IntelMPIEnvDefaultSlots}),
+				),
+			},
+		},
+		"trainer has reserved MPICH envs": {
+			info: runtime.NewInfo(
+				runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
+					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
+						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationMPICH, nil, nil).
+						Obj(),
+					).
+					Obj(),
+				),
+			),
+			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
+				Trainer(utiltesting.MakeTrainJobTrainerWrapper().
+					Env(
+						corev1.EnvVar{Name: constants.MPICHEnvHostFileLocation, Value: "custom"},
+						corev1.EnvVar{Name: constants.MPICHEnvKeyLaunchExtraArgs, Value: "custom"},
+					).
+					Obj(),
+				).
+				Obj(),
+			wantError: field.ErrorList{
+				field.Invalid(
+					field.NewPath("spec").Child("trainer").Child("env"),
+					[]corev1.EnvVar{
+						{Name: constants.MPICHEnvHostFileLocation, Value: "custom"},
+						{Name: constants.MPICHEnvKeyLaunchExtraArgs, Value: "custom"},
+					},
+					fmt.Sprintf("must not have reserved envs, invalid envs configured: %v", []string{constants.MPICHEnvHostFileLocation, constants.MPICHEnvKeyLaunchExtraArgs}),
+				),
+			},
+		},
+		"trainer has OpenMPI env that is not reserved for MPICH is valid": {
+			info: runtime.NewInfo(
+				runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
+					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
+						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationMPICH, nil, nil).
+						Obj(),
+					).
+					Obj(),
+				),
+			),
+			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
+				Trainer(utiltesting.MakeTrainJobTrainerWrapper().
+					Env(corev1.EnvVar{Name: constants.OpenMPIEnvHostFileLocation, Value: "/custom/hostfile"}).
+					Obj(),
+				).
+				Obj(),
 		},
 		"trainer has non-reserved env is valid": {
 			info: runtime.NewInfo(
