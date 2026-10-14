@@ -796,6 +796,18 @@ trainJob-node-1-0.trainJob slots=1
 									*corev1ac.EnvVar().
 										WithName(constants.OpenMPIEnvKeyRSHArgs).
 										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvHostFileLocation).
+										WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeepFQDNHostNames).
+										WithValue("false"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvDefaultSlots).
+										WithValue("1"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeySSHArgs).
+										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
 								},
 							}},
 							Volumes: []corev1ac.VolumeApplyConfiguration{
