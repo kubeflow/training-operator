@@ -85,6 +85,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainJobStatus":                   schema_pkg_apis_trainer_v1alpha1_TrainJobStatus(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainJobTemplateSpec":             schema_pkg_apis_trainer_v1alpha1_TrainJobTemplateSpec(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.Trainer":                          schema_pkg_apis_trainer_v1alpha1_Trainer(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerResourceClaim":             schema_pkg_apis_trainer_v1alpha1_TrainerResourceClaim(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerStatus":                    schema_pkg_apis_trainer_v1alpha1_TrainerStatus(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainingRuntime":                  schema_pkg_apis_trainer_v1alpha1_TrainingRuntime(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainingRuntimeList":              schema_pkg_apis_trainer_v1alpha1_TrainingRuntimeList(ref),
@@ -488,12 +489,15 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.DependsOn":                                          schema_jobset_api_jobset_v1alpha2_DependsOn(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.FailurePolicy":                                      schema_jobset_api_jobset_v1alpha2_FailurePolicy(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.FailurePolicyRule":                                  schema_jobset_api_jobset_v1alpha2_FailurePolicyRule(ref),
+		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobScheduling":                                      schema_jobset_api_jobset_v1alpha2_JobScheduling(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSet":                                             schema_jobset_api_jobset_v1alpha2_JobSet(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetList":                                         schema_jobset_api_jobset_v1alpha2_JobSetList(ref),
+		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetScheduling":                                   schema_jobset_api_jobset_v1alpha2_JobSetScheduling(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetSpec":                                         schema_jobset_api_jobset_v1alpha2_JobSetSpec(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetStatus":                                       schema_jobset_api_jobset_v1alpha2_JobSetStatus(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.Network":                                            schema_jobset_api_jobset_v1alpha2_Network(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJob":                                      schema_jobset_api_jobset_v1alpha2_ReplicatedJob(ref),
+		"sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobScheduling":                            schema_jobset_api_jobset_v1alpha2_ReplicatedJobScheduling(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobStatus":                                schema_jobset_api_jobset_v1alpha2_ReplicatedJobStatus(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.StartupPolicy":                                      schema_jobset_api_jobset_v1alpha2_StartupPolicy(ref),
 		"sigs.k8s.io/jobset/api/jobset/v1alpha2.SuccessPolicy":                                      schema_jobset_api_jobset_v1alpha2_SuccessPolicy(ref),
@@ -700,6 +704,12 @@ func schema_pkg_apis_trainer_v1alpha1_ContainerPatch(ref common.ReferenceCallbac
 							},
 						},
 					},
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "resources patches the container's compute resources, merged with the runtime template using strategic merge patch. If setting the resources on the main node container, prefer the higher level spec.trainer.resourcesPerNode and spec.trainer.resourceClaimsPerNode fields; they take precedence over this field, which takes precedence over the runtime template.",
+							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
+						},
+					},
 					"securityContext": {
 						SchemaProps: spec.SchemaProps{
 							Description: "securityContext patches the container's security context. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
@@ -711,7 +721,7 @@ func schema_pkg_apis_trainer_v1alpha1_ContainerPatch(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			corev1.EnvVar{}.OpenAPIModelName(), corev1.SecurityContext{}.OpenAPIModelName(), corev1.VolumeMount{}.OpenAPIModelName()},
+			corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName(), corev1.SecurityContext{}.OpenAPIModelName(), corev1.VolumeMount{}.OpenAPIModelName()},
 	}
 }
 
@@ -1773,6 +1783,27 @@ func schema_pkg_apis_trainer_v1alpha1_PodSpecPatch(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"resourceClaims": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "resourceClaims patches the Pod's resourceClaims, typically for sidecar and init containers. Entries are merged by name with the runtime template using strategic merge patch. For a claim of the same name, spec.trainer.resourceClaimsPerNode takes precedence over this field, which takes precedence over the runtime template. Containers consume a claim by referencing its name in the container's resources.claims of this runtime patch.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref(corev1.PodResourceClaim{}.OpenAPIModelName()),
+									},
+								},
+							},
+						},
+					},
 					"initContainers": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -1913,7 +1944,7 @@ func schema_pkg_apis_trainer_v1alpha1_PodSpecPatch(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.ContainerPatch", corev1.Affinity{}.OpenAPIModelName(), corev1.LocalObjectReference{}.OpenAPIModelName(), corev1.PodSchedulingGate{}.OpenAPIModelName(), corev1.PodSecurityContext{}.OpenAPIModelName(), corev1.Toleration{}.OpenAPIModelName(), corev1.Volume{}.OpenAPIModelName()},
+			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.ContainerPatch", corev1.Affinity{}.OpenAPIModelName(), corev1.LocalObjectReference{}.OpenAPIModelName(), corev1.PodResourceClaim{}.OpenAPIModelName(), corev1.PodSchedulingGate{}.OpenAPIModelName(), corev1.PodSecurityContext{}.OpenAPIModelName(), corev1.Toleration{}.OpenAPIModelName(), corev1.Volume{}.OpenAPIModelName()},
 	}
 }
 
@@ -2546,6 +2577,27 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
 						},
 					},
+					"resourceClaimsPerNode": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "resourceClaimsPerNode defines the DRA ResourceClaims for each training node. These claims are added to the trainer node Pod's resourceClaims and automatically referenced in the node container's resources.claims. To attach a claim to another container (sidecar or init), use the runtimePatches API. Claims are merged by name. For a claim of the same name, this field takes precedence over runtimePatches, which take precedence over the runtime template, matching how resourcesPerNode overrides patched requests and limits. This is an alpha feature and requires enabling the TrainJobDynamicResourceAllocation feature gate. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerResourceClaim"),
+									},
+								},
+							},
+						},
+					},
 					"numProcPerNode": {
 						SchemaProps: spec.SchemaProps{
 							Description: "numProcPerNode is the number of processes/workers/slots on every training node. For the MPI runtime only int value can be set to represent number of slots per node. For the Torch runtime the value defaults to `auto` and can be overridden with an int.",
@@ -2557,7 +2609,35 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
+			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerResourceClaim", corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
+	}
+}
+
+func schema_pkg_apis_trainer_v1alpha1_TrainerResourceClaim(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "TrainerResourceClaim references a ResourceClaimTemplate for every training node Pod.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "name uniquely identifies this resource claim inside the Pod and is what the node container's resources.claims entry references. Must be a DNS label.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"resourceClaimTemplateName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "resourceClaimTemplateName is the name of a ResourceClaimTemplate in the TrainJob namespace. A separate ResourceClaim is created from it for every training node Pod.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name", "resourceClaimTemplateName"},
+			},
+		},
 	}
 }
 
@@ -23595,6 +23675,57 @@ func schema_jobset_api_jobset_v1alpha2_FailurePolicyRule(ref common.ReferenceCal
 	}
 }
 
+func schema_jobset_api_jobset_v1alpha2_JobScheduling(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JobScheduling defines scheduling configuration applied at the individual Job (ReplicatedJob replica) level, enabling each replica to be scheduled as its own independent gang. This is part of the Gang-of-Gangs model: the JobSet controller compiles one PodGroupTemplate/PodGroup per Job (replica) of the targeted ReplicatedJob, sized to that Job's own parallelism, rather than one PodGroup shared across all of the ReplicatedJob's replicas.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"schedulingPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingPolicy defines the scheduling policy (basic or gang) applied to each replica of the targeted ReplicatedJobs.",
+							Ref:         ref(v1alpha3.WorkloadPodGroupSchedulingPolicy{}.OpenAPIModelName()),
+						},
+					},
+					"schedulingConstraints": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingConstraints defines topology constraints applied to each replica of the targeted ReplicatedJobs.",
+							Ref:         ref(v1alpha3.WorkloadPodGroupSchedulingConstraints{}.OpenAPIModelName()),
+						},
+					},
+					"disruptionMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "disruptionMode defines how pods within a single replica can be disrupted.",
+							Ref:         ref(v1alpha3.WorkloadPodGroupDisruptionMode{}.OpenAPIModelName()),
+						},
+					},
+					"resourceClaims": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "resourceClaims defines claims shared by all pods in each Job's PodGroup.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref(v1alpha3.WorkloadPodGroupResourceClaim{}.OpenAPIModelName()),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			v1alpha3.WorkloadPodGroupDisruptionMode{}.OpenAPIModelName(), v1alpha3.WorkloadPodGroupResourceClaim{}.OpenAPIModelName(), v1alpha3.WorkloadPodGroupSchedulingConstraints{}.OpenAPIModelName(), v1alpha3.WorkloadPodGroupSchedulingPolicy{}.OpenAPIModelName()},
+	}
+}
+
 func schema_jobset_api_jobset_v1alpha2_JobSet(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -23693,6 +23824,57 @@ func schema_jobset_api_jobset_v1alpha2_JobSetList(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_jobset_api_jobset_v1alpha2_JobSetScheduling(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JobSetScheduling defines the Workload-Aware Scheduling configuration for a JobSet. A JobSet must configure scheduling using exactly one of two mutually exclusive models, since composite Gang-of-Gangs PodGroup hierarchies linking a parent PodGroup to leaf PodGroups are not implemented in alpha:\n  - the top-level (composite) model: set schedulingPolicy,\n    schedulingConstraints, and/or disruptionMode to configure a single PodGroup\n    covering the whole JobSet, and leave replicatedJobs unset.\n  - the per-ReplicatedJob (composite) model: set replicatedJobs and leave\n    schedulingPolicy, schedulingConstraints, and disruptionMode unset at the top\n    level. Every ReplicatedJob must then be targeted by exactly one\n    replicatedJobs entry, since there is no top-level policy for an\n    untargeted ReplicatedJob to fall back to.\n\nSequenced startup (DependsOn or an InOrder StartupPolicy) creates Jobs sequentially, so a single top-level PodGroup could never reach its minCount. A JobSet using sequenced startup must therefore use the per-ReplicatedJob model; top-level scheduling (including the defaulted top-level gang) is rejected with sequenced startup.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"schedulingPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingPolicy defines the composite-level scheduling policy for the entire JobSet. Defaults to Gang when spec.scheduling is set but schedulingPolicy is nil and replicatedJobs is not set. Top-level scheduling, including this defaulted top-level gang, is forbidden with sequenced startup (DependsOn or an InOrder StartupPolicy), since a single PodGroup spanning the whole JobSet could never reach its minCount while Jobs are created sequentially. Configure Gang policies under replicatedJobs instead in that case. Mutually exclusive with replicatedJobs: see the type-level comment.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupSchedulingPolicy{}.OpenAPIModelName()),
+						},
+					},
+					"schedulingConstraints": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingConstraints defines composite-level topology constraints for the entire JobSet. Mutually exclusive with replicatedJobs: see the type-level comment.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupSchedulingConstraints{}.OpenAPIModelName()),
+						},
+					},
+					"disruptionMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "disruptionMode defines how the entire composite group can be disrupted. Mutually exclusive with replicatedJobs: see the type-level comment.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupDisruptionMode{}.OpenAPIModelName()),
+						},
+					},
+					"replicatedJobs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "replicatedJobs specifies per-ReplicatedJob composite-level scheduling overrides. Each entry targets one or more named ReplicatedJobs. Mutually exclusive with the top-level schedulingPolicy, schedulingConstraints, and disruptionMode fields: see the type-level comment. When set, every ReplicatedJob in the JobSet must be targeted by exactly one entry.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobScheduling"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			v1alpha3.WorkloadCompositePodGroupDisruptionMode{}.OpenAPIModelName(), v1alpha3.WorkloadCompositePodGroupSchedulingConstraints{}.OpenAPIModelName(), v1alpha3.WorkloadCompositePodGroupSchedulingPolicy{}.OpenAPIModelName(), "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobScheduling"},
+	}
+}
+
 func schema_jobset_api_jobset_v1alpha2_JobSetSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -23762,16 +23944,23 @@ func schema_jobset_api_jobset_v1alpha2_JobSetSpec(ref common.ReferenceCallback) 
 					},
 					"managedBy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "managedBy is used to indicate the controller or entity that manages a JobSet. The built-in JobSet controller reconciles JobSets which don't have this field at all or the field value is the reserved string `jobset.sigs.k8s.io/jobset-controller`, but skips reconciling JobSets with a custom value for this field.\n\nThe value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.",
+							Description: "managedBy is used to indicate the controller or entity that manages a JobSet. The built-in JobSet controller reconciles JobSets which don't have this field at all or the field value is the reserved string `jobset.sigs.k8s.io/jobset-controller`, but skips reconciling JobSets with a custom value for this field. Note that ttlSecondsAfterFinished cleanup still applies to externally managed JobSets once the managing controller has recorded a terminal condition.\n\nThe value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"ttlSecondsAfterFinished": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ttlSecondsAfterFinished limits the lifetime of a JobSet that has finished execution (either Complete or Failed). If this field is set, TTLSecondsAfterFinished after the JobSet finishes, it is eligible to be automatically deleted. When the JobSet is being deleted, its lifecycle guarantees (e.g. finalizers) will be honored. If this field is unset, the JobSet won't be automatically deleted. If this field is set to zero, the JobSet becomes eligible to be deleted immediately after it finishes.",
+							Description: "ttlSecondsAfterFinished limits the lifetime of a JobSet that has finished execution (either Complete or Failed). If this field is set, TTLSecondsAfterFinished after the JobSet finishes, it is eligible to be automatically deleted. When the JobSet is being deleted, its lifecycle guarantees (e.g. finalizers) will be honored. If this field is unset, the JobSet won't be automatically deleted. If this field is set to zero, the JobSet becomes eligible to be deleted immediately after it finishes. For JobSets that set managedBy to an external controller, TTL cleanup becomes eligible only after that controller records a terminal (Completed or Failed) condition.",
 							Type:        []string{"integer"},
 							Format:      "int32",
+						},
+					},
+					"activeDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "activeDeadlineSeconds is the maximum duration in seconds, relative to status.startTime, that the JobSet may be continuously active before the JobSet controller marks it Failed and deletes its active Jobs.\n\nThe timer does not accrue while the JobSet is suspended: startTime is cleared on suspend and reset when the JobSet resumes. The value must be a positive integer. The field is mutable: operators may raise or lower the deadline on a running JobSet, matching batch/v1.Job. The controller recomputes the remaining time from status.startTime on the next reconcile, so no timer state is reset on update.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 					"volumeClaimPolicies": {
@@ -23792,11 +23981,17 @@ func schema_jobset_api_jobset_v1alpha2_JobSetSpec(ref common.ReferenceCallback) 
 							},
 						},
 					},
+					"scheduling": {
+						SchemaProps: spec.SchemaProps{
+							Description: "scheduling defines the Workload-Aware Scheduling configuration for this JobSet. When nil, no scheduling objects are created and behavior is unchanged. When set (even to {}), the controller compiles a Workload resource (containing PodGroupTemplates) and materializes the corresponding PodGroup objects for the scheduler. Requires the JobSetWorkloadAwareSchedulingAPI feature gate.",
+							Ref:         ref("sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetScheduling"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"sigs.k8s.io/jobset/api/jobset/v1alpha2.Coordinator", "sigs.k8s.io/jobset/api/jobset/v1alpha2.FailurePolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.Network", "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJob", "sigs.k8s.io/jobset/api/jobset/v1alpha2.StartupPolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.SuccessPolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.VolumeClaimPolicy"},
+			"sigs.k8s.io/jobset/api/jobset/v1alpha2.Coordinator", "sigs.k8s.io/jobset/api/jobset/v1alpha2.FailurePolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.JobSetScheduling", "sigs.k8s.io/jobset/api/jobset/v1alpha2.Network", "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJob", "sigs.k8s.io/jobset/api/jobset/v1alpha2.StartupPolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.SuccessPolicy", "sigs.k8s.io/jobset/api/jobset/v1alpha2.VolumeClaimPolicy"},
 	}
 }
 
@@ -23830,6 +24025,12 @@ func schema_jobset_api_jobset_v1alpha2_JobSetStatus(ref common.ReferenceCallback
 							},
 						},
 					},
+					"startTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "startTime is the timestamp from which activeDeadlineSeconds is measured, and also serves as the JobSet's active-start time. It is set when the JobSet first becomes active (unsuspended), cleared when the JobSet is suspended, and reset to the current time when the JobSet resumes, matching batch/v1.Job.status.startTime. It is maintained only while the JobSetActiveDeadlineSeconds feature gate is enabled (and cleared while the gate is off), independent of whether activeDeadlineSeconds is set.",
+							Ref:         ref(metav1.Time{}.OpenAPIModelName()),
+						},
+					},
 					"restarts": {
 						SchemaProps: spec.SchemaProps{
 							Description: "restarts tracks the number of times the JobSet has been globally restarted. That is, restarts is the number of times the restart action RestartJobSet or RestartJobSetAndIgnoreMaxRestarts have been executed and led to the recreation of all Jobs.",
@@ -23841,6 +24042,13 @@ func schema_jobset_api_jobset_v1alpha2_JobSetStatus(ref common.ReferenceCallback
 					"restartsCountTowardsMax": {
 						SchemaProps: spec.SchemaProps{
 							Description: "restartsCountTowardsMax tracks the number of times the JobSet has been globally restarted that counts towards the maximum allowed number of restarts. That is, restartsCountTowardsMax is the number of times the restart action RestartJobSet has been executed and led to the recreation of all Jobs.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"executionAttempts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "executionAttempts tracks the number of execution lifecycles of the JobSet. A value of nil indicates the JobSet has not yet executed (e.g. created suspended). A value of 0 indicates the initial execution attempt, and values > 0 indicate subsequent execution attempts triggered by failure policy restarts or suspend/resume cycles.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -23893,7 +24101,7 @@ func schema_jobset_api_jobset_v1alpha2_JobSetStatus(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			metav1.Condition{}.OpenAPIModelName(), "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobStatus"},
+			metav1.Condition{}.OpenAPIModelName(), metav1.Time{}.OpenAPIModelName(), "sigs.k8s.io/jobset/api/jobset/v1alpha2.ReplicatedJobStatus"},
 	}
 }
 
@@ -23994,6 +24202,65 @@ func schema_jobset_api_jobset_v1alpha2_ReplicatedJob(ref common.ReferenceCallbac
 		},
 		Dependencies: []string{
 			v1.JobTemplateSpec{}.OpenAPIModelName(), "sigs.k8s.io/jobset/api/jobset/v1alpha2.DependsOn"},
+	}
+}
+
+func schema_jobset_api_jobset_v1alpha2_ReplicatedJobScheduling(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ReplicatedJobScheduling targets one or more named ReplicatedJobs with composite-level scheduling configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"targetReplicatedJobs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "targetReplicatedJobs is the list of ReplicatedJob names this policy applies to. When more than one name is listed, the targeted ReplicatedJobs share a single PodGroup. Every name must be unique across all replicatedJobs entries. The list is limited to a maximum of 50 jobs and the length of each replicatedJobName can not exceed 256 characters.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"schedulingPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingPolicy defines the composite-level scheduling policy (basic or gang) for jobs created by the targeted ReplicatedJobs. Defaults to Gang when not specified.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupSchedulingPolicy{}.OpenAPIModelName()),
+						},
+					},
+					"schedulingConstraints": {
+						SchemaProps: spec.SchemaProps{
+							Description: "schedulingConstraints defines composite-level topology constraints for the targeted ReplicatedJobs' pods.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupSchedulingConstraints{}.OpenAPIModelName()),
+						},
+					},
+					"disruptionMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "disruptionMode defines how pods within the targeted ReplicatedJobs can be disrupted.",
+							Ref:         ref(v1alpha3.WorkloadCompositePodGroupDisruptionMode{}.OpenAPIModelName()),
+						},
+					},
+					"job": {
+						SchemaProps: spec.SchemaProps{
+							Description: "job defines job-level (replica-level) scheduling configuration, where each replica of the targeted ReplicatedJobs forms its own independent gang (i.e. one PodGroup per Job) instead of sharing a single PodGroup across every replica of the targeted ReplicatedJobs. This is part of the Gang-of-Gangs model. When set, targetReplicatedJobs must contain exactly one ReplicatedJob name, and the composite-level schedulingPolicy, schedulingConstraints, and disruptionMode fields on this ReplicatedJobScheduling must not be set, since they configure a shared PodGroup that job replaces with one PodGroup per Job.",
+							Ref:         ref("sigs.k8s.io/jobset/api/jobset/v1alpha2.JobScheduling"),
+						},
+					},
+				},
+				Required: []string{"targetReplicatedJobs"},
+			},
+		},
+		Dependencies: []string{
+			v1alpha3.WorkloadCompositePodGroupDisruptionMode{}.OpenAPIModelName(), v1alpha3.WorkloadCompositePodGroupSchedulingConstraints{}.OpenAPIModelName(), v1alpha3.WorkloadCompositePodGroupSchedulingPolicy{}.OpenAPIModelName(), "sigs.k8s.io/jobset/api/jobset/v1alpha2.JobScheduling"},
 	}
 }
 

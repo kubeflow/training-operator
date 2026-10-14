@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: v2.12.1
+version: v2.14.0
 name: golangci-lint-kube-api-linter
 destination: ./bin
 plugins:
-  - module: 'sigs.k8s.io/kube-api-linter'
+  - module: "sigs.k8s.io/kube-api-linter"
     version: v0.0.0-20260423112246-3fa174937a6b

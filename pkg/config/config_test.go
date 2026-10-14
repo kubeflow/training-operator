@@ -32,6 +32,7 @@ import (
 	componentconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -325,6 +326,7 @@ this is not: valid: yaml: content
 		cmpopts.IgnoreUnexported(ctrl.Options{}, webhook.DefaultServer{}, net.ListenConfig{}),
 		cmpopts.IgnoreFields(ctrl.Options{}, "Scheme", "Logger", "Cache"),
 		cmpopts.IgnoreFields(runtimeconfig.Controller{}, "Logger"),
+		cmpopts.IgnoreFields(client.Options{}, "Log"),
 		cmpopts.IgnoreFields(metricsserver.Options{}, "TLSOpts"),
 		cmpopts.IgnoreFields(webhook.Options{}, "TLSOpts"),
 	}

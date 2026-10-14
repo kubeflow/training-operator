@@ -38,7 +38,7 @@ or open an issue in this repository.
 
 ## Requirements
 
-- [Go](https://golang.org/) (1.26 or later)
+- [Go](https://golang.org/) (1.27 or later)
 - [Docker](https://docs.docker.com/) (23 or later)
 - [Lima](https://github.com/lima-vm/lima?tab=readme-ov-file#adopters) (an alternative to DockerDesktop) (0.21.0 or later)
   - [Colima](https://github.com/abiosoft/colima) (Lima specifically for MacOS) (0.6.8 or later)
