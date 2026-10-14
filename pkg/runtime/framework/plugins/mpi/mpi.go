@@ -49,8 +49,6 @@ import (
 	"github.com/kubeflow/trainer/v2/pkg/runtime/framework"
 )
 
-// TODO : Support MPICH and IntelMPI implementations.
-
 type MPI struct {
 	client client.Client
 	scheme *apiruntime.Scheme
@@ -222,8 +220,31 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 							WithName(constants.OpenMPIEnvKeyRSHArgs).
 							WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
 					)
+				case trainer.MPIImplementationIntel:
+					apply.UpsertEnvVars(
+						&info.TemplateSpec.PodSets[psIdx].Containers[cIdx].Env,
+						*corev1ac.EnvVar().
+							WithName(constants.IntelMPIEnvHostFileLocation).
+							WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+						*corev1ac.EnvVar().
+							WithName(constants.IntelMPIEnvKeyBootstrapExecExtraArgs).
+							WithValue(constants.MPIEnvDefaultValueSSHArgs),
+						*corev1ac.EnvVar().
+							WithName(constants.IntelMPIEnvPerHost).
+							WithValue(strconv.Itoa(int(ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode, 1)))),
+					)
+				case trainer.MPIImplementationMPICH:
+					apply.UpsertEnvVars(
+						&info.TemplateSpec.PodSets[psIdx].Containers[cIdx].Env,
+						*corev1ac.EnvVar().
+							WithName(constants.MPICHEnvHostFileLocation).
+							WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+						*corev1ac.EnvVar().
+							WithName(constants.MPICHEnvKeyLaunchExtraArgs).
+							WithValue(constants.MPIEnvDefaultValueSSHArgs),
+					)
 				default:
-					return fmt.Errorf("MPI implementation for %v doesn't supported", info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation)
+					return fmt.Errorf("MPI implementation %q is not supported", ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, ""))
 				}
 			}
 		}
@@ -323,6 +344,11 @@ func (m *MPI) buildHostFileConfigMap(info *runtime.Info, trainJob *trainer.Train
 		case trainer.MPIImplementationOpenMPI:
 			for e := range ps.Endpoints {
 				fmt.Fprintf(&hostFile, "%s slots=%d\n", e, slots)
+			}
+		case trainer.MPIImplementationIntel, trainer.MPIImplementationMPICH:
+			// Hydra-based implementations (Intel MPI and MPICH) use the "host:slots" format.
+			for e := range ps.Endpoints {
+				fmt.Fprintf(&hostFile, "%s:%d\n", e, slots)
 			}
 		}
 	}
