@@ -946,6 +946,12 @@ The TrainingRuntime and ClusterTrainingRuntime validation enforces that:
   The validation logic mirrors the controller's `minCount` computation; if that computation
   changes, the validation must be updated accordingly. This restriction will be lifted when
   elastic TrainJob support is defined.
+- Setting `trainJob.spec.trainer.resourceClaimsPerNode` or Pod resource claims via
+  `trainJob.spec.runtimePatches` is rejected when the resolved runtime sets
+  `scheduling.replicatedJobs[].job.resourceClaims`. TrainJob and runtime are managed by different
+  personas, so merging TrainJob-level claims with PodGroup-level claims requires a deterministic
+  merge order across the TrainJob, `spec.scheduling`, and the runtime Pod template. The restriction
+  may be relaxed once that merge order is defined after Phase 1.
 
 ### Controller Integration
 
