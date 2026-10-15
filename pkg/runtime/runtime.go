@@ -291,6 +291,20 @@ func ExtractResourcePerNodeFromRuntime(info *Info) *corev1.ResourceRequirements 
 	return nil
 }
 
+// TrainerReplicas returns the number of replicas for the trainer replicatedJob from the Info object.
+// It returns 1 if the trainer replicatedJob is not found or replicas are not set.
+func TrainerReplicas(info *Info) int32 {
+	if jobSetSpec, ok := TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info); ok {
+		for _, rJob := range jobSetSpec.ReplicatedJobs {
+			if rJob.Template != nil && rJob.Template.ObjectMetaApplyConfiguration != nil &&
+				rJob.Template.Labels[constants.LabelTrainJobAncestor] == constants.AncestorTrainer {
+				return ptr.Deref(rJob.Replicas, constants.DefaultJobReplicas)
+			}
+		}
+	}
+	return constants.DefaultJobReplicas
+}
+
 // GetNumGPUPerNode returns the GPU count if found in container resources.
 func GetNumGPUPerNode(res *corev1.ResourceRequirements) int {
 	if res == nil {

@@ -85,6 +85,10 @@ func (m *MPI) Validate(_ context.Context, runtimeInfo *runtime.Info, _, newJobOb
 		return nil, allErrs
 	}
 	specPath := field.NewPath("spec")
+	if trainerReplicas := runtime.TrainerReplicas(runtimeInfo); trainerReplicas > 1 {
+		allErrs = append(allErrs, field.Invalid(specPath.Child("runtimeRef"), trainerReplicas,
+			"trainer replicatedJob replicas must be 1 for the MPI runtime"))
+	}
 	// validate PodSet configurations based on NumNodes and RunLauncherAsNode.
 	if trainJobTrainer := newJobObj.Spec.Trainer; trainJobTrainer != nil && ptr.Deref(trainJobTrainer.NumNodes, 1) >= 2 && ptr.Deref(runtimeInfo.RuntimePolicy.MLPolicySource.MPI.RunLauncherAsNode, false) {
 		if runtimeInfo.FindPodSetByName(constants.Launcher) == nil || runtimeInfo.FindPodSetByName(constants.Node) == nil {

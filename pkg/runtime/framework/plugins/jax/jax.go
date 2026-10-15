@@ -71,20 +71,28 @@ func (j *Jax) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 		// Get the number of nodes for distributed setup
 		numNodes := ptr.Deref(ptr.Deref(trainerPS, runtime.PodSet{}).Count, 1)
 
+		// When the trainer runs as multiple replicated Jobs (e.g. multi-slice TPU), the Job completion
+		// index is not unique across replicas, so the process ID can't be derived from it.
+		// In that case, jax.distributed.initialize() auto-detects the number of processes and
+		// the process ID from the TPU environment.
+		if runtime.TrainerReplicas(info) == 1 {
+			apply.UpsertEnvVars(&trainerContainer.Env,
+				// Total number of JAX processes (one per node/host)
+				*corev1ac.EnvVar().
+					WithName("JAX_NUM_PROCESSES").
+					WithValue(fmt.Sprintf("%d", numNodes)),
+
+				// Process ID - derived from job completion index
+				*corev1ac.EnvVar().
+					WithName("JAX_PROCESS_ID").
+					WithValueFrom(corev1ac.EnvVarSource().
+						WithFieldRef(corev1ac.ObjectFieldSelector().
+							WithFieldPath(constants.JobCompletionIndexFieldPath))),
+			)
+		}
+
 		// Set JAX distributed environment variables
 		apply.UpsertEnvVars(&trainerContainer.Env,
-			// Total number of JAX processes (one per node/host)
-			*corev1ac.EnvVar().
-				WithName("JAX_NUM_PROCESSES").
-				WithValue(fmt.Sprintf("%d", numNodes)),
-
-			// Process ID - derived from job completion index
-			*corev1ac.EnvVar().
-				WithName("JAX_PROCESS_ID").
-				WithValueFrom(corev1ac.EnvVarSource().
-					WithFieldRef(corev1ac.ObjectFieldSelector().
-						WithFieldPath(constants.JobCompletionIndexFieldPath))),
-
 			// Coordinator address - first pod in the headless service
 			*corev1ac.EnvVar().
 				WithName("JAX_COORDINATOR_ADDRESS").

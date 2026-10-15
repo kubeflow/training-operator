@@ -194,16 +194,15 @@ func (r *TrainingRuntime) newRuntimeInfo(
 	}
 
 	for i, rJob := range jobSetSpecApply.ReplicatedJobs {
+		// The PodSet count is the total number of Pods across all replicas of the replicatedJob.
+		// The JobSet plugin divides it by replicas to compute per-replica Parallelism/Completions.
 		// REF: https://github.com/kubeflow/trainer/issues/2318
-		count := ptr.Deref(rJob.Template.Spec.Parallelism, 1)
+		count := ptr.Deref(rJob.Template.Spec.Parallelism, 1) * ptr.Deref(rJob.Replicas, constants.DefaultJobReplicas)
 		var ancestor *string
 		if metadata := rJob.Template.ObjectMetaApplyConfiguration; metadata != nil && metadata.Labels != nil {
 			if labelAncestor, ok := metadata.Labels[constants.LabelTrainJobAncestor]; ok {
 				if labelAncestor == constants.AncestorTrainer && mlPolicy != nil {
-					// For multi-slice TPU, numNodes represents total nodes across all slices.
-					// Per-slice Parallelism/Completions is computed in Build() by dividing
-					// the final count (set by EnforceMLPolicy) by trainer replicas.
-					// REF: https://github.com/kubeflow/trainer/issues/3407
+					// numNodes is the total number of nodes across all trainer replicas (e.g. TPU slices).
 					count = ptr.Deref(mlPolicy.NumNodes, 1)
 				}
 				ancestor = &labelAncestor

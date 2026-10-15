@@ -616,6 +616,78 @@ func TestFindPodSetByName(t *testing.T) {
 	}
 }
 
+func TestTrainerReplicas(t *testing.T) {
+	cases := map[string]struct {
+		info         *Info
+		wantReplicas int32
+	}{
+		"template spec is not JobSet": {
+			info:         &Info{},
+			wantReplicas: 1,
+		},
+		"trainer replicatedJob does not exist": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.DatasetInitializer).
+								WithReplicas(1).
+								WithTemplate(batchv1ac.JobTemplateSpec().
+									WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.DatasetInitializer}),
+								),
+						),
+				},
+			},
+			wantReplicas: 1,
+		},
+		"trainer replicatedJob without replicas": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Node).
+								WithTemplate(batchv1ac.JobTemplateSpec().
+									WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}),
+								),
+						),
+				},
+			},
+			wantReplicas: 1,
+		},
+		"trainer replicatedJob with multiple replicas": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.DatasetInitializer).
+								WithReplicas(1).
+								WithTemplate(batchv1ac.JobTemplateSpec().
+									WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.DatasetInitializer}),
+								),
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Node).
+								WithReplicas(4).
+								WithTemplate(batchv1ac.JobTemplateSpec().
+									WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}),
+								),
+						),
+				},
+			},
+			wantReplicas: 4,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if got := TrainerReplicas(tc.info); got != tc.wantReplicas {
+				t.Errorf("Unexpected trainer replicas, want: %d, got: %d", tc.wantReplicas, got)
+			}
+		})
+	}
+}
+
 func TestFindContainerByPodSetName(t *testing.T) {
 	cases := map[string]struct {
 		info          *Info
