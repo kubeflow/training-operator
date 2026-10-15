@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */ -}}
 
-{{- if .Values.serviceMonitor.enabled }}
+{{- if .Values.prometheus.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -22,7 +22,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "trainer.labels" . | nindent 4 }}
-    {{- with .Values.serviceMonitor.labels }}
+    {{- with .Values.prometheus.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
@@ -35,20 +35,20 @@ spec:
     - port: monitoring-port
       scheme: {{ if .Values.manager.config.metrics.secureServing }}https{{ else }}http{{ end }}
       {{- if .Values.manager.config.metrics.auth.enabled }}
-      {{- if not .Values.serviceMonitor.authorization.credentials.name }}
-      {{- fail "serviceMonitor.authorization.credentials.name is required when metrics authentication is enabled" }}
+      {{- if not .Values.prometheus.authorization.credentials.name }}
+      {{- fail "prometheus.authorization.credentials.name is required when metrics authentication is enabled" }}
       {{- end }}
       authorization:
         credentials:
-          name: {{ .Values.serviceMonitor.authorization.credentials.name | quote }}
-          key: {{ .Values.serviceMonitor.authorization.credentials.key | default "token" | quote }}
+          name: {{ .Values.prometheus.authorization.credentials.name | quote }}
+          key: {{ .Values.prometheus.authorization.credentials.key | default "token" | quote }}
       {{- end }}
       {{- if .Values.manager.config.metrics.secureServing }}
       tlsConfig:
         ca:
           secret:
-            name: {{ .Values.serviceMonitor.tlsConfig.ca.secret.name | default .Values.manager.config.certManagement.webhookSecretName | default (include "trainer.webhook.secret.name" .) }}
-            key: {{ .Values.serviceMonitor.tlsConfig.ca.secret.key | default "ca.crt" }}
-        serverName: {{ .Values.serviceMonitor.tlsConfig.serverName | default (printf "%s.%s.svc" (.Values.manager.config.certManagement.webhookServiceName | default (include "trainer.webhook.service.name" .)) .Release.Namespace) }}
+            name: {{ .Values.prometheus.tlsConfig.ca.secret.name | default .Values.manager.config.certManagement.webhookSecretName | default (include "trainer.webhook.secret.name" .) }}
+            key: {{ .Values.prometheus.tlsConfig.ca.secret.key | default "ca.crt" }}
+        serverName: {{ .Values.prometheus.tlsConfig.serverName | default (printf "%s.%s.svc" (.Values.manager.config.certManagement.webhookServiceName | default (include "trainer.webhook.service.name" .)) .Release.Namespace) }}
       {{- end }}
 {{- end }}
