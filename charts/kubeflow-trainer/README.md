@@ -146,10 +146,10 @@ manager:
 | manager.config.statusServer.port | int | `10443` | Port that the TrainJob status server serves on. |
 | manager.config.statusServer.qps | int | `5` | QPS rate limit for the TrainJob Status Server api client |
 | manager.config.statusServer.burst | int | `10` | Burst rate limit for the TrainJob Status Server api client |
-| serviceMonitor.enabled | bool | `false` | Whether to create a Prometheus Operator ServiceMonitor. |
-| serviceMonitor.labels | object | `{}` | Additional labels for selecting this ServiceMonitor from Prometheus. |
-| serviceMonitor.authorization | object | `{"credentials":{"key":"token","name":""}}` | Secret-based authorization for authenticated metrics scraping. Required when metrics authentication is enabled. The Secret must be available in the ServiceMonitor namespace and readable by Prometheus. |
-| serviceMonitor.tlsConfig | object | `{"ca":{"secret":{"key":"ca.crt","name":""}},"serverName":""}` | TLS settings for the ServiceMonitor. Empty values use the Trainer defaults. |
+| prometheus.enabled | bool | `false` | Whether to create a Prometheus Operator ServiceMonitor. |
+| prometheus.labels | object | `{}` | Additional labels for selecting this ServiceMonitor from Prometheus. |
+| prometheus.authorization | object | `{"credentials":{"key":"token","name":""}}` | Secret-based authorization for authenticated metrics scraping. Required when metrics authentication is enabled. The Secret must be available in the ServiceMonitor namespace and readable by Prometheus. |
+| prometheus.tlsConfig | object | `{"ca":{"secret":{"key":"ca.crt","name":""}},"serverName":""}` | TLS settings for the ServiceMonitor. Empty values use the Trainer defaults. |
 | webhook.failurePolicy | string | `"Fail"` | Specifies how unrecognized errors are handled. Available options are `Ignore` or `Fail`. |
 | dataCache.enabled | bool | `false` | Enable/disable data cache support (LWS dependency, ClusterRole). Set to `true` to install data cache components. |
 | dataCache.lws.fullnameOverride | string | `"lws"` | String to fully override LeaderWorkerSet release name. |

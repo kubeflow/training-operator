@@ -163,7 +163,7 @@ manager:
       burst: 10
     featureGates: {}
 
-serviceMonitor:
+prometheus:
   # -- Whether to create a Prometheus Operator ServiceMonitor.
   enabled: false
   # -- Additional labels for selecting this ServiceMonitor from Prometheus.

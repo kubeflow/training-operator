@@ -29,7 +29,7 @@ tests:
 
   - it: Should create a secure unauthenticated ServiceMonitor when enabled
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
     asserts:
       - containsDocument:
           apiVersion: monitoring.coreos.com/v1
@@ -59,19 +59,19 @@ tests:
 
   - it: Should require Secret credentials when authentication is enabled
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
       manager.config.metrics.auth.enabled: true
     asserts:
       - failedTemplate:
-          errorMessage: "serviceMonitor.authorization.credentials.name is required when metrics authentication is enabled"
+          errorMessage: "prometheus.authorization.credentials.name is required when metrics authentication is enabled"
 
   - it: Should support Prometheus selector labels and Secret credentials
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
       manager.config.metrics.auth.enabled: true
-      serviceMonitor.labels.release: prometheus
-      serviceMonitor.authorization.credentials.name: prometheus-token
-      serviceMonitor.authorization.credentials.key: bearer
+      prometheus.labels.release: prometheus
+      prometheus.authorization.credentials.name: prometheus-token
+      prometheus.authorization.credentials.key: bearer
     asserts:
       - equal:
           path: metadata.labels.release
@@ -87,7 +87,7 @@ tests:
 
   - it: Should use HTTP without TLS when secure serving is disabled
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
       manager.config.metrics.secureServing: false
     asserts:
       - equal:
@@ -100,10 +100,10 @@ tests:
 
   - it: Should allow overriding the TLS configuration
     set:
-      serviceMonitor.enabled: true
-      serviceMonitor.tlsConfig.ca.secret.name: custom-metrics-ca
-      serviceMonitor.tlsConfig.ca.secret.key: tls.crt
-      serviceMonitor.tlsConfig.serverName: metrics.example.test
+      prometheus.enabled: true
+      prometheus.tlsConfig.ca.secret.name: custom-metrics-ca
+      prometheus.tlsConfig.ca.secret.key: tls.crt
+      prometheus.tlsConfig.serverName: metrics.example.test
     asserts:
       - equal:
           path: spec.endpoints[0].tlsConfig.ca.secret.name
@@ -117,7 +117,7 @@ tests:
 
   - it: Should use custom certificate management names by default
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
       manager.config.certManagement.webhookSecretName: custom-webhook-secret
       manager.config.certManagement.webhookServiceName: custom-webhook-service
     asserts:
@@ -130,7 +130,7 @@ tests:
 
   - it: Should not include custom manager selector labels in the ServiceMonitor selector
     set:
-      serviceMonitor.enabled: true
+      prometheus.enabled: true
       manager.selectorLabels.custom-label: custom-value
     asserts:
       - notExists:
