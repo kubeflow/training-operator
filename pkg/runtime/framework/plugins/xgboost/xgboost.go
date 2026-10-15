@@ -26,6 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 
 	configapi "github.com/kubeflow/trainer/v2/pkg/apis/config/v1alpha1"
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
@@ -94,6 +95,15 @@ func (x *XGBoost) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob
 		constants.AncestorTrainer, constants.Node,
 	); trainerContainer != nil {
 		numNodes := ptr.Deref(ptr.Deref(trainerPS, runtime.PodSet{}).Count, 1)
+		// Determine the subdomain for the headless service.
+		// If a custom network.subdomain is configured in the TrainingRuntime/ClusterTrainingRuntime template,
+		// use it; otherwise default to the TrainJob name for backward compatibility.
+		subDomain := trainJob.Name
+		if jobSetSpec, ok := runtime.TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info); ok {
+			if jobSetSpec.Network != nil && jobSetSpec.Network.Subdomain != nil {
+				subDomain = *jobSetSpec.Network.Subdomain
+			}
+		}
 
 		// Auto-derive numWorkersPerNode from GPU resources.
 		// GPU training: 1 worker per GPU | CPU training: 1 worker per node.
@@ -112,7 +122,7 @@ func (x *XGBoost) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob
 
 		// Build tracker URI: <trainjob-name>-node-0-0.<trainjob-name>
 		trackerURI := fmt.Sprintf("%s-%s-0-0.%s",
-			trainJob.Name, constants.Node, trainJob.Name)
+			trainJob.Name, constants.Node, subDomain)
 
 		// Inject DMLC_* environment variables.
 		apply.UpsertEnvVars(&trainerContainer.Env,
