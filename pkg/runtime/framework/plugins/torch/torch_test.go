@@ -3028,6 +3028,17 @@ func TestTorchValidate(t *testing.T) {
 				Trainer(utiltesting.MakeTrainJobTrainerWrapper().Obj()).
 				Obj(),
 		},
+		"no warning when the Runtime GPU survives a TrainJob override of other resources alongside DRA claims": {
+			info: draNodeInfo(corev1ac.ResourceRequirements().
+				WithClaims(corev1ac.ResourceClaim().WithName("gpu")).
+				WithLimits(corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("2")}),
+			),
+			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
+				Trainer(utiltesting.MakeTrainJobTrainerWrapper().
+					Container("test:image", nil, nil, corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("32Gi")}).
+					Obj()).
+				Obj(),
+		},
 		"no warning on update": {
 			info: draNodeInfo(corev1ac.ResourceRequirements().WithClaims(corev1ac.ResourceClaim().WithName("gpu"))),
 			oldObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").

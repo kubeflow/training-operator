@@ -97,9 +97,6 @@ func (t *Torch) Validate(_ context.Context, runtimeInfo *runtime.Info, oldObj, n
 	if oldObj == nil {
 		runtimeRes := runtime.ExtractResourcePerNodeFromRuntime(runtimeInfo)
 		resourcesPerNode := ptr.Deref(runtimeRes, corev1.ResourceRequirements{})
-		if jobTrainer := newObj.Spec.Trainer; jobTrainer != nil && jobTrainer.ResourcesPerNode != nil {
-			resourcesPerNode = *jobTrainer.ResourcesPerNode
-		}
 		numProcPerNodeSet := newObj.Spec.Trainer != nil && newObj.Spec.Trainer.NumProcPerNode != nil
 		if runtimeRes != nil && len(runtimeRes.Claims) > 0 && !numProcPerNodeSet && runtime.GetNumGPUPerNode(&resourcesPerNode) == 0 {
 			warnings = append(warnings, draNumProcPerNodeWarning)

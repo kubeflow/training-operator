@@ -2725,28 +2725,37 @@ func TestToApplyConfig(t *testing.T) {
 
 func TestTrainingRuntimeNewObjectsResolvedNodeResources(t *testing.T) {
 	cases := map[string]struct {
-		runtimeResources   corev1.ResourceList
-		trainJobResources  corev1.ResourceList
-		wantNodeResources  corev1.ResourceList
+		runtimeResources   corev1.ResourceRequirements
+		trainJobResources  corev1.ResourceRequirements
+		wantNodeResources  corev1.ResourceRequirements
 		wantNumProcPerNode string
 	}{
 		"GPUs declared by the Runtime survive a TrainJob override of other resources": {
-			runtimeResources: corev1.ResourceList{
+			runtimeResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
 				corev1.ResourceCPU: resource.MustParse("8"),
 				"nvidia.com/gpu":   resource.MustParse("4"),
-			},
-			trainJobResources: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("16Gi")},
-			wantNodeResources: corev1.ResourceList{
+			}},
+			trainJobResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("16Gi")}},
+			wantNodeResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("8"),
 				corev1.ResourceMemory: resource.MustParse("16Gi"),
 				"nvidia.com/gpu":      resource.MustParse("4"),
+			}},
+			wantNumProcPerNode: "auto",
+		},
+		"GPUs declared only in the Runtime limits survive a TrainJob override of requests": {
+			runtimeResources:  corev1.ResourceRequirements{Limits: corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("4")}},
+			trainJobResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("16Gi")}},
+			wantNodeResources: corev1.ResourceRequirements{
+				Limits:   corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("4")},
+				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("16Gi")},
 			},
 			wantNumProcPerNode: "auto",
 		},
 		"TrainJob CPUs override the Runtime ones": {
-			runtimeResources:  corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("8")},
-			trainJobResources: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
-			wantNodeResources: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
+			runtimeResources:  corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("8")}},
+			trainJobResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")}},
+			wantNodeResources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")}},
 			// No GPU anywhere, so torchrun gets one process per CPU.
 			wantNumProcPerNode: "2",
 		},
@@ -2767,12 +2776,20 @@ func TestTrainingRuntimeNewObjectsResolvedNodeResources(t *testing.T) {
 							WithMLPolicySource(*testingutil.MakeMLPolicySourceWrapper().TorchPolicy().Obj()).
 							Obj(),
 					).
-					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, tc.runtimeResources).
+					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, tc.runtimeResources.Requests).
 					Obj(),
 			).Obj()
+			for i := range trainingRuntime.Spec.Template.Spec.ReplicatedJobs {
+				containers := trainingRuntime.Spec.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers
+				for j := range containers {
+					if containers[j].Name == constants.Node {
+						containers[j].Resources.Limits = tc.runtimeResources.Limits
+					}
+				}
+			}
 
 			trainerSpec := testingutil.MakeTrainJobTrainerWrapper().NumNodes(1).Obj()
-			trainerSpec.ResourcesPerNode = &corev1.ResourceRequirements{Requests: tc.trainJobResources}
+			trainerSpec.ResourcesPerNode = &tc.trainJobResources
 			trainJob := testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "torch-job").
 				UID("uid").
 				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "torch-runtime").
@@ -2795,7 +2812,7 @@ func TestTrainingRuntimeNewObjectsResolvedNodeResources(t *testing.T) {
 			}
 
 			nodeContainer := findTrainerNodeContainer(t, resultObjs)
-			if diff := cmp.Diff(tc.wantNodeResources, nodeContainer.Resources.Requests); len(diff) != 0 {
+			if diff := cmp.Diff(tc.wantNodeResources, nodeContainer.Resources); len(diff) != 0 {
 				t.Errorf("Unexpected node container resources (-want,+got):\n%s", diff)
 			}
 			var gotNumProcPerNode string
